@@ -101,7 +101,8 @@ The deadline includes stdout EOF, even after a successful shell exit. At timeout
 the direct child is killed and reaped without joining a blocked stdout reader;
 descendants holding stdout open cannot delay resolution until pipe EOF. Partial
 output at the deadline is unavailable, not a secret.
-Trim surrounding stdout whitespace, preserving interior newlines. Empty output,
+Trim surrounding stdout whitespace using the ECMAScript whitespace set: U+FEFF
+is trimmed, while U+0085 is preserved. Interior newlines are preserved. Empty output,
 nonzero exit, spawn/UTF-8 failure and timeout resolve unavailable without exposing
 command text or diagnostics. Success and unresolved failure are process-cached by
 (explicit working directory, full `!command`) across instances. Same-key waiters

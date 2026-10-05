@@ -112,6 +112,9 @@ trait HelperRuntime: Send + Sync {
     fn now(&self) -> Duration;
     fn wait(&self, duration: Duration);
 }
+fn is_reference_whitespace(c: char) -> bool {
+    c != '\u{85}' && (c.is_whitespace() || c == '\u{FEFF}')
+}
 fn helper(runtime: &dyn HelperRuntime, command: &str, directory: &Path) -> Option<SecretString> {
     helper_with_timeout(runtime, command, directory, Duration::from_millis(10_000))
 }
@@ -137,7 +140,7 @@ fn helper_with_timeout(
                 }
                 let output = process.finish(false)?;
                 let output = String::from_utf8(output).ok()?;
-                let output = output.trim();
+                let output = output.trim_matches(is_reference_whitespace);
                 return (!output.is_empty()).then(|| SecretString::new(output.into()));
             }
             Err(()) => {

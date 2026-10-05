@@ -463,6 +463,65 @@ fn secret_sentinels_stay_out_of_public_observations() {
 }
 
 #[test]
+fn stored_token_metadata_and_observations_exclude_access_and_refresh_secrets() {
+    let sentinels = ["ACCESS_TOKEN_SENTINEL", "REFRESH_TOKEN_SENTINEL"];
+    let credentials = owner(memory());
+    credentials
+        .set(
+            "chosen",
+            Credential::Refreshable(TokenExchangeResult {
+                auth: auth(sentinels[0]),
+                state: secret(sentinels[1]),
+                expires_at: Some(101),
+            }),
+            &Cancellation::new(),
+        )
+        .unwrap();
+    assert_eq!(credentials.list(), vec!["chosen"]);
+    assert_eq!(
+        credentials.status("chosen"),
+        AuthStatus {
+            configured: true,
+            source: Some("stored".into()),
+        }
+    );
+    let mut models = Models::new(Arc::new(|| 123));
+    models.register(model("chosen"), scripted(1)).unwrap();
+    let original = context();
+    let before = format!("{original:?}");
+    let mut stream = models.stream(
+        model("chosen"),
+        original.clone(),
+        StreamOptions {
+            auth_resolver: Some(credentials.clone()),
+            ..Default::default()
+        },
+    );
+    let mut events = vec![];
+    while let Some(event) = block_on(stream.next()) {
+        events.push(event);
+    }
+    assert!(matches!(events.last(), Some(ModelEvent::Done { .. })));
+    let metadata = format!(
+        "{:?} {:?} {:?}",
+        credentials.list(),
+        credentials.status("chosen"),
+        models.auth_status("chosen", credentials.as_ref()).unwrap(),
+    );
+    for observation in [
+        metadata,
+        format!("{events:?}"),
+        before,
+        format!("{original:?}"),
+    ] {
+        for sentinel in sentinels {
+            assert!(!observation.contains(sentinel));
+        }
+    }
+    assert_eq!(original, context());
+}
+
+#[test]
 fn cancelled_resolution_never_dispatches() {
     for fallback in [false, true] {
         for pre_cancelled in [false, true] {

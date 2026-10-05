@@ -217,6 +217,20 @@ fn helper_output_and_failure_are_resolved_without_leaking() {
     }
 }
 
+#[test]
+fn helper_output_trims_bom_but_preserves_nel() {
+    let _guard = test_guard();
+    for (output, expected) in [("\u{FEFF}key\u{FEFF}", "key"), ("\u{85}key", "\u{85}key")] {
+        let runtime = Controlled::new();
+        *runtime.output.lock().unwrap() = output.as_bytes().to_vec();
+        let resolver = resolver(runtime);
+        assert_eq!(
+            resolved(&resolver, "!whitespace").as_deref(),
+            Some(expected)
+        );
+    }
+}
+
 fn test_guard() -> std::sync::MutexGuard<'static, ()> {
     static SERIAL: Mutex<()> = Mutex::new(());
     SERIAL.lock().unwrap_or_else(|p| p.into_inner())
