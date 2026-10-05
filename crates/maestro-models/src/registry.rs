@@ -50,6 +50,7 @@ impl Models {
     }
 
     /// Resolve once and return the normalized caller stream, including setup failures.
+    /// Projects once before dispatch without changing caller history.
     /// Samples the clock once; the stream owns its source and requested metadata.
     pub fn stream(&self, model: Model, context: Context, options: StreamOptions) -> ModelStream {
         let timestamp = (self.clock)();
@@ -70,9 +71,25 @@ impl Models {
                 .and_then(|(registered, provider)| {
                     if registered.protocol != model.protocol || !provider.supports("chat") {
                         Err(Failure::UnsupportedOperation)
-                    } else if options.cancellation.is_cancelled() {
-                        Err(Failure::Cancelled)
                     } else {
+                        if options.cancellation.is_cancelled() {
+                            return Err(Failure::Cancelled);
+                        }
+                        let context = crate::project_context(
+                            &context,
+                            &model,
+                            &|id, model, source| {
+                                if options.cancellation.is_cancelled() {
+                                    id.to_owned()
+                                } else {
+                                    provider.normalize_tool_call_id(id, model, source)
+                                }
+                            },
+                            timestamp,
+                        );
+                        if options.cancellation.is_cancelled() {
+                            return Err(Failure::Cancelled);
+                        }
                         let description = provider.description();
                         if options.cancellation.is_cancelled() {
                             return Err(Failure::Cancelled);

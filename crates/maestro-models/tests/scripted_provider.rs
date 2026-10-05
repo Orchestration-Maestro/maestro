@@ -23,21 +23,33 @@ fn queued_scripts_are_fifo_and_exhaustion_never_replays() {
     let mut request = context();
     let first = models.stream(model(), request.clone(), support::auth::local());
     assert_eq!(fake.pending(), 2);
-    request.messages[0].content = "changed".into();
+    if let Message::User(user) = &mut request.messages[0] {
+        user.content = vec![InputContent::Text(TextContent {
+            text: "changed".into(),
+            replay_metadata: None,
+        })];
+    }
     let mut calls = fake.calls();
-    calls[0].context.messages[0].content = "clone changed".into();
+    if let Message::User(user) = &mut calls[0].context.messages[0] {
+        user.content = vec![InputContent::Text(TextContent {
+            text: "clone changed".into(),
+            replay_metadata: None,
+        })];
+    }
     assert_eq!(fake.calls()[0].context, context());
     assert_eq!(
         terminal(&collect(first, &model(), 73)).content[0],
         AssistantContent::Text(TextContent {
-            text: "first".into()
+            text: "first".into(),
+            replay_metadata: None
         })
     );
     let second = block_on(models.complete(model(), context(), support::auth::local()));
     assert_eq!(
         second.content[0],
         AssistantContent::Text(TextContent {
-            text: "second".into()
+            text: "second".into(),
+            replay_metadata: None
         })
     );
     assert_eq!(fake.pending(), 1);
@@ -106,7 +118,8 @@ fn factories_inspect_owned_requests_without_holding_queue_locks() {
     assert_eq!(
         terminal(&events).content[0],
         AssistantContent::Text(TextContent {
-            text: "factory".into()
+            text: "factory".into(),
+            replay_metadata: None
         })
     );
     assert_eq!(terminal(&events).usage, usage());
@@ -158,7 +171,10 @@ fn controlled_script_waits_preserve_steps_across_polls() {
                         content_index: 0,
                         delta: "once".into(),
                     }),
-                    ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0 }),
+                    ScriptStep::Update(ProviderUpdate::TextEnd {
+                        content_index: 0,
+                        replay_metadata: None,
+                    }),
                     ScriptStep::Update(done()),
                 ])
             })
@@ -193,7 +209,8 @@ fn controlled_script_waits_preserve_steps_across_polls() {
     assert_eq!(
         terminal(&events).content[0],
         AssistantContent::Text(TextContent {
-            text: "once".into()
+            text: "once".into(),
+            replay_metadata: None
         })
     );
     assert_eq!(count.load(Ordering::SeqCst), 1);

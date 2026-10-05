@@ -1,6 +1,9 @@
 //! Indexed adapter updates and supplied request cancellation.
 
-use crate::{AuthResolver, Cancellation, Context, Failure, Model, RequestAuth, StopReason, Usage};
+use crate::{
+    AssistantMessage, AuthResolver, Cancellation, Context, Failure, Model, RequestAuth, StopReason,
+    Usage,
+};
 use std::{collections::BTreeMap, future::Future, pin::Pin, sync::Arc};
 
 /// Request-local streaming options.
@@ -50,10 +53,12 @@ pub enum ProviderUpdate {
         /// Exact supplied fragment, including an empty fragment.
         delta: String,
     },
-    /// Close a text block.
+    /// Close a text block, attaching supplied opaque replay metadata.
     TextEnd {
         /// Stable content-block index.
         content_index: usize,
+        /// Opaque metadata attached before the closing snapshot.
+        replay_metadata: Option<String>,
     },
     /// Open empty readable thinking or introduce opaque redacted thinking.
     ThinkingStart {
@@ -147,7 +152,17 @@ pub trait Provider: Send + Sync {
     fn token_exchange(&self) -> Option<Arc<dyn crate::TokenExchange>> {
         None
     }
-    /// Start exactly one invocation with owned inputs, or return a safe setup failure.
+    /// Apply this adapter's deterministic, effect-free foreign call-ID rule.
+    /// The identity default preserves IDs; overrides must keep batch IDs distinct.
+    fn normalize_tool_call_id(
+        &self,
+        id: &str,
+        _model: &Model,
+        _source: &AssistantMessage,
+    ) -> String {
+        id.to_owned()
+    }
+    /// Start exactly one invocation with an owned, already projected context, or return a safe setup failure.
     /// The model interface converts setup failures into terminal error events.
     /// Synchronous setup must not block; asynchronous work belongs in the source.
     fn stream(

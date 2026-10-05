@@ -10,6 +10,8 @@ From `docs/specs/2026-10-04-models.md`.
 - **Model identity:** The combination of provider ID, model ID and operation.
 - **Operation:** A kind of model work: chat, classification, image generation, embedding or reranking.
 - **Catalog:** The locally registered collection of model entries with their identities, capabilities and flat price metadata.
+- **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
+- **Model-request projection:** The selected-model view of supplied conversation context, not the stored branch or a history write.
 - **Request:** An invocation of a selected model operation with its inputs, options, authentication and cancellation.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
@@ -37,7 +39,7 @@ From `docs/specs/2026-10-05-engine-core.md`.
 - **Session:** A conversation history with a selected branch.
 - **Entry:** An immutable record in the session tree.
 - **Active branch:** The path from the root to the selected position.
-- **Context projection:** The model-bound view of the active branch.
+- **Context projection:** The model-bound view of supplied conversation context; branch selection and storage remain session responsibilities.
 - **Compaction:** Reduction of model context without deleting raw history.
 
 ### State

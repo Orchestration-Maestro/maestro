@@ -22,15 +22,20 @@ pub fn model() -> Model {
         },
         protocol: "script".into(),
         headers: Default::default(),
+        input: vec!["text".into()],
     }
 }
 pub fn context() -> Context {
     Context {
         system_prompt: Some("synthetic secret".into()),
-        messages: vec![UserMessage {
-            content: "hello".into(),
+        messages: vec![Message::User(UserMessage {
+            content: vec![InputContent::Text(TextContent {
+                text: "hello".into(),
+                replay_metadata: None,
+            })],
             timestamp: 1,
-        }],
+        })],
+        tools: vec![],
     }
 }
 pub fn registry(provider: Arc<dyn Provider>) -> Models {
@@ -192,6 +197,7 @@ pub fn text(index: usize, value: &str) -> Vec<ProviderUpdate> {
         },
         ProviderUpdate::TextEnd {
             content_index: index,
+            replay_metadata: None,
         },
     ]
 }

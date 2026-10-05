@@ -25,6 +25,11 @@
   case-insensitive literal header overlay, safe diagnostics and cancellable
   auth waits. Credential lifecycle remains outside model access.
 
+- Mixed conversation records with nonmutating selected-model projection, opaque
+  replay preservation, explicit image omissions and paired missing-result repair.
+  Pure offline tool-argument validation returns independent coerced objects
+  without tool execution or history writes.
+
 - Deterministic chat-stream conformance with indexed text/thinking/tool-call
   blocks, strict completed tool JSON, owned metadata snapshots and wakeable
   request cancellation. Expanded the scripted provider with queued factories,

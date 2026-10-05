@@ -62,6 +62,12 @@ Only these libraries are owner-approved: tokio, reqwest, serde, serde_json,
 toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
 Ask the owner before adding any other crate; never add one silently.
 
+Owner-approved model validation exception: `jsonschema` 0.58.5 with default
+features disabled, used only through the model crate's private schema module.
+Keep HTTP/file and asynchronous retrieval, TLS, idna, macros and all other optional
+features disabled; construction must also explicitly use the offline builder.
+No remote schema retrieval is authorized.
+
 Keep one current format for everything. No compatibility code.
 
 ## Public text

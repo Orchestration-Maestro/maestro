@@ -22,24 +22,8 @@ pub struct Model {
     pub protocol: String,
     /// Registered literal default headers; sensitive and not safe to log.
     pub headers: std::collections::BTreeMap<String, String>,
-}
-
-/// One text user input with its Unix timestamp in milliseconds.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UserMessage {
-    /// User text.
-    pub content: String,
-    /// Unix timestamp in milliseconds.
-    pub timestamp: u64,
-}
-
-/// Current system prompt and ordered text user inputs.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Context {
-    /// Separate optional system prompt.
-    pub system_prompt: Option<String>,
-    /// User inputs in conversation order.
-    pub messages: Vec<UserMessage>,
+    /// Supplied input capabilities; `image` enables image retention.
+    pub input: Vec<String>,
 }
 
 /// Reported flat token counters, not estimates inferred from text. Initial zeros mean unreported usage.

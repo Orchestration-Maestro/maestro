@@ -8,6 +8,11 @@ See [request authentication](request-authentication.md) for ownership, headers
 and secret-free local access. The crate has no internal workspace dependencies. Its JSON dependency parses
 completed tool arguments strictly; it requires no asynchronous runtime.
 
+Mixed conversation records keep current prompt/tools separate from history.
+The registry supplies one owned, selected-model projection before adapter
+dispatch. See [conversation projection](conversation-projection.md) for replay,
+image omissions, paired tool results and pure offline argument validation.
+
 ## Explicit indexed streaming
 
 This example compiles without credentials or network access. An application
@@ -25,10 +30,12 @@ async fn scripted_text() -> Result<(), Failure> {
         },
         protocol: "scripted/chat".into(),
         headers: Default::default(),
+        input: vec!["text".into()],
     };
     let context = Context {
         system_prompt: Some("Reply with a greeting".into()),
-        messages: vec![UserMessage { content: "hello".into(), timestamp: 17 }],
+        messages: vec![Message::User(UserMessage { content: vec![InputContent::Text(TextContent { text: "hello".into(), replay_metadata: None })], timestamp: 17 })],
+        tools: vec![],
     };
     let response = || Script::Steps(vec![
         ScriptStep::Update(ProviderUpdate::TextStart { content_index: 0 }),
@@ -38,7 +45,7 @@ async fn scripted_text() -> Result<(), Failure> {
         ScriptStep::Update(ProviderUpdate::TextDelta {
             content_index: 0, delta: "lo".into(),
         }),
-        ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0 }),
+        ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0, replay_metadata: None }),
         ScriptStep::Update(ProviderUpdate::Usage {
             usage: Usage { input: 11, output: 7, total_tokens: 18, ..Usage::default() },
         }),
@@ -63,7 +70,7 @@ async fn scripted_text() -> Result<(), Failure> {
     }
     let completed = models.complete(model.clone(), context.clone(), options.clone()).await;
     assert_eq!(terminal.as_ref(), Some(&completed));
-    assert_eq!(completed.content[0], AssistantContent::Text(TextContent { text: "hello".into() }));
+    assert_eq!(completed.content[0], AssistantContent::Text(TextContent { text: "hello".into(), replay_metadata: None }));
     assert_eq!(completed.timestamp, 73);
     assert_eq!(fake.calls()[0].model, model);
     assert_eq!(fake.calls()[0].context, context);
@@ -77,7 +84,8 @@ Success emits one `Start`, balanced text/thinking/tool-call starts and ends, and
 one `Done` with `Stop`, `Length` or `ToolUse`. Empty success has exactly Start/Done
 and invents no block. New blocks append at the next index; any open blocks may
 interleave. Empty deltas are retained exactly. Readable thinking starts empty
-and retains its optional signature. Redacted thinking introduces an opaque block
+and retains its optional signature. TextEnd attaches optional opaque replay
+metadata to its block before the closing snapshot. Redacted thinking introduces an opaque block
 with ThinkingStart/ThinkingEnd and no delta; ThinkingEnd's readable content is
 empty. Do not display opaque data as reasoning.
 
@@ -110,11 +118,13 @@ async fn request_factory(model: Model, context: Context) -> Result<(), Failure> 
     let fake = Arc::new(ScriptedProvider::new(vec![Script::Factory(Box::new(|call| {
         Box::pin(async move {
             assert_eq!(call.call_index, 1);
-            let text = call.context.messages[0].content.clone();
+            let Message::User(user) = &call.context.messages[0] else { panic!("expected user") };
+            let InputContent::Text(block) = &user.content[0] else { panic!("expected text") };
+            let text = block.text.clone();
             Ok(vec![
                 ScriptStep::Update(ProviderUpdate::TextStart { content_index: 0 }),
                 ScriptStep::Update(ProviderUpdate::TextDelta { content_index: 0, delta: text }),
-                ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0 }),
+                ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0, replay_metadata: None }),
                 ScriptStep::Update(ProviderUpdate::Done { reason: StopReason::Stop }),
             ])
         })
