@@ -13,6 +13,10 @@ name = "maestro"
 version = "0.1.0"
 
 [[package]]
+name = "maestro-models"
+version = "0.1.0"
+
+[[package]]
 name = "maestro-test-conventions"
 version = "0.1.0"
 dependencies = [

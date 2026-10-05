@@ -15,6 +15,9 @@
 
 ### Added
 
+- Credential-free model text access with explicit registration, owned streaming
+  snapshots, completion and a queued scripted provider adapter.
+
 - Engine-core specification covering application modes, the agent loop, native
   tools, branchable sessions, replaceable storage, settings, extensions, packages
   and documentation acceptance. This specifies planned behavior, not implemented
