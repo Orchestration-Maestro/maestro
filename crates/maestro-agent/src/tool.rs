@@ -25,7 +25,9 @@ pub struct ToolResult {
     pub terminate: Option<bool>,
 }
 
-/// Synchronous owned progress submission. Delivery is awaited before finalization.
+/// Synchronous owned progress submission with independent delivery for each update.
+/// Subscribers run in registration order within each update. All deliveries are
+/// awaited before finalization, even when execution fails.
 /// Do not retain or use this callback after the execution future settles.
 pub type ToolProgress = Arc<dyn Fn(ToolResult) + Send + Sync + 'static>;
 

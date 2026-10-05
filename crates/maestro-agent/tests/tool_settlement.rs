@@ -571,6 +571,112 @@ async fn tool_result_clock_samples_at_message_creation() {
     }
 }
 
+#[test]
+fn progress_updates_deliver_without_waiting_for_earlier_updates() {
+    let (completed, completion) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            for failed in [false, true] {
+                let t = tool(
+                    "work",
+                    Arc::new(move |inv| {
+                        (inv.progress)(output("A"));
+                        (inv.progress)(output("B"));
+                        Box::pin(async move {
+                            if failed {
+                                Err("failed".into())
+                            } else {
+                                let mut result = output("done");
+                                result.terminate = Some(true);
+                                Ok(result)
+                            }
+                        })
+                    }),
+                );
+                let (agent, _) = setup(
+                    vec![
+                        Script::Steps(call_steps(
+                            &[("id", "work", json!({}))],
+                            StopReason::ToolUse,
+                        )),
+                        Script::Steps(steps("end")),
+                    ],
+                    AgentOptions {
+                        tools: vec![t],
+                        ..Default::default()
+                    },
+                );
+                let (signal, wait) = tokio::sync::oneshot::channel();
+                let signal = Arc::new(Mutex::new(Some(signal)));
+                let wait = Arc::new(Mutex::new(Some(wait)));
+                let observed = Arc::new(Mutex::new(vec![]));
+                let first = observed.clone();
+                let observer = agent.clone();
+                let subscription = agent.subscribe(Arc::new(move |event, _| {
+                    let mut gate = None;
+                    let mut label = None;
+                    if let AgentEvent::ToolExecutionUpdate { partial_result, .. } = event {
+                        assert!(observer.state().is_running);
+                        if partial_result == output("A") {
+                            gate = wait.lock().unwrap().take();
+                            label = Some("first-A");
+                        } else {
+                            assert_eq!(partial_result, output("B"));
+                            signal.lock().unwrap().take().unwrap().send(()).unwrap();
+                            label = Some("first-B");
+                        }
+                    }
+                    let first = first.clone();
+                    Box::pin(async move {
+                        if let Some(gate) = gate {
+                            gate.await.unwrap();
+                        }
+                        if let Some(label) = label {
+                            first.lock().unwrap().push(label);
+                        }
+                    })
+                }));
+                let second = observed.clone();
+                agent.subscribe(Arc::new(move |event, _| {
+                    let mut seen = second.lock().unwrap();
+                    match event {
+                        AgentEvent::ToolExecutionUpdate { partial_result, .. } => {
+                            let (first, second) = if partial_result == output("A") {
+                                ("first-A", "second-A")
+                            } else {
+                                assert_eq!(partial_result, output("B"));
+                                ("first-B", "second-B")
+                            };
+                            assert!(seen.contains(&first));
+                            seen.push(second);
+                        }
+                        AgentEvent::ToolExecutionEnd { .. } => {
+                            assert!(seen.contains(&"second-A"));
+                            assert!(seen.contains(&"second-B"));
+                            seen.push("end");
+                        }
+                        _ => {}
+                    }
+                    Box::pin(async {})
+                }));
+                let records = agent.prompt(user("go"), options()).unwrap().await.unwrap();
+                agent.unsubscribe(subscription);
+                assert_eq!(results(&records)[0].is_error, failed);
+                assert_eq!(observed.lock().unwrap().len(), 5);
+                assert_eq!(observed.lock().unwrap().last(), Some(&"end"));
+            }
+            completed.send(()).unwrap();
+        });
+    });
+    completion
+        .recv_timeout(std::time::Duration::from_secs(2))
+        .expect("progress B must deliver while progress A waits for its signal");
+    worker.join().unwrap();
+}
+
 #[tokio::test]
 async fn submitted_progress_retains_subscription_snapshot() {
     let owner = Arc::new(Mutex::new(None::<(Agent, SubscriptionId)>));

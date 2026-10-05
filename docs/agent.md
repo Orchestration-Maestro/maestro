@@ -101,8 +101,10 @@ validation/coercion → registered before hooks → execute → drain accepted p
 all hooks receive the same cooperative run cancellation. `ToolInvocation` carries
 the call ID, final working arguments, cancellation and synchronous progress sink.
 Do not retain/use the progress sink after the execution future settles. Submission
-immediately owns output and the subscription snapshot; asynchronous delivery is
-awaited in submission order before after hooks, even on execution failure.
+immediately owns output and the subscription snapshot and starts independent
+asynchronous delivery. Updates do not wait for earlier updates; subscribers within
+each update run in registration order. All deliveries settle before after hooks,
+even on execution failure.
 
 Before hooks see previous whole-object replacements, without revalidation.
 Blocking wins over an accompanying replacement and skips remaining before hooks,
