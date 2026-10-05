@@ -232,3 +232,116 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
 }
+
+#[test]
+fn settings_is_registered_as_core() {
+    let workspace = Workspace::new();
+    workspace.member("settings", "maestro-settings", "");
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("workspace crate is not listed in workspace-crates.json: maestro-settings".into())
+    );
+    workspace.list(&[("maestro-settings", "dedicated")]);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("maestro-settings must be registered as core".into())
+    );
+    workspace.list(&[("maestro-settings", "core")]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn settings_only_allows_declared_domain_edges() {
+    let workspace = Workspace::new();
+    workspace.list(&[
+        ("maestro-settings", "core"),
+        ("maestro-models", "core"),
+        ("maestro-agent", "core"),
+        ("maestro-packages", "core"),
+        ("maestro-storage", "core"),
+        ("maestro-jobs", "dedicated"),
+    ]);
+    for (directory, name) in [
+        ("models", "maestro-models"),
+        ("agent", "maestro-agent"),
+        ("packages", "maestro-packages"),
+        ("storage", "maestro-storage"),
+        ("jobs", "maestro-jobs"),
+    ] {
+        workspace.member(directory, name, "");
+    }
+    for kind in [
+        "dependencies",
+        "build-dependencies",
+        "target.'cfg(target_os = \"none\")'.dependencies",
+        "target.'cfg(target_os = \"none\")'.build-dependencies",
+    ] {
+        for (directory, name) in [
+            ("models", "maestro-models"),
+            ("agent", "maestro-agent"),
+            ("packages", "maestro-packages"),
+            ("storage", "maestro-storage"),
+            ("jobs", "maestro-jobs"),
+        ] {
+            for renamed in [false, true] {
+                let key = if renamed { "alias" } else { name };
+                workspace.member("settings","maestro-settings",&format!("[{kind}]\n{key} = {{ package = \"{name}\", path = \"../{directory}/../{directory}\", optional = true }}"));
+                let result = check_workspace(&workspace.root);
+                if matches!(directory, "models" | "agent" | "packages") {
+                    assert_eq!(result, Ok(()));
+                } else {
+                    assert_eq!(
+                        result,
+                        Err(format!(
+                            "maestro-settings must not depend on workspace crate {name}"
+                        ))
+                    );
+                }
+            }
+        }
+    }
+    workspace.member("settings", "maestro-settings", "");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn settings_rejects_internal_dev_dependencies() {
+    let workspace = Workspace::new();
+    workspace.list(&[
+        ("maestro-settings", "core"),
+        ("maestro-models", "core"),
+        ("maestro-agent", "core"),
+        ("maestro-packages", "core"),
+    ]);
+    for (directory, name) in [
+        ("models", "maestro-models"),
+        ("agent", "maestro-agent"),
+        ("packages", "maestro-packages"),
+    ] {
+        workspace.member(directory, name, "");
+    }
+    for kind in [
+        "dev-dependencies",
+        "target.'cfg(target_os = \"none\")'.dev-dependencies",
+    ] {
+        for (directory, name) in [
+            ("models", "maestro-models"),
+            ("agent", "maestro-agent"),
+            ("packages", "maestro-packages"),
+        ] {
+            workspace.member(
+                "settings",
+                "maestro-settings",
+                &format!("[{kind}]\nalias = {{ package = \"{name}\", path = \"../{directory}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "maestro-settings must not have internal dev dependency {name}"
+                ))
+            );
+        }
+    }
+    workspace.member("settings", "maestro-settings", "");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}

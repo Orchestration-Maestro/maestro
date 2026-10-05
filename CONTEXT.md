@@ -41,7 +41,9 @@ From `docs/specs/2026-10-05-engine-core.md`.
 
 - **Storage:** The replaceable interface that records session state; ephemeral storage is not the memory capability.
 - **Notification:** An observation of current activity; delivery does not imply persistence or replay.
-- **Settings:** Effective configured values with origins and enforceable value locks.
+- **Settings:** Effective configured values with origins and enforceable value locks. A stored scope is user or project configuration; an ephemeral override changes effective values only until reload or a stored update.
+- **Setting origin:** The source of an effective value.
+- **Value lock:** A manifest constraint freezing a value or subtree, not a filesystem lock.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Manifest:** Governed declarations of defaults, packages and resources consumed by their owners.
 

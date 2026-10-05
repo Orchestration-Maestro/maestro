@@ -41,6 +41,12 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
             ));
         }
     }
+    if list
+        .get("maestro-settings")
+        .is_some_and(|layer| layer != "core")
+    {
+        return Err("maestro-settings must be registered as core".into());
+    }
     let graph = dependency_graph(&metadata)?;
     if let Some(dependencies) = graph.get("maestro-models")
         && let Some(dependency) = dependencies.first()
@@ -48,6 +54,18 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         return Err(format!(
             "maestro-models must not depend on workspace crate {dependency}"
         ));
+    }
+    if let Some(dependencies) = graph.get("maestro-settings") {
+        for dependency in dependencies {
+            if !matches!(
+                dependency.as_str(),
+                "maestro-models" | "maestro-agent" | "maestro-packages"
+            ) {
+                return Err(format!(
+                    "maestro-settings must not depend on workspace crate {dependency}"
+                ));
+            }
+        }
     }
     for (name, dependencies) in &graph {
         if list[name] != "core" {
@@ -111,6 +129,11 @@ fn dependency_graph(metadata: &Value) -> Result<BTreeMap<String, BTreeSet<String
                 ));
             }
             if let Some(name) = member {
+                if string(package, "name")? == "maestro-settings" && dependency["kind"] == "dev" {
+                    return Err(format!(
+                        "maestro-settings must not have internal dev dependency {name}"
+                    ));
+                }
                 edges.insert(name.clone());
             }
         }
