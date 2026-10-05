@@ -15,3 +15,23 @@ cargo test --workspace --locked
 ```
 
 Shared CI runs format and lint on Linux, with tests on Linux, macOS and Windows.
+
+## Workspace crate rules
+
+`maestro-test-conventions` runs automatically with the workspace tests. Add
+new members to `workspace-crates.json` with a `core` or `dedicated` layer.
+The composition root (`maestro`) and the conventions checker are dedicated;
+engine libraries such as `maestro-models` are core.
+
+The checker rejects unlisted members, dependency cycles, core-to-dedicated
+edges and all internal dependencies of `maestro-models`. Normal, build, dev,
+optional and target-specific dependencies all count. External dependencies
+are not workspace edges. A dependency with a workspace member's package name
+must use a path to that member, not a registry/git source or a different path;
+this prevents Cargo patches or overrides from hiding internal edges.
+The full per-crate dependency allowlist is deferred.
+
+Names are `maestro` or `maestro-` followed by one or two lowercase ASCII
+alphanumeric segments, each starting with a letter. The checked-in crate
+list records the reviewed names; the checker does not invent a noun or role
+vocabulary.
