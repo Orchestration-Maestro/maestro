@@ -12,5 +12,5 @@ From `docs/specs/2026-10-04-models.md`.
 - **Catalog:** The locally registered collection of model entries with their identities, capabilities and flat price metadata.
 - **Request:** An invocation of a selected model operation with its inputs, options, authentication and cancellation.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
-- **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it. Retained events own their snapshots.
+- **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Scripted fake:** A provider adapter driven by queued responses or request-inspecting factories, with observable calls and no external I/O.
