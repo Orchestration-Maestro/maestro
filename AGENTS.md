@@ -8,13 +8,37 @@ Issues link to the spec rather than copying it.
 
 ## Checks
 
+Install mise and rustup, enable mise on `PATH`, then run:
+
 ```sh
-cargo fmt --all --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
+mise install
+just setup
+just ci
 ```
 
-Shared CI runs format and lint on Linux, with tests on Linux, macOS and Windows.
+`just setup` installs pinned tools and prek hooks. `just check` runs formatting,
+Clippy with warnings denied, strict public rustdoc and workspace conventions.
+`just test` runs all tests; `just ci` runs both, matching shared Linux CI.
+Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
+Use `mise exec -- just <recipe>` if mise is not active in your shell.
+
+The commit hook formats the code, re-stages the staged files and runs
+`just check`; unformatted code is fixed, never rejected. It also rejects
+merge-conflict markers and invalid TOML or YAML. Commit messages need a
+conventional header and every line must be at most 80 columns.
+
+## Documentation
+
+Every crate root needs `//!` docs and every public item needs `///` docs.
+`just check` denies rustdoc warnings and missing documentation.
+
+All Rust comments describe the code, not planning material. Never include
+numbered slices, specs, tasks or tickets, issue/pull-request references,
+planning vocabulary or planning identifiers. Workspace conventions scan
+comments in all member Rust files, reporting file and line; strings and
+attributes are not comments. No allowlist or exceptions: reword a false
+positive. Ordinary technical terms such as "the JSON-RPC specification",
+"an async task", "step 1 of the parse", "UTF-16" and "S3-compatible" pass.
 
 ## Crates
 

@@ -5,16 +5,40 @@ build on. It is being built piece by piece, with specs in `docs/specs/`.
 
 ## Build and test
 
-With Rust installed, run these from the repository root. Clippy builds and
-checks every target; the tests also build the binary.
+Install `mise` and `rustup`, then run from the repository root:
 
 ```sh
-cargo fmt --all --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
+mise install
+just setup
 ```
 
-Shared CI runs format and lint on Linux, with tests on Linux, macOS and Windows.
+Enable mise in your shell (or prefix commands with `mise exec --`) so the
+pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml` through
+rustup, not mise. `mise.lock` records the tool downloads and checksums.
+
+- `just setup`: install the pinned tools and git hooks.
+- `just check`: formatting, Clippy with warnings denied, strict public
+  documentation, and workspace conventions tests.
+- `just test`: the full workspace test suite.
+- `just ci`: checks and tests, matching shared Linux CI.
+
+Before each commit, prek formats the code with `cargo fmt`, re-stages the
+staged files and runs `just check`. It also rejects merge-conflict markers and
+invalid TOML or YAML. Commit messages require a conventional header and lines
+of at most 80 columns.
+
+## Documentation rules
+
+Every crate root has `//!` documentation and every public item has `///`
+documentation. The documentation build denies warnings and missing docs.
+Comments describe code behavior, never planning material: no numbered
+slices, specs, tasks or tickets; issue or pull-request references; planning
+vocabulary or identifiers. The conventions checker scans Rust comments in
+each workspace member and reports the file and line. Strings and attributes
+are not comments. There are no exemptions; reword false positives.
+
+Technical wording such as "the JSON-RPC specification", "an async task",
+"step 1 of the parse", "UTF-16" and "S3-compatible" remains valid.
 
 ## Workspace crate rules
 
