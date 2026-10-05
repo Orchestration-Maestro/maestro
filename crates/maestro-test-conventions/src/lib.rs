@@ -9,8 +9,11 @@ mod comments;
 mod graph;
 
 /// Checks names, membership and internal dependency boundaries using Cargo metadata.
+///
+/// Declared edges cover all features and targets. The resolved pass uses default
+/// features for the compiler host so it reads only crates a normal build fetched.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
-    let metadata = metadata_command(root, "--no-deps")?;
+    let metadata = metadata_command(root, &["--no-deps"])?;
     let members = array(&metadata, "workspace_members")?;
     let list_path = root.join("workspace-crates.json");
     let list: Value = serde_json::from_slice(
@@ -44,15 +47,17 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     graph::inventory(&metadata, list)?;
     let mut edges = graph::declared(&metadata)?;
     graph::validate(&metadata, &edges)?;
-    let resolved = metadata_command(root, "--all-features")?;
+    let host = compiler_host()?;
+    let resolved = metadata_command(root, &["--filter-platform", &host])?;
     edges.extend(graph::resolved(&resolved)?);
     graph::validate(&metadata, &edges)?;
     comments::check(&metadata)
 }
 
-fn metadata_command(root: &Path, mode: &str) -> Result<Value, String> {
+fn metadata_command(root: &Path, options: &[&str]) -> Result<Value, String> {
     let output = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
-        .args(["metadata", "--format-version", "1", mode, "--offline"])
+        .args(["metadata", "--format-version", "1", "--offline"])
+        .args(options)
         .current_dir(root)
         .output()
         .map_err(|error| format!("cargo metadata failed: {error}"))?;
@@ -65,6 +70,31 @@ fn metadata_command(root: &Path, mode: &str) -> Result<Value, String> {
     }
     serde_json::from_slice(&output.stdout)
         .map_err(|error| format!("invalid cargo metadata: {error}"))
+}
+
+fn compiler_host() -> Result<String, String> {
+    let output = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()))
+        .arg("-vV")
+        .output()
+        .map_err(|error| format!("rustc -vV failed: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "rustc -vV failed ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    parse_compiler_host(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_compiler_host(version: &str) -> Result<String, String> {
+    version
+        .lines()
+        .find_map(|line| line.strip_prefix("host:"))
+        .map(str::trim)
+        .filter(|host| !host.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| "rustc -vV failed: missing or empty host line".into())
 }
 
 fn array<'a>(value: &'a Value, key: &str) -> Result<&'a Vec<Value>, String> {
@@ -101,3 +131,22 @@ fn valid_name(name: &str) -> bool {
 
 #[cfg(test)]
 mod graph_tests;
+
+#[cfg(test)]
+mod tests {
+    use super::parse_compiler_host;
+
+    #[test]
+    fn compiler_host_requires_a_nonempty_host_line() {
+        assert_eq!(
+            parse_compiler_host("rustc 1.96.0\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\n"),
+            Ok("x86_64-unknown-linux-gnu".into())
+        );
+        for version in ["release: 1.96.0\n", "host:\n", "host:   \n"] {
+            assert_eq!(
+                parse_compiler_host(version),
+                Err("rustc -vV failed: missing or empty host line".into())
+            );
+        }
+    }
+}

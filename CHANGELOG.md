@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Kept offline workspace graph checks within the test build's fetched crates,
+  while retaining declared checks for inactive optional dependencies.
 - Enforced scoped crate classes and direct declared/resolved dependency edges,
   with isolated leaves and a separately acyclic restricted test graph.
 

@@ -228,10 +228,17 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
         "build-dependencies",
         "target.'cfg(target_os = \"none\")'.dependencies",
     ] {
-        for source in [
+        let mut sources = vec![
             "version = \"0.1\"",
             "git = \"https://example.invalid/storage\"",
-        ] {
+        ];
+        if kind != "dev-dependencies" {
+            sources.extend([
+                "version = \"0.1\", optional = true",
+                "git = \"https://example.invalid/storage\", optional = true",
+            ]);
+        }
+        for source in sources {
             workspace.member(
                 "session",
                 "maestro-session",
