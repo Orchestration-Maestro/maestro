@@ -43,6 +43,12 @@ null, whole array and empty object. Nonempty objects have descendant entries, so
 `display.theme` is User and `display.width` is Project in this example. Replacing
 an object with a scalar removes its old descendant origins.
 
+`read_scope(SettingsScope::User)` and `read_scope(SettingsScope::Project)` return
+cloned accepted maps, without I/O. Shadowed user values remain readable. These
+maps include session-only stored edits, but exclude defaults, other layers,
+runtime overrides and unrequested external edits. Mutating a returned nested
+value cannot change the manager.
+
 ## Updates and locks
 
 All callers use `Settings::set(target, path, value)`. Paths are lists of literal
@@ -66,15 +72,32 @@ cannot change a locked subtree. Logical rejection changes neither the accepted s
 nor stored settings. Native I/O failures retain the snapshot but can leave partial
 file bytes.
 
-`Stored(User)` and `Stored(Project)` edit the selected transaction's current map,
-retaining unrelated keys, then rebuild effective settings without old overrides.
+`Stored(User)` and `Stored(Project)` validate two independent candidates: the
+cached target plus the requested edit for publication, and the fresh transaction
+map plus that same edit for persistence. Both enforce ancestor omission and
+per-layer locks against the baseline and cached other scope. Saving does not read
+the other scope. Disk preserves unrelated external keys; cached/effective views
+publish only the requested change until explicit reload. Successful stored edits
+discard old overrides. A load-failed scope instead accepts validated session-only
+edits without any storage call until a successful reload read clears its latch.
 `Override(source)` edits effective settings only; source labels are nonsecret
 identifiers, not permissions. CLI, environment, runtime and extension callers all
 use this same operation.
 
-`reload()` re-reads both scopes and discards overrides only after successful
-validation. Memory-backed initial values and accepted scoped edits survive.
-Failure preserves the last usable snapshot. Re-apply overrides through `set`.
+`apply_overrides(source, values)` recursively merges an object into current
+effective values. Missing properties and nested siblings survive; arrays, scalars
+and null replace whole values. Supplied leaves get the source's Override origin;
+untouched leaves retain theirs. Scope maps and storage remain unchanged. The same
+manifest guard applies, including equal restatement and locked subtree membership.
+Unlike overlay, `set` still replaces its addressed subtree/root exactly.
+
+`reload()` attempts both scope reads and discards overrides only after successful
+validation. Memory-backed initial values and persisted scoped edits survive.
+Any failure retains both accepted scope maps and the entire effective snapshot,
+including overrides. Read failures queue diagnostics in user/project order and
+return the first error. Each scope's persistence latch follows its own read result,
+even if the other read fails and nothing publishes. A parse-successful lock conflict
+is not a load failure. Re-apply overrides through `set` or `apply_overrides`.
 
 ## Errors
 
@@ -119,6 +142,13 @@ let mut settings = Settings::new(
 ).unwrap();
 settings.set(SettingsTarget::Stored(SettingsScope::User),
     &["quietStartup".into()], json!(true)).unwrap();
+assert_eq!(settings.read_scope(SettingsScope::User)["quietStartup"], json!(true));
+settings.apply_overrides("runtime".into(),
+    json!({"display":{"width":80}}).as_object().unwrap().clone()).unwrap();
+settings.apply_overrides("runtime".into(),
+    json!({"display":{"theme":"dark"}}).as_object().unwrap().clone()).unwrap();
+assert_eq!(settings.resolve().values["display"], json!({"width":80,"theme":"dark"}));
+assert!(settings.drain_errors().is_empty());
 assert_eq!(settings.reload().unwrap().values["quietStartup"], json!(true));
 ```
 
@@ -169,14 +199,20 @@ Shadowed environment input is not another edit. Selection never changes snapshot
 persists preferences, creates directories, opens sessions or activates resources.
 The session owner owns subsequent layout and opening.
 
-Absolute paths remain absolute. Exact `~` and `~/` expand using supplied home;
-other tilde-prefixed strings remain relative. Relative invocation and session
-paths (even a user-scope sessionDir) use the effective working directory. Relative
-working directories use supplied process cwd; relative user roots use the effective
-working directory. `resource_path(path, declaring_directory)` uses the explicit
-user/project configuration directory, manifest directory or package root. Relative
-declaring directories use working directory. No canonicalization, existence check,
-discovery or activation is performed.
+Invocation, resource and selected session text is trimmed at both ends (including
+U+FEFF, excluding U+0085). Empty trimmed input selects its base. `~`, `~/x` and `~x`
+expand under supplied home. Absolute input replaces its base; relative invocation
+and session paths (even user-scope sessionDir) use the effective working directory.
+`resource_path(path, declaring_directory)` uses the supplied user/project,
+manifest or package directory; a relative declaring directory resolves at cwd.
+All results normalize repeated separators, `.` and `..` lexically, including
+absolute/home-expanded input. Surplus `..` cannot escape an absolute root.
+`link/../x` selects base/x regardless of whether link exists or is a symlink.
+Native path characters are not lossy-converted. No canonicalization, existence
+check, discovery or activation occurs. Raw session values stay unchanged;
+trimmed, expanded or lexically equivalent text cannot restate a different frozen
+raw string. Constructor root-selection policy is unchanged: relative working
+and user directories anchor as before, with exact `~` and `~/` home expansion.
 
 ## Native exclusion, failures and repair
 
@@ -192,11 +228,21 @@ starts false; true cancels before admission, including after a wait or acquisiti
 The adapter never resets it. An admitted transaction settles despite late cancellation.
 File-write locks do not alter manifest value locks.
 
-Malformed, empty and nonobject files are errors, never defaults. Only NotFound
-means empty. Logical rejection/parse failure writes no settings bytes. After a
-malformed external replacement, reload and setters report safe metadata while
-retaining the entire last usable snapshot. Repair the selected file to a JSON
-object, then call reload or set on the same Settings instance.
+Malformed, empty and nonobject files remain storage errors; only NotFound means
+empty. Settings construction attempts both loads, substitutes empty contributions
+for failed scopes and keeps healthy settings usable. `drain_errors()` returns and
+removes scoped File/Storage load diagnostics without changing bytes or clearing
+persistence latches; a second drain is empty. Manifest and stored-layer governance
+failures still reject construction. Synchronous setter/path/lock/transaction
+failures return directly, rather than becoming load diagnostics.
+
+After a failed startup or reload read, that scope's valid stored setters return Ok
+and update scoped/effective cache only; malformed bytes are untouched. The healthy
+other scope can still persist. Repairing bytes alone does not enable writes:
+repair to a JSON object, then reload. Each successful scope read clears its latch;
+a successful full reload replaces cached values from disk. Subsequent setters
+persist normally and do not replay earlier session-only edits. A nonlatched
+transaction encountering malformed bytes still returns Err without publication.
 
 Serialization completes before destination truncation. Cooperating writers preserve
 unrelated edits/unknown keys by editing only a fresh scoped map. Native I/O failure

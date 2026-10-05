@@ -265,11 +265,110 @@ fn resource_and_invocation_paths_use_their_declared_bases() {
     );
     assert_eq!(
         locations.invocation_path(Path::new("~other")),
-        locations.working_directory().join("~other")
+        scratch.root.join("home/other")
     );
     assert_eq!(
         locations.invocation_path(Path::new("~/expanded")),
         scratch.root.join("home/expanded")
     );
     assert!(!locations.working_directory().exists());
+}
+
+#[test]
+fn resource_paths_follow_normalization_rules() {
+    let scratch = Scratch::new();
+    let locations = scratch.locations();
+    let cwd = locations.working_directory();
+    let home = scratch.root.join("home");
+    for base in [
+        locations.configuration_directory(SettingsScope::User),
+        locations.configuration_directory(SettingsScope::Project),
+        scratch.root.join("manifest"),
+        scratch.root.join("package"),
+        cwd.join("relative-package"),
+    ] {
+        for (input, relative) in [
+            (" ext.ts ", "ext.ts"),
+            ("", ""),
+            (" \t\n", ""),
+            (".", ""),
+            ("dir/../x", "x"),
+            ("link/../x", "x"),
+            ("dir///child/./x", "dir/child/x"),
+            ("\u{FEFF}ext.ts\u{FEFF}", "ext.ts"),
+            ("\u{85}ext.ts", "\u{85}ext.ts"),
+        ] {
+            assert_eq!(
+                locations.invocation_path(Path::new(input)),
+                cwd.join(relative)
+            );
+            assert_eq!(
+                locations.resource_path(Path::new(input), &base),
+                base.join(relative)
+            );
+        }
+        for (input, expected) in [
+            ("~", home.clone()),
+            ("~/x", home.join("x")),
+            ("~other", home.join("other")),
+            ("~/dir/../x", home.join("x")),
+            ("~dir/../x", home.join("x")),
+            ("/absolute/dir/.././x", PathBuf::from("/absolute/x")),
+            ("/../../x", PathBuf::from("/x")),
+            ("~//x", home.join("x")),
+        ] {
+            assert_eq!(locations.invocation_path(Path::new(input)), expected);
+            assert_eq!(locations.resource_path(Path::new(input), &base), expected);
+        }
+    }
+    assert_eq!(
+        locations.resource_path(Path::new(" dir/../x "), Path::new("relative-package")),
+        cwd.join("relative-package/x")
+    );
+    assert!(!cwd.exists());
+    std::fs::create_dir_all(cwd.join("link")).unwrap();
+    assert_eq!(
+        locations.invocation_path(Path::new("link/../x")),
+        cwd.join("x")
+    );
+    #[cfg(unix)]
+    {
+        std::fs::remove_dir(cwd.join("link")).unwrap();
+        std::os::unix::fs::symlink(scratch.root.join("missing"), cwd.join("link")).unwrap();
+        assert_eq!(
+            locations.invocation_path(Path::new("link/../x")),
+            cwd.join("x")
+        );
+        use std::os::unix::ffi::OsStringExt;
+        let native = PathBuf::from(std::ffi::OsString::from_vec(b"dir/../\xff".to_vec()));
+        let filename = PathBuf::from(std::ffi::OsString::from_vec(vec![0xff]));
+        assert_eq!(locations.invocation_path(&native), cwd.join(filename));
+    }
+    for (raw, equivalent) in [
+        (" ext.ts ", "ext.ts"),
+        ("~/x", home.join("x").to_str().unwrap()),
+        ("dir/../x", "x"),
+    ] {
+        let s = settings(
+            memory,
+            json!({}),
+            json!({"sessionDir":raw}),
+            &[&["sessionDir"]],
+            json!({}),
+            json!({}),
+        )
+        .unwrap();
+        assert_eq!(s.resolve().values["sessionDir"], json!(raw));
+        assert_eq!(
+            s.session_directory(&locations, Some(raw), None).unwrap(),
+            locations.invocation_path(Path::new(raw))
+        );
+        for (explicit, environment) in [(Some(equivalent), None), (None, Some(equivalent))] {
+            assert!(matches!(
+                s.session_directory(&locations, explicit, environment),
+                Err(SettingsError::LockConflict { .. })
+            ));
+        }
+        assert_eq!(s.resolve().values["sessionDir"], json!(raw));
+    }
 }

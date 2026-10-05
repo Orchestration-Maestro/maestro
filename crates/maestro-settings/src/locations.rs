@@ -43,15 +43,17 @@ impl SettingsLocations {
             home: home_directory,
         })
     }
-    /// Resolves an invocation path at the working directory with supplied home expansion.
+    /// Trims path text, expands leading tilde at supplied home and resolves at cwd.
+    /// Dot segments and separators normalize lexically, without filesystem lookup.
     pub fn invocation_path(&self, path: &Path) -> PathBuf {
-        anchored(path, &self.working, &self.home)
+        normalized(path, &self.working, &self.home)
     }
 
-    /// Resolves resource paths at their declaring directory; relative bases use the working directory.
+    /// Trims, expands tilde and lexically normalizes at the declaring directory.
+    /// Relative declaring directories resolve at cwd; no filesystem lookup occurs.
     pub fn resource_path(&self, path: &Path, declaring_directory: &Path) -> PathBuf {
         let base = self.invocation_path(declaring_directory);
-        anchored(path, &base, &self.home)
+        normalized(path, &base, &self.home)
     }
 
     /// Effective working directory.
@@ -79,4 +81,37 @@ fn anchored(path: &Path, base: &Path, home: &Path) -> PathBuf {
     } else {
         base.join(path)
     }
+}
+
+fn normalized(path: &Path, base: &Path, home: &Path) -> PathBuf {
+    let path = path.to_str().map_or(path, |text| {
+        Path::new(
+            text.trim_matches(|c: char| c != '\u{85}' && (c.is_whitespace() || c == '\u{FEFF}')),
+        )
+    });
+    let anchored = if let Some(rest) = path.to_str().and_then(|text| text.strip_prefix('~')) {
+        home.join(rest.trim_start_matches(std::path::is_separator))
+    } else if path.is_absolute() {
+        path.to_owned()
+    } else {
+        base.join(path)
+    };
+    let mut result = PathBuf::new();
+    for component in anchored.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if matches!(
+                    result.components().next_back(),
+                    Some(std::path::Component::Normal(_))
+                ) {
+                    result.pop();
+                } else if !result.has_root() {
+                    result.push(component);
+                }
+            }
+            _ => result.push(component),
+        }
+    }
+    result
 }
