@@ -678,6 +678,48 @@ fn progress_updates_deliver_without_waiting_for_earlier_updates() {
 }
 
 #[tokio::test]
+async fn progress_from_a_plain_thread_is_delivered() {
+    let t = tool(
+        "work",
+        Arc::new(move |inv| {
+            Box::pin(async move {
+                std::thread::spawn(move || (inv.progress)(output("partial")))
+                    .join()
+                    .expect("progress submission from a plain thread must not panic");
+                let mut result = output("done");
+                result.terminate = Some(true);
+                Ok(result)
+            })
+        }),
+    );
+    let (agent, _) = setup(
+        vec![Script::Steps(call_steps(
+            &[("id", "work", json!({}))],
+            StopReason::ToolUse,
+        ))],
+        AgentOptions {
+            tools: vec![t],
+            ..Default::default()
+        },
+    );
+    let events = capture(&agent);
+    let records = agent.prompt(user("go"), options()).unwrap().await.unwrap();
+    assert_eq!(results(&records)[0].content, output("done").content);
+    assert!(!results(&records)[0].is_error);
+    let updates: Vec<_> = events
+        .lock()
+        .unwrap()
+        .iter()
+        .filter_map(|event| match event {
+            AgentEvent::ToolExecutionUpdate { partial_result, .. } => Some(partial_result.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(updates, vec![output("partial")]);
+    assert!(!agent.state().is_running);
+}
+
+#[tokio::test]
 async fn submitted_progress_retains_subscription_snapshot() {
     let owner = Arc::new(Mutex::new(None::<(Agent, SubscriptionId)>));
     let seen = Arc::new(Mutex::new(vec![]));

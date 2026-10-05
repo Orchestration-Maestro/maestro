@@ -28,6 +28,7 @@ pub struct ToolResult {
 /// Synchronous owned progress submission with independent delivery for each update.
 /// Subscribers run in registration order within each update. All deliveries are
 /// awaited before finalization, even when execution fails.
+/// This callback may be called from any thread during the tool's execution.
 /// Do not retain or use this callback after the execution future settles.
 pub type ToolProgress = Arc<dyn Fn(ToolResult) + Send + Sync + 'static>;
 

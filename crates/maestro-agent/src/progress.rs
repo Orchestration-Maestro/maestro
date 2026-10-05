@@ -9,6 +9,7 @@ pub(crate) fn accept(
     call: ToolCall,
     cancellation: Cancellation,
 ) -> (ToolProgress, JoinHandle<()>) {
+    let runtime = tokio::runtime::Handle::current();
     let (sender, mut receiver) = mpsc::unbounded_channel::<JoinHandle<()>>();
     let progress = Arc::new(move |partial_result| {
         let delivery = accept_event(
@@ -21,7 +22,7 @@ pub(crate) fn accept(
             },
         );
         let cancellation = cancellation.clone();
-        let task = tokio::spawn(async move {
+        let task = runtime.spawn(async move {
             delivery.deliver(&cancellation).await;
         });
         let _ = sender.send(task);
