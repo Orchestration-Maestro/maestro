@@ -603,3 +603,118 @@ fn agent_rejects_internal_dev_dependencies() {
     workspace.member("agent", "maestro-agent", "");
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+#[test]
+fn credentials_is_registered_as_core() {
+    let workspace = Workspace::new();
+    workspace.member("credentials", "maestro-credentials", "");
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("workspace crate is not listed in workspace-crates.json: maestro-credentials".into())
+    );
+    workspace.list(&[("maestro-credentials", "dedicated")]);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("invalid scoped layer for maestro-credentials: expected core".into())
+    );
+    workspace.list(&[("maestro-credentials", "core")]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn credentials_only_allows_models_edge() {
+    for (to, class) in [
+        ("maestro-models", "core"),
+        ("maestro-storage", "core"),
+        ("maestro-packages", "core"),
+        ("maestro-agent", "core"),
+        ("maestro-tools", "core"),
+        ("maestro-session", "core"),
+        ("maestro-settings", "core"),
+        ("maestro-resources", "core"),
+        ("maestro-extensions", "core"),
+        ("maestro-app", "core"),
+        ("maestro-cli", "core"),
+        ("maestro", "dedicated"),
+        ("maestro-test-conventions", "dedicated"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.list(&[("maestro-credentials", "core"), (to, class)]);
+        workspace.member("to", to, "");
+        for (kind, extra) in [
+            ("dependencies", ""),
+            ("dependencies", ", optional = true"),
+            ("build-dependencies", ""),
+            (
+                "target.'cfg(target_os = \"none\")'.dependencies",
+                ", optional = true",
+            ),
+            ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
+        ] {
+            workspace.member(
+                "credentials",
+                "maestro-credentials",
+                &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../to\"{extra} }}"),
+            );
+            let result = check_workspace(&workspace.root);
+            if to == "maestro-models" {
+                assert_eq!(result, Ok(()));
+            } else if class == "dedicated" {
+                assert_eq!(
+                    result,
+                    Err(format!(
+                        "core crate maestro-credentials must not depend on dedicated crate {to}"
+                    ))
+                );
+            } else {
+                assert_eq!(
+                    result,
+                    Err(format!(
+                        "forbidden production dependency: maestro-credentials -> {to}"
+                    ))
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn credentials_rejects_internal_dev_dependencies() {
+    for (to, class) in [
+        ("maestro-models", "core"),
+        ("maestro-storage", "core"),
+        ("maestro-packages", "core"),
+        ("maestro-agent", "core"),
+        ("maestro-tools", "core"),
+        ("maestro-session", "core"),
+        ("maestro-settings", "core"),
+        ("maestro-resources", "core"),
+        ("maestro-extensions", "core"),
+        ("maestro-app", "core"),
+        ("maestro-cli", "core"),
+        ("maestro", "dedicated"),
+        ("maestro-test-conventions", "dedicated"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.list(&[("maestro-credentials", "core"), (to, class)]);
+        workspace.member("to", to, "");
+        for kind in [
+            "dev-dependencies",
+            "target.'cfg(target_os = \"none\")'.dev-dependencies",
+        ] {
+            workspace.member(
+                "credentials",
+                "maestro-credentials",
+                &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../to\" }}"),
+            );
+            let expected = if class == "dedicated" {
+                format!("core crate maestro-credentials must not depend on dedicated crate {to}")
+            } else {
+                format!(
+                    "internal dev dependency requires declared dependency-free test support: maestro-credentials -> {to}"
+                )
+            };
+            assert_eq!(check_workspace(&workspace.root), Err(expected));
+        }
+    }
+}
