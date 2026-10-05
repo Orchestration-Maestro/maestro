@@ -12,6 +12,7 @@ fn empty_success_has_exact_start_and_done() {
             operation: "chat".into(),
         },
         protocol: "script".into(),
+        headers: Default::default(),
     };
     let fake = Arc::new(ScriptedProvider::new(vec![Script::Steps(vec![
         ScriptStep::Update(ProviderUpdate::Done {
@@ -26,7 +27,7 @@ fn empty_success_has_exact_start_and_done() {
             system_prompt: None,
             messages: vec![],
         },
-        StreamOptions::default(),
+        support::auth::local(),
     );
     assert!(
         matches!(block_on(stream.next()), Some(ModelEvent::Start { partial }) if partial.content.is_empty())
@@ -382,7 +383,7 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
         done(),
     ]);
     let (models, _) = fixture(updates);
-    let mut stream = models.stream(model(), context(), StreamOptions::default());
+    let mut stream = models.stream(model(), context(), support::auth::local());
     let mut retained = vec![];
     for _ in 0..9 {
         retained.push(block_on(stream.next()).unwrap());
@@ -456,7 +457,7 @@ fn setup_and_transport_failures_preserve_the_normal_error_contract() {
         (Arc::new(direct) as Arc<dyn Provider>, Failure::Transport),
     ] {
         let events = collect(
-            registry(provider).stream(model(), context(), StreamOptions::default()),
+            registry(provider).stream(model(), context(), support::auth::local()),
             &model(),
             73,
         );
@@ -692,7 +693,7 @@ fn terminal_delivery_drops_source_and_suppresses_later_updates() {
         assert!(terminal(&scripted).content.is_empty());
         let direct = Arc::new(DirectProvider::new(updates));
         let models = registry(direct.clone());
-        let options = StreamOptions::default();
+        let options = support::auth::local();
         let mut stream = models.stream(model(), context(), options.clone());
         while let Some(event) = block_on(stream.next()) {
             if matches!(event, ModelEvent::Done { .. } | ModelEvent::Error { .. }) {

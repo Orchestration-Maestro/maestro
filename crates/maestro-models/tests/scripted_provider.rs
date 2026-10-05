@@ -21,7 +21,7 @@ fn queued_scripts_are_fifo_and_exhaustion_never_replays() {
     let models = registry(fake.clone());
     assert_eq!(fake.pending(), 3);
     let mut request = context();
-    let first = models.stream(model(), request.clone(), StreamOptions::default());
+    let first = models.stream(model(), request.clone(), support::auth::local());
     assert_eq!(fake.pending(), 2);
     request.messages[0].content = "changed".into();
     let mut calls = fake.calls();
@@ -33,7 +33,7 @@ fn queued_scripts_are_fifo_and_exhaustion_never_replays() {
             text: "first".into()
         })
     );
-    let second = block_on(models.complete(model(), context(), StreamOptions::default()));
+    let second = block_on(models.complete(model(), context(), support::auth::local()));
     assert_eq!(
         second.content[0],
         AssistantContent::Text(TextContent {
@@ -47,7 +47,7 @@ fn queued_scripts_are_fifo_and_exhaustion_never_replays() {
         Failure::ScriptExhausted,
     ] {
         let events = collect(
-            models.stream(model(), context(), StreamOptions::default()),
+            models.stream(model(), context(), support::auth::local()),
             &model(),
             73,
         );
@@ -75,7 +75,7 @@ fn factories_inspect_owned_requests_without_holding_queue_locks() {
     let holder = Arc::new(Mutex::new(None::<std::sync::Weak<ScriptedProvider>>));
     let seen = Arc::new(AtomicUsize::new(0));
     let (inside, count) = (holder.clone(), seen.clone());
-    let options = StreamOptions::default();
+    let options = support::auth::local();
     let cancellation = options.cancellation.clone();
     let fake = Arc::new(ScriptedProvider::new(vec![Script::Factory(Box::new(
         move |call| {
@@ -130,7 +130,7 @@ fn factory_failure_is_a_secret_safe_prestart_error() {
     ))]));
     let models = registry(fake);
     let events = collect(
-        models.stream(model(), context(), StreamOptions::default()),
+        models.stream(model(), context(), support::auth::local()),
         &model(),
         73,
     );
@@ -165,7 +165,7 @@ fn controlled_script_waits_preserve_steps_across_polls() {
         },
     ))]));
     let models = registry(fake.clone());
-    let mut stream = models.stream(model(), context(), StreamOptions::default());
+    let mut stream = models.stream(model(), context(), support::auth::local());
     let wakes = Arc::new(WakeCounter::default());
     {
         let mut next = Box::pin(stream.next());
@@ -206,11 +206,11 @@ fn stream_and_completion_share_the_same_conformance_assertions() {
     use std::sync::atomic::Ordering;
     fn caller(models: &Models) -> AssistantMessage {
         let events = collect(
-            models.stream(model(), context(), StreamOptions::default()),
+            models.stream(model(), context(), support::auth::local()),
             &model(),
             73,
         );
-        let result = block_on(models.complete(model(), context(), StreamOptions::default()));
+        let result = block_on(models.complete(model(), context(), support::auth::local()));
         assert_eq!(&result, terminal(&events));
         assert_eq!(
             trace(&events),

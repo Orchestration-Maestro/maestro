@@ -11,6 +11,9 @@ From `docs/specs/2026-10-04-models.md`.
 - **Operation:** A kind of model work: chat, classification, image generation, embedding or reranking.
 - **Catalog:** The locally registered collection of model entries with their identities, capabilities and flat price metadata.
 - **Request:** An invocation of a selected model operation with its inputs, options, authentication and cancellation.
+- **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
+- **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
+- **Token exchange:** An optional provider primitive invoked by the credential owner, not coordination of credential persistence, precedence or refresh.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.

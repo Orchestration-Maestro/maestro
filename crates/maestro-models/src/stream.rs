@@ -1,8 +1,8 @@
 //! Incremental normalization with owned snapshots and terminal source release.
 
 use crate::{
-    AssistantContent, AssistantMessage, Failure, Model, ModelEvent, ProviderStream, ProviderUpdate,
-    StopReason, StreamOptions, TextContent, ThinkingContent, ToolCall, Usage,
+    AssistantContent, AssistantMessage, Cancellation, Failure, Model, ModelEvent, ProviderStream,
+    ProviderUpdate, StopReason, TextContent, ThinkingContent, ToolCall, Usage,
 };
 
 /// One request's normalization state and owned adapter source.
@@ -14,7 +14,7 @@ pub struct ModelStream {
     failure: Option<Failure>,
     started: bool,
     terminal: bool,
-    options: StreamOptions,
+    cancellation: Cancellation,
     blocks: Vec<BlockState>,
 }
 
@@ -30,7 +30,7 @@ impl ModelStream {
         model: Model,
         timestamp: u64,
         source: Result<Box<dyn ProviderStream>, Failure>,
-        options: StreamOptions,
+        cancellation: Cancellation,
     ) -> Self {
         let (source, failure) = match source {
             Ok(source) => (Some(source), None),
@@ -43,7 +43,7 @@ impl ModelStream {
             pending_event: None,
             started: false,
             terminal: false,
-            options,
+            cancellation,
             blocks: Vec::new(),
             message: AssistantMessage {
                 provider: model.identity.provider,
@@ -286,7 +286,7 @@ impl ModelStream {
         if self.terminal {
             return None;
         }
-        if self.options.cancellation.is_cancelled() {
+        if self.cancellation.is_cancelled() {
             return Some(self.error(Failure::Cancelled));
         }
         if let Some(failure) = self.failure.take() {
@@ -302,7 +302,7 @@ impl ModelStream {
             });
         }
         loop {
-            let cancellation = self.options.cancellation.clone();
+            let cancellation = self.cancellation.clone();
             let update = match self.source.as_mut() {
                 Some(source) => {
                     let mut read = source.next();

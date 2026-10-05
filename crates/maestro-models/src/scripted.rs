@@ -1,6 +1,6 @@
 //! Credential-free FIFO response scripts with owned request observations.
 
-use crate::{Context, Failure, Model, Provider, ProviderStream, ProviderUpdate, StreamOptions};
+use crate::{Context, Failure, Model, Provider, ProviderOptions, ProviderStream, ProviderUpdate};
 use std::{collections::VecDeque, future::Future, pin::Pin, sync::Mutex};
 
 /// An independent observation of one adapter dispatch.
@@ -11,7 +11,7 @@ pub struct ScriptedCall {
     /// Owned request context.
     pub context: Context,
     /// Request options; cancellation deliberately shares its signal.
-    pub options: StreamOptions,
+    pub options: ProviderOptions,
     /// One-based dispatch index, including failures and exhaustion.
     pub call_index: usize,
 }
@@ -90,7 +90,7 @@ impl Provider for ScriptedProvider {
         &self,
         model: Model,
         context: Context,
-        options: StreamOptions,
+        options: ProviderOptions,
     ) -> Result<Box<dyn ProviderStream>, Failure> {
         let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
         let call = ScriptedCall {

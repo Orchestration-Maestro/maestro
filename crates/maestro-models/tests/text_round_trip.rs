@@ -15,6 +15,7 @@ fn model() -> Model {
             operation: "chat".into(),
         },
         protocol: "test:protocol/v1".into(),
+        headers: Default::default(),
     }
 }
 
@@ -51,7 +52,7 @@ fn updates() -> Vec<ProviderUpdate> {
 }
 
 async fn collect(models: &Models, model: Model, context: Context) -> Vec<ModelEvent> {
-    let mut stream = models.stream(model.clone(), context, StreamOptions::default());
+    let mut stream = models.stream(model.clone(), context, support::auth::local());
     let mut events = Vec::new();
     while let Some(event) = stream.next().await {
         events.push(event);
@@ -87,7 +88,7 @@ async fn assert_failure(models: &Models, request: Model, input: Context, failure
     );
     assert_eq!(
         models
-            .complete(request, input, StreamOptions::default())
+            .complete(request, input, support::auth::local())
             .await,
         expected
     );
@@ -118,7 +119,7 @@ fn dispatch_uses_provider_model_and_operation_as_data() {
         }
         for (identity, adapter) in identities[..3].iter().zip(&adapters) {
             let result = models
-                .complete(identity.clone(), context(), StreamOptions::default())
+                .complete(identity.clone(), context(), support::auth::local())
                 .await;
             assert_eq!(result.provider, identity.identity.provider);
             assert_eq!(result.protocol, identity.protocol);
@@ -187,7 +188,7 @@ impl Provider for UnsupportedProvider {
         &self,
         _: Model,
         _: Context,
-        _: StreamOptions,
+        _: ProviderOptions,
     ) -> Result<Box<dyn ProviderStream>, Failure> {
         self.0.fetch_add(1, Ordering::SeqCst);
         Err(Failure::AdapterFailed)
@@ -244,7 +245,7 @@ fn duplicate_registration_preserves_the_original_adapter() {
         );
         assert_eq!(
             models
-                .complete(model(), context(), StreamOptions::default())
+                .complete(model(), context(), support::auth::local())
                 .await
                 .stop_reason,
             Some(StopReason::Stop)
@@ -257,7 +258,7 @@ fn duplicate_registration_preserves_the_original_adapter() {
         independent.register(model(), other.clone()).unwrap();
         assert_eq!(
             independent
-                .complete(model(), context(), StreamOptions::default())
+                .complete(model(), context(), support::auth::local())
                 .await
                 .stop_reason,
             Some(StopReason::Stop)

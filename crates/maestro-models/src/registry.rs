@@ -32,6 +32,23 @@ impl Models {
         Ok(())
     }
 
+    /// Read supplied configured-auth metadata for a registered provider only.
+    /// This never resolves credentials or predicts request success.
+    pub fn auth_status(
+        &self,
+        provider: &str,
+        resolver: &dyn crate::AuthResolver,
+    ) -> Result<crate::AuthStatus, Failure> {
+        if !self
+            .registrations
+            .keys()
+            .any(|identity| identity.provider == provider)
+        {
+            return Err(Failure::UnknownProvider);
+        }
+        Ok(resolver.status(provider))
+    }
+
     /// Resolve once and return the normalized caller stream, including setup failures.
     /// Samples the clock once; the stream owns its source and requested metadata.
     pub fn stream(&self, model: Model, context: Context, options: StreamOptions) -> ModelStream {
@@ -56,11 +73,21 @@ impl Models {
                     } else if options.cancellation.is_cancelled() {
                         Err(Failure::Cancelled)
                     } else {
-                        provider.stream(model.clone(), context, options.clone())
+                        let description = provider.description();
+                        if options.cancellation.is_cancelled() {
+                            return Err(Failure::Cancelled);
+                        }
+                        let mut resolved = options.clone();
+                        resolved.headers = crate::dispatch::headers(&[
+                            &description.headers,
+                            &registered.headers,
+                            &options.headers,
+                        ])?;
+                        crate::dispatch::source(provider.clone(), model.clone(), context, resolved)
                     }
                 })
         };
-        ModelStream::new(model, timestamp, source, options)
+        ModelStream::new(model, timestamp, source, options.cancellation)
     }
 
     /// Drain exactly one call to stream and return its terminal assistant record.
