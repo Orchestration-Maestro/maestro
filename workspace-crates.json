@@ -2,5 +2,6 @@
   "maestro": "dedicated",
   "maestro-models": "core",
   "maestro-settings": "core",
+  "maestro-storage": "core",
   "maestro-test-conventions": "dedicated"
 }

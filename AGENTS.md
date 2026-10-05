@@ -48,6 +48,14 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - Names follow `maestro-<noun>[-<role>]`.
 - The composition-root crate, `maestro`, owns the binary and only wires.
 
+Conventions check scoped names, inventory classes and direct internal edges from
+both declared and resolved Cargo metadata, including optional, target and build
+edges. Sparse workspaces need no placeholder crates. The test graph is separately
+acyclic; internal dev edges may target only explicitly declared dependency-free
+test-support crates. The current test-support allowlist is empty; the verification
+crate is not a general dev-dependency target. Publish reusable adapter conformance
+from the owning leaf, not a forwarding test crate.
+
 ## Libraries and formats
 
 Only these libraries are owner-approved: tokio, reqwest, serde, serde_json,

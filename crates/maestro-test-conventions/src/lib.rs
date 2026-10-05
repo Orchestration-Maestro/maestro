@@ -1,16 +1,19 @@
 //! Checks the workspace's crate boundaries against its reviewed crate list.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use serde_json::Value;
 
 mod comments;
+mod graph;
 
 /// Checks names, membership and internal dependency boundaries using Cargo metadata.
+///
+/// Declared edges cover all features and targets. The resolved pass uses default
+/// features for the compiler host so it reads only crates a normal build fetched.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
-    let metadata = metadata(root)?;
+    let metadata = metadata_command(root, &["--no-deps"])?;
     let members = array(&metadata, "workspace_members")?;
     let list_path = root.join("workspace-crates.json");
     let list: Value = serde_json::from_slice(
@@ -41,147 +44,20 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
             ));
         }
     }
-    if list
-        .get("maestro-settings")
-        .is_some_and(|layer| layer != "core")
-    {
-        return Err("maestro-settings must be registered as core".into());
-    }
-    let graph = dependency_graph(&metadata)?;
-    if let Some(dependencies) = graph.get("maestro-models")
-        && let Some(dependency) = dependencies.first()
-    {
-        return Err(format!(
-            "maestro-models must not depend on workspace crate {dependency}"
-        ));
-    }
-    if let Some(dependencies) = graph.get("maestro-settings") {
-        for dependency in dependencies {
-            if !matches!(
-                dependency.as_str(),
-                "maestro-models" | "maestro-agent" | "maestro-packages"
-            ) {
-                return Err(format!(
-                    "maestro-settings must not depend on workspace crate {dependency}"
-                ));
-            }
-        }
-    }
-    for (name, dependencies) in &graph {
-        if list[name] != "core" {
-            continue;
-        }
-        for dependency in dependencies {
-            if list[dependency] == "dedicated" {
-                return Err(format!(
-                    "core crate {name} must not depend on dedicated crate {dependency}"
-                ));
-            }
-        }
-    }
-    let mut visited = BTreeSet::new();
-    for name in graph.keys() {
-        check_cycles(name, &graph, &mut Vec::new(), &mut visited)?;
-    }
+    graph::inventory(&metadata, list)?;
+    let mut edges = graph::declared(&metadata)?;
+    graph::validate(&metadata, &edges)?;
+    let host = compiler_host()?;
+    let resolved = metadata_command(root, &["--filter-platform", &host])?;
+    edges.extend(graph::resolved(&resolved)?);
+    graph::validate(&metadata, &edges)?;
     comments::check(&metadata)
 }
 
-// Use manifest paths rather than dependency names: Cargo dependencies can be renamed.
-// --no-deps lets us inspect cycles ourselves, before Cargo's resolver rejects them.
-fn dependency_graph(metadata: &Value) -> Result<BTreeMap<String, BTreeSet<String>>, String> {
-    let members = array(metadata, "workspace_members")?;
-    let packages: Vec<_> = array(metadata, "packages")?
-        .iter()
-        .filter(|package| members.contains(&package["id"]))
-        .collect();
-    let mut names = BTreeMap::new();
-    for package in &packages {
-        let manifest = Path::new(string(package, "manifest_path")?);
-        let directory = manifest
-            .parent()
-            .ok_or("manifest has no parent directory")?;
-        names.insert(canonical(directory)?, string(package, "name")?.to_owned());
-    }
-    let mut graph = BTreeMap::new();
-    for package in packages {
-        let mut edges = BTreeSet::new();
-        // All dependency kinds, optional features and target-specific entries count.
-        for dependency in array(package, "dependencies")? {
-            let path = dependency
-                .get("path")
-                .map(|path| {
-                    let path = path
-                        .as_str()
-                        .ok_or("invalid cargo metadata: dependency path")?;
-                    canonical(Path::new(path))
-                })
-                .transpose()?;
-            let member = path.as_ref().and_then(|path| names.get(path));
-            let dependency_name = string(dependency, "name")?;
-            // Registry/git references may be patched to members without exposing a path
-            // in --no-deps metadata. Require explicit member paths instead of guessing.
-            if names.values().any(|name| name == dependency_name)
-                && member.map(String::as_str) != Some(dependency_name)
-            {
-                return Err(format!(
-                    "dependency {} -> {dependency_name} must use a path to that workspace member",
-                    string(package, "name")?
-                ));
-            }
-            if let Some(name) = member {
-                if string(package, "name")? == "maestro-settings" && dependency["kind"] == "dev" {
-                    return Err(format!(
-                        "maestro-settings must not have internal dev dependency {name}"
-                    ));
-                }
-                edges.insert(name.clone());
-            }
-        }
-        graph.insert(string(package, "name")?.to_owned(), edges);
-    }
-    Ok(graph)
-}
-
-fn canonical(path: &Path) -> Result<PathBuf, String> {
-    path.canonicalize()
-        .map_err(|error| format!("cannot resolve {}: {error}", path.display()))
-}
-
-fn check_cycles<'a>(
-    name: &'a str,
-    graph: &'a BTreeMap<String, BTreeSet<String>>,
-    visiting: &mut Vec<&'a str>,
-    visited: &mut BTreeSet<&'a str>,
-) -> Result<(), String> {
-    if let Some(start) = visiting.iter().position(|entry| *entry == name) {
-        let mut cycle = visiting[start..].to_vec();
-        cycle.push(name);
-        return Err(format!(
-            "workspace dependency cycle: {}",
-            cycle.join(" -> ")
-        ));
-    }
-    if visited.contains(name) {
-        return Ok(());
-    }
-    visiting.push(name);
-    for dependency in &graph[name] {
-        check_cycles(dependency, graph, visiting, visited)?;
-    }
-    visiting.pop();
-    visited.insert(name);
-    Ok(())
-}
-
-fn metadata(root: &Path) -> Result<Value, String> {
+fn metadata_command(root: &Path, options: &[&str]) -> Result<Value, String> {
     let output = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
-        .args([
-            "metadata",
-            "--format-version",
-            "1",
-            "--no-deps",
-            "--offline",
-        ])
+        .args(["metadata", "--format-version", "1", "--offline"])
+        .args(options)
         .current_dir(root)
         .output()
         .map_err(|error| format!("cargo metadata failed: {error}"))?;
@@ -194,6 +70,31 @@ fn metadata(root: &Path) -> Result<Value, String> {
     }
     serde_json::from_slice(&output.stdout)
         .map_err(|error| format!("invalid cargo metadata: {error}"))
+}
+
+fn compiler_host() -> Result<String, String> {
+    let output = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()))
+        .arg("-vV")
+        .output()
+        .map_err(|error| format!("rustc -vV failed: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "rustc -vV failed ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    parse_compiler_host(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_compiler_host(version: &str) -> Result<String, String> {
+    version
+        .lines()
+        .find_map(|line| line.strip_prefix("host:"))
+        .map(str::trim)
+        .filter(|host| !host.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| "rustc -vV failed: missing or empty host line".into())
 }
 
 fn array<'a>(value: &'a Value, key: &str) -> Result<&'a Vec<Value>, String> {
@@ -226,4 +127,26 @@ fn valid_name(name: &str) -> bool {
                     .bytes()
                     .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
         })
+}
+
+#[cfg(test)]
+mod graph_tests;
+
+#[cfg(test)]
+mod tests {
+    use super::parse_compiler_host;
+
+    #[test]
+    fn compiler_host_requires_a_nonempty_host_line() {
+        assert_eq!(
+            parse_compiler_host("rustc 1.96.0\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\n"),
+            Ok("x86_64-unknown-linux-gnu".into())
+        );
+        for version in ["release: 1.96.0\n", "host:\n", "host:   \n"] {
+            assert_eq!(
+                parse_compiler_host(version),
+                Err("rustc -vV failed: missing or empty host line".into())
+            );
+        }
+    }
 }

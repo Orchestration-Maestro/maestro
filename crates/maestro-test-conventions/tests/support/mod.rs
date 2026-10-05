@@ -45,6 +45,24 @@ impl Workspace {
         .unwrap();
     }
 
+    #[allow(
+        dead_code,
+        reason = "External fixtures are unused by the comment-test executable."
+    )]
+    pub fn external(&self, name: &str) {
+        let root = self.root.join("external");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/lib.rs"), "").unwrap();
+        fs::write(
+            root.join("Cargo.toml"),
+            format!(
+                "[workspace]\n[package]\nname = {name:?}\nversion = \"9.0.0\"\nedition = \"2024\"\n"
+            ),
+        )
+        .unwrap();
+        fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
+    }
+
     pub fn list(&self, entries: &[(&str, &str)]) {
         let entries: serde_json::Map<String, serde_json::Value> = entries
             .iter()
