@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Enforced scoped crate classes and direct declared/resolved dependency edges,
+  with isolated leaves and a separately acyclic restricted test graph.
+
 - Narrowed the model-access specification to local catalogs, plain conversation
   projection, flat usage/cost and selected-provider request authentication.
 - Clarified model-owned tool-argument validation, derived usage totals and the
@@ -19,6 +22,9 @@
   blocks, strict completed tool JSON, owned metadata snapshots and wakeable
   request cancellation. Expanded the scripted provider with queued factories,
   controlled waits and owned dispatch observations.
+- Explicit ephemeral session-record storage with atomic batches, detached reads,
+  independent handle close/reopen and reusable adapter conformance. Memory is
+  non-resumable and provides no restart persistence.
 
 - Credential-free model text access with explicit registration, owned streaming
   snapshots, completion and a queued scripted provider adapter.

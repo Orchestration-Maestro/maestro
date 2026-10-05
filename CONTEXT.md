@@ -39,6 +39,11 @@ From `docs/specs/2026-10-05-engine-core.md`.
 
 ### State
 
+- **Record:** Opaque caller-owned bytes with a session-local lookup identity.
+- **Selected position:** A record identity, or the position before all records.
+- **Storage handle:** A shareable view permanently bound to one session identity, with its own admission and close lifecycle.
+- **Definite rejection:** An operation outcome guaranteeing the prior state is unchanged.
+- **Uncertain write outcome:** A mutation whose publication is unknown, preventing safe continued mutation through that handle.
 - **Storage:** The replaceable interface that records session state; ephemeral storage is not the memory capability.
 - **Notification:** An observation of current activity; delivery does not imply persistence or replay.
 - **Settings:** Effective configured values with origins and enforceable value locks. A stored scope is user or project configuration; an ephemeral override changes effective values only until reload or a stored update.
