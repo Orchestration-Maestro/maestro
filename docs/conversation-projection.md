@@ -79,11 +79,13 @@ async fn handoff() -> Result<(), Box<dyn std::error::Error>> {
         identity: ModelIdentity { provider: "first".into(), model: "vision".into(), operation: "chat".into() },
         protocol: "chat".into(), input: vec!["text".into(), "image".into()],
         headers: Default::default(),
+        capabilities: Default::default(),
     };
     let second = Model {
         identity: ModelIdentity { provider: "second".into(), model: "text".into(), operation: "chat".into() },
         protocol: "chat".into(), input: vec!["text".into()],
         headers: Default::default(),
+        capabilities: Default::default(),
     };
     let call = ToolCall::new("call".into(), "lookup".into(),
         json!({"count":"2"}).as_object().unwrap().clone(), Some("opaque".into()));

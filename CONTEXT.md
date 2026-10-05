@@ -22,6 +22,10 @@ From `docs/specs/2026-10-04-models.md`.
 - **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects.
 - **Scripted fake:** A provider adapter driven by queued request responses or request-inspecting factories, with observable calls and no external I/O; queued scripted steps are responses, not deferred jobs.
 
+- **Requested thinking:** The application's supplied effort choice.
+- **Effective thinking:** The supported choice used for this request.
+- **Request capability:** A registered declaration of supported request behavior.
+
 ## Engine
 
 From `docs/specs/2026-10-05-engine-core.md`.

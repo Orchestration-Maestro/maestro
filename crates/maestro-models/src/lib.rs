@@ -9,6 +9,7 @@
 //! once; credential lifecycle remains outside this crate.
 
 #![doc = include_str!("../../../docs/models.md")]
+#![doc = include_str!("../../../docs/model-options.md")]
 #![doc = include_str!("../../../docs/request-authentication.md")]
 #![doc = include_str!("../../../docs/conversation-projection.md")]
 
@@ -18,6 +19,7 @@ mod content;
 mod conversation;
 mod dispatch;
 mod events;
+mod options;
 mod projection;
 mod provider;
 mod registry;
@@ -36,9 +38,12 @@ pub use content::{
 };
 pub use conversation::{Context, Message, ToolDeclaration, ToolResultMessage, UserMessage};
 pub use events::ModelEvent;
+pub use options::{
+    EffectiveOptions, RequestCapabilities, StreamOptions, ThinkingLevel, ThinkingMode,
+};
 pub use projection::project_context;
 pub use provider::{
-    Provider, ProviderDescription, ProviderOptions, ProviderStream, ProviderUpdate, StreamOptions,
+    Provider, ProviderDescription, ProviderOptions, ProviderStream, ProviderUpdate,
 };
 pub use registry::Models;
 pub use scripted::{Script, ScriptFactory, ScriptStep, ScriptedCall, ScriptedProvider};

@@ -5,7 +5,9 @@ adapters. The registry owns provider/model/operation dispatch; adapters supply
 indexed updates and the normalizer owns block, failure and cancellation rules.
 Requests require explicit authentication or an injected selected-provider resolver.
 See [request authentication](request-authentication.md) for ownership, headers
-and secret-free local access. The crate has no internal workspace dependencies. Its JSON dependency parses
+and secret-free local access. Adapters and scripted factories receive effective options resolved from registered
+capabilities; see [Thinking and output options](model-options.md).
+The crate has no internal workspace dependencies. Its JSON dependency parses
 completed tool arguments strictly; it requires no asynchronous runtime.
 
 Mixed conversation records keep current prompt/tools separate from history.
@@ -29,6 +31,7 @@ async fn scripted_text() -> Result<(), Failure> {
             operation: "chat".into(),
         },
         protocol: "scripted/chat".into(),
+        capabilities: RequestCapabilities::default(),
         headers: Default::default(),
         input: vec!["text".into()],
     };

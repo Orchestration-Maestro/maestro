@@ -21,6 +21,7 @@ pub fn model() -> Model {
             operation: "chat".into(),
         },
         protocol: "script".into(),
+        capabilities: RequestCapabilities::default(),
         headers: Default::default(),
         input: vec!["text".into()],
     }

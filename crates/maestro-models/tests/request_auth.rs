@@ -417,6 +417,15 @@ fn secret_bearing_values_do_not_enter_public_observations() {
     };
     options.headers = headers(&[("x-request", SENTINELS[3])]);
     let provider_options = ProviderOptions {
+        requested_thinking: ThinkingLevel::Off,
+        thinking: ThinkingLevel::Off,
+        effort: None,
+        thinking_budget: None,
+        temperature: None,
+        output_limit: None,
+        transport: None,
+        cache_preference: None,
+        session_affinity: None,
         cancellation: options.cancellation.clone(),
         auth: auth.clone(),
         headers: options.headers.clone(),

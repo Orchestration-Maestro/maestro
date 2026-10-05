@@ -20,6 +20,11 @@
 
 ### Added
 
+- Declared request capabilities with requested/effective thinking, upward-first
+  effort clamping, exact shared-ceiling token budgets and simple output defaults.
+  Registered option resolution preserves supported preferences and cancellation
+  across replaceable adapters; scripted factories observe effective choices.
+
 - Selected-provider request authentication with explicit secret-free access,
   metadata-only configured status, optional owner-invoked token exchange,
   case-insensitive literal header overlay, safe diagnostics and cancellable

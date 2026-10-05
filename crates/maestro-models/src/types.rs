@@ -1,6 +1,6 @@
 //! Owned requests, response records and secret-safe outcomes.
 
-use crate::AssistantContent;
+use crate::{AssistantContent, RequestCapabilities};
 
 /// The complete dispatch key; all three identifiers are opaque data.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -20,6 +20,8 @@ pub struct Model {
     pub identity: ModelIdentity,
     /// Adapter protocol identifier.
     pub protocol: String,
+    /// Captured registered request behavior, not inferred from identity.
+    pub capabilities: RequestCapabilities,
     /// Registered literal default headers; sensitive and not safe to log.
     pub headers: std::collections::BTreeMap<String, String>,
     /// Supplied input capabilities; `image` enables image retention.
