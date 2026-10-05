@@ -16,3 +16,11 @@ test:
 
 # Run the same checks as continuous integration.
 ci: check test
+
+# Format the workspace, then re-stage the files staged for the commit.
+format-staged:
+    cargo fmt --all
+    git diff --cached --name-only -z --diff-filter=ACMR | xargs -0 git add --
+
+# The commit hook: format and re-stage, then run every check.
+pre-commit: format-staged check

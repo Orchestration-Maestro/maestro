@@ -22,8 +22,10 @@ Clippy with warnings denied, strict public rustdoc and workspace conventions.
 Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
-Commit hooks run basic file hygiene and `just check`. Commit messages need
-a conventional header and every line must be at most 80 columns.
+The commit hook formats the code, re-stages the staged files and runs
+`just check`; unformatted code is fixed, never rejected. It also rejects
+merge-conflict markers and invalid TOML or YAML. Commit messages need a
+conventional header and every line must be at most 80 columns.
 
 ## Documentation
 

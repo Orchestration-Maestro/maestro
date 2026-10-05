@@ -7,15 +7,12 @@ repos:
       - id: check-merge-conflict
       - id: check-yaml
       - id: check-toml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-        args: [--markdown-linebreak-ext=md]
   - repo: local
     hooks:
       - id: workspace-check
-        name: Workspace checks
+        name: Format, re-stage and check the workspace
         language: system
-        entry: just check
+        entry: just pre-commit
         pass_filenames: false
         always_run: true
       - id: conventional-commit-header
