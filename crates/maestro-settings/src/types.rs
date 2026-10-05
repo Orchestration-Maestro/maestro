@@ -54,6 +54,26 @@ pub struct SettingsSnapshot {
     pub locks: Vec<Vec<String>>,
 }
 
+/// Safe file-operation diagnostics without file contents or parser excerpts.
+#[derive(Clone, Debug, PartialEq)]
+pub enum SettingsFileError {
+    /// Native I/O error category.
+    Io(std::io::ErrorKind),
+    /// Invalid JSON, using the parser's reported coordinates.
+    Malformed {
+        /// Parser-reported line.
+        line: usize,
+        /// Parser-reported column.
+        column: usize,
+    },
+    /// Valid JSON whose root is not an object.
+    NotObject,
+    /// All acquisition attempts encountered contention.
+    Contended,
+    /// Caller cancelled before transaction admission.
+    Cancelled,
+}
+
 /// Value-free diagnostic metadata; no attempted or frozen settings are retained.
 #[derive(Clone, Debug, PartialEq)]
 pub enum SettingsError {
@@ -83,6 +103,24 @@ pub enum SettingsError {
         /// Layer or caller attempting the change.
         attempted_by: SettingsOrigin,
     },
+    /// File failure without publishing a new effective snapshot.
+    File {
+        /// Affected stored scope.
+        scope: SettingsScope,
+        /// Selected file path, not its contents.
+        path: std::path::PathBuf,
+        /// Value-free failure category.
+        kind: SettingsFileError,
+    },
+    /// Invalid injected root or selected session-directory type.
+    Location {
+        /// Fixed input name, never its value.
+        input: &'static str,
+        /// Source of the invalid input. For a nonempty object `sessionDir`,
+        /// the highest-precedence descendant origin is reported; overrides rank
+        /// above project, user, manifest and engine origins.
+        origin: SettingsOrigin,
+    },
     /// Storage failed without publishing a new effective snapshot.
     Storage {
         /// Scope involved in the failure.
@@ -108,6 +146,13 @@ impl std::fmt::Display for SettingsError {
                 f,
                 "lock conflict at {path:?}: locked by {locked_by:?}, attempted by {attempted_by:?}"
             ),
+            Self::File { scope, path, kind } => write!(
+                f,
+                "settings file failure in {scope:?} at {path:?}: {kind:?}"
+            ),
+            Self::Location { input, origin } => {
+                write!(f, "invalid settings location {input} from {origin:?}")
+            }
             Self::Storage { scope } => write!(f, "settings storage failure in {scope:?}"),
         }
     }

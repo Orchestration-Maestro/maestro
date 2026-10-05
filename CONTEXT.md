@@ -52,6 +52,9 @@ From `docs/specs/2026-10-05-engine-core.md`.
 - **Settings:** Effective configured values with origins and enforceable value locks. A stored scope is user or project configuration; an ephemeral override changes effective values only until reload or a stored update.
 - **Setting origin:** The source of an effective value.
 - **Value lock:** A manifest constraint freezing a value or subtree, not a filesystem lock.
+- **Configuration root:** The explicitly selected user configuration directory.
+- **Session directory:** The resolved location supplied to the session owner.
+- **File-write lock:** Native transaction exclusion for cooperating settings writers, distinct from a manifest value lock.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Manifest:** Governed declarations of defaults, packages and resources consumed by their owners.
 
