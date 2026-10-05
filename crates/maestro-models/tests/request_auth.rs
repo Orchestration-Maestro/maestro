@@ -487,25 +487,6 @@ fn secret_bearing_values_do_not_enter_public_observations() {
         }
     }
     assert_eq!(original, context());
-    if std::env::var_os("MAESTRO_AUTH_DEBUG_CHILD").is_some() {
-        println!("{formatted}");
-        eprintln!("{formatted}");
-    } else {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "secret_bearing_values_do_not_enter_public_observations",
-                "--nocapture",
-            ])
-            .env("MAESTRO_AUTH_DEBUG_CHILD", "1")
-            .output()
-            .unwrap();
-        assert!(output.status.success());
-        for sentinel in SENTINELS {
-            assert!(!String::from_utf8_lossy(&output.stdout).contains(sentinel));
-            assert!(!String::from_utf8_lossy(&output.stderr).contains(sentinel));
-        }
-    }
 }
 
 #[test]

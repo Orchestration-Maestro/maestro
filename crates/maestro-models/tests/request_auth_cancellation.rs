@@ -175,6 +175,47 @@ fn auth_readiness_cancellation_races_prevent_dispatch() {
 }
 
 #[test]
+fn adapter_setup_cancellation_aborts_without_reading_source() {
+    use std::{future::Future, pin::Pin, sync::atomic::AtomicUsize};
+
+    struct CancellingProvider(Arc<AtomicUsize>);
+    impl Provider for CancellingProvider {
+        fn supports(&self, operation: &str) -> bool {
+            operation == "chat"
+        }
+        fn stream(
+            &self,
+            _: Model,
+            _: Context,
+            options: ProviderOptions,
+        ) -> Result<Box<dyn ProviderStream>, Failure> {
+            options.cancellation.cancel();
+            Ok(Box::new(CountingSource(self.0.clone())))
+        }
+    }
+    struct CountingSource(Arc<AtomicUsize>);
+    impl ProviderStream for CountingSource {
+        fn next(&mut self) -> Pin<Box<dyn Future<Output = Option<ProviderUpdate>> + Send + '_>> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async { Some(done()) })
+        }
+    }
+
+    let reads = Arc::new(AtomicUsize::new(0));
+    let models = registry(Arc::new(CancellingProvider(reads.clone())));
+    let resolver = Arc::new(Resolver::new(vec![Ok(secret("ready", None))]));
+    let events = collect(
+        models.stream(model(), context(), resolving(resolver)),
+        &model(),
+        73,
+    );
+    assert_eq!(trace(&events), vec![("error", None)]);
+    assert_eq!(terminal(&events).failure, Some(Failure::Cancelled));
+    assert_eq!(terminal(&events).stop_reason, Some(StopReason::Aborted));
+    assert_eq!(reads.load(Ordering::SeqCst), 0);
+}
+
+#[test]
 fn dropping_pending_read_keeps_one_resolution_and_dropping_stream_releases_it() {
     let (models, fake) = fixture(vec![done()]);
     let gate = Gate::default();

@@ -57,15 +57,19 @@ pub(crate) fn source(
             if options.cancellation.is_cancelled() {
                 return Err(Failure::Cancelled);
             }
-            provider.stream(
+            let result = provider.stream(
                 model,
                 context,
                 ProviderOptions {
-                    cancellation: options.cancellation,
+                    cancellation: options.cancellation.clone(),
                     auth,
                     headers: options.headers,
                 },
-            )
+            );
+            if options.cancellation.is_cancelled() {
+                return Err(Failure::Cancelled);
+            }
+            result
         })),
     }))
 }
