@@ -1,5 +1,8 @@
 # Changelog
 
+Entries are generated from conventional commits at release time.
+Existing `[Unreleased]` entries are kept as history.
+
 ## [Unreleased]
 
 ### Changed
