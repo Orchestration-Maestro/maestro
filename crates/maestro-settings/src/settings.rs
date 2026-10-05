@@ -1,7 +1,7 @@
 use crate::resolve::{guard, lookup, merge, replace, replace_effective};
 use crate::{
-    ManifestSettings, SettingsError, SettingsOrigin, SettingsScope, SettingsSnapshot,
-    SettingsStorage, SettingsTarget,
+    ManifestSettings, SettingsError, SettingsLocations, SettingsOrigin, SettingsScope,
+    SettingsSnapshot, SettingsStorage, SettingsTarget,
 };
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
@@ -56,7 +56,9 @@ impl Settings {
     /// Replaces one literal-addressed value or subtree; an empty path requires
     /// an object and replaces the root. Missing object ancestors are created.
     /// Stored edits use the transaction's current map and discard overrides.
-    /// Overrides affect only the effective snapshot. All rejection is atomic.
+    /// Overrides affect only the effective snapshot. Logical rejection preserves
+    /// settings bytes; native write failures can leave partial files. All failures
+    /// preserve the last accepted effective snapshot.
     pub fn set(
         &mut self,
         target: SettingsTarget,
@@ -80,7 +82,7 @@ impl Settings {
                     SettingsScope::User => SettingsScope::Project,
                     SettingsScope::Project => SettingsScope::User,
                 };
-                let other = read(&mut *self.storage, other_scope)?;
+                let other = self.storage.read(other_scope)?;
                 let mut accepted = None;
                 let baseline = &self.baseline;
                 self.storage.transact(scope, &mut |current| {
@@ -111,25 +113,72 @@ impl Settings {
         }
         Ok(self.resolve())
     }
+    /// Selects explicit, nonempty supplied environment, effective `sessionDir`,
+    /// then selected user-root/sessions without I/O or snapshot mutation.
+    /// Relative paths use the working directory; non-string selected values fail.
+    /// Explicit and environment winners are checked as raw `cli`/`environment`
+    /// overrides by the manifest guard before expansion. Empty environment input
+    /// is absent; explicit/effective empty strings select the working directory.
+    pub fn session_directory(
+        &self,
+        locations: &SettingsLocations,
+        explicit: Option<&str>,
+        environment: Option<&str>,
+    ) -> Result<std::path::PathBuf, SettingsError> {
+        let selected = explicit.or(environment.filter(|s| !s.is_empty()));
+        if let Some(raw) = selected {
+            let origin = SettingsOrigin::Override(
+                if explicit.is_some() {
+                    "cli"
+                } else {
+                    "environment"
+                }
+                .into(),
+            );
+            let mut candidate = self.snapshot.clone();
+            replace_effective(
+                &mut candidate,
+                &["sessionDir".into()],
+                Value::String(raw.into()),
+                &origin,
+            )?;
+            guard(&self.baseline, &candidate.values, &origin)?;
+            return Ok(locations.invocation_path(std::path::Path::new(raw)));
+        }
+        match self.snapshot.values.get("sessionDir") {
+            Some(Value::String(raw)) => Ok(locations.invocation_path(std::path::Path::new(raw))),
+            Some(_) => Err(SettingsError::Location {
+                input: "sessionDir",
+                origin: self
+                    .snapshot
+                    .origins
+                    .iter()
+                    .filter(|(path, _)| path.first().is_some_and(|segment| segment == "sessionDir"))
+                    .max_by_key(|(_, origin)| match origin {
+                        SettingsOrigin::Engine => 0,
+                        SettingsOrigin::Manifest => 1,
+                        SettingsOrigin::User => 2,
+                        SettingsOrigin::Project => 3,
+                        SettingsOrigin::Override(_) => 4,
+                    })
+                    .expect("present settings value has a leaf origin")
+                    .1
+                    .clone(),
+            }),
+            None => Ok(locations
+                .configuration_directory(SettingsScope::User)
+                .join("sessions")),
+        }
+    }
+
     /// Re-reads both stored scopes and discards overrides only after validation.
     /// Failure preserves the last usable snapshot; memory state is not reset.
     pub fn reload(&mut self) -> Result<SettingsSnapshot, SettingsError> {
-        let user = read(&mut *self.storage, SettingsScope::User)?;
-        let project = read(&mut *self.storage, SettingsScope::Project)?;
+        let user = self.storage.read(SettingsScope::User)?;
+        let project = self.storage.read(SettingsScope::Project)?;
         self.snapshot = resolve_stored(&self.baseline, &user, &project)?;
         Ok(self.resolve())
     }
-}
-fn read(
-    storage: &mut dyn SettingsStorage,
-    scope: SettingsScope,
-) -> Result<Map<String, Value>, SettingsError> {
-    let mut result = Map::new();
-    storage.transact(scope, &mut |current| {
-        result = current.clone();
-        Ok(None)
-    })?;
-    Ok(result)
 }
 fn resolve_stored(
     baseline: &SettingsSnapshot,

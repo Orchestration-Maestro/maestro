@@ -45,3 +45,8 @@
 
 - Effective layered settings with origins, manifest value locks and an injectable
   in-memory settings adapter. Reload retains stored state and discards overrides.
+
+- File-backed settings preserving unrelated edits and unknown keys, safe malformed-file
+  reload diagnostics, explicit configuration locations and governed session-directory
+  selection. File transactions use native cooperative exclusion; in-place writes
+  do not promise rollback or crash durability.

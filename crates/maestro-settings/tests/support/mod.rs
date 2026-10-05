@@ -82,6 +82,16 @@ pub struct ControlledStorage {
     pub fail: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 impl SettingsStorage for ControlledStorage {
+    fn read(&mut self, scope: SettingsScope) -> Result<Map<String, Value>, SettingsError> {
+        if self.fail.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(SettingsError::Storage { scope });
+        }
+        Ok(self.maps.lock().unwrap()[match scope {
+            SettingsScope::User => 0,
+            SettingsScope::Project => 1,
+        }]
+        .clone())
+    }
     fn transact(
         &mut self,
         scope: maestro_settings::SettingsScope,
@@ -797,4 +807,79 @@ pub fn defaults_cover_omitted_explicit_and_disabled(factory: StorageFactory) {
             assert_eq!(cleared.origins[&path(&[key])], SettingsOrigin::User);
         }
     }
+}
+
+pub struct Scratch {
+    pub root: std::path::PathBuf,
+}
+impl Scratch {
+    pub fn new() -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        loop {
+            let root = std::env::temp_dir().join(format!(
+                "maestro-settings-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            ));
+            match std::fs::create_dir(&root) {
+                Ok(()) => return Self { root },
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(e) => panic!("create scratch: {e}"),
+            }
+        }
+    }
+    pub fn locations(&self) -> SettingsLocations {
+        SettingsLocations::new(
+            self.root.join("cwd"),
+            None,
+            self.root.join("user"),
+            self.root.join("home"),
+        )
+        .unwrap()
+    }
+    pub fn write(&self, scope: SettingsScope, value: &Value) {
+        let dir = self.locations().configuration_directory(scope);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("settings.json"),
+            serde_json::to_vec(value).unwrap(),
+        )
+        .unwrap();
+    }
+}
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let result = std::fs::remove_dir_all(&self.root);
+        if !std::thread::panicking() {
+            result.expect("remove owned scratch");
+        }
+    }
+}
+struct OwnedFile {
+    storage: FileSettingsStorage,
+    _scratch: Scratch,
+}
+impl SettingsStorage for OwnedFile {
+    fn read(&mut self, scope: SettingsScope) -> Result<Map<String, Value>, SettingsError> {
+        self.storage.read(scope)
+    }
+    fn transact(
+        &mut self,
+        scope: SettingsScope,
+        edit: &mut SettingsTransaction<'_>,
+    ) -> Result<(), SettingsError> {
+        self.storage.transact(scope, edit)
+    }
+}
+pub fn file(user: Map<String, Value>, project: Map<String, Value>) -> Box<dyn SettingsStorage> {
+    let scratch = Scratch::new();
+    scratch.write(SettingsScope::User, &Value::Object(user));
+    scratch.write(SettingsScope::Project, &Value::Object(project));
+    Box::new(OwnedFile {
+        storage: FileSettingsStorage::new(
+            scratch.locations(),
+            std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        ),
+        _scratch: scratch,
+    })
 }
