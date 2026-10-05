@@ -29,3 +29,6 @@
   runtime features. Clarifies credential precedence, same-identity active-model
   rebinding, unfiltered directory listing and atomic duplicate-registration
   rejection.
+
+- Effective layered settings with origins, manifest value locks and an injectable
+  in-memory settings adapter. Reload retains stored state and discards overrides.
