@@ -22,6 +22,7 @@ pub fn model() -> Model {
         },
         protocol: "script".into(),
         capabilities: RequestCapabilities::default(),
+        rates: None,
         headers: Default::default(),
         input: vec!["text".into()],
     }
@@ -217,6 +218,8 @@ pub fn usage() -> Usage {
         cache_read: 3,
         cache_write: 2,
         total_tokens: 23,
+        reported: true,
+        ..Usage::default()
     }
 }
 
@@ -342,5 +345,90 @@ impl ProviderStream for DirectStream {
 impl Drop for DirectStream {
     fn drop(&mut self) {
         self.drops.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+pub fn flat_usage() -> Usage {
+    Usage {
+        input: 11,
+        output: 7,
+        cache_read: 3,
+        cache_write: 2,
+        total_tokens: 23,
+        ..Usage::default()
+    }
+}
+pub fn flat_rates() -> TokenRates {
+    TokenRates {
+        input: 2.0,
+        output: 8.0,
+        cache_read: 1.0,
+        cache_write: 4.0,
+    }
+}
+pub fn priced_registry(provider: Arc<dyn Provider>) -> Models {
+    let mut models = Models::new(Arc::new(|| 73));
+    let mut selected = model();
+    selected.rates = Some(flat_rates());
+    models.register(selected, provider).unwrap();
+    models
+}
+pub fn accounting_report() -> Usage {
+    Usage {
+        input: 1_000_000,
+        output: 500_000,
+        cache_read: 250_000,
+        cache_write: 125_000,
+        total_tokens: 99,
+        ..Usage::default()
+    }
+}
+pub fn expected_accounting() -> Usage {
+    Usage {
+        input: 1_000_000,
+        output: 500_000,
+        cache_read: 250_000,
+        cache_write: 125_000,
+        total_tokens: 1_875_000,
+        reported: true,
+        cost: UsageCost {
+            input: 2.0,
+            output: 4.0,
+            cache_read: 0.25,
+            cache_write: 0.5,
+            total: 6.75,
+            priced: true,
+        },
+    }
+}
+pub fn assert_accounting(actual: &Usage, expected: &Usage) {
+    assert_eq!(
+        (
+            actual.input,
+            actual.output,
+            actual.cache_read,
+            actual.cache_write,
+            actual.total_tokens,
+            actual.reported,
+            actual.cost.priced
+        ),
+        (
+            expected.input,
+            expected.output,
+            expected.cache_read,
+            expected.cache_write,
+            expected.total_tokens,
+            expected.reported,
+            expected.cost.priced
+        )
+    );
+    for (actual, expected) in [
+        (actual.cost.input, expected.cost.input),
+        (actual.cost.output, expected.cost.output),
+        (actual.cost.cache_read, expected.cost.cache_read),
+        (actual.cost.cache_write, expected.cost.cache_write),
+        (actual.cost.total, expected.cost.total),
+    ] {
+        assert!((actual - expected).abs() <= 1e-12, "{actual} != {expected}");
     }
 }

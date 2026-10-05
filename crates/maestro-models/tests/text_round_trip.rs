@@ -16,6 +16,7 @@ fn model() -> Model {
         },
         protocol: "test:protocol/v1".into(),
         capabilities: RequestCapabilities::default(),
+        rates: None,
         headers: Default::default(),
         input: vec!["text".into()],
     }

@@ -24,6 +24,8 @@
   effort clamping, exact shared-ceiling token budgets and simple output defaults.
   Registered option resolution preserves supported preferences and cancellation
   across replaceable adapters; scripted factories observe effective choices.
+- Model attempts expose derived flat usage/cost estimates with explicit reported
+  and unpriced state, retained on partial failures and cancellation.
 
 - Selected-provider request authentication with explicit secret-free access,
   metadata-only configured status, optional owner-invoked token exchange,

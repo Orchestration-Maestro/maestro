@@ -78,12 +78,14 @@ async fn handoff() -> Result<(), Box<dyn std::error::Error>> {
     let first = Model {
         identity: ModelIdentity { provider: "first".into(), model: "vision".into(), operation: "chat".into() },
         protocol: "chat".into(), input: vec!["text".into(), "image".into()],
+        rates: None,
         headers: Default::default(),
         capabilities: Default::default(),
     };
     let second = Model {
         identity: ModelIdentity { provider: "second".into(), model: "text".into(), operation: "chat".into() },
         protocol: "chat".into(), input: vec!["text".into()],
+        rates: None,
         headers: Default::default(),
         capabilities: Default::default(),
     };

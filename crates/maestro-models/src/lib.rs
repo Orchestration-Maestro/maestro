@@ -3,6 +3,8 @@
 //! storing history or executing tools; pure validation returns owned arguments.
 //! Indexed text, thinking and tool-call updates become independent owned
 //! snapshots with strict block validation and exactly one terminal outcome.
+//! Flat reported counters yield checked totals and catalog-rate estimates, not bills.
+//! Reporting and supplied-price provenance remain independent on partial failures.
 //! Completion drains the same stream. Supplied cancellation wakes blocked reads
 //! and releases local work without claiming to undo remote effects.
 //! Selected-provider request authentication is supplied explicitly or resolved
@@ -13,6 +15,7 @@
 #![doc = include_str!("../../../docs/request-authentication.md")]
 #![doc = include_str!("../../../docs/conversation-projection.md")]
 
+mod accounting;
 mod auth;
 mod cancellation;
 mod content;
@@ -29,6 +32,7 @@ mod stream;
 mod types;
 mod validation;
 
+pub use accounting::{TokenRates, Usage, UsageCost};
 pub use auth::{
     AuthResolver, AuthStatus, RequestAuth, SecretString, TokenExchange, TokenExchangeResult,
 };
@@ -48,5 +52,5 @@ pub use provider::{
 pub use registry::Models;
 pub use scripted::{Script, ScriptFactory, ScriptStep, ScriptedCall, ScriptedProvider};
 pub use stream::ModelStream;
-pub use types::{AssistantMessage, Failure, Model, ModelIdentity, StopReason, Usage};
+pub use types::{AssistantMessage, Failure, Model, ModelIdentity, StopReason};
 pub use validation::{ToolValidationError, validate_tool_call};

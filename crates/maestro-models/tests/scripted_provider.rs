@@ -102,7 +102,12 @@ fn factories_inspect_owned_requests_without_holding_queue_locks() {
             assert!(!cancellation.is_cancelled());
             Box::pin(async move {
                 let mut updates = text(0, "factory");
-                updates.extend([ProviderUpdate::Usage { usage: usage() }, done()]);
+                updates.extend([
+                    ProviderUpdate::Usage {
+                        usage: flat_usage(),
+                    },
+                    done(),
+                ]);
                 Ok(updates.into_iter().map(ScriptStep::Update).collect())
             })
         },
@@ -242,15 +247,21 @@ fn stream_and_completion_share_the_same_conformance_assertions() {
         result
     }
     let mut updates = text(0, "same");
-    updates.extend([ProviderUpdate::Usage { usage: usage() }, done()]);
+    updates.extend([
+        ProviderUpdate::Usage {
+            usage: accounting_report(),
+        },
+        done(),
+    ]);
     let fake = Arc::new(ScriptedProvider::new(vec![
         steps(updates.clone()),
         steps(updates.clone()),
     ]));
-    let fake_result = caller(&registry(fake.clone()));
+    let fake_result = caller(&priced_registry(fake.clone()));
     assert_eq!(fake.calls().len(), 2);
     let direct = Arc::new(DirectProvider::new(updates));
-    assert_eq!(caller(&registry(direct.clone())), fake_result);
+    assert_eq!(caller(&priced_registry(direct.clone())), fake_result);
     assert_eq!(direct.calls.load(Ordering::SeqCst), 2);
     assert_eq!(fake_result.timestamp, 73);
+    assert_accounting(&fake_result.usage, &expected_accounting());
 }
