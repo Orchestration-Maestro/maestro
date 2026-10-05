@@ -75,7 +75,7 @@ fn supported_primitive_coercions_are_exact() {
         (
             json!("string"),
             json!(9007199254740993_u64),
-            json!("9007199254740993"),
+            json!("9007199254740992"),
         ),
         (json!("string"), json!(2.5), json!("2.5")),
         (json!("string"), json!(true), json!("true")),
@@ -382,4 +382,111 @@ fn remote_schema_references_fail_without_io() {
         validate(json!({"$ref":"file:///unavailable-schema.json"}), json!({})),
         Err(ToolValidationError::InvalidSchema)
     );
+}
+
+#[test]
+fn number_to_string_coercion_uses_standard_spelling() {
+    let cases = [
+        (json!(0), "0"),
+        (json!(-0.0), "0"),
+        (json!(42), "42"),
+        (json!(-42), "-42"),
+        (json!(2.5), "2.5"),
+        (json!(-2.5), "-2.5"),
+        (json!(1e-7), "1e-7"),
+        (json!(-1e-7), "-1e-7"),
+        (json!(1e-6), "0.000001"),
+        (json!(-1e-6), "-0.000001"),
+        (json!(1e20), "100000000000000000000"),
+        (json!(-1e20), "-100000000000000000000"),
+        (json!(1e21), "1e+21"),
+        (json!(-1e21), "-1e+21"),
+        (json!(1e23), "1e+23"),
+        (json!(f64::from_bits(1)), "5e-324"),
+        (json!(f64::MAX), "1.7976931348623157e+308"),
+        (json!(1.2345678901234567), "1.2345678901234567"),
+        (json!(9007199254740993_u64), "9007199254740992"),
+        (json!(1000000000000000128_u64), "1000000000000000100"),
+    ];
+    for (value, expected) in cases {
+        let schema = json!({"type":"object","properties":{"x":{"type":"string"}},"required":["x"]});
+        let tools = vec![tool(schema.clone())];
+        let completed = call(json!({"x":value}));
+        let before = completed.clone();
+        let declarations = tools.clone();
+        assert_eq!(
+            validate_tool_call(&tools, &completed).map(Value::Object),
+            Ok(json!({"x":expected})),
+            "{value}"
+        );
+        assert_eq!(completed, before);
+        assert_eq!(tools, declarations);
+        assert_eq!(
+            validate(
+                json!({"type":"object","properties":{"x":{"type":"string","enum":[expected]}}}),
+                json!({"x":value})
+            ),
+            Ok(json!({"x":expected}))
+        );
+        let previous = if value.as_number().unwrap().is_f64() {
+            value.as_f64().unwrap().to_string()
+        } else {
+            value.to_string()
+        };
+        if previous != expected {
+            assert_eq!(
+                validate(
+                    json!({"type":"object","properties":{"x":{"type":"string","enum":[previous]}}}),
+                    json!({"x":value})
+                ),
+                Err(ToolValidationError::InvalidArguments)
+            );
+        }
+        assert_eq!(
+            validate(
+                json!({"type":"object","properties":{"x":{"type":"number"}}}),
+                json!({"x":value})
+            ),
+            Ok(json!({"x":value}))
+        );
+    }
+}
+
+#[test]
+fn whitespace_follows_the_standard_set() {
+    let whitespace = "\u{0009}\u{000a}\u{000b}\u{000c}\u{000d}\u{0020}\u{00a0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}\u{feff}";
+    for kind in ["number", "integer"] {
+        let schema = json!({"type":"object","properties":{"x":{"type":kind}}});
+        for c in whitespace.chars() {
+            assert_eq!(
+                validate(schema.clone(), json!({"x":format!("{c}42{c}")})),
+                Ok(json!({"x":42})),
+                "{kind} U+{:04X}",
+                c as u32
+            );
+            assert_eq!(
+                validate(schema.clone(), json!({"x":c.to_string()})),
+                Err(ToolValidationError::InvalidArguments)
+            );
+            assert_eq!(
+                validate(schema.clone(), json!({"x":format!("4{c}2")})),
+                Err(ToolValidationError::InvalidArguments)
+            );
+        }
+        for c in "\u{0085}\u{180e}\u{200b}".chars() {
+            assert_eq!(
+                validate(schema.clone(), json!({"x":format!("{c}42{c}")})),
+                Err(ToolValidationError::InvalidArguments)
+            );
+        }
+        let expected = if kind == "number" {
+            Ok(json!({"x":42.5}))
+        } else {
+            Err(ToolValidationError::InvalidArguments)
+        };
+        assert_eq!(
+            validate(schema, json!({"x":"\u{feff}42.5\u{feff}"})),
+            expected
+        );
+    }
 }

@@ -8,14 +8,17 @@ use crate::{
 /// Clone a selected-model request without modifying history, prompt or tools.
 /// Exact requested provider/protocol/model equality retains opaque replay data.
 /// Foreign metadata and redactions are omitted; readable thinking becomes text.
-/// Signed empty thinking survives same-model replay; unsigned blank thinking is
-/// omitted. Without the `image` capability, adjacent image runs become explicit
-/// user/tool omission text. Unanswered successful calls receive error results at
+/// Nonempty signatures preserve blank same-model thinking; unsigned thinking blank
+/// under ECMAScript whitespace is omitted. Without the `image` capability, image
+/// runs become user/tool omission text. Supplied text always survives unchanged;
+/// a preceding omission literal suppresses another placeholder regardless of metadata.
+/// Unanswered successful calls receive error results at
 /// user/assistant boundaries and transcript end, using only the supplied timestamp.
 /// Failed, aborted and partial attempts are omitted without manufacturing arguments.
 /// Tool-result details never enter this view. The supplied ID rule must be
 /// deterministic and effect-free, preserving distinct IDs within a batch. It is
-/// called only for foreign calls; originating-turn mappings pair their results.
+/// called only for foreign calls. Mappings survive repair to pair delayed real
+/// results; each later successful originating call supersedes its ID mapping.
 pub fn project_context(
     context: &Context,
     model: &Model,
@@ -28,6 +31,7 @@ pub fn project_context(
         messages: Vec::new(),
     };
     let mut pending: Vec<(String, ToolCall, bool)> = Vec::new();
+    let mut ids = std::collections::HashMap::new();
     for message in &context.messages {
         if matches!(message, Message::User(_) | Message::Assistant(_)) {
             repair(&mut projected.messages, &mut pending, timestamp);
@@ -56,6 +60,7 @@ pub fn project_context(
                         if !same {
                             call.id = normalize_tool_call_id(&original, model, &source);
                         }
+                        ids.insert(original.clone(), call.id.clone());
                         pending.push((original, call.clone(), false));
                     }
                 }
@@ -67,11 +72,13 @@ pub fn project_context(
                     model,
                     "(tool image omitted: model does not support images)",
                 );
-                if let Some((_, call, answered)) =
+                if let Some((_, _, answered)) =
                     pending.iter_mut().find(|(id, _, _)| id == &r.tool_call_id)
                 {
-                    r.tool_call_id = call.id.clone();
                     *answered = true;
+                }
+                if let Some(id) = ids.get(&r.tool_call_id) {
+                    r.tool_call_id = id.clone();
                 }
             }
             Message::User(u) => {
@@ -113,7 +120,9 @@ fn repair(
 fn replay_block(block: &AssistantContent, same: bool) -> Option<AssistantContent> {
     match block {
         AssistantContent::Thinking(ThinkingContent::Readable { text, signature }) => {
-            if text.trim().is_empty() && (!same || signature.is_none()) {
+            if crate::scalar::trim(text).is_empty()
+                && (!same || signature.as_deref().is_none_or(str::is_empty))
+            {
                 return None;
             }
             if !same {
@@ -146,18 +155,18 @@ fn project_images(content: &[InputContent], model: &Model, placeholder: &str) ->
     }
     let mut projected = Vec::new();
     for block in content {
-        let block = match block {
-            InputContent::Image(_) => InputContent::Text(TextContent {
-                text: placeholder.into(),
-                replay_metadata: None,
-            }),
-            _ => block.clone(),
-        };
-        let omission = matches!(&block, InputContent::Text(text) if text.text == placeholder && text.replay_metadata.is_none());
-        if omission && projected.last() == Some(&block) {
-            continue;
+        match block {
+            InputContent::Text(_) => projected.push(block.clone()),
+            InputContent::Image(_) => {
+                if !matches!(projected.last(), Some(InputContent::Text(text)) if text.text == placeholder)
+                {
+                    projected.push(InputContent::Text(TextContent {
+                        text: placeholder.into(),
+                        replay_metadata: None,
+                    }));
+                }
+            }
         }
-        projected.push(block);
     }
     projected
 }

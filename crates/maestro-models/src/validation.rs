@@ -30,6 +30,8 @@ impl std::error::Error for ToolValidationError {}
 /// Find the first matching declaration and validate an independent argument object.
 /// Completed arguments are not authorization. This function never executes tools,
 /// mutates inputs, or retrieves schemas from the network or filesystem.
+/// Numeric strings trim exactly ECMAScript whitespace; number-to-string coercion
+/// uses binary64 shortest scalar spelling. Already accepted numbers remain exact.
 /// Invalid schemas and unavailable references fail closed with safe typed errors.
 pub fn validate_tool_call(
     tools: &[ToolDeclaration],
@@ -183,14 +185,7 @@ fn primitive(value: &Value, kind: &str) -> Option<Value> {
         "string" => match value {
             Value::Null => Some(Value::String(String::new())),
             Value::Bool(boolean) => Some(Value::String(boolean.to_string())),
-            Value::Number(number) => {
-                let text = if number.is_i64() || number.is_u64() {
-                    number.to_string()
-                } else {
-                    number.as_f64()?.to_string()
-                };
-                Some(Value::String(text))
-            }
+            Value::Number(number) => crate::scalar::number_string(number).map(Value::String),
             _ => None,
         },
         "null" if value == "" || value == &Value::Bool(false) || value.as_f64() == Some(0.0) => {
@@ -201,7 +196,7 @@ fn primitive(value: &Value, kind: &str) -> Option<Value> {
 }
 
 fn parse_number(text: &str) -> Option<f64> {
-    let text = text.trim();
+    let text = crate::scalar::trim(text);
     if text.is_empty() {
         return None;
     }

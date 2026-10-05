@@ -62,6 +62,11 @@ async fn scripted_text() -> Result<(), Failure> {
         ..Default::default()
     };
     let mut stream = models.stream(model.clone(), context.clone(), options.clone());
+    // Only pending responses change; the active response remains owned by stream.
+    fake.replace_scripts(vec![response()]);
+    assert_eq!(fake.pending(), 1);
+    fake.append_scripts(vec![response()]);
+    assert_eq!(fake.pending(), 2);
     let mut terminal = None;
     while let Some(event) = stream.next().await {
         match event {
@@ -78,7 +83,11 @@ async fn scripted_text() -> Result<(), Failure> {
     assert_eq!(fake.calls()[0].model, model);
     assert_eq!(fake.calls()[0].context, context);
     assert_eq!(fake.calls().len(), 2);
+    assert_eq!(fake.pending(), 1);
+    fake.replace_scripts(vec![]);
+    fake.append_scripts(vec![]);
     assert_eq!(fake.pending(), 0);
+    assert_eq!(fake.calls().len(), 2);
     Ok(())
 }
 ```
@@ -150,6 +159,12 @@ Each `Script` is one queued request response, not a deferred job. FIFO dispatch
 atomically records the owned request and removes at most one script. `calls()`
 clones request data; options deliberately retain shared cancellation semantics.
 `pending()` counts queued Script values, excluding the dispatched response.
+`replace_scripts` atomically replaces only pending scripts; an empty vector clears
+them. `append_scripts` atomically appends in supplied order; an empty vector does
+nothing. Both preserve active responses, request observations and one-based call
+indices. A retained `Arc<ScriptedProvider>` can mutate the queue while registered,
+including refilling it after exhaustion. Discarded pending scripts are dropped
+after unlocking; factories never run under the queue lock.
 Exhaustion records a call and returns ScriptExhausted, never replaying a response.
 SetupFailure supplies a typed synchronous error. A Factory runs once, lazily on
 the first asynchronous source read, before Start; it may inspect observations
