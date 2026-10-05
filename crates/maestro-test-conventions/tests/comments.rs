@@ -11,7 +11,17 @@ fn numbered_planning_comments_are_rejected_with_file_and_line() {
     let path = workspace.root.join("crates/models/src/lib.rs");
     std::fs::write(&path, "\n// slice 6\n").unwrap();
     let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&format!("{}:2:", path.display())), "{error}");
+    assert_location(&error, &path, 2);
+}
+
+fn assert_location(error: &str, expected: &std::path::Path, line: usize) {
+    let suffix = format!(":{line}: planning reference in comment");
+    let reported = error.strip_suffix(&suffix).expect(error);
+    assert_eq!(
+        std::path::Path::new(reported).canonicalize().unwrap(),
+        expected.canonicalize().unwrap(),
+        "{error}"
+    );
 }
 
 fn rejects(comments: &[&str]) {
@@ -22,10 +32,7 @@ fn rejects(comments: &[&str]) {
     for comment in comments {
         std::fs::write(&path, format!("\n{comment}\n")).unwrap();
         let error = check_workspace(&workspace.root).unwrap_err();
-        assert!(
-            error.contains(&format!("{}:2:", path.display())),
-            "{comment}: {error}"
-        );
+        assert_location(&error, &path, 2);
     }
     std::fs::write(&path, "// Describes model behavior.\n").unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -96,5 +103,5 @@ fn nested_block_comments_report_the_inner_line_in_non_src_files() {
     let path = workspace.root.join("crates/models/build.rs");
     std::fs::write(&path, "/* technical\n /* ticket 5 */\n*/\n").unwrap();
     let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&format!("{}:2:", path.display())), "{error}");
+    assert_location(&error, &path, 2);
 }
