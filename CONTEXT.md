@@ -14,3 +14,43 @@ From `docs/specs/2026-10-04-models.md`.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Scripted fake:** A provider adapter driven by queued responses or request-inspecting factories, with observable calls and no external I/O.
+
+## Engine
+
+From `docs/specs/2026-10-05-engine-core.md`.
+
+### Execution
+
+- **Agent:** The conversation runner, not a supervisor persona.
+- **Run:** One foreground prompt or continuation through low-level idle.
+- **Turn:** One assistant response with its tool results.
+- **Tool:** A registered callable capability with validated input and an explicit outcome.
+- **Batch:** The tool calls belonging to one assistant response.
+
+### Conversation
+
+- **Session:** A conversation history with a selected branch.
+- **Entry:** An immutable record in the session tree.
+- **Active branch:** The path from the root to the selected position.
+- **Context projection:** The model-bound view of the active branch.
+- **Compaction:** Reduction of model context without deleting raw history.
+
+### State
+
+- **Storage:** The replaceable interface that records session state; ephemeral storage is not the memory capability.
+- **Notification:** An observation of current activity; delivery does not imply persistence or replay.
+- **Settings:** Effective configured values with origins and enforceable value locks.
+- **Credential:** Provider-owned authentication data, not permission to execute a tool.
+- **Manifest:** Governed declarations of defaults, packages and resources consumed by their owners.
+
+### Extensibility
+
+- **Extension:** Admitted behavior that owns declared capabilities.
+- **Registration:** A host-admitted declaration of an owned capability.
+- **Package:** An installed source containing declared extension programs or resources.
+- **Resource:** Instruction material or documentation made discoverable to the engine.
+
+### Interfaces
+
+- **Application:** The session operations shared by embedding and frontends. _Avoid_: app.
+- **CLI:** The command-line frontend, including chat, print, JSON and RPC modes.
