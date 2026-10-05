@@ -25,6 +25,8 @@ pub(crate) struct Inner {
     pub models: Arc<Models>,
     pub model: Model,
     pub options: AgentOptions,
+    // Only read or mutate state under this mutex; run callbacks, notifications,
+    // wakes and cleanup of removed caller-owned values after releasing it.
     pub state: Mutex<Shared>,
 }
 pub(crate) struct Shared {
@@ -155,8 +157,11 @@ impl Agent {
         };
         let (sender, receiver) = watch::channel(None);
         state.running = true;
-        state.cancellation = Some(options.cancellation.clone());
-        state.completion = Some(receiver.clone());
+        let prior_cancellation = state.cancellation.replace(options.cancellation.clone());
+        let prior_completion = state.completion.replace(receiver.clone());
+        drop(state);
+        drop(prior_cancellation);
+        drop(prior_completion);
         let inner = self.inner.clone();
         let worker = runtime.spawn(crate::run::run(
             inner.clone(),
@@ -166,10 +171,13 @@ impl Agent {
         ));
         runtime.spawn(async move {
             let outcome = worker.await.unwrap_or(Err(AgentError::RunFailed));
-            let mut state = inner.lock();
-            state.running = false;
-            state.streaming = None;
-            state.cancellation = None;
+            let (streaming, cancellation) = {
+                let mut state = inner.lock();
+                state.running = false;
+                (state.streaming.take(), state.cancellation.take())
+            };
+            drop(streaming);
+            drop(cancellation);
             sender.send_replace(Some(outcome));
         });
         Ok(observe(receiver))

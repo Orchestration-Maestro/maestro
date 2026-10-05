@@ -1,7 +1,10 @@
 mod support;
 use maestro_agent::*;
 use maestro_models::*;
-use std::sync::{Arc, Mutex};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+};
 use support::*;
 
 #[tokio::test]
@@ -447,6 +450,64 @@ async fn owned_task_failure_is_not_reported_as_successful_idle() {
     assert!(!agent.state().is_running);
     assert!(agent.state().streaming_message.is_none());
     assert_eq!(agent.wait_for_idle().await, Err(AgentError::RunFailed));
+}
+
+#[test]
+fn completion_wake_can_read_state() {
+    struct StateWake {
+        agent: Agent,
+        observed: Mutex<Option<tokio::sync::oneshot::Sender<AgentState>>>,
+    }
+    impl std::task::Wake for StateWake {
+        fn wake(self: Arc<Self>) {
+            self.wake_by_ref();
+        }
+        fn wake_by_ref(self: &Arc<Self>) {
+            let state = self.agent.state();
+            if let Some(observed) = self.observed.lock().unwrap().take() {
+                observed.send(state).unwrap();
+            }
+        }
+    }
+    let (completed, completion) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        runtime.block_on(async move {
+            let (wait, entered, release) = gate();
+            let mut response = vec![wait];
+            response.extend(steps("reply"));
+            let (agent, _) = setup(vec![Script::Steps(response)], AgentOptions::default());
+            let mut handle = agent.prompt(user("input"), options()).unwrap();
+            entered.await.unwrap();
+            let (observed, observation) = tokio::sync::oneshot::channel();
+            let observer = Arc::new(StateWake {
+                agent: agent.clone(),
+                observed: Mutex::new(Some(observed)),
+            });
+            let waker = std::task::Waker::from(observer.clone());
+            let mut context = std::task::Context::from_waker(&waker);
+            assert!(
+                std::pin::Pin::new(&mut handle)
+                    .poll(&mut context)
+                    .is_pending()
+            );
+            release.send(()).unwrap();
+            let observed = observation.await.unwrap();
+            let result = handle.await.unwrap();
+            completed.send((result, observed, agent.state())).unwrap();
+        });
+    });
+    let (result, observed, settled) = completion
+        .recv_timeout(std::time::Duration::from_secs(2))
+        .expect("completion wake must finish reentrant state observation");
+    assert_eq!(result.len(), 2);
+    assert!(!observed.is_running);
+    assert!(observed.streaming_message.is_none());
+    assert_eq!(observed.context.messages, result);
+    assert_eq!(observed, settled);
+    worker.join().unwrap();
 }
 
 #[test]
