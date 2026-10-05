@@ -12,3 +12,10 @@
   classification, image generation, embeddings and reranking contracts.
 - Removed deferred model responses and expanded transcript/catalog lifecycle
   requirements from core scope; required feature documentation in model tickets.
+
+### Added
+
+- Engine-core specification covering application modes, the agent loop, native
+  tools, branchable sessions, replaceable storage, settings, extensions, packages
+  and documentation acceptance. This specifies planned behavior, not implemented
+  runtime features.
