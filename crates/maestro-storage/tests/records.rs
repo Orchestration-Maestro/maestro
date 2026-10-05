@@ -157,3 +157,66 @@ fn uncertain_outcome_blocks_mutations() {
         handle.close().unwrap();
     }
 }
+
+use std::process::Command;
+
+fn rejects_promptly(case: &str, run: impl FnOnce()) {
+    if std::env::var("MAESTRO_CONFORMANCE_CHILD").as_deref() == Ok(case) {
+        let failure = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
+            .expect_err("nonconforming adapter must fail");
+        if case == "close_settles_admitted_writes_rejects_early_close" {
+            let message = failure
+                .downcast_ref::<String>()
+                .map(String::as_str)
+                .or_else(|| failure.downcast_ref::<&str>().copied())
+                .unwrap();
+            assert!(
+                message.contains("write must settle before close completes"),
+                "{message}"
+            );
+        }
+        return;
+    }
+    // Bound the entire child process, including scoped-thread unwinding.
+    let output = Command::new("timeout")
+        .args(["10s"])
+        .arg(std::env::current_exe().unwrap())
+        .args(["--exact", case, "--nocapture"])
+        .env("MAESTRO_CONFORMANCE_CHILD", case)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "child failed or hung: {}\n{}\n{}",
+        output.status,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn whole_batch_visibility_releases_writer_on_failure() {
+    rejects_promptly("whole_batch_visibility_releases_writer_on_failure", || {
+        let store = support::ControlledStorage::failing_reads(false);
+        conformance::whole_batch_visibility(&store, &store);
+    });
+}
+
+#[test]
+fn close_settles_admitted_writes_releases_writer_on_failure() {
+    rejects_promptly(
+        "close_settles_admitted_writes_releases_writer_on_failure",
+        || {
+            let store = support::ControlledStorage::failing_reads(true);
+            conformance::close_settles_admitted_writes(&store, &store);
+        },
+    );
+}
+
+#[test]
+fn close_settles_admitted_writes_rejects_early_close() {
+    rejects_promptly("close_settles_admitted_writes_rejects_early_close", || {
+        let store = support::ControlledStorage::early_close();
+        conformance::close_settles_admitted_writes(&store, &store);
+    });
+}

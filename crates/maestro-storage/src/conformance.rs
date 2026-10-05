@@ -232,6 +232,32 @@ pub trait Controls {
     fn pause_next_append(&self, session_id: &str) -> Pause;
     /// Observes admission closing immediately before admitted-write draining.
     fn observe_close(&self, session_id: &str) -> std::sync::mpsc::Receiver<()>;
+    /// Records close beginning to wait for admitted writes, before it blocks.
+    /// A close that returns without draining must not emit this witness.
+    fn observe_close_draining(
+        &self,
+        session_id: &str,
+        witness: std::sync::mpsc::Sender<CloseWitness>,
+    );
+    /// Records the next admitted append's settled outcome, after publication or
+    /// failure is final but before notifying close's drain waiters. The observer
+    /// must not delay draining or require the append caller to run first.
+    fn observe_write_settled(
+        &self,
+        session_id: &str,
+        witness: std::sync::mpsc::Sender<CloseWitness>,
+    );
+}
+
+/// Ordered observations of an admitted write and its handle's close.
+#[derive(Debug, PartialEq, Eq)]
+pub enum CloseWitness {
+    /// Close has begun draining the admitted write before returning.
+    CloseDraining,
+    /// The admitted append's outcome is final before draining is notified.
+    WriteSettled,
+    /// The close caller has received its result.
+    CloseComplete,
 }
 
 /// Owned endpoints for a paused real append.
@@ -240,6 +266,22 @@ pub struct Pause {
     pub reached: std::sync::mpsc::Receiver<()>,
     /// Sending releases the admitted write.
     pub release: std::sync::mpsc::Sender<()>,
+}
+
+struct ReleaseOnDrop(Option<std::sync::mpsc::Sender<()>>);
+
+impl ReleaseOnDrop {
+    fn release(&mut self) {
+        if let Some(sender) = self.0.take() {
+            let _ = sender.send(());
+        }
+    }
+}
+
+impl Drop for ReleaseOnDrop {
+    fn drop(&mut self) {
+        self.release();
+    }
 }
 
 /// Checks that readers never observe a staged prefix or mismatched position.
@@ -252,11 +294,12 @@ pub fn whole_batch_visibility(storage: &dyn Storage, controls: &dyn Controls) {
     let before = reader.read().unwrap();
     let pause = controls.pause_next_append("s");
     std::thread::scope(|scope| {
+        let mut release = ReleaseOnDrop(Some(pause.release));
         let write = scope.spawn(|| handle.append(vec![record("a"), record("b")], Some("b".into())));
         pause.reached.recv().unwrap();
         assert_eq!(reader.read().unwrap(), before);
         assert_eq!(reader.get("a").unwrap(), None);
-        pause.release.send(()).unwrap();
+        release.release();
         write.join().unwrap().unwrap();
     });
     let after = reader.read().unwrap();
@@ -270,8 +313,11 @@ pub fn close_settles_admitted_writes(storage: &dyn Storage, controls: &dyn Contr
     let reader = storage.open("s").unwrap();
     let pause = controls.pause_next_append("s");
     let closing = controls.observe_close("s");
-    let (done_tx, done) = std::sync::mpsc::channel();
+    let (witness_tx, witnesses) = std::sync::mpsc::channel();
+    controls.observe_write_settled("s", witness_tx.clone());
+    controls.observe_close_draining("s", witness_tx.clone());
     std::thread::scope(|scope| {
+        let mut release = ReleaseOnDrop(Some(pause.release));
         let writer = handle.clone();
         let write =
             scope.spawn(move || writer.append(vec![record("a"), record("b")], Some("b".into())));
@@ -279,11 +325,15 @@ pub fn close_settles_admitted_writes(storage: &dyn Storage, controls: &dyn Contr
         let closer = handle.clone();
         let close = scope.spawn(move || {
             let result = closer.close();
-            done_tx.send(()).unwrap();
+            let _ = witness_tx.send(CloseWitness::CloseComplete);
             result
         });
         closing.recv().unwrap();
-        assert_eq!(done.try_recv(), Err(std::sync::mpsc::TryRecvError::Empty));
+        assert_eq!(
+            witnesses.recv().unwrap(),
+            CloseWitness::CloseDraining,
+            "write must settle before close completes"
+        );
         assert_eq!(handle.read(), Err(StorageError::Closed));
         assert_eq!(handle.get("a"), Err(StorageError::Closed));
         assert_eq!(
@@ -292,10 +342,14 @@ pub fn close_settles_admitted_writes(storage: &dyn Storage, controls: &dyn Contr
         );
         assert_eq!(handle.select(None), Err(StorageError::Closed));
         assert!(reader.read().unwrap().records.is_empty());
-        pause.release.send(()).unwrap();
+        release.release();
         write.join().unwrap().unwrap();
         close.join().unwrap().unwrap();
-        done.recv().unwrap();
+        assert_eq!(
+            [witnesses.recv().unwrap(), witnesses.recv().unwrap()],
+            [CloseWitness::WriteSettled, CloseWitness::CloseComplete],
+            "write must settle before close completes"
+        );
     });
     handle.close().unwrap();
     assert_eq!(

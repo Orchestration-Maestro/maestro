@@ -29,6 +29,28 @@ impl crate::conformance::Controls for MemoryStorage {
             .pause = Some((reached_tx, release_rx));
         crate::conformance::Pause { reached, release }
     }
+    fn observe_close_draining(
+        &self,
+        session_id: &str,
+        witness: std::sync::mpsc::Sender<crate::conformance::CloseWitness>,
+    ) {
+        self.sessions.lock().unwrap()[session_id]
+            .hooks
+            .lock()
+            .unwrap()
+            .draining = Some(witness);
+    }
+    fn observe_write_settled(
+        &self,
+        session_id: &str,
+        witness: std::sync::mpsc::Sender<crate::conformance::CloseWitness>,
+    ) {
+        self.sessions.lock().unwrap()[session_id]
+            .hooks
+            .lock()
+            .unwrap()
+            .settled = Some(witness);
+    }
     fn observe_close(&self, session_id: &str) -> std::sync::mpsc::Receiver<()> {
         let (tx, rx) = std::sync::mpsc::channel();
         self.sessions.lock().unwrap()[session_id]

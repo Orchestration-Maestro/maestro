@@ -29,6 +29,8 @@ struct Shared {
 struct Hooks {
     pause: Option<(std::sync::mpsc::Sender<()>, std::sync::mpsc::Receiver<()>)>,
     close: Option<std::sync::mpsc::Sender<()>>,
+    draining: Option<std::sync::mpsc::Sender<crate::conformance::CloseWitness>>,
+    settled: Option<std::sync::mpsc::Sender<crate::conformance::CloseWitness>>,
 }
 
 #[derive(Default)]
@@ -41,6 +43,10 @@ struct Write<'a>(&'a Handle);
 impl Drop for Write<'_> {
     fn drop(&mut self) {
         let mut admission = self.0.admission.lock().unwrap();
+        #[cfg(test)]
+        if let Some(witness) = self.0.state.hooks.lock().unwrap().settled.take() {
+            let _ = witness.send(crate::conformance::CloseWitness::WriteSettled);
+        }
         admission.writes -= 1;
         self.0.drained.notify_all();
     }
@@ -185,6 +191,12 @@ impl RecordSession for Handle {
         #[cfg(test)]
         if let Some(observed) = self.state.hooks.lock().unwrap().close.take() {
             observed.send(()).unwrap();
+        }
+        #[cfg(test)]
+        if admission.writes != 0
+            && let Some(witness) = self.state.hooks.lock().unwrap().draining.take()
+        {
+            let _ = witness.send(crate::conformance::CloseWitness::CloseDraining);
         }
         while admission.writes != 0 {
             admission = self.drained.wait(admission).unwrap();

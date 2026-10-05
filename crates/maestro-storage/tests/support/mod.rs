@@ -7,10 +7,26 @@ use std::sync::{Arc, Condvar, Mutex, RwLock};
 #[derive(Default)]
 pub struct ControlledStorage {
     sessions: Mutex<HashMap<String, Arc<Data>>>,
+    fail_paused_read: bool,
+    fail_closed_read: bool,
+    early_close: bool,
 }
 impl ControlledStorage {
     pub fn new() -> Self {
         Self::default()
+    }
+    pub fn failing_reads(closed: bool) -> Self {
+        Self {
+            fail_paused_read: !closed,
+            fail_closed_read: closed,
+            ..Self::default()
+        }
+    }
+    pub fn early_close() -> Self {
+        Self {
+            early_close: true,
+            ..Self::default()
+        }
     }
     pub fn observe_next_mutation(&self, id: &str) -> std::sync::mpsc::Receiver<()> {
         let (tx, rx) = std::sync::mpsc::channel();
@@ -35,8 +51,14 @@ struct Schedule {
     admission: Option<std::sync::mpsc::Sender<()>>,
     uncertain: Option<bool>,
     closing: Option<std::sync::mpsc::Sender<()>>,
+    paused: bool,
+    draining: Option<std::sync::mpsc::Sender<maestro_storage::conformance::CloseWitness>>,
+    settled: Option<std::sync::mpsc::Sender<maestro_storage::conformance::CloseWitness>>,
 }
 struct Data {
+    fail_paused_read: bool,
+    fail_closed_read: bool,
+    early_close: bool,
     snapshot: RwLock<SessionSnapshot>,
     writing: Mutex<()>,
     controls: Mutex<Schedule>,
@@ -65,6 +87,9 @@ struct Active<'a>(&'a Open);
 impl Drop for Active<'_> {
     fn drop(&mut self) {
         let mut life = self.0.life.lock().unwrap();
+        if let Some(witness) = self.0.data.controls.lock().unwrap().settled.take() {
+            let _ = witness.send(maestro_storage::conformance::CloseWitness::WriteSettled);
+        }
         life.active -= 1;
         self.0.settled.notify_all();
     }
@@ -82,6 +107,9 @@ impl Storage for ControlledStorage {
         }
         let id = header.session_id.clone();
         let data = Arc::new(Data {
+            fail_paused_read: self.fail_paused_read,
+            fail_closed_read: self.fail_closed_read,
+            early_close: self.early_close,
             snapshot: RwLock::new(SessionSnapshot {
                 metadata: SessionMetadata {
                     header,
@@ -120,8 +148,11 @@ impl Storage for ControlledStorage {
 impl RecordSession for Open {
     fn read(&self) -> Result<SessionSnapshot, StorageError> {
         let life = self.life.lock().unwrap();
-        if life.closed {
+        if life.closed && !self.data.fail_closed_read {
             return Err(StorageError::Closed);
+        }
+        if self.data.fail_paused_read && self.data.controls.lock().unwrap().paused {
+            return Err(rejected("deliberately failing paused read"));
         }
         Ok(self.data.snapshot.read().unwrap().clone())
     }
@@ -174,6 +205,7 @@ impl RecordSession for Open {
         }
         let pause = self.data.controls.lock().unwrap().pause.take();
         if let Some((reached, release)) = pause {
+            self.data.controls.lock().unwrap().paused = true;
             reached.send(()).unwrap();
             release.recv().unwrap();
         }
@@ -200,6 +232,14 @@ impl RecordSession for Open {
         if let Some(closing) = self.data.controls.lock().unwrap().closing.take() {
             closing.send(()).unwrap();
         }
+        if self.data.early_close {
+            return Ok(());
+        }
+        if life.active != 0
+            && let Some(witness) = self.data.controls.lock().unwrap().draining.take()
+        {
+            let _ = witness.send(maestro_storage::conformance::CloseWitness::CloseDraining);
+        }
         while life.active != 0 {
             life = self.settled.wait(life).unwrap();
         }
@@ -217,6 +257,28 @@ impl maestro_storage::conformance::Controls for ControlledStorage {
             .unwrap()
             .pause = Some((tx, rx));
         maestro_storage::conformance::Pause { reached, release }
+    }
+    fn observe_close_draining(
+        &self,
+        id: &str,
+        witness: std::sync::mpsc::Sender<maestro_storage::conformance::CloseWitness>,
+    ) {
+        self.sessions.lock().unwrap()[id]
+            .controls
+            .lock()
+            .unwrap()
+            .draining = Some(witness);
+    }
+    fn observe_write_settled(
+        &self,
+        id: &str,
+        witness: std::sync::mpsc::Sender<maestro_storage::conformance::CloseWitness>,
+    ) {
+        self.sessions.lock().unwrap()[id]
+            .controls
+            .lock()
+            .unwrap()
+            .settled = Some(witness);
     }
     fn observe_close(&self, id: &str) -> std::sync::mpsc::Receiver<()> {
         let (tx, rx) = std::sync::mpsc::channel();
