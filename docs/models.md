@@ -1,108 +1,175 @@
-# Model text access
+# Model streaming and scripted responses
 
-`maestro-models` provides explicitly registered, credential-free text access.
-The registry owns provider/model/operation identities and protocols; adapters
-supply updates, while the model stream assembles cumulative text and independent
-owned snapshots. Registries are instance-local and the crate has no dependencies.
+`maestro-models` provides explicitly registered chat access through replaceable
+adapters. The registry owns provider/model/operation dispatch; adapters supply
+indexed updates and the normalizer owns block, failure and cancellation rules.
+The crate has no internal workspace dependencies. Its JSON dependency parses
+completed tool arguments strictly; it requires no asynchronous runtime.
 
-## Scripted text example
+## Explicit indexed streaming
 
-This complete example type-checks without a runtime. Run its async body using
-an executor supplied by your application. The integration tests execute the same
-behavior with a private standard-library executor; no production executor or
-network access is provided here.
+This example compiles without credentials or network access. An application
+executor runs the async body; tests use a private standard-library executor.
 
 ```rust
-use maestro_models::{
-    Context, Failure, Model, ModelIdentity, Models, ScriptedProvider, StopReason,
-    ProviderUpdate, Usage, UserMessage,
-};
+use maestro_models::*;
 use std::sync::Arc;
 
 async fn scripted_text() -> Result<(), Failure> {
-    let mut models = Models::new(Arc::new(|| 1_700_000_000_000));
-    let fake = Arc::new(ScriptedProvider::new(vec![vec![
-        ProviderUpdate::TextDelta { delta: "hel".into() },
-        ProviderUpdate::TextDelta { delta: "lo".into() },
-        ProviderUpdate::Done {
-            usage: Usage {
-                input: 11, output: 7, cache_read: 3, cache_write: 2,
-                total_tokens: 23,
-            },
-        },
-    ]]));
     let model = Model {
         identity: ModelIdentity {
-            provider: "scripted:example".into(),
-            model: "greeting/text".into(),
+            provider: "scripted:example".into(), model: "greeting/text".into(),
             operation: "chat".into(),
         },
-        protocol: "scripted/text".into(),
+        protocol: "scripted/chat".into(),
     };
-    models.register(model.clone(), fake.clone())?;
     let context = Context {
         system_prompt: Some("Reply with a greeting".into()),
-        messages: vec![UserMessage {
-            content: "hello".into(),
-            timestamp: 1_699_999_999_999,
-        }],
+        messages: vec![UserMessage { content: "hello".into(), timestamp: 17 }],
     };
-    let response = models.complete(model.clone(), context.clone()).await;
-    if let Some(failure) = response.failure {
-        // Display text contains only the fixed failure category.
-        eprintln!("{failure}");
-        return Err(failure);
+    let response = || Script::Steps(vec![
+        ScriptStep::Update(ProviderUpdate::TextStart { content_index: 0 }),
+        ScriptStep::Update(ProviderUpdate::TextDelta {
+            content_index: 0, delta: "hel".into(),
+        }),
+        ScriptStep::Update(ProviderUpdate::TextDelta {
+            content_index: 0, delta: "lo".into(),
+        }),
+        ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0 }),
+        ScriptStep::Update(ProviderUpdate::Usage {
+            usage: Usage { input: 11, output: 7, total_tokens: 18, ..Usage::default() },
+        }),
+        ScriptStep::Update(ProviderUpdate::Done { reason: StopReason::Stop }),
+    ]);
+    let fake = Arc::new(ScriptedProvider::new(vec![response(), response()]));
+    let mut models = Models::new(Arc::new(|| 73));
+    models.register(model.clone(), fake.clone())?;
+    let mut stream = models.stream(model.clone(), context.clone(), StreamOptions::default());
+    let mut terminal = None;
+    while let Some(event) = stream.next().await {
+        match event {
+            ModelEvent::TextDelta { delta, .. } => assert!(delta == "hel" || delta == "lo"),
+            ModelEvent::Done { message, .. } => terminal = Some(message),
+            ModelEvent::Error { error, .. } => return Err(error.failure.unwrap()),
+            _ => {},
+        }
     }
-    assert_eq!(response.stop_reason, Some(StopReason::Stop));
-    assert_eq!(response.content[0].text, "hello");
-    assert_eq!(response.timestamp, 1_700_000_000_000);
-    assert_eq!(fake.calls(), vec![(model, context)]);
+    let completed = models.complete(model.clone(), context.clone(), StreamOptions::default()).await;
+    assert_eq!(terminal.as_ref(), Some(&completed));
+    assert_eq!(completed.content[0], AssistantContent::Text(TextContent { text: "hello".into() }));
+    assert_eq!(completed.timestamp, 73);
+    assert_eq!(fake.calls()[0].model, model);
+    assert_eq!(fake.calls()[0].context, context);
+    assert_eq!(fake.calls().len(), 2);
     assert_eq!(fake.pending(), 0);
     Ok(())
 }
 ```
 
-## Streaming and completion
+Success emits one `Start`, balanced text/thinking/tool-call starts and ends, and
+one `Done` with `Stop`, `Length` or `ToolUse`. Empty success has exactly Start/Done
+and invents no block. New blocks append at the next index; any open blocks may
+interleave. Empty deltas are retained exactly. Readable thinking starts empty
+and retains its optional signature. Redacted thinking introduces an opaque block
+with ThinkingStart/ThinkingEnd and no delta; ThinkingEnd's readable content is
+empty. Do not display opaque data as reasoning.
 
-Use `models.stream(model, context)` and repeatedly await `stream.next()` for
-incremental access. Successful text emits exactly `Start`, `TextStart`, one
-`TextDelta` per supplied chunk, `TextEnd`, then `Done`. The block index is zero;
-`TextEnd` contains the full text. Successful responses without any text deltas
-emit only `Start` and `Done`, without inventing a text block. The first event
-requires only the first update, not the whole response. No background task or
-channel is used.
+Tool-call deltas carry JSON fragments. `ToolCall::arguments()` returns `None`
+until ToolCallEnd accepts a strict JSON object, including explicitly supplied
+`{}`. Truncated JSON, non-object values and invalid escapes fail; no repair or
+placeholder object is invented. Availability is not execution authorization:
+require successful terminal completion and apply tool validation/policy before
+execution. An unfinished failed or aborted call retains unavailable arguments.
 
-Each event owns its content and usage. Retaining or modifying a caller-owned
-snapshot cannot affect another event. Initial usage counters are zero because
-usage is unreported, not because consumption was measured as zero. Final reported
-usage is applied before `TextEnd` and `Done`; no token estimation or pricing is
-performed. Partial snapshots have no stop reason. Terminal records carry `Stop`
-or `Error`. The requested provider/protocol/model and the clock sampled once at
-invocation remain unchanged throughout the response.
+Every event owns cumulative content, nested tool arguments, usage and identity.
+Retaining or modifying an owned clone cannot rewrite other events. Requested
+provider/protocol/model and the injected clock's one invocation sample remain
+unchanged. Optional actual response model/ID remain separate. Explicit Usage
+updates replace counters without estimation, normalization or pricing; initial
+zero counters mean unreported usage, not measured zero consumption.
 
-`complete` drains exactly one call to the same streaming implementation and
-returns its terminal assistant record. Neither method requires credentials or
-performs network access itself. A different implementation of `Provider` and
-`ProviderStream` can be registered without editing the caller.
+`complete` drains exactly one invocation of the same stream and returns its
+terminal record. Registering another implementation of `Provider` and
+`ProviderStream` does not require caller edits. Synchronous provider setup must
+not block; asynchronous work belongs in the source.
 
-## Failures and adapter observations
+## Queued request factories
 
-Only `chat` is implemented. Unknown providers and models are distinct failures;
-other operations, unsupported adapter capabilities and mismatched protocols
-fail without dispatching an adapter. Exact duplicate identities are rejected
-without changing the original registration. Identifiers are opaque strings, not
-parsed provider/model shortcuts.
+```rust
+use maestro_models::*;
+use std::sync::Arc;
 
-Setup and source failures use the normal `Error` event, never a successful
-`Done`. A failure before any successful update can produce only `Error`; a later
-failure preserves accumulated text. Premature source EOF is `IncompleteStream`.
-After termination the source is dropped and `next()` returns `None` forever.
-`Failure` implements `Display` and `std::error::Error` using useful fixed text;
-it never includes arbitrary identifiers, context, credentials or raw adapter
-errors. Typed categories allow recovery without parsing that display text.
+async fn request_factory(model: Model, context: Context) -> Result<(), Failure> {
+    let fake = Arc::new(ScriptedProvider::new(vec![Script::Factory(Box::new(|call| {
+        Box::pin(async move {
+            assert_eq!(call.call_index, 1);
+            let text = call.context.messages[0].content.clone();
+            Ok(vec![
+                ScriptStep::Update(ProviderUpdate::TextStart { content_index: 0 }),
+                ScriptStep::Update(ProviderUpdate::TextDelta { content_index: 0, delta: text }),
+                ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0 }),
+                ScriptStep::Update(ProviderUpdate::Done { reason: StopReason::Stop }),
+            ])
+        })
+    }))]));
+    let mut models = Models::new(Arc::new(|| 73));
+    models.register(model.clone(), fake.clone())?;
+    let result = models.complete(model, context, StreamOptions::default()).await;
+    assert_eq!(result.stop_reason, Some(StopReason::Stop));
+    assert_eq!(fake.pending(), 0);
+    assert_eq!(fake.calls()[0].call_index, 1);
+    Ok(())
+}
+```
 
-`ScriptedProvider::calls()` returns an independent owned request-history snapshot.
-`pending()` reports queued responses. Each invocation consumes at most one
-sequence; exhaustion records the call and fails with `ScriptExhausted` instead
-of replaying the previous response. Explicit chunks and usage are deterministic;
-the scripted adapter performs no credential lookup or external I/O.
+Each `Script` is one queued request response, not a deferred job. FIFO dispatch
+atomically records the owned request and removes at most one script. `calls()`
+clones request data; options deliberately retain shared cancellation semantics.
+`pending()` counts queued Script values, excluding the dispatched response.
+Exhaustion records a call and returns ScriptExhausted, never replaying a response.
+SetupFailure supplies a typed synchronous error. A Factory runs once, lazily on
+the first asynchronous source read, before Start; it may inspect observations
+without a queue lock being held. Its typed failure uses the normal pre-start
+error contract. `ScriptStep::Wait` accepts a caller-controlled future: no sleeps,
+random pacing or inferred token usage. Active wait/factory futures belong to the
+source, so dropping and recreating a pending read does not consume a wait or
+restart a factory.
+
+## Cancellation and failures
+
+```rust
+use maestro_models::*;
+
+async fn cancelled_request(models: &Models, model: Model, context: Context) {
+    let options = StreamOptions::default();
+    let signal = options.cancellation.clone();
+    signal.cancel();
+    let result = models.complete(model, context, options).await;
+    assert_eq!(result.stop_reason, Some(StopReason::Aborted));
+    assert_eq!(result.failure, Some(Failure::Cancelled));
+    signal.cancel(); // Repeated cancellation is harmless.
+    signal.cancelled().await; // Also completes when cancelled before polling.
+}
+```
+
+Clones share one signal; separately created/defaulted requests remain independent.
+Cancellation before dispatch consumes no script and records no provider call.
+While a source read is blocked, cancellation wakes its waiter without opening a
+fixture gate, drops the outstanding read/source/factory future and returns one
+Error with Aborted/Cancelled, retaining valid content/usage/identity. Dropped
+cancellation waiters unregister. Cancellation wins observable source-readiness
+and pending block-end/terminal ties until terminal delivery; after delivered
+termination it cannot replace the result. No retry occurs. This stops local
+work/waiting, not remote effects already performed.
+
+Unknown identities, unsupported operations/protocols and duplicate registrations
+remain distinct typed failures. Setup, factory and source failures become Error
+rather than escaped exceptions or Done. Error outcomes use Error; cancellation
+uses Aborted. Fixed useful `Failure` display text never interpolates raw parser
+errors, identifiers, request contents or secrets. Started failures preserve valid
+partial state. Illegal indices/families, closed-block updates, invalid tool JSON,
+non-success Done reasons and Done with open blocks are MalformedStream. EOF
+without a terminal update is IncompleteStream, including an empty source or
+closed content lacking Done. Metadata-only updates require no invented content
+event. After one terminal delivery the source is dropped and `next()` permanently
+returns None; later source updates are never polled.

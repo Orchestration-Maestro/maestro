@@ -13,7 +13,9 @@ From `docs/specs/2026-10-04-models.md`.
 - **Request:** An invocation of a selected model operation with its inputs, options, authentication and cancellation.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
-- **Scripted fake:** A provider adapter driven by queued responses or request-inspecting factories, with observable calls and no external I/O.
+- **Content block:** An indexed text, thinking or tool-call part of one assistant response.
+- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects.
+- **Scripted fake:** A provider adapter driven by queued request responses or request-inspecting factories, with observable calls and no external I/O; queued scripted steps are responses, not deferred jobs.
 
 ## Engine
 

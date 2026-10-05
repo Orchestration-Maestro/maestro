@@ -42,3 +42,5 @@ fn support_executor_resumes_a_woken_future() {
     }
     assert_eq!(block_on(WakeOnce(false)), 73);
 }
+
+pub mod conformance;
