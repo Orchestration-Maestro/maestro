@@ -71,17 +71,24 @@ pub fn model(provider: &str) -> Model {
             model: "synthetic".into(),
             operation: "chat".into(),
         },
+        rates: None,
         protocol: "script".into(),
+        capabilities: Default::default(),
         headers: Default::default(),
+        input: vec!["text".into()],
     }
 }
 pub fn context() -> Context {
     Context {
         system_prompt: None,
-        messages: vec![UserMessage {
-            content: "hello".into(),
+        messages: vec![Message::User(UserMessage {
+            content: vec![InputContent::Text(TextContent {
+                text: "hello".into(),
+                replay_metadata: None,
+            })],
             timestamp: 1,
-        }],
+        })],
+        tools: vec![],
     }
 }
 pub fn scripted(count: usize) -> Arc<ScriptedProvider> {

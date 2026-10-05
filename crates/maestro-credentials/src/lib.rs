@@ -25,6 +25,7 @@
 //! }, &Cancellation::new())?;
 //! let model = Model { identity: ModelIdentity { provider: "synthetic".into(),
 //!     model: "example".into(), operation: "chat".into() }, protocol: "script".into(),
+//!     rates: None, capabilities: Default::default(), input: vec!["text".into()],
 //!     headers: Default::default() };
 //! let adapter = Arc::new(ScriptedProvider::new(vec![Script::Steps(vec![
 //!     ScriptStep::Update(ProviderUpdate::Done { reason: StopReason::Stop }),
@@ -32,7 +33,7 @@
 //! let mut models = Models::new(Arc::new(|| 100));
 //! models.register(model.clone(), adapter.clone())?;
 //! let result = block_on(models.complete(model,
-//!     Context { system_prompt: None, messages: vec![] },
+//!     Context { system_prompt: None, messages: vec![], tools: vec![] },
 //!     StreamOptions { auth_resolver: Some(credentials), ..Default::default() }));
 //! assert_eq!(result.failure, None);
 //! assert_eq!(adapter.calls().len(), 1);
