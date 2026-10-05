@@ -15,6 +15,11 @@
 
 ### Added
 
+- Deterministic chat-stream conformance with indexed text/thinking/tool-call
+  blocks, strict completed tool JSON, owned metadata snapshots and wakeable
+  request cancellation. Expanded the scripted provider with queued factories,
+  controlled waits and owned dispatch observations.
+
 - Credential-free model text access with explicit registration, owned streaming
   snapshots, completion and a queued scripted provider adapter.
 

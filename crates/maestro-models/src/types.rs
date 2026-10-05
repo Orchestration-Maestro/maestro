@@ -1,4 +1,6 @@
-//! Owned text requests, response snapshots and typed outcomes.
+//! Owned requests, response records and secret-safe outcomes.
+
+use crate::AssistantContent;
 
 /// The complete dispatch key; all three identifiers are opaque data.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -38,13 +40,6 @@ pub struct Context {
     pub messages: Vec<UserMessage>,
 }
 
-/// One cumulative assistant text block.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TextContent {
-    /// Accumulated text.
-    pub text: String,
-}
-
 /// Reported flat token counters, not estimates inferred from text. Initial zeros mean unreported usage.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Usage {
@@ -60,13 +55,19 @@ pub struct Usage {
     pub total_tokens: u64,
 }
 
-/// The successful or failed terminal outcomes exercised by text access.
+/// The five terminal outcomes of a chat response.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StopReason {
     /// Successful termination.
     Stop,
+    /// Output limit reached.
+    Length,
+    /// Successful tool-call response.
+    ToolUse,
     /// Failed termination.
     Error,
+    /// Local cancellation.
+    Aborted,
 }
 
 /// Recoverable categories whose display text is fixed and never includes request or adapter secrets.
@@ -86,6 +87,12 @@ pub enum Failure {
     IncompleteStream,
     /// The adapter could not set up or continue the request.
     AdapterFailed,
+    /// Invalid block updates or completed tool JSON.
+    MalformedStream,
+    /// Transport lost during a request.
+    Transport,
+    /// Local request work was cancelled.
+    Cancelled,
 }
 
 impl std::fmt::Display for Failure {
@@ -98,6 +105,9 @@ impl std::fmt::Display for Failure {
             Self::ScriptExhausted => "scripted provider has no response remaining",
             Self::IncompleteStream => "provider stream ended without a terminal update",
             Self::AdapterFailed => "provider adapter failed",
+            Self::MalformedStream => "malformed provider stream",
+            Self::Transport => "provider transport failed",
+            Self::Cancelled => "request cancelled",
         })
     }
 }
@@ -115,63 +125,16 @@ pub struct AssistantMessage {
     pub model: String,
     /// Unix-millisecond clock sampled once at invocation.
     pub timestamp: u64,
-    /// Cumulative independent text blocks.
-    pub content: Vec<TextContent>,
+    /// Cumulative independent content blocks.
+    pub content: Vec<AssistantContent>,
     /// Reported usage; zero counters initially mean unreported usage.
     pub usage: Usage,
     /// Absent in partial snapshots; present in terminal records.
     pub stop_reason: Option<StopReason>,
     /// Typed failure category on failed termination.
     pub failure: Option<Failure>,
-}
-
-/// Typed stream events carrying independent, cumulative owned snapshots.
-/// Successful text follows start, text-start, deltas, text-end, done ordering.
-/// Errors terminate without a done event; empty success has no text block.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ModelEvent {
-    /// The first successful update was obtained, with no accumulated content yet.
-    Start {
-        /// Independent response-so-far.
-        partial: AssistantMessage,
-    },
-    /// The text block was opened before its first delta.
-    TextStart {
-        /// Index of the text block, currently zero.
-        content_index: usize,
-        /// Snapshot containing the empty block.
-        partial: AssistantMessage,
-    },
-    /// A supplied chunk was appended.
-    TextDelta {
-        /// Index of the text block, currently zero.
-        content_index: usize,
-        /// The supplied chunk.
-        delta: String,
-        /// Snapshot after appending the chunk.
-        partial: AssistantMessage,
-    },
-    /// The text block closed successfully with final reported usage.
-    TextEnd {
-        /// Index of the text block, currently zero.
-        content_index: usize,
-        /// Full accumulated text.
-        content: String,
-        /// Independent response-so-far, not yet terminal.
-        partial: AssistantMessage,
-    },
-    /// Successful terminal delivery.
-    Done {
-        /// Always [`StopReason::Stop`].
-        reason: StopReason,
-        /// Final successful record.
-        message: AssistantMessage,
-    },
-    /// Failed terminal delivery, possibly retaining partial text.
-    Error {
-        /// Always [`StopReason::Error`].
-        reason: StopReason,
-        /// Final failed record, with a fixed-display failure category.
-        error: AssistantMessage,
-    },
+    /// Actual response model, distinct from requested identity.
+    pub response_model: Option<String>,
+    /// Actual response identifier.
+    pub response_id: Option<String>,
 }

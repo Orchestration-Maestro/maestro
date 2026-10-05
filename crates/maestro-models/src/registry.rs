@@ -2,6 +2,7 @@
 
 use crate::{
     AssistantMessage, Context, Failure, Model, ModelEvent, ModelIdentity, ModelStream, Provider,
+    StreamOptions,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -33,9 +34,11 @@ impl Models {
 
     /// Resolve once and return the normalized caller stream, including setup failures.
     /// Samples the clock once; the stream owns its source and requested metadata.
-    pub fn stream(&self, model: Model, context: Context) -> ModelStream {
+    pub fn stream(&self, model: Model, context: Context, options: StreamOptions) -> ModelStream {
         let timestamp = (self.clock)();
-        let source = if model.identity.operation != "chat" {
+        let source = if options.cancellation.is_cancelled() {
+            Err(Failure::Cancelled)
+        } else if model.identity.operation != "chat" {
             Err(Failure::UnsupportedOperation)
         } else if !self
             .registrations
@@ -50,18 +53,25 @@ impl Models {
                 .and_then(|(registered, provider)| {
                     if registered.protocol != model.protocol || !provider.supports("chat") {
                         Err(Failure::UnsupportedOperation)
+                    } else if options.cancellation.is_cancelled() {
+                        Err(Failure::Cancelled)
                     } else {
-                        provider.stream(model.clone(), context)
+                        provider.stream(model.clone(), context, options.clone())
                     }
                 })
         };
-        ModelStream::new(model, timestamp, source)
+        ModelStream::new(model, timestamp, source, options)
     }
 
     /// Drain exactly one call to stream and return its terminal assistant record.
     /// Completion shares streaming dispatch, assembly and failure handling.
-    pub async fn complete(&self, model: Model, context: Context) -> AssistantMessage {
-        let mut stream = self.stream(model, context);
+    pub async fn complete(
+        &self,
+        model: Model,
+        context: Context,
+        options: StreamOptions,
+    ) -> AssistantMessage {
+        let mut stream = self.stream(model, context, options);
         loop {
             match stream.next().await {
                 Some(ModelEvent::Done { message, .. }) => return message,
