@@ -21,6 +21,7 @@ pub fn model() -> Model {
             operation: "chat".into(),
         },
         protocol: "script".into(),
+        headers: Default::default(),
     }
 }
 pub fn context() -> Context {
@@ -56,7 +57,7 @@ pub fn collect(mut stream: ModelStream, expected_model: &Model, timestamp: u64) 
 pub fn run(updates: Vec<ProviderUpdate>) -> Vec<ModelEvent> {
     let (models, _) = fixture(updates);
     collect(
-        models.stream(model(), context(), StreamOptions::default()),
+        models.stream(model(), context(), super::auth::local()),
         &model(),
         73,
     )
@@ -300,7 +301,7 @@ impl Provider for DirectProvider {
         &self,
         _: Model,
         _: Context,
-        _: StreamOptions,
+        _: ProviderOptions,
     ) -> Result<Box<dyn ProviderStream>, Failure> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         if let Some(failure) = self.setup_failure {

@@ -20,6 +20,11 @@
 
 ### Added
 
+- Selected-provider request authentication with explicit secret-free access,
+  metadata-only configured status, optional owner-invoked token exchange,
+  case-insensitive literal header overlay, safe diagnostics and cancellable
+  auth waits. Credential lifecycle remains outside model access.
+
 - Deterministic chat-stream conformance with indexed text/thinking/tool-call
   blocks, strict completed tool JSON, owned metadata snapshots and wakeable
   request cancellation. Expanded the scripted provider with queued factories,

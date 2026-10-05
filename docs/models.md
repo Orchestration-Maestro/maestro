@@ -3,7 +3,9 @@
 `maestro-models` provides explicitly registered chat access through replaceable
 adapters. The registry owns provider/model/operation dispatch; adapters supply
 indexed updates and the normalizer owns block, failure and cancellation rules.
-The crate has no internal workspace dependencies. Its JSON dependency parses
+Requests require explicit authentication or an injected selected-provider resolver.
+See [request authentication](request-authentication.md) for ownership, headers
+and secret-free local access. The crate has no internal workspace dependencies. Its JSON dependency parses
 completed tool arguments strictly; it requires no asynchronous runtime.
 
 ## Explicit indexed streaming
@@ -22,6 +24,7 @@ async fn scripted_text() -> Result<(), Failure> {
             operation: "chat".into(),
         },
         protocol: "scripted/chat".into(),
+        headers: Default::default(),
     };
     let context = Context {
         system_prompt: Some("Reply with a greeting".into()),
@@ -44,7 +47,11 @@ async fn scripted_text() -> Result<(), Failure> {
     let fake = Arc::new(ScriptedProvider::new(vec![response(), response()]));
     let mut models = Models::new(Arc::new(|| 73));
     models.register(model.clone(), fake.clone())?;
-    let mut stream = models.stream(model.clone(), context.clone(), StreamOptions::default());
+    let options = StreamOptions {
+        auth: Some(RequestAuth::ConfiguredWithoutSecret { source: None }),
+        ..Default::default()
+    };
+    let mut stream = models.stream(model.clone(), context.clone(), options.clone());
     let mut terminal = None;
     while let Some(event) = stream.next().await {
         match event {
@@ -54,7 +61,7 @@ async fn scripted_text() -> Result<(), Failure> {
             _ => {},
         }
     }
-    let completed = models.complete(model.clone(), context.clone(), StreamOptions::default()).await;
+    let completed = models.complete(model.clone(), context.clone(), options.clone()).await;
     assert_eq!(terminal.as_ref(), Some(&completed));
     assert_eq!(completed.content[0], AssistantContent::Text(TextContent { text: "hello".into() }));
     assert_eq!(completed.timestamp, 73);
@@ -114,7 +121,11 @@ async fn request_factory(model: Model, context: Context) -> Result<(), Failure> 
     }))]));
     let mut models = Models::new(Arc::new(|| 73));
     models.register(model.clone(), fake.clone())?;
-    let result = models.complete(model, context, StreamOptions::default()).await;
+    let options = StreamOptions {
+        auth: Some(RequestAuth::ConfiguredWithoutSecret { source: None }),
+        ..Default::default()
+    };
+    let result = models.complete(model, context, options).await;
     assert_eq!(result.stop_reason, Some(StopReason::Stop));
     assert_eq!(fake.pending(), 0);
     assert_eq!(fake.calls()[0].call_index, 1);
@@ -141,7 +152,10 @@ restart a factory.
 use maestro_models::*;
 
 async fn cancelled_request(models: &Models, model: Model, context: Context) {
-    let options = StreamOptions::default();
+    let options = StreamOptions {
+        auth: Some(RequestAuth::ConfiguredWithoutSecret { source: None }),
+        ..Default::default()
+    };
     let signal = options.cancellation.clone();
     signal.cancel();
     let result = models.complete(model, context, options).await;

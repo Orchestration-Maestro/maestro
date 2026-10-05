@@ -9,7 +9,7 @@ use support::{block_on, conformance::*};
 #[test]
 fn pre_dispatch_cancellation_aborts_without_consuming_a_script() {
     let (models, fake) = fixture(vec![done()]);
-    let options = StreamOptions::default();
+    let options = support::auth::local();
     options.cancellation.cancel();
     let events = collect(
         models.stream(model(), context(), options.clone()),
@@ -23,7 +23,7 @@ fn pre_dispatch_cancellation_aborts_without_consuming_a_script() {
     assert_eq!(result, *terminal(&events));
     assert_eq!(fake.calls().len(), 0);
     assert_eq!(fake.pending(), 1);
-    let result = block_on(models.complete(model(), context(), StreamOptions::default()));
+    let result = block_on(models.complete(model(), context(), support::auth::local()));
     assert_eq!(result.stop_reason, Some(StopReason::Stop));
     assert_eq!(fake.calls().len(), 1);
 }
@@ -45,13 +45,13 @@ fn capability_check_cancellation_aborts_without_dispatching_or_consuming_a_scrip
             &self,
             model: Model,
             context: Context,
-            options: StreamOptions,
+            options: ProviderOptions,
         ) -> Result<Box<dyn ProviderStream>, Failure> {
             self.scripted.stream(model, context, options)
         }
     }
 
-    let options = StreamOptions::default();
+    let options = support::auth::local();
     let fake = Arc::new(ScriptedProvider::new(vec![steps(vec![done()])]));
     let models = registry(Arc::new(CancellingProvider {
         cancellation: options.cancellation.clone(),
@@ -101,7 +101,7 @@ fn blocked_read_cancellation_wakes_and_drops_without_retry() {
         actions.push(ScriptStep::Update(done()));
         let fake = Arc::new(ScriptedProvider::new(vec![Script::Steps(actions)]));
         let models = registry(fake.clone());
-        let options = StreamOptions::default();
+        let options = support::auth::local();
         let mut stream = models.stream(model(), context(), options.clone());
         let mut events = Vec::new();
         if !partial.is_empty() {
@@ -148,7 +148,7 @@ fn blocked_read_cancellation_wakes_and_drops_without_retry() {
         },
     ))]));
     let models = registry(fake.clone());
-    let options = StreamOptions::default();
+    let options = support::auth::local();
     let mut stream = models.stream(model(), context(), options.clone());
     let wakes = Arc::new(WakeCounter::default());
     {
@@ -172,7 +172,7 @@ fn blocked_read_cancellation_wakes_and_drops_without_retry() {
 #[test]
 fn cancellation_wins_ready_read_and_pending_terminal_races() {
     for first in [done(), ProviderUpdate::TextStart { content_index: 0 }] {
-        let options = StreamOptions::default();
+        let options = support::auth::local();
         let mut direct = DirectProvider::new(vec![first]);
         direct.cancel_on_read = Some(options.cancellation.clone());
         let direct = Arc::new(direct);
@@ -194,7 +194,7 @@ fn cancellation_wins_ready_read_and_pending_terminal_races() {
         ],
     ] {
         let (models, _) = fixture(updates.clone());
-        let options = StreamOptions::default();
+        let options = support::auth::local();
         let mut stream = models.stream(model(), context(), options.clone());
         let mut events = vec![block_on(stream.next()).unwrap()];
         if updates.len() == 2 {
@@ -217,7 +217,7 @@ fn cancellation_wins_ready_read_and_pending_terminal_races() {
         }
     }
     let (models, _) = fixture(vec![done()]);
-    let options = StreamOptions::default();
+    let options = support::auth::local();
     let mut stream = models.stream(model(), context(), options.clone());
     assert!(matches!(
         block_on(stream.next()),
@@ -235,7 +235,7 @@ fn cancellation_wins_ready_read_and_pending_terminal_races() {
         ScriptStep::Update(done()),
     ])]));
     let models = registry(fake);
-    let options = StreamOptions::default();
+    let options = support::auth::local();
     let mut stream = models.stream(model(), context(), options.clone());
     let wakes = Arc::new(WakeCounter::default());
     let mut next = Box::pin(stream.next());
