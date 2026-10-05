@@ -41,6 +41,9 @@ From `docs/specs/2026-10-05-engine-core.md`.
 - **Run:** One foreground prompt or continuation through low-level idle.
 - **Turn:** One assistant response with its tool results.
 - **Tool:** A registered callable capability with validated input and an explicit outcome.
+- **Steering:** Input delivered at a turn boundary.
+- **Follow-up:** Input delivered after ordinary continuation and steering.
+- **Run handle:** An awaitable observation, not the owner or cancellation control of a run.
 - **Batch:** The tool calls belonging to one assistant response.
 
 ### Conversation
