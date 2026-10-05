@@ -490,3 +490,116 @@ fn settings_rejects_internal_dev_dependencies() {
     workspace.member("settings", "maestro-settings", "");
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+#[test]
+fn agent_is_registered_as_core() {
+    let workspace = Workspace::new();
+    workspace.member("agent", "maestro-agent", "");
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("workspace crate is not listed in workspace-crates.json: maestro-agent".into())
+    );
+    workspace.list(&[("maestro-agent", "dedicated")]);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("invalid scoped layer for maestro-agent: expected core".into())
+    );
+    workspace.list(&[("maestro-agent", "core")]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let inventory: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(root.join("workspace-crates.json")).unwrap())
+            .unwrap();
+    assert_eq!(inventory["maestro-agent"], "core");
+}
+
+#[test]
+fn agent_only_allows_models_production_edge() {
+    for to in [
+        "maestro-models",
+        "maestro-storage",
+        "maestro-packages",
+        "maestro-credentials",
+        "maestro-tools",
+        "maestro-session",
+        "maestro-settings",
+        "maestro-resources",
+        "maestro-extensions",
+        "maestro-app",
+        "maestro-cli",
+        "maestro",
+        "maestro-test-conventions",
+    ] {
+        let workspace = Workspace::new();
+        workspace.list(&[
+            ("maestro-agent", "core"),
+            (
+                to,
+                if matches!(to, "maestro" | "maestro-test-conventions") {
+                    "dedicated"
+                } else {
+                    "core"
+                },
+            ),
+        ]);
+        workspace.member("target", to, "");
+        for renamed in [false, true] {
+            for (kind, extra) in [
+                ("dependencies", ""),
+                ("build-dependencies", ""),
+                ("dependencies", ", optional = true"),
+                ("target.'cfg(target_os = \"none\")'.dependencies", ""),
+                ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
+            ] {
+                let name = if renamed { "alias" } else { to };
+                workspace.member(
+                    "agent",
+                    "maestro-agent",
+                    &format!(
+                        "[{kind}]\n{name} = {{ package = {to:?}, path = \"../target\"{extra} }}"
+                    ),
+                );
+                assert_eq!(
+                    check_workspace(&workspace.root),
+                    if to == "maestro-models" {
+                        Ok(())
+                    } else if matches!(to, "maestro" | "maestro-test-conventions") {
+                        Err(format!(
+                            "core crate maestro-agent must not depend on dedicated crate {to}"
+                        ))
+                    } else {
+                        Err(format!(
+                            "forbidden production dependency: maestro-agent -> {to}"
+                        ))
+                    },
+                    "{to} {kind} {renamed} {extra}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn agent_rejects_internal_dev_dependencies() {
+    let workspace = Workspace::new();
+    workspace.list(&[("maestro-agent", "core"), ("maestro-models", "core")]);
+    workspace.member("models", "maestro-models", "");
+    for renamed in [false, true] {
+        for kind in [
+            "dev-dependencies",
+            "target.'cfg(target_os = \"none\")'.dev-dependencies",
+        ] {
+            let name = if renamed { "alias" } else { "maestro-models" };
+            workspace.member(
+                "agent",
+                "maestro-agent",
+                &format!(
+                    "[{kind}]\n{name} = {{ package = \"maestro-models\", path = \"../models\" }}"
+                ),
+            );
+            assert_eq!(check_workspace(&workspace.root), Err("internal dev dependency requires declared dependency-free test support: maestro-agent -> maestro-models".into()));
+        }
+    }
+    workspace.member("agent", "maestro-agent", "");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
