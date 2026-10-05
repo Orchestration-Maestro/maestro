@@ -70,6 +70,9 @@ From `docs/specs/2026-10-05-engine-core.md`.
 - **Session directory:** The resolved location supplied to the session owner.
 - **File-write lock:** Native transaction exclusion for cooperating settings writers, distinct from a manifest value lock.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
+- **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
+- **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
+- **Read-only credential storage:** A storage adapter that permits reads but rejects every replacement; it does not contain helper effects.
 - **Manifest:** Governed declarations of defaults, packages and resources consumed by their owners.
 
 ### Extensibility
