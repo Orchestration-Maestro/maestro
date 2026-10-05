@@ -1,7 +1,7 @@
 //! Owned lazy authentication setup before the adapter source exists.
 use crate::{
-    Context, Failure, Model, Provider, ProviderOptions, ProviderStream, ProviderUpdate,
-    StreamOptions,
+    Context, EffectiveOptions, Failure, Model, Provider, ProviderOptions, ProviderStream,
+    ProviderUpdate, StreamOptions,
 };
 use std::{future::Future, pin::Pin, sync::Arc};
 
@@ -15,6 +15,7 @@ pub(crate) fn source(
     model: Model,
     context: Context,
     options: StreamOptions,
+    effective: EffectiveOptions,
 ) -> Result<Box<dyn ProviderStream>, Failure> {
     if options.cancellation.is_cancelled() {
         return Err(Failure::Cancelled);
@@ -23,11 +24,7 @@ pub(crate) fn source(
         return provider.stream(
             model,
             context,
-            ProviderOptions {
-                cancellation: options.cancellation,
-                auth: crate::auth::validate(auth)?,
-                headers: options.headers,
-            },
+            authorized(effective, crate::auth::validate(auth)?, options.headers),
         );
     }
     let resolver = options
@@ -57,21 +54,34 @@ pub(crate) fn source(
             if options.cancellation.is_cancelled() {
                 return Err(Failure::Cancelled);
             }
-            let result = provider.stream(
-                model,
-                context,
-                ProviderOptions {
-                    cancellation: options.cancellation.clone(),
-                    auth,
-                    headers: options.headers,
-                },
-            );
+            let result =
+                provider.stream(model, context, authorized(effective, auth, options.headers));
             if options.cancellation.is_cancelled() {
                 return Err(Failure::Cancelled);
             }
             result
         })),
     }))
+}
+fn authorized(
+    effective: EffectiveOptions,
+    auth: crate::RequestAuth,
+    headers: std::collections::BTreeMap<String, String>,
+) -> ProviderOptions {
+    ProviderOptions {
+        cancellation: effective.cancellation,
+        requested_thinking: effective.requested_thinking,
+        thinking: effective.thinking,
+        effort: effective.effort,
+        thinking_budget: effective.thinking_budget,
+        temperature: effective.temperature,
+        output_limit: effective.output_limit,
+        transport: effective.transport,
+        cache_preference: effective.cache_preference,
+        session_affinity: effective.session_affinity,
+        auth,
+        headers,
+    }
 }
 impl ProviderStream for Dispatch {
     fn next(&mut self) -> Pin<Box<dyn Future<Output = Option<ProviderUpdate>> + Send + '_>> {

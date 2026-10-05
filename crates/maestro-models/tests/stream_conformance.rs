@@ -12,6 +12,7 @@ fn empty_success_has_exact_start_and_done() {
             operation: "chat".into(),
         },
         protocol: "script".into(),
+        capabilities: RequestCapabilities::default(),
         headers: Default::default(),
         input: vec!["text".into()],
     };

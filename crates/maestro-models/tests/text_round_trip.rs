@@ -15,6 +15,7 @@ fn model() -> Model {
             operation: "chat".into(),
         },
         protocol: "test:protocol/v1".into(),
+        capabilities: RequestCapabilities::default(),
         headers: Default::default(),
         input: vec!["text".into()],
     }

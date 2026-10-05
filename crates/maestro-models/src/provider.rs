@@ -1,28 +1,34 @@
 //! Indexed adapter updates and supplied request cancellation.
 
 use crate::{
-    AssistantMessage, AuthResolver, Cancellation, Context, Failure, Model, RequestAuth, StopReason,
-    Usage,
+    AssistantMessage, Cancellation, Context, Failure, Model, RequestAuth, StopReason,
+    StreamOptions, ThinkingLevel, Usage,
 };
 use std::{collections::BTreeMap, future::Future, pin::Pin, sync::Arc};
 
-/// Request-local streaming options.
-#[derive(Clone, Default)]
-pub struct StreamOptions {
-    /// Supplied signal shared by clones of this request.
-    pub cancellation: Cancellation,
-    /// Explicit request authentication, taking precedence over resolution.
-    pub auth: Option<RequestAuth>,
-    /// Optional resolver for the selected provider only.
-    pub auth_resolver: Option<Arc<dyn AuthResolver>>,
-    /// Literal request header values; sensitive and not safe to log.
-    pub headers: BTreeMap<String, String>,
-}
 /// Authorized inputs for one adapter, without a resolver surface.
 #[derive(Clone)]
 pub struct ProviderOptions {
     /// Shared local cancellation signal.
     pub cancellation: Cancellation,
+    /// Original application-supplied reasoning choice.
+    pub requested_thinking: ThinkingLevel,
+    /// Supported reasoning choice from registered metadata.
+    pub thinking: ThinkingLevel,
+    /// Resolved effort string, mutually exclusive with a token budget.
+    pub effort: Option<String>,
+    /// Resolved shared-ceiling reasoning budget.
+    pub thinking_budget: Option<u64>,
+    /// Supported supplied temperature, without a default or reasoning overlay.
+    pub temperature: Option<f64>,
+    /// Resolved output allowance, including shared-ceiling adjustment if enabled.
+    pub output_limit: Option<u64>,
+    /// Supported supplied transport preference.
+    pub transport: Option<String>,
+    /// Supported supplied cache preference.
+    pub cache_preference: Option<String>,
+    /// Supported supplied session affinity.
+    pub session_affinity: Option<String>,
     /// Resolved request authentication.
     pub auth: RequestAuth,
     /// Effective literal headers; sensitive and not safe to log.
