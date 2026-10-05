@@ -265,3 +265,93 @@ fn stream_and_completion_share_the_same_conformance_assertions() {
     assert_eq!(fake_result.timestamp, 73);
     assert_accounting(&fake_result.usage, &expected_accounting());
 }
+
+#[test]
+fn replacing_and_appending_scripts_updates_pending_in_order() {
+    let response = |value: &str| {
+        let mut updates = text(0, value);
+        updates.push(done());
+        steps(updates)
+    };
+    let fake = Arc::new(ScriptedProvider::new(vec![
+        response("active"),
+        response("discarded"),
+    ]));
+    let models = registry(fake.clone());
+    assert_eq!(fake.pending(), 2);
+    let active = models.stream(model(), context(), support::auth::local());
+    assert_eq!(fake.pending(), 1);
+    fake.replace_scripts(vec![response("replacement")]);
+    assert_eq!(fake.pending(), 1);
+    fake.append_scripts(vec![
+        response("appended"),
+        Script::Factory(Box::new(|call| {
+            assert_eq!(call.call_index, 4);
+            assert_eq!(call.model, model());
+            assert_eq!(call.context, context());
+            Box::pin(async {
+                let mut updates = text(0, "factory");
+                updates.push(done());
+                Ok(updates.into_iter().map(ScriptStep::Update).collect())
+            })
+        })),
+    ]);
+    assert_eq!(fake.pending(), 3);
+    fake.append_scripts(vec![]);
+    assert_eq!(fake.pending(), 3);
+    assert_eq!(
+        terminal(&collect(active, &model(), 73)).content,
+        vec![AssistantContent::Text(TextContent {
+            text: "active".into(),
+            replay_metadata: None
+        })]
+    );
+    for (value, pending) in [("replacement", 2), ("appended", 1), ("factory", 0)] {
+        let completed = block_on(models.complete(model(), context(), support::auth::local()));
+        assert_eq!(
+            completed.content,
+            vec![AssistantContent::Text(TextContent {
+                text: value.into(),
+                replay_metadata: None
+            })]
+        );
+        assert_eq!(fake.pending(), pending);
+    }
+    fake.append_scripts(vec![response("discarded again")]);
+    assert_eq!(fake.pending(), 1);
+    fake.replace_scripts(vec![]);
+    assert_eq!(fake.pending(), 0);
+    for _ in 0..2 {
+        let exhausted = block_on(models.complete(model(), context(), support::auth::local()));
+        assert_eq!(exhausted.failure, Some(Failure::ScriptExhausted));
+        assert!(exhausted.content.is_empty());
+        assert_eq!(fake.pending(), 0);
+    }
+    fake.replace_scripts(vec![response("refilled")]);
+    assert_eq!(fake.pending(), 1);
+    let refilled = collect(
+        models.stream(model(), context(), support::auth::local()),
+        &model(),
+        73,
+    );
+    assert_eq!(
+        terminal(&refilled).content,
+        vec![AssistantContent::Text(TextContent {
+            text: "refilled".into(),
+            replay_metadata: None
+        })]
+    );
+    assert_eq!(fake.pending(), 0);
+    let exhausted = block_on(models.complete(model(), context(), support::auth::local()));
+    assert_eq!(exhausted.failure, Some(Failure::ScriptExhausted));
+    assert!(exhausted.content.is_empty());
+    let calls = fake.calls();
+    assert_eq!(
+        calls.iter().map(|c| c.call_index).collect::<Vec<_>>(),
+        vec![1, 2, 3, 4, 5, 6, 7, 8]
+    );
+    for call in calls {
+        assert_eq!(call.context, context());
+        assert_eq!(call.model, model());
+    }
+}

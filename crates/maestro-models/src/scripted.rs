@@ -64,6 +64,25 @@ impl ScriptedProvider {
             }),
         }
     }
+    /// Atomically replace pending responses, preserving active responses and calls.
+    /// An empty vector clears the pending queue.
+    pub fn replace_scripts(&self, scripts: Vec<Script>) {
+        let replacement = scripts.into();
+        let discarded = {
+            let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
+            std::mem::replace(&mut state.responses, replacement)
+        };
+        drop(discarded);
+    }
+    /// Atomically append pending responses in order, preserving active responses and calls.
+    /// An empty vector leaves the queue unchanged.
+    pub fn append_scripts(&self, scripts: Vec<Script>) {
+        self.state
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .responses
+            .extend(scripts);
+    }
     /// Clone independent request records in dispatch order.
     pub fn calls(&self) -> Vec<ScriptedCall> {
         self.state

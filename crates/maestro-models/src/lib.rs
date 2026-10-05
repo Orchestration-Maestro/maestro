@@ -28,6 +28,7 @@ mod options;
 mod projection;
 mod provider;
 mod registry;
+mod scalar;
 mod schema;
 mod scripted;
 mod stream;

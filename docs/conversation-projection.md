@@ -18,6 +18,8 @@ Tool-result `details` remain caller-owned but never enter provider context.
 
 Exact requested provider, protocol and model equality retains text/call replay
 metadata, thinking signatures, signed empty thinking and opaque redacted data.
+Only nonempty signatures count as signed: `Some("")` is unsigned, while a
+signature containing a space is signed without trimming.
 Actual response model/ID do not redefine that equality. Unsigned blank thinking
 is omitted. Foreign replay drops text/call metadata and redacted thinking;
 nonblank readable thinking becomes unsigned text, without exposing opaque data.
@@ -28,7 +30,9 @@ Only foreign calls invoke the adapter's deterministic, effect-free
 `normalize_tool_call_id` rule. Its identity default changes nothing. Overrides
 must preserve distinct IDs within a batch. The originating-turn mapping also
 rewrites real and synthetic results; a later same-model turn reusing an ID is
-not affected by an earlier rewrite. Names and completed arguments stay exact.
+not affected by an earlier rewrite. Mappings survive synthetic repair and
+intervening turns, so a delayed real result keeps the same rewritten ID as its
+originating call. Names and completed arguments stay exact.
 
 Input capability identifiers are supplied data. `image` retains exact base64
 and MIME strings, without fetching, decoding, resizing or re-encoding. Otherwise,
@@ -37,8 +41,11 @@ adjacent image runs become one text block:
 - User: `(image omitted: model does not support images)`.
 - Tool result: `(tool image omitted: model does not support images)`.
 
-Interleaved text order survives. Repeated omission does not accumulate adjacent
-identical placeholders. At each next user/assistant boundary and transcript end,
+Supplied text blocks always survive unchanged, even adjacent omission-literal
+blocks with distinct replay metadata or supplied literal text following a
+generated omission. A preceding supplied omission literal suppresses a new
+placeholder for the following image run regardless of its replay metadata.
+Ordinary or empty text separates runs; repeated projection preserves the output. At each next user/assistant boundary and transcript end,
 unanswered successful calls receive error results in call order: `No result
 provided`, no details, and the supplied synthetic timestamp. Existing matching
 results prevent duplicates. Error, aborted and partial assistant attempts are
@@ -185,3 +192,19 @@ Supported coercions are deliberately narrower than full schema validation:
   clones in schema order, validating branches with their enclosing dialect and
   local reference scope intact. Whole-object validation still enforces exclusive
   `oneOf`, required fields, bounds, enums and additional-property rules.
+
+Blank-thinking detection and numeric-string edge trimming use exactly
+U+0009–U+000D, U+0020, U+00A0, U+1680, U+2000–U+200A, U+2028, U+2029,
+U+202F, U+205F, U+3000 and U+FEFF. U+0085, U+180E and U+200B are not
+whitespace. Retained thinking text and signatures are never trimmed; whitespace
+inside numeric strings and whitespace-only numeric strings remain invalid.
+
+Number-to-string coercion uses binary64 semantics regardless of JSON integer
+storage, with shortest round-trip digits. Negative zero becomes `"0"`; integral
+values have no fraction. Fixed notation applies from `1e-6` inclusive to `1e21`
+exclusive: `1e-6` becomes `"0.000001"`, `1e20` becomes
+`"100000000000000000000"`. Outside that range, `1e-7` becomes `"1e-7"`,
+`1e21` becomes `"1e+21"` and the smallest positive subnormal becomes `"5e-324"`.
+The integer-backed value `9007199254740993` becomes `"9007199254740992"` only
+when coerced to a string; a value already accepted by a numeric schema stays
+unchanged. String enums are checked against the coerced spelling.
