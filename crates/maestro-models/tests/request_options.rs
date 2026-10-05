@@ -38,6 +38,9 @@ fn observe(model: Model, mut options: StreamOptions) -> ProviderOptions {
 
 fn effective(options: &ProviderOptions) -> EffectiveOptions {
     EffectiveOptions {
+        tool_choice: None,
+        timeout_ms: None,
+        max_retries: None,
         cancellation: options.cancellation.clone(),
         requested_thinking: options.requested_thinking,
         thinking: options.thinking,

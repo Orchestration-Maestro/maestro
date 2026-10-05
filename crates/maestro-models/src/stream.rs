@@ -341,6 +341,30 @@ impl ModelStream {
                 return Some(self.error(Failure::IncompleteStream));
             };
             match update {
+                ProviderUpdate::ToolCallMetadata {
+                    content_index,
+                    id,
+                    name,
+                    replay_metadata,
+                } => {
+                    if !matches!(self.blocks.get(content_index), Some(BlockState::Tool(_))) {
+                        return Some(self.error(Failure::MalformedStream));
+                    }
+                    if let AssistantContent::ToolCall(call) =
+                        &mut self.message.content[content_index]
+                    {
+                        if let Some(id) = id {
+                            call.id = id;
+                        }
+                        if let Some(name) = name {
+                            call.name = name;
+                        }
+                        if let Some(metadata) = replay_metadata {
+                            call.replay_metadata = Some(metadata);
+                        }
+                    }
+                    continue;
+                }
                 ProviderUpdate::Usage { usage } => {
                     match crate::accounting::normalize(usage, self.rates.as_ref()) {
                         Ok(usage) => self.message.usage = usage,

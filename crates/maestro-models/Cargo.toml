@@ -8,3 +8,9 @@ repository.workspace = true
 [dependencies]
 serde_json = { workspace = true }
 jsonschema = { workspace = true }
+
+reqwest = { workspace = true }
+tokio = { workspace = true, features = ["time"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "net", "io-util"] }

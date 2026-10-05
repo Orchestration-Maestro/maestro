@@ -86,3 +86,9 @@ From `docs/specs/2026-10-05-engine-core.md`.
 
 - **Application:** The session operations shared by embedding and frontends. _Avoid_: app.
 - **CLI:** The command-line frontend, including chat, print, JSON and RPC modes.
+
+## Chat transport
+
+- **Chat connection:** A registered chat-completions provider adapter using supplied transport and explicit dialect declarations.
+- **Chat dialect:** Explicit declarations of supported current chat wire fields, independent of provider names and endpoints.
+- **Chat transport:** The replaceable single-attempt HTTP and controlled-time interface used by a chat connection.

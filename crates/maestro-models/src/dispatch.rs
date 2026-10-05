@@ -69,6 +69,9 @@ fn authorized(
     headers: std::collections::BTreeMap<String, String>,
 ) -> ProviderOptions {
     ProviderOptions {
+        tool_choice: effective.tool_choice,
+        timeout_ms: effective.timeout_ms,
+        max_retries: effective.max_retries,
         cancellation: effective.cancellation,
         requested_thinking: effective.requested_thinking,
         thinking: effective.thinking,

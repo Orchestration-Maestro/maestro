@@ -9,6 +9,12 @@ use std::{collections::BTreeMap, future::Future, pin::Pin, sync::Arc};
 /// Authorized inputs for one adapter, without a resolver surface.
 #[derive(Clone)]
 pub struct ProviderOptions {
+    /// Supported tool selection.
+    pub tool_choice: Option<crate::ToolChoice>,
+    /// Per-attempt header timeout; absent resolves to 600000 milliseconds.
+    pub timeout_ms: Option<u64>,
+    /// Additional setup retries; absent resolves to two.
+    pub max_retries: Option<u32>,
     /// Shared local cancellation signal.
     pub cancellation: Cancellation,
     /// Original application-supplied reasoning choice.
@@ -101,6 +107,17 @@ pub enum ProviderUpdate {
         /// Tool name.
         name: String,
         /// Optional opaque replay metadata.
+        replay_metadata: Option<String>,
+    },
+    /// Update metadata on an open tool block without emitting a model event.
+    ToolCallMetadata {
+        /// Stable content-block index.
+        content_index: usize,
+        /// Replacement identifier, when supplied.
+        id: Option<String>,
+        /// Replacement name, when supplied.
+        name: Option<String>,
+        /// Opaque replay data, when supplied.
         replay_metadata: Option<String>,
     },
     /// Append a private JSON fragment without making arguments executable.

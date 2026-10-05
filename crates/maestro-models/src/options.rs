@@ -51,6 +51,8 @@ pub struct RequestCapabilities {
     pub transports: BTreeSet<String>,
     /// Supported supplied cache preference identifiers, treated as opaque data.
     pub cache_preferences: BTreeSet<String>,
+    /// Whether supplied tool choice is accepted.
+    pub tool_choice: bool,
     /// Whether supplied session affinity is accepted.
     pub session_affinity: bool,
 }
@@ -60,6 +62,12 @@ pub struct RequestCapabilities {
 /// cancellation signal; supplied authentication and headers belong to dispatch.
 #[derive(Clone, Default)]
 pub struct StreamOptions {
+    /// Supplied supported tool-selection choice.
+    pub tool_choice: Option<ToolChoice>,
+    /// Per-attempt header timeout; absent leaves resolution to the adapter.
+    pub timeout_ms: Option<u64>,
+    /// Additional setup retries; absent leaves resolution to the adapter.
+    pub max_retries: Option<u32>,
     /// Supplied signal intentionally shared by request clones.
     pub cancellation: Cancellation,
     /// Requested reasoning choice.
@@ -86,6 +94,12 @@ pub struct StreamOptions {
 /// Effort and budget are mutually exclusive. Unsupported preferences are absent.
 #[derive(Clone)]
 pub struct EffectiveOptions {
+    /// Supplied supported tool-selection choice.
+    pub tool_choice: Option<ToolChoice>,
+    /// Per-attempt header timeout; absent leaves resolution to the adapter.
+    pub timeout_ms: Option<u64>,
+    /// Additional setup retries; absent leaves resolution to the adapter.
+    pub max_retries: Option<u32>,
     /// Original signal shared with caller options and stream normalization.
     pub cancellation: Cancellation,
     /// Original application-supplied reasoning choice.
@@ -184,6 +198,9 @@ pub(crate) fn resolve(
         None
     };
     Ok(EffectiveOptions {
+        tool_choice: options.tool_choice.filter(|_| capabilities.tool_choice),
+        timeout_ms: options.timeout_ms,
+        max_retries: options.max_retries,
         cancellation: options.cancellation,
         requested_thinking: options.thinking,
         thinking,
@@ -201,4 +218,20 @@ pub(crate) fn resolve(
             .session_affinity
             .filter(|_| capabilities.session_affinity),
     })
+}
+
+/// Supplied tool-selection request, forwarded only with declared support.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ToolChoice {
+    /// Let the model choose.
+    Auto,
+    /// Disable tool selection.
+    None,
+    /// Require a tool call.
+    Required,
+    /// Select one named function.
+    Function {
+        /// Selected function name.
+        name: String,
+    },
 }

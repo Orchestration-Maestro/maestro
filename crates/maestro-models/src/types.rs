@@ -54,6 +54,21 @@ pub enum StopReason {
 /// Recoverable categories whose display text is fixed and never includes request or adapter secrets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Failure {
+    /// Response headers did not arrive within the attempt deadline.
+    SetupTimeout,
+    /// The upstream request was rate limited.
+    Throttled,
+    /// The upstream service was overloaded.
+    Overloaded,
+    /// Upstream quota or billing prevented the request.
+    QuotaExceeded,
+    /// The supplied context exceeded an explicit upstream limit.
+    ContextOverflow,
+    /// Unclassified unsuccessful HTTP status.
+    HttpStatus {
+        /// Status number only; no upstream text is retained.
+        status: u16,
+    },
     /// No registration has the requested provider identifier.
     UnknownProvider,
     /// The provider has no registration for the requested model identity.
@@ -90,6 +105,12 @@ pub enum Failure {
 impl std::fmt::Display for Failure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
+            Self::SetupTimeout => "provider response-header timeout",
+            Self::Throttled => "provider request throttled",
+            Self::Overloaded => "provider service overloaded",
+            Self::QuotaExceeded => "provider quota exceeded",
+            Self::ContextOverflow => "provider context limit exceeded",
+            Self::HttpStatus { .. } => "provider HTTP status failure",
             Self::UnknownProvider => "unknown provider: register a provider before invoking it",
             Self::UnknownModel => "unknown model: register the requested model identity",
             Self::UnsupportedOperation => "unsupported operation or protocol",

@@ -15,6 +15,7 @@
 #![doc = include_str!("../../../docs/local-model-catalogs.md")]
 #![doc = include_str!("../../../docs/request-authentication.md")]
 #![doc = include_str!("../../../docs/conversation-projection.md")]
+#![doc = include_str!("../../../docs/chat-connection.md")]
 
 mod accounting;
 mod auth;
@@ -47,7 +48,7 @@ pub use content::{
 pub use conversation::{Context, Message, ToolDeclaration, ToolResultMessage, UserMessage};
 pub use events::ModelEvent;
 pub use options::{
-    EffectiveOptions, RequestCapabilities, StreamOptions, ThinkingLevel, ThinkingMode,
+    EffectiveOptions, RequestCapabilities, StreamOptions, ThinkingLevel, ThinkingMode, ToolChoice,
 };
 pub use projection::project_context;
 pub use provider::{
@@ -58,3 +59,27 @@ pub use scripted::{Script, ScriptFactory, ScriptStep, ScriptedCall, ScriptedProv
 pub use stream::ModelStream;
 pub use types::{AssistantMessage, Failure, Model, ModelIdentity, StopReason};
 pub use validation::{ToolValidationError, validate_tool_call};
+
+mod chat;
+mod chat_dialect;
+mod chat_transport;
+pub use chat::ChatConnection;
+pub use chat_dialect::{ChatCacheControl, ChatDialect, ChatOutputField, ChatThinkingFormat};
+pub use chat_transport::{ChatHttpBody, ChatHttpRequest, ChatHttpResponse, ChatTransport};
+
+mod chat_request;
+
+mod chat_replay;
+
+mod chat_json;
+
+mod chat_decode;
+
+mod chat_sse;
+
+mod chat_failure;
+
+mod chat_retry;
+
+mod http_transport;
+pub use http_transport::NativeHttpTransport;

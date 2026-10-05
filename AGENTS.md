@@ -93,3 +93,9 @@ Matt Pocock's five default triage labels. See `docs/agents/triage-labels.md`.
 
 Single-context, with the glossary in `CONTEXT.md` and ADRs in `docs/adr/`.
 See `docs/agents/domain.md`.
+
+Owner-approved chat HTTP transport: reqwest 0.13.5 with its full default
+features (rustls on aws-lc-rs, operating-system certificate roots, HTTP/2,
+system proxy and charset). Preserve these defaults; do not substitute a TLS
+backend or disable proxy-environment behavior. Tokio supplies asynchronous
+I/O and time; reusable model operations never create a runtime.
