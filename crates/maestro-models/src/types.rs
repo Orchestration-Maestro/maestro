@@ -1,6 +1,6 @@
 //! Owned requests, response records and secret-safe outcomes.
 
-use crate::{AssistantContent, RequestCapabilities};
+use crate::{AssistantContent, RequestCapabilities, TokenRates, Usage};
 
 /// The complete dispatch key; all three identifiers are opaque data.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -14,10 +14,12 @@ pub struct ModelIdentity {
 }
 
 /// Explicit model reference supplied at registration and invocation.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq)]
 pub struct Model {
     /// Complete dispatch identity.
     pub identity: ModelIdentity,
+    /// Optional supplied flat catalog prices; absent prices are not explicit zero prices.
+    pub rates: Option<TokenRates>,
     /// Adapter protocol identifier.
     pub protocol: String,
     /// Captured registered request behavior, not inferred from identity.
@@ -26,21 +28,6 @@ pub struct Model {
     pub headers: std::collections::BTreeMap<String, String>,
     /// Supplied input capabilities; `image` enables image retention.
     pub input: Vec<String>,
-}
-
-/// Reported flat token counters, not estimates inferred from text. Initial zeros mean unreported usage.
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct Usage {
-    /// Reported input tokens.
-    pub input: u64,
-    /// Reported output tokens.
-    pub output: u64,
-    /// Reported cache-read tokens.
-    pub cache_read: u64,
-    /// Reported cache-write tokens.
-    pub cache_write: u64,
-    /// Reported total tokens.
-    pub total_tokens: u64,
 }
 
 /// The five terminal outcomes of a chat response.
@@ -75,7 +62,8 @@ pub enum Failure {
     IncompleteStream,
     /// The adapter could not set up or continue the request.
     AdapterFailed,
-    /// Invalid block updates or completed tool JSON.
+    /// Invalid block updates, completed tool JSON or accounting arithmetic.
+    /// Unrepresentable token totals, invalid rates and non-finite estimates retain prior valid state.
     MalformedStream,
     /// Transport lost during a request.
     Transport,
@@ -112,7 +100,7 @@ impl std::fmt::Display for Failure {
 impl std::error::Error for Failure {}
 
 /// An independent owned response-so-far, or the final successful/failed assistant record.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AssistantMessage {
     /// Requested provider identifier.
     pub provider: String,
@@ -124,7 +112,7 @@ pub struct AssistantMessage {
     pub timestamp: u64,
     /// Cumulative independent content blocks.
     pub content: Vec<AssistantContent>,
-    /// Reported usage; zero counters initially mean unreported usage.
+    /// Owned per-attempt accounting; initially unreported and unpriced.
     pub usage: Usage,
     /// Absent in partial snapshots; present in terminal records.
     pub stop_reason: Option<StopReason>,
@@ -141,6 +129,7 @@ impl std::fmt::Debug for Model {
         f.debug_struct("Model")
             .field("identity", &self.identity)
             .field("protocol", &self.protocol)
+            .field("rates", &self.rates)
             .field("headers", &crate::provider::RedactedHeaders(&self.headers))
             .finish()
     }

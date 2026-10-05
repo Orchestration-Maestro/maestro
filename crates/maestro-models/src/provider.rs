@@ -45,7 +45,7 @@ pub struct ProviderDescription {
 }
 
 /// Indexed source updates normalized into owned caller events.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ProviderUpdate {
     /// Open an empty text block.
     TextStart {
@@ -115,9 +115,13 @@ pub enum ProviderUpdate {
         /// Stable content-block index.
         content_index: usize,
     },
-    /// Replace explicitly reported usage without estimation.
+    /// Replace one attempt's flat report with authoritative non-overlapping categories.
+    /// Input excludes cache reads/writes; cache reads exclude current writes; output includes reasoning.
+    /// Adapters own raw overlap subtraction and assemble complete snapshots, not deltas.
+    /// The normalizer ignores supplied totals, reporting flags and costs, derives them from
+    /// captured catalog rates, and rejects invalid arithmetic without replacing prior state.
     Usage {
-        /// Explicit reported usage snapshot, replacing the previous counters.
+        /// Explicit reported category snapshot, replacing the previous counters.
         usage: Usage,
     },
     /// Update actual response identity independently of requested identity.

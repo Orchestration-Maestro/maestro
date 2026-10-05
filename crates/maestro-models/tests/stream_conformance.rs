@@ -13,6 +13,7 @@ fn empty_success_has_exact_start_and_done() {
         },
         protocol: "script".into(),
         capabilities: RequestCapabilities::default(),
+        rates: None,
         headers: Default::default(),
         input: vec!["text".into()],
     };
@@ -361,7 +362,9 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
     let mut updates = text(0, "early");
     updates.pop();
     updates.extend([
-        ProviderUpdate::Usage { usage: usage() },
+        ProviderUpdate::Usage {
+            usage: flat_usage(),
+        },
         ProviderUpdate::ResponseIdentity {
             response_model: Some("actual-a".into()),
             response_id: Some("id-a".into()),
@@ -405,7 +408,8 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
         },
         done(),
     ]);
-    let (models, _) = fixture(updates);
+    let fake = Arc::new(ScriptedProvider::new(vec![steps(updates)]));
+    let models = priced_registry(fake);
     let mut stream = models.stream(model(), context(), support::auth::local());
     let mut retained = vec![];
     for _ in 0..9 {
@@ -433,7 +437,20 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
         })
     );
     assert_eq!(snapshot(&retained[2]).usage, Usage::default());
-    assert_eq!(snapshot(&retained[3]).usage, usage());
+    assert_accounting(
+        &snapshot(&retained[3]).usage,
+        &Usage {
+            cost: UsageCost {
+                input: 0.000022,
+                output: 0.000056,
+                cache_read: 0.000003,
+                cache_write: 0.000008,
+                total: 0.000089,
+                priced: true,
+            },
+            ..usage()
+        },
+    );
     assert_eq!(
         snapshot(&retained[3]).response_model.as_deref(),
         Some("actual-a")
@@ -456,6 +473,7 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
     call.id = "mutated".into();
     let mut object = call.arguments().unwrap().clone();
     object.get_mut("nested").unwrap()["items"][0] = serde_json::json!(999);
+    cloned.usage.cost.total = 999.0;
     assert_eq!(retained[7], frozen[7]);
     let AssistantContent::ToolCall(original) = &snapshot(&retained[7]).content[2] else {
         panic!("tool")
@@ -469,6 +487,22 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
         Some("actual-b")
     );
     assert_eq!(terminal(&retained).usage.output, 99);
+    assert_accounting(
+        &terminal(&retained).usage,
+        &Usage {
+            output: 99,
+            total_tokens: 115,
+            cost: UsageCost {
+                input: 0.000022,
+                output: 0.000792,
+                cache_read: 0.000003,
+                cache_write: 0.000008,
+                total: 0.000825,
+                priced: true,
+            },
+            ..usage()
+        },
+    );
 }
 
 #[test]
@@ -498,7 +532,9 @@ fn setup_and_transport_failures_preserve_the_normal_error_contract() {
             content_index: 0,
             delta: "partial".into(),
         },
-        ProviderUpdate::Usage { usage: usage() },
+        ProviderUpdate::Usage {
+            usage: flat_usage(),
+        },
         ProviderUpdate::ResponseIdentity {
             response_model: Some("actual".into()),
             response_id: Some("response".into()),
@@ -685,7 +721,9 @@ fn eof_without_terminal_is_incomplete_not_success() {
     use support::conformance::*;
     for updates in [
         vec![],
-        vec![ProviderUpdate::Usage { usage: usage() }],
+        vec![ProviderUpdate::Usage {
+            usage: flat_usage(),
+        }],
         vec![
             ProviderUpdate::TextStart { content_index: 0 },
             ProviderUpdate::TextDelta {
@@ -776,7 +814,9 @@ fn reported_usage_and_response_identity_survive_failure() {
                 content_index: 1,
                 replay_metadata: None,
             },
-            ProviderUpdate::Usage { usage: usage() },
+            ProviderUpdate::Usage {
+                usage: flat_usage(),
+            },
             ProviderUpdate::ResponseIdentity {
                 response_model: Some("actual".into()),
                 response_id: Some("id".into()),

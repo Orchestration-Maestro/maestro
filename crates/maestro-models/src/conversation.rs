@@ -29,7 +29,7 @@ pub struct ToolResultMessage {
 }
 
 /// Exactly the three conversation record families; instructions remain separate.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Message {
     /// User input.
     User(UserMessage),
@@ -51,7 +51,7 @@ pub struct ToolDeclaration {
 }
 
 /// Current instructions and declarations, separate from supplied history.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Context {
     /// Separate optional current system prompt.
     pub system_prompt: Option<String>,

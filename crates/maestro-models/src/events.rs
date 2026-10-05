@@ -3,7 +3,7 @@
 use crate::{AssistantMessage, StopReason, ToolCall};
 
 /// Owned content events with one terminal outcome and immutable retained snapshots.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ModelEvent {
     /// The first valid non-failure update, before content events.
     Start {

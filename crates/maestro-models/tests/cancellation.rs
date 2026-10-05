@@ -95,12 +95,14 @@ fn blocked_read_cancellation_wakes_and_drops_without_retry() {
         ],
     ] {
         let gate = Gate::default();
-        let mut actions = vec![ScriptStep::Update(ProviderUpdate::Usage { usage: usage() })];
+        let mut actions = vec![ScriptStep::Update(ProviderUpdate::Usage {
+            usage: accounting_report(),
+        })];
         actions.extend(partial.iter().cloned().map(ScriptStep::Update));
         actions.push(ScriptStep::Wait(gate.wait()));
         actions.push(ScriptStep::Update(done()));
         let fake = Arc::new(ScriptedProvider::new(vec![Script::Steps(actions)]));
-        let models = registry(fake.clone());
+        let models = priced_registry(fake.clone());
         let options = support::auth::local();
         let mut stream = models.stream(model(), context(), options.clone());
         let mut events = Vec::new();
@@ -126,7 +128,7 @@ fn blocked_read_cancellation_wakes_and_drops_without_retry() {
         assert_contract(&events, &model(), 73);
         assert_eq!(terminal(&events).failure, Some(Failure::Cancelled));
         assert_eq!(terminal(&events).content, before);
-        assert_eq!(terminal(&events).usage, usage());
+        assert_accounting(&terminal(&events).usage, &expected_accounting());
         if let Some(AssistantContent::ToolCall(call)) = before.first() {
             assert!(call.arguments().is_none());
         }

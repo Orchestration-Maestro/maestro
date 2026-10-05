@@ -32,6 +32,7 @@ async fn scripted_text() -> Result<(), Failure> {
         },
         protocol: "scripted/chat".into(),
         capabilities: RequestCapabilities::default(),
+        rates: None,
         headers: Default::default(),
         input: vec!["text".into()],
     };
@@ -103,8 +104,8 @@ Every event owns cumulative content, nested tool arguments, usage and identity.
 Retaining or modifying an owned clone cannot rewrite other events. Requested
 provider/protocol/model and the injected clock's one invocation sample remain
 unchanged. Optional actual response model/ID remain separate. Explicit Usage
-updates replace counters without estimation, normalization or pricing; initial
-zero counters mean unreported usage, not measured zero consumption.
+updates replace non-overlapping counters; the normalizer derives totals and flat
+catalog-rate estimates. Initial zeros remain unreported, not measured zero consumption.
 
 `complete` drains exactly one invocation of the same stream and returns its
 terminal record. Registering another implementation of `Provider` and
@@ -200,3 +201,93 @@ without a terminal update is IncompleteStream, including an empty source or
 closed content lacking Done. Metadata-only updates require no invented content
 event. After one terminal delivery the source is dropped and `next()` permanently
 returns None; later source updates are never polled.
+
+## Flat reported usage and cost estimates
+
+Each attempt starts with `Usage::default()`: zero counters/costs, `reported = false`
+and `cost.priced = false`, even with catalog rates. Content length and thinking
+never fabricate a measurement. Each explicit report replaces the previous four
+categories, including explicit all-zero reports (`reported = true`).
+
+Adapters supply non-overlapping categories: input excludes both cache categories,
+cache reads exclude current cache writes, and output already includes reasoning.
+Raw inclusive-prompt/combined-cache subtraction belongs to the adapter. The shared
+normalizer ignores adapter totals, flags and monetary values, derives the category
+sum and applies captured registered rates in USD per million tokens. Invocation
+rate metadata and actual response identity do not change those prices.
+
+```rust
+use maestro_models::*;
+use std::sync::Arc;
+
+async fn flat_accounting() -> Result<(), Failure> {
+    let model = Model {
+        identity: ModelIdentity {
+            provider: "scripted:accounting".into(), model: "flat/chat".into(),
+            operation: "chat".into(),
+        },
+        protocol: "scripted/chat".into(),
+        capabilities: RequestCapabilities::default(),
+        input: vec!["text".into()],
+        rates: Some(TokenRates { input: 2.0, output: 8.0, cache_read: 1.0, cache_write: 4.0 }),
+        headers: Default::default(),
+    };
+    let fake = Arc::new(ScriptedProvider::new(vec![Script::Steps(vec![
+        ScriptStep::Update(ProviderUpdate::TextStart { content_index: 0 }),
+        ScriptStep::Update(ProviderUpdate::TextEnd { content_index: 0, replay_metadata: None }),
+        ScriptStep::Update(ProviderUpdate::Usage {
+            usage: Usage {
+                input: 1_000_000, output: 500_000, cache_read: 250_000,
+                cache_write: 125_000, total_tokens: 99, ..Usage::default()
+            },
+        }),
+        ScriptStep::Update(ProviderUpdate::Done { reason: StopReason::Stop }),
+    ])]));
+    let mut models = Models::new(Arc::new(|| 73));
+    models.register(model.clone(), fake)?;
+    let context = Context { system_prompt: None, messages: vec![], tools: vec![] };
+    let options = StreamOptions {
+        auth: Some(RequestAuth::ConfiguredWithoutSecret { source: None }),
+        ..Default::default()
+    };
+    let mut stream = models.stream(model, context, options);
+    while let Some(event) = stream.next().await {
+        match event {
+            ModelEvent::Start { partial } => assert_eq!(partial.usage, Usage::default()),
+            ModelEvent::Done { message, .. } => {
+                assert_eq!(message.usage.total_tokens, 1_875_000);
+                assert!(message.usage.reported && message.usage.cost.priced);
+                assert!((message.usage.cost.total - 6.75).abs() <= 1e-12);
+            },
+            ModelEvent::Error { error, .. } => return Err(error.failure.unwrap()),
+            _ => {},
+        }
+    }
+    let absent = Model {
+        identity: ModelIdentity { provider: "local".into(), model: "unpriced".into(), operation: "chat".into() },
+        protocol: "local/chat".into(), rates: None, headers: Default::default(),
+        capabilities: RequestCapabilities::default(), input: vec!["text".into()],
+    };
+    let explicit_zero = Model { rates: Some(TokenRates::default()), ..absent.clone() };
+    assert!(absent.rates.is_none());
+    assert_eq!(explicit_zero.rates, Some(TokenRates::default()));
+    Ok(())
+}
+```
+
+The four category estimates here are USD 2, 4, 0.25 and 0.5, summing to USD 6.75
+without intermediate rounding. Each estimate uses `(rate / 1_000_000) * tokens`.
+Absent rates produce zero arithmetic with `priced = false`; explicitly supplied
+zero rates produce zero arithmetic with `priced = true` after a report. These are
+estimates, not provider bills, balances or proof of free access. Floating-point
+representation and incomplete provider reports limit their precision/completeness.
+No tier, separate reasoning price, tool-result accounting or spending aggregation
+is implied; separate operations retain separate accounting.
+
+Checked token addition, finite nonnegative rates and finite category/total costs
+are required when processing a report. Invalid arithmetic produces
+`Failure::MalformedStream` and atomically preserves prior valid content/accounting.
+Accepted usage, requested/actual identity and estimates survive transport errors,
+EOF failures and cancellation. Earlier owned snapshots remain unchanged; later
+attempts start unreported again. `complete` drains the same accounting stream.
+EOF or cancellation does not turn a partial estimate into a successful bill.

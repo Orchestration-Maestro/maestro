@@ -16,6 +16,9 @@ From `docs/specs/2026-10-04-models.md`.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
 - **Token exchange:** An optional provider primitive invoked by the credential owner, not coordination of credential persistence, precedence or refresh.
+- **Reported usage:** Provider-supplied, non-overlapping token categories for one attempt.
+- **Flat rate:** A supplied USD-per-million price for one token category.
+- **Cost estimate:** Arithmetic using reported categories and supplied rates, not a bill or balance.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.

@@ -30,6 +30,7 @@ let mut model = Model {
     },
     protocol: "declared-chat".into(),
     capabilities: RequestCapabilities { reasoning: true, ..Default::default() },
+    rates: None,
     headers: Default::default(),
     input: vec!["text".into()],
 };
@@ -87,6 +88,7 @@ fn resolve(ceiling: i64, mode: ThinkingMode, output: Option<u64>) -> Result<Effe
             reasoning: true, output_limit: ceiling, thinking_mode: mode,
             ..Default::default()
         },
+        rates: None,
         headers: Default::default(),
     input: vec!["text".into()],
     };
@@ -141,6 +143,7 @@ async fn inspect_request() -> Result<(), Failure> {
             transports: ["sse".into()].into(),
             ..Default::default()
         },
+        rates: None,
         headers: Default::default(),
     input: vec!["text".into()],
     };

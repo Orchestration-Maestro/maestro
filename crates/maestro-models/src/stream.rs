@@ -2,7 +2,7 @@
 
 use crate::{
     AssistantContent, AssistantMessage, Cancellation, Failure, Model, ModelEvent, ProviderStream,
-    ProviderUpdate, StopReason, TextContent, ThinkingContent, ToolCall, Usage,
+    ProviderUpdate, StopReason, TextContent, ThinkingContent, TokenRates, ToolCall, Usage,
 };
 
 /// One request's normalization state and owned adapter source.
@@ -16,6 +16,7 @@ pub struct ModelStream {
     terminal: bool,
     cancellation: Cancellation,
     blocks: Vec<BlockState>,
+    rates: Option<TokenRates>,
 }
 
 enum BlockState {
@@ -31,6 +32,7 @@ impl ModelStream {
         timestamp: u64,
         source: Result<Box<dyn ProviderStream>, Failure>,
         cancellation: Cancellation,
+        rates: Option<TokenRates>,
     ) -> Self {
         let (source, failure) = match source {
             Ok(source) => (Some(source), None),
@@ -45,6 +47,7 @@ impl ModelStream {
             terminal: false,
             cancellation,
             blocks: Vec::new(),
+            rates,
             message: AssistantMessage {
                 provider: model.identity.provider,
                 protocol: model.protocol,
@@ -286,6 +289,8 @@ impl ModelStream {
     /// Obtain one independent owned event, or None permanently after termination.
     /// Cancellation wins observable readiness ties, wakes blocked reads and drops
     /// the source. Failures retain valid partial content, reported usage and identity.
+    /// Explicit usage snapshots replace accounting atomically after checked totals and pricing.
+    /// Invalid arithmetic retains the previous accepted report with MalformedStream.
     /// Success requires balanced blocks and an explicit successful Done update.
     pub async fn next(&mut self) -> Option<ModelEvent> {
         if self.terminal {
@@ -337,7 +342,10 @@ impl ModelStream {
             };
             match update {
                 ProviderUpdate::Usage { usage } => {
-                    self.message.usage = usage;
+                    match crate::accounting::normalize(usage, self.rates.as_ref()) {
+                        Ok(usage) => self.message.usage = usage,
+                        Err(failure) => return Some(self.error(failure)),
+                    }
                     continue;
                 }
                 ProviderUpdate::ResponseIdentity {

@@ -102,8 +102,13 @@ impl Models {
     /// Projects once before dispatch without changing caller history.
     /// Samples the clock once; normalization retains the same cancellation signal.
     /// Resolution failures become terminal errors without invoking an adapter.
+    /// Captures registered rates once; invocation metadata never overrides catalog prices.
     pub fn stream(&self, model: Model, context: Context, options: StreamOptions) -> ModelStream {
         let timestamp = (self.clock)();
+        let rates = self
+            .registrations
+            .get(&model.identity)
+            .and_then(|(registered, _)| registered.rates.clone());
         let source = self
             .registration(&model, &options)
             .and_then(|(registered, provider)| {
@@ -145,7 +150,7 @@ impl Models {
                     )
                 }
             });
-        ModelStream::new(model, timestamp, source, options.cancellation)
+        ModelStream::new(model, timestamp, source, options.cancellation, rates)
     }
 
     /// Drain exactly one call to stream and return its terminal assistant record.
