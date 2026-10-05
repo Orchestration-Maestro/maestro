@@ -6,6 +6,8 @@ use std::process::Command;
 
 use serde_json::Value;
 
+mod comments;
+
 /// Checks names, membership and internal dependency boundaries using Cargo metadata.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     let metadata = metadata(root)?;
@@ -63,7 +65,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     for name in graph.keys() {
         check_cycles(name, &graph, &mut Vec::new(), &mut visited)?;
     }
-    Ok(())
+    comments::check(&metadata)
 }
 
 // Use manifest paths rather than dependency names: Cargo dependencies can be renamed.

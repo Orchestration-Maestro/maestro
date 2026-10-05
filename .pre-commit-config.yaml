@@ -1,0 +1,31 @@
+minimum_prek_version: '0.5.0'
+default_stages: [pre-commit, pre-merge-commit]
+default_install_hook_types: [pre-commit, pre-merge-commit, commit-msg]
+repos:
+  - repo: builtin
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+  - repo: local
+    hooks:
+      - id: workspace-check
+        name: Workspace checks
+        language: system
+        entry: just check
+        pass_filenames: false
+        always_run: true
+      - id: conventional-commit-header
+        name: Commit message opens with a conventional header
+        language: pygrep
+        entry: '\A(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: [a-z][^\n]{0,70}\n'
+        args: [--negate, --multiline]
+        stages: [commit-msg]
+      - id: eighty-columns
+        name: Commit message lines stay within 80 columns
+        language: pygrep
+        entry: '^.{81,}$'
+        stages: [commit-msg]
