@@ -36,8 +36,18 @@ fn adapters_share_current_format_reads_and_preservation() {
             assert_eq!(current["selected"]["unknown"], serde_json::json!([1, true]));
             assert_eq!(current["alien"]["payload"], serde_json::json!({"a":2}));
             assert_eq!(current["external"], 123);
+            let mut externally_edited = current.clone();
+            externally_edited["other-provider"] =
+                serde_json::json!({"type":"api_key", "key":"external-key"});
+            externally_edited["external"] = serde_json::json!({"nested":[null, 42, "kept"]});
+            replace(backing.as_ref(), &externally_edited.to_string());
             credentials.remove("new", &Cancellation::new()).unwrap();
             assert!(!credentials.list().contains(&"new".into()));
+            let removed: serde_json::Value =
+                serde_json::from_str(&bytes(backing.as_ref())).unwrap();
+            assert!(removed.get("new").is_none());
+            externally_edited.as_object_mut().unwrap().remove("new");
+            assert_eq!(removed, externally_edited);
         } else {
             assert_eq!(result, Err(CredentialError::ReadOnly));
             assert_eq!(

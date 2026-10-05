@@ -20,7 +20,8 @@ File operations lock an independent handle using native exclusive locks over
 stable file identity. Full read/parse/change/write happens under ownership, with
 10 attempts: the first immediate, at most nine 20-ms waits after contention.
 No locked file is renamed or lock state unlinked. New files are created with
-0600 and new parent directories with 0700 where supported; existing directories
+0600 and new parent directories with 0700 where supported. Every replacement
+restricts the owned file to 0600 on Unix before writing; existing directories
 are not recursively chmodded. Missing stores start empty; only an exclusively
 created file may initialize its empty bytes to `{}` under its acquired guard.
 An existing empty file is malformed.
@@ -96,6 +97,10 @@ escape grammar. Otherwise a nonempty environment variable whose name equals the
 whole value wins, then the unchanged literal. Empty final values are unavailable.
 
 Helpers close stdin, capture stdout, discard stderr and time out after 10,000 ms.
+The deadline includes stdout EOF, even after a successful shell exit. At timeout,
+the direct child is killed and reaped without joining a blocked stdout reader;
+descendants holding stdout open cannot delay resolution until pipe EOF. Partial
+output at the deadline is unavailable, not a secret.
 Trim surrounding stdout whitespace, preserving interior newlines. Empty output,
 nonzero exit, spawn/UTF-8 failure and timeout resolve unavailable without exposing
 command text or diagnostics. Success and unresolved failure are process-cached by
@@ -115,9 +120,10 @@ waiting, wins readiness ties and prevents model dispatch. A cancelled storage
 waiter never admits its callback or releases another operation's guard; an
 already admitted write keeps ownership until it settles. Cancellation is not
 rollback. Cancelling one helper waiter does not cancel unrelated same-key waiters
-or cache cancellation as helper failure. Owned native work retains cleanup/reap
-responsibility; stopping local waiting does not undo arbitrary helper effects or
-contain descendants.
+or cache cancellation as helper failure. Owned native work retains direct-child cleanup/reap responsibility; detached
+stdout readers may remain blocked until descendants close inherited pipes.
+Stopping local waiting does not undo arbitrary helper effects or contain
+descendants.
 
 `CredentialError` has fixed secret-safe categories: `Cancelled`, `ReadOnly`,
 `Contended`, `Malformed`, `Storage`, `InvalidPath`, with no external error source.

@@ -383,3 +383,20 @@ fn cancelled_helper_waiter_does_not_cancel_other_waiters() {
     assert_eq!(runtime.commands.lock().unwrap().len(), 1);
     assert_eq!(runtime.finishes.load(Ordering::SeqCst), 1);
 }
+
+#[cfg(unix)]
+#[test]
+fn exited_helper_with_inherited_stdout_times_out_without_partial_output() {
+    let runtime = NativeRuntime {
+        origin: Instant::now(),
+    };
+    let started = Instant::now();
+    let result = helper_with_timeout(
+        &runtime,
+        "sleep 2 & printf token",
+        &std::env::temp_dir(),
+        Duration::from_millis(100),
+    );
+    assert!(result.is_none(), "stdout without EOF must be unavailable");
+    assert!(started.elapsed() < Duration::from_millis(500));
+}

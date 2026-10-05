@@ -207,6 +207,7 @@ impl AuthResolver for Credentials {
             let storage = self.storage.clone();
             let signal = cancellation.clone();
             let data = Work::start(move || read(storage.as_ref(), &signal))
+                .map_err(failure)?
                 .wait(cancellation.clone())
                 .await
                 .map_err(failure)?;

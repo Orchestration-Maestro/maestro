@@ -15,18 +15,23 @@ struct State<T> {
 }
 pub(crate) struct Work<T> {
     state: Arc<Mutex<State<T>>>,
-    handle: Option<JoinHandle<()>>,
 }
 impl<T: Clone + Send + 'static> Work<T> {
     pub(crate) fn start(
         run: impl FnOnce() -> Result<T, CredentialError> + Send + 'static,
-    ) -> Arc<Self> {
+    ) -> Result<Arc<Self>, CredentialError> {
+        Self::start_with_launcher(run, |work| std::thread::Builder::new().spawn(work))
+    }
+    fn start_with_launcher(
+        run: impl FnOnce() -> Result<T, CredentialError> + Send + 'static,
+        launch: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<JoinHandle<()>>,
+    ) -> Result<Arc<Self>, CredentialError> {
         let state = Arc::new(Mutex::new(State {
             result: None,
             waiters: vec![],
         }));
         let owned = state.clone();
-        let handle = std::thread::spawn(move || {
+        launch(Box::new(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
                 .unwrap_or(Err(CredentialError::Storage));
             let waiters = {
@@ -37,11 +42,9 @@ impl<T: Clone + Send + 'static> Work<T> {
             for (_, waker) in waiters {
                 waker.wake();
             }
-        });
-        Arc::new(Self {
-            state,
-            handle: Some(handle),
-        })
+        }))
+        .map_err(|_| CredentialError::Storage)?;
+        Ok(Arc::new(Self { state }))
     }
     pub(crate) async fn wait(&self, cancellation: Cancellation) -> Result<T, CredentialError> {
         let mut waiter = Waiter {
@@ -49,16 +52,6 @@ impl<T: Clone + Send + 'static> Work<T> {
             id: Arc::new(()),
         };
         cancellable(&cancellation, poll_fn(|cx| waiter.poll(cx))).await
-    }
-}
-impl<T> Drop for Work<T> {
-    fn drop(&mut self) {
-        if let Some(handle) = self.handle.take() {
-            // Reaping remains owned without blocking a dropped resolver future.
-            std::thread::spawn(move || {
-                let _ = handle.join();
-            });
-        }
     }
 }
 struct Waiter<'a, T> {
@@ -120,4 +113,34 @@ pub(crate) async fn cancellable<T>(
         }
     })
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{CredentialStorage, MemoryCredentialStorage};
+    use maestro_models::SecretString;
+
+    #[test]
+    fn failed_worker_launch_returns_storage_error_without_changing_store() {
+        let storage = Arc::new(MemoryCredentialStorage::new(Some(SecretString::new(
+            "{}".into(),
+        ))));
+        let owned = storage.clone();
+        let result = Work::start_with_launcher(
+            move || {
+                owned.transact(&Cancellation::new(), &mut |_| {
+                    Ok(Some(SecretString::new("changed".into())))
+                })
+            },
+            |_| Err(std::io::Error::other("LAUNCH_SECRET_SENTINEL")),
+        );
+        assert!(matches!(result, Err(CredentialError::Storage)));
+        storage
+            .transact(&Cancellation::new(), &mut |current| {
+                assert_eq!(current.unwrap().expose(), "{}");
+                Ok(None)
+            })
+            .unwrap();
+    }
 }

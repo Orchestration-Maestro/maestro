@@ -328,3 +328,30 @@ fn native_helpers_are_lazy_private_and_directory_bound() {
         assert!(!stderr.contains(sentinel));
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn updating_existing_file_restricts_permissions_and_replaces_contents() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = Scratch::new();
+    let path = scratch.0.join("credentials.json");
+    std::fs::write(&path, r#"{"chosen":{"type":"api_key","key":"old"}}"#).unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+    let credentials = owner(Arc::new(FileCredentialStorage::new(path.clone()).unwrap()));
+    credentials
+        .set(
+            "chosen",
+            Credential::ApiKey {
+                value: secret("new"),
+            },
+            &Cancellation::new(),
+        )
+        .unwrap();
+    let current: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    assert_eq!(current["chosen"]["key"], "new");
+    assert_eq!(
+        std::fs::metadata(path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+}

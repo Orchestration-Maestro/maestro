@@ -26,7 +26,8 @@ pub trait SecretResolver: Send + Sync {
 }
 
 /// Native secret access bound to one explicitly supplied helper directory.
-/// Helpers capture output, discard diagnostics and retain cleanup ownership.
+/// Helpers capture stdout, discard stderr and retain direct-child cleanup ownership.
+/// The 10,000-ms deadline includes stdout EOF; inherited open pipes yield no value.
 pub struct NativeSecretResolver {
     working_directory: PathBuf,
     runtime: Arc<dyn HelperRuntime>,
@@ -66,15 +67,18 @@ impl SecretResolver for NativeSecretResolver {
                 let key = (self.working_directory.clone(), value.expose().to_owned());
                 let work = {
                     let mut cache = cache().lock().unwrap_or_else(|p| p.into_inner());
-                    cache
-                        .entry(key)
-                        .or_insert_with(|| {
-                            let runtime = self.runtime.clone();
-                            let directory = self.working_directory.clone();
-                            let command = command.to_owned();
-                            Work::start(move || Ok(helper(runtime.as_ref(), &command, &directory)))
-                        })
-                        .clone()
+                    if let Some(work) = cache.get(&key) {
+                        work.clone()
+                    } else {
+                        let runtime = self.runtime.clone();
+                        let directory = self.working_directory.clone();
+                        let command = command.to_owned();
+                        let work = Work::start(move || {
+                            Ok(helper(runtime.as_ref(), &command, &directory))
+                        })?;
+                        cache.insert(key, work.clone());
+                        work
+                    }
                 };
                 work.wait(cancellation).await
             } else {
@@ -109,20 +113,29 @@ trait HelperRuntime: Send + Sync {
     fn wait(&self, duration: Duration);
 }
 fn helper(runtime: &dyn HelperRuntime, command: &str, directory: &Path) -> Option<SecretString> {
+    helper_with_timeout(runtime, command, directory, Duration::from_millis(10_000))
+}
+fn helper_with_timeout(
+    runtime: &dyn HelperRuntime,
+    command: &str,
+    directory: &Path,
+    timeout: Duration,
+) -> Option<SecretString> {
     let started = runtime.now();
     let mut process = runtime.spawn(command, directory).ok()?;
     loop {
         let elapsed = runtime.now().saturating_sub(started);
-        if elapsed >= Duration::from_millis(10_000) {
+        if elapsed >= timeout {
             process.finish(true);
             return None;
         }
         match process.status() {
             Ok(Some(success)) => {
-                let output = process.finish(false)?;
                 if !success {
+                    process.finish(true);
                     return None;
                 }
+                let output = process.finish(false)?;
                 let output = String::from_utf8(output).ok()?;
                 let output = output.trim();
                 return (!output.is_empty()).then(|| SecretString::new(output.into()));
@@ -131,9 +144,7 @@ fn helper(runtime: &dyn HelperRuntime, command: &str, directory: &Path) -> Optio
                 process.finish(true);
                 return None;
             }
-            Ok(None) => {
-                runtime.wait(Duration::from_millis(20).min(Duration::from_millis(10_000) - elapsed))
-            }
+            Ok(None) => runtime.wait(Duration::from_millis(20).min(timeout - elapsed)),
         }
     }
 }
@@ -162,29 +173,21 @@ impl HelperRuntime for NativeRuntime {
             .current_dir(directory)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::null())
             .spawn()
             .map_err(|_| ())?;
         let stdout = child.stdout.take();
-        let stderr = child.stderr.take();
         let mut process = NativeProcess {
             child: Some(child),
             stdout: None,
-            stderr: None,
         };
         let mut stdout = stdout.ok_or(())?;
-        let mut stderr = stderr.ok_or(())?;
         process.stdout = Some(
             std::thread::Builder::new()
                 .spawn(move || {
                     let mut bytes = vec![];
                     stdout.read_to_end(&mut bytes).map(|_| bytes)
                 })
-                .map_err(|_| ())?,
-        );
-        process.stderr = Some(
-            std::thread::Builder::new()
-                .spawn(move || std::io::copy(&mut stderr, &mut std::io::sink()))
                 .map_err(|_| ())?,
         );
         Ok(Box::new(process))
@@ -199,28 +202,22 @@ impl HelperRuntime for NativeRuntime {
 struct NativeProcess {
     child: Option<Child>,
     stdout: Option<JoinHandle<std::io::Result<Vec<u8>>>>,
-    stderr: Option<JoinHandle<std::io::Result<u64>>>,
 }
 impl NativeProcess {
     fn settle(&mut self, kill: bool) -> Option<Vec<u8>> {
-        let reaped = if let Some(mut child) = self.child.take() {
-            if kill {
+        if kill {
+            self.stdout.take(); // Dropping the handle detaches a possibly blocked reader.
+            if let Some(mut child) = self.child.take() {
                 let _ = child.kill();
+                let _ = child.wait();
             }
-            child.wait().is_ok()
-        } else {
-            true
-        };
-        let output = self
-            .stdout
+            return None;
+        }
+        self.child.take(); // try_wait already reaped the shell.
+        self.stdout
             .take()
             .and_then(|reader| reader.join().ok())
-            .and_then(Result::ok);
-        let drained = self
-            .stderr
-            .take()
-            .is_none_or(|reader| matches!(reader.join(), Ok(Ok(_))));
-        if reaped && drained { output } else { None }
+            .and_then(Result::ok)
     }
 }
 impl HelperProcess for NativeProcess {
@@ -229,7 +226,17 @@ impl HelperProcess for NativeProcess {
             .as_mut()
             .ok_or(())?
             .try_wait()
-            .map(|status| status.map(|status| status.success()))
+            .map(|status| {
+                status.and_then(|status| {
+                    if !status.success() {
+                        Some(false)
+                    } else if self.stdout.as_ref().is_some_and(JoinHandle::is_finished) {
+                        Some(true)
+                    } else {
+                        None
+                    }
+                })
+            })
             .map_err(|_| ())
     }
     fn finish(mut self: Box<Self>, kill: bool) -> Option<Vec<u8>> {

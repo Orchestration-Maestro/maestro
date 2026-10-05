@@ -10,6 +10,7 @@ use std::{
 
 /// Private plaintext credential file, protected only against cooperating writers.
 /// Uses independent handles and owned native guards; no rename or crash rollback.
+/// On Unix, every replacement restricts the owned file to mode 0600.
 pub struct FileCredentialStorage {
     path: PathBuf,
     acquisition: std::sync::Arc<dyn Acquisition>,
@@ -119,6 +120,14 @@ impl CredentialStorage for FileCredentialStorage {
             return Err(CredentialError::Cancelled);
         }
         if let Some(next) = edit(Some(SecretString::new(bytes)))? {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                guard
+                    .0
+                    .set_permissions(std::fs::Permissions::from_mode(0o600))
+                    .map_err(|_| CredentialError::Storage)?;
+            }
             guard.0.rewind().map_err(|_| CredentialError::Storage)?;
             guard
                 .0
