@@ -204,11 +204,16 @@ U+FEFF, excluding U+0085). Empty trimmed input selects its base. `~`, `~/x` and 
 expand under supplied home. Absolute input replaces its base; relative invocation
 and session paths (even user-scope sessionDir) use the effective working directory.
 `resource_path(path, declaring_directory)` uses the supplied user/project,
-manifest or package directory; a relative declaring directory resolves at cwd.
+manifest or package directory exactly as supplied, without trimming or tilde
+reinterpretation; a relative declaring directory resolves at cwd.
 All results normalize repeated separators, `.` and `..` lexically, including
 absolute/home-expanded input. Surplus `..` cannot escape an absolute root.
 `link/../x` selects base/x regardless of whether link exists or is a symlink.
-Native path characters are not lossy-converted. No canonicalization, existence
+On Unix, trimming decodes only valid UTF-8 at the native byte string's ends;
+invalid bytes remain untouched, including in tilde-prefixed paths. Tilde expansion
+uses native bytes without requiring whole-path UTF-8. Other platforms trim and
+expand valid UTF-8 input. Native path characters are not lossy-converted.
+No canonicalization, existence
 check, discovery or activation occurs. Raw session values stay unchanged;
 trimmed, expanded or lexically equivalent text cannot restate a different frozen
 raw string. Constructor root-selection policy is unchanged: relative working

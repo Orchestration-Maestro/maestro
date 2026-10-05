@@ -50,9 +50,10 @@ impl SettingsLocations {
     }
 
     /// Trims, expands tilde and lexically normalizes at the declaring directory.
-    /// Relative declaring directories resolve at cwd; no filesystem lookup occurs.
+    /// Declaring directories retain their supplied text; relative ones resolve at
+    /// cwd. No filesystem lookup occurs.
     pub fn resource_path(&self, path: &Path, declaring_directory: &Path) -> PathBuf {
-        let base = self.invocation_path(declaring_directory);
+        let base = self.working.join(declaring_directory);
         normalized(path, &base, &self.home)
     }
 
@@ -83,14 +84,58 @@ fn anchored(path: &Path, base: &Path, home: &Path) -> PathBuf {
     }
 }
 
-fn normalized(path: &Path, base: &Path, home: &Path) -> PathBuf {
-    let path = path.to_str().map_or(path, |text| {
-        Path::new(
-            text.trim_matches(|c: char| c != '\u{85}' && (c.is_whitespace() || c == '\u{FEFF}')),
-        )
+fn reference_whitespace(c: char) -> bool {
+    c != '\u{85}' && (c.is_whitespace() || c == '\u{FEFF}')
+}
+
+#[cfg(unix)]
+fn trimmed(path: &Path) -> &Path {
+    use std::os::unix::ffi::OsStrExt;
+
+    let bytes = path.as_os_str().as_bytes();
+    let first = bytes.utf8_chunks().next().map_or("", |chunk| chunk.valid());
+    let start = first.len() - first.trim_start_matches(reference_whitespace).len();
+    let bytes = &bytes[start..];
+    let last = bytes.utf8_chunks().last().map_or("", |chunk| {
+        if chunk.invalid().is_empty() {
+            chunk.valid()
+        } else {
+            ""
+        }
     });
-    let anchored = if let Some(rest) = path.to_str().and_then(|text| text.strip_prefix('~')) {
-        home.join(rest.trim_start_matches(std::path::is_separator))
+    let end = bytes.len() - (last.len() - last.trim_end_matches(reference_whitespace).len());
+    Path::new(std::ffi::OsStr::from_bytes(&bytes[..end]))
+}
+
+#[cfg(not(unix))]
+fn trimmed(path: &Path) -> &Path {
+    path.to_str().map_or(path, |text| {
+        Path::new(text.trim_matches(reference_whitespace))
+    })
+}
+
+#[cfg(unix)]
+fn tilde_suffix(path: &Path) -> Option<&Path> {
+    use std::os::unix::ffi::OsStrExt;
+
+    let rest = path.as_os_str().as_bytes().strip_prefix(b"~")?;
+    let start = rest
+        .iter()
+        .position(|&byte| byte != b'/')
+        .unwrap_or(rest.len());
+    Some(Path::new(std::ffi::OsStr::from_bytes(&rest[start..])))
+}
+
+#[cfg(not(unix))]
+fn tilde_suffix(path: &Path) -> Option<&Path> {
+    let rest = path.to_str()?.strip_prefix('~')?;
+    Some(Path::new(rest.trim_start_matches(std::path::is_separator)))
+}
+
+fn normalized(path: &Path, base: &Path, home: &Path) -> PathBuf {
+    let path = trimmed(path);
+    let anchored = if let Some(rest) = tilde_suffix(path) {
+        home.join(rest)
     } else if path.is_absolute() {
         path.to_owned()
     } else {

@@ -275,6 +275,41 @@ fn resource_and_invocation_paths_use_their_declared_bases() {
 }
 
 #[test]
+fn resource_paths_preserve_declaring_directory_text() {
+    let scratch = Scratch::new();
+    let locations = scratch.locations();
+    assert_eq!(
+        locations.resource_path(Path::new("ext.ts"), Path::new("/config/user ")),
+        PathBuf::from("/config/user /ext.ts")
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn native_tilde_paths_trim_and_expand_at_home() {
+    use std::os::unix::ffi::OsStrExt;
+
+    let scratch = Scratch::new();
+    let locations = scratch.locations();
+    let expected = scratch
+        .root
+        .join("home")
+        .join(std::ffi::OsStr::from_bytes(b"\xff"));
+    for bytes in [
+        b"~/\xff".as_slice(),
+        b" ~/\xff ",
+        b"\xef\xbb\xbf~/\xff\xef\xbb\xbf",
+    ] {
+        let path = Path::new(std::ffi::OsStr::from_bytes(bytes));
+        assert_eq!(locations.invocation_path(path), expected);
+        assert_eq!(
+            locations.resource_path(path, Path::new("/config/user ")),
+            expected
+        );
+    }
+}
+
+#[test]
 fn resource_paths_follow_normalization_rules() {
     let scratch = Scratch::new();
     let locations = scratch.locations();
