@@ -43,6 +43,7 @@ fn all_numbered_nouns_are_rejected() {
     rejects(&[
         "// slice 6",
         "/// spec 1 task 2",
+        "/// spec 1",
         "//! task 2",
         "/* ticket 5 */",
         "// issue 18",
