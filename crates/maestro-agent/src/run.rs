@@ -46,7 +46,12 @@ pub(crate) async fn run(
             Context {
                 system_prompt: context.system_prompt,
                 messages,
-                tools: vec![],
+                tools: inner
+                    .options
+                    .tools
+                    .iter()
+                    .map(|tool| tool.declaration.clone())
+                    .collect(),
             },
             options.clone(),
         );
@@ -104,11 +109,19 @@ pub(crate) async fn run(
         )
         .await;
         additions.push(record);
+        let (tool_results, terminating) = if matches!(
+            terminal.stop_reason,
+            Some(StopReason::Stop | StopReason::Length | StopReason::ToolUse)
+        ) {
+            crate::batch::run(inner.clone(), &terminal, cancellation, &mut additions).await?
+        } else {
+            (vec![], false)
+        };
         emit(
             &inner,
             AgentEvent::TurnEnd {
                 message: terminal.clone(),
-                tool_results: vec![],
+                tool_results: tool_results.clone(),
             },
             cancellation,
         )
@@ -123,7 +136,7 @@ pub(crate) async fn run(
             let context = inner.lock().context.clone();
             if stop(StopAfterTurnContext {
                 message: terminal,
-                tool_results: vec![],
+                tool_results: tool_results.clone(),
                 context,
                 new_messages: additions.clone(),
             })
@@ -133,6 +146,9 @@ pub(crate) async fn run(
             }
         }
         input = inner.lock().queues.drain(Queue::Steering);
+        if input.is_empty() && !tool_results.is_empty() && !terminating {
+            continue;
+        }
         if input.is_empty() {
             input = inner.lock().queues.drain(Queue::FollowUp);
         }

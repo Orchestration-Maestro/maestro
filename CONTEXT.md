@@ -45,6 +45,9 @@ From `docs/specs/2026-10-05-engine-core.md`.
 - **Follow-up:** Input delivered after ordinary continuation and steering.
 - **Run handle:** An awaitable observation, not the owner or cancellation control of a run.
 - **Batch:** The tool calls belonging to one assistant response.
+- **Preparation:** Cancellable current-format argument transformation before shared validation and before hooks.
+- **Finalized tool result:** Executed or rejected output after accepted progress and applicable after hooks settle, with a separate error flag.
+- **Termination hint:** Optional runtime-only tool output flag suppressing ordinary continuation only when every finalized result in a nonempty batch is true.
 
 ### Conversation
 

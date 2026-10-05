@@ -1,6 +1,7 @@
 //! Owned transcript values and execution contracts.
+use crate::{AfterToolCall, BeforeToolCall, Tool, ToolExecutionMode, ToolResult};
 use maestro_models::{AssistantMessage, Cancellation, Message, ModelEvent, ToolResultMessage};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{future::Future, pin::Pin, sync::Arc};
 
 /// A shared model record or open application-owned record.
@@ -35,6 +36,8 @@ pub struct AgentState {
     pub is_running: bool,
     /// Current independent cumulative assistant snapshot.
     pub streaming_message: Option<AssistantMessage>,
+    /// Detached insertion-ordered set of pending call identities.
+    pub pending_tool_calls: Vec<String>,
 }
 /// Ordered low-level execution events, not application settlement.
 #[derive(Clone, Debug, PartialEq)]
@@ -43,6 +46,37 @@ pub struct AgentState {
     reason = "message updates are the most frequent event and carry owned snapshots; boxing would allocate on every update"
 )]
 pub enum AgentEvent {
+    /// Original completed call, before preflight.
+    ToolExecutionStart {
+        /// Original identity.
+        tool_call_id: String,
+        /// Original name.
+        tool_name: String,
+        /// Original arguments.
+        args: Map<String, Value>,
+    },
+    /// Owned partial output accepted during execution.
+    ToolExecutionUpdate {
+        /// Original identity.
+        tool_call_id: String,
+        /// Original name.
+        tool_name: String,
+        /// Original arguments.
+        args: Map<String, Value>,
+        /// Partial output.
+        partial_result: ToolResult,
+    },
+    /// Finalized output after progress and hooks settle.
+    ToolExecutionEnd {
+        /// Original identity.
+        tool_call_id: String,
+        /// Original name.
+        tool_name: String,
+        /// Finalized output.
+        result: ToolResult,
+        /// Separate error status.
+        is_error: bool,
+    },
     /// A run begins.
     AgentStart,
     /// Run-local records after all turns.
@@ -56,7 +90,7 @@ pub enum AgentEvent {
     TurnEnd {
         /// Normalized terminal assistant.
         message: AssistantMessage,
-        /// Empty in text-only execution.
+        /// Finalized source-ordered results from this turn.
         tool_results: Vec<ToolResultMessage>,
     },
     /// A new input or assistant begins.
@@ -100,6 +134,16 @@ pub struct AgentOptions {
     pub convert_messages: Option<MessageConverter>,
     /// Optional boolean stop decision after awaited turn-end delivery.
     pub stop_after_turn: Option<StopAfterTurn>,
+    /// Ordered available tools; empty by default.
+    pub tools: Vec<Tool>,
+    /// Default parallel whole-batch execution policy.
+    pub tool_execution: ToolExecutionMode,
+    /// Ordered cancellable preflight hooks.
+    pub before_tool_call: Vec<BeforeToolCall>,
+    /// Ordered cancellable executed-outcome finalizers.
+    pub after_tool_call: Vec<AfterToolCall>,
+    /// Optional Unix-millisecond clock sampled at tool-result creation.
+    pub clock: Option<Arc<dyn Fn() -> u64 + Send + Sync + 'static>>,
 }
 /// Admission failures or abnormal owned-task settlement.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -172,7 +216,7 @@ pub enum QueueMode {
 pub struct StopAfterTurnContext {
     /// Authoritative completed assistant.
     pub message: AssistantMessage,
-    /// Empty in text-only execution.
+    /// Finalized source-ordered results from this turn.
     pub tool_results: Vec<ToolResultMessage>,
     /// Current detached authoritative context.
     pub context: AgentContext,

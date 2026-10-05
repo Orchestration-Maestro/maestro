@@ -49,7 +49,7 @@ pub fn setup(scripts: Vec<Script>, config: AgentOptions) -> (Agent, Arc<Scripted
         protocol: "synthetic".into(),
         rates: None,
         headers: Default::default(),
-        input: vec!["text".into()],
+        input: vec!["text".into(), "image".into()],
         capabilities: RequestCapabilities {
             session_affinity: true,
             temperature: true,
@@ -72,6 +72,9 @@ pub fn capture(agent: &Agent) -> Arc<Mutex<Vec<AgentEvent>>> {
 }
 pub fn label(event: &AgentEvent) -> &'static str {
     match event {
+        AgentEvent::ToolExecutionStart { .. } => "tool_start",
+        AgentEvent::ToolExecutionUpdate { .. } => "tool_update",
+        AgentEvent::ToolExecutionEnd { .. } => "tool_end",
         AgentEvent::AgentStart => "agent_start",
         AgentEvent::AgentEnd { .. } => "agent_end",
         AgentEvent::TurnStart => "turn_start",
@@ -104,4 +107,62 @@ pub async fn pending<F: std::future::Future + Unpin>(future: &mut F) {
         std::task::Poll::Ready(())
     })
     .await;
+}
+
+pub fn call_steps(
+    calls: &[(&str, &str, serde_json::Value)],
+    reason: StopReason,
+) -> Vec<ScriptStep> {
+    let mut out = vec![];
+    for (index, (id, name, args)) in calls.iter().enumerate() {
+        out.extend([
+            ScriptStep::Update(ProviderUpdate::ToolCallStart {
+                content_index: index,
+                id: (*id).into(),
+                name: (*name).into(),
+                replay_metadata: Some("replay".into()),
+            }),
+            ScriptStep::Update(ProviderUpdate::ToolCallDelta {
+                content_index: index,
+                delta: args.to_string(),
+            }),
+            ScriptStep::Update(ProviderUpdate::ToolCallEnd {
+                content_index: index,
+            }),
+        ]);
+    }
+    out.push(ScriptStep::Update(ProviderUpdate::Done { reason }));
+    out
+}
+pub fn output(text: &str) -> ToolResult {
+    ToolResult {
+        content: vec![InputContent::Text(TextContent {
+            text: text.into(),
+            replay_metadata: None,
+        })],
+        details: serde_json::json!({}),
+        terminate: None,
+    }
+}
+pub fn tool(name: &str, execute: ToolExecute) -> Tool {
+    Tool {
+        declaration: ToolDeclaration {
+            name: name.into(),
+            description: "synthetic".into(),
+            parameters: serde_json::json!({"type":"object"}),
+        },
+        label: name.into(),
+        prepare: None,
+        execute,
+        execution_mode: None,
+    }
+}
+pub fn results(records: &[AgentMessage]) -> Vec<ToolResultMessage> {
+    records
+        .iter()
+        .filter_map(|m| match m {
+            AgentMessage::Model(Message::ToolResult(r)) => Some(r.clone()),
+            _ => None,
+        })
+        .collect()
 }

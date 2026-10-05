@@ -34,6 +34,7 @@ pub(crate) struct Shared {
     pub running: bool,
     pub queues: crate::queues::Queues,
     pub streaming: Option<maestro_models::AssistantMessage>,
+    pub pending: Vec<String>,
     pub listeners: Vec<(SubscriptionId, AgentListener)>,
     pub next_id: u64,
     pub completion: Option<watch::Receiver<Option<Outcome>>>,
@@ -86,6 +87,7 @@ impl Agent {
                         queues
                     },
                     streaming: None,
+                    pending: vec![],
                     listeners: vec![],
                     next_id: 0,
                     completion: None,
@@ -101,6 +103,7 @@ impl Agent {
             context: state.context.clone(),
             is_running: state.running,
             streaming_message: state.streaming.clone(),
+            pending_tool_calls: state.pending.clone(),
         }
     }
     /// Admit input synchronously and start independent owned runtime work.
@@ -174,6 +177,7 @@ impl Agent {
             let (streaming, cancellation) = {
                 let mut state = inner.lock();
                 state.running = false;
+                state.pending.clear();
                 (state.streaming.take(), state.cancellation.take())
             };
             drop(streaming);
