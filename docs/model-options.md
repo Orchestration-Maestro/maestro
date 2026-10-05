@@ -28,6 +28,9 @@ let mut model = Model {
     identity: ModelIdentity {
         provider: "local".into(), model: "example".into(), operation: "chat".into(),
     },
+    name: "test".into(),
+    endpoint: "local:endpoint".into(),
+    chat: Some(maestro_models::ChatMetadata { context_window: None }),
     protocol: "declared-chat".into(),
     capabilities: RequestCapabilities { reasoning: true, ..Default::default() },
     rates: None,
@@ -83,6 +86,9 @@ fn resolve(ceiling: i64, mode: ThinkingMode, output: Option<u64>) -> Result<Effe
         identity: ModelIdentity {
             provider: "local".into(), model: "example".into(), operation: "chat".into(),
         },
+        name: "test".into(),
+        endpoint: "local:endpoint".into(),
+        chat: Some(maestro_models::ChatMetadata { context_window: None }),
         protocol: "declared-chat".into(),
         capabilities: RequestCapabilities {
             reasoning: true, output_limit: ceiling, thinking_mode: mode,
@@ -137,6 +143,9 @@ async fn inspect_request() -> Result<(), Failure> {
         identity: ModelIdentity {
             provider: "local".into(), model: "example".into(), operation: "chat".into(),
         },
+        name: "test".into(),
+        endpoint: "local:endpoint".into(),
+        chat: Some(maestro_models::ChatMetadata { context_window: None }),
         protocol: "declared-chat".into(),
         capabilities: RequestCapabilities {
             reasoning: true, output_limit: 32_001, temperature: true,

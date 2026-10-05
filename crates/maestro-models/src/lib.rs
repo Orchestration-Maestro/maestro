@@ -12,12 +12,14 @@
 
 #![doc = include_str!("../../../docs/models.md")]
 #![doc = include_str!("../../../docs/model-options.md")]
+#![doc = include_str!("../../../docs/local-model-catalogs.md")]
 #![doc = include_str!("../../../docs/request-authentication.md")]
 #![doc = include_str!("../../../docs/conversation-projection.md")]
 
 mod accounting;
 mod auth;
 mod cancellation;
+mod catalog;
 mod content;
 mod conversation;
 mod dispatch;
@@ -37,6 +39,7 @@ pub use auth::{
     AuthResolver, AuthStatus, RequestAuth, SecretString, TokenExchange, TokenExchangeResult,
 };
 pub use cancellation::Cancellation;
+pub use catalog::{AvailableModel, CatalogOverride, ChatMetadata};
 pub use content::{
     AssistantContent, ImageContent, InputContent, TextContent, ThinkingContent, ToolCall,
 };

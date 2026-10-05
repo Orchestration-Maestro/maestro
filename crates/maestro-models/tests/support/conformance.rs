@@ -14,18 +14,15 @@ use std::{
 };
 
 pub fn model() -> Model {
-    Model {
-        identity: ModelIdentity {
+    Model::custom(
+        ModelIdentity {
             provider: "local".into(),
             model: "test".into(),
             operation: "chat".into(),
         },
-        protocol: "script".into(),
-        capabilities: RequestCapabilities::default(),
-        rates: None,
-        headers: Default::default(),
-        input: vec!["text".into()],
-    }
+        "script".into(),
+        "local:endpoint".into(),
+    )
 }
 pub fn context() -> Context {
     Context {

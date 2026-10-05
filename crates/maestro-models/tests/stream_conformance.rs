@@ -5,18 +5,15 @@ use support::block_on;
 
 #[test]
 fn empty_success_has_exact_start_and_done() {
-    let model = Model {
-        identity: ModelIdentity {
+    let model = Model::custom(
+        ModelIdentity {
             provider: "local".into(),
             model: "test".into(),
             operation: "chat".into(),
         },
-        protocol: "script".into(),
-        capabilities: RequestCapabilities::default(),
-        rates: None,
-        headers: Default::default(),
-        input: vec!["text".into()],
-    };
+        "script".into(),
+        "local:endpoint".into(),
+    );
     let fake = Arc::new(ScriptedProvider::new(vec![Script::Steps(vec![
         ScriptStep::Update(ProviderUpdate::Done {
             reason: StopReason::Stop,

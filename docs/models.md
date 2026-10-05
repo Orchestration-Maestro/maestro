@@ -14,6 +14,8 @@ Mixed conversation records keep current prompt/tools separate from history.
 The registry supplies one owned, selected-model projection before adapter
 dispatch. See [conversation projection](conversation-projection.md) for replay,
 image omissions, paired tool results and pure offline argument validation.
+See [local model catalogs](local-model-catalogs.md) for offline lookup, metadata
+validation, reversible overrides and captured-request replacement semantics.
 
 ## Explicit indexed streaming
 
@@ -25,17 +27,14 @@ use maestro_models::*;
 use std::sync::Arc;
 
 async fn scripted_text() -> Result<(), Failure> {
-    let model = Model {
-        identity: ModelIdentity {
+    let model = Model::custom(
+        ModelIdentity {
             provider: "scripted:example".into(), model: "greeting/text".into(),
             operation: "chat".into(),
         },
-        protocol: "scripted/chat".into(),
-        capabilities: RequestCapabilities::default(),
-        rates: None,
-        headers: Default::default(),
-        input: vec!["text".into()],
-    };
+        "scripted/chat".into(),
+        "local:endpoint".into(),
+    );
     let context = Context {
         system_prompt: Some("Reply with a greeting".into()),
         messages: vec![Message::User(UserMessage { content: vec![InputContent::Text(TextContent { text: "hello".into(), replay_metadata: None })], timestamp: 17 })],
@@ -226,6 +225,9 @@ async fn flat_accounting() -> Result<(), Failure> {
             provider: "scripted:accounting".into(), model: "flat/chat".into(),
             operation: "chat".into(),
         },
+        name: "test".into(),
+        endpoint: "local:endpoint".into(),
+        chat: Some(maestro_models::ChatMetadata { context_window: None }),
         protocol: "scripted/chat".into(),
         capabilities: RequestCapabilities::default(),
         input: vec!["text".into()],
@@ -265,6 +267,9 @@ async fn flat_accounting() -> Result<(), Failure> {
     }
     let absent = Model {
         identity: ModelIdentity { provider: "local".into(), model: "unpriced".into(), operation: "chat".into() },
+        name: "test".into(),
+        endpoint: "local:endpoint".into(),
+        chat: Some(maestro_models::ChatMetadata { context_window: None }),
         protocol: "local/chat".into(), rates: None, headers: Default::default(),
         capabilities: RequestCapabilities::default(), input: vec!["text".into()],
     };

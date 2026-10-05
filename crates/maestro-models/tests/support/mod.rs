@@ -46,3 +46,5 @@ fn support_executor_resumes_a_woken_future() {
 pub mod conformance;
 
 pub mod auth;
+
+pub mod catalog;

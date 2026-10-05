@@ -26,6 +26,12 @@ pub struct Model {
     pub capabilities: RequestCapabilities,
     /// Registered literal default headers; sensitive and not safe to log.
     pub headers: std::collections::BTreeMap<String, String>,
+    /// Supplied display name.
+    pub name: String,
+    /// Inert transport endpoint; sensitive and not safe to log.
+    pub endpoint: String,
+    /// Chat declarations, present only for chat operations.
+    pub chat: Option<crate::ChatMetadata>,
     /// Supplied input capabilities; `image` enables image retention.
     pub input: Vec<String>,
 }
@@ -75,6 +81,10 @@ pub enum Failure {
     AuthenticationFailed,
     /// Malformed or ambiguous literal header input.
     InvalidRequestHeaders,
+    /// Supplied local metadata failed validation.
+    InvalidCatalog,
+    /// A trusted local catalog getter failed.
+    CatalogFailed,
 }
 
 impl std::fmt::Display for Failure {
@@ -92,6 +102,8 @@ impl std::fmt::Display for Failure {
             Self::Cancelled => "request cancelled",
             Self::MissingAuthentication => "missing request authentication",
             Self::AuthenticationFailed => "request authentication failed",
+            Self::InvalidCatalog => "invalid local model catalog",
+            Self::CatalogFailed => "local model catalog getter failed",
             Self::InvalidRequestHeaders => "invalid request headers",
         })
     }
