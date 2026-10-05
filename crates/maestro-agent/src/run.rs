@@ -2,41 +2,27 @@
 use crate::{
     AgentError, AgentEvent, AgentMessage, Queue, StopAfterTurnContext, agent::Inner, events::emit,
 };
-use maestro_models::{AssistantMessage, Context, Message, ModelEvent, StopReason, StreamOptions};
+use maestro_models::{
+    AssistantMessage, Cancellation, Context, Message, ModelEvent, StopReason, StreamOptions,
+};
 use std::sync::Arc;
 
 pub(crate) async fn run(
     inner: Arc<Inner>,
     mut input: Vec<AgentMessage>,
-    skip_initial: bool,
+    mut skip_initial: bool,
     options: StreamOptions,
 ) -> Result<Vec<AgentMessage>, AgentError> {
     let cancellation = &options.cancellation;
     emit(&inner, AgentEvent::AgentStart, cancellation).await;
-    if !skip_initial {
-        input.extend(inner.lock().queues.drain(Queue::Steering));
-    }
     let mut additions = vec![];
     loop {
         emit(&inner, AgentEvent::TurnStart, cancellation).await;
-        for message in input {
-            emit(
-                &inner,
-                AgentEvent::MessageStart {
-                    message: message.clone(),
-                },
-                cancellation,
-            )
-            .await;
-            emit(
-                &inner,
-                AgentEvent::MessageEnd {
-                    message: message.clone(),
-                },
-                cancellation,
-            )
-            .await;
-            additions.push(message);
+        append_input(&inner, input, &mut additions, cancellation).await;
+        if !skip_initial {
+            let steering = inner.lock().queues.drain(Queue::Steering);
+            append_input(&inner, steering, &mut additions, cancellation).await;
+            skip_initial = true;
         }
         let context = inner.lock().context.clone();
         let records = if let Some(transform) = &inner.options.transform_context {
@@ -163,6 +149,32 @@ pub(crate) async fn run(
     )
     .await;
     Ok(additions)
+}
+async fn append_input(
+    inner: &Arc<Inner>,
+    input: Vec<AgentMessage>,
+    additions: &mut Vec<AgentMessage>,
+    cancellation: &Cancellation,
+) {
+    for message in input {
+        emit(
+            inner,
+            AgentEvent::MessageStart {
+                message: message.clone(),
+            },
+            cancellation,
+        )
+        .await;
+        emit(
+            inner,
+            AgentEvent::MessageEnd {
+                message: message.clone(),
+            },
+            cancellation,
+        )
+        .await;
+        additions.push(message);
+    }
 }
 fn partial(event: &ModelEvent) -> &AssistantMessage {
     match event {

@@ -271,3 +271,86 @@ async fn stop_after_turn_false_does_not_invent_continuation() {
         }
     }
 }
+
+#[tokio::test]
+async fn first_turn_start_steering_joins_the_first_request() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    let (agent, provider) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let owner = agent.clone();
+    let once = AtomicBool::new(false);
+    agent.subscribe(Arc::new(move |event, _| {
+        let owner = owner.clone();
+        let inject = matches!(event, AgentEvent::TurnStart) && !once.swap(true, Ordering::SeqCst);
+        Box::pin(async move {
+            tokio::task::yield_now().await;
+            if inject {
+                owner.steer(user("steering"));
+            }
+        })
+    }));
+    let result = agent
+        .prompt(user("initial"), options())
+        .unwrap()
+        .await
+        .unwrap();
+    assert_eq!(
+        provider.calls()[0].context.messages,
+        vec![
+            match user("initial") {
+                AgentMessage::Model(message) => message,
+                _ => unreachable!(),
+            },
+            match user("steering") {
+                AgentMessage::Model(message) => message,
+                _ => unreachable!(),
+            },
+        ]
+    );
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(result.len(), 3);
+    assert!(agent.queue(Queue::Steering).is_empty());
+}
+
+#[tokio::test]
+async fn follow_up_restart_polls_agent_start_steering_before_first_request() {
+    use std::sync::Arc;
+    let (agent, provider) = setup(
+        vec![
+            Script::Steps(steps("old reply")),
+            Script::Steps(steps("continued")),
+        ],
+        AgentOptions::default(),
+    );
+    agent.prompt(user("old"), options()).unwrap().await.unwrap();
+    let history = agent.state().context.messages;
+    agent.follow_up(user("follow-up"));
+    let owner = agent.clone();
+    agent.subscribe(Arc::new(move |event, _| {
+        let owner = owner.clone();
+        Box::pin(async move {
+            tokio::task::yield_now().await;
+            if matches!(event, AgentEvent::AgentStart) {
+                owner.steer(user("steering"));
+            }
+        })
+    }));
+    let result = agent.continue_run(options()).unwrap().await.unwrap();
+    let first_request: Vec<_> = provider.calls()[1]
+        .context
+        .messages
+        .iter()
+        .cloned()
+        .map(AgentMessage::Model)
+        .collect();
+    assert_eq!(
+        first_request,
+        [history, vec![user("follow-up"), user("steering")]].concat()
+    );
+    assert_eq!(provider.calls().len(), 2);
+    assert_eq!(result.len(), 3);
+    assert!(agent.queue(Queue::Steering).is_empty());
+    assert!(agent.queue(Queue::FollowUp).is_empty());
+}

@@ -448,3 +448,30 @@ async fn owned_task_failure_is_not_reported_as_successful_idle() {
     assert!(agent.state().streaming_message.is_none());
     assert_eq!(agent.wait_for_idle().await, Err(AgentError::RunFailed));
 }
+
+#[test]
+fn idle_unsubscribe_allows_listener_cleanup_to_read_state() {
+    struct Cleanup(Agent);
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            assert!(!self.0.state().is_running);
+        }
+    }
+    let (agent, _) = setup(vec![], AgentOptions::default());
+    let cleanup = Cleanup(agent.clone());
+    let subscription = agent.subscribe(Arc::new(move |_, _| {
+        let _ = &cleanup;
+        Box::pin(async {})
+    }));
+    let (completed, completion) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        agent.unsubscribe(subscription);
+        completed.send(agent.state()).unwrap();
+    });
+    let state = completion
+        .recv_timeout(std::time::Duration::from_secs(2))
+        .expect("idle unsubscribe must finish reentrant listener cleanup");
+    assert!(!state.is_running);
+    assert!(state.context.messages.is_empty());
+    worker.join().unwrap();
+}

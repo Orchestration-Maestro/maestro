@@ -103,6 +103,7 @@ impl Agent {
     }
     /// Admit input synchronously and start independent owned runtime work.
     /// Returns Busy or RuntimeUnavailable without changing history.
+    /// Entry steering is polled after awaited initial turn and input events.
     pub fn prompt(
         &self,
         message: AgentMessage,
@@ -111,6 +112,7 @@ impl Agent {
         self.start(Some(message), options)
     }
     /// Continue existing history without replaying its message events.
+    /// Only a restart supplied by steering skips the entry steering poll.
     pub fn continue_run(&self, options: StreamOptions) -> Result<RunHandle, AgentError> {
         self.start(None, options)
     }
@@ -140,8 +142,10 @@ impl Agent {
         }
         let runtime =
             tokio::runtime::Handle::try_current().map_err(|_| AgentError::RuntimeUnavailable)?;
+        let mut skip_initial_steering = false;
         let input = if restart {
             let mut input = state.queues.drain(Queue::Steering);
+            skip_initial_steering = !input.is_empty();
             if input.is_empty() {
                 input = state.queues.drain(Queue::FollowUp);
             }
@@ -154,7 +158,12 @@ impl Agent {
         state.cancellation = Some(options.cancellation.clone());
         state.completion = Some(receiver.clone());
         let inner = self.inner.clone();
-        let worker = runtime.spawn(crate::run::run(inner.clone(), input, restart, options));
+        let worker = runtime.spawn(crate::run::run(
+            inner.clone(),
+            input,
+            skip_initial_steering,
+            options,
+        ));
         runtime.spawn(async move {
             let outcome = worker.await.unwrap_or(Err(AgentError::RunFailed));
             let mut state = inner.lock();
@@ -223,12 +232,17 @@ impl Agent {
         }
     }
     /// Remove future event acceptance, leaving already snapshotted delivery awaited.
-    /// Removing the same identity again has no effect.
+    /// Removing the same identity again has no effect. Listener cleanup runs unlocked.
     pub fn unsubscribe(&self, subscription: SubscriptionId) {
-        self.inner
-            .lock()
-            .listeners
-            .retain(|(id, _)| *id != subscription);
+        let removed = {
+            let mut state = self.inner.lock();
+            state
+                .listeners
+                .iter()
+                .position(|(id, _)| *id == subscription)
+                .map(|index| state.listeners.remove(index))
+        };
+        drop(removed);
     }
     /// Register an ordered awaited sink without replay.
     pub fn subscribe(&self, listener: AgentListener) -> SubscriptionId {

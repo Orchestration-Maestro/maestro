@@ -47,10 +47,12 @@ current FIFO on one poll. `queue_mode` and `set_queue_mode` inspect/change one
 policy without changing the other. `queue` returns a detached copy; `clear_queue`
 returns removed records in FIFO order and leaves the other queue untouched.
 
-Steering is polled at entry and after a completed turn. Assistant-tail restart
-skips the initial steering poll after selecting its input, preserving one-at-a-time
-semantics. Follow-up is consumed only after steering is exhausted. There is no
-executable-tool continuation in text execution.
+Entry steering is polled after awaited agent start, turn start and initial input
+start/end events, before the first model request. It is also polled after a
+completed turn. Only an assistant-tail restart supplied by steering skips the
+entry poll, preserving one-at-a-time semantics; a follow-up restart still polls
+entry steering. Follow-up is consumed only after steering is exhausted. There is
+no executable-tool continuation in text execution.
 
 After awaited `TurnEnd` subscribers, `stop_after_turn` sees the terminal assistant,
 completed context and run-local records. True stops before either queue poll;
@@ -69,7 +71,8 @@ queue and event values are owned independent snapshots.
 
 Subscribers are awaited in registration order without locks across user code.
 Each event snapshots registrations; unsubscribe is idempotent and affects future
-acceptance, not already accepted delivery. No replay or initial event occurs.
+acceptance, not already accepted delivery. Removed listener cleanup runs without
+the state lock. No replay or initial event occurs.
 Callbacks must not panic or await their own run's completion/idle. Transforms
 must settle cooperatively. A sink must await any child work it wants included in
 idle; detached work is excluded.
