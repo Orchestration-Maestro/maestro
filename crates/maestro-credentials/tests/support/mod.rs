@@ -73,6 +73,11 @@ pub fn model(provider: &str) -> Model {
         },
         rates: None,
         protocol: "script".into(),
+        name: "synthetic".into(),
+        endpoint: "https://example.invalid".into(),
+        chat: Some(ChatMetadata {
+            context_window: None,
+        }),
         capabilities: Default::default(),
         headers: Default::default(),
         input: vec!["text".into()],
