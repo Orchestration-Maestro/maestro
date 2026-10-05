@@ -154,6 +154,16 @@ fn nested_and_union_coercion_uses_schema_order() {
 }
 
 #[test]
+fn union_branches_resolve_references_in_nested_resources() {
+    let schema = json!({"$id":"https://example.invalid/root","type":"object","properties":{"x":{"$id":"child","$defs":{"limit":{"minimum":5}},"anyOf":[{"type":"integer","$ref":"#/$defs/limit"},{"type":"boolean"}]}}});
+    assert_eq!(
+        validate(schema.clone(), json!({"x":null})),
+        Ok(json!({"x":false}))
+    );
+    assert_eq!(validate(schema, json!({"x":"7"})), Ok(json!({"x":7})));
+}
+
+#[test]
 fn invalid_tool_arguments_and_schemas_fail_safely() {
     let secret = "RAW_SECRET_SENTINEL";
     assert_eq!(
