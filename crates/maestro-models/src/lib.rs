@@ -12,12 +12,14 @@
 
 #![doc = include_str!("../../../docs/models.md")]
 #![doc = include_str!("../../../docs/model-options.md")]
+#![doc = include_str!("../../../docs/local-model-catalogs.md")]
 #![doc = include_str!("../../../docs/request-authentication.md")]
 #![doc = include_str!("../../../docs/conversation-projection.md")]
 
 mod accounting;
 mod auth;
 mod cancellation;
+mod catalog;
 mod content;
 mod conversation;
 mod dispatch;
@@ -41,6 +43,7 @@ pub use content::{
     AssistantContent, ImageContent, InputContent, TextContent, ThinkingContent, ToolCall,
 };
 pub use conversation::{Context, Message, ToolDeclaration, ToolResultMessage, UserMessage};
+pub use catalog::{AvailableModel, CatalogOverride, ChatMetadata, FlatRates};
 pub use events::ModelEvent;
 pub use options::{
     EffectiveOptions, RequestCapabilities, StreamOptions, ThinkingLevel, ThinkingMode,

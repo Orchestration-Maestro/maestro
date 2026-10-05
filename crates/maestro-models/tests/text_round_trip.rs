@@ -8,18 +8,15 @@ use std::sync::{
 use support::block_on;
 
 fn model() -> Model {
-    Model {
-        identity: ModelIdentity {
+    Model::custom(
+        ModelIdentity {
             provider: "test:provider/custom".into(),
             model: "text/model:v1".into(),
             operation: "chat".into(),
         },
-        protocol: "test:protocol/v1".into(),
-        capabilities: RequestCapabilities::default(),
-        rates: None,
-        headers: Default::default(),
-        input: vec!["text".into()],
-    }
+        "test:protocol/v1".into(),
+        "local:endpoint".into(),
+    )
 }
 
 fn context() -> Context {
@@ -115,6 +112,7 @@ fn dispatch_uses_provider_model_and_operation_as_data() {
         third.identity.model = "another/model:id".into();
         let mut non_chat = first.clone();
         non_chat.identity.operation = "embedding".into();
+        non_chat.chat = None;
         let identities = [first, second, third, non_chat.clone()];
         let adapters: Vec<_> = identities
             .iter()
@@ -221,6 +219,7 @@ fn unimplemented_operations_and_protocol_mismatch_never_dispatch() {
         let mut models = registry();
         let mut non_chat = model();
         non_chat.identity.operation = "native:other/op".into();
+        non_chat.chat = None;
         let mut unsupported_model = model();
         unsupported_model.identity.model = "unsupported:model/id".into();
         models.register(model(), fake.clone()).unwrap();

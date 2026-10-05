@@ -9,9 +9,11 @@ From `docs/specs/2026-10-04-models.md`.
 - **Provider:** A registered adapter that supplies models and implements declared operations using supplied request authentication.
 - **Model identity:** The combination of provider ID, model ID and operation.
 - **Operation:** A kind of model work: chat, classification, image generation, embedding or reranking.
-- **Catalog:** The locally registered collection of model entries with their identities, capabilities and flat price metadata.
+- **Catalog:** The locally materialized collection of model entries with their identities, capabilities and flat price metadata.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
 - **Model-request projection:** The selected-model view of supplied conversation context, not the stored branch or a history write.
+- **Catalog override:** Reversible supplied metadata over base registrations, keyed by provider and complete model identity.
+- **Captured model:** The effective registered metadata retained by one request despite later registry changes.
 - **Request:** An invocation of a selected model operation with its inputs, options, authentication and cancellation.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
