@@ -96,7 +96,11 @@ requests shell execution; strip that first character, without interpolation or
 escape grammar. Otherwise a nonempty environment variable whose name equals the
 whole value wins, then the unchanged literal. Empty final values are unavailable.
 
-Helpers close stdin, capture stdout, discard stderr and time out after 10,000 ms.
+On Unix, helpers run through the absolute `/bin/sh -c`, without looking up `sh`
+on PATH. Helpers close stdin, capture stdout, discard stderr and time out after
+10,000 ms. Stdout is limited to 1,048,576 bytes before trimming: exactly that size
+is accepted, while one byte more stops capture, kills and reaps the direct child,
+and resolves unavailable without partial output.
 The deadline includes stdout EOF, even after a successful shell exit. At timeout,
 the direct child is killed and reaped without joining a blocked stdout reader;
 descendants holding stdout open cannot delay resolution until pipe EOF. Partial

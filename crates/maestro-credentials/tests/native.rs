@@ -331,6 +331,74 @@ fn native_helpers_are_lazy_private_and_directory_bound() {
 
 #[cfg(unix)]
 #[test]
+fn native_helper_stdout_limit_accepts_boundary_and_reaps_overflow() {
+    let scratch = Scratch::new();
+    let native = NativeSecretResolver::new(scratch.0.clone()).unwrap();
+    std::fs::write(scratch.0.join("boundary"), vec![b'x'; 1_048_576]).unwrap();
+    let boundary = block_on(native.resolve(secret("!/bin/cat boundary"), Cancellation::new()))
+        .unwrap()
+        .unwrap();
+    assert_eq!(boundary.expose(), "x".repeat(1_048_576));
+
+    std::fs::write(scratch.0.join("overflow"), vec![b'x'; 1_048_577]).unwrap();
+    let overflow = block_on(native.resolve(
+        secret("!echo $$ > helper.pid; /bin/cat overflow; exec /bin/sleep 1"),
+        Cancellation::new(),
+    ))
+    .unwrap();
+    assert!(overflow.is_none(), "oversized stdout must yield no value");
+    let pid = std::fs::read_to_string(scratch.0.join("helper.pid")).unwrap();
+    assert!(
+        !std::process::Command::new("/bin/kill")
+            .args(["-0", pid.trim()])
+            .stderr(std::process::Stdio::null())
+            .status()
+            .unwrap()
+            .success(),
+        "overflow helper must be reaped before resolution completes"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn native_helper_uses_absolute_shell_despite_shadowed_path() {
+    use std::os::unix::fs::PermissionsExt;
+    if let Some(root) = std::env::var_os("MAESTRO_TEST_SHELL_ROOT") {
+        let native = NativeSecretResolver::new(root.into()).unwrap();
+        let result = block_on(native.resolve(secret("!printf real-shell"), Cancellation::new()))
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.expose(), "real-shell");
+        assert!(!result.expose().contains("SHADOW_SHELL_SENTINEL"));
+        return;
+    }
+    let scratch = Scratch::new();
+    let shadow = scratch.0.join("sh");
+    std::fs::write(&shadow, "#!/bin/sh\nprintf SHADOW_SHELL_SENTINEL\n").unwrap();
+    std::fs::set_permissions(&shadow, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "native_helper_uses_absolute_shell_despite_shadowed_path",
+            "--nocapture",
+        ])
+        .env("MAESTRO_TEST_SHELL_ROOT", &scratch.0)
+        .env("PATH", &scratch.0)
+        .stdin(std::process::Stdio::null())
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "child test failed: {stdout} {stderr}"
+    );
+    assert!(!stdout.contains("SHADOW_SHELL_SENTINEL"));
+    assert!(!stderr.contains("SHADOW_SHELL_SENTINEL"));
+}
+
+#[cfg(unix)]
+#[test]
 fn updating_existing_file_restricts_permissions_and_replaces_contents() {
     use std::os::unix::fs::PermissionsExt;
     let scratch = Scratch::new();

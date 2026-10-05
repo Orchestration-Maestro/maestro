@@ -7,7 +7,10 @@ use std::{
     path::{Path, PathBuf},
     pin::Pin,
     process::{Child, Command, Stdio},
-    sync::{Arc, Mutex, OnceLock},
+    sync::{
+        Arc, Mutex, OnceLock,
+        atomic::{AtomicBool, Ordering},
+    },
     thread::JoinHandle,
     time::{Duration, Instant},
 };
@@ -27,6 +30,7 @@ pub trait SecretResolver: Send + Sync {
 
 /// Native secret access bound to one explicitly supplied helper directory.
 /// Helpers capture stdout, discard stderr and retain direct-child cleanup ownership.
+/// Stdout above 1,048,576 bytes yields no value and terminates the direct child.
 /// The 10,000-ms deadline includes stdout EOF; inherited open pipes yield no value.
 pub struct NativeSecretResolver {
     working_directory: PathBuf,
@@ -161,7 +165,7 @@ impl HelperRuntime for NativeRuntime {
     fn spawn(&self, command: &str, directory: &Path) -> Result<Box<dyn HelperProcess>, ()> {
         #[cfg(not(windows))]
         let mut shell = {
-            let mut command = Command::new("sh");
+            let mut command = Command::new("/bin/sh");
             command.arg("-c");
             command
         };
@@ -180,16 +184,35 @@ impl HelperRuntime for NativeRuntime {
             .spawn()
             .map_err(|_| ())?;
         let stdout = child.stdout.take();
+        let overflow = Arc::new(AtomicBool::new(false));
         let mut process = NativeProcess {
             child: Some(child),
             stdout: None,
+            overflow: overflow.clone(),
         };
         let mut stdout = stdout.ok_or(())?;
         process.stdout = Some(
             std::thread::Builder::new()
                 .spawn(move || {
-                    let mut bytes = vec![];
-                    stdout.read_to_end(&mut bytes).map(|_| bytes)
+                    const OUTPUT_LIMIT: usize = 1_048_576;
+                    let mut bytes = Vec::new();
+                    let mut chunk = [0; 8192];
+                    loop {
+                        let read = match stdout.read(&mut chunk) {
+                            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {
+                                continue;
+                            }
+                            result => result?,
+                        };
+                        if read == 0 {
+                            return Ok(bytes);
+                        }
+                        if bytes.len() + read > OUTPUT_LIMIT {
+                            overflow.store(true, Ordering::Release);
+                            return Err(std::io::Error::other("helper stdout exceeded limit"));
+                        }
+                        bytes.extend_from_slice(&chunk[..read]);
+                    }
                 })
                 .map_err(|_| ())?,
         );
@@ -205,6 +228,7 @@ impl HelperRuntime for NativeRuntime {
 struct NativeProcess {
     child: Option<Child>,
     stdout: Option<JoinHandle<std::io::Result<Vec<u8>>>>,
+    overflow: Arc<AtomicBool>,
 }
 impl NativeProcess {
     fn settle(&mut self, kill: bool) -> Option<Vec<u8>> {
@@ -225,6 +249,9 @@ impl NativeProcess {
 }
 impl HelperProcess for NativeProcess {
     fn status(&mut self) -> Result<Option<bool>, ()> {
+        if self.overflow.load(Ordering::Acquire) {
+            return Ok(Some(false));
+        }
         self.child
             .as_mut()
             .ok_or(())?
