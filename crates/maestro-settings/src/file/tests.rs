@@ -4,34 +4,9 @@ use serde_json::json;
 use std::sync::{atomic::Ordering, mpsc};
 use std::time::Duration;
 
-struct Scratch {
-    root: std::path::PathBuf,
-}
+use crate::scratch::Scratch;
+
 impl Scratch {
-    fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-        loop {
-            let root = std::env::temp_dir().join(format!(
-                "maestro-settings-native-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ));
-            match std::fs::create_dir(&root) {
-                Ok(()) => return Self { root },
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-                Err(e) => panic!("create scratch: {e}"),
-            }
-        }
-    }
-    fn locations(&self) -> SettingsLocations {
-        SettingsLocations::new(
-            self.root.join("cwd"),
-            None,
-            self.root.join("user"),
-            self.root.join("home"),
-        )
-        .unwrap()
-    }
     fn adapter(&self) -> FileSettingsStorage {
         FileSettingsStorage::new(self.locations(), Arc::new(AtomicBool::new(false)))
     }
@@ -39,14 +14,6 @@ impl Scratch {
         self.locations()
             .configuration_directory(scope)
             .join("settings.json")
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let result = std::fs::remove_dir_all(&self.root);
-        if !std::thread::panicking() {
-            result.unwrap();
-        }
     }
 }
 fn settings(storage: FileSettingsStorage) -> Settings {
@@ -104,10 +71,13 @@ fn native_transactions_serialize_the_entire_update() {
             }));
             let mut caller = settings(b);
             let accepted = set(&mut caller, scope).unwrap();
-            assert_eq!(accepted.values["a"], json!(1));
+            assert!(!accepted.values.contains_key("a"));
             assert_eq!(accepted.values["b"], json!(2));
             a_thread.join().unwrap();
-            assert_eq!(settings(scratch.adapter()).resolve(), accepted);
+            let reopened = settings(scratch.adapter()).resolve();
+            assert_eq!(reopened.values["a"], json!(1));
+            assert_eq!(reopened.values["b"], json!(2));
+            assert_eq!(reopened, caller.reload().unwrap());
             assert!(
                 scratch
                     .file(scope)

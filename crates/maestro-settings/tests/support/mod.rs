@@ -809,52 +809,8 @@ pub fn defaults_cover_omitted_explicit_and_disabled(factory: StorageFactory) {
     }
 }
 
-pub struct Scratch {
-    pub root: std::path::PathBuf,
-}
-impl Scratch {
-    pub fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-        loop {
-            let root = std::env::temp_dir().join(format!(
-                "maestro-settings-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-            ));
-            match std::fs::create_dir(&root) {
-                Ok(()) => return Self { root },
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-                Err(e) => panic!("create scratch: {e}"),
-            }
-        }
-    }
-    pub fn locations(&self) -> SettingsLocations {
-        SettingsLocations::new(
-            self.root.join("cwd"),
-            None,
-            self.root.join("user"),
-            self.root.join("home"),
-        )
-        .unwrap()
-    }
-    pub fn write(&self, scope: SettingsScope, value: &Value) {
-        let dir = self.locations().configuration_directory(scope);
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(
-            dir.join("settings.json"),
-            serde_json::to_vec(value).unwrap(),
-        )
-        .unwrap();
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let result = std::fs::remove_dir_all(&self.root);
-        if !std::thread::panicking() {
-            result.expect("remove owned scratch");
-        }
-    }
-}
+mod scratch;
+pub(crate) use scratch::Scratch;
 struct OwnedFile {
     storage: FileSettingsStorage,
     _scratch: Scratch,
@@ -882,4 +838,165 @@ pub fn file(user: Map<String, Value>, project: Map<String, Value>) -> Box<dyn Se
         ),
         _scratch: scratch,
     })
+}
+
+pub fn scoped_reads_keep_shadowed_values(factory: StorageFactory) {
+    let user = json!({"packages":["u"],"nested":{"leaf":1}});
+    let project = json!({"packages":["p"],"projectOnly":2});
+    let mut s = settings(
+        factory,
+        json!({"engineOnly":true}),
+        json!({"manifestOnly":true}),
+        &[],
+        user.clone(),
+        project.clone(),
+    )
+    .unwrap();
+    assert_eq!(s.resolve().values["packages"], json!(["p"]));
+    s.set(
+        SettingsTarget::Override("runtime".into()),
+        &path(&["ephemeral"]),
+        json!(true),
+    )
+    .unwrap();
+    assert_eq!(s.read_scope(SettingsScope::User), map(user.clone()));
+    assert_eq!(s.read_scope(SettingsScope::Project), map(project.clone()));
+    let mut detached = s.read_scope(SettingsScope::User);
+    detached["nested"]["leaf"] = json!(99);
+    detached.insert("extra".into(), json!(true));
+    assert_eq!(s.read_scope(SettingsScope::User), map(user.clone()));
+    assert_eq!(s.resolve().values["nested"]["leaf"], json!(1));
+    s.set(
+        SettingsTarget::Stored(SettingsScope::User),
+        &path(&["unrelated"]),
+        json!(3),
+    )
+    .unwrap();
+    s.reload().unwrap();
+    assert_eq!(
+        s.read_scope(SettingsScope::User),
+        map(json!({"packages":["u"],"nested":{"leaf":1},"unrelated":3}))
+    );
+    assert_eq!(s.read_scope(SettingsScope::Project), map(project));
+}
+
+pub fn override_overlay_keeps_unmentioned_values(factory: StorageFactory) {
+    let user = json!({"a":{"x":1,"y":3,"deep":{"keep":4,"change":0}},"scalar":{"old":1},"nullable":1,"array":[1,2],"unrelated":7});
+    let mut s = settings(factory, json!({}), json!({}), &[], user.clone(), json!({})).unwrap();
+    let stored = s.resolve();
+    let next = s
+        .apply_overrides(
+            "runtime".into(),
+            map(json!({"a":{"x":2,"deep":{"change":5}},"scalar":2,"nullable":null,"array":[3]})),
+        )
+        .unwrap();
+    assert_eq!(
+        next.values["a"],
+        json!({"x":2,"y":3,"deep":{"keep":4,"change":5}})
+    );
+    assert_eq!(next.values["scalar"], json!(2));
+    assert_eq!(next.values["nullable"], json!(null));
+    assert_eq!(next.values["array"], json!([3]));
+    for segments in [
+        &["a", "x"][..],
+        &["a", "deep", "change"],
+        &["scalar"],
+        &["nullable"],
+        &["array"],
+    ] {
+        assert_eq!(
+            next.origins[&path(segments)],
+            SettingsOrigin::Override("runtime".into())
+        );
+    }
+    for segments in [&["a", "y"][..], &["a", "deep", "keep"], &["unrelated"]] {
+        assert_eq!(next.origins[&path(segments)], SettingsOrigin::User);
+    }
+    let later = s
+        .apply_overrides("extension:sample".into(), map(json!({"flag":true})))
+        .unwrap();
+    assert_eq!(later.values["a"], next.values["a"]);
+    assert_eq!(later.values["unrelated"], json!(7));
+    assert_eq!(
+        later.origins[&path(&["a", "x"])],
+        SettingsOrigin::Override("runtime".into())
+    );
+    assert_eq!(
+        later.origins[&path(&["flag"])],
+        SettingsOrigin::Override("extension:sample".into())
+    );
+    assert_eq!(s.read_scope(SettingsScope::User), map(user.clone()));
+    assert_eq!(s.read_scope(SettingsScope::Project), map(json!({})));
+    assert_eq!(s.reload().unwrap(), stored);
+    s.apply_overrides("runtime".into(), map(json!({"flag":true})))
+        .unwrap();
+    let saved = s
+        .set(
+            SettingsTarget::Stored(SettingsScope::User),
+            &path(&["a"]),
+            json!({"only":8}),
+        )
+        .unwrap();
+    assert_eq!(saved.values["a"], json!({"only":8}));
+    assert!(!saved.values.contains_key("flag"));
+    assert_eq!(s.reload().unwrap(), saved);
+    assert_eq!(
+        s.set(
+            SettingsTarget::Override("runtime".into()),
+            &[],
+            json!({"only":1})
+        )
+        .unwrap()
+        .values,
+        map(json!({"only":1}))
+    );
+}
+
+pub fn override_overlay_respects_locks(factory: StorageFactory) {
+    for source in ["cli", "environment", "runtime", "extension:sample"] {
+        let mut s = settings(factory, json!({}), json!({"scalar":"FROZEN_SENTINEL","array":[1,2],"tree":{"child":3},"a":{"locked":4,"open":0}}), &[&["scalar"], &["array"], &["tree"], &["a","locked"]], json!({"user":1}), json!({"project":2})).unwrap();
+        let stored = s.resolve();
+        let equal = s
+            .apply_overrides(
+                source.into(),
+                map(json!({"scalar":"FROZEN_SENTINEL","array":[1,2],"tree":{"child":3}})),
+            )
+            .unwrap();
+        assert_eq!(equal.locks, stored.locks);
+        assert_eq!(
+            equal.origins[&path(&["scalar"])],
+            SettingsOrigin::Override(source.into())
+        );
+        assert_eq!(
+            s.apply_overrides(source.into(), map(json!({"a":{"open":5}})))
+                .unwrap()
+                .values["a"],
+            json!({"locked":4,"open":5})
+        );
+        let before = s.resolve();
+        let user = s.read_scope(SettingsScope::User);
+        let project = s.read_scope(SettingsScope::Project);
+        for (values, lock) in [
+            (json!({"scalar":"ATTEMPT_SENTINEL"}), path(&["scalar"])),
+            (json!({"array":[1,3]}), path(&["array"])),
+            (json!({"tree":{"added":1}}), path(&["tree"])),
+            (json!({"tree":null}), path(&["tree"])),
+            (json!({"a":0}), path(&["a", "locked"])),
+        ] {
+            let error = s.apply_overrides(source.into(), map(values)).unwrap_err();
+            assert_eq!(
+                error,
+                SettingsError::LockConflict {
+                    path: lock,
+                    locked_by: SettingsOrigin::Manifest,
+                    attempted_by: SettingsOrigin::Override(source.into())
+                }
+            );
+            assert!(!format!("{error} {error:?}").contains("SENTINEL"));
+            assert_eq!(s.resolve(), before);
+            assert_eq!(s.read_scope(SettingsScope::User), user);
+            assert_eq!(s.read_scope(SettingsScope::Project), project);
+        }
+        assert_eq!(s.reload().unwrap(), stored);
+    }
 }

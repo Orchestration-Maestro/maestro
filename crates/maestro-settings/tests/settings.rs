@@ -1,4 +1,11 @@
 mod support;
+
+#[test]
+fn scoped_reads_keep_shadowed_values() {
+    support::scoped_reads_keep_shadowed_values(memory);
+    support::scoped_reads_keep_shadowed_values(controlled);
+    support::scoped_reads_keep_shadowed_values(file);
+}
 use maestro_settings::*;
 use serde_json::json;
 use support::*;
@@ -132,17 +139,17 @@ fn settings_use_injected_storage_without_caller_policy() {
         })
     );
     assert_eq!(s.resolve(), before);
-    assert_eq!(
-        s.set(
+    let accepted = s
+        .set(
             SettingsTarget::Stored(SettingsScope::User),
             &path(&["keep"]),
-            json!(3)
-        ),
-        Err(SettingsError::Storage {
-            scope: SettingsScope::Project
-        })
-    );
-    assert_eq!(s.resolve(), before);
+            json!(3),
+        )
+        .unwrap();
+    let mut expected = before.clone();
+    expected.values.insert("keep".into(), json!(3));
+    assert_eq!(accepted, expected);
+    assert_eq!(s.resolve(), expected);
     assert_eq!(maps.lock().unwrap()[0], map(json!({"keep":1})));
     fail.store(false, std::sync::atomic::Ordering::SeqCst);
     maps.lock().unwrap()[1] = map(json!({"frozen":2}));
@@ -153,7 +160,7 @@ fn settings_use_injected_storage_without_caller_policy() {
             ..
         })
     ));
-    assert_eq!(s.resolve(), before);
+    assert_eq!(s.resolve(), expected);
 }
 
 #[test]
@@ -182,4 +189,86 @@ fn defaults_cover_omitted_explicit_and_disabled() {
     support::defaults_cover_omitted_explicit_and_disabled(memory);
     support::defaults_cover_omitted_explicit_and_disabled(controlled);
     support::defaults_cover_omitted_explicit_and_disabled(file);
+}
+
+#[test]
+fn override_overlay_keeps_unmentioned_values() {
+    support::override_overlay_keeps_unmentioned_values(memory);
+    support::override_overlay_keeps_unmentioned_values(controlled);
+    support::override_overlay_keeps_unmentioned_values(file);
+}
+
+#[test]
+fn override_overlay_respects_locks() {
+    support::override_overlay_respects_locks(memory);
+    support::override_overlay_respects_locks(controlled);
+    support::override_overlay_respects_locks(file);
+}
+
+#[test]
+fn startup_storage_failures_keep_manager_usable() {
+    let maps = std::sync::Arc::new(std::sync::Mutex::new([
+        map(json!({"user":1})),
+        map(json!({"project":2})),
+    ]));
+    let fail = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let storage = || {
+        Box::new(ControlledStorage {
+            maps: maps.clone(),
+            fail: fail.clone(),
+        }) as Box<dyn SettingsStorage>
+    };
+    let manifest = || ManifestSettings {
+        values: map(json!({"frozen":1})),
+        locks: vec![path(&["frozen"])],
+    };
+    let mut s = Settings::new(map(json!({"engine":true})), manifest(), storage()).unwrap();
+    assert_eq!(s.resolve().values["engine"], json!(true));
+    assert_eq!(s.resolve().values["frozen"], json!(1));
+    assert_eq!(s.read_scope(SettingsScope::User), map(json!({})));
+    assert_eq!(s.read_scope(SettingsScope::Project), map(json!({})));
+    assert_eq!(
+        s.drain_errors(),
+        vec![
+            SettingsError::Storage {
+                scope: SettingsScope::User
+            },
+            SettingsError::Storage {
+                scope: SettingsScope::Project
+            }
+        ]
+    );
+    assert!(s.drain_errors().is_empty());
+    assert!(matches!(
+        Settings::new(
+            map(json!({})),
+            ManifestSettings {
+                values: map(json!({})),
+                locks: vec![vec![]]
+            },
+            storage()
+        ),
+        Err(SettingsError::InvalidLock { .. })
+    ));
+    assert!(matches!(
+        Settings::new(
+            map(json!({})),
+            ManifestSettings {
+                values: map(json!({})),
+                locks: vec![path(&["missing"])]
+            },
+            storage()
+        ),
+        Err(SettingsError::MissingLockTarget { .. })
+    ));
+    fail.store(false, std::sync::atomic::Ordering::SeqCst);
+    maps.lock().unwrap()[0] = map(json!({"frozen":2}));
+    maps.lock().unwrap()[1] = map(json!({"frozen":1}));
+    assert!(matches!(
+        Settings::new(map(json!({})), manifest(), storage()),
+        Err(SettingsError::LockConflict {
+            attempted_by: SettingsOrigin::User,
+            ..
+        })
+    ));
 }
