@@ -382,7 +382,7 @@ fn settings_is_registered_as_core() {
     workspace.list(&[("maestro-settings", "dedicated")]);
     assert_eq!(
         check_workspace(&workspace.root),
-        Err("maestro-settings must be registered as core".into())
+        Err("invalid scoped layer for maestro-settings: expected core".into())
     );
     workspace.list(&[("maestro-settings", "core")]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -397,14 +397,14 @@ fn settings_only_allows_declared_domain_edges() {
         ("maestro-agent", "core"),
         ("maestro-packages", "core"),
         ("maestro-storage", "core"),
-        ("maestro-jobs", "dedicated"),
+        ("maestro-tools", "core"),
     ]);
     for (directory, name) in [
         ("models", "maestro-models"),
         ("agent", "maestro-agent"),
         ("packages", "maestro-packages"),
         ("storage", "maestro-storage"),
-        ("jobs", "maestro-jobs"),
+        ("tools", "maestro-tools"),
     ] {
         workspace.member(directory, name, "");
     }
@@ -419,7 +419,7 @@ fn settings_only_allows_declared_domain_edges() {
             ("agent", "maestro-agent"),
             ("packages", "maestro-packages"),
             ("storage", "maestro-storage"),
-            ("jobs", "maestro-jobs"),
+            ("tools", "maestro-tools"),
         ] {
             for renamed in [false, true] {
                 let key = if renamed { "alias" } else { name };
@@ -431,7 +431,7 @@ fn settings_only_allows_declared_domain_edges() {
                     assert_eq!(
                         result,
                         Err(format!(
-                            "maestro-settings must not depend on workspace crate {name}"
+                            "forbidden production dependency: maestro-settings -> {name}"
                         ))
                     );
                 }
@@ -475,7 +475,7 @@ fn settings_rejects_internal_dev_dependencies() {
             assert_eq!(
                 check_workspace(&workspace.root),
                 Err(format!(
-                    "maestro-settings must not have internal dev dependency {name}"
+                    "internal dev dependency requires declared dependency-free test support: maestro-settings -> {name}"
                 ))
             );
         }
