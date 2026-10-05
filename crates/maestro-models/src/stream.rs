@@ -95,6 +95,7 @@ impl ModelStream {
                     content_index,
                     AssistantContent::Text(TextContent {
                         text: String::new(),
+                        replay_metadata: None,
                     }),
                     BlockState::Text,
                 )?;
@@ -208,13 +209,17 @@ impl ModelStream {
                     partial: self.message.clone(),
                 }
             }
-            U::TextEnd { content_index } => {
+            U::TextEnd {
+                content_index,
+                replay_metadata,
+            } => {
                 if !matches!(self.blocks.get(content_index), Some(BlockState::Text)) {
                     return Err(Failure::MalformedStream);
                 }
-                let AssistantContent::Text(text) = &self.message.content[content_index] else {
+                let AssistantContent::Text(text) = &mut self.message.content[content_index] else {
                     return Err(Failure::MalformedStream);
                 };
+                text.replay_metadata = replay_metadata;
                 let content = text.text.clone();
                 self.blocks[content_index] = BlockState::Closed;
                 ModelEvent::TextEnd {

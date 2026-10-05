@@ -16,16 +16,21 @@ fn model() -> Model {
         },
         protocol: "test:protocol/v1".into(),
         headers: Default::default(),
+        input: vec!["text".into()],
     }
 }
 
 fn context() -> Context {
     Context {
         system_prompt: Some("Reply with a greeting".into()),
-        messages: vec![UserMessage {
-            content: "hello".into(),
+        messages: vec![Message::User(UserMessage {
+            content: vec![InputContent::Text(TextContent {
+                text: "hello".into(),
+                replay_metadata: None,
+            })],
             timestamp: 17,
-        }],
+        })],
+        tools: vec![],
     }
 }
 
@@ -44,7 +49,10 @@ fn updates() -> Vec<ProviderUpdate> {
             content_index: 0,
             delta: "lo".into(),
         },
-        ProviderUpdate::TextEnd { content_index: 0 },
+        ProviderUpdate::TextEnd {
+            content_index: 0,
+            replay_metadata: None,
+        },
         ProviderUpdate::Done {
             reason: StopReason::Stop,
         },
@@ -127,7 +135,8 @@ fn dispatch_uses_provider_model_and_operation_as_data() {
             assert_eq!(
                 result.content,
                 vec![AssistantContent::Text(TextContent {
-                    text: "hello".into()
+                    text: "hello".into(),
+                    replay_metadata: None
                 })]
             );
             assert_eq!(result.stop_reason, Some(StopReason::Stop));
@@ -159,7 +168,12 @@ fn unknown_identities_return_secret_safe_errors() {
         let sentinel = "SECRET_SENTINEL_abc123";
         let mut input = context();
         input.system_prompt = Some(sentinel.into());
-        input.messages[0].content = sentinel.into();
+        if let Message::User(user) = &mut input.messages[0] {
+            user.content = vec![InputContent::Text(TextContent {
+                text: sentinel.into(),
+                replay_metadata: None,
+            })];
+        }
         let mut unknown_provider = model();
         unknown_provider.identity.provider = sentinel.into();
         let mut unknown_model = model();

@@ -13,6 +13,7 @@ fn empty_success_has_exact_start_and_done() {
         },
         protocol: "script".into(),
         headers: Default::default(),
+        input: vec!["text".into()],
     };
     let fake = Arc::new(ScriptedProvider::new(vec![Script::Steps(vec![
         ScriptStep::Update(ProviderUpdate::Done {
@@ -26,6 +27,7 @@ fn empty_success_has_exact_start_and_done() {
         Context {
             system_prompt: None,
             messages: vec![],
+            tools: vec![],
         },
         support::auth::local(),
     );
@@ -56,7 +58,10 @@ fn empty_and_interleaved_blocks_keep_exact_indices_and_order() {
             content_index: 1,
             delta: "".into(),
         },
-        ProviderUpdate::TextEnd { content_index: 0 },
+        ProviderUpdate::TextEnd {
+            content_index: 0,
+            replay_metadata: None,
+        },
         ProviderUpdate::ThinkingEnd { content_index: 1 },
         ProviderUpdate::TextStart { content_index: 2 },
         ProviderUpdate::ThinkingStart {
@@ -78,7 +83,10 @@ fn empty_and_interleaved_blocks_keep_exact_indices_and_order() {
         },
         ProviderUpdate::ToolCallEnd { content_index: 4 },
         ProviderUpdate::ThinkingEnd { content_index: 3 },
-        ProviderUpdate::TextEnd { content_index: 2 },
+        ProviderUpdate::TextEnd {
+            content_index: 2,
+            replay_metadata: None,
+        },
         done(),
     ]);
     assert_eq!(
@@ -106,16 +114,23 @@ fn empty_and_interleaved_blocks_keep_exact_indices_and_order() {
     assert_eq!(terminal(&events).content.len(), 5);
     assert_eq!(
         snapshot(&events[1]).content,
-        vec![AssistantContent::Text(TextContent { text: "".into() })]
+        vec![AssistantContent::Text(TextContent {
+            text: "".into(),
+            replay_metadata: None
+        })]
     );
     assert_eq!(
         snapshot(&events[3]).content[0],
-        AssistantContent::Text(TextContent { text: "".into() })
+        AssistantContent::Text(TextContent {
+            text: "".into(),
+            replay_metadata: None
+        })
     );
     assert_eq!(
         terminal(&events).content[2],
         AssistantContent::Text(TextContent {
-            text: "answer".into()
+            text: "answer".into(),
+            replay_metadata: None
         })
     );
 }
@@ -246,7 +261,10 @@ fn unicode_and_json_fragments_reassemble_without_loss() {
     }
     updates.extend([
         ProviderUpdate::ToolCallEnd { content_index: 2 },
-        ProviderUpdate::TextEnd { content_index: 0 },
+        ProviderUpdate::TextEnd {
+            content_index: 0,
+            replay_metadata: None,
+        },
         ProviderUpdate::ThinkingEnd { content_index: 1 },
         done(),
     ]);
@@ -254,7 +272,8 @@ fn unicode_and_json_fragments_reassemble_without_loss() {
     assert_eq!(
         terminal(&events).content[0],
         AssistantContent::Text(TextContent {
-            text: "ée\u{301}👩\u{200d}💻漢字".into()
+            text: "ée\u{301}👩\u{200d}💻漢字".into(),
+            replay_metadata: None
         })
     );
     assert_eq!(
@@ -379,7 +398,10 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
             delta: "second".into(),
         },
         ProviderUpdate::ThinkingEnd { content_index: 1 },
-        ProviderUpdate::TextEnd { content_index: 0 },
+        ProviderUpdate::TextEnd {
+            content_index: 0,
+            replay_metadata: None,
+        },
         done(),
     ]);
     let (models, _) = fixture(updates);
@@ -397,12 +419,16 @@ fn retained_snapshots_own_nested_content_usage_and_identity() {
     assert!(snapshot(&retained[0]).content.is_empty());
     assert_eq!(
         snapshot(&retained[1]).content[0],
-        AssistantContent::Text(TextContent { text: "".into() })
+        AssistantContent::Text(TextContent {
+            text: "".into(),
+            replay_metadata: None
+        })
     );
     assert_eq!(
         snapshot(&retained[2]).content[0],
         AssistantContent::Text(TextContent {
-            text: "early".into()
+            text: "early".into(),
+            replay_metadata: None
         })
     );
     assert_eq!(snapshot(&retained[2]).usage, Usage::default());
@@ -486,7 +512,8 @@ fn setup_and_transport_failures_preserve_the_normal_error_contract() {
     assert_eq!(
         terminal(&events).content[0],
         AssistantContent::Text(TextContent {
-            text: "partial".into()
+            text: "partial".into(),
+            replay_metadata: None
         })
     );
 }
@@ -500,7 +527,10 @@ fn malformed_blocks_and_tool_json_fail_without_repair() {
             content_index: 0,
             delta: "bad".into(),
         }],
-        vec![ProviderUpdate::TextEnd { content_index: 0 }],
+        vec![ProviderUpdate::TextEnd {
+            content_index: 0,
+            replay_metadata: None,
+        }],
         vec![ProviderUpdate::ThinkingDelta {
             content_index: 9,
             delta: "bad".into(),
@@ -541,7 +571,10 @@ fn malformed_blocks_and_tool_json_fail_without_repair() {
                 content_index: 0,
                 signature: None,
             },
-            ProviderUpdate::TextEnd { content_index: 0 },
+            ProviderUpdate::TextEnd {
+                content_index: 0,
+                replay_metadata: None,
+            },
         ],
         vec![ProviderUpdate::TextStart { content_index: 0 }, done()],
         vec![
@@ -566,7 +599,10 @@ fn malformed_blocks_and_tool_json_fail_without_repair() {
     for (start, end, delta) in [
         (
             ProviderUpdate::TextStart { content_index: 0 },
-            ProviderUpdate::TextEnd { content_index: 0 },
+            ProviderUpdate::TextEnd {
+                content_index: 0,
+                replay_metadata: None,
+            },
             ProviderUpdate::TextDelta {
                 content_index: 0,
                 delta: "late".into(),
@@ -735,7 +771,10 @@ fn reported_usage_and_response_identity_survive_failure() {
                 response_id: None,
             },
             ProviderUpdate::TextStart { content_index: 1 },
-            ProviderUpdate::TextEnd { content_index: 1 },
+            ProviderUpdate::TextEnd {
+                content_index: 1,
+                replay_metadata: None,
+            },
             ProviderUpdate::Usage { usage: usage() },
             ProviderUpdate::ResponseIdentity {
                 response_model: Some("actual".into()),
@@ -759,4 +798,76 @@ fn reported_usage_and_response_identity_survive_failure() {
         assert_eq!(snapshot(&events[4]).response_id, None);
     }
     assert_eq!(terminal(&run(vec![done()])).usage, Usage::default());
+}
+
+#[test]
+fn text_replay_metadata_survives_stream_completion() {
+    use support::conformance::*;
+    let updates = vec![
+        ProviderUpdate::TextStart { content_index: 0 },
+        ProviderUpdate::TextDelta {
+            content_index: 0,
+            delta: "answer".into(),
+        },
+        ProviderUpdate::TextEnd {
+            content_index: 0,
+            replay_metadata: Some("opaque-signature".into()),
+        },
+        done(),
+    ];
+    let fake = Arc::new(ScriptedProvider::new(vec![
+        steps(updates.clone()),
+        steps(updates),
+    ]));
+    let models = registry(fake);
+    let events = collect(
+        models.stream(model(), context(), support::auth::local()),
+        &model(),
+        73,
+    );
+    assert_eq!(
+        trace(&events),
+        vec![
+            ("start", None),
+            ("text_start", Some(0)),
+            ("text_delta", Some(0)),
+            ("text_end", Some(0)),
+            ("done", None)
+        ]
+    );
+    let unsigned = AssistantContent::Text(TextContent {
+        text: "answer".into(),
+        replay_metadata: None,
+    });
+    let signed = AssistantContent::Text(TextContent {
+        text: "answer".into(),
+        replay_metadata: Some("opaque-signature".into()),
+    });
+    assert_eq!(snapshot(&events[2]).content, vec![unsigned.clone()]);
+    assert_eq!(snapshot(&events[3]).content, vec![signed.clone()]);
+    assert_eq!(terminal(&events).content, vec![signed]);
+    let completed = block_on(models.complete(model(), context(), support::auth::local()));
+    assert_eq!(&completed, terminal(&events));
+    let source = Context {
+        messages: vec![Message::Assistant(completed.clone())],
+        ..context()
+    };
+    assert_eq!(
+        project_context(&source, &model(), &|_, _, _| panic!(), 73),
+        source
+    );
+    let mut foreign = model();
+    foreign.identity.model = "foreign".into();
+    let projected = project_context(&source, &foreign, &|_, _, _| panic!(), 73);
+    let Message::Assistant(a) = &projected.messages[0] else {
+        panic!()
+    };
+    assert_eq!(a.content, vec![unsigned]);
+    assert_eq!(
+        snapshot(&events[2]).content[0],
+        AssistantContent::Text(TextContent {
+            text: "answer".into(),
+            replay_metadata: None
+        })
+    );
 }
