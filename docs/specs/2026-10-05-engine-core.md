@@ -796,7 +796,9 @@ Every implementation ticket must include this **Docs** acceptance block:
 1. Public rustdoc documents every public item and crate root; strict docs build passes.
 2. The feature's `docs/` page explains behavior, errors, configuration and examples.
 3. `AGENTS.md` or `CONTEXT.md` is updated when coding agents need a new rule, command or term; otherwise record why no update is needed.
-4. `CHANGELOG.md` has the change under `[Unreleased]`.
+4. Every change has a clear conventional commit message (the squash commit)
+   describing user-visible behavior. Pull requests never edit `CHANGELOG.md`.
+   The changelog is generated from conventional commits at release time.
 5. Both Standards and Spec reviewers verify this block, adapter substitution and module depth; the merged spec is their single scope reference.
 
 Rust comments describe code only: no planning IDs, numbered slices/tasks, ticket

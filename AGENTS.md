@@ -29,6 +29,10 @@ conventional header and every line must be at most 80 columns.
 
 ## Documentation
 
+Every change has a clear conventional commit message (the squash commit)
+describing user-visible behavior. Pull requests never edit `CHANGELOG.md`.
+The changelog is generated from conventional commits at release time.
+
 Every crate root needs `//!` docs and every public item needs `///` docs.
 `just check` denies rustdoc warnings and missing documentation.
 
