@@ -149,17 +149,21 @@ adapters and explicit ephemeral storage.
 ### D02 — Consume the model contract; coordinate at the application
 
 Use the companion model specification for selection, messages, thinking, usage,
-credentials, local catalogs, registration and provider instrumentation. Do not
-copy its types or provider defaults into this specification. The application
+request authentication, local catalogs, registration and provider instrumentation.
+Credential persistence and precedence belong to D09 here. Do not copy model types
+or provider defaults into this specification. The application
 assembles current system instructions, branch messages and active tool
 declarations for each request; these are not system/tool-change transcript entries.
 
 The application applies settings locks to explicit model and thinking changes,
 records them in the session, and persists ordinary explicit preference changes.
-Restoration changes runtime state without persisting startup preferences. Local
-registration changes follow the model specification's application policy; an
-already-dispatched request is never rewritten. Initial provider registration
-precedes startup selection.
+Restoration changes runtime state without persisting startup preferences. After a
+local registry change, resolve the active model by the same provider and model ID.
+If that identity resolves to a changed entry, rebind the active selection to it
+without writing preferences; the next request uses its refreshed metadata and
+endpoint. If the identity no longer resolves, keep the current selection. Never
+rewrite an already-dispatched request's captured adapter or metadata. Initial
+provider registration precedes startup selection.
 
 Application retry is distinct from a provider's setup retries. Retry eligible
 transient model failures visibly; cancellation, authentication failure, exhausted
@@ -240,7 +244,8 @@ model tool call.
 | `write` | Path and UTF-8 content. Create parents and create or replace the whole file. |
 | `edit` | Path and a nonempty array of old/new text pairs. Match every pair against the original snapshot. Reject empty old text, missing, ambiguous or overlapping matches and no-change batches before writing. Try exact matching first; if fuzzy matching is needed, use the defined whitespace/Unicode/quote/dash-normalized whole snapshot. Retain BOM and line-ending style. Return a display diff and first changed line, not a newly required patch format. |
 | `bash` | Command and optional timeout in seconds. Resolve the configured shell, support a command prefix and injected environment, stream combined observed stdout/stderr, and distinguish spawn/directory failure, nonzero exit, absent exit status, timeout and abort. |
-| `grep`, `find`, `ls` | Native ignore-aware traversal and the declared pattern/path/filter/limit options. Respect nested ignore files; include hidden non-ignored entries. No matches is success; invalid patterns and inaccessible roots are errors. Find returns relative forward-slash paths; ls includes dotfiles, sorts case-insensitively and marks directories. |
+| `grep`, `find` | Native ignore-aware traversal and the declared pattern/path/filter/limit options. Respect nested ignore files; include hidden non-ignored entries. No matches is success; invalid patterns and inaccessible roots are errors. Find returns relative forward-slash paths. |
+| `ls` | List every directory entry, including ignored entries and dotfiles, with the declared path/limit options. Sort case-insensitively and mark directories; inaccessible roots are errors. |
 
 Write and edit share a process-local per-file mutation queue, including existing
 symlink aliases. A cancelled waiter cannot release a write still in flight. This
@@ -526,14 +531,21 @@ user permissions. Value locks are not a sandbox and do not make project content
 safe. Dedicated packages may later own their specific admission rules without
 introducing a generic trust subsystem here.
 
-`maestro-credentials` implements the model contract's credential-storage seam
-using private provider files plus memory/read-only adapters. Store API-key or
-provider-owned refreshable-token data; do not expose credentials through ordinary
-listing, logs, events or transcripts. Metadata inspection does not run secret
-helpers. Serialize refresh, re-read under the lock, preserve valid state on failed
-reads/refreshes and save rotated state before release. Request authentication
-precedence and provider token exchange belong to the models contract, not another
-resolver here.
+`maestro-credentials` owns persistence, refresh serialization and credential
+precedence through private provider files plus memory/read-only adapters. Store
+API-key or provider-owned refreshable-token data; do not expose credentials through
+ordinary listing, logs, events or transcripts. Metadata inspection does not run
+secret helpers. Resolve in this order: runtime override, stored API key, stored
+refreshable token, provider environment variable, configured fallback resolver.
+Refresh a stored token when expired under the store lock, re-reading current state
+before exchange and saving rotated state before release. After a failed refresh,
+re-read the store; use a now-valid token, otherwise return no credential without
+falling through to the environment or fallback resolver. Preserve valid stored
+state on failed reads/refreshes. The resolved result reaches models only through
+the [selected-provider request-auth resolver](2026-10-04-models.md#d09--selected-provider-request-authentication).
+Models supply ambient credential-name data and optional provider token-exchange
+primitives; the credential owner invokes exchange under its own lock. The bundled
+chat connection implements no token exchange.
 
 For configured secret values, a leading `!` explicitly requests a lazy shell
 helper; otherwise resolve a nonempty environment variable of that name, then use
@@ -556,7 +568,10 @@ language modules.
 
 A program receives `hello` with host-instance/session/grant context, replies with
 its complete `register` batch, and receives `ready` only after atomic admission.
-Failure publishes no registrations. Use one current JSONL grammar with correlated
+Failure publishes no registrations. A registration ID is owner-qualified: the
+host-assigned owner identity plus its local registration name. Reject duplicate
+owner-qualified IDs within one owner's admission batch atomically, publishing
+none of that batch. Use one current JSONL grammar with correlated
 requests, operation/target/context/input, result or coded error, progress,
 notifications and targeted cancellation; stderr is diagnostic. Replies may be
 out of order. Reject stale-instance calls; late replies cannot revive cancelled
@@ -566,12 +581,13 @@ introduced. Built-ins skip transport, not admission semantics.
 Tools, commands with argument completion, boolean/string flags, provider adapters
 and lifecycle hooks are generic registrations. Dynamic tools refresh after binding;
 all-tool inspection and active-tool get/set remain separate from registration.
-First tool wins across extensions with diagnostics; a registration may replace
-its owner's tool, and an admitted extension tool may replace a built-in. Duplicate
-commands receive deterministic numbered invocation suffixes. Provider replacement
-follows the model contract. Reserved engine administration names cannot be
-shadowed. Process reload waits for idle; runtime registration updates do not imply
-process reload.
+First tool wins across extensions with diagnostics; an admitted extension tool
+may replace a built-in. Explicit runtime replacement of an owner's registration
+is a separate named operation, not duplicate admission; provider re-registration
+follows the model contract's replacement behavior. Cross-owner command-name
+collisions receive deterministic numbered invocation suffixes. Reserved engine
+administration names cannot be shadowed. Process reload waits for idle; runtime
+registration updates do not imply process reload.
 
 Hook dispatch snapshots load/registration order. Keep resource discovery, session
 start/shutdown, before switch/fork/tree/compact, after tree/compact, input,
@@ -747,11 +763,11 @@ must be shared by adapters, not merely similar tests with weaker fake assertions
 | --- | --- | --- | --- |
 | T01 — Application/frontends | US01–US05 | D01, D07, D08 | Shared SDK behavior; runtime replacement/rebinding/disposal; real subprocess stream/exit tests; all 29 commands and response shapes; preflight success/failure exactly once; fragmented UTF-8, CRLF and final records; cumulative outer/nested event snapshots. |
 | T02 — Agent lifecycle | US06–US10 | D02, D03, D07 | Busy/continue cases; FIFO modes and steering priority; stop-after-turn; chat text restore versus RPC abort preserving queues; awaited loop listeners versus ordinary observers; serial preflight, completion-order events and source-order results; hooks without revalidation; all-result termination and cooperative cancellation. |
-| T03 — Native tools | US11–US15 | D03, D04 | Original-snapshot edits, zero writes on invalid batches, aliases sharing mutation order; ignore/glob rules; Unicode and line/byte bounds; image fitting; shell process-tree cleanup and readable full artifacts for every truncation cause. |
+| T03 — Native tools | US11–US15 | D03, D04 | Original-snapshot edits, zero writes on invalid batches, aliases sharing mutation order; grep/find ignore/glob rules and hidden non-ignored entries; ls includes a file ignored by a nested ignore file and dotfiles; Unicode and line/byte bounds; image fitting; shell process-tree cleanup and readable full artifacts for every truncation cause. |
 | T04 — Session semantics | US16–US20 | D05, D06 | Append-only branching, names/labels, navigation veto/failure, fork/clone reference integrity, selected-path projection, custom data excluded/custom messages included, raw-history-preserving escaped export, ephemeral status and adapter-independent locators. |
 | T05 — Recovery/storage/events | US21–US25 | D02, D05, D06, D07 | Compaction equality/crossing, retained tool pairs, repeated summaries and stale-usage guards; before/after hook order; queued work after compaction; one overflow recovery; retry without tool replay; memory conformance for atomic rejection/snapshots/identity/order; notification failure/unsubscribe/teardown without persistence. |
-| T06 — Configuration/authentication | US26–US30 | D02, D08, D09 | Companion model integration; explicit preference persistence versus restore; every lock bypass path; malformed/concurrent-file preservation and memory reload; serialized auth refresh and secret redaction; injected locations and offline startup. |
-| T07 — Extensions/interactions | US31–US35 | D03, D07, D10 | One suite for built-in/program admission, current handshake and grants, collision rules, dynamic activation, idle reload, crash/stale replies, unavailable blocking hooks, role-preserving replacements, generic package hook fixture and all nine UI methods with no-UI/cancel/timeout cases. |
+| T06 — Configuration/authentication | US26–US30 | D02, D08, D09 | Companion model integration; same-identity registry rebinding sends a changed endpoint to the next request without preference writes or changing in-flight requests, and missing identities retain the selection; explicit preference persistence versus restore; every lock bypass path; malformed/concurrent-file preservation and memory reload; full credential precedence, serialized auth refresh, failed-refresh re-read using a now-valid token or returning no credential without ambient/fallback fall-through, and secret redaction; injected locations and offline startup. |
+| T07 — Extensions/interactions | US31–US35 | D03, D07, D10 | One suite for built-in/program admission, current handshake and grants, atomic rejection of duplicate owner-qualified IDs in one admission batch, explicit runtime replacement versus cross-owner tool/command collisions, dynamic activation, idle reload, crash/stale replies, unavailable blocking hooks, role-preserving replacements, generic package hook fixture and all nine UI methods with no-UI/cancel/timeout cases. |
 | T08 — Packages/resources | US36–US40 | D09, D10, D11 | Registry/repository/local sources, contained extraction, exact-pin/force/local behavior, update target parsing and partial outcomes; manifest ownership/locks; missing initialization package; precedence, lazy skills and nonrecursive templates. |
 | T09 — Structure/defaults/docs | US41–US45 | D01, D11 | Every forbidden dependency/name/alias/feature/target fixture; same callers with adapter swaps; core runs without dedicated packages; every C01–C20 row; retained final docs pointer, installed links/schemas/examples and documented public interfaces. |
 

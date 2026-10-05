@@ -18,4 +18,6 @@
 - Engine-core specification covering application modes, the agent loop, native
   tools, branchable sessions, replaceable storage, settings, extensions, packages
   and documentation acceptance. This specifies planned behavior, not implemented
-  runtime features.
+  runtime features. Clarifies credential precedence, same-identity active-model
+  rebinding, unfiltered directory listing and atomic duplicate-registration
+  rejection.

@@ -45,15 +45,12 @@ From `docs/specs/2026-10-05-engine-core.md`.
 
 ### Extensibility
 
-- **Extension:** Admitted behavior supplied by a native program or a composition-wired implementation.
+- **Extension:** Admitted behavior that owns declared capabilities.
 - **Registration:** A host-admitted declaration of an owned capability.
 - **Package:** An installed source containing declared extension programs or resources.
 - **Resource:** Instruction material or documentation made discoverable to the engine.
 
 ### Interfaces
 
-- **Application / app:** The session operations shared by embedding and frontends.
+- **Application:** The session operations shared by embedding and frontends. _Avoid_: app.
 - **CLI:** The command-line frontend, including chat, print, JSON and RPC modes.
-- **Module / interface:** Behavior with a contract / that contract including invariants and failures.
-- **Seam / adapter:** Where behavior can be substituted / the implementation selected there.
-- **Conventions:** Mechanically checked naming and dependency rules.
