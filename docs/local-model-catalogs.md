@@ -38,8 +38,8 @@ assert_eq!(models.find(&base.identity).unwrap().endpoint, "local:alternate");
 // The full replacement wins over the provider endpoint, for this operation only.
 let mut changed = base.clone();
 changed.name = "Alternate display".into();
-changed.rates.input = 2.0;
-changed.rates_supplied = true;
+changed.rates.get_or_insert_with(TokenRates::default).input = 2.0;
+
 models.set_override("local:example", CatalogOverride {
     endpoint: Some("local:alternate".into()),
     models: vec![changed.clone()],
@@ -139,15 +139,21 @@ checked independently.
 
 Custom chat metadata defaults to ID-as-name, text input, false reasoning, no
 explicit thinking mappings, context 128,000 and output 16,384. These are fallback
-declarations, not measured limits. Four default arithmetic zero rates with
-`rates_supplied = false` mean unspecified pricing, not free access. Explicit zero
-rates use `rates_supplied = true`. Non-chat construction invents no chat limits
-or input capabilities. Thinking mapping keys are open strings; absent keys differ
-from explicit `None` (disabled). No thinking resolution or cost arithmetic occurs.
+declarations, not measured limits. `Model.rates: Option<TokenRates>` uses `None`
+for unknown pricing and `Some(TokenRates::default())` for explicit zero prices,
+not a promise of free access. Non-chat construction invents no chat limits or
+input capabilities. Reasoning, output ceiling and typed thinking mappings live
+only in `Model.capabilities: RequestCapabilities`; absent map entries differ from
+explicit `None` (disabled). Request dispatch resolves these capabilities and
+accounting estimates costs from captured effective rates. `ChatMetadata` retains
+only the context window; name and endpoint are independent model metadata.
 
-Registration and overrides reject empty required identifiers, protocol, endpoint,
-name or input identifiers; negative/nonfinite rates; zero declared chat limits;
-and incorrect chat metadata placement. `None` limits are unspecified. Identifiers,
+Catalog ingestion and overrides reject empty required identifiers, protocol,
+endpoint, name or input identifiers; negative/nonfinite rates; zero declared context
+windows; and incorrect chat metadata placement. Programmatic single-entry
+registration validates structure but relies on accounting's report-time rate
+checks. A `None` context window is unspecified; nonpositive request output ceilings
+mean unknown, matching request option resolution. Identifiers,
 protocols and endpoints are opaque nonempty strings, including slashes and colons;
 there is no URL parsing or credential requirement. Whole batches validate before
 publication. Duplicate complete keys return `DuplicateModel`; provider mismatch

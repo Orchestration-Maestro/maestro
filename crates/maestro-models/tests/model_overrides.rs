@@ -59,8 +59,8 @@ fn model_override_is_operation_qualified_and_wins_endpoint_precedence() {
         .unwrap();
     let mut changed = chat.clone();
     changed.name = "changed".into();
-    changed.rates.input = 3.5;
-    changed.rates_supplied = true;
+    changed.rates.get_or_insert_with(TokenRates::default).input = 3.5;
+
     models
         .set_override(
             "local",
@@ -142,7 +142,9 @@ fn invalid_override_preserves_previous_effective_catalog() {
     let before = models.find(&base.identity).unwrap();
     let unmatched = entry("local", "unmatched", "chat");
     let mut bad = unmatched.clone();
-    bad.rates.cache_write = f64::NAN;
+    bad.rates
+        .get_or_insert_with(TokenRates::default)
+        .cache_write = f64::NAN;
     let mut wrong = unmatched.clone();
     wrong.identity.provider = "wrong".into();
     for (overrides, failure) in [
@@ -220,8 +222,8 @@ fn removing_override_restores_latest_registration() {
     latest.protocol = "latest:protocol".into();
     latest.endpoint = "latest:endpoint".into();
     latest.headers = headers(&[("x-latest", "latest")]);
-    latest.rates.output = 2.0;
-    latest.rates_supplied = true;
+    latest.rates.get_or_insert_with(TokenRates::default).output = 2.0;
+
     models
         .register_catalog("local", || Ok(vec![latest.clone()]), next.clone())
         .unwrap();

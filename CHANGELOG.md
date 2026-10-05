@@ -26,9 +26,6 @@
   across replaceable adapters; scripted factories observe effective choices.
 - Model attempts expose derived flat usage/cost estimates with explicit reported
   and unpriced state, retained on partial failures and cancellation.
-- Add local model catalog lookup and validated reversible overrides; registry
-  changes affect subsequent requests immediately while in-flight requests retain
-  their captured adapters and metadata.
 
 - Selected-provider request authentication with explicit secret-free access,
   metadata-only configured status, optional owner-invoked token exchange,

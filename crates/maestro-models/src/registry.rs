@@ -25,8 +25,11 @@ impl Models {
     }
 
     /// Bind one explicit model identity to an adapter, rejecting duplicates.
+    /// Empty required data or invalid chat declarations return InvalidCatalog.
+    /// Programmatic registration relies on accounting's report-time rate checks;
+    /// catalog and override data instead validate rates on ingestion.
     pub fn register(&mut self, model: Model, provider: Arc<dyn Provider>) -> Result<(), Failure> {
-        crate::catalog::validate(&model)?;
+        crate::catalog::validate_structure(&model)?;
         if self.registrations.contains_key(&model.identity) {
             return Err(Failure::DuplicateModel);
         }
@@ -37,6 +40,8 @@ impl Models {
 
     /// Materialize a trusted local nonblocking getter once, replacing this provider.
     /// Configuration loading belongs to the caller; lookups never rerun the getter.
+    /// Catalog and override data validate rates on ingestion; programmatic
+    /// registration relies on accounting's report-time rate checks.
     /// Entire batches validate before publication: duplicate identities return
     /// DuplicateModel; provider mismatch or invalid metadata returns InvalidCatalog.
     /// Getter errors return fixed CatalogFailed diagnostics. All failures preserve

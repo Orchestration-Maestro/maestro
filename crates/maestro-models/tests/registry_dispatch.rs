@@ -136,8 +136,11 @@ fn in_flight_stream_retains_captured_adapter_and_metadata() {
             let mut effective = base.clone();
             effective.endpoint = "captured:endpoint".into();
             effective.headers = headers(&[("x-model", "captured-header")]);
-            effective.rates.input = 5.0;
-            effective.rates_supplied = true;
+            effective
+                .rates
+                .get_or_insert_with(TokenRates::default)
+                .input = 5.0;
+
             effective.input = vec!["captured-input".into()];
             effective.chat.as_mut().unwrap().context_window = Some(23);
             models.register(base.clone(), old.clone()).unwrap();
@@ -179,7 +182,7 @@ fn in_flight_stream_retains_captured_adapter_and_metadata() {
             }
             let mut changed = base.clone();
             changed.endpoint = "subsequent:endpoint".into();
-            changed.rates.output = 7.0;
+            changed.rates.get_or_insert_with(TokenRates::default).output = 7.0;
             changed.headers = headers(&[("x-model", "subsequent-header")]);
             changed.input = vec!["subsequent-input".into()];
             let expected_next = match mutation {
@@ -268,7 +271,10 @@ fn dispatch_uses_effective_registration_not_stale_caller_metadata() {
     models.register(base.clone(), adapter.clone()).unwrap();
     let mut effective = base.clone();
     effective.endpoint = "effective:endpoint".into();
-    effective.rates.input = 6.0;
+    effective
+        .rates
+        .get_or_insert_with(TokenRates::default)
+        .input = 6.0;
     effective.input = vec!["effective-capability".into()];
     effective.headers = headers(&[("x-shared", "effective"), ("x-model", "effective")]);
     models
@@ -282,7 +288,7 @@ fn dispatch_uses_effective_registration_not_stale_caller_metadata() {
         .unwrap();
     let mut stale = base.clone();
     stale.endpoint = "stale:endpoint".into();
-    stale.rates.input = 999.0;
+    stale.rates.get_or_insert_with(TokenRates::default).input = 999.0;
     stale.headers = headers(&[("x-stale", "stale")]);
     stale.input.clear();
     stale.chat = None;
@@ -366,7 +372,7 @@ fn advertised_operation_does_not_implement_dispatch() {
         );
     }
     let mut changed = chat.clone();
-    changed.chat.as_mut().unwrap().reasoning = true;
+    changed.capabilities.reasoning = true;
     changed.input = vec!["arbitrary-capability".into()];
     models
         .set_override(
@@ -384,4 +390,130 @@ fn advertised_operation_does_not_implement_dispatch() {
     assert!(rejecting.calls.lock().unwrap().is_empty());
     assert!(fake.calls().is_empty());
     assert_eq!(fake.pending(), 1);
+}
+
+#[test]
+fn overrides_capture_unified_options_projection_and_accounting() {
+    let script = || {
+        steps(vec![
+            ProviderUpdate::Usage {
+                usage: Usage {
+                    input: 1_000_000,
+                    ..Default::default()
+                },
+            },
+            done(),
+        ])
+    };
+    let fake = Arc::new(ScriptedProvider::new(vec![script(), script()]));
+    let mut models = models();
+    let mut base = entry("local", "base", "chat");
+    base.rates = Some(TokenRates {
+        input: 2.0,
+        ..Default::default()
+    });
+    models.register(base.clone(), fake.clone()).unwrap();
+    let mut changed = base.clone();
+    changed.rates.as_mut().unwrap().input = 5.0;
+    changed.input.push("image".into());
+    changed.capabilities.reasoning = true;
+    changed
+        .capabilities
+        .thinking_level_map
+        .insert(ThinkingLevel::High, Some("custom-effort".into()));
+    changed.capabilities.output_limit = 8_000;
+    models
+        .set_override(
+            "local",
+            CatalogOverride {
+                endpoint: None,
+                models: vec![changed.clone()],
+            },
+        )
+        .unwrap();
+    let mut options = local();
+    options.thinking = ThinkingLevel::High;
+    assert_eq!(
+        models
+            .resolve_options(&base, options.clone())
+            .unwrap()
+            .effort
+            .as_deref(),
+        Some("custom-effort")
+    );
+    let image = InputContent::Image(ImageContent {
+        data: "AQID".into(),
+        mime_type: "image/png".into(),
+    });
+    let source = Context {
+        system_prompt: None,
+        tools: vec![],
+        messages: vec![Message::User(UserMessage {
+            content: vec![image.clone()],
+            timestamp: 1,
+        })],
+    };
+    let mut stream = models.stream(base.clone(), source.clone(), options.clone());
+    assert!(models.remove_override("local"));
+    let captured = loop {
+        match block_on(stream.next()).unwrap() {
+            ModelEvent::Done { message, .. } => break message,
+            ModelEvent::Error { error, .. } => panic!("{error:?}"),
+            _ => {}
+        }
+    };
+    assert!(captured.usage.cost.priced);
+    assert_eq!(captured.usage.cost.input, 5.0);
+    let subsequent = block_on(models.complete(base.clone(), source.clone(), options));
+    assert!(subsequent.usage.cost.priced);
+    assert_eq!(subsequent.usage.cost.input, 2.0);
+    let calls = fake.calls();
+    assert_eq!(calls.len(), 2);
+    assert_eq!(calls[0].model, changed);
+    assert_eq!(calls[1].model, base);
+    assert_eq!(calls[0].options.effort.as_deref(), Some("custom-effort"));
+    assert_eq!(calls[0].options.output_limit, Some(8_000));
+    assert_eq!(calls[1].options.thinking, ThinkingLevel::Off);
+    let Message::User(captured_user) = &calls[0].context.messages[0] else {
+        panic!()
+    };
+    assert_eq!(captured_user.content, vec![image.clone()]);
+    let Message::User(subsequent_user) = &calls[1].context.messages[0] else {
+        panic!()
+    };
+    assert_eq!(
+        subsequent_user.content,
+        vec![InputContent::Text(TextContent {
+            text: "(image omitted: model does not support images)".into(),
+            replay_metadata: None
+        })]
+    );
+    let Message::User(original_user) = &source.messages[0] else {
+        panic!()
+    };
+    assert_eq!(original_user.content, vec![image]);
+}
+
+#[test]
+fn catalog_nonpositive_output_ceilings_remain_unknown() {
+    for ceiling in [0, -1, i64::MIN] {
+        let mut models = models();
+        let mut model = entry("local", "unknown-ceiling", "chat");
+        model.capabilities.output_limit = ceiling;
+        models
+            .register_catalog(
+                "local",
+                || Ok(vec![model.clone()]),
+                Arc::new(RecordingProvider::default()),
+            )
+            .unwrap();
+        assert_eq!(models.find(&model.identity), Some(model.clone()));
+        assert_eq!(
+            models
+                .resolve_options(&model, local())
+                .unwrap()
+                .output_limit,
+            None
+        );
+    }
 }

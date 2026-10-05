@@ -30,10 +30,6 @@ pub struct Model {
     pub name: String,
     /// Inert transport endpoint; sensitive and not safe to log.
     pub endpoint: String,
-    /// Legacy catalog price declarations.
-    pub catalog_rates: crate::FlatRates,
-    /// Whether rates were explicitly supplied, including explicit zeros.
-    pub rates_supplied: bool,
     /// Chat declarations, present only for chat operations.
     pub chat: Option<crate::ChatMetadata>,
     /// Supplied input capabilities; `image` enables image retention.

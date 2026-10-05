@@ -39,11 +39,11 @@ pub use auth::{
     AuthResolver, AuthStatus, RequestAuth, SecretString, TokenExchange, TokenExchangeResult,
 };
 pub use cancellation::Cancellation;
+pub use catalog::{AvailableModel, CatalogOverride, ChatMetadata};
 pub use content::{
     AssistantContent, ImageContent, InputContent, TextContent, ThinkingContent, ToolCall,
 };
 pub use conversation::{Context, Message, ToolDeclaration, ToolResultMessage, UserMessage};
-pub use catalog::{AvailableModel, CatalogOverride, ChatMetadata, FlatRates};
 pub use events::ModelEvent;
 pub use options::{
     EffectiveOptions, RequestCapabilities, StreamOptions, ThinkingLevel, ThinkingMode,

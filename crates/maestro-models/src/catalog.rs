@@ -3,30 +3,11 @@
 use crate::{AuthStatus, Model, ModelIdentity};
 use std::collections::BTreeMap;
 
-/// Declared USD per million tokens; default zeros do not promise free access.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct FlatRates {
-    /// Input token rate.
-    pub input: f64,
-    /// Output token rate.
-    pub output: f64,
-    /// Cached input read rate.
-    pub cache_read: f64,
-    /// Cache write rate.
-    pub cache_write: f64,
-}
-
 /// Declared chat capability metadata, not measured capacity or option resolution.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ChatMetadata {
     /// Declared context limit; absent means unspecified.
     pub context_window: Option<u64>,
-    /// Declared output limit; absent means unspecified.
-    pub max_output_tokens: Option<u64>,
-    /// Whether reasoning is declared.
-    pub reasoning: bool,
-    /// Open thinking names; explicit None disables a name, unlike an absent key.
-    pub thinking_level_map: BTreeMap<String, Option<String>>,
 }
 
 /// Reversible provider endpoint and complete operation-qualified model replacements.
@@ -49,14 +30,11 @@ pub struct AvailableModel {
 
 impl Model {
     /// Construct editable sparse metadata without validation.
-    /// Chat limits are fallback declarations, not measured capacity; zero rates
-    /// are unspecified pricing. Other operations receive no invented chat limits.
+    /// Chat limits are fallback declarations, not measured capacity. Absent rates
+    /// mean unknown pricing. Other operations receive no invented chat limits.
     pub fn custom(identity: ModelIdentity, protocol: String, endpoint: String) -> Self {
-        let chat = (identity.operation == "chat").then(|| ChatMetadata {
+        let chat = (identity.operation == "chat").then_some(ChatMetadata {
             context_window: Some(128_000),
-            max_output_tokens: Some(16_384),
-            reasoning: false,
-            thinking_level_map: BTreeMap::new(),
         });
         Self {
             name: identity.model.clone(),
@@ -65,18 +43,38 @@ impl Model {
             } else {
                 vec![]
             },
+            capabilities: crate::RequestCapabilities {
+                output_limit: if chat.is_some() { 16_384 } else { 0 },
+                ..Default::default()
+            },
             identity,
             protocol,
             endpoint,
             chat,
             headers: BTreeMap::new(),
-            rates: FlatRates::default(),
-            rates_supplied: false,
+            rates: None,
         }
     }
 }
 
 pub(crate) fn validate(model: &Model) -> Result<(), crate::Failure> {
+    validate_structure(model)?;
+    if model.rates.as_ref().is_some_and(|rates| {
+        [
+            rates.input,
+            rates.output,
+            rates.cache_read,
+            rates.cache_write,
+        ]
+        .iter()
+        .any(|rate| !rate.is_finite() || *rate < 0.0)
+    }) {
+        return Err(crate::Failure::InvalidCatalog);
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_structure(model: &Model) -> Result<(), crate::Failure> {
     let required = [
         &model.identity.provider,
         &model.identity.model,
@@ -85,20 +83,13 @@ pub(crate) fn validate(model: &Model) -> Result<(), crate::Failure> {
         &model.endpoint,
         &model.name,
     ];
-    let rates = [
-        model.rates.input,
-        model.rates.output,
-        model.rates.cache_read,
-        model.rates.cache_write,
-    ];
     let chat_valid = match (&model.chat, model.identity.operation.as_str()) {
-        (Some(chat), "chat") => chat.context_window != Some(0) && chat.max_output_tokens != Some(0),
+        (Some(chat), "chat") => chat.context_window != Some(0),
         (None, op) => op != "chat",
         _ => false,
     };
     if required.iter().any(|s| s.is_empty())
         || model.input.iter().any(String::is_empty)
-        || rates.iter().any(|r| !r.is_finite() || *r < 0.0)
         || !chat_valid
     {
         return Err(crate::Failure::InvalidCatalog);

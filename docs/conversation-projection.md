@@ -77,6 +77,8 @@ async fn caller(models: &Models, target: Model, source: &Context) -> AssistantMe
 async fn handoff() -> Result<(), Box<dyn std::error::Error>> {
     let first = Model {
         identity: ModelIdentity { provider: "first".into(), model: "vision".into(), operation: "chat".into() },
+        name: "vision".into(), endpoint: "local:endpoint".into(),
+        chat: Some(ChatMetadata { context_window: None }),
         protocol: "chat".into(), input: vec!["text".into(), "image".into()],
         rates: None,
         headers: Default::default(),
@@ -84,6 +86,8 @@ async fn handoff() -> Result<(), Box<dyn std::error::Error>> {
     };
     let second = Model {
         identity: ModelIdentity { provider: "second".into(), model: "text".into(), operation: "chat".into() },
+        name: "text".into(), endpoint: "local:endpoint".into(),
+        chat: Some(ChatMetadata { context_window: None }),
         protocol: "chat".into(), input: vec!["text".into()],
         rates: None,
         headers: Default::default(),

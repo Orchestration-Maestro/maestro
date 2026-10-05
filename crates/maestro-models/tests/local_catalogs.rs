@@ -227,10 +227,14 @@ fn invalid_catalog_replacement_is_atomic() {
         for field in 0..4 {
             let mut bad = base.clone();
             match field {
-                0 => bad.rates.input = rate,
-                1 => bad.rates.output = rate,
-                2 => bad.rates.cache_read = rate,
-                _ => bad.rates.cache_write = rate,
+                0 => bad.rates.get_or_insert_with(TokenRates::default).input = rate,
+                1 => bad.rates.get_or_insert_with(TokenRates::default).output = rate,
+                2 => bad.rates.get_or_insert_with(TokenRates::default).cache_read = rate,
+                _ => {
+                    bad.rates
+                        .get_or_insert_with(TokenRates::default)
+                        .cache_write = rate
+                }
             }
             cases.push(bad);
         }
@@ -241,7 +245,7 @@ fn invalid_catalog_replacement_is_atomic() {
         if context_limit {
             chat.context_window = Some(0);
         } else {
-            chat.max_output_tokens = Some(0);
+            bad.identity.model.clear();
         }
         cases.push(bad);
     }
@@ -261,10 +265,13 @@ fn invalid_catalog_replacement_is_atomic() {
         assert_eq!(models.find(&base.identity), Some(effective.clone()));
         assert_eq!(models.find(&fresh.identity), None);
         if bad.identity.provider != "wrong" {
-            assert_eq!(
-                models.register(bad, next.clone()),
-                Err(Failure::InvalidCatalog)
-            );
+            let failure = if bad.rates.is_some() {
+                Failure::DuplicateModel
+            } else {
+                Failure::InvalidCatalog
+            };
+            assert_eq!(models.register(bad, next.clone()), Err(failure));
+            assert_eq!(models.find(&base.identity), Some(effective.clone()));
         }
     }
     assert_eq!(
@@ -301,40 +308,34 @@ fn custom_metadata_defaults_are_fallbacks_not_measurements() {
     assert_eq!(chat.name, "name");
     assert_eq!(chat.input, ["text"]);
     assert!(chat.headers.is_empty());
-    assert_eq!(
-        chat.rates,
-        FlatRates {
-            input: 0.0,
-            output: 0.0,
-            cache_read: 0.0,
-            cache_write: 0.0
-        }
-    );
-    assert!(!chat.rates_supplied);
+    assert_eq!(chat.rates, None);
     assert_eq!(
         chat.chat,
         Some(ChatMetadata {
             context_window: Some(128_000),
-            max_output_tokens: Some(16_384),
-            reasoning: false,
-            thinking_level_map: Default::default()
         })
     );
+    assert_eq!(chat.capabilities.output_limit, 16_384);
+    assert!(!chat.capabilities.reasoning);
+    assert!(chat.capabilities.thinking_level_map.is_empty());
     let native = entry("local", "native", "embedding");
     assert!(native.chat.is_none());
     assert!(native.input.is_empty());
-    assert!(!native.rates_supplied);
-    chat.rates_supplied = true;
+    assert_eq!(native.rates, None);
+
+    chat.rates = Some(TokenRates::default());
     chat.endpoint = "ENDPOINT_SENTINEL".into();
     chat.headers = headers(&[("x-key", "HEADER_SENTINEL")]);
     let metadata = chat.chat.as_mut().unwrap();
     metadata.context_window = None;
-    metadata.max_output_tokens = Some(7);
-    metadata.reasoning = true;
-    metadata.thinking_level_map.insert("disabled".into(), None);
-    metadata
+    chat.capabilities.output_limit = 7;
+    chat.capabilities.reasoning = true;
+    chat.capabilities
         .thinking_level_map
-        .insert("custom".into(), Some("arbitrary".into()));
+        .insert(ThinkingLevel::Low, None);
+    chat.capabilities
+        .thinking_level_map
+        .insert(ThinkingLevel::High, Some("arbitrary".into()));
     let debug = format!("{chat:?}");
     assert!(!debug.contains("ENDPOINT_SENTINEL"));
     assert!(!debug.contains("HEADER_SENTINEL"));
@@ -344,12 +345,12 @@ fn custom_metadata_defaults_are_fallbacks_not_measurements() {
         .unwrap();
     assert_eq!(models.find(&chat.identity), Some(chat.clone()));
     assert_ne!(
-        chat.chat
-            .as_ref()
-            .unwrap()
+        chat.capabilities
             .thinking_level_map
-            .get("disabled"),
-        chat.chat.as_ref().unwrap().thinking_level_map.get("absent")
+            .get(&ThinkingLevel::Low),
+        chat.capabilities
+            .thinking_level_map
+            .get(&ThinkingLevel::Medium)
     );
     chat.name.clear();
     let failure = models
