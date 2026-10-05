@@ -53,6 +53,8 @@ impl Models {
                 .and_then(|(registered, provider)| {
                     if registered.protocol != model.protocol || !provider.supports("chat") {
                         Err(Failure::UnsupportedOperation)
+                    } else if options.cancellation.is_cancelled() {
+                        Err(Failure::Cancelled)
                     } else {
                         provider.stream(model.clone(), context, options.clone())
                     }

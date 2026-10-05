@@ -29,6 +29,43 @@ fn pre_dispatch_cancellation_aborts_without_consuming_a_script() {
 }
 
 #[test]
+fn capability_check_cancellation_aborts_without_dispatching_or_consuming_a_script() {
+    struct CancellingProvider {
+        cancellation: Cancellation,
+        scripted: Arc<ScriptedProvider>,
+    }
+
+    impl Provider for CancellingProvider {
+        fn supports(&self, operation: &str) -> bool {
+            self.cancellation.cancel();
+            self.scripted.supports(operation)
+        }
+
+        fn stream(
+            &self,
+            model: Model,
+            context: Context,
+            options: StreamOptions,
+        ) -> Result<Box<dyn ProviderStream>, Failure> {
+            self.scripted.stream(model, context, options)
+        }
+    }
+
+    let options = StreamOptions::default();
+    let fake = Arc::new(ScriptedProvider::new(vec![steps(vec![done()])]));
+    let models = registry(Arc::new(CancellingProvider {
+        cancellation: options.cancellation.clone(),
+        scripted: fake.clone(),
+    }));
+    let events = collect(models.stream(model(), context(), options), &model(), 73);
+    assert_eq!(trace(&events), vec![("error", None)]);
+    assert_eq!(terminal(&events).failure, Some(Failure::Cancelled));
+    assert_eq!(terminal(&events).stop_reason, Some(StopReason::Aborted));
+    assert_eq!(fake.calls().len(), 0);
+    assert_eq!(fake.pending(), 1);
+}
+
+#[test]
 fn blocked_read_cancellation_wakes_and_drops_without_retry() {
     for partial in [
         vec![],
