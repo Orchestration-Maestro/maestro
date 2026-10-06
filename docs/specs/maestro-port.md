@@ -179,7 +179,7 @@ An em dash means no internal dependencies.
 | `maestro-session` | own conversation history | `maestro-models`, `maestro-agent`, `maestro-storage` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
-| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
+| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
 | `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-storage`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -187,6 +187,8 @@ An em dash means no internal dependencies.
 | `maestro-rpc` | present the RPC contract | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime` | 6 |
+
+The graph contains 25 crates and 62 permitted internal dependency edges; seven crates remain leaves.
 
 ### Crate order
 

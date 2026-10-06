@@ -45,6 +45,7 @@ fn rule(name: &str) -> Option<Rule> {
             "maestro-tools",
             "maestro-theme",
             "maestro-tui",
+            "maestro-resources",
         ],
         "maestro-app" => &[
             "maestro-models",

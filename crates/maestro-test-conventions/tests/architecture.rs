@@ -433,7 +433,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        61
+        62
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -1149,4 +1149,112 @@ fn metadata_graph_failures_cross_the_public_interface() {
         .unwrap()
         .remove(0);
     workspace.metadata_probe(&declared, &full, "ok");
+}
+
+#[test]
+fn extension_domain_accepts_resource_edges() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions", "maestro-resources"]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-extensions",
+            "maestro-extensions",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-resources\", path = \"../maestro-resources\"{extra} }}"),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
+    }
+}
+
+#[test]
+fn resource_leaf_rejects_extension_edges() {
+    for (kind, extra) in DECLARATIONS.iter().copied().chain([
+        ("dev-dependencies", ""),
+        ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
+    ]) {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-extensions", "maestro-resources"]);
+        workspace.member(
+            "maestro-resources",
+            "maestro-resources",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-extensions\", path = \"../maestro-extensions\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("maestro-resources must not depend on workspace crate maestro-extensions".into()),
+            "{kind}{extra}"
+        );
+        workspace.member("maestro-resources", "maestro-resources", "");
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+}
+
+#[test]
+fn extension_resource_dev_edges_stay_forbidden() {
+    for kind in [
+        "dev-dependencies",
+        "target.'cfg(target_os = \"none\")'.dev-dependencies",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-extensions", "maestro-resources"]);
+        workspace.member(
+            "maestro-extensions",
+            "maestro-extensions",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-resources\", path = \"../maestro-resources\" }}"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("internal dev dependency requires declared dependency-free test support: maestro-extensions -> maestro-resources".into()),
+            "{kind}"
+        );
+        workspace.member("maestro-extensions", "maestro-extensions", "");
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+}
+
+#[test]
+fn documented_foundation_graph_matches_policy() {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let specification = std::fs::read_to_string(root.join("docs/specs/maestro-port.md")).unwrap();
+    let architecture = std::fs::read_to_string(root.join("docs/architecture.md")).unwrap();
+    let table = specification
+        .split_once("| Crate | One job | Allowed internal dependencies | Layer |\n")
+        .unwrap()
+        .1
+        .split_once("\n\n")
+        .unwrap()
+        .0;
+    let mut documented = BTreeMap::new();
+    for row in table.lines().skip(1) {
+        let columns: Vec<_> = row.split('|').map(str::trim).collect();
+        assert_eq!(columns.len(), 6, "{row}");
+        let name = columns[1].trim_matches('`');
+        let dependencies: BTreeSet<_> = if columns[3] == "—" {
+            BTreeSet::new()
+        } else {
+            columns[3]
+                .split(", ")
+                .map(|dependency| dependency.trim_matches('`'))
+                .collect()
+        };
+        assert!(
+            documented.insert(name, dependencies).is_none(),
+            "duplicate crate: {name}"
+        );
+    }
+    let expected: BTreeMap<_, BTreeSet<_>> = support::policy::POLICY
+        .iter()
+        .map(|&(name, dependencies)| (name, dependencies.iter().copied().collect()))
+        .collect();
+    assert_eq!(documented, expected);
+    assert_eq!(documented.len(), 25);
+    assert_eq!(documented.values().map(BTreeSet::len).sum::<usize>(), 62);
+    assert_eq!(documented.values().filter(|row| row.is_empty()).count(), 7);
+    assert!(documented["maestro-resources"].is_empty());
+    assert!(documented["maestro-extensions"].contains("maestro-resources"));
+    assert!(specification.lines().any(|line| line == "| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |"));
+    assert!(specification.split("\n\n").any(|paragraph| paragraph == "The graph contains 25 crates and 62 permitted internal dependency edges; seven crates remain leaves."));
+    assert!(architecture.split("\n\n").any(|paragraph| paragraph == "The extension domain may depend directly on resources for shared source information. Resources remain a leaf; this permission does not allow the reverse dependency or internal dev-dependencies."));
 }
