@@ -54,15 +54,62 @@ pub(crate) async fn run(
                 tools: Some(vec![]),
             },
             Some(options.clone()),
-        )
-        .map_err(|_| AgentError::RunFailed)?;
+        );
+        let stream = match stream {
+            Ok(stream) => stream,
+            Err(error) => {
+                let message = AssistantMessage {
+                    content: vec![],
+                    api: inner.model.api.clone(),
+                    provider: inner.model.provider.clone(),
+                    model: inner.model.id.clone(),
+                    response_model: None,
+                    response_id: None,
+                    diagnostics: None,
+                    usage: maestro_models::Usage {
+                        input: 0.0,
+                        output: 0.0,
+                        cache_read: 0.0,
+                        cache_write: 0.0,
+                        total_tokens: 0.0,
+                        cost: maestro_models::UsageCost {
+                            input: 0.0,
+                            output: 0.0,
+                            cache_read: 0.0,
+                            cache_write: 0.0,
+                            total: 0.0,
+                        },
+                    },
+                    stop_reason: if cancellation.is_cancelled() {
+                        StopReason::Aborted
+                    } else {
+                        StopReason::Error
+                    },
+                    error_message: Some(
+                        maestro_models::format_thrown_value(&error)
+                            .map_err(|_| AgentError::RunFailed)?,
+                    ),
+                    timestamp: std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_millis() as f64,
+                };
+                let stream = maestro_models::create_assistant_message_event_stream();
+                stream
+                    .push(AssistantMessageEvent::Error {
+                        reason: message.stop_reason.clone(),
+                        error: Arc::new(std::sync::RwLock::new(message)),
+                    })
+                    .map_err(|_| AgentError::RunFailed)?;
+                stream
+            }
+        };
         let mut iterator = stream.iter();
         let mut started = false;
         let terminal = loop {
-            let event = iterator
-                .next()
-                .await
-                .expect("model stream supplies a terminal outcome");
+            let Some(event) = iterator.next().await else {
+                break snapshot(&stream.result().await);
+            };
             match event {
                 AssistantMessageEvent::Start { partial } => {
                     started = true;

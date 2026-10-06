@@ -73,11 +73,19 @@ pub fn setup(responses: Vec<Response>, config: AgentOptions) -> (Agent, Arc<Cont
             };
             supplied.calls.lock().unwrap().push(call.clone());
             let response = supplied.responses.lock().unwrap().pop_front().unwrap();
+            if let Response::SetupFailure = response {
+                return Err(ThrownValue::Json(serde_json::json!("setup failed")));
+            }
             let stream = create_assistant_message_event_stream();
             let output = stream.clone();
             tokio::spawn(async move {
                 let signal = call.options.signal.clone().unwrap();
                 let actions = match response {
+                    Response::SetupFailure => unreachable!(),
+                    Response::EndOnly => {
+                        output.end(Some(shared(&assistant(&model))));
+                        return;
+                    }
                     Response::Steps(actions) => actions,
                     Response::Factory(factory) => factory(call).await.unwrap(),
                     Response::Failure(failure) => {
@@ -277,6 +285,8 @@ type ResponseFactory = Box<
         > + Send,
 >;
 pub enum Response {
+    SetupFailure,
+    EndOnly,
     Steps(Vec<Action>),
     Factory(ResponseFactory),
     Failure(Failure),

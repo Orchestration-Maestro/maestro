@@ -1628,3 +1628,84 @@ fn docs_record_contract_paragraphs_match() {
         assert!(docs.contains(paragraph), "{paragraph}");
     }
 }
+
+#[test]
+fn event_clone_can_end_its_stream_without_deadlock() {
+    struct Reentrant(Arc<Mutex<Option<EventStream<Reentrant, i32>>>>);
+    impl Clone for Reentrant {
+        fn clone(&self) -> Self {
+            self.0.lock().unwrap().as_ref().unwrap().end(None);
+            Self(self.0.clone())
+        }
+    }
+    let (sent, received) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let owner = Arc::new(Mutex::new(None));
+        let stream = EventStream::new(Arc::new(|_| Ok(false)), Arc::new(|_| Ok(0)));
+        *owner.lock().unwrap() = Some(stream.clone());
+        stream.push(Reentrant(owner.clone())).unwrap();
+        let mut cursor = stream.iter();
+        assert!(matches!(
+            poll(&mut cursor.next()),
+            std::task::Poll::Ready(Some(_))
+        ));
+        assert!(matches!(
+            poll(&mut cursor.next()),
+            std::task::Poll::Ready(None)
+        ));
+        owner.lock().unwrap().take();
+        sent.send(()).unwrap();
+    });
+    received
+        .recv_timeout(std::time::Duration::from_secs(2))
+        .expect("event Clone must run outside stream locks");
+    worker.join().unwrap();
+}
+
+#[test]
+fn header_records_enumerate_indices_before_strings() {
+    let entries = [
+        ("tail", "a"),
+        ("10", "ten"),
+        ("2", "two"),
+        ("01", "leading"),
+        ("4294967295", "not-index"),
+        ("0", "zero"),
+        ("tail", "updated"),
+    ];
+    let record = headers_to_record(entries.map(|(key, value)| (key.into(), value.into())));
+    assert_eq!(
+        record.keys().map(String::as_str).collect::<Vec<_>>(),
+        vec!["0", "2", "10", "tail", "01", "4294967295"]
+    );
+    assert_eq!(record["tail"], "updated");
+}
+
+#[test]
+fn header_proto_assignment_creates_no_own_property() {
+    let record = headers_to_record([
+        ("__proto__".into(), "ignored".into()),
+        ("ok".into(), "kept".into()),
+    ]);
+    assert!(!record.contains_key("__proto__"));
+    assert_eq!(record.len(), 1);
+    assert_eq!(record["ok"], "kept");
+}
+
+#[test]
+fn diagnostic_json_coercion_propagates_noncallable_to_string() {
+    for value in [
+        serde_json::json!({"toString":null}),
+        serde_json::json!([{"toString":null}]),
+        serde_json::json!([[{"toString":0}]]),
+    ] {
+        let thrown = ThrownValue::Json(value);
+        let failure = create_assistant_message_diagnostic("kind".into(), &thrown, None)
+            .expect_err("noncallable toString shadows object conversion");
+        let ThrownValue::Error(error) = failure else {
+            panic!("coercion must throw an error instance")
+        };
+        assert_eq!(error.name, "TypeError");
+        assert_eq!(error.message, "Cannot convert object to primitive value");
+    }
+}

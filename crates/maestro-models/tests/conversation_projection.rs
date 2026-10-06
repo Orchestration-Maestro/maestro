@@ -860,3 +860,31 @@ fn tool_call(
         thought_signature,
     }))
 }
+
+#[test]
+fn whole_messages_round_trip_by_role() {
+    let messages = [
+        Message::User(UserMessage {
+            content: UserContent::Text("input".into()),
+            timestamp: 1.0,
+        }),
+        Message::Assistant(assistant(vec![AssistantContent::Text(TextContent {
+            text: "reply".into(),
+            text_signature: None,
+        })])),
+        Message::ToolResult(ToolResultMessage {
+            tool_call_id: "call".into(),
+            tool_name: "lookup".into(),
+            content: vec![],
+            details: Some(json!({"retained":true})),
+            is_error: true,
+            timestamp: 2.0,
+        }),
+    ];
+    for message in messages {
+        let wire = serde_json::to_value(&message).unwrap();
+        let decoded: Message = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(decoded, message, "role {}", wire["role"]);
+        assert_eq!(serde_json::to_value(decoded).unwrap(), wire);
+    }
+}

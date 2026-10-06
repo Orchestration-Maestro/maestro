@@ -396,7 +396,7 @@ pub struct ToolResultMessage<TDetails = serde_json::Value> {
     pub timestamp: f64,
 }
 /// Message supplied record.
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(untagged)]
 pub enum Message {
     /// User value.
@@ -405,6 +405,22 @@ pub enum Message {
     Assistant(AssistantMessage),
     /// ToolResult value.
     ToolResult(ToolResultMessage),
+}
+impl<'de> serde::Deserialize<'de> for Message {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(serde::Deserialize)]
+        #[serde(tag = "role", rename_all = "camelCase")]
+        enum ByRole {
+            User(UserMessage),
+            Assistant(AssistantMessage),
+            ToolResult(ToolResultMessage),
+        }
+        Ok(match ByRole::deserialize(deserializer)? {
+            ByRole::User(value) => Self::User(value),
+            ByRole::Assistant(value) => Self::Assistant(value),
+            ByRole::ToolResult(value) => Self::ToolResult(value),
+        })
+    }
 }
 /// Tool supplied record.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]

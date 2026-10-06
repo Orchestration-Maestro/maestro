@@ -26,7 +26,7 @@ type Continuation = Box<dyn FnOnce() + Send>;
 type Continuation = Box<dyn FnOnce()>;
 
 struct Promise<T> {
-    value: Option<T>,
+    value: Option<Arc<T>>,
     wakers: Vec<Waker>,
     continuations: Vec<Continuation>,
 }
@@ -38,36 +38,47 @@ impl<T: Clone> Promise<T> {
             continuations: vec![],
         }))
     }
+    fn publish(promise: &Arc<Mutex<Self>>, value: T) -> (Vec<Waker>, Vec<Continuation>) {
+        let mut p = promise.lock().unwrap_or_else(|p| p.into_inner());
+        if p.value.is_some() {
+            return (vec![], vec![]);
+        }
+        p.value = Some(Arc::new(value));
+        (
+            std::mem::take(&mut p.wakers),
+            std::mem::take(&mut p.continuations),
+        )
+    }
     fn settle(promise: &Arc<Mutex<Self>>, value: T) {
-        let (wakes, continuations) = {
-            let mut p = promise.lock().unwrap_or_else(|p| p.into_inner());
-            if p.value.is_some() {
-                return;
-            }
-            p.value = Some(value);
-            (
-                std::mem::take(&mut p.wakers),
-                std::mem::take(&mut p.continuations),
-            )
-        };
-        for continuation in continuations {
-            continuation();
-        }
-        for w in wakes {
-            w.wake();
-        }
+        notify(Self::publish(promise, value));
+    }
+}
+fn notify((wakes, continuations): (Vec<Waker>, Vec<Continuation>)) {
+    for continuation in continuations {
+        continuation();
+    }
+    for waker in wakes {
+        waker.wake();
     }
 }
 struct Read<T>(Arc<Mutex<Promise<T>>>);
 impl<T: Clone> Future for Read<T> {
     type Output = T;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T> {
-        let mut p = self.0.lock().unwrap_or_else(|p| p.into_inner());
-        if let Some(v) = &p.value {
-            return Poll::Ready(v.clone());
-        }
-        if !p.wakers.iter().any(|w| w.will_wake(cx.waker())) {
-            p.wakers.push(cx.waker().clone());
+        let waker = cx.waker().clone();
+        let value = {
+            let mut p = self.0.lock().unwrap_or_else(|p| p.into_inner());
+            if let Some(v) = &p.value {
+                Some(v.clone())
+            } else {
+                if !p.wakers.iter().any(|w| w.will_wake(&waker)) {
+                    p.wakers.push(waker);
+                }
+                None
+            }
+        };
+        if let Some(value) = value {
+            return Poll::Ready((*value).clone());
         }
         Poll::Pending
     }
@@ -101,7 +112,7 @@ pub struct AsyncIterator<T> {
     pending: Option<Arc<Mutex<Promise<Option<T>>>>>,
 }
 #[cfg(not(target_arch = "wasm32"))]
-impl<T: Clone + Send + 'static, R: Clone + Send + 'static> EventStream<T, R> {
+impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventStream<T, R> {
     /// Install completion and result callbacks without starting an executor.
     pub fn new(is_complete: Callback<T, bool>, extract_result: Callback<T, R>) -> Self {
         Self {
@@ -120,22 +131,29 @@ impl<T: Clone + Send + 'static, R: Clone + Send + 'static> EventStream<T, R> {
         if self.queue.lock().unwrap_or_else(|p| p.into_inner()).done {
             return Ok(());
         }
-        if (self.is_complete)(&event)? {
+        let result = if (self.is_complete)(&event)? {
             self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
-            let result = (self.extract_result)(&event)?;
-            Promise::settle(&self.result, result);
-        }
+            Some((self.extract_result)(&event)?)
+        } else {
+            None
+        };
+        let mut event = Some(event);
         let waiter = {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
             if let Some(waiter) = q.waiting.pop_front() {
                 Some(waiter)
             } else {
-                q.queue.push_back(event.clone());
+                q.queue.push_back(event.take().unwrap());
                 None
             }
         };
-        if let Some(waiter) = waiter {
-            Promise::settle(&waiter, Some(event));
+        let delivery = waiter.map(|waiter| Promise::publish(&waiter, event));
+        let settlement = result.map(|result| Promise::publish(&self.result, result));
+        if let Some(delivery) = delivery {
+            notify(delivery);
+        }
+        if let Some(settlement) = settlement {
+            notify(settlement);
         }
         Ok(())
     }
@@ -166,7 +184,7 @@ impl<T: Clone + Send + 'static, R: Clone + Send + 'static> EventStream<T, R> {
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
-impl<T: Clone + Send + 'static> AsyncIterator<T> {
+impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
     /// Request the next read eagerly; a dropped observation abandons its delivery.
     #[expect(
         clippy::should_implement_trait,
@@ -179,8 +197,12 @@ impl<T: Clone + Send + 'static> AsyncIterator<T> {
         self.pending = Some(promise.clone());
         if let Some(prior) = prior {
             let target = promise.clone();
-            let mut continuation: Option<Continuation> =
-                Some(Box::new(move || request(&queue, &target)));
+            let weak_queue = Arc::downgrade(&queue);
+            let mut continuation: Option<Continuation> = Some(Box::new(move || {
+                if let Some(queue) = weak_queue.upgrade() {
+                    request(&queue, &target);
+                }
+            }));
             {
                 let mut prior = prior.lock().unwrap_or_else(|p| p.into_inner());
                 if prior.value.is_none() {
@@ -216,22 +238,29 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
         if self.queue.lock().unwrap_or_else(|p| p.into_inner()).done {
             return Ok(());
         }
-        if (self.is_complete)(&event)? {
+        let result = if (self.is_complete)(&event)? {
             self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
-            let result = (self.extract_result)(&event)?;
-            Promise::settle(&self.result, result);
-        }
+            Some((self.extract_result)(&event)?)
+        } else {
+            None
+        };
+        let mut event = Some(event);
         let waiter = {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
             if let Some(waiter) = q.waiting.pop_front() {
                 Some(waiter)
             } else {
-                q.queue.push_back(event.clone());
+                q.queue.push_back(event.take().unwrap());
                 None
             }
         };
-        if let Some(waiter) = waiter {
-            Promise::settle(&waiter, Some(event));
+        let delivery = waiter.map(|waiter| Promise::publish(&waiter, event));
+        let settlement = result.map(|result| Promise::publish(&self.result, result));
+        if let Some(delivery) = delivery {
+            notify(delivery);
+        }
+        if let Some(settlement) = settlement {
+            notify(settlement);
         }
         Ok(())
     }
@@ -275,8 +304,12 @@ impl<T: Clone + 'static> AsyncIterator<T> {
         self.pending = Some(promise.clone());
         if let Some(prior) = prior {
             let target = promise.clone();
-            let mut continuation: Option<Continuation> =
-                Some(Box::new(move || request(&queue, &target)));
+            let weak_queue = Arc::downgrade(&queue);
+            let mut continuation: Option<Continuation> = Some(Box::new(move || {
+                if let Some(queue) = weak_queue.upgrade() {
+                    request(&queue, &target);
+                }
+            }));
             {
                 let mut prior = prior.lock().unwrap_or_else(|p| p.into_inner());
                 if prior.value.is_none() {

@@ -1,0 +1,99 @@
+use maestro_models::*;
+use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Mutex;
+
+fn queue() -> EventStream<i32> {
+    EventStream::new(
+        Arc::new(|value| Ok(*value < 0)),
+        Arc::new(|value| Ok(*value)),
+    )
+}
+#[cfg(not(target_arch = "wasm32"))]
+fn poll<F: std::future::Future + ?Sized>(
+    future: &mut std::pin::Pin<Box<F>>,
+) -> std::task::Poll<F::Output> {
+    future
+        .as_mut()
+        .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
+}
+
+#[test]
+fn abandoned_pending_reads_release_queue_and_wakers() {
+    struct Tracked(std::sync::atomic::AtomicUsize);
+    impl std::task::Wake for Tracked {
+        fn wake(self: Arc<Self>) {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    let tracked = Arc::new(Tracked(std::sync::atomic::AtomicUsize::new(0)));
+    let weak_waker = Arc::downgrade(&tracked);
+    let stream = queue();
+    let mut cursor = stream.iter();
+    let waker = std::task::Waker::from(tracked.clone());
+    let mut cx = std::task::Context::from_waker(&waker);
+    let mut first = cursor.next();
+    assert!(first.as_mut().poll(&mut cx).is_pending());
+    drop(first);
+    let tracked_second = Arc::new(Tracked(std::sync::atomic::AtomicUsize::new(0)));
+    let weak_second = Arc::downgrade(&tracked_second);
+    let second_waker = std::task::Waker::from(tracked_second.clone());
+    let mut second = cursor.next();
+    assert!(
+        second
+            .as_mut()
+            .poll(&mut std::task::Context::from_waker(&second_waker))
+            .is_pending()
+    );
+    drop(second);
+    drop(second_waker);
+    drop(tracked_second);
+    drop(cursor);
+    drop(stream);
+    drop(waker);
+    drop(tracked);
+    assert!(
+        weak_waker.upgrade().is_none(),
+        "abandoned reads must not retain the queue's registered wakers"
+    );
+    assert!(
+        weak_second.upgrade().is_none(),
+        "every abandoned observation waker must be released"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn result_wake_drains_terminal_event_before_eof() {
+    struct Drain {
+        cursor: Mutex<AsyncIterator<i32>>,
+        observed: Mutex<Vec<Option<i32>>>,
+    }
+    impl std::task::Wake for Drain {
+        fn wake(self: Arc<Self>) {
+            let mut cursor = self.cursor.lock().unwrap();
+            for _ in 0..2 {
+                let std::task::Poll::Ready(value) = poll(&mut cursor.next()) else {
+                    panic!("terminal iteration must be ready")
+                };
+                self.observed.lock().unwrap().push(value);
+            }
+        }
+    }
+    let stream = queue();
+    let observer = Arc::new(Drain {
+        cursor: Mutex::new(stream.iter()),
+        observed: Mutex::new(vec![]),
+    });
+    let waker = std::task::Waker::from(observer.clone());
+    let mut result = stream.result();
+    assert!(
+        result
+            .as_mut()
+            .poll(&mut std::task::Context::from_waker(&waker))
+            .is_pending()
+    );
+    stream.push(-1).unwrap();
+    assert_eq!(*observer.observed.lock().unwrap(), vec![Some(-1), None]);
+    assert_eq!(poll(&mut result), std::task::Poll::Ready(-1));
+}

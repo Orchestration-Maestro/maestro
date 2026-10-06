@@ -57,3 +57,19 @@ assert!(matches!(ready(queued_events.next()), Some(AssistantMessageEvent::Done {
 assert!(Arc::ptr_eq(&result, &ready(stream.result())));
 clear_api_providers();
 ```
+
+## Record and observation semantics
+
+Whole messages decode by `role`, retaining assistant fields and tool-result
+identifiers and details even when content is empty. Header records enumerate
+canonical array-index keys numerically before insertion-ordered string keys;
+assigning `__proto__` creates no own property. Diagnostic string conversion can
+return a `TypeError` when a JSON object's own `toString` is non-callable, including
+objects nested in arrays.
+
+Native generic event and result types must be `Clone + Send + Sync`; browser
+types require `Clone` only. Observations clone stored values after releasing the
+promise and queue locks. Abandoned reads reserve their deliveries while handles
+remain alive, but retain no queue ownership after all handles are dropped.
+Terminal pushes publish the terminal delivery and final result before notifying
+observers, so a reentrant result observer can drain the terminal event before EOF.

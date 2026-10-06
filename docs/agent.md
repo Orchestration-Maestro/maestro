@@ -64,7 +64,9 @@ Prompt order is agent start, turn start, input start/end, assistant start,
 cumulative updates, assistant end, turn end, agent end. Continuation does not
 re-emit existing history. Subsequent turns start before queued message events.
 Even a terminal error event without model start has balanced assistant start/end events.
-An invocation setup error instead fails the run with `RunFailed`.
+An invocation setup error settles an error assistant through the same history and
+end lifecycle. Iterator EOF awaits the independently supplied stream result,
+including producers that close with `end(Some(message))` without a terminal event.
 `MessageUpdate` retains both the outer cumulative snapshot and original nested
 model event. State is reduced before each subscriber observes it. Returned state,
 queue and event values are owned independent snapshots.

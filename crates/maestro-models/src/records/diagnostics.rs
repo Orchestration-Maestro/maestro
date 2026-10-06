@@ -101,30 +101,40 @@ pub fn format_thrown_value(value: &ThrownValue) -> Result<String, ThrownValue> {
             }
         }
         ThrownValue::Undefined => "undefined".into(),
-        ThrownValue::Json(v) => json_string(v),
+        ThrownValue::Json(v) => json_string(v)?,
         ThrownValue::Number(v) => ryu_js::Buffer::new().format(*v).into(),
         ThrownValue::StringCoercion(f) => return f(),
     })
 }
-fn json_string(value: &serde_json::Value) -> String {
-    match value {
+fn json_string(value: &serde_json::Value) -> Result<String, ThrownValue> {
+    Ok(match value {
         serde_json::Value::Null => "null".into(),
         serde_json::Value::Bool(v) => v.to_string(),
         serde_json::Value::Number(v) => ryu_js::Buffer::new().format(v.as_f64().unwrap()).into(),
         serde_json::Value::String(v) => v.clone(),
-        serde_json::Value::Object(_) => "[object Object]".into(),
+        serde_json::Value::Object(object) => {
+            if object.contains_key("toString") {
+                return Err(ThrownValue::Error(Box::new(Error {
+                    name: "TypeError".into(),
+                    message: "Cannot convert object to primitive value".into(),
+                    stack: None,
+                    code: None,
+                })));
+            }
+            "[object Object]".into()
+        }
         serde_json::Value::Array(v) => v
             .iter()
             .map(|v| {
                 if v.is_null() {
-                    String::new()
+                    Ok(String::new())
                 } else {
                     json_string(v)
                 }
             })
-            .collect::<Vec<_>>()
+            .collect::<Result<Vec<_>, _>>()?
             .join(","),
-    }
+    })
 }
 
 /// Extract error metadata, retaining only string and binary64 code values.

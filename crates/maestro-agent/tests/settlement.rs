@@ -579,3 +579,70 @@ fn idle_unsubscribe_allows_listener_cleanup_to_read_state() {
     assert!(state.context.messages.is_empty());
     worker.join().unwrap();
 }
+
+#[tokio::test]
+async fn setup_failure_settles_assistant_history_and_lifecycle() {
+    let (agent, provider) = setup(vec![Response::SetupFailure], AgentOptions::default());
+    let events = capture(&agent);
+    let result = agent
+        .prompt(user("input"), options())
+        .unwrap()
+        .await
+        .expect("setup errors settle normally");
+    let AgentMessage::Model(Message::Assistant(message)) = &result[1] else {
+        panic!()
+    };
+    assert_eq!(message.stop_reason, StopReason::Error);
+    assert_eq!(message.error_message.as_deref(), Some("setup failed"));
+    assert!(message.content.is_empty());
+    assert_eq!(agent.state().context.messages, result);
+    assert!(!agent.state().is_running);
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(
+        events.lock().unwrap().iter().map(label).collect::<Vec<_>>(),
+        vec![
+            "agent_start",
+            "turn_start",
+            "message_start",
+            "message_end",
+            "message_start",
+            "message_end",
+            "turn_end",
+            "agent_end"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn iterator_eof_settles_supplied_stream_result() {
+    let (agent, provider) = setup(vec![Response::EndOnly], AgentOptions::default());
+    let events = capture(&agent);
+    let result = agent
+        .prompt(user("input"), options())
+        .unwrap()
+        .await
+        .expect("EOF awaits the supplied result");
+    let AgentMessage::Model(Message::Assistant(message)) = &result[1] else {
+        panic!()
+    };
+    assert_eq!(message.stop_reason, StopReason::Stop);
+    assert_eq!(message.timestamp, 42.0);
+    assert_eq!(message.model, "text");
+    assert_eq!(message.error_message, None);
+    assert_eq!(agent.state().context.messages, result);
+    assert!(!agent.state().is_running);
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(
+        events.lock().unwrap().iter().map(label).collect::<Vec<_>>(),
+        vec![
+            "agent_start",
+            "turn_start",
+            "message_start",
+            "message_end",
+            "message_start",
+            "message_end",
+            "turn_end",
+            "agent_end"
+        ]
+    );
+}
