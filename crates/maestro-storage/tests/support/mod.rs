@@ -82,7 +82,7 @@ impl Controlled {
     }
     fn kinds(&self, path: &Path) -> io::Result<Vec<Dirent>> {
         if path.as_os_str().is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
+            return Err(empty_path_error());
         }
         if let Some(entries) = self.listings.borrow().get(path) {
             return Ok(entries.clone());
@@ -103,7 +103,7 @@ impl Controlled {
     }
     fn store(&self, path: &Path, bytes: &[u8], append: bool) -> io::Result<()> {
         if path.as_os_str().is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
+            return Err(empty_path_error());
         }
         let mut nodes = self.nodes.borrow_mut();
         if !matches!(
@@ -134,6 +134,17 @@ impl Controlled {
         }
     }
 }
+fn empty_path_error() -> io::Error {
+    #[cfg(unix)]
+    {
+        io::Error::from_raw_os_error(2)
+    }
+    #[cfg(not(unix))]
+    {
+        io::ErrorKind::NotFound.into()
+    }
+}
+
 impl Storage for Controlled {
     fn exists(&self, path: &Path) -> bool {
         if path.as_os_str().is_empty() {
@@ -145,7 +156,7 @@ impl Storage for Controlled {
     }
     fn mkdir(&self, path: &Path) -> io::Result<()> {
         if path.as_os_str().is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
+            return Err(empty_path_error());
         }
         match self.nodes.borrow().get(path) {
             Some(Node::Directory) => return Ok(()),
@@ -162,7 +173,7 @@ impl Storage for Controlled {
     }
     fn read_file(&self, path: &Path) -> io::Result<Vec<u8>> {
         if path.as_os_str().is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
+            return Err(empty_path_error());
         }
         match self.nodes.borrow().get(path) {
             Some(Node::File(v)) => Ok(v.clone()),
@@ -172,7 +183,7 @@ impl Storage for Controlled {
     }
     fn read_dir(&self, path: &Path) -> io::Result<Vec<std::ffi::OsString>> {
         if path.as_os_str().is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
+            return Err(empty_path_error());
         }
         if let Some(entries) = self.listings.borrow().get(path) {
             return Ok(entries.iter().map(|entry| entry.name.clone()).collect());
@@ -189,6 +200,9 @@ impl Storage for Controlled {
         }
     }
     fn modified(&self, path: &Path) -> io::Result<std::time::SystemTime> {
+        if path.as_os_str().is_empty() {
+            return Err(empty_path_error());
+        }
         if self.exists(path) {
             Ok(std::time::UNIX_EPOCH + std::time::Duration::from_secs(123))
         } else {

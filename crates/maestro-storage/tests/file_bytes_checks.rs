@@ -37,57 +37,47 @@ fn empty_paths_are_not_found_for_every_operation() {
         for storage in adapters {
             let path = Path::new("");
             let errors = [
-                ("mkdir", storage.mkdir(path).err().map(|e| e.kind())),
-                ("read", storage.read_file(path).err().map(|e| e.kind())),
-                (
-                    "prefix",
-                    storage.read_prefix(path, 512).err().map(|e| e.kind()),
-                ),
-                (
-                    "zero prefix",
-                    storage.read_prefix(path, 0).err().map(|e| e.kind()),
-                ),
-                ("mtime", storage.modified(path).err().map(|e| e.kind())),
-                ("readdir", storage.read_dir(path).err().map(|e| e.kind())),
-                (
-                    "append",
-                    storage.append_file(path, b"").err().map(|e| e.kind()),
-                ),
-                (
-                    "write",
-                    storage.write_file(path, b"").err().map(|e| e.kind()),
-                ),
+                ("mkdir", storage.mkdir(path).err()),
+                ("read", storage.read_file(path).err()),
+                ("prefix", storage.read_prefix(path, 512).err()),
+                ("zero prefix", storage.read_prefix(path, 0).err()),
+                ("mtime", storage.modified(path).err()),
+                ("readdir", storage.read_dir(path).err()),
+                ("append", storage.append_file(path, b"").err()),
+                ("write", storage.write_file(path, b"").err()),
                 (
                     "async read",
-                    support::ready(storage.read_file_async(path))
-                        .err()
-                        .map(|e| e.kind()),
+                    support::ready(storage.read_file_async(path)).err(),
                 ),
                 (
                     "async mtime",
-                    support::ready(storage.modified_async(path))
-                        .err()
-                        .map(|e| e.kind()),
+                    support::ready(storage.modified_async(path)).err(),
                 ),
                 (
                     "async readdir",
-                    support::ready(storage.read_dir_async(path))
-                        .err()
-                        .map(|e| e.kind()),
+                    support::ready(storage.read_dir_async(path)).err(),
                 ),
                 (
                     "async dirents",
-                    support::ready(storage.read_dir_with_file_types_async(path))
-                        .err()
-                        .map(|e| e.kind()),
+                    support::ready(storage.read_dir_with_file_types_async(path)).err(),
                 ),
             ];
             outcomes.push((errors, storage.exists(path)));
         }
     }
     for (errors, exists) in outcomes {
-        for (operation, kind) in errors {
-            assert_eq!(kind, Some(ErrorKind::NotFound), "empty path: {operation}");
+        for (operation, error) in errors {
+            assert_eq!(
+                error.as_ref().map(|error| error.kind()),
+                Some(ErrorKind::NotFound),
+                "empty path: {operation}"
+            );
+            #[cfg(target_os = "linux")]
+            assert_eq!(
+                error.as_ref().and_then(|error| error.raw_os_error()),
+                Some(2),
+                "empty path native error: {operation}"
+            );
         }
         assert!(!exists, "empty path must not exist");
     }

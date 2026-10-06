@@ -14,7 +14,7 @@ impl Storage for FileStorage {
     }
     fn mkdir(&self, path: &Path) -> io::Result<()> {
         if path.as_os_str().is_empty() {
-            return Err(io::ErrorKind::NotFound.into());
+            return fs::create_dir(path);
         }
         fs::create_dir_all(path)
     }
