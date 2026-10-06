@@ -1002,7 +1002,7 @@ fn activity_search_matches_label_only() {
             p.diagnostics,
             vec![
                 "MiXeD has opened 2 issues/PRs on fixture/second",
-                "MiXeD has configured activity, adding label"
+                "MiXeD has fixture/second activity, adding label"
             ]
         );
         assert_eq!(p.requests.len(), 5);
@@ -1105,7 +1105,7 @@ fn activity_diagnostics_preserve_trimmed_gh_stderr() {
         vec![
             "Could not read APPROVED_CONTRIBUTORS: controlled gh failure",
             "Search failed: controlled gh failure",
-            "Alice has no configured activity, passing"
+            "Alice has no fixture/remote activity, passing"
         ]
     );
 }
@@ -2255,15 +2255,15 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
                     p.reply(json!({}));
                     vec![
                         "Alice has opened 3 issues/PRs on fixture/remote",
-                        "Alice has configured activity, adding label",
+                        "Alice has fixture/remote activity, adding label",
                     ]
                 } else if branch == "search-error" {
                     vec![
                         "Search failed: controlled failure",
-                        "Alice has no configured activity, passing",
+                        "Alice has no fixture/remote activity, passing",
                     ]
                 } else {
-                    vec!["Alice has no configured activity, passing"]
+                    vec!["Alice has no fixture/remote activity, passing"]
                 }
             }
         };
@@ -2288,4 +2288,33 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
             }
         );
     }
+}
+
+#[test]
+fn activity_no_match_diagnostic_names_every_configured_repository() {
+    let w = fixture();
+    policy_support::configure(&w, |v| {
+        v["activity_gate"] =
+            json!({"repositories":["fixture/first","fixture/second"],"label":"activity"});
+    });
+    let mut p = RecordingProcess::default();
+    policy_support::content(&mut p, "");
+    p.reply(json!({"permission":"none"}));
+    p.reply(json!({"total_count":0}));
+    p.reply(json!({"total_count":0}));
+    run(
+        &w.root,
+        "contribution-policy",
+        "issues",
+        &event("opened").to_string(),
+        None,
+        &mut p,
+    )
+    .unwrap();
+    assert_eq!(
+        p.diagnostics,
+        vec!["Alice has no fixture/first, fixture/second activity, passing"]
+    );
+    assert_eq!(p.requests.len(), 4);
+    assert!(p.requests.iter().all(|request| request.args[2] == "GET"));
 }

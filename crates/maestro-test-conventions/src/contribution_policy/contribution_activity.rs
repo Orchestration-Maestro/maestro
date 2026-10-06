@@ -48,16 +48,17 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
     if label.is_empty() {
         return Ok(());
     }
-    for repository in gate["repositories"]
+    let repositories: Vec<_> = gate["repositories"]
         .as_array()
         .into_iter()
         .flatten()
         .filter_map(Value::as_str)
-    {
+        .collect();
+    for repository in &repositories {
         if has_activity(github, repository, author) {
             github
                 .process
-                .diagnostic(&format!("{author} has configured activity, adding label"));
+                .diagnostic(&format!("{author} has {repository} activity, adding label"));
             let number = item["number"].as_u64().ok_or("Missing issue/PR number")?;
             github.repo_api(
                 "POST",
@@ -67,9 +68,10 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
             return Ok(());
         }
     }
-    github
-        .process
-        .diagnostic(&format!("{author} has no configured activity, passing"));
+    github.process.diagnostic(&format!(
+        "{author} has no {} activity, passing",
+        repositories.join(", ")
+    ));
     Ok(())
 }
 
