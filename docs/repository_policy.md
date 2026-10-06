@@ -121,11 +121,13 @@ comment on or close live items.
 Runtime addition is base64 0.23.1 (`std` only, defaults off).
 ISO dates use integer Gregorian day and millisecond arithmetic with the full
 ±8.64e15 ms time-value range; no library date range constrains routing.
-Numeric fields require ASCII digits. `T`/`t` offsets require two-digit hours
-within 0–23; space-separated forms also accept one-digit or hour-only offsets.
-The date-only negative-zero expanded year follows numeric legacy parsing as
-2001; the same year with a clock is invalid. A 213-input differential routing
-test covers field grammar, fractions, offsets, partial dates and time limits.
+Numeric fields require ASCII digits. ISO date-times use a `T`/`t` separator;
+offsets require two-digit hours within 0–23 and two-digit minutes, with or
+without a colon. Date-only forms and expanded years are accepted except the
+negative-zero expanded year. Space-separated and other non-ISO date text is
+invalid and receives no schedule guidance or labels. A 213-input differential
+routing test covers field grammar, fractions, offsets, partial dates and time
+limits.
 Test-only yaml-rust2 0.13.0 (defaults off) resolves arraydeque 0.5.1 and hashlink
 0.12.2; hashlink resolves hashbrown 0.17.1, which resolves foldhash 0.2.0.
 The direct additions and transitive dependencies are MIT OR Apache-2.0, except

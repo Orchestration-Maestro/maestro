@@ -22,7 +22,7 @@ pub(super) fn command(body: &str) -> Option<&'static str> {
 
 pub(super) fn weekday(value: &str) -> Option<u32> {
     let (date, time) = value
-        .split_once(['T', 't', ' '])
+        .split_once(['T', 't'])
         .map_or((value, None), |(d, t)| (d, Some(t)));
     let year_len = if date.starts_with(['+', '-']) { 7 } else { 4 };
     let year_text = date.get(..year_len)?;
@@ -33,15 +33,10 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     {
         return None;
     }
-    // Numeric date-only parsing maps the negative-zero year to 2001.
-    let year = if year_text == "-000000" {
-        if time.is_some() || date.len() == year_len {
-            return None;
-        }
-        2001
-    } else {
-        year_text.parse::<i32>().ok()?
-    };
+    if year_text == "-000000" {
+        return None;
+    }
+    let year = year_text.parse::<i32>().ok()?;
     let rest = date.get(year_len..)?;
     let (month, day) = match rest.len() {
         0 => (1, 1),
@@ -75,28 +70,17 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
         (clock, 0)
     } else if let Some(index) = time.find(['+', '-']) {
         let zone = time.get(index..)?;
-        let space_separator = value.as_bytes().get(date.len()) == Some(&b' ');
         let fields = zone.get(1..)?;
         let (hour_text, minute_text) = if let Some((hour, minute)) = fields.split_once(':') {
-            (hour, Some(minute))
+            (hour, minute)
         } else if fields.len() == 4 {
-            (fields.get(..2)?, Some(fields.get(2..)?))
-        } else if space_separator && matches!(fields.len(), 1 | 2) {
-            (fields, None)
+            (fields.get(..2)?, fields.get(2..)?)
         } else {
             return None;
         };
-        let hour_width = if space_separator && matches!(hour_text.len(), 1 | 2) {
-            hour_text.len()
-        } else {
-            2
-        };
-        let hour = digits(hour_text, hour_width)?;
-        let minute = match minute_text {
-            Some(text) => digits(text, 2)?,
-            None => 0,
-        };
-        if (!space_separator && hour > 23) || minute > 59 {
+        let hour = digits(hour_text, 2)?;
+        let minute = digits(minute_text, 2)?;
+        if hour > 23 || minute > 59 {
             return None;
         }
         let sign = if zone.starts_with('-') { -1 } else { 1 };
