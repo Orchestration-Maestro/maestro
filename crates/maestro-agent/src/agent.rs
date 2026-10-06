@@ -153,7 +153,7 @@ impl Agent {
             }
             input
         } else {
-            message.into_iter().collect()
+            message.iter().map(crate::run::snapshot_record).collect()
         };
         let (sender, receiver) = watch::channel(None);
         state.running = true;

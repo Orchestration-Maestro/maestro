@@ -85,7 +85,27 @@ fn api_registry_replacement_keeps_position_and_source() {
     register_api_provider(provider("a"), Some("old".into()));
     register_api_provider(provider("b"), None);
     let retained = get_api_provider("a").unwrap();
-    register_api_provider(provider("a"), Some("new".into()));
+    let replacement_calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let raw_calls = replacement_calls.clone();
+    let simple_calls = replacement_calls.clone();
+    let replacement = ApiProvider {
+        api: "a".into(),
+        stream: Arc::new(move |_, _, _| {
+            raw_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(AssistantMessageEventStream::new())
+        }),
+        stream_simple: Arc::new(move |_, _, _| {
+            simple_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(AssistantMessageEventStream::new())
+        }),
+    };
+    register_api_provider(replacement, Some("new".into()));
+    stream(model("a"), context(), None).unwrap();
+    stream_simple(model("a"), context(), None).unwrap();
+    assert_eq!(
+        replacement_calls.load(std::sync::atomic::Ordering::SeqCst),
+        2
+    );
     assert_eq!(
         get_api_providers()
             .iter()
@@ -202,6 +222,8 @@ fn raw_simple_calls_forward_options_unchanged() {
             api_key: Some(String::new()),
             headers: Some(Default::default()),
             max_retries: Some(0.0),
+            timeout_ms: Some(123.0),
+            max_retry_delay_ms: Some(456.0),
             ..Default::default()
         },
         extra: serde_json::json!({"custom":false,"null":null})
@@ -217,13 +239,19 @@ fn raw_simple_calls_forward_options_unchanged() {
         reasoning: Some(ThinkingLevel::Minimal),
         thinking_budgets: Some(ThinkingBudgets {
             minimal: Some(0.0),
-            low: None,
-            medium: None,
-            high: None,
+            low: Some(1.0),
+            medium: Some(2.0),
+            high: Some(3.0),
         }),
     };
     let expected_raw = serde_json::to_value(&raw).unwrap();
     let expected_simple = serde_json::to_value(&simple).unwrap();
+    assert_eq!(expected_raw["timeoutMs"], 123.0);
+    assert_eq!(expected_raw["maxRetryDelayMs"], 456.0);
+    assert_eq!(
+        expected_simple["thinkingBudgets"],
+        serde_json::json!({"minimal":0.0,"low":1.0,"medium":2.0,"high":3.0})
+    );
     stream(model("options"), context(), Some(raw.clone())).unwrap();
     stream_simple(model("options"), context(), Some(simple.clone())).unwrap();
     drop(complete(model("options"), context(), Some(raw)));
@@ -1792,4 +1820,153 @@ fn nullable_routing_and_compat_distinguish_missing_from_explicit_null() {
     let present: Model = serde_json::from_value(wire.clone()).unwrap();
     assert_eq!(present.compat, Some(serde_json::Value::Null));
     assert_eq!(serde_json::to_value(present).unwrap(), wire);
+}
+
+#[test]
+fn reentrant_serializer_can_write_shared_tool_call() {
+    struct Reentrant(Arc<std::sync::RwLock<ToolCall>>);
+    impl serde::Serializer for Reentrant {
+        type Ok = ();
+        type Error = serde_json::Error;
+        type SerializeSeq = serde::ser::Impossible<(), serde_json::Error>;
+        type SerializeTuple = serde::ser::Impossible<(), serde_json::Error>;
+        type SerializeTupleStruct = serde::ser::Impossible<(), serde_json::Error>;
+        type SerializeTupleVariant = serde::ser::Impossible<(), serde_json::Error>;
+        type SerializeMap = serde::ser::Impossible<(), serde_json::Error>;
+        type SerializeStruct = serde::ser::Impossible<(), serde_json::Error>;
+        type SerializeStructVariant = serde::ser::Impossible<(), serde_json::Error>;
+        fn serialize_struct(
+            self,
+            _: &'static str,
+            _: usize,
+        ) -> Result<Self::SerializeStruct, Self::Error> {
+            self.0
+                .try_write()
+                .expect("serializer must run without a record lock")
+                .arguments["x"] = serde_json::json!(2);
+            Err(<serde_json::Error as serde::ser::Error>::custom("observed"))
+        }
+        fn serialize_bool(self, _: bool) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_i8(self, _: i8) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_i16(self, _: i16) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_i32(self, _: i32) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_i64(self, _: i64) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_u8(self, _: u8) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_u16(self, _: u16) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_u32(self, _: u32) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_u64(self, _: u64) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_f32(self, _: f32) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_f64(self, _: f64) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_char(self, _: char) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_str(self, _: &str) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_bytes(self, _: &[u8]) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_none(self) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_unit(self) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_unit_struct(self, _: &'static str) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_unit_variant(
+            self,
+            _: &'static str,
+            _: u32,
+            _: &'static str,
+        ) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+            unreachable!()
+        }
+        fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
+            unreachable!()
+        }
+        fn serialize_tuple_struct(
+            self,
+            _: &'static str,
+            _: usize,
+        ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+            unreachable!()
+        }
+        fn serialize_tuple_variant(
+            self,
+            _: &'static str,
+            _: u32,
+            _: &'static str,
+            _: usize,
+        ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+            unreachable!()
+        }
+        fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+            unreachable!()
+        }
+        fn serialize_struct_variant(
+            self,
+            _: &'static str,
+            _: u32,
+            _: &'static str,
+            _: usize,
+        ) -> Result<Self::SerializeStructVariant, Self::Error> {
+            unreachable!()
+        }
+        fn serialize_some<T: ?Sized + serde::Serialize>(self, _: &T) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(
+            self,
+            _: &'static str,
+            _: &T,
+        ) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+        fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(
+            self,
+            _: &'static str,
+            _: u32,
+            _: &'static str,
+            _: &T,
+        ) -> Result<(), Self::Error> {
+            unreachable!()
+        }
+    }
+    let call = Arc::new(std::sync::RwLock::new(ToolCall {
+        id: "call".into(),
+        name: "lookup".into(),
+        arguments: serde_json::json!({"x":1}).as_object().unwrap().clone(),
+        thought_signature: None,
+    }));
+    let content = AssistantContent::ToolCall(call.clone());
+    let error = serde::Serialize::serialize(&content, Reentrant(call.clone())).unwrap_err();
+    assert_eq!(error.to_string(), "observed");
+    assert_eq!(call.read().unwrap().arguments["x"], 2);
 }

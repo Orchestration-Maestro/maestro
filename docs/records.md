@@ -71,11 +71,15 @@ Native generic event and result types must be `Clone + Send + Sync`; browser
 types require `Clone` only. Observations clone stored values after releasing the
 promise and queue locks. Abandoned reads reserve their deliveries while handles
 remain alive, but retain no queue ownership after all handles are dropped.
-Terminal pushes publish the terminal delivery and final result before notifying
-observers, so a reentrant result observer can drain the terminal event before EOF.
+Terminal pushes mark logical completion before extracting the result. A fresh
+read during extraction sees EOF when no events are queued; a previously
+registered consumer still receives the terminal event, then EOF. An exhausted
+cursor never resumes. Delivery and result publication precede notifications, so
+a reentrant result observer can drain the terminal event before EOF. Shared
+records are cloned before serialization invokes caller code.
 
 Flattened raw options enumerate the complete object with canonical integer keys
 first, including keys supplied alongside common options. Explicit JSON null in
 routing sort, throughput, latency and model compatibility remains distinct from
-an absent field when decoded and serialized again. Concurrent iteration waits
-for terminal extraction and delivery before observing EOF.
+an absent field when decoded and serialized again. Agent prompt admission copies
+input records, including nested tool calls, independently of caller mutations.

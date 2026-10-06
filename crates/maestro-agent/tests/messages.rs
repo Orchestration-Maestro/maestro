@@ -389,3 +389,72 @@ fn admitted_tool_calls_do_not_alias_caller_history_or_queues() {
         assert_call(admitted, 1);
     }
 }
+
+#[tokio::test]
+async fn prompt_admission_detaches_tool_calls_before_input_message_end() {
+    use std::sync::Arc;
+    let entered = Arc::new(tokio::sync::Notify::new());
+    let release = Arc::new(tokio::sync::Notify::new());
+    let gated = release.clone();
+    let started = entered.clone();
+    let (agent, _) = setup(
+        vec![Response::Factory(Box::new(move |_| {
+            Box::pin(async move {
+                started.notify_one();
+                gated.notified().await;
+                Ok(steps("answer"))
+            })
+        }))],
+        AgentOptions::default(),
+    );
+    let mut input = AssistantMessage {
+        content: vec![],
+        api: "synthetic".into(),
+        provider: "script".into(),
+        model: "text".into(),
+        response_model: None,
+        response_id: None,
+        diagnostics: None,
+        usage: zero_usage(),
+        stop_reason: StopReason::Stop,
+        error_message: None,
+        timestamp: 0.0,
+    };
+    input.content = vec![AssistantContent::ToolCall(Arc::new(
+        std::sync::RwLock::new(ToolCall {
+            id: "input".into(),
+            name: "lookup".into(),
+            arguments: serde_json::json!({"x":1}).as_object().unwrap().clone(),
+            thought_signature: None,
+        }),
+    ))];
+    let events = capture(&agent);
+    let run = agent
+        .prompt(
+            AgentMessage::Model(Message::Assistant(input.clone())),
+            options(),
+        )
+        .unwrap();
+    entered.notified().await;
+    assert!(events.lock().unwrap().iter().any(|event| matches!(
+        event,
+        AgentEvent::MessageEnd {
+            message: AgentMessage::Model(Message::Assistant(_))
+        }
+    )));
+    change_call(&input, 999);
+    release.notify_one();
+    let result = run.await.unwrap();
+    let AgentMessage::Model(Message::Assistant(admitted)) = &result[0] else {
+        panic!()
+    };
+    assert_call(admitted, 1);
+    assert_eq!(agent.state().context.messages, result);
+    assert!(
+        events
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|event| matches!(event, AgentEvent::AgentEnd { messages } if messages == &result))
+    );
+}

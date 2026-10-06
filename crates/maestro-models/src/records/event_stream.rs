@@ -139,10 +139,11 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
             return Ok(());
         }
         let result = if (self.is_complete)(&event)? {
-            self.queue
-                .lock()
-                .unwrap_or_else(|p| p.into_inner())
-                .terminal_admitted = true;
+            {
+                let mut queue = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+                queue.terminal_admitted = true;
+                queue.done = true;
+            }
             match (self.extract_result)(&event) {
                 Ok(result) => Some(result),
                 Err(error) => {
@@ -216,8 +217,19 @@ impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
         if let Some(prior) = prior {
             let target = promise.clone();
             let weak_queue = Arc::downgrade(&queue);
+            let previous = Arc::downgrade(&prior);
             let mut continuation: Option<Continuation> = Some(Box::new(move || {
-                if let Some(queue) = weak_queue.upgrade() {
+                let exhausted = previous.upgrade().is_some_and(|previous| {
+                    previous
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .value
+                        .as_ref()
+                        .is_some_and(|value| value.is_none())
+                });
+                if exhausted {
+                    Promise::settle(&target, None);
+                } else if let Some(queue) = weak_queue.upgrade() {
                     request(&queue, &target);
                 }
             }));
@@ -263,10 +275,11 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
             return Ok(());
         }
         let result = if (self.is_complete)(&event)? {
-            self.queue
-                .lock()
-                .unwrap_or_else(|p| p.into_inner())
-                .terminal_admitted = true;
+            {
+                let mut queue = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+                queue.terminal_admitted = true;
+                queue.done = true;
+            }
             match (self.extract_result)(&event) {
                 Ok(result) => Some(result),
                 Err(error) => {
@@ -340,8 +353,19 @@ impl<T: Clone + 'static> AsyncIterator<T> {
         if let Some(prior) = prior {
             let target = promise.clone();
             let weak_queue = Arc::downgrade(&queue);
+            let previous = Arc::downgrade(&prior);
             let mut continuation: Option<Continuation> = Some(Box::new(move || {
-                if let Some(queue) = weak_queue.upgrade() {
+                let exhausted = previous.upgrade().is_some_and(|previous| {
+                    previous
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .value
+                        .as_ref()
+                        .is_some_and(|value| value.is_none())
+                });
+                if exhausted {
+                    Promise::settle(&target, None);
+                } else if let Some(queue) = weak_queue.upgrade() {
                     request(&queue, &target);
                 }
             }));

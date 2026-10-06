@@ -1,6 +1,5 @@
 use maestro_models::*;
 use std::sync::Arc;
-#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Mutex;
 
 fn queue() -> EventStream<i32> {
@@ -9,7 +8,6 @@ fn queue() -> EventStream<i32> {
         Arc::new(|value| Ok(*value)),
     )
 }
-#[cfg(not(target_arch = "wasm32"))]
 fn poll<F: std::future::Future + ?Sized>(
     future: &mut std::pin::Pin<Box<F>>,
 ) -> std::task::Poll<F::Output> {
@@ -98,34 +96,65 @@ fn result_wake_drains_terminal_event_before_eof() {
     assert_eq!(poll(&mut result), std::task::Poll::Ready(-1));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn concurrent_terminal_extraction_does_not_publish_premature_eof() {
-    let entered = Arc::new(std::sync::Barrier::new(2));
-    let release = Arc::new(std::sync::Barrier::new(2));
-    let extracting = entered.clone();
-    let gated = release.clone();
+fn reentrant_terminal_extraction_observes_eof() {
+    let holder = Arc::new(Mutex::new(None::<EventStream<i32>>));
+    let observing = holder.clone();
     let stream = EventStream::new(
         Arc::new(|_: &i32| Ok(true)),
         Arc::new(move |value| {
-            extracting.wait();
-            gated.wait();
+            let stream = observing.lock().unwrap().as_ref().unwrap().clone();
+            assert_eq!(
+                poll(&mut stream.iter().next()),
+                std::task::Poll::Ready(None)
+            );
             Ok(*value)
         }),
     );
-    let producer = stream.clone();
-    let thread = std::thread::spawn(move || producer.push(-1).unwrap());
-    entered.wait();
+    *holder.lock().unwrap() = Some(stream.clone());
+    stream.push(-1).unwrap();
+    holder.lock().unwrap().take();
+}
+
+#[test]
+fn preregistered_consumer_receives_terminal_then_eof() {
+    let stream = queue();
     let mut cursor = stream.iter();
     let mut read = cursor.next();
-    let before_publication = poll(&mut read);
-    release.wait();
-    thread.join().unwrap();
-    assert!(
-        before_publication.is_pending(),
-        "EOF must wait for terminal publication: {before_publication:?}"
-    );
+    assert!(poll(&mut read).is_pending());
+    stream.push(-1).unwrap();
     assert_eq!(poll(&mut read), std::task::Poll::Ready(Some(-1)));
     drop(read);
     assert_eq!(poll(&mut cursor.next()), std::task::Poll::Ready(None));
+}
+
+#[test]
+fn exhausted_cursor_stays_exhausted_after_end_then_push() {
+    let holder = Arc::new(Mutex::new(None::<EventStream<i32>>));
+    let cursor = Arc::new(Mutex::new(None::<AsyncIterator<i32>>));
+    let producer = holder.clone();
+    let reader = cursor.clone();
+    let stream = EventStream::new(
+        Arc::new(move |_: &i32| {
+            producer.lock().unwrap().as_ref().unwrap().end(None);
+            assert_eq!(
+                poll(&mut reader.lock().unwrap().as_mut().unwrap().next()),
+                std::task::Poll::Ready(None)
+            );
+            Ok(false)
+        }),
+        Arc::new(|value| Ok(*value)),
+    );
+    *holder.lock().unwrap() = Some(stream.clone());
+    *cursor.lock().unwrap() = Some(stream.iter());
+    stream.push(7).unwrap();
+    assert_eq!(
+        poll(&mut cursor.lock().unwrap().as_mut().unwrap().next()),
+        std::task::Poll::Ready(None)
+    );
+    assert_eq!(
+        poll(&mut stream.iter().next()),
+        std::task::Poll::Ready(Some(7))
+    );
+    holder.lock().unwrap().take();
 }

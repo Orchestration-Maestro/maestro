@@ -746,11 +746,12 @@ fn present_value<'de, D: serde::Deserializer<'de>, T: serde::Deserialize<'de>>(
 }
 mod locked {
     use super::*;
-    pub fn serialize<T: serde::Serialize, S: serde::Serializer>(
+    pub fn serialize<T: serde::Serialize + Clone, S: serde::Serializer>(
         value: &Arc<RwLock<T>>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
-        value.read().unwrap_or_else(|p| p.into_inner()).serialize(s)
+        let snapshot = value.read().unwrap_or_else(|p| p.into_inner()).clone();
+        snapshot.serialize(s)
     }
     pub fn deserialize<'de, T: serde::Deserialize<'de>, D: serde::Deserializer<'de>>(
         d: D,
