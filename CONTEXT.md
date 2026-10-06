@@ -87,3 +87,15 @@ are later scope, not active foundation concepts.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
 - **Web:** The browser frontend, including the offline exported session viewer.
 - **Theme:** The shared presentation library for style resolution and caller-specific code highlighting.
+
+### Structure
+
+- **Catalog:** The application-facing usable model selection resolved from models and credentials.
+- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context.
+- **Export:** Session document serialization shared with application operations.
+- **Terminal toolkit:** Dependency-free terminal components in `maestro-tui`, without application selectors or framework/highlighting engines.
+- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit.
+- **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
+- **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
+- **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
+- **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.

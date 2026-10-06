@@ -1,19 +1,25 @@
-//! Checks the workspace's crate boundaries against its reviewed crate list.
+//! Checks the workspace dependency graph and bounded source ownership.
 
 use std::path::Path;
 use std::process::Command;
 
 use serde_json::Value;
 
+mod boundaries;
 mod comments;
 mod graph;
+mod source;
 
-/// Checks names, membership and internal dependency boundaries using Cargo metadata.
+/// Checks names, membership, dependencies and bounded source/build ownership.
 ///
 /// Declared edges cover all features and targets. The resolved pass uses default
 /// features for the compiler host so it reads only crates a normal build fetched.
+/// Complete direct sets are checked over both passes; absent future owners are
+/// inactive. Source/WIT checks are structural and do not replace semantic review.
+/// Returns a human-readable diagnostic on malformed input or a violated boundary.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     let metadata = metadata_command(root, &["--no-deps"])?;
+    graph::identities(&metadata)?;
     let members = array(&metadata, "workspace_members")?;
     let list_path = root.join("workspace-crates.json");
     let list: Value = serde_json::from_slice(
@@ -51,6 +57,8 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     let resolved = metadata_command(root, &["--filter-platform", &host])?;
     edges.extend(graph::resolved(&resolved)?);
     graph::validate(&metadata, &edges)?;
+    graph::complete(&metadata, &edges)?;
+    boundaries::check(&metadata)?;
     comments::check(&metadata)
 }
 

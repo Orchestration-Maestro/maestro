@@ -7,55 +7,91 @@ struct Rule {
     class: &'static str,
     dependencies: &'static [&'static str],
 }
-const DOMAIN: &[&str] = &[
-    "maestro-models",
-    "maestro-storage",
-    "maestro-packages",
-    "maestro-agent",
-    "maestro-credentials",
-    "maestro-tools",
-    "maestro-session",
-    "maestro-settings",
-    "maestro-resources",
-    "maestro-extensions",
-];
-const CORE: &[&str] = &[
-    "maestro-models",
-    "maestro-storage",
-    "maestro-packages",
-    "maestro-agent",
-    "maestro-credentials",
-    "maestro-tools",
-    "maestro-session",
-    "maestro-settings",
-    "maestro-resources",
-    "maestro-extensions",
-    "maestro-app",
-    "maestro-cli",
-];
 fn rule(name: &str) -> Option<Rule> {
     let dependencies: &'static [&'static str] = match name {
-        "maestro-models" | "maestro-storage" | "maestro-packages" | "maestro-test-conventions" => {
-            &[]
-        }
-        "maestro-agent" | "maestro-credentials" => &["maestro-models"],
-        "maestro-tools" => &["maestro-agent", "maestro-models"],
-        "maestro-session" => &["maestro-agent", "maestro-models", "maestro-storage"],
-        "maestro-settings" => &["maestro-models", "maestro-agent", "maestro-packages"],
-        "maestro-resources" => &["maestro-models", "maestro-settings", "maestro-packages"],
+        "maestro-extensions-wasm" => &[],
+        "maestro-models" => &[],
+        "maestro-resources" => &[],
+        "maestro-settings" => &[],
+        "maestro-storage" => &[],
+        "maestro-test-conventions" => &[],
+        "maestro-tui" => &[],
+        "maestro-agent" => &["maestro-models"],
+        "maestro-credentials" => &["maestro-models"],
+        "maestro-packages" => &["maestro-settings", "maestro-resources"],
+        "maestro-test-terminal" => &["maestro-tui"],
+        "maestro-theme" => &["maestro-tui"],
+        "maestro-tui-crossterm" => &["maestro-tui"],
+        "maestro-catalog" => &["maestro-models", "maestro-credentials"],
+        "maestro-session" => &["maestro-models", "maestro-agent", "maestro-storage"],
+        "maestro-tools" => &[
+            "maestro-models",
+            "maestro-agent",
+            "maestro-tui",
+            "maestro-theme",
+        ],
+        "maestro-export" => &[
+            "maestro-session",
+            "maestro-models",
+            "maestro-tools",
+            "maestro-theme",
+            "maestro-tui",
+        ],
         "maestro-extensions" => &[
             "maestro-models",
             "maestro-agent",
             "maestro-session",
-            "maestro-storage",
+            "maestro-catalog",
+            "maestro-tools",
+            "maestro-theme",
+            "maestro-tui",
         ],
-        "maestro-app" => DOMAIN,
-        "maestro-cli" => &["maestro-app"],
-        "maestro" => CORE,
+        "maestro-app" => &[
+            "maestro-models",
+            "maestro-agent",
+            "maestro-credentials",
+            "maestro-settings",
+            "maestro-storage",
+            "maestro-catalog",
+            "maestro-session",
+            "maestro-tools",
+            "maestro-resources",
+            "maestro-packages",
+            "maestro-extensions",
+            "maestro-export",
+            "maestro-theme",
+            "maestro-tui",
+        ],
+        "maestro-extensions-wasmtime" => &["maestro-extensions"],
+        "maestro-chat" => &[
+            "maestro-app",
+            "maestro-tui",
+            "maestro-tui-crossterm",
+            "maestro-theme",
+        ],
+        "maestro-cli" => &[
+            "maestro-app",
+            "maestro-tui",
+            "maestro-tui-crossterm",
+            "maestro-theme",
+        ],
+        "maestro-rpc" => &["maestro-app", "maestro-theme"],
+        "maestro-web" => &["maestro-app", "maestro-theme"],
+        "maestro" => &[
+            "maestro-app",
+            "maestro-cli",
+            "maestro-rpc",
+            "maestro-chat",
+            "maestro-web",
+            "maestro-extensions-wasmtime",
+        ],
         _ => return None,
     };
     Some(Rule {
-        class: if matches!(name, "maestro" | "maestro-test-conventions") {
+        class: if matches!(
+            name,
+            "maestro" | "maestro-test-conventions" | "maestro-test-terminal"
+        ) {
             "dedicated"
         } else {
             "core"
@@ -128,13 +164,19 @@ pub(crate) fn validate_with_support(
         }
     }
     for edge in edges {
+        if !test.contains_key(&edge.to) {
+            return Err(format!(
+                "invalid cargo metadata: unknown graph target {}",
+                edge.to
+            ));
+        }
         test.get_mut(&edge.from)
-            .ok_or("unknown graph source")?
+            .ok_or("invalid cargo metadata: unknown graph source")?
             .insert(edge.to.clone());
         if edge.kind != Kind::Dev {
             production
                 .get_mut(&edge.from)
-                .ok_or("unknown graph source")?
+                .ok_or("invalid cargo metadata: unknown graph source")?
                 .insert(edge.to.clone());
         }
     }
@@ -196,6 +238,7 @@ pub(crate) fn validate_with_support(
 // Use manifest paths rather than dependency names: Cargo dependencies can be renamed.
 // --no-deps lets us inspect cycles ourselves, before Cargo's resolver rejects them.
 pub(crate) fn declared(metadata: &Value) -> Result<BTreeSet<Edge>, String> {
+    identities(metadata)?;
     let members = array(metadata, "workspace_members")?;
     let packages: Vec<_> = array(metadata, "packages")?
         .iter()
@@ -224,6 +267,22 @@ pub(crate) fn declared(metadata: &Value) -> Result<BTreeSet<Edge>, String> {
                 .transpose()?;
             let member = path.as_ref().and_then(|path| names.get(path));
             let dependency_name = string(dependency, "name")?;
+            let owner = string(package, "name")?;
+            if dependency_name == "wasmtime-wasi-http"
+                || (dependency_name == "wasmtime" || dependency_name.starts_with("wasmtime-"))
+                    && owner != "maestro-extensions-wasmtime"
+            {
+                return Err(format!(
+                    "{owner}: forbidden runtime library dependency {dependency_name}"
+                ));
+            }
+            if owner == "maestro-tui"
+                && matches!(dependency_name, "ratatui" | "syntect" | "two-face")
+            {
+                return Err(format!(
+                    "{owner}: forbidden toolkit library dependency {dependency_name}"
+                ));
+            }
             // Registry/git references may be patched to members without exposing a path
             // in --no-deps metadata. Require explicit member paths instead of guessing.
             if names.values().any(|name| name == dependency_name)
@@ -276,6 +335,7 @@ fn check_cycles<'a>(
 }
 
 pub(crate) fn resolved(metadata: &Value) -> Result<BTreeSet<Edge>, String> {
+    identities(metadata)?;
     let members = array(metadata, "workspace_members")?;
     let mut packages = BTreeMap::new();
     for package in array(metadata, "packages")? {
@@ -342,4 +402,63 @@ pub(crate) fn resolved(metadata: &Value) -> Result<BTreeSet<Edge>, String> {
         }
     }
     Ok(edges)
+}
+
+pub(crate) fn complete(metadata: &Value, edges: &BTreeSet<Edge>) -> Result<(), String> {
+    let members = array(metadata, "workspace_members")?;
+    for package in array(metadata, "packages")? {
+        if !members.contains(&package["id"]) {
+            continue;
+        }
+        let name = string(package, "name")?;
+        if matches!(
+            name,
+            "maestro-cli"
+                | "maestro-chat"
+                | "maestro-rpc"
+                | "maestro-web"
+                | "maestro-tui-crossterm"
+                | "maestro-test-terminal"
+        ) {
+            for required in rule(name).ok_or("unknown scoped source")?.dependencies {
+                if !edges
+                    .iter()
+                    .any(|edge| edge.from == name && edge.to == *required && edge.kind != Kind::Dev)
+                {
+                    return Err(format!(
+                        "{name}: missing required direct dependency {required}"
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn identities(metadata: &Value) -> Result<(), String> {
+    let mut members = BTreeSet::new();
+    for member in array(metadata, "workspace_members")? {
+        let id = member
+            .as_str()
+            .ok_or("invalid cargo metadata: member identity")?;
+        if id.is_empty() || !members.insert(id) {
+            return Err("invalid cargo metadata: duplicate or empty member identity".into());
+        }
+    }
+    let mut ids = BTreeSet::new();
+    let mut names = BTreeSet::new();
+    for package in array(metadata, "packages")? {
+        let id = string(package, "id")?;
+        let name = string(package, "name")?;
+        if id.is_empty() || name.is_empty() || !ids.insert(id) {
+            return Err("invalid cargo metadata: duplicate or empty package identity".into());
+        }
+        if members.contains(id) && !names.insert(name) {
+            return Err("invalid cargo metadata: duplicate member package name".into());
+        }
+    }
+    if !members.is_subset(&ids) {
+        return Err("invalid cargo metadata: missing member package".into());
+    }
+    Ok(())
 }
