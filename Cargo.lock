@@ -348,6 +348,7 @@ dependencies = [
 name = "maestro-settings"
 version = "0.1.0"
 dependencies = [
+ "ryu-js",
  "serde_json",
 ]
 

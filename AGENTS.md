@@ -86,6 +86,10 @@ Keep HTTP/file and asynchronous retrieval, TLS, idna, macros and all other optio
 features disabled; construction must also explicitly use the offline builder.
 No remote schema retrieval is authorized.
 
+Owner-approved settings number formatting: `ryu-js` 1.0.3 with default
+features disabled, private to settings serialization; `serde_json` 1.0.151
+uses `preserve_order` for JSON property insertion order.
+
 Keep one current format for everything. No compatibility code.
 
 ## Public text

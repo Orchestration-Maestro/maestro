@@ -65,7 +65,8 @@ are later scope, not active foundation concepts.
 - **Branch position:** The selected entry in the session tree, or the position before all entries.
 - **Storage:** The replaceable raw supplied-path byte I/O interface; the SessionManager owns history and persistence timing.
 - **Notification:** An observation of current activity; delivery does not imply persistence or replay.
-- **Settings:** Accepted user/project preferences merged at the top level with one nested object spread, runtime overrides, immediate cache publication, queued writes, flush and drainable errors. Reload retains a failed scope but clears runtime overrides.
+- **Settings:** Raw global/project preference values, including unknown and wrong-typed properties; typed reads return owned copies with individual fallbacks.
+- **SettingsManager:** The owner of accepted preferences, one-level merging, runtime overrides, immediate publication and ordered queued persistence through replaceable raw-text storage. Reload independently retains failed scopes and clears overrides; errors drain separately.
 - **Configuration root:** The explicitly selected user configuration directory.
 - **Session directory:** The resolved location supplied to the session owner.
 - **File-write lock:** Cooperating writer exclusion with canonical lockfile paths, stale/heartbeat/compromise handling and operation-specific contention schedules.
