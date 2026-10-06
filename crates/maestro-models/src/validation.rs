@@ -1,6 +1,6 @@
 //! Pure tool declaration lookup with owned, validated argument objects.
 
-use crate::{ToolCall, ToolDeclaration};
+use crate::{Tool, ToolCall};
 use serde_json::{Map, Value};
 
 /// Safe validation outcomes, without raw names, schemas or argument values.
@@ -34,17 +34,14 @@ impl std::error::Error for ToolValidationError {}
 /// uses binary64 shortest scalar spelling. Already accepted numbers remain exact.
 /// Invalid schemas and unavailable references fail closed with safe typed errors.
 pub fn validate_tool_call(
-    tools: &[ToolDeclaration],
+    tools: &[Tool],
     call: &ToolCall,
 ) -> Result<Map<String, Value>, ToolValidationError> {
     let tool = tools
         .iter()
         .find(|tool| tool.name == call.name)
         .ok_or(ToolValidationError::UnknownTool)?;
-    let arguments = call
-        .arguments()
-        .ok_or(ToolValidationError::IncompleteArguments)?
-        .clone();
+    let arguments = call.arguments.clone();
     let checker = crate::schema::Schema::build(&tool.parameters)?;
     let mut value = Value::Object(arguments);
     coerce(&mut value, &tool.parameters, &checker, "#")?;

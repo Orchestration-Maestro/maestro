@@ -6,46 +6,46 @@ use support::*;
 #[tokio::test]
 async fn updates_preserve_cumulative_outer_and_nested_snapshots() {
     let response = vec![
-        ProviderUpdate::ThinkingStart {
+        Update::ThinkingStart {
             content_index: 0,
             signature: Some("signature".into()),
         },
-        ProviderUpdate::ThinkingDelta {
+        Update::ThinkingDelta {
             content_index: 0,
             delta: "思".into(),
         },
-        ProviderUpdate::ThinkingEnd { content_index: 0 },
-        ProviderUpdate::TextStart { content_index: 1 },
-        ProviderUpdate::TextDelta {
+        Update::ThinkingEnd { content_index: 0 },
+        Update::TextStart { content_index: 1 },
+        Update::TextDelta {
             content_index: 1,
             delta: "é".into(),
         },
-        ProviderUpdate::TextDelta {
+        Update::TextDelta {
             content_index: 1,
             delta: "🙂".into(),
         },
-        ProviderUpdate::TextEnd {
+        Update::TextEnd {
             content_index: 1,
-            replay_metadata: None,
+            text_signature: None,
         },
-        ProviderUpdate::Usage {
+        Update::Usage {
             usage: Usage {
-                input: 11,
-                output: 7,
-                ..Default::default()
+                input: 11.0,
+                output: 7.0,
+                ..zero_usage()
             },
         },
-        ProviderUpdate::ResponseIdentity {
+        Update::ResponseIdentity {
             response_model: Some("actual".into()),
             response_id: Some("response".into()),
         },
-        ProviderUpdate::Done {
+        Update::Done {
             reason: StopReason::Length,
         },
     ];
     let (agent, _) = setup(
-        vec![Script::Steps(
-            response.into_iter().map(ScriptStep::Update).collect(),
+        vec![Response::Steps(
+            response.into_iter().map(Action::Update).collect(),
         )],
         AgentOptions::default(),
     );
@@ -61,9 +61,9 @@ async fn updates_preserve_cumulative_outer_and_nested_snapshots() {
         .filter_map(|event| match event {
             AgentEvent::MessageUpdate {
                 message,
-                assistant_message_event: ModelEvent::TextDelta { partial, .. },
+                assistant_message_event: AssistantMessageEvent::TextDelta { partial, .. },
             } => {
-                assert_eq!(message, partial);
+                assert_eq!(message, &*partial.read().unwrap());
                 Some(message.clone())
             }
             _ => None,
@@ -74,33 +74,34 @@ async fn updates_preserve_cumulative_outer_and_nested_snapshots() {
         deltas[0].content[1],
         AssistantContent::Text(TextContent {
             text: "é".into(),
-            replay_metadata: None
+            text_signature: None
         })
     );
     assert_eq!(
         deltas[1].content[1],
         AssistantContent::Text(TextContent {
             text: "é🙂".into(),
-            replay_metadata: None
+            text_signature: None
         })
     );
     assert_eq!(
         deltas[0].content[0],
-        AssistantContent::Thinking(ThinkingContent::Readable {
-            text: "思".into(),
-            signature: Some("signature".into())
+        AssistantContent::Thinking(ThinkingContent {
+            thinking: "思".into(),
+            thinking_signature: Some("signature".into()),
+            redacted: None
         })
     );
     let AgentMessage::Model(Message::Assistant(terminal)) = &result[1] else {
         panic!()
     };
     assert_eq!(terminal.content, deltas[1].content);
-    assert_eq!(terminal.usage.input, 11);
-    assert_eq!(terminal.usage.output, 7);
+    assert_eq!(terminal.usage.input, 11.0);
+    assert_eq!(terminal.usage.output, 7.0);
     assert_eq!(terminal.response_id.as_deref(), Some("response"));
     assert_eq!(terminal.response_model.as_deref(), Some("actual"));
-    assert_eq!(terminal.stop_reason, Some(StopReason::Length));
-    assert_eq!(deltas[1].usage, Usage::default());
+    assert_eq!(terminal.stop_reason, StopReason::Length);
+    assert_eq!(deltas[1].usage, zero_usage());
     let mut snapshot = agent.state();
     snapshot.context.messages.clear();
     assert_eq!(agent.state().context.messages, result);
@@ -151,7 +152,7 @@ async fn context_transform_precedes_application_message_conversion() {
         })),
         ..Default::default()
     };
-    let (agent, provider) = setup(vec![Script::Steps(steps("response"))], config);
+    let (agent, provider) = setup(vec![Response::Steps(steps("response"))], config);
     let result = agent.continue_run(options()).unwrap().await.unwrap();
     assert_eq!(*order.lock().unwrap(), vec!["transform", "convert"]);
     assert_eq!(
@@ -178,7 +179,7 @@ async fn default_conversion_filters_application_records() {
         },
         ..Default::default()
     };
-    let (agent, provider) = setup(vec![Script::Steps(steps("reply"))], config);
+    let (agent, provider) = setup(vec![Response::Steps(steps("reply"))], config);
     let result = agent.prompt(user("new"), options()).unwrap().await.unwrap();
     assert_eq!(
         provider.calls()[0].context.messages,
@@ -194,4 +195,128 @@ async fn default_conversion_filters_application_records() {
         agent.state().context.messages,
         [vec![user("old"), custom], result].concat()
     );
+}
+
+#[tokio::test]
+async fn tool_call_mutations_do_not_escape_agent_snapshot_seams() {
+    use std::sync::{Arc, RwLock};
+    let model: Model = serde_json::from_value(serde_json::json!({
+        "id":"controlled","name":"Controlled","api":"controlled","provider":"local",
+        "baseUrl":"","reasoning":false,"input":["text"],
+        "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
+        "contextWindow":0,"maxTokens":0
+    }))
+    .unwrap();
+    let supplied: ApiStreamSimpleFunction = Arc::new(|model, _, _| {
+        let call = Arc::new(RwLock::new(ToolCall {
+            id: "call".into(),
+            name: "lookup".into(),
+            arguments: serde_json::json!({"x":1}).as_object().unwrap().clone(),
+            thought_signature: None,
+        }));
+        let message = Arc::new(RwLock::new(AssistantMessage {
+            content: vec![AssistantContent::ToolCall(call.clone())],
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            response_model: None,
+            response_id: None,
+            diagnostics: None,
+            usage: zero_usage(),
+            stop_reason: StopReason::Stop,
+            error_message: None,
+            timestamp: 42.0,
+        }));
+        let stream = create_assistant_message_event_stream();
+        stream
+            .push(AssistantMessageEvent::Start {
+                partial: message.clone(),
+            })
+            .unwrap();
+        stream
+            .push(AssistantMessageEvent::ToolcallEnd {
+                content_index: 0.0,
+                tool_call: call,
+                partial: message.clone(),
+            })
+            .unwrap();
+        stream
+            .push(AssistantMessageEvent::Done {
+                reason: StopReason::Stop,
+                message,
+            })
+            .unwrap();
+        Ok(stream)
+    });
+    let agent = Agent::new(supplied, model, AgentOptions::default());
+    let observer = agent.clone();
+    agent.subscribe(Arc::new(move |event, _| {
+        if let Some(message) = observer.state().streaming_message {
+            change_call(&message, 99);
+        }
+        match event {
+            AgentEvent::MessageUpdate {
+                message,
+                assistant_message_event:
+                    AssistantMessageEvent::ToolcallEnd {
+                        tool_call, partial, ..
+                    },
+            } => {
+                change_call(&message, 88);
+                change_call(&partial.read().unwrap(), 77);
+                tool_call.write().unwrap().arguments["x"] = serde_json::json!(66);
+            }
+            AgentEvent::MessageEnd {
+                message: AgentMessage::Model(Message::Assistant(message)),
+            } => change_call(&message, 55),
+            _ => {}
+        }
+        Box::pin(async {})
+    }));
+    let events = capture(&agent);
+    let result = agent
+        .prompt(user("input"), options())
+        .unwrap()
+        .await
+        .unwrap();
+    let AgentMessage::Model(Message::Assistant(terminal)) = &result[1] else {
+        panic!()
+    };
+    assert_call(terminal, 1);
+    for event in events.lock().unwrap().iter() {
+        if let AgentEvent::MessageUpdate {
+            message,
+            assistant_message_event:
+                AssistantMessageEvent::ToolcallEnd {
+                    tool_call, partial, ..
+                },
+        } = event
+        {
+            assert_call(message, 1);
+            assert_call(&partial.read().unwrap(), 1);
+            assert_eq!(tool_call.read().unwrap().arguments["x"], 1);
+        }
+    }
+    let state = agent.state();
+    let AgentMessage::Model(Message::Assistant(message)) = &state.context.messages[1] else {
+        panic!()
+    };
+    change_call(message, 44);
+    let fresh = agent.state();
+    let AgentMessage::Model(Message::Assistant(message)) = &fresh.context.messages[1] else {
+        panic!()
+    };
+    assert_call(message, 1);
+}
+fn change_call(message: &AssistantMessage, value: i32) {
+    let AssistantContent::ToolCall(call) = &message.content[0] else {
+        panic!()
+    };
+    call.write().unwrap().arguments["x"] = serde_json::json!(value);
+}
+fn assert_call(message: &AssistantMessage, value: i32) {
+    let AssistantContent::ToolCall(call) = &message.content[0] else {
+        panic!()
+    };
+    assert_eq!(call.read().unwrap().arguments["x"], value);
 }

@@ -74,9 +74,11 @@ Publish reusable adapter conformance from the owning leaf, not a forwarding test
 
 ## Libraries and formats
 
-Only these libraries are owner-approved: tokio, reqwest, serde, serde_json,
+The base owner-approved libraries are: tokio, reqwest, serde, serde_json,
 toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
-Ask the owner before adding any other crate; never add one silently.
+Also approved for model records: serde 1.0.229 with derive/rc, serde_json
+1.0.151 with preserve_order, ryu-js 1.0.3 and target-local js-sys 0.3.106
+for browser timestamps. Ask before adding any unapproved crate; never add one silently.
 
 Owner-approved model validation exception: `jsonschema` 0.58.5 with default
 features disabled, used only through the model crate's private schema module.

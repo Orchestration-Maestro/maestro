@@ -66,20 +66,23 @@ pub fn memory() -> Arc<MemoryCredentialStorage> {
 }
 pub fn model(provider: &str) -> Model {
     Model {
-        identity: ModelIdentity {
-            provider: provider.into(),
-            model: "synthetic".into(),
-            operation: "chat".into(),
-        },
-        rates: None,
-        protocol: "script".into(),
+        id: "synthetic".into(),
         name: "synthetic".into(),
-        endpoint: "https://example.invalid".into(),
-        chat: Some(ChatMetadata {
-            context_window: None,
-        }),
-        capabilities: Default::default(),
-        headers: Default::default(),
+        api: "script".into(),
+        provider: provider.into(),
+        base_url: "https://example.invalid".into(),
+        reasoning: false,
+        thinking_level_map: None,
+        cost: TokenRates {
+            input: 0.0,
+            output: 0.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+        },
+        context_window: 0.0,
+        max_tokens: 0.0,
+        headers: None,
+        compat: None,
         input: vec!["text".into()],
     }
 }
@@ -87,42 +90,125 @@ pub fn context() -> Context {
     Context {
         system_prompt: None,
         messages: vec![Message::User(UserMessage {
-            content: vec![InputContent::Text(TextContent {
-                text: "hello".into(),
-                replay_metadata: None,
-            })],
-            timestamp: 1,
+            content: UserContent::Text("hello".into()),
+            timestamp: 1.0,
         })],
-        tools: vec![],
+        tools: Some(vec![]),
     }
 }
-pub fn scripted(count: usize) -> Arc<ScriptedProvider> {
-    Arc::new(ScriptedProvider::new(
-        (0..count)
-            .map(|_| {
-                Script::Steps(vec![ScriptStep::Update(ProviderUpdate::Done {
-                    reason: StopReason::Stop,
-                })])
+#[derive(Clone)]
+pub struct Call {
+    pub options: StreamOptions,
+}
+pub struct ControlledAdapter {
+    provider: ApiProvider,
+    calls: Arc<std::sync::Mutex<Vec<Call>>>,
+    resolutions: std::sync::Mutex<Vec<RequestAuth>>,
+}
+impl ControlledAdapter {
+    pub fn calls(&self) -> Vec<Call> {
+        self.calls.lock().unwrap().clone()
+    }
+    pub fn resolutions(&self) -> Vec<RequestAuth> {
+        self.resolutions.lock().unwrap().clone()
+    }
+    pub fn invoke(&self, model: Model, context: Context, auth: RequestAuth) -> AssistantMessage {
+        let api_key = match &auth {
+            RequestAuth::Secret { secret, .. } => Some(secret.expose().into()),
+            RequestAuth::ConfiguredWithoutSecret { .. } => None,
+        };
+        self.resolutions.lock().unwrap().push(auth);
+        let stream = (self.provider.stream)(
+            model,
+            context,
+            Some(ProviderStreamOptions {
+                base: StreamOptions {
+                    api_key,
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+        )
+        .unwrap();
+        let result = block_on(stream.result());
+        result.read().unwrap().clone()
+    }
+}
+pub fn controlled() -> Arc<ControlledAdapter> {
+    let calls = Arc::new(std::sync::Mutex::new(vec![]));
+    let observed = calls.clone();
+    let raw: ApiStreamFunction = Arc::new(move |model, _, options| {
+        observed.lock().unwrap().push(Call {
+            options: options.unwrap().base,
+        });
+        let stream = create_assistant_message_event_stream();
+        let message = Arc::new(std::sync::RwLock::new(AssistantMessage {
+            content: vec![],
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            response_model: None,
+            response_id: None,
+            diagnostics: None,
+            error_message: None,
+            usage: Usage {
+                input: 0.0,
+                output: 0.0,
+                cache_read: 0.0,
+                cache_write: 0.0,
+                total_tokens: 0.0,
+                cost: UsageCost {
+                    input: 0.0,
+                    output: 0.0,
+                    cache_read: 0.0,
+                    cache_write: 0.0,
+                    total: 0.0,
+                },
+            },
+            stop_reason: StopReason::Stop,
+            timestamp: 123.0,
+        }));
+        stream
+            .push(AssistantMessageEvent::Start {
+                partial: message.clone(),
             })
-            .collect(),
-    ))
+            .unwrap();
+        stream
+            .push(AssistantMessageEvent::Done {
+                reason: StopReason::Stop,
+                message,
+            })
+            .unwrap();
+        Ok(stream)
+    });
+    let simple_raw = raw.clone();
+    Arc::new(ControlledAdapter {
+        provider: ApiProvider {
+            api: "script".into(),
+            stream: raw,
+            stream_simple: Arc::new(move |m, c, o| {
+                simple_raw(
+                    m,
+                    c,
+                    o.map(|o| ProviderStreamOptions {
+                        base: o.base,
+                        extra: Default::default(),
+                    }),
+                )
+            }),
+        },
+        calls,
+        resolutions: std::sync::Mutex::new(vec![]),
+    })
 }
 pub fn request(
     credentials: Arc<dyn AuthResolver>,
     provider: &str,
-) -> (AssistantMessage, Arc<ScriptedProvider>) {
-    let fake = scripted(1);
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model(provider), fake.clone()).unwrap();
-    let result = block_on(models.complete(
-        model(provider),
-        context(),
-        StreamOptions {
-            auth_resolver: Some(credentials),
-            ..Default::default()
-        },
-    ));
-    (result, fake)
+) -> (Result<AssistantMessage, Failure>, Arc<ControlledAdapter>) {
+    let adapter = controlled();
+    let result = block_on(credentials.resolve(provider.into(), Cancellation::new()))
+        .map(|auth| adapter.invoke(model(provider), context(), auth));
+    (result, adapter)
 }
 pub fn assert_secret(auth: &RequestAuth, value: &str, source: &str) {
     match auth {
@@ -362,7 +448,7 @@ pub fn adapters(root: &std::path::Path, initial: &str) -> Vec<AdapterCase> {
     ]
 }
 
-pub fn poll_once<F: Future>(future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
+pub fn poll_once<F: Future + ?Sized>(future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
     let waker = Waker::from(Arc::new(Notify(std::thread::current())));
     future.poll(&mut TaskContext::from_waker(&waker))
 }

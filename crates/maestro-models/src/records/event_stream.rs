@@ -1,0 +1,381 @@
+//! Shared producer-owned FIFO events with independent result observation.
+use super::{
+    diagnostics::ThrownValue,
+    types::{AssistantMessage, AssistantMessageEvent},
+};
+use std::{
+    collections::VecDeque,
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex, RwLock},
+    task::{Context, Poll, Waker},
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+type Callback<T, R> = Arc<dyn Fn(&T) -> Result<R, ThrownValue> + Send + Sync>;
+#[cfg(target_arch = "wasm32")]
+type Callback<T, R> = Arc<dyn Fn(&T) -> Result<R, ThrownValue>>;
+#[cfg(not(target_arch = "wasm32"))]
+type Observation<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+#[cfg(target_arch = "wasm32")]
+type Observation<T> = Pin<Box<dyn Future<Output = T>>>;
+
+#[cfg(not(target_arch = "wasm32"))]
+type Continuation = Box<dyn FnOnce() + Send>;
+#[cfg(target_arch = "wasm32")]
+type Continuation = Box<dyn FnOnce()>;
+
+struct Promise<T> {
+    value: Option<T>,
+    wakers: Vec<Waker>,
+    continuations: Vec<Continuation>,
+}
+impl<T: Clone> Promise<T> {
+    fn new() -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(Self {
+            value: None,
+            wakers: vec![],
+            continuations: vec![],
+        }))
+    }
+    fn settle(promise: &Arc<Mutex<Self>>, value: T) {
+        let (wakes, continuations) = {
+            let mut p = promise.lock().unwrap_or_else(|p| p.into_inner());
+            if p.value.is_some() {
+                return;
+            }
+            p.value = Some(value);
+            (
+                std::mem::take(&mut p.wakers),
+                std::mem::take(&mut p.continuations),
+            )
+        };
+        for continuation in continuations {
+            continuation();
+        }
+        for w in wakes {
+            w.wake();
+        }
+    }
+}
+struct Read<T>(Arc<Mutex<Promise<T>>>);
+impl<T: Clone> Future for Read<T> {
+    type Output = T;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T> {
+        let mut p = self.0.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(v) = &p.value {
+            return Poll::Ready(v.clone());
+        }
+        if !p.wakers.iter().any(|w| w.will_wake(cx.waker())) {
+            p.wakers.push(cx.waker().clone());
+        }
+        Poll::Pending
+    }
+}
+struct Queue<T> {
+    queue: VecDeque<T>,
+    waiting: VecDeque<Arc<Mutex<Promise<Option<T>>>>>,
+    done: bool,
+}
+/// Shared FIFO producer handle with an independently observed final result.
+pub struct EventStream<T, R = T> {
+    queue: Arc<Mutex<Queue<T>>>,
+    result: Arc<Mutex<Promise<R>>>,
+    is_complete: Callback<T, bool>,
+    extract_result: Callback<T, R>,
+}
+impl<T, R> Clone for EventStream<T, R> {
+    fn clone(&self) -> Self {
+        Self {
+            queue: self.queue.clone(),
+            result: self.result.clone(),
+            is_complete: self.is_complete.clone(),
+            extract_result: self.extract_result.clone(),
+        }
+    }
+}
+
+/// Independent cursor; already registered reads remain reserved when abandoned.
+pub struct AsyncIterator<T> {
+    queue: Arc<Mutex<Queue<T>>>,
+    pending: Option<Arc<Mutex<Promise<Option<T>>>>>,
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl<T: Clone + Send + 'static, R: Clone + Send + 'static> EventStream<T, R> {
+    /// Install completion and result callbacks without starting an executor.
+    pub fn new(is_complete: Callback<T, bool>, extract_result: Callback<T, R>) -> Self {
+        Self {
+            queue: Arc::new(Mutex::new(Queue {
+                queue: VecDeque::new(),
+                waiting: VecDeque::new(),
+                done: false,
+            })),
+            result: Promise::new(),
+            is_complete,
+            extract_result,
+        }
+    }
+    /// Push supplied data; callback errors retain their ordered state transitions.
+    pub fn push(&self, event: T) -> Result<(), ThrownValue> {
+        if self.queue.lock().unwrap_or_else(|p| p.into_inner()).done {
+            return Ok(());
+        }
+        if (self.is_complete)(&event)? {
+            self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
+            let result = (self.extract_result)(&event)?;
+            Promise::settle(&self.result, result);
+        }
+        let waiter = {
+            let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+            if let Some(waiter) = q.waiting.pop_front() {
+                Some(waiter)
+            } else {
+                q.queue.push_back(event.clone());
+                None
+            }
+        };
+        if let Some(waiter) = waiter {
+            Promise::settle(&waiter, Some(event));
+        }
+        Ok(())
+    }
+    /// Close iteration; an absent result leaves result observation unresolved.
+    pub fn end(&self, result: Option<R>) {
+        let waiting = {
+            let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+            q.done = true;
+            std::mem::take(&mut q.waiting)
+        };
+        if let Some(value) = result {
+            Promise::settle(&self.result, value);
+        }
+        for waiter in waiting {
+            Promise::settle(&waiter, None);
+        }
+    }
+    /// Create an independent cursor sharing the FIFO.
+    pub fn iter(&self) -> AsyncIterator<T> {
+        AsyncIterator {
+            queue: self.queue.clone(),
+            pending: None,
+        }
+    }
+    /// Observe the result without draining events or starting producer work.
+    pub fn result(&self) -> Observation<R> {
+        Box::pin(Read(self.result.clone()))
+    }
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl<T: Clone + Send + 'static> AsyncIterator<T> {
+    /// Request the next read eagerly; a dropped observation abandons its delivery.
+    #[expect(
+        clippy::should_implement_trait,
+        reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
+    )]
+    pub fn next(&mut self) -> Pin<Box<dyn Future<Output = Option<T>> + Send + '_>> {
+        let prior = self.pending.take();
+        let queue = self.queue.clone();
+        let promise = Promise::new();
+        self.pending = Some(promise.clone());
+        if let Some(prior) = prior {
+            let target = promise.clone();
+            let mut continuation: Option<Continuation> =
+                Some(Box::new(move || request(&queue, &target)));
+            {
+                let mut prior = prior.lock().unwrap_or_else(|p| p.into_inner());
+                if prior.value.is_none() {
+                    prior.continuations.push(continuation.take().unwrap());
+                }
+            }
+            if let Some(continuation) = continuation {
+                continuation();
+            }
+        } else {
+            request(&queue, &promise);
+        }
+        Box::pin(Read(promise))
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
+    /// Install completion and result callbacks without starting an executor.
+    pub fn new(is_complete: Callback<T, bool>, extract_result: Callback<T, R>) -> Self {
+        Self {
+            queue: Arc::new(Mutex::new(Queue {
+                queue: VecDeque::new(),
+                waiting: VecDeque::new(),
+                done: false,
+            })),
+            result: Promise::new(),
+            is_complete,
+            extract_result,
+        }
+    }
+    /// Push supplied data; callback errors retain their ordered state transitions.
+    pub fn push(&self, event: T) -> Result<(), ThrownValue> {
+        if self.queue.lock().unwrap_or_else(|p| p.into_inner()).done {
+            return Ok(());
+        }
+        if (self.is_complete)(&event)? {
+            self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
+            let result = (self.extract_result)(&event)?;
+            Promise::settle(&self.result, result);
+        }
+        let waiter = {
+            let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+            if let Some(waiter) = q.waiting.pop_front() {
+                Some(waiter)
+            } else {
+                q.queue.push_back(event.clone());
+                None
+            }
+        };
+        if let Some(waiter) = waiter {
+            Promise::settle(&waiter, Some(event));
+        }
+        Ok(())
+    }
+    /// Close iteration; an absent result leaves result observation unresolved.
+    pub fn end(&self, result: Option<R>) {
+        let waiting = {
+            let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+            q.done = true;
+            std::mem::take(&mut q.waiting)
+        };
+        if let Some(value) = result {
+            Promise::settle(&self.result, value);
+        }
+        for waiter in waiting {
+            Promise::settle(&waiter, None);
+        }
+    }
+    /// Create an independent cursor sharing the FIFO.
+    pub fn iter(&self) -> AsyncIterator<T> {
+        AsyncIterator {
+            queue: self.queue.clone(),
+            pending: None,
+        }
+    }
+    /// Observe the result without draining events or starting producer work.
+    pub fn result(&self) -> Observation<R> {
+        Box::pin(Read(self.result.clone()))
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl<T: Clone + 'static> AsyncIterator<T> {
+    /// Request the next read eagerly; a dropped observation abandons its delivery.
+    #[expect(
+        clippy::should_implement_trait,
+        reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
+    )]
+    pub fn next(&mut self) -> Pin<Box<dyn Future<Output = Option<T>> + '_>> {
+        let prior = self.pending.take();
+        let queue = self.queue.clone();
+        let promise = Promise::new();
+        self.pending = Some(promise.clone());
+        if let Some(prior) = prior {
+            let target = promise.clone();
+            let mut continuation: Option<Continuation> =
+                Some(Box::new(move || request(&queue, &target)));
+            {
+                let mut prior = prior.lock().unwrap_or_else(|p| p.into_inner());
+                if prior.value.is_none() {
+                    prior.continuations.push(continuation.take().unwrap());
+                }
+            }
+            if let Some(continuation) = continuation {
+                continuation();
+            }
+        } else {
+            request(&queue, &promise);
+        }
+        Box::pin(Read(promise))
+    }
+}
+
+fn request<T: Clone>(queue: &Arc<Mutex<Queue<T>>>, promise: &Arc<Mutex<Promise<Option<T>>>>) {
+    let ready = {
+        let mut q = queue.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(v) = q.queue.pop_front() {
+            Some(Some(v))
+        } else if q.done {
+            Some(None)
+        } else {
+            q.waiting.push_back(promise.clone());
+            None
+        }
+    };
+    if let Some(value) = ready {
+        Promise::settle(promise, value);
+    }
+}
+/// Assistant events retain the producer's shared mutable message objects.
+#[derive(Clone)]
+pub struct AssistantMessageEventStream(
+    EventStream<AssistantMessageEvent, Arc<RwLock<AssistantMessage>>>,
+);
+impl Default for AssistantMessageEventStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+impl AssistantMessageEventStream {
+    /// Create an empty stream recognizing done and error as terminal events.
+    pub fn new() -> Self {
+        Self(EventStream::new(
+            Arc::new(|e| {
+                Ok(matches!(
+                    e,
+                    AssistantMessageEvent::Done { .. } | AssistantMessageEvent::Error { .. }
+                ))
+            }),
+            Arc::new(extract),
+        ))
+    }
+    /// Push an event without normalizing its data.
+    pub fn push(&self, event: AssistantMessageEvent) -> Result<(), ThrownValue> {
+        self.0.push(event)
+    }
+    /// Close iteration, optionally supplying a final result.
+    pub fn end(&self, result: Option<Arc<RwLock<AssistantMessage>>>) {
+        self.0.end(result);
+    }
+    /// Create an independent FIFO cursor.
+    pub fn iter(&self) -> AsyncIterator<AssistantMessageEvent> {
+        self.0.iter()
+    }
+    /// Observe the shared result independently of event consumption.
+    pub fn result(&self) -> Observation<Arc<RwLock<AssistantMessage>>> {
+        self.0.result()
+    }
+}
+fn extract(event: &AssistantMessageEvent) -> Result<Arc<RwLock<AssistantMessage>>, ThrownValue> {
+    match event {
+        AssistantMessageEvent::Done { message, .. } => Ok(message.clone()),
+        AssistantMessageEvent::Error { error, .. } => Ok(error.clone()),
+        _ => Err(super::diagnostics::error(
+            "Unexpected event type for final result".into(),
+        )),
+    }
+}
+/// Construct an empty assistant event stream.
+pub fn create_assistant_message_event_stream() -> AssistantMessageEventStream {
+    AssistantMessageEventStream::new()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn nonterminal_result_extraction_reports_exact_text() {
+        let a: AssistantMessage = serde_json::from_value(serde_json::json!({"role":"assistant","content":[],"api":"a","provider":"p","model":"m","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0})).unwrap();
+        let error = extract(&AssistantMessageEvent::Start {
+            partial: Arc::new(RwLock::new(a)),
+        })
+        .unwrap_err();
+        assert_eq!(
+            super::super::diagnostics::format_thrown_value(&error).unwrap(),
+            "Unexpected event type for final result"
+        );
+    }
+}

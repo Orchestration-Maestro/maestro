@@ -16,28 +16,17 @@ fn stored_key_reaches_only_selected_provider() {
             &Cancellation::new(),
         )
         .unwrap();
-    let chosen = scripted(2);
-    let other = scripted(1);
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model("chosen"), chosen.clone()).unwrap();
-    models.register(model("other"), other.clone()).unwrap();
-    let options = StreamOptions {
-        auth_resolver: Some(credentials),
-        ..Default::default()
-    };
-    let mut stream = models.stream(model("chosen"), context(), options.clone());
-    let mut events = vec![];
-    while let Some(event) = block_on(stream.next()) {
-        events.push(event);
+    let chosen = controlled();
+    let other = controlled();
+    for _ in 0..2 {
+        let resolved = block_on(credentials.resolve("chosen".into(), Cancellation::new())).unwrap();
+        assert_secret(&resolved, "SYNTHETIC_KEY", "stored");
+        let result = chosen.invoke(model("chosen"), context(), resolved);
+        assert_eq!(result.stop_reason, StopReason::Stop);
     }
-    assert!(matches!(events.last(), Some(ModelEvent::Done { .. })));
-    assert_eq!(
-        block_on(models.complete(model("chosen"), context(), options)).failure,
-        None
-    );
     assert_eq!(chosen.calls().len(), 2);
     for call in chosen.calls() {
-        assert_secret(&call.options.auth, "SYNTHETIC_KEY", "stored");
+        assert_eq!(call.options.api_key.as_deref(), Some("SYNTHETIC_KEY"));
     }
     assert!(other.calls().is_empty());
 }
@@ -109,25 +98,17 @@ fn runtime_override_precedes_stored_credentials() {
         block_on(credentials.resolve("chosen".into(), Cancellation::new())).unwrap_err(),
         Failure::MissingAuthentication
     );
-    let fake = scripted(2);
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model("chosen"), fake.clone()).unwrap();
+    let adapter = controlled();
     for (value, expected) in [
         ("explicit", None),
         ("", Some(Failure::MissingAuthentication)),
     ] {
-        let result = block_on(models.complete(
-            model("chosen"),
-            context(),
-            StreamOptions {
-                auth: Some(auth(value)),
-                auth_resolver: Some(credentials.clone()),
-                ..Default::default()
-            },
-        ));
-        assert_eq!(result.failure, expected);
+        credentials.set_runtime_auth("chosen".into(), Some(auth(value)));
+        let result = block_on(credentials.resolve("chosen".into(), Cancellation::new()))
+            .map(|resolved| adapter.invoke(model("chosen"), context(), resolved));
+        assert_eq!(result.err(), expected);
     }
-    assert_eq!(fake.calls().len(), 1);
+    assert_eq!(adapter.calls().len(), 1);
     credentials.set_runtime_auth("chosen".into(), None);
     assert_secret(
         &block_on(credentials.resolve("chosen".into(), Cancellation::new())).unwrap(),
@@ -250,7 +231,7 @@ fn selected_stored_failure_never_uses_ambient_or_fallback() {
         let credentials = Arc::new(Credentials::new(storage.clone(), inputs).unwrap());
         storage.fail.store(fail_read, Ordering::SeqCst);
         let (result, adapter) = request(credentials, "chosen");
-        assert_eq!(result.failure, Some(expected));
+        assert_eq!(result.err(), Some(expected));
         assert!(adapter.calls().is_empty());
         assert!(secrets.names.lock().unwrap().is_empty());
         assert!(fallback.calls.lock().unwrap().is_empty());
@@ -258,7 +239,7 @@ fn selected_stored_failure_never_uses_ambient_or_fallback() {
     let storage = Arc::new(MemoryCredentialStorage::new(Some(secret(
         r#"{"chosen":{"type":"api_key","key":"valid"},"unrelated":{"alien":true}}"#,
     ))));
-    assert_eq!(request(owner(storage), "chosen").0.failure, None);
+    assert_eq!(request(owner(storage), "chosen").0.err(), None);
 }
 
 #[test]
@@ -335,8 +316,6 @@ fn metadata_inspection_has_no_secret_effects() {
         .insert("environment".into(), vec!["NAME".into()]);
     let credentials = Arc::new(Credentials::new(storage.clone(), inputs).unwrap());
     credentials.set_runtime_auth("stored".into(), Some(auth("runtime")));
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model("empty"), scripted(1)).unwrap();
     for _ in 0..3 {
         assert_eq!(credentials.list(), vec!["empty", "stored"]);
         for (provider, configured, source) in [
@@ -354,11 +333,7 @@ fn metadata_inspection_has_no_secret_effects() {
             );
         }
         assert_eq!(
-            models
-                .auth_status("empty", credentials.as_ref())
-                .unwrap()
-                .source
-                .as_deref(),
+            credentials.status("empty").source.as_deref(),
             Some("stored")
         );
     }
@@ -405,20 +380,12 @@ fn secret_sentinels_stay_out_of_public_observations() {
             .unwrap();
         let original = context();
         let before = format!("{original:?}");
-        let fake = scripted(1);
-        let mut models = Models::new(Arc::new(|| 123));
-        models.register(model("chosen"), fake).unwrap();
-        let mut stream = models.stream(
-            model("chosen"),
-            original.clone(),
-            StreamOptions {
-                auth_resolver: Some(credentials.clone()),
-                ..Default::default()
-            },
-        );
-        let mut events = vec![];
-        while let Some(event) = block_on(stream.next()) {
-            events.push(event);
+        let fake = controlled();
+        let resolution = block_on(credentials.resolve("chosen".into(), Cancellation::new()));
+        let events =
+            resolution.map(|resolved| fake.invoke(model("chosen"), original.clone(), resolved));
+        if unresolved {
+            assert!(fake.calls().is_empty());
         }
         let observation = format!(
             "{debug} {:?} {:?} {events:?} {before}",
@@ -485,28 +452,20 @@ fn stored_token_metadata_and_observations_exclude_access_and_refresh_secrets() {
             source: Some("stored".into()),
         }
     );
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model("chosen"), scripted(1)).unwrap();
     let original = context();
     let before = format!("{original:?}");
-    let mut stream = models.stream(
-        model("chosen"),
-        original.clone(),
-        StreamOptions {
-            auth_resolver: Some(credentials.clone()),
-            ..Default::default()
-        },
+    let (events, adapter) = request(credentials.clone(), "chosen");
+    assert_eq!(events.as_ref().unwrap().stop_reason, StopReason::Stop);
+    assert_secret(&adapter.resolutions()[0], sentinels[0], "stored");
+    assert_eq!(
+        adapter.calls()[0].options.api_key.as_deref(),
+        Some(sentinels[0])
     );
-    let mut events = vec![];
-    while let Some(event) = block_on(stream.next()) {
-        events.push(event);
-    }
-    assert!(matches!(events.last(), Some(ModelEvent::Done { .. })));
     let metadata = format!(
         "{:?} {:?} {:?}",
         credentials.list(),
         credentials.status("chosen"),
-        models.auth_status("chosen", credentials.as_ref()).unwrap(),
+        credentials.status("chosen"),
     );
     for observation in [
         metadata,
@@ -546,30 +505,16 @@ fn cancelled_resolution_never_dispatches() {
                         )
                         .unwrap();
                 }
-                let fake = scripted(1);
+                let fake = controlled();
                 let selected = fake.clone();
-                let mut models = Models::new(Arc::new(|| 123));
-                models.register(model("chosen"), fake).unwrap();
                 let signal = Cancellation::new();
                 if pre_cancelled {
                     signal.cancel();
                 }
                 let worker_signal = signal.clone();
                 let worker = std::thread::spawn(move || {
-                    let mut stream = models.stream(
-                        model("chosen"),
-                        context(),
-                        StreamOptions {
-                            cancellation: worker_signal,
-                            auth_resolver: Some(credentials),
-                            ..Default::default()
-                        },
-                    );
-                    let mut events = vec![];
-                    while let Some(event) = block_on(stream.next()) {
-                        events.push(event);
-                    }
-                    events
+                    block_on(credentials.resolve("chosen".into(), worker_signal))
+                        .map(|resolved| fake.invoke(model("chosen"), context(), resolved))
                 });
                 if !pre_cancelled {
                     entered.recv().unwrap();
@@ -578,11 +523,8 @@ fn cancelled_resolution_never_dispatches() {
                         gate.release.cancel();
                     }
                 }
-                let events = worker.join().unwrap();
-                assert_eq!(events.len(), 1);
-                assert!(
-                    matches!(&events[0], ModelEvent::Error { reason: StopReason::Aborted, error } if error.failure == Some(Failure::Cancelled))
-                );
+                let resolution = worker.join().unwrap();
+                assert_eq!(resolution.unwrap_err(), Failure::Cancelled);
                 assert!(selected.calls().is_empty());
             }
         }
@@ -600,21 +542,11 @@ fn cancelled_resolution_never_dispatches() {
             &Cancellation::new(),
         )
         .unwrap();
-    let fake = scripted(1);
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model("chosen"), fake.clone()).unwrap();
+    let fake = controlled();
     let signal = Cancellation::new();
-    let mut stream = models.stream(
-        model("chosen"),
-        context(),
-        StreamOptions {
-            auth_resolver: Some(credentials),
-            cancellation: signal.clone(),
-            ..Default::default()
-        },
-    );
+    let mut resolution = credentials.resolve("chosen".into(), signal.clone());
     {
-        let mut read = std::pin::pin!(stream.next());
+        let mut read = resolution.as_mut();
         loop {
             assert!(poll_once(read.as_mut()).is_pending());
             if entered.try_recv().is_ok() {
@@ -624,20 +556,16 @@ fn cancelled_resolution_never_dispatches() {
         }
     }
     {
-        let mut read = std::pin::pin!(stream.next());
+        let mut read = resolution.as_mut();
         assert!(poll_once(read.as_mut()).is_pending());
         assert_eq!(gate.count.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
     signal.cancel();
-    assert!(matches!(
-        block_on(stream.next()),
-        Some(ModelEvent::Error {
-            reason: StopReason::Aborted,
-            ..
-        })
-    ));
-    assert!(block_on(stream.next()).is_none());
+    assert_eq!(
+        block_on(resolution.as_mut()).unwrap_err(),
+        Failure::Cancelled
+    );
     assert!(fake.calls().is_empty());
-    drop(stream);
+    drop(resolution);
     gate.release.cancel();
 }

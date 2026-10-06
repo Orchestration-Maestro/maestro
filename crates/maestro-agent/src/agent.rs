@@ -3,7 +3,7 @@ use crate::{
     AgentContext, AgentError, AgentListener, AgentMessage, AgentOptions, AgentState, Queue,
     QueueMode,
 };
-use maestro_models::{Cancellation, Model, Models, StreamOptions};
+use maestro_models::{ApiStreamSimpleFunction, Cancellation, Model, SimpleStreamOptions};
 use std::{
     future::Future,
     pin::Pin,
@@ -22,7 +22,7 @@ pub struct Agent {
     pub(crate) inner: Arc<Inner>,
 }
 pub(crate) struct Inner {
-    pub models: Arc<Models>,
+    pub stream_fn: ApiStreamSimpleFunction,
     pub model: Model,
     pub options: AgentOptions,
     // Only read or mutate state under this mutex; run callbacks, notifications,
@@ -70,10 +70,10 @@ fn observe(mut receiver: watch::Receiver<Option<Outcome>>) -> RunHandle {
 }
 impl Agent {
     /// Construct an idle shared owner without selecting a provider implicitly.
-    pub fn new(models: Arc<Models>, model: Model, options: AgentOptions) -> Self {
+    pub fn new(stream_fn: ApiStreamSimpleFunction, model: Model, options: AgentOptions) -> Self {
         Self {
             inner: Arc::new(Inner {
-                models,
+                stream_fn,
                 model,
                 options: options.clone(),
                 state: Mutex::new(Shared {
@@ -98,9 +98,9 @@ impl Agent {
     pub fn state(&self) -> AgentState {
         let state = self.inner.lock();
         AgentState {
-            context: state.context.clone(),
+            context: crate::run::snapshot_context(&state.context),
             is_running: state.running,
-            streaming_message: state.streaming.clone(),
+            streaming_message: state.streaming.as_ref().map(crate::run::snapshot_assistant),
         }
     }
     /// Admit input synchronously and start independent owned runtime work.
@@ -109,19 +109,19 @@ impl Agent {
     pub fn prompt(
         &self,
         message: AgentMessage,
-        options: StreamOptions,
+        options: SimpleStreamOptions,
     ) -> Result<RunHandle, AgentError> {
         self.start(Some(message), options)
     }
     /// Continue existing history without replaying its message events.
     /// Only a restart supplied by steering skips the entry steering poll.
-    pub fn continue_run(&self, options: StreamOptions) -> Result<RunHandle, AgentError> {
+    pub fn continue_run(&self, options: SimpleStreamOptions) -> Result<RunHandle, AgentError> {
         self.start(None, options)
     }
     fn start(
         &self,
         message: Option<AgentMessage>,
-        options: StreamOptions,
+        mut options: SimpleStreamOptions,
     ) -> Result<RunHandle, AgentError> {
         let mut state = self.inner.lock();
         if state.running {
@@ -157,7 +157,13 @@ impl Agent {
         };
         let (sender, receiver) = watch::channel(None);
         state.running = true;
-        let prior_cancellation = state.cancellation.replace(options.cancellation.clone());
+        let prior_cancellation = state.cancellation.replace(
+            options
+                .base
+                .signal
+                .get_or_insert_with(Cancellation::new)
+                .clone(),
+        );
         let prior_completion = state.completion.replace(receiver.clone());
         drop(state);
         drop(prior_cancellation);
@@ -213,7 +219,7 @@ impl Agent {
             .queues
             .get(queue)
             .iter()
-            .cloned()
+            .map(crate::run::snapshot_record)
             .collect()
     }
     /// Remove and return the selected FIFO in order, leaving the other alone.

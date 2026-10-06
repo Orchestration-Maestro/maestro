@@ -8,10 +8,17 @@ pub(crate) async fn emit(inner: &Inner, event: AgentEvent, cancellation: &Cancel
         let streaming = match &event {
             AgentEvent::MessageStart {
                 message: AgentMessage::Model(Message::Assistant(message)),
-            } => state.streaming.replace(message.clone()),
-            AgentEvent::MessageUpdate { message, .. } => state.streaming.replace(message.clone()),
+            } => state
+                .streaming
+                .replace(crate::run::snapshot_assistant(message)),
+            AgentEvent::MessageUpdate { message, .. } => state
+                .streaming
+                .replace(crate::run::snapshot_assistant(message)),
             AgentEvent::MessageEnd { message } => {
-                state.context.messages.push(message.clone());
+                state
+                    .context
+                    .messages
+                    .push(crate::run::snapshot_record(message));
                 if matches!(message, AgentMessage::Model(Message::Assistant(_))) {
                     state.streaming.take()
                 } else {
@@ -24,6 +31,6 @@ pub(crate) async fn emit(inner: &Inner, event: AgentEvent, cancellation: &Cancel
     };
     drop(streaming);
     for (_, listener) in listeners {
-        listener(event.clone(), cancellation.clone()).await;
+        listener(crate::run::snapshot_event(&event), cancellation.clone()).await;
     }
 }

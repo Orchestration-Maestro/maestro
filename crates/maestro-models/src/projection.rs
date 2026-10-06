@@ -2,7 +2,7 @@
 
 use crate::{
     AssistantContent, AssistantMessage, Context, InputContent, Message, Model, StopReason,
-    TextContent, ThinkingContent, ToolCall, ToolResultMessage,
+    TextContent, ToolCall, ToolResultMessage, UserContent,
 };
 
 /// Clone a selected-model request without modifying history, prompt or tools.
@@ -41,13 +41,12 @@ pub fn project_context(
             Message::Assistant(a) => {
                 if !matches!(
                     a.stop_reason,
-                    Some(StopReason::Stop | StopReason::Length | StopReason::ToolUse)
+                    StopReason::Stop | StopReason::Length | StopReason::ToolUse
                 ) {
                     continue;
                 }
-                let same = a.provider == model.identity.provider
-                    && a.protocol == model.protocol
-                    && a.model == model.identity.model;
+                let same =
+                    a.provider == model.provider && a.api == model.api && a.model == model.id;
                 let source = a.clone();
                 a.content = a
                     .content
@@ -56,12 +55,16 @@ pub fn project_context(
                     .collect();
                 for block in &mut a.content {
                     if let AssistantContent::ToolCall(call) = block {
+                        let mut call = call.read().unwrap_or_else(|p| p.into_inner()).clone();
                         let original = call.id.clone();
                         if !same {
                             call.id = normalize_tool_call_id(&original, model, &source);
                         }
                         ids.insert(original.clone(), call.id.clone());
                         pending.push((original, call.clone(), false));
+                        *block = AssistantContent::ToolCall(std::sync::Arc::new(
+                            std::sync::RwLock::new(call),
+                        ));
                     }
                 }
             }
@@ -82,11 +85,13 @@ pub fn project_context(
                 }
             }
             Message::User(u) => {
-                u.content = project_images(
-                    &u.content,
-                    model,
-                    "(image omitted: model does not support images)",
-                )
+                if let UserContent::Blocks(content) = &u.content {
+                    u.content = UserContent::Blocks(project_images(
+                        content,
+                        model,
+                        "(image omitted: model does not support images)",
+                    ));
+                }
             }
         }
         projected.messages.push(message);
@@ -107,11 +112,11 @@ fn repair(
                 tool_name: call.name,
                 content: vec![InputContent::Text(TextContent {
                     text: "No result provided".into(),
-                    replay_metadata: None,
+                    text_signature: None,
                 })],
                 details: None,
                 is_error: true,
-                timestamp,
+                timestamp: timestamp as f64,
             }));
         }
     }
@@ -119,30 +124,40 @@ fn repair(
 
 fn replay_block(block: &AssistantContent, same: bool) -> Option<AssistantContent> {
     match block {
-        AssistantContent::Thinking(ThinkingContent::Readable { text, signature }) => {
-            if crate::scalar::trim(text).is_empty()
-                && (!same || signature.as_deref().is_none_or(str::is_empty))
+        AssistantContent::Thinking(thinking) => {
+            if thinking.redacted == Some(true) {
+                return same.then(|| block.clone());
+            }
+            if crate::scalar::trim(&thinking.thinking).is_empty()
+                && (!same
+                    || thinking
+                        .thinking_signature
+                        .as_deref()
+                        .is_none_or(str::is_empty))
             {
                 return None;
             }
             if !same {
                 return Some(AssistantContent::Text(TextContent {
-                    text: text.clone(),
-                    replay_metadata: None,
+                    text: thinking.thinking.clone(),
+                    text_signature: None,
                 }));
             }
         }
-        AssistantContent::Thinking(ThinkingContent::Redacted { .. }) if !same => return None,
         AssistantContent::Text(text) if !same => {
             return Some(AssistantContent::Text(TextContent {
                 text: text.text.clone(),
-                replay_metadata: None,
+                text_signature: None,
             }));
         }
-        AssistantContent::ToolCall(call) if !same => {
-            let mut call = call.clone();
-            call.replay_metadata = None;
-            return Some(AssistantContent::ToolCall(call));
+        AssistantContent::ToolCall(call) => {
+            let mut call = call.read().unwrap_or_else(|p| p.into_inner()).clone();
+            if !same {
+                call.thought_signature = None;
+            }
+            return Some(AssistantContent::ToolCall(std::sync::Arc::new(
+                std::sync::RwLock::new(call),
+            )));
         }
         _ => {}
     }
@@ -162,7 +177,7 @@ fn project_images(content: &[InputContent], model: &Model, placeholder: &str) ->
                 {
                     projected.push(InputContent::Text(TextContent {
                         text: placeholder.into(),
-                        replay_metadata: None,
+                        text_signature: None,
                     }));
                 }
             }

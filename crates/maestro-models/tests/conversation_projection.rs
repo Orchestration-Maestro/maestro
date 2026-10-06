@@ -2,12 +2,11 @@ mod support;
 use maestro_models::*;
 use serde_json::json;
 use std::sync::Arc;
-use support::{block_on, conformance::*};
 
 fn input(text: &str) -> InputContent {
     InputContent::Text(TextContent {
         text: text.into(),
-        replay_metadata: None,
+        text_signature: None,
     })
 }
 fn image(data: &str) -> InputContent {
@@ -16,8 +15,8 @@ fn image(data: &str) -> InputContent {
         mime_type: "image/png".into(),
     })
 }
-fn declaration() -> ToolDeclaration {
-    ToolDeclaration {
+fn declaration() -> Tool {
+    Tool {
         name: "lookup".into(),
         description: "Look up data".into(),
         parameters: json!({"type":"object"}),
@@ -30,175 +29,27 @@ fn result(id: &str) -> Message {
         content: vec![input("found")],
         details: Some(json!({"private":"sentinel"})),
         is_error: false,
-        timestamp: 19,
+        timestamp: 19.0,
     })
-}
-
-#[test]
-fn conversation_records_round_trip_through_model_interface() {
-    let mut target = model();
-    target.input = vec!["text".into(), "image".into()];
-    let original = Context {
-        system_prompt: Some("current".into()),
-        messages: vec![Message::User(UserMessage {
-            content: vec![input("hello"), image("AQID")],
-            timestamp: 17,
-        })],
-        tools: vec![declaration()],
-    };
-    let mut updates = text(0, "answer");
-    updates.extend([
-        tool_start(1),
-        ProviderUpdate::ToolCallDelta {
-            content_index: 1,
-            delta: "{\"nested\":{\"x\":1}}".into(),
-        },
-        ProviderUpdate::ToolCallEnd { content_index: 1 },
-        ProviderUpdate::Usage { usage: usage() },
-        ProviderUpdate::ResponseIdentity {
-            response_model: Some("actual".into()),
-            response_id: Some("response".into()),
-        },
-        ProviderUpdate::Done {
-            reason: StopReason::ToolUse,
-        },
-    ]);
-    let fake = Arc::new(ScriptedProvider::new(vec![
-        steps(updates),
-        steps(vec![done()]),
-    ]));
-    let mut models = Models::new(Arc::new(|| 73));
-    models.register(target.clone(), fake.clone()).unwrap();
-    let events = collect(
-        models.stream(target.clone(), original.clone(), support::auth::local()),
-        &target,
-        73,
-    );
-    let assistant = terminal(&events).clone();
-    assert_eq!(assistant.usage, usage());
-    assert_eq!(assistant.timestamp, 73);
-    assert_eq!(assistant.response_model.as_deref(), Some("actual"));
-    assert_eq!(assistant.response_id.as_deref(), Some("response"));
-    assert_eq!(
-        (&assistant.provider, &assistant.protocol, &assistant.model),
-        (
-            &target.identity.provider,
-            &target.protocol,
-            &target.identity.model
-        )
-    );
-    let AssistantContent::ToolCall(call) = &assistant.content[1] else {
-        panic!()
-    };
-    assert_eq!((&call.id[..], &call.name[..]), ("call-1", "lookup"));
-    assert_eq!(call.arguments(), json!({"nested":{"x":1}}).as_object());
-    let mut history = original.clone();
-    history
-        .messages
-        .extend([Message::Assistant(assistant.clone()), result("call-1")]);
-    let before = history.clone();
-    block_on(models.complete(target, history.clone(), support::auth::local()));
-    assert_eq!(history, before);
-    assert_eq!(fake.calls()[0].context, original);
-    let mut expected = history.clone();
-    let Message::ToolResult(r) = &mut expected.messages[2] else {
-        panic!()
-    };
-    r.details = None;
-    assert_eq!(fake.calls()[1].context, expected);
-    for message in &history.messages {
-        match message {
-            Message::User(u) => assert_eq!(u.timestamp, 17),
-            Message::Assistant(a) => assert_eq!(a, &assistant),
-            Message::ToolResult(r) => {
-                assert_eq!(r.timestamp, 19);
-                assert!(!r.is_error);
-                assert_eq!(r.details, Some(json!({"private":"sentinel"})));
-            }
-        }
-    }
-}
-
-#[test]
-fn current_prompt_and_tools_remain_separate_request_inputs() {
-    let source = context();
-    let before = source.clone();
-    let mut changed = source.clone();
-    changed.system_prompt = Some("replacement prompt".into());
-    changed.tools = vec![declaration()];
-    let expected = [source.clone(), changed.clone()];
-    let scripts = expected
-        .into_iter()
-        .map(|expected| {
-            Script::Factory(Box::new(move |call| {
-                Box::pin(async move {
-                    assert_eq!(call.context, expected);
-                    Ok(vec![ScriptStep::Update(done())])
-                })
-            }))
-        })
-        .collect();
-    let fake = Arc::new(ScriptedProvider::new(scripts));
-    let models = registry(fake.clone());
-    for input in [source.clone(), changed] {
-        block_on(models.complete(model(), input, support::auth::local()));
-    }
-    assert_eq!(source, before);
-    assert_eq!(
-        fake.calls()[0].context.messages,
-        fake.calls()[1].context.messages
-    );
-    assert_eq!(fake.calls().len(), 2);
-}
-
-#[test]
-fn tool_details_and_execution_policy_never_enter_provider_context() {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    let executions = AtomicUsize::new(0);
-    let execute = || {
-        executions.fetch_add(1, Ordering::SeqCst);
-    };
-    let mut source = context();
-    source.tools.push(declaration());
-    source.messages.push(result("caller-call"));
-    let before = source.clone();
-    let expected_tools = source.tools.clone();
-    let fake = Arc::new(ScriptedProvider::new(vec![Script::Factory(Box::new(
-        move |call| {
-            Box::pin(async move {
-                assert_eq!(call.context.tools, expected_tools);
-                let Message::ToolResult(result) = &call.context.messages[1] else {
-                    panic!()
-                };
-                assert_eq!(result.details, None);
-                assert_eq!(result.content, vec![input("found")]);
-                Ok(vec![ScriptStep::Update(done())])
-            })
-        },
-    ))]));
-    block_on(registry(fake).complete(model(), source.clone(), support::auth::local()));
-    assert_eq!(source, before);
-    assert_eq!(executions.load(Ordering::SeqCst), 0);
-    execute();
-    assert_eq!(executions.load(Ordering::SeqCst), 1);
 }
 
 fn assistant(blocks: Vec<AssistantContent>) -> AssistantMessage {
     AssistantMessage {
-        provider: model().identity.provider,
-        protocol: model().protocol,
-        model: model().identity.model,
-        timestamp: 11,
+        provider: model().provider,
+        api: model().api,
+        model: model().id,
+        timestamp: 11.0,
         content: blocks,
         usage: usage(),
-        stop_reason: Some(StopReason::ToolUse),
-        failure: None,
+        stop_reason: StopReason::ToolUse,
+        error_message: None,
+        diagnostics: None,
         response_model: Some("different-actual".into()),
         response_id: Some("response".into()),
     }
 }
 fn call(id: &str) -> AssistantContent {
-    AssistantContent::ToolCall(ToolCall::new(
+    AssistantContent::ToolCall(tool_call(
         id.into(),
         "lookup".into(),
         json!({"x":1}).as_object().unwrap().clone(),
@@ -208,27 +59,32 @@ fn call(id: &str) -> AssistantContent {
 fn replay_context() -> Context {
     Context {
         system_prompt: Some("prompt".into()),
-        tools: vec![declaration()],
+        tools: Some(vec![declaration()]),
         messages: vec![
             Message::Assistant(assistant(vec![
                 AssistantContent::Text(TextContent {
                     text: "answer".into(),
-                    replay_metadata: Some("text-signature".into()),
+                    text_signature: Some("text-signature".into()),
                 }),
-                AssistantContent::Thinking(ThinkingContent::Readable {
-                    text: "reason".into(),
-                    signature: Some("thinking-signature".into()),
+                AssistantContent::Thinking(ThinkingContent {
+                    thinking: "reason".into(),
+                    thinking_signature: Some("thinking-signature".into()),
+                    redacted: None,
                 }),
-                AssistantContent::Thinking(ThinkingContent::Readable {
-                    text: "".into(),
-                    signature: Some("empty-signature".into()),
+                AssistantContent::Thinking(ThinkingContent {
+                    thinking: "".into(),
+                    thinking_signature: Some("empty-signature".into()),
+                    redacted: None,
                 }),
-                AssistantContent::Thinking(ThinkingContent::Readable {
-                    text: "  \n".into(),
-                    signature: None,
+                AssistantContent::Thinking(ThinkingContent {
+                    thinking: "  \n".into(),
+                    thinking_signature: None,
+                    redacted: None,
                 }),
-                AssistantContent::Thinking(ThinkingContent::Redacted {
-                    data: "opaque-redaction".into(),
+                AssistantContent::Thinking(ThinkingContent {
+                    thinking: String::new(),
+                    thinking_signature: Some("opaque-redaction".into()),
+                    redacted: Some(true),
                 }),
                 call("original"),
             ])),
@@ -266,9 +122,9 @@ fn foreign_replay_drops_signatures_and_redaction() {
     for change in 0..3 {
         let mut target = model();
         match change {
-            0 => target.identity.provider = "foreign".into(),
-            1 => target.protocol = "foreign".into(),
-            _ => target.identity.model = "foreign".into(),
+            0 => target.provider = "foreign".into(),
+            1 => target.api = "foreign".into(),
+            _ => target.id = "foreign".into(),
         }
         let projected = project_context(&source, &target, &|id, _, _| id.to_owned(), 73);
         let Message::Assistant(a) = &projected.messages[0] else {
@@ -279,13 +135,13 @@ fn foreign_replay_drops_signatures_and_redaction() {
             vec![
                 AssistantContent::Text(TextContent {
                     text: "answer".into(),
-                    replay_metadata: None
+                    text_signature: None
                 }),
                 AssistantContent::Text(TextContent {
                     text: "reason".into(),
-                    replay_metadata: None
+                    text_signature: None
                 }),
-                AssistantContent::ToolCall(ToolCall::new(
+                AssistantContent::ToolCall(tool_call(
                     "original".into(),
                     "lookup".into(),
                     json!({"x":1}).as_object().unwrap().clone(),
@@ -293,7 +149,7 @@ fn foreign_replay_drops_signatures_and_redaction() {
                 ))
             ]
         );
-        assert_eq!(a.timestamp, 11);
+        assert_eq!(a.timestamp, 11.0);
         assert_eq!(a.usage, usage());
         assert_eq!(source, replay_context());
     }
@@ -342,14 +198,17 @@ fn call_id_rewrites_match_real_and_synthetic_results() {
     let AssistantContent::ToolCall(c) = &first.content[0] else {
         panic!()
     };
-    assert_eq!(c.id, "new-a");
-    assert_eq!(c.name, "lookup");
-    assert_eq!(c.arguments(), json!({"x":1}).as_object());
+    assert_eq!(c.read().unwrap().id, "new-a");
+    assert_eq!(c.read().unwrap().name, "lookup");
+    assert_eq!(
+        &c.read().unwrap().arguments,
+        json!({"x":1}).as_object().unwrap()
+    );
     let Message::ToolResult(synthetic) = &projected.messages[3] else {
         panic!()
     };
     assert_eq!(synthetic.content, vec![input("No result provided")]);
-    assert_eq!(synthetic.timestamp, 73);
+    assert_eq!(synthetic.timestamp, 73.0);
     assert!(synthetic.is_error);
     assert_eq!(source.messages[1], Message::Assistant(foreign));
 }
@@ -357,13 +216,13 @@ fn call_id_rewrites_match_real_and_synthetic_results() {
 #[test]
 fn missing_results_are_completed_at_each_turn_boundary() {
     let mut failed = assistant(vec![call("ignored")]);
-    failed.stop_reason = Some(StopReason::Error);
-    failed.failure = Some(Failure::Transport);
+    failed.stop_reason = StopReason::Error;
+    failed.error_message = Some(Failure::Transport.to_string());
     let boundaries = [
         None,
         Some(Message::User(UserMessage {
-            content: vec![input("interrupt")],
-            timestamp: 22,
+            content: UserContent::Blocks(vec![input("interrupt")]),
+            timestamp: 22.0,
         })),
         Some(Message::Assistant(assistant(vec![]))),
         Some(Message::Assistant(failed)),
@@ -401,7 +260,7 @@ fn missing_results_are_completed_at_each_turn_boundary() {
                 assert_eq!(r.tool_name, "lookup");
                 assert_eq!(r.content, vec![input("No result provided")]);
                 assert_eq!(r.details, None);
-                assert_eq!(r.timestamp, 99);
+                assert_eq!(r.timestamp, 99.0);
             }
             assert_eq!(source, before);
             assert_eq!(
@@ -414,33 +273,28 @@ fn missing_results_are_completed_at_each_turn_boundary() {
 
 #[test]
 fn failed_and_aborted_attempts_never_replay_as_completed_turns() {
-    let events = run(vec![
-        tool_start(0),
-        ProviderUpdate::ToolCallDelta {
-            content_index: 0,
-            delta: "{\"partial\":".into(),
-        },
-        ProviderUpdate::Error {
-            failure: Failure::Transport,
-        },
-    ]);
-    let partial_call = terminal(&events).content[0].clone();
+    let partial_call = AssistantContent::ToolCall(Arc::new(std::sync::RwLock::new(ToolCall {
+        id: "partial".into(),
+        name: "lookup".into(),
+        arguments: Default::default(),
+        thought_signature: None,
+    })));
     let mut source = context();
     source.messages.extend([
         Message::Assistant(assistant(vec![call("good")])),
         result("good"),
     ]);
     let expected_source = source.clone();
-    for reason in [Some(StopReason::Error), Some(StopReason::Aborted), None] {
+    for reason in [StopReason::Error, StopReason::Aborted] {
         let mut attempt = assistant(vec![
             AssistantContent::Text(TextContent {
                 text: "partial".into(),
-                replay_metadata: None,
+                text_signature: None,
             }),
             partial_call.clone(),
         ]);
         attempt.stop_reason = reason;
-        attempt.failure = Some(Failure::Transport);
+        attempt.error_message = Some(Failure::Transport.to_string());
         source.messages.push(Message::Assistant(attempt));
     }
     let before = source.clone();
@@ -454,10 +308,6 @@ fn failed_and_aborted_attempts_never_replay_as_completed_turns() {
         expected
     );
     assert_eq!(source, before);
-    let AssistantContent::ToolCall(c) = &partial_call else {
-        panic!()
-    };
-    assert_eq!(c.arguments(), None);
 }
 
 #[test]
@@ -477,8 +327,8 @@ fn unsupported_images_become_explicit_omissions() {
         let mut source = context();
         source.messages = vec![
             Message::User(UserMessage {
-                content: blocks.clone(),
-                timestamp: 1,
+                content: UserContent::Blocks(blocks.clone()),
+                timestamp: 1.0,
             }),
             Message::ToolResult(ToolResultMessage {
                 content: blocks.clone(),
@@ -494,7 +344,10 @@ fn unsupported_images_become_explicit_omissions() {
             (1, "(tool image omitted: model does not support images)"),
         ] {
             let content = match &projected.messages[index] {
-                Message::User(u) => &u.content,
+                Message::User(u) => match &u.content {
+                    UserContent::Blocks(content) => content,
+                    _ => panic!(),
+                },
                 Message::ToolResult(r) => &r.content,
                 _ => panic!(),
             };
@@ -517,7 +370,10 @@ fn unsupported_images_become_explicit_omissions() {
         );
         assert_eq!(
             match &source.messages[0] {
-                Message::User(u) => &u.content,
+                Message::User(u) => match &u.content {
+                    UserContent::Blocks(content) => content,
+                    _ => panic!(),
+                },
                 _ => panic!(),
             },
             &blocks
@@ -525,11 +381,11 @@ fn unsupported_images_become_explicit_omissions() {
     }
     let source = Context {
         messages: vec![Message::User(UserMessage {
-            content: vec![
+            content: UserContent::Blocks(vec![
                 input("(image omitted: model does not support images)"),
                 image("AA=="),
-            ],
-            timestamp: 1,
+            ]),
+            timestamp: 1.0,
         })],
         ..context()
     };
@@ -539,7 +395,9 @@ fn unsupported_images_become_explicit_omissions() {
     };
     assert_eq!(
         u.content,
-        vec![input("(image omitted: model does not support images)")]
+        UserContent::Blocks(vec![input(
+            "(image omitted: model does not support images)"
+        )])
     );
 }
 
@@ -558,8 +416,8 @@ fn supported_images_keep_exact_base64_and_mime() {
     let source = Context {
         messages: vec![
             Message::User(UserMessage {
-                content: blocks.clone(),
-                timestamp: 1,
+                content: UserContent::Blocks(blocks.clone()),
+                timestamp: 1.0,
             }),
             Message::ToolResult(ToolResultMessage {
                 content: blocks.clone(),
@@ -581,12 +439,13 @@ fn supported_images_keep_exact_base64_and_mime() {
 #[test]
 fn projection_never_mutates_source_context() {
     let mut source = replay_context();
-    source.tools[0].parameters = json!({"type":"object","properties":{"x":{"type":"integer"}}});
+    source.tools.as_mut().unwrap()[0].parameters =
+        json!({"type":"object","properties":{"x":{"type":"integer"}}});
     source.messages.insert(
         0,
         Message::User(UserMessage {
-            content: vec![input("hello"), image("AAECAw==")],
-            timestamp: 3,
+            content: UserContent::Blocks(vec![input("hello"), image("AAECAw==")]),
+            timestamp: 3.0,
         }),
     );
     source
@@ -599,138 +458,35 @@ fn projection_never_mutates_source_context() {
             target.input.push("image".into());
         }
         if mode == 1 {
-            target.identity.provider = "foreign".into();
+            target.provider = "foreign".into();
         }
         let mut projected = project_context(&source, &target, &|id, _, _| format!("safe-{id}"), 73);
         assert_eq!(
             projected,
             project_context(&source, &target, &|id, _, _| format!("safe-{id}"), 73)
         );
-        projected.tools[0].parameters["properties"]["x"]["type"] = json!("string");
+        projected.tools.as_mut().unwrap()[0].parameters["properties"]["x"]["type"] =
+            json!("string");
         projected.system_prompt.as_mut().unwrap().clear();
         let Message::User(u) = &mut projected.messages[0] else {
             panic!()
         };
-        u.content.clear();
+        let UserContent::Blocks(content) = &mut u.content else {
+            panic!()
+        };
+        content.clear();
         let Message::Assistant(a) = &mut projected.messages[1] else {
             panic!()
         };
         let AssistantContent::ToolCall(c) = a.content.last().unwrap() else {
             panic!()
         };
-        let mut args = c.arguments().unwrap().clone();
+        let mut args = c.read().unwrap().arguments.clone();
         args.insert("x".into(), json!(999));
-        *a.content.last_mut().unwrap() = AssistantContent::ToolCall(ToolCall::new(
-            "changed".into(),
-            "changed".into(),
-            args,
-            None,
-        ));
-        assert_eq!(source, before);
-        let fake = Arc::new(ScriptedProvider::new(vec![steps(vec![done()])]));
-        let mut models = Models::new(Arc::new(|| 73));
-        models.register(target.clone(), fake.clone()).unwrap();
-        block_on(models.complete(target, source.clone(), support::auth::local()));
-        let mut observed = fake.calls();
-        observed[0].context.messages.clear();
-        assert!(!fake.calls()[0].context.messages.is_empty());
+        *a.content.last_mut().unwrap() =
+            AssistantContent::ToolCall(tool_call("changed".into(), "changed".into(), args, None));
         assert_eq!(source, before);
     }
-}
-
-struct IdProvider(Arc<ScriptedProvider>);
-impl Provider for IdProvider {
-    fn supports(&self, operation: &str) -> bool {
-        self.0.supports(operation)
-    }
-    fn normalize_tool_call_id(&self, id: &str, _: &Model, _: &AssistantMessage) -> String {
-        format!("adapter-{id}")
-    }
-    fn stream(
-        &self,
-        model: Model,
-        context: Context,
-        options: ProviderOptions,
-    ) -> Result<Box<dyn ProviderStream>, Failure> {
-        self.0.stream(model, context, options)
-    }
-}
-
-#[test]
-fn model_substitution_keeps_callers_unchanged() {
-    fn caller(models: &Models, target: Model, source: &Context) -> AssistantMessage {
-        block_on(models.complete(target, source.clone(), support::auth::local()))
-    }
-    let mut source = replay_context();
-    source.messages.insert(
-        0,
-        Message::User(UserMessage {
-            content: vec![image("AAECAw==")],
-            timestamp: 1,
-        }),
-    );
-    let before = source.clone();
-    let mut first = model();
-    first.input.push("image".into());
-    let mut second = model();
-    second.identity.provider = "other".into();
-    let mut third = second.clone();
-    third.identity.model = "id-rule".into();
-    let scripts = || {
-        vec![Script::Factory(Box::new(|call| {
-            Box::pin(async move {
-                assert_eq!(call.context.system_prompt.as_deref(), Some("prompt"));
-                assert_eq!(call.context.tools, vec![declaration()]);
-                assert_eq!(call.context.messages.len(), 3);
-                Ok(vec![ScriptStep::Update(done())])
-            })
-        }))]
-    };
-    let fakes: Vec<_> = (0..3)
-        .map(|_| Arc::new(ScriptedProvider::new(scripts())))
-        .collect();
-    let mut models = Models::new(Arc::new(|| 73));
-    models.register(first.clone(), fakes[0].clone()).unwrap();
-    models.register(second.clone(), fakes[1].clone()).unwrap();
-    models
-        .register(third.clone(), Arc::new(IdProvider(fakes[2].clone())))
-        .unwrap();
-    for target in [first, second, third] {
-        let result = caller(&models, target.clone(), &source);
-        assert_eq!(result.stop_reason, Some(StopReason::Stop));
-        assert_eq!(result.model, target.identity.model);
-        assert_eq!(result.timestamp, 73);
-    }
-    let contexts: Vec<_> = fakes
-        .iter()
-        .map(|fake| {
-            assert_eq!(fake.calls().len(), 1);
-            fake.calls()[0].context.clone()
-        })
-        .collect();
-    let Message::User(u) = &contexts[0].messages[0] else {
-        panic!()
-    };
-    assert_eq!(u.content, vec![image("AAECAw==")]);
-    let Message::User(u) = &contexts[1].messages[0] else {
-        panic!()
-    };
-    assert_eq!(
-        u.content,
-        vec![input("(image omitted: model does not support images)")]
-    );
-    let Message::Assistant(a) = &contexts[2].messages[1] else {
-        panic!()
-    };
-    let AssistantContent::ToolCall(c) = a.content.last().unwrap() else {
-        panic!()
-    };
-    assert_eq!(c.id, "adapter-original");
-    let Message::ToolResult(r) = &contexts[2].messages[2] else {
-        panic!()
-    };
-    assert_eq!(r.tool_call_id, "adapter-original");
-    assert_eq!(source, before);
 }
 
 fn omission_source(content: Vec<InputContent>, tool: bool) -> Context {
@@ -742,8 +498,8 @@ fn omission_source(content: Vec<InputContent>, tool: bool) -> Context {
         Message::ToolResult(r)
     } else {
         Message::User(UserMessage {
-            content,
-            timestamp: 17,
+            content: UserContent::Blocks(content),
+            timestamp: 17.0,
         })
     };
     Context {
@@ -753,7 +509,10 @@ fn omission_source(content: Vec<InputContent>, tool: bool) -> Context {
 }
 fn omission_content(context: &Context) -> &[InputContent] {
     match &context.messages[0] {
-        Message::User(u) => &u.content,
+        Message::User(u) => match &u.content {
+            UserContent::Blocks(content) => content,
+            _ => panic!(),
+        },
         Message::ToolResult(r) => &r.content,
         _ => panic!(),
     }
@@ -766,7 +525,7 @@ fn supplied_placeholder_text_is_never_removed() {
     ] {
         let signed = InputContent::Text(TextContent {
             text: literal.into(),
-            replay_metadata: Some("opaque".into()),
+            text_signature: Some("opaque".into()),
         });
         let content = vec![
             input(literal),
@@ -822,7 +581,7 @@ fn placeholder_text_before_image_suppresses_another_placeholder() {
             for count in [1, 3] {
                 let supplied = InputContent::Text(TextContent {
                     text: literal.into(),
-                    replay_metadata: metadata.map(str::to_owned),
+                    text_signature: metadata.map(str::to_owned),
                 });
                 let mut content = vec![supplied.clone()];
                 content.extend((0..count).map(|_| image("AQID")));
@@ -830,18 +589,13 @@ fn placeholder_text_before_image_suppresses_another_placeholder() {
                 let before = source.clone();
                 let projected = project_context(&source, &model(), &|id, _, _| id.into(), 73);
                 assert_eq!(omission_content(&projected), vec![supplied.clone()]);
-                let fake = Arc::new(ScriptedProvider::new(vec![steps(vec![done()])]));
-                block_on(registry(fake.clone()).complete(
-                    model(),
-                    source.clone(),
-                    support::auth::local(),
-                ));
-                assert_eq!(fake.calls()[0].context, projected);
                 let mut interleaved = source.clone();
                 match &mut interleaved.messages[0] {
                     Message::User(u) => {
-                        u.content
-                            .extend([input("ordinary"), image("2"), image("3")])
+                        let UserContent::Blocks(content) = &mut u.content else {
+                            panic!()
+                        };
+                        content.extend([input("ordinary"), image("2"), image("3")])
                     }
                     Message::ToolResult(r) => {
                         r.content
@@ -872,8 +626,8 @@ fn delayed_real_result_keeps_rewritten_call_id() {
         messages: vec![
             Message::Assistant(origin),
             Message::User(UserMessage {
-                content: vec![input("interrupt")],
-                timestamp: 22,
+                content: UserContent::Blocks(vec![input("interrupt")]),
+                timestamp: 22.0,
             }),
             result("a"),
         ],
@@ -888,14 +642,14 @@ fn delayed_real_result_keeps_rewritten_call_id() {
     assert_eq!(synthetic.tool_call_id, "adapter-a");
     assert_eq!(synthetic.tool_name, "lookup");
     assert_eq!(synthetic.content, vec![input("No result provided")]);
-    assert_eq!(synthetic.timestamp, 73);
+    assert_eq!(synthetic.timestamp, 73.0);
     assert!(synthetic.is_error);
     let Message::ToolResult(real) = &projected.messages[3] else {
         panic!()
     };
     assert_eq!(real.tool_call_id, "adapter-a");
     assert_eq!(real.content, vec![input("found")]);
-    assert_eq!(real.timestamp, 19);
+    assert_eq!(real.timestamp, 19.0);
     assert!(!real.is_error);
     assert_eq!(real.details, None);
     assert_eq!(source, before);
@@ -906,8 +660,8 @@ fn delayed_real_result_keeps_rewritten_call_id() {
             messages: vec![
                 Message::Assistant(origin),
                 Message::User(UserMessage {
-                    content: vec![input("interrupt")],
-                    timestamp: 22,
+                    content: UserContent::Blocks(vec![input("interrupt")]),
+                    timestamp: 22.0,
                 }),
             ],
             ..context()
@@ -925,37 +679,30 @@ fn delayed_real_result_keeps_rewritten_call_id() {
             let AssistantContent::ToolCall(c) = &a.content[index] else {
                 panic!()
             };
-            assert_eq!(c.id, format!("adapter-{id}"));
+            assert_eq!(c.read().unwrap().id, format!("adapter-{id}"));
             let Message::ToolResult(synthetic) = &projected.messages[index + 1] else {
                 panic!()
             };
-            assert_eq!(synthetic.tool_call_id, c.id);
+            assert_eq!(synthetic.tool_call_id, c.read().unwrap().id);
             assert_eq!(synthetic.tool_name, "lookup");
             assert_eq!(synthetic.content, vec![input("No result provided")]);
             assert!(synthetic.is_error);
-            assert_eq!(synthetic.timestamp, 73);
+            assert_eq!(synthetic.timestamp, 73.0);
             assert_eq!(synthetic.details, None);
             let Message::ToolResult(real) =
                 &projected.messages[projected.messages.len() - 2 + index]
             else {
                 panic!()
             };
-            assert_eq!(real.tool_call_id, c.id);
+            assert_eq!(real.tool_call_id, c.read().unwrap().id);
             assert_eq!(real.tool_name, "lookup");
             assert_eq!(real.content, vec![input("found")]);
-            assert_eq!(real.timestamp, 19);
+            assert_eq!(real.timestamp, 19.0);
             assert!(!real.is_error);
             assert_eq!(real.details, None);
         }
         assert_eq!(projected.messages[3], source.messages[1]);
         assert_eq!(projected.messages.len(), source.messages.len() + 2);
-        let fake = Arc::new(ScriptedProvider::new(vec![steps(vec![done()])]));
-        block_on(registry(Arc::new(IdProvider(fake.clone()))).complete(
-            model(),
-            source.clone(),
-            support::auth::local(),
-        ));
-        assert_eq!(fake.calls()[0].context, projected);
         assert_eq!(source, before);
     }
 }
@@ -965,9 +712,10 @@ fn blank_thinking_with_empty_signature_is_dropped() {
     for foreign in [false, true] {
         for text in ["", " \n", "readable"] {
             for signature in [None, Some(""), Some("signed"), Some(" ")] {
-                let block = AssistantContent::Thinking(ThinkingContent::Readable {
-                    text: text.into(),
-                    signature: signature.map(str::to_owned),
+                let block = AssistantContent::Thinking(ThinkingContent {
+                    thinking: text.into(),
+                    thinking_signature: signature.map(str::to_owned),
+                    redacted: None,
                 });
                 let source = Context {
                     messages: vec![Message::Assistant(assistant(vec![block.clone()]))],
@@ -976,7 +724,7 @@ fn blank_thinking_with_empty_signature_is_dropped() {
                 let before = source.clone();
                 let mut target = model();
                 if foreign {
-                    target.identity.provider = "foreign".into();
+                    target.provider = "foreign".into();
                 }
                 let projected = project_context(&source, &target, &|id, _, _| id.into(), 73);
                 let Message::Assistant(a) = &projected.messages[0] else {
@@ -988,7 +736,7 @@ fn blank_thinking_with_empty_signature_is_dropped() {
                     } else if foreign {
                         vec![AssistantContent::Text(TextContent {
                             text: text.into(),
-                            replay_metadata: None,
+                            text_signature: None,
                         })]
                     } else {
                         vec![block]
@@ -1013,9 +761,10 @@ fn whitespace_follows_the_standard_set() {
                         } else {
                             c.to_string()
                         };
-                        let block = AssistantContent::Thinking(ThinkingContent::Readable {
-                            text: text.clone(),
-                            signature: signature.map(str::to_owned),
+                        let block = AssistantContent::Thinking(ThinkingContent {
+                            thinking: text.clone(),
+                            thinking_signature: signature.map(str::to_owned),
+                            redacted: None,
                         });
                         let source = Context {
                             messages: vec![Message::Assistant(assistant(vec![block.clone()]))],
@@ -1024,7 +773,7 @@ fn whitespace_follows_the_standard_set() {
                         let before = source.clone();
                         let mut target = model();
                         if foreign {
-                            target.identity.model = "foreign".into();
+                            target.id = "foreign".into();
                         }
                         let projected =
                             project_context(&source, &target, &|id, _, _| id.into(), 73);
@@ -1036,7 +785,7 @@ fn whitespace_follows_the_standard_set() {
                         } else if foreign {
                             vec![AssistantContent::Text(TextContent {
                                 text,
-                                replay_metadata: None,
+                                text_signature: None,
                             })]
                         } else {
                             vec![block]
@@ -1048,4 +797,66 @@ fn whitespace_follows_the_standard_set() {
             }
         }
     }
+}
+
+fn model() -> Model {
+    Model {
+        id: "text".into(),
+        name: "Synthetic".into(),
+        api: "synthetic".into(),
+        provider: "test".into(),
+        base_url: "synthetic:".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        cost: TokenRates {
+            input: 0.0,
+            output: 0.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+        },
+        context_window: 0.0,
+        max_tokens: 0.0,
+        headers: None,
+        compat: None,
+    }
+}
+fn context() -> Context {
+    Context {
+        system_prompt: Some("synthetic secret".into()),
+        messages: vec![Message::User(UserMessage {
+            content: UserContent::Blocks(vec![input("hello")]),
+            timestamp: 1.0,
+        })],
+        tools: Some(vec![]),
+    }
+}
+fn usage() -> Usage {
+    Usage {
+        input: 11.0,
+        output: 7.0,
+        cache_read: 3.0,
+        cache_write: 2.0,
+        total_tokens: 23.0,
+        cost: UsageCost {
+            input: 0.0,
+            output: 0.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+            total: 0.0,
+        },
+    }
+}
+fn tool_call(
+    id: String,
+    name: String,
+    arguments: serde_json::Map<String, serde_json::Value>,
+    thought_signature: Option<String>,
+) -> Arc<std::sync::RwLock<ToolCall>> {
+    Arc::new(std::sync::RwLock::new(ToolCall {
+        id,
+        name,
+        arguments,
+        thought_signature,
+    }))
 }

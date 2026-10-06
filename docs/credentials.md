@@ -1,7 +1,8 @@
 # Provider credentials
 
-`maestro-credentials` owns provider credential policy. Models receive only
-request-scoped `RequestAuth` for the selected provider. Storage and secret access
+`maestro-credentials` owns provider credential policy. The caller resolves
+request-scoped `RequestAuth` for the selected provider before supplying an
+adapter api key. Storage and secret access
 are replaceable without changing the caller's construction or request code.
 There is no provider roster, ambient installation discovery, token exchange,
 login UI or application wiring here.
@@ -54,7 +55,7 @@ Empty auth, unresolved helpers and unavailable tokens produce model
 Owner-generated sources are fixed labels: `runtime`, `stored`, `environment`,
 `fallback`.
 
-`list`, `status` and model `auth_status` inspect detached metadata without reading
+`list` and `status` inspect detached metadata without reading
 storage again, environment values, helpers or fallback resolution. Runtime/stored
 presence reports configured even when a later request fails. Declared environment
 names report source `environment`, configured false; otherwise fallback metadata
@@ -152,7 +153,7 @@ let credentials = Credentials::new(read_only, CredentialOptions {
 })?;
 ```
 
-The crate-root rustdoc includes a compiling memory-to-credential-owner-to-scripted
+The crate-root rustdoc includes a compiling memory-to-credential-owner-to-controlled
 model-request example. No `AGENTS.md` change is needed: this capability introduces
 no new repository rule, command or approved dependency. Glossary terms live in
 `CONTEXT.md`.
