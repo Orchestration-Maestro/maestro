@@ -189,17 +189,40 @@ impl WitInputs {
                 // A shorthand string names a world in the manifest-relative default directory.
                 paths.push("wit".to_owned());
             } else {
-                for (offset, pair) in body.windows(2).enumerate() {
-                    if pair[1].text != ":" {
+                let fields = if body.first().is_some_and(|token| token.text == "{") {
+                    &body[1..body.len() - 1]
+                } else {
+                    body
+                };
+                let mut depth = 0_usize;
+                let mut field_start = true;
+                for (offset, token) in fields.iter().enumerate() {
+                    let is_field = depth == 0
+                        && field_start
+                        && fields
+                            .get(offset + 1)
+                            .is_some_and(|token| token.text == ":")
+                        && fields.get(offset + 2).is_none_or(|token| token.text != ":");
+                    match token.text {
+                        "(" | "{" | "[" => {
+                            depth += 1;
+                            field_start = false;
+                        }
+                        ")" | "}" | "]" => depth = depth.checked_sub(1).ok_or_else(error)?,
+                        "," if depth == 0 => field_start = true,
+                        _ if depth == 0 => field_start = false,
+                        _ => {}
+                    }
+                    if !is_field {
                         continue;
                     }
-                    if pair[0].text == "inline" {
+                    if token.text == "inline" {
                         inline = true;
                         if owner != "maestro-extensions-wasm" {
                             return Err(format!("{location}: inline WIT must be guest-owned"));
                         }
-                    } else if pair[0].text == "path" {
-                        let value = &body[offset + 2..];
+                    } else if token.text == "path" {
+                        let value = &fields[offset + 2..];
                         if let Some(path) =
                             value.first().and_then(|token| string_literal(token.text))
                         {

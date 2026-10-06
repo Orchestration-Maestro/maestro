@@ -350,6 +350,60 @@ fn wit_codegen_inputs_share_one_canonical_source() {
 }
 
 #[test]
+fn wit_options_ignore_module_paths_in_nested_values() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    let guest = workspace
+        .root
+        .join("crates/maestro-extensions-wasm/interfaces");
+    std::fs::create_dir(&guest).unwrap();
+    std::fs::write(
+        guest.join("world.wit"),
+        "package maestro:fixture; world fixture {}",
+    )
+    .unwrap();
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/lib.rs",
+        r#"wit_bindgen::generate!({
+            path: "interfaces",
+            with: {
+                "maestro:fixture/types": crate::path::bindings,
+                "maestro:fixture/other": crate::inline::bindings,
+            },
+        });"#,
+    );
+    for input in [
+        r#"wasmtime::component::bindgen!({
+            path: "../maestro-extensions-wasm/interfaces",
+            with: {
+                "maestro:fixture/types": crate::path::bindings,
+                "maestro:fixture/other": crate::inline::bindings,
+            },
+        });"#,
+        r#"wasmtime::component::bindgen!({
+            with: {
+                "maestro:fixture/types": crate::path::bindings,
+                "maestro:fixture/other": crate::inline::bindings,
+            },
+            path: "../maestro-extensions-wasm/interfaces",
+        });"#,
+    ] {
+        source(&workspace, "maestro-extensions-wasmtime", "build.rs", input);
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{input}");
+        source(
+            &workspace,
+            "maestro-extensions-wasmtime",
+            "build.rs",
+            &input.replace("../maestro-extensions-wasm/interfaces", "wrong-root"),
+        );
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(error.contains("cannot resolve WIT input"), "{error}");
+    }
+}
+
+#[test]
 fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
