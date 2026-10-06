@@ -7,7 +7,7 @@ there is no alternate model invocation interface or executable-tool layer.
 
 See [the agent guide](../../docs/agent.md) for configuration, errors and a compiling
 credential-free example, [the glossary](../../CONTEXT.md) for execution terms,
-and [the execution contract](../../docs/specs/2026-10-05-engine-core.md).
+and [the execution contract](../../docs/specs/maestro-port.md).
 
 Focused checks:
 
