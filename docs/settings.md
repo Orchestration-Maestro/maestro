@@ -40,7 +40,8 @@ Unicode replacement character in the resulting JSON member.
 Project preferences override global preferences. A pair of ordinary objects
 spreads one level: immediate siblings survive, but grandchildren are replaced.
 Arrays, primitives and null replace. Runtime `apply_overrides` uses the same merge
-and never persists. Every setter republishes from accepted scopes, discarding all
+and never persists. It returns an immediate error for a null root, leaving both
+accepted and effective values unchanged. Every setter republishes from accepted scopes, discarding all
 runtime overrides.
 
 For example, global `retry.provider = {timeoutMs: 10, maxRetries: 2}` plus project

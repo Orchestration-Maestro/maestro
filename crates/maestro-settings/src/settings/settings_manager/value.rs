@@ -1,5 +1,8 @@
 use super::{Map, Value};
-use serde::Deserialize;
+use serde::{
+    Deserialize,
+    de::{self, MapAccess, SeqAccess, Visitor},
+};
 // Use the same stack-growth parameters as the deserialization adapter.
 fn grow<T>(operation: impl FnOnce() -> T) -> T {
     stacker::maybe_grow(64 * 1024, 2 * 1024 * 1024, operation)
@@ -39,6 +42,9 @@ pub(super) fn remove(map: &mut Map<String, Value>, key: &str) {
         teardown(old);
     }
 }
+pub(super) fn take(map: &mut Map<String, Value>, key: &str) -> Option<Owned> {
+    map.shift_remove(key).map(Owned)
+}
 pub(super) struct Owned(pub(super) Value);
 impl std::ops::Deref for Owned {
     type Target = Value;
@@ -54,6 +60,61 @@ impl std::ops::DerefMut for Owned {
 impl Drop for Owned {
     fn drop(&mut self) {
         teardown(std::mem::take(&mut self.0));
+    }
+}
+impl<'de> Deserialize<'de> for Owned {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct ValueVisitor;
+        impl<'de> Visitor<'de> for ValueVisitor {
+            type Value = Owned;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("any valid JSON value")
+            }
+            fn visit_unit<E: de::Error>(self) -> Result<Owned, E> {
+                Ok(Owned(Value::Null))
+            }
+            fn visit_bool<E: de::Error>(self, value: bool) -> Result<Owned, E> {
+                Ok(Owned(Value::Bool(value)))
+            }
+            fn visit_i64<E: de::Error>(self, value: i64) -> Result<Owned, E> {
+                Ok(Owned(Value::from(value)))
+            }
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<Owned, E> {
+                Ok(Owned(Value::from(value)))
+            }
+            fn visit_f64<E: de::Error>(self, value: f64) -> Result<Owned, E> {
+                Ok(Owned(Value::from(value)))
+            }
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<Owned, E> {
+                Ok(Owned(Value::String(value.into())))
+            }
+            fn visit_string<E: de::Error>(self, value: String) -> Result<Owned, E> {
+                Ok(Owned(Value::String(value)))
+            }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Owned, A::Error> {
+                let mut values = Owned(Value::Array(Vec::new()));
+                while let Some(mut value) = seq.next_element::<Owned>()? {
+                    values
+                        .as_array_mut()
+                        .unwrap()
+                        .push(std::mem::take(&mut value.0));
+                }
+                Ok(values)
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Owned, A::Error> {
+                let mut values = Owned(Value::Object(Map::new()));
+                while let Some(key) = map.next_key::<String>()? {
+                    let mut value = map.next_value::<Owned>()?;
+                    insert(
+                        values.as_object_mut().unwrap(),
+                        key,
+                        std::mem::take(&mut value.0),
+                    );
+                }
+                Ok(values)
+            }
+        }
+        deserializer.deserialize_any(ValueVisitor)
     }
 }
 pub(super) fn spread(value: &Value) -> Map<String, Value> {
@@ -296,13 +357,12 @@ pub(super) fn parse(text: &str) -> Result<Value, super::Error> {
     }
     let mut deserializer = serde_json::Deserializer::from_str(text);
     deserializer.disable_recursion_limit();
-    let mut value = Value::deserialize(serde_stacker::Deserializer::new(&mut deserializer))?;
+    let mut value = Owned::deserialize(serde_stacker::Deserializer::new(&mut deserializer))?;
     if let Err(error) = deserializer.end() {
-        teardown(value);
         return Err(error.into());
     }
     doubles(&mut value);
-    Ok(value)
+    Ok(std::mem::take(&mut value.0))
 }
 
 pub(super) fn ordered(mut map: Map<String, Value>, keys: &[String]) -> Map<String, Value> {

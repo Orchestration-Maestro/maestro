@@ -4,6 +4,50 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use support::*;
 
+fn crash_safe_subprocess(name: &str, operation: impl FnOnce()) {
+    if std::env::var("MAESTRO_DEEP_CASE").as_deref() == Ok(name) {
+        operation();
+        return;
+    }
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", name, "--nocapture"])
+        .env("MAESTRO_DEEP_CASE", name)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{name}: {}\n{}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn deep_object() -> String {
+    format!(
+        "{}{{}}{}",
+        "{\"unknown\":".repeat(100000),
+        "}".repeat(100000)
+    )
+}
+
+#[test]
+fn duplicate_key_discards_deep_subtree_without_crashing() {
+    crash_safe_subprocess(
+        "duplicate_key_discards_deep_subtree_without_crashing",
+        || {
+            let (m, s, _) = empty();
+            put(
+                s.as_ref(),
+                SettingsScope::Global,
+                &format!("{{\"duplicate\":{},\"duplicate\":false}}", deep_object()),
+            );
+            block_on(m.reload());
+            assert!(m.drain_errors().is_empty());
+            assert_eq!(m.get_global_settings(), json!({"duplicate":false}));
+        },
+    );
+}
+
 #[test]
 fn prototype_named_unknown_key_has_no_theme_fallback_and_round_trips() {
     let (m, s, q) = seeded(json!({}), json!({"__proto__":{"theme":"dark"}}));
@@ -205,12 +249,20 @@ fn load_errors_drain_in_scope_order() {
 #[test]
 fn global_project_and_override_spreads_are_one_level() {
     let (m, s, q) = seeded(
-        json!({"retry":{"enabled":true,"provider":{"timeoutMs":1,"maxRetries":2}},"arr":[1],"other":true}),
+        json!({"retry":{"enabled":true,"provider":{"timeoutMs":1,"maxRetries":2}},"arr":[1],"other":true,"extensions":["stored"]}),
         json!({"retry":{"provider":{"maxRetries":7}},"arr":[2]}),
     );
     assert_eq!(m.get_global_settings()["retry"]["provider"]["timeoutMs"], 1);
-    m.apply_overrides(json!({"retry":{"provider":{"timeoutMs":9}},"arr":null,"theme":"override"}));
+    m.apply_overrides(json!({"retry":{"provider":{"timeoutMs":9}},"arr":null,"theme":"override"}))
+        .unwrap();
     assert_eq!(m.get_theme().as_deref(), Some("override"));
+    assert_eq!(m.get_provider_retry_settings().timeout_ms, Some(9.0));
+    assert_eq!(m.get_provider_retry_settings().max_retries, None);
+    m.apply_overrides(json!({"extensions":["runtime"]}))
+        .unwrap();
+    assert_eq!(m.get_extension_paths(), vec!["runtime"]);
+    m.apply_overrides(json!({"extensions":null})).unwrap();
+    assert!(m.get_extension_paths().is_empty());
     m.set_theme("stored".into());
     q.drive();
     assert_eq!(m.get_theme().as_deref(), Some("stored"));
@@ -487,7 +539,7 @@ fn numeric_getters_and_setters_keep_distinct_rules() {
 fn nonfinite_setters_keep_getters_and_json_outcomes() {
     let (m, _) = memory(json!({}));
     m.set_editor_padding_x(f64::NAN);
-    m.apply_overrides(json!({"editorPaddingX":2}));
+    m.apply_overrides(json!({"editorPaddingX":2})).unwrap();
     assert_eq!(m.get_editor_padding_x(), 2.0);
     m.set_theme("reset".into());
     assert!(m.get_editor_padding_x().is_nan());
@@ -918,7 +970,7 @@ fn root_arrays_are_accepted_without_object_admission() {
 #[test]
 fn cache_publishes_before_scheduled_write() {
     let (m, s, q) = empty();
-    m.apply_overrides(json!({"theme":"override"}));
+    m.apply_overrides(json!({"theme":"override"})).unwrap();
     m.set_theme("new".into());
     assert_eq!(m.get_theme().as_deref(), Some("new"));
     assert_eq!(disk(s.as_ref(), SettingsScope::Global), json!({}));
@@ -984,7 +1036,7 @@ fn fresh_disk_merge_does_not_publish_unrelated_edits() {
 fn partial_reload_updates_healthy_scope_and_clears_overrides() {
     let (m, s, q) = seeded(json!({"theme":"old"}), json!({"extensions":["accepted"]}));
     m.set_theme("queued".into());
-    m.apply_overrides(json!({"theme":"override"}));
+    m.apply_overrides(json!({"theme":"override"})).unwrap();
     q.drive();
     put(s.as_ref(), SettingsScope::Global, r#"{"theme":"healthy"}"#);
     put(s.as_ref(), SettingsScope::Project, "{");
@@ -1776,4 +1828,138 @@ fn block_images_coexists_with_auto_resize() {
     let (m, _) = memory(json!({"images":{"autoResize":true,"blockImages":true}}));
     assert!(m.get_image_auto_resize());
     assert!(m.get_block_images());
+}
+
+#[test]
+fn malformed_member_after_deep_subtree_reports_scoped_error() {
+    crash_safe_subprocess(
+        "malformed_member_after_deep_subtree_reports_scoped_error",
+        || {
+            let (m, s, _) = seeded(json!({"theme":"kept"}), json!({}));
+            put(
+                s.as_ref(),
+                SettingsScope::Global,
+                &format!("{{\"deep\":{},\"broken\":]}}", deep_object()),
+            );
+            block_on(m.reload());
+            let errors = m.drain_errors();
+            assert_eq!(errors.len(), 1);
+            assert_eq!(errors[0].scope, SettingsScope::Global);
+            assert!(errors[0].error.to_string().contains("expected value"));
+            assert_eq!(m.get_theme().as_deref(), Some("kept"));
+        },
+    );
+}
+
+#[test]
+fn deep_wrong_typed_warning_is_unset_without_crashing() {
+    crash_safe_subprocess("deep_wrong_typed_warning_is_unset_without_crashing", || {
+        let (m, s, _) = empty();
+        put(
+            s.as_ref(),
+            SettingsScope::Global,
+            &format!(
+                "{{\"warnings\":{{\"anthropicExtraUsage\":{}}}}}",
+                deep_object()
+            ),
+        );
+        block_on(m.reload());
+        assert!(m.drain_errors().is_empty());
+        assert_eq!(m.get_warnings().anthropic_extra_usage, None);
+    });
+}
+
+#[test]
+fn deep_compaction_member_replacement_does_not_crash() {
+    crash_safe_subprocess("deep_compaction_member_replacement_does_not_crash", || {
+        let (m, s, q) = empty();
+        put(
+            s.as_ref(),
+            SettingsScope::Global,
+            &format!("{{\"compaction\":{{\"enabled\":{}}}}}", deep_object()),
+        );
+        block_on(m.reload());
+        assert!(m.drain_errors().is_empty());
+        m.set_compaction_enabled(false).unwrap();
+        assert!(!m.get_compaction_enabled());
+        // Avoid formatting the obsolete deep disk value during this cache observation.
+        put(s.as_ref(), SettingsScope::Global, "{}");
+        q.drive();
+        block_on(m.flush());
+        assert!(m.drain_errors().is_empty());
+        assert_eq!(
+            disk(s.as_ref(), SettingsScope::Global),
+            json!({"compaction":{"enabled":false}})
+        );
+    });
+}
+
+#[test]
+fn null_runtime_override_fails_without_changing_settings() {
+    let (m, s, _) = seeded(
+        json!({"theme":"accepted","extensions":["saved"]}),
+        json!({}),
+    );
+    m.apply_overrides(json!({"theme":"effective","extensions":["runtime"]}))
+        .unwrap();
+    let accepted = m.get_global_settings();
+    let persisted = raw(s.as_ref(), SettingsScope::Global);
+    let error = m.apply_overrides(Value::Null).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "Cannot convert undefined or null to object"
+    );
+    assert_eq!(m.get_global_settings(), accepted);
+    assert_eq!(m.get_theme().as_deref(), Some("effective"));
+    assert_eq!(m.get_extension_paths(), vec!["runtime"]);
+    assert_eq!(raw(s.as_ref(), SettingsScope::Global), persisted);
+    assert!(m.drain_errors().is_empty());
+}
+
+#[test]
+fn waker_clone_can_complete_queued_work_without_deadlocking() {
+    crash_safe_subprocess(
+        "waker_clone_can_complete_queued_work_without_deadlocking",
+        || {
+            let (done, deadline) = std::sync::mpsc::channel();
+            let watchdog = std::thread::spawn(move || {
+                if deadline
+                    .recv_timeout(std::time::Duration::from_secs(10))
+                    .is_err()
+                {
+                    eprintln!("waker clone deadlocked while completing queued work");
+                    std::process::exit(1);
+                }
+            });
+            use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+            unsafe fn clone(data: *const ()) -> RawWaker {
+                // The pointer owns an Arc, borrowed until a new Arc is returned.
+                let scheduler =
+                    std::mem::ManuallyDrop::new(unsafe { Arc::<Scheduler>::from_raw(data.cast()) });
+                scheduler.drive();
+                RawWaker::new(Arc::into_raw(Arc::clone(&scheduler)).cast(), &VTABLE)
+            }
+            unsafe fn wake(data: *const ()) {
+                // Consumes the Arc owned by this raw waker.
+                drop(unsafe { Arc::<Scheduler>::from_raw(data.cast()) });
+            }
+            unsafe fn wake_by_ref(_: *const ()) {}
+            static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake_by_ref, wake);
+            let (m, q) = memory(json!({}));
+            m.set_theme("queued".into());
+            let raw = RawWaker::new(Arc::into_raw(Arc::new(q.clone())).cast(), &VTABLE);
+            // All vtable callbacks uphold the Arc ownership contract.
+            let waker = unsafe { Waker::from_raw(raw) };
+            let mut cx = Context::from_waker(&waker);
+            let mut flush = std::pin::pin!(m.flush());
+            assert_eq!(
+                std::future::Future::poll(flush.as_mut(), &mut cx),
+                Poll::Ready(())
+            );
+            assert_eq!(q.len(), 0);
+            assert!(m.drain_errors().is_empty());
+            done.send(()).unwrap();
+            watchdog.join().unwrap();
+        },
+    );
 }

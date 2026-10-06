@@ -95,14 +95,20 @@ struct Wait(Arc<Completion>);
 impl Future for Wait {
     type Output = ();
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {
-        let mut state = self.0.0.lock().unwrap();
-        if state.0 {
-            Poll::Ready(())
-        } else {
-            if !state.1.iter().any(|w| w.will_wake(cx.waker())) {
-                state.1.push(cx.waker().clone());
+        if self.0.0.lock().unwrap().0 {
+            return Poll::Ready(());
+        }
+        let mut waker = Some(cx.waker().clone());
+        {
+            let mut state = self.0.0.lock().unwrap();
+            if state.0 {
+                Poll::Ready(())
+            } else {
+                if !state.1.iter().any(|w| w.will_wake(cx.waker())) {
+                    state.1.push(waker.take().unwrap());
+                }
+                Poll::Pending
             }
-            Poll::Pending
         }
     }
 }
@@ -291,12 +297,14 @@ impl SettingsManager {
             };
             let container = map.entry(field.to_owned()).or_insert_with(empty);
             if !value::truthy(container) {
-                *container = empty();
+                value::replace(container, empty());
             }
             if let Some(object) = container.as_object_mut() {
-                object.insert(child.into(), value);
+                value::insert(object, child.into(), value);
             } else if container.is_array() {
-                state.named.insert((field.into(), child.into()), value);
+                if let Some(old) = state.named.insert((field.into(), child.into()), value) {
+                    value::teardown(old);
+                }
             } else {
                 let kind = match container {
                     Value::Bool(_) => "boolean",
@@ -392,7 +400,7 @@ impl SettingsManager {
                             if let Some(v) = value.get(child) {
                                 value::insert(&mut nested, child.clone(), value::clone(v));
                             } else {
-                                nested.shift_remove(child);
+                                value::remove(&mut nested, child);
                             }
                         }
                         value::insert(object, field.clone(), Value::Object(nested));
@@ -468,7 +476,12 @@ pub struct ProviderRetrySettings {
 }
 impl SettingsManager {
     /// Applies ephemeral one-level overrides without persisting them.
-    pub fn apply_overrides(&self, overrides: Settings) {
+    ///
+    /// A null root returns an immediate error without changing accepted or effective values.
+    pub fn apply_overrides(&self, overrides: Settings) -> Result<(), Error> {
+        if overrides.is_null() {
+            return Err(std::io::Error::other("Cannot convert undefined or null to object").into());
+        }
         let mut state = self.state.lock().unwrap();
         let keys = value::Owned(Value::Object(value::spread(&overrides)));
         for key in keys.as_object().unwrap().keys() {
@@ -478,6 +491,7 @@ impl SettingsManager {
         let effective = value::merge(&state.effective, &overrides);
         value::replace(&mut state.effective, effective);
         value::teardown(overrides);
+        Ok(())
     }
     /// Returns provider defaults without synthesizing them in raw storage.
     pub fn get_provider_retry_settings(&self) -> ProviderRetrySettings {
@@ -583,8 +597,8 @@ impl SettingsManager {
             } else {
                 state.scopes[0].as_object_mut().unwrap()
             };
-            map.insert("defaultProvider".into(), Value::String(provider));
-            map.insert("defaultModel".into(), Value::String(model_id));
+            value::insert(map, "defaultProvider".into(), Value::String(provider));
+            value::insert(map, "defaultModel".into(), Value::String(model_id));
             state.modified[0].mark("defaultProvider", None);
             state.modified[0].mark("defaultModel", None);
             capture_write(&mut state, SettingsScope::Global)
@@ -863,23 +877,25 @@ impl PackageSource {
         if let Some(s) = v.as_str() {
             return Some(Self::String(s.into()));
         }
-        let mut extra = value::clone_map(v.as_object()?);
+        let mut owned = value::Owned(Value::Object(value::clone_map(v.as_object()?)));
+        let extra = owned.as_object_mut().unwrap();
         let property_order = extra.keys().cloned().collect();
-        let source = extra.shift_remove("source")?.as_str()?.to_owned();
+        let source = value::take(extra, "source")?.as_str()?.to_owned();
         fn list(map: &mut Map<String, Value>, key: &str) -> Option<Option<Vec<String>>> {
-            match map.shift_remove(key) {
-                None | Some(Value::Null) => Some(None),
+            match value::take(map, key) {
+                None => Some(None),
+                Some(v) if v.is_null() => Some(None),
                 Some(v) => value::strings(&v).map(Some),
             }
         }
         Some(Self::Object {
             source,
             property_order,
-            extensions: list(&mut extra, "extensions")?,
-            skills: list(&mut extra, "skills")?,
-            prompts: list(&mut extra, "prompts")?,
-            themes: list(&mut extra, "themes")?,
-            extra,
+            extensions: list(extra, "extensions")?,
+            skills: list(extra, "skills")?,
+            prompts: list(extra, "prompts")?,
+            themes: list(extra, "themes")?,
+            extra: std::mem::take(extra),
         })
     }
     fn raw(self) -> Value {
@@ -894,7 +910,7 @@ impl PackageSource {
                 property_order,
                 mut extra,
             } => {
-                extra.insert("source".into(), Value::String(source));
+                value::insert(&mut extra, "source".into(), Value::String(source));
                 for (key, list) in [
                     ("extensions", extensions),
                     ("skills", skills),
@@ -902,12 +918,13 @@ impl PackageSource {
                     ("themes", themes),
                 ] {
                     if let Some(list) = list {
-                        extra.insert(
+                        value::insert(
+                            &mut extra,
                             key.into(),
                             Value::Array(list.into_iter().map(Value::String).collect()),
                         );
                     } else {
-                        extra.shift_remove(key);
+                        value::remove(&mut extra, key);
                     }
                 }
                 Value::Object(value::ordered(extra, &property_order))
@@ -920,10 +937,18 @@ impl SettingsManager {
     pub fn get_packages(&self) -> Vec<PackageSource> {
         self.read("packages")
             .and_then(|v| {
-                v.as_array()?
-                    .iter()
-                    .map(PackageSource::read)
-                    .collect::<Option<Vec<_>>>()
+                let mut packages = Vec::new();
+                for item in v.as_array()? {
+                    if let Some(package) = PackageSource::read(item) {
+                        packages.push(package);
+                    } else {
+                        for package in packages {
+                            value::teardown(package.raw());
+                        }
+                        return None;
+                    }
+                }
+                Some(packages)
             })
             .unwrap_or_default()
     }
@@ -1310,10 +1335,10 @@ impl SettingsManager {
         let value = self.read("thinkingBudgets")?;
         let mut extra = value::clone_map(value.as_object()?);
         Some(ThinkingBudgetsSettings {
-            minimal: extra.shift_remove("minimal").and_then(|v| v.as_f64()),
-            low: extra.shift_remove("low").and_then(|v| v.as_f64()),
-            medium: extra.shift_remove("medium").and_then(|v| v.as_f64()),
-            high: extra.shift_remove("high").and_then(|v| v.as_f64()),
+            minimal: value::take(&mut extra, "minimal").and_then(|v| v.as_f64()),
+            low: value::take(&mut extra, "low").and_then(|v| v.as_f64()),
+            medium: value::take(&mut extra, "medium").and_then(|v| v.as_f64()),
+            high: value::take(&mut extra, "high").and_then(|v| v.as_f64()),
             extra,
         })
     }
@@ -1325,8 +1350,7 @@ impl SettingsManager {
             .unwrap_or_default();
         WarningSettings {
             property_order: extra.keys().cloned().collect(),
-            anthropic_extra_usage: extra
-                .shift_remove("anthropicExtraUsage")
+            anthropic_extra_usage: value::take(&mut extra, "anthropicExtraUsage")
                 .and_then(|v| v.as_bool()),
             extra,
         }
@@ -1335,9 +1359,9 @@ impl SettingsManager {
     pub fn set_warnings(&self, warnings: WarningSettings) {
         let mut raw = warnings.extra;
         if let Some(value) = warnings.anthropic_extra_usage {
-            raw.insert("anthropicExtraUsage".into(), Value::Bool(value));
+            value::insert(&mut raw, "anthropicExtraUsage".into(), Value::Bool(value));
         } else {
-            raw.shift_remove("anthropicExtraUsage");
+            value::remove(&mut raw, "anthropicExtraUsage");
         }
         self.set(
             SettingsScope::Global,
