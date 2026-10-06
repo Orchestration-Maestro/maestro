@@ -2,7 +2,7 @@
 
 `Storage` provides raw byte access at explicit caller-supplied paths. The session owner selects paths and owns history, formats and persistence timing. Storage does not parse JSON, decode UTF-8, frame lines, deduplicate bytes or normalize paths.
 
-The eight synchronous operations are `exists`, `mkdir`, `read_file`, `read_prefix`, `read_dir`, `modified`, `append_file` and `write_file`. Existence follows targets and failed observations return false. Only mkdir recursively creates directories. Reads create nothing; append and write create files only when their parents exist. Empty appends still create files.
+The eight synchronous operations are `exists`, `mkdir`, `read_file`, `read_prefix`, `read_dir`, `modified`, `append_file` and `write_file`. Existence follows targets and failed observations return false. Only mkdir recursively creates directories. Reads create nothing; append and write create files only when their parents exist. Empty appends still create files. An empty path returns `NotFound` for every I/O operation, synchronous or asynchronous, and false for existence; it never denotes the current directory.
 
 Prefix reads open even for a zero-byte request. A nonzero request performs one bounded positional read at offset zero and returns only the bytes actually read, including incomplete UTF-8. A failed positional read intentionally retains the opened descriptor; successful reads and failed opens do not leak descriptors.
 

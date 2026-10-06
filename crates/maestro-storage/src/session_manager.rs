@@ -13,6 +13,9 @@ impl Storage for FileStorage {
         path.exists()
     }
     fn mkdir(&self, path: &Path) -> io::Result<()> {
+        if path.as_os_str().is_empty() {
+            return Err(io::ErrorKind::NotFound.into());
+        }
         fs::create_dir_all(path)
     }
     fn read_file(&self, path: &Path) -> io::Result<Vec<u8>> {

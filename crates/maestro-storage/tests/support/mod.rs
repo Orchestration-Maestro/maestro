@@ -81,6 +81,9 @@ impl Controlled {
         self.listings.borrow_mut().insert(path.to_owned(), entries);
     }
     fn kinds(&self, path: &Path) -> io::Result<Vec<Dirent>> {
+        if path.as_os_str().is_empty() {
+            return Err(io::ErrorKind::NotFound.into());
+        }
         if let Some(entries) = self.listings.borrow().get(path) {
             return Ok(entries.clone());
         }
@@ -99,6 +102,9 @@ impl Controlled {
         self.partial.set(Some(count));
     }
     fn store(&self, path: &Path, bytes: &[u8], append: bool) -> io::Result<()> {
+        if path.as_os_str().is_empty() {
+            return Err(io::ErrorKind::NotFound.into());
+        }
         let mut nodes = self.nodes.borrow_mut();
         if !matches!(
             path.parent().and_then(|p| nodes.get(p)),
@@ -130,20 +136,23 @@ impl Controlled {
 }
 impl Storage for Controlled {
     fn exists(&self, path: &Path) -> bool {
+        if path.as_os_str().is_empty() {
+            return false;
+        }
         let links = self.links.borrow();
         let target = links.get(path).map_or(path, |path| path.as_path());
         self.nodes.borrow().contains_key(target)
     }
     fn mkdir(&self, path: &Path) -> io::Result<()> {
         if path.as_os_str().is_empty() {
-            return Ok(());
+            return Err(io::ErrorKind::NotFound.into());
         }
         match self.nodes.borrow().get(path) {
             Some(Node::Directory) => return Ok(()),
             Some(Node::File(_)) => return Err(io::ErrorKind::NotADirectory.into()),
             None => {}
         }
-        if let Some(parent) = path.parent() {
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
             self.mkdir(parent)?;
         }
         self.nodes
@@ -152,6 +161,9 @@ impl Storage for Controlled {
         Ok(())
     }
     fn read_file(&self, path: &Path) -> io::Result<Vec<u8>> {
+        if path.as_os_str().is_empty() {
+            return Err(io::ErrorKind::NotFound.into());
+        }
         match self.nodes.borrow().get(path) {
             Some(Node::File(v)) => Ok(v.clone()),
             Some(Node::Directory) => Err(io::ErrorKind::IsADirectory.into()),
@@ -159,6 +171,9 @@ impl Storage for Controlled {
         }
     }
     fn read_dir(&self, path: &Path) -> io::Result<Vec<std::ffi::OsString>> {
+        if path.as_os_str().is_empty() {
+            return Err(io::ErrorKind::NotFound.into());
+        }
         if let Some(entries) = self.listings.borrow().get(path) {
             return Ok(entries.iter().map(|entry| entry.name.clone()).collect());
         }
@@ -324,7 +339,7 @@ pub const GUIDE: &str = r###"# Transcript byte access
 
 `Storage` provides raw byte access at explicit caller-supplied paths. The session owner selects paths and owns history, formats and persistence timing. Storage does not parse JSON, decode UTF-8, frame lines, deduplicate bytes or normalize paths.
 
-The eight synchronous operations are `exists`, `mkdir`, `read_file`, `read_prefix`, `read_dir`, `modified`, `append_file` and `write_file`. Existence follows targets and failed observations return false. Only mkdir recursively creates directories. Reads create nothing; append and write create files only when their parents exist. Empty appends still create files.
+The eight synchronous operations are `exists`, `mkdir`, `read_file`, `read_prefix`, `read_dir`, `modified`, `append_file` and `write_file`. Existence follows targets and failed observations return false. Only mkdir recursively creates directories. Reads create nothing; append and write create files only when their parents exist. Empty appends still create files. An empty path returns `NotFound` for every I/O operation, synchronous or asynchronous, and false for existence; it never denotes the current directory.
 
 Prefix reads open even for a zero-byte request. A nonzero request performs one bounded positional read at offset zero and returns only the bytes actually read, including incomplete UTF-8. A failed positional read intentionally retains the opened descriptor; successful reads and failed opens do not leak descriptors.
 

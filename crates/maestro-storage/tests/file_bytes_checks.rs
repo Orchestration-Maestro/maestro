@@ -21,6 +21,83 @@ fn explicit_paths_and_recursive_directories() {
 }
 
 #[test]
+fn empty_paths_are_not_found_for_every_operation() {
+    use maestro_storage::Storage;
+    use std::{io::ErrorKind, path::Path};
+
+    let mut outcomes = Vec::new();
+    for relative in [false, true] {
+        let fixture = support::Fixture::new("empty-path", relative);
+        let controlled = support::Controlled::new(&fixture.root);
+        let adapters: &[&dyn Storage] = &[
+            &controlled,
+            #[cfg(not(target_arch = "wasm32"))]
+            &maestro_storage::FileStorage,
+        ];
+        for storage in adapters {
+            let path = Path::new("");
+            let errors = [
+                ("mkdir", storage.mkdir(path).err().map(|e| e.kind())),
+                ("read", storage.read_file(path).err().map(|e| e.kind())),
+                (
+                    "prefix",
+                    storage.read_prefix(path, 512).err().map(|e| e.kind()),
+                ),
+                (
+                    "zero prefix",
+                    storage.read_prefix(path, 0).err().map(|e| e.kind()),
+                ),
+                ("mtime", storage.modified(path).err().map(|e| e.kind())),
+                ("readdir", storage.read_dir(path).err().map(|e| e.kind())),
+                (
+                    "append",
+                    storage.append_file(path, b"").err().map(|e| e.kind()),
+                ),
+                (
+                    "write",
+                    storage.write_file(path, b"").err().map(|e| e.kind()),
+                ),
+                (
+                    "async read",
+                    support::ready(storage.read_file_async(path))
+                        .err()
+                        .map(|e| e.kind()),
+                ),
+                (
+                    "async mtime",
+                    support::ready(storage.modified_async(path))
+                        .err()
+                        .map(|e| e.kind()),
+                ),
+                (
+                    "async readdir",
+                    support::ready(storage.read_dir_async(path))
+                        .err()
+                        .map(|e| e.kind()),
+                ),
+                (
+                    "async dirents",
+                    support::ready(storage.read_dir_with_file_types_async(path))
+                        .err()
+                        .map(|e| e.kind()),
+                ),
+            ];
+            outcomes.push((errors, storage.exists(path)));
+        }
+    }
+    for (errors, exists) in outcomes {
+        for (operation, kind) in errors {
+            assert_eq!(kind, Some(ErrorKind::NotFound), "empty path: {operation}");
+        }
+        assert!(!exists, "empty path must not exist");
+    }
+    let controlled = support::Controlled::default();
+    controlled.mkdir(Path::new("relative/child")).unwrap();
+    assert!(controlled.exists(Path::new("relative")));
+    assert!(controlled.exists(Path::new("relative/child")));
+}
+
+#[test]
 fn opaque_file_reads() {
     support::both("opaque", conformance::opaque_file_reads);
 }
