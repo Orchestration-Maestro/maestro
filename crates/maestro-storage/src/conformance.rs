@@ -1,391 +1,148 @@
-//! Reusable assertions for adapter test suites; violations panic.
+//! Reusable public-interface assertions for supplied-path byte adapters.
 
-use crate::{Record, SessionHeader, Storage, StorageError};
+use crate::Storage;
+use std::path::Path;
 
-/// Checks explicit creation, ordered records, lookup and independent close/reopen.
-pub fn create_append_read_open(storage: &dyn Storage) {
-    let header = SessionHeader {
-        session_id: "session".into(),
-        data: vec![1, 2],
-    };
-    let handle = storage.create(header.clone()).unwrap();
-    let empty = handle.read().unwrap();
-    assert_eq!(empty.metadata.header, header);
-    assert!(empty.records.is_empty());
-    assert_eq!(empty.selected_position, None);
-    let records = vec![
-        Record {
-            id: "a".into(),
-            data: vec![3],
-        },
-        Record {
-            id: "b".into(),
-            data: vec![4],
-        },
-    ];
-    handle.append(records.clone(), Some("b".into())).unwrap();
-    let snapshot = handle.read().unwrap();
-    assert_eq!(snapshot.metadata.header, header);
-    assert_eq!(snapshot.records, records);
-    assert_eq!(snapshot.selected_position.as_deref(), Some("b"));
-    assert_eq!(handle.get("a").unwrap(), Some(records[0].clone()));
-    assert_eq!(handle.get("missing").unwrap(), None);
-    assert_eq!(storage.list().unwrap(), vec![snapshot.metadata.clone()]);
-    let independent = storage.open("session").unwrap();
-    handle.close().unwrap();
-    assert_eq!(handle.read(), Err(StorageError::Closed));
-    assert_eq!(handle.get("a"), Err(StorageError::Closed));
-    assert_eq!(handle.append(vec![], None), Err(StorageError::Closed));
-    assert_eq!(handle.select(None), Err(StorageError::Closed));
-    handle.close().unwrap();
-    assert_eq!(independent.read().unwrap(), snapshot);
-    independent.close().unwrap();
-    assert_eq!(storage.list().unwrap(), vec![snapshot.metadata.clone()]);
-    assert_eq!(storage.open("session").unwrap().read().unwrap(), snapshot);
+/// Assert explicit paths, recursive creation and no implicit parent creation.
+pub fn explicit_paths_and_recursive_directories(storage: &dyn Storage, root: &Path) {
+    let nested = root.join("paths/a/b");
+    assert!(!storage.exists(&nested));
+    assert!(storage.read_file(&nested).is_err());
+    assert!(!storage.exists(&nested));
+    assert!(storage.append_file(&nested.join("absent"), b"x").is_err());
+    assert!(storage.write_file(&nested.join("absent"), b"x").is_err());
+    storage.mkdir(&nested).unwrap();
+    storage.mkdir(&nested).unwrap();
+    assert!(storage.exists(&nested));
+    let file = nested.join("file");
+    storage.append_file(&file, b"").unwrap();
+    assert!(storage.exists(&file));
+    assert_eq!(storage.read_file(&file).unwrap(), b"");
+    assert!(storage.mkdir(&file.join("blocked")).is_err());
 }
 
-fn header(id: &str) -> SessionHeader {
-    SessionHeader {
-        session_id: id.into(),
-        data: vec![0, 255],
+/// Assert raw full reads across text and binary boundaries.
+pub fn opaque_file_reads(storage: &dyn Storage, root: &Path) {
+    let file = root.join("opaque");
+    for bytes in [&b""[..], b"{malformed", b"\0\xff\r\n\xef\xbb\xbf\xc2\x85"] {
+        storage.write_file(&file, bytes).unwrap();
+        assert_eq!(storage.read_file(&file).unwrap(), bytes);
     }
-}
-fn record(id: &str) -> Record {
-    Record {
-        id: id.into(),
-        data: id.as_bytes().to_vec(),
-    }
-}
-
-/// Checks selected positions and complete preservation after definite rejection.
-pub fn selected_position_and_rejection(storage: &dyn Storage) {
-    let handle = storage.create(header("s")).unwrap();
-    handle
-        .append(vec![record("a"), record("b")], Some("b".into()))
-        .unwrap();
-    handle.select(Some("a".into())).unwrap();
+    let missing = root.join("missing-read");
     assert_eq!(
-        handle.read().unwrap().selected_position.as_deref(),
-        Some("a")
+        storage.read_file(&missing).unwrap_err().kind(),
+        std::io::ErrorKind::NotFound
     );
-    handle.select(None).unwrap();
-    assert_eq!(handle.read().unwrap().selected_position, None);
-    handle.append(vec![], Some("b".into())).unwrap();
-    let before = handle.read().unwrap();
-    let other = storage.create(header("other")).unwrap();
-    other
-        .append(vec![record("foreign")], Some("foreign".into()))
-        .unwrap();
-    for (records, position) in [
-        (vec![record("c"), record("c")], Some("c".into())),
-        (vec![record("c"), record("a")], Some("c".into())),
-        (vec![record("c")], Some("missing".into())),
-        (vec![record("c")], Some("foreign".into())),
-    ] {
-        assert!(matches!(
-            handle.append(records, position),
-            Err(StorageError::Rejected { .. })
-        ));
-        assert_eq!(handle.read().unwrap(), before);
-    }
-    assert!(matches!(
-        handle.select(Some("foreign".into())),
-        Err(StorageError::Rejected { .. })
-    ));
-    assert_eq!(handle.read().unwrap(), before);
+    assert!(!storage.exists(&missing));
 }
 
-/// Checks identity-local records, duplicate creation and unknown opens.
-pub fn identity_isolation(storage: &dyn Storage) {
-    let a = storage.create(header("a")).unwrap();
-    let b = storage.create(header("b")).unwrap();
-    let left = Record {
-        id: "same".into(),
-        data: vec![1],
-    };
-    let right = Record {
-        id: "same".into(),
-        data: vec![2],
-    };
-    a.append(vec![left.clone()], Some("same".into())).unwrap();
-    b.append(vec![right.clone()], None).unwrap();
-    assert_eq!(a.get("same").unwrap(), Some(left));
-    assert_eq!(b.get("same").unwrap(), Some(right));
-    let before = b.read().unwrap();
-    a.select(None).unwrap();
-    a.append(vec![record("only-a")], Some("only-a".into()))
-        .unwrap();
-    assert_eq!(b.get("only-a").unwrap(), None);
-    assert!(matches!(
-        b.select(Some("only-a".into())),
-        Err(StorageError::Rejected { .. })
-    ));
-    assert!(matches!(
-        storage.create(header("b")),
-        Err(StorageError::Rejected { .. })
-    ));
-    assert!(matches!(
-        storage.open("missing"),
-        Err(StorageError::Rejected { .. })
-    ));
-    a.close().unwrap();
-    assert_eq!(b.read().unwrap(), before);
-    assert_eq!(storage.open("b").unwrap().read().unwrap(), before);
-    assert_eq!(storage.list().unwrap().len(), 2);
-}
-
-/// Checks nested ownership of snapshots, lookup results and metadata listings.
-pub fn detached_snapshots(storage: &dyn Storage) {
-    let handle = storage.create(header("s")).unwrap();
-    handle.append(vec![record("a")], Some("a".into())).unwrap();
-    let before = handle.read().unwrap();
-    let mut changed = before.clone();
-    changed.metadata.header.data.clear();
-    changed.metadata.header.session_id.clear();
-    changed.metadata.persistent_locator = Some("changed".into());
-    changed.metadata.resumable = !changed.metadata.resumable;
-    changed.records[0].data.clear();
-    changed.records[0].id.clear();
-    changed.selected_position = None;
-    let mut listed = storage.list().unwrap();
-    listed[0].header.data.clear();
-    listed[0].persistent_locator = Some("changed".into());
-    let mut found = handle.get("a").unwrap().unwrap();
-    found.data.clear();
-    assert_eq!(handle.read().unwrap(), before);
-    assert_eq!(storage.list().unwrap(), vec![before.metadata.clone()]);
-    handle.append(vec![record("b")], None).unwrap();
-    handle.select(Some("b".into())).unwrap();
-    assert_eq!(before.records, vec![record("a")]);
-    assert_eq!(before.selected_position.as_deref(), Some("a"));
-}
-
-/// Checks byte-exact retention without decoding unfamiliar encodings.
-pub fn opaque_payloads(storage: &dyn Storage) {
-    let header = SessionHeader {
-        session_id: String::new(),
-        data: vec![255, 0, 128],
-    };
-    let records = vec![
-        Record {
-            id: String::new(),
-            data: vec![],
-        },
-        Record {
-            id: "alien".into(),
-            data: vec![0, 255, 128, 123],
-        },
-    ];
-    let handle = storage.create(header.clone()).unwrap();
-    handle.append(records.clone(), Some(String::new())).unwrap();
-    let snapshot = handle.read().unwrap();
-    assert_eq!(snapshot.metadata.header, header);
-    assert_eq!(snapshot.records, records);
-    assert_eq!(handle.get("").unwrap(), Some(records[0].clone()));
-}
-
-/// Checks concurrent batches and position changes against valid serial outcomes.
-pub fn serial_mutations(storage: &dyn Storage) {
-    let handle = storage.create(header("s")).unwrap();
-    handle
-        .append(vec![record("seed")], Some("seed".into()))
-        .unwrap();
-    let a = storage.open("s").unwrap();
-    let b = storage.open("s").unwrap();
-    let selector = storage.open("s").unwrap();
-    let barrier = std::sync::Arc::new(std::sync::Barrier::new(4));
-    std::thread::scope(|scope| {
-        for (writer, ids) in [(a, ["a1", "a2"]), (b, ["b1", "b2"])] {
-            let barrier = barrier.clone();
-            scope.spawn(move || {
-                barrier.wait();
-                writer
-                    .append(ids.map(record).to_vec(), Some(ids[1].into()))
-                    .unwrap();
-            });
+/// Assert one bounded prefix read returns only available bytes.
+pub fn prefix_reads_keep_bytes_and_requested_bound(storage: &dyn Storage, root: &Path) {
+    let file = root.join("prefix");
+    for size in [0, 3, 512, 514] {
+        let bytes = vec![0xff; size];
+        storage.write_file(&file, &bytes).unwrap();
+        for length in [0, 1, 512, 513] {
+            assert_eq!(
+                storage.read_prefix(&file, length).unwrap(),
+                vec![0xff; size.min(length)]
+            );
         }
-        let start = barrier.clone();
-        scope.spawn(move || {
-            start.wait();
-            selector.select(Some("seed".into())).unwrap();
-        });
-        barrier.wait();
-    });
-    let snapshot = handle.read().unwrap();
-    let ids: Vec<_> = snapshot
-        .records
-        .iter()
-        .map(|record| record.id.as_str())
-        .collect();
-    assert!(ids == ["seed", "a1", "a2", "b1", "b2"] || ids == ["seed", "b1", "b2", "a1", "a2"]);
-    let last = ids.last().copied().unwrap();
+    }
+    storage.write_file(&file, b"\xc3\xa9").unwrap();
+    assert_eq!(storage.read_prefix(&file, 1).unwrap(), b"\xc3");
     assert!(
-        snapshot.selected_position.as_deref() == Some(last)
-            || snapshot.selected_position.as_deref() == Some("seed")
+        storage
+            .read_prefix(&root.join("missing-prefix"), 0)
+            .is_err()
     );
 }
 
-/// Deterministic scheduling witnesses for real adapter paths in test suites.
-pub trait Controls {
-    /// Pauses an admitted append after its first staged record, before publication,
-    /// without holding the snapshot lock.
-    fn pause_next_append(&self, session_id: &str) -> Pause;
-    /// Observes admission closing immediately before admitted-write draining.
-    fn observe_close(&self, session_id: &str) -> std::sync::mpsc::Receiver<()>;
-    /// Records close beginning to wait for admitted writes, before it blocks.
-    /// A close that returns without draining must not emit this witness.
-    fn observe_close_draining(
-        &self,
-        session_id: &str,
-        witness: std::sync::mpsc::Sender<CloseWitness>,
-    );
-    /// Records the next admitted append's settled outcome, after publication or
-    /// failure is final but before notifying close's drain waiters. The observer
-    /// must not delay draining or require the append caller to run first.
-    fn observe_write_settled(
-        &self,
-        session_id: &str,
-        witness: std::sync::mpsc::Sender<CloseWitness>,
-    );
-}
-
-/// Ordered observations of an admitted write and its handle's close.
-#[derive(Debug, PartialEq, Eq)]
-pub enum CloseWitness {
-    /// Close has begun draining the admitted write before returning.
-    CloseDraining,
-    /// The admitted append's outcome is final before draining is notified.
-    WriteSettled,
-    /// The close caller has received its result.
-    CloseComplete,
-}
-
-/// Owned endpoints for a paused real append.
-pub struct Pause {
-    /// Receives the admission/preparation witness.
-    pub reached: std::sync::mpsc::Receiver<()>,
-    /// Sending releases the admitted write.
-    pub release: std::sync::mpsc::Sender<()>,
-}
-
-struct ReleaseOnDrop(Option<std::sync::mpsc::Sender<()>>);
-
-impl ReleaseOnDrop {
-    fn release(&mut self) {
-        if let Some(sender) = self.0.take() {
-            let _ = sender.send(());
-        }
+/// Assert sequential append preserves chunks, including duplicates and empties.
+pub fn append_chunks_without_framing(storage: &dyn Storage, root: &Path) {
+    let file = root.join("append");
+    for chunk in [&b"header\n"[..], b"header\n", b"\0\xff", b"", b"tail"] {
+        storage.append_file(&file, chunk).unwrap();
     }
-}
-
-impl Drop for ReleaseOnDrop {
-    fn drop(&mut self) {
-        self.release();
-    }
-}
-
-/// Checks that readers never observe a staged prefix or mismatched position.
-pub fn whole_batch_visibility(storage: &dyn Storage, controls: &dyn Controls) {
-    let handle = storage.create(header("s")).unwrap();
-    handle
-        .append(vec![record("old")], Some("old".into()))
-        .unwrap();
-    let reader = storage.open("s").unwrap();
-    let before = reader.read().unwrap();
-    let pause = controls.pause_next_append("s");
-    std::thread::scope(|scope| {
-        let mut release = ReleaseOnDrop(Some(pause.release));
-        let write = scope.spawn(|| handle.append(vec![record("a"), record("b")], Some("b".into())));
-        pause.reached.recv().unwrap();
-        assert_eq!(reader.read().unwrap(), before);
-        assert_eq!(reader.get("a").unwrap(), None);
-        release.release();
-        write.join().unwrap().unwrap();
-    });
-    let after = reader.read().unwrap();
-    assert_eq!(after.records, vec![record("old"), record("a"), record("b")]);
-    assert_eq!(after.selected_position.as_deref(), Some("b"));
-}
-
-/// Checks close's real admission/drain path and independent handle usability.
-pub fn close_settles_admitted_writes(storage: &dyn Storage, controls: &dyn Controls) {
-    let handle = storage.create(header("s")).unwrap();
-    let reader = storage.open("s").unwrap();
-    let pause = controls.pause_next_append("s");
-    let closing = controls.observe_close("s");
-    let (witness_tx, witnesses) = std::sync::mpsc::channel();
-    controls.observe_write_settled("s", witness_tx.clone());
-    controls.observe_close_draining("s", witness_tx.clone());
-    std::thread::scope(|scope| {
-        let mut release = ReleaseOnDrop(Some(pause.release));
-        let writer = handle.clone();
-        let write =
-            scope.spawn(move || writer.append(vec![record("a"), record("b")], Some("b".into())));
-        pause.reached.recv().unwrap();
-        let closer = handle.clone();
-        let close = scope.spawn(move || {
-            let result = closer.close();
-            let _ = witness_tx.send(CloseWitness::CloseComplete);
-            result
-        });
-        closing.recv().unwrap();
-        assert_eq!(
-            witnesses.recv().unwrap(),
-            CloseWitness::CloseDraining,
-            "write must settle before close completes"
-        );
-        assert_eq!(handle.read(), Err(StorageError::Closed));
-        assert_eq!(handle.get("a"), Err(StorageError::Closed));
-        assert_eq!(
-            handle.append(vec![record("late")], None),
-            Err(StorageError::Closed)
-        );
-        assert_eq!(handle.select(None), Err(StorageError::Closed));
-        assert!(reader.read().unwrap().records.is_empty());
-        release.release();
-        write.join().unwrap().unwrap();
-        close.join().unwrap().unwrap();
-        assert_eq!(
-            [witnesses.recv().unwrap(), witnesses.recv().unwrap()],
-            [CloseWitness::WriteSettled, CloseWitness::CloseComplete],
-            "write must settle before close completes"
-        );
-    });
-    handle.close().unwrap();
     assert_eq!(
-        reader.read().unwrap().records,
-        vec![record("a"), record("b")]
+        storage.read_file(&file).unwrap(),
+        b"header\nheader\n\0\xfftail"
     );
-    reader.append(vec![record("c")], Some("c".into())).unwrap();
+    assert!(
+        storage
+            .append_file(&root.join("missing-parent/file"), b"x")
+            .is_err()
+    );
+}
+
+/// Assert replacement creates a file and removes every old suffix byte.
+pub fn rewrite_removes_old_suffix(storage: &dyn Storage, root: &Path) {
+    let file = root.join("rewrite");
+    storage.write_file(&file, b"long original suffix").unwrap();
+    storage.write_file(&file, b"\0\xff").unwrap();
+    assert_eq!(storage.read_file(&file).unwrap(), b"\0\xff");
+    storage.write_file(&file, b"").unwrap();
+    assert_eq!(storage.read_file(&file).unwrap(), b"");
+}
+
+/// Assert unfiltered names and separately selected modification times.
+pub fn directory_names_and_modification_time_are_separate(storage: &dyn Storage, root: &Path) {
+    let dir = root.join("names");
+    storage.mkdir(&dir).unwrap();
+    assert!(storage.read_dir(&dir).unwrap().is_empty());
+    storage.mkdir(&dir.join("folder")).unwrap();
+    for name in [".hidden", "notes.txt", "invalid.jsonl"] {
+        storage.write_file(&dir.join(name), b"not JSON").unwrap();
+    }
+    let mut names = storage.read_dir(&dir).unwrap();
+    names.sort();
+    assert_eq!(
+        names,
+        [".hidden", "folder", "invalid.jsonl", "notes.txt"].map(std::ffi::OsString::from)
+    );
+    let file = dir.join("notes.txt");
+    assert_eq!(
+        storage.modified(&file).unwrap(),
+        storage.modified(&file).unwrap()
+    );
+    assert!(storage.modified(&dir.join("absent")).is_err());
+    assert!(storage.read_dir(&root.join("absent-dir")).is_err());
+}
+
+/// Assert I/O failures do not poison later calls on the same adapter.
+pub fn io_failure_leaves_later_operations_available(storage: &dyn Storage, root: &Path) {
+    let parent = root.join("blocking-file");
+    storage.write_file(&parent, b"block").unwrap();
+    let blocked = parent.join("child");
+    assert!(storage.mkdir(&blocked).is_err());
+    assert!(storage.write_file(&blocked, b"bad").is_err());
+    assert!(storage.append_file(&blocked, b"bad").is_err());
+    let usable = root.join("usable");
+    storage.write_file(&usable, b"ok").unwrap();
+    storage.append_file(&usable, b"!").unwrap();
+    assert_eq!(storage.read_file(&usable).unwrap(), b"ok!");
     assert_eq!(
         storage
-            .open("s")
-            .unwrap()
-            .read()
-            .unwrap()
-            .selected_position
-            .as_deref(),
-        Some("c")
+            .read_file(&root.join("missing-error"))
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::NotFound
     );
 }
 
-/// Checks uncertain outcomes disable mutations through the handle and its clones.
-/// This makes no rejection, rollback or durability assertion.
-pub fn uncertain_outcome_blocks_mutations(storage: &dyn Storage, arm_uncertain: &dyn Fn(&str)) {
-    let handle = storage.create(header("s")).unwrap();
-    handle
-        .append(vec![record("old")], Some("old".into()))
-        .unwrap();
-    arm_uncertain("s");
-    assert!(matches!(
-        handle.append(vec![record("a"), record("b")], Some("b".into())),
-        Err(StorageError::Uncertain { .. })
-    ));
-    let clone = handle.clone();
-    for caller in [&handle, &clone] {
-        assert!(caller.append(vec![record("late")], None).is_err());
-        assert!(caller.select(None).is_err());
-    }
-    handle.close().unwrap();
-    clone.close().unwrap();
+/// Assert one unchanged byte caller accepts any storage adapter.
+pub fn same_byte_caller_accepts_each_adapter(storage: &dyn Storage, root: &Path) {
+    let dir = root.join("caller");
+    let file = dir.join("bytes");
+    storage.mkdir(&dir).unwrap();
+    storage.write_file(&file, b"one").unwrap();
+    storage.append_file(&file, b"two").unwrap();
+    assert_eq!(storage.read_file(&file).unwrap(), b"onetwo");
+    assert_eq!(storage.read_prefix(&file, 2).unwrap(), b"on");
+    assert_eq!(
+        storage.read_dir(&dir).unwrap(),
+        [std::ffi::OsString::from("bytes")]
+    );
+    storage.modified(&file).unwrap();
+    assert!(storage.exists(&file));
 }

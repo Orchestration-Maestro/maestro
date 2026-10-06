@@ -59,9 +59,9 @@ are later scope, not active foundation concepts.
 
 ### State
 
-- **Transcript bytes:** Session data accessed through the replaceable storage interface.
+- **Transcript bytes:** Opaque bytes accessed at caller-supplied paths without parsing or framing.
 - **Branch position:** The selected entry in the session tree, or the position before all entries.
-- **Storage:** The replaceable interface that accesses transcript bytes; the SessionManager owns history and persistence timing.
+- **Storage:** The replaceable raw supplied-path byte I/O interface; the SessionManager owns history and persistence timing.
 - **Notification:** An observation of current activity; delivery does not imply persistence or replay.
 - **Settings:** Accepted user/project preferences merged at the top level with one nested object spread, runtime overrides, immediate cache publication, queued writes, flush and drainable errors. Reload retains a failed scope but clears runtime overrides.
 - **Configuration root:** The explicitly selected user configuration directory.
