@@ -457,3 +457,64 @@ fn session_directory_uses_environment_or_account_home() {
         );
     }
 }
+
+#[test]
+fn memory_callback_reenters_same_and_other_scope() {
+    let name = "memory_callback_reenters_same_and_other_scope";
+    if std::env::var("MAESTRO_STORAGE_CASE").as_deref() == Ok(name) {
+        let storage = InMemorySettingsStorage::new();
+        for nested in [SettingsScope::Global, SettingsScope::Project] {
+            put(&storage, SettingsScope::Global, "before");
+            storage
+                .with_lock(SettingsScope::Global, &mut |text| {
+                    assert_eq!(text, Some("before"));
+                    put(&storage, nested, "nested");
+                    assert_eq!(raw(&storage, nested).as_deref(), Some("nested"));
+                    Ok(Some("outer".into()))
+                })
+                .unwrap();
+            assert_eq!(
+                raw(&storage, SettingsScope::Global).as_deref(),
+                Some("outer")
+            );
+        }
+        return;
+    }
+    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", name, "--nocapture"])
+        .env("MAESTRO_STORAGE_CASE", name)
+        .spawn()
+        .unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            assert!(status.success(), "{name}: {status}");
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            child.kill().unwrap();
+            child.wait().unwrap();
+            panic!("memory callback re-entry deadlocked");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+}
+
+#[test]
+fn memory_callback_panic_leaves_storage_usable() {
+    let storage = InMemorySettingsStorage::new();
+    put(&storage, SettingsScope::Global, "accepted");
+    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = storage.with_lock(SettingsScope::Global, &mut |_| panic!("callback panic"));
+    }));
+    assert!(panic.is_err());
+    assert_eq!(
+        raw(&storage, SettingsScope::Global).as_deref(),
+        Some("accepted")
+    );
+    put(&storage, SettingsScope::Global, "replacement");
+    assert_eq!(
+        raw(&storage, SettingsScope::Global).as_deref(),
+        Some("replacement")
+    );
+}

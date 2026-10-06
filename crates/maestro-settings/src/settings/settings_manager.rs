@@ -43,7 +43,9 @@ pub struct SettingsError {
     pub error: Arc<dyn std::error::Error + Send + Sync>,
 }
 /// Raw text storage. `None` returned by the callback leaves bytes unchanged.
-/// The callback runs synchronously under the adapter's cooperating-writer lock.
+/// Callbacks run synchronously without an internal state mutex held. File storage
+/// holds a cooperating-writer lease for existing files; missing-file callbacks
+/// and memory callbacks run without that lease.
 pub trait SettingsStorage: Send + Sync {
     /// Reads and optionally replaces one scope, propagating original errors.
     fn with_lock<'a>(
@@ -69,10 +71,9 @@ impl SettingsStorage for InMemorySettingsStorage {
         scope: SettingsScope,
         operation: &'a mut Operation<'a>,
     ) -> Result<(), Error> {
-        let mut text = self.text.lock().unwrap();
-        let current = &mut text[scope.index()];
+        let current = self.text.lock().unwrap()[scope.index()].clone();
         if let Some(next) = operation(current.as_deref())? {
-            *current = Some(next);
+            self.text.lock().unwrap()[scope.index()] = Some(next);
         }
         Ok(())
     }
@@ -1409,7 +1410,8 @@ fn captured(state: &State, i: usize) -> Value {
     if i == 0 {
         for ((field, child), value) in &state.named {
             if raw.get(field).is_some_and(Value::is_array) {
-                raw[field] = Value::Object(value::spread(&raw[field]));
+                let properties = Value::Object(value::spread(&raw[field]));
+                value::replace(&mut raw[field], properties);
             }
             if let Some(map) = raw.get_mut(field).and_then(Value::as_object_mut) {
                 value::insert(map, child.clone(), value::clone(value));

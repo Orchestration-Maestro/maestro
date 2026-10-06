@@ -1963,3 +1963,41 @@ fn waker_clone_can_complete_queued_work_without_deadlocking() {
         },
     );
 }
+
+#[test]
+fn deep_compaction_array_capture_does_not_crash() {
+    crash_safe_subprocess("deep_compaction_array_capture_does_not_crash", || {
+        let (m, s, q) = empty();
+        put(
+            s.as_ref(),
+            SettingsScope::Global,
+            &format!("{{\"compaction\":[{}]}}", deep_object()),
+        );
+        block_on(m.reload());
+        assert!(m.drain_errors().is_empty());
+        m.set_compaction_enabled(false).unwrap();
+        assert!(!m.get_compaction_enabled());
+        assert_eq!(q.len(), 1);
+        drop(q);
+        drop(m);
+    });
+}
+
+#[test]
+fn deep_images_array_capture_does_not_crash() {
+    crash_safe_subprocess("deep_images_array_capture_does_not_crash", || {
+        let (m, s, q) = empty();
+        put(
+            s.as_ref(),
+            SettingsScope::Global,
+            &format!("{{\"images\":[{}]}}", deep_object()),
+        );
+        block_on(m.reload());
+        assert!(m.drain_errors().is_empty());
+        m.set_image_auto_resize(false).unwrap();
+        assert!(!m.get_image_auto_resize());
+        assert_eq!(q.len(), 1);
+        drop(q);
+        drop(m);
+    });
+}

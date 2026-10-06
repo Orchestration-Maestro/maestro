@@ -114,6 +114,13 @@ and fresh write data; there is no whole-document admission schema.
 
 `SettingsStorage::with_lock` receives a synchronous raw-text callback. Returning
 `None` preserves bytes; returning `Some` replaces them even with empty text.
+Memory callbacks run outside the text mutex and can re-enter either scope. They
+observe a captured text value; a returned replacement is published after the
+callback returns, so an outer replacement wins a nested write to the same scope.
+A callback panic leaves the memory adapter usable without publishing an outer
+replacement; any completed nested writes remain visible.
+No caller callback, waker lifecycle or executor invocation runs under a manager
+state mutex.
 Loads capture raw text in the callback and parse only after storage completes
 successfully, so a storage completion failure takes precedence over malformed text.
 The memory adapter and arbitrary caller adapters work on native and browser
