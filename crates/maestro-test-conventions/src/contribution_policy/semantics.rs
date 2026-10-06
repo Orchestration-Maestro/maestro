@@ -30,18 +30,25 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
         .trim_start_matches(['+', '-'])
         .bytes()
         .all(|b| b.is_ascii_digit())
-        || year_text == "-000000"
     {
         return None;
     }
-    let year = year_text.parse::<i32>().ok()?;
+    // Numeric date-only parsing maps the negative-zero year to 2001.
+    let year = if year_text == "-000000" {
+        if time.is_some() || date.len() == year_len {
+            return None;
+        }
+        2001
+    } else {
+        year_text.parse::<i32>().ok()?
+    };
     let rest = date.get(year_len..)?;
     let (month, day) = match rest.len() {
         0 => (1, 1),
-        3 if rest.starts_with('-') => (rest[1..].parse::<u32>().ok()?, 1),
+        3 if rest.starts_with('-') => (digits(&rest[1..], 2)? as u32, 1),
         6 if rest.starts_with('-') && rest.as_bytes()[3] == b'-' => (
-            rest[1..3].parse::<u32>().ok()?,
-            rest[4..].parse::<u32>().ok()?,
+            digits(&rest[1..3], 2)? as u32,
+            digits(&rest[4..], 2)? as u32,
         ),
         _ => return None,
     };
@@ -68,14 +75,28 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
         (clock, 0)
     } else if let Some(index) = time.find(['+', '-']) {
         let zone = time.get(index..)?;
-        let minute_start = match zone.len() {
-            5 => 3,
-            6 if zone.as_bytes()[3] == b':' => 4,
-            _ => return None,
+        let space_separator = value.as_bytes().get(date.len()) == Some(&b' ');
+        let fields = zone.get(1..)?;
+        let (hour_text, minute_text) = if let Some((hour, minute)) = fields.split_once(':') {
+            (hour, Some(minute))
+        } else if fields.len() == 4 {
+            (fields.get(..2)?, Some(fields.get(2..)?))
+        } else if space_separator && matches!(fields.len(), 1 | 2) {
+            (fields, None)
+        } else {
+            return None;
         };
-        let hour = zone.get(1..3)?.parse::<i64>().ok()?;
-        let minute = zone.get(minute_start..)?.parse::<i64>().ok()?;
-        if hour > 23 || minute > 59 {
+        let hour_width = if space_separator && matches!(hour_text.len(), 1 | 2) {
+            hour_text.len()
+        } else {
+            2
+        };
+        let hour = digits(hour_text, hour_width)?;
+        let minute = match minute_text {
+            Some(text) => digits(text, 2)?,
+            None => 0,
+        };
+        if (!space_separator && hour > 23) || minute > 59 {
             return None;
         }
         let sign = if zone.starts_with('-') { -1 } else { 1 };
@@ -97,10 +118,10 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     {
         return None;
     }
-    let hour = clock[..2].parse::<i64>().ok()?;
-    let minute = clock[3..5].parse::<i64>().ok()?;
+    let hour = digits(&clock[..2], 2)?;
+    let minute = digits(&clock[3..5], 2)?;
     let second = if clock.len() == 8 {
-        clock[6..].parse::<i64>().ok()?
+        digits(&clock[6..], 2)?
     } else {
         0
     };
@@ -127,6 +148,13 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     clipped_weekday(
         days * 86_400_000 + (hour * 3600 + minute * 60 + second - offset * 60) * 1000 + millis,
     )
+}
+
+fn digits(value: &str, width: usize) -> Option<i64> {
+    if value.len() != width || !value.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    value.parse().ok()
 }
 
 fn clipped_weekday(time: i64) -> Option<u32> {

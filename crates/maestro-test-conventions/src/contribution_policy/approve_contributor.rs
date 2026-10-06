@@ -37,7 +37,7 @@ pub(super) fn approve(
     let content = String::from_utf8_lossy(&bytes);
     let mut users = parse_approved_users(
         &content,
-        super::approved_users::LineDiagnostics::Trimmed,
+        super::approved_users::LineDiagnostics::Raw,
         github.process,
     );
     let author = e["issue"]["user"]["login"]
@@ -230,7 +230,7 @@ pub(super) fn complete(
     let content = super::github::get_text_file(github, APPROVED_FILE)?;
     let users = parse_approved_users(
         &content,
-        super::approved_users::LineDiagnostics::Trimmed,
+        super::approved_users::LineDiagnostics::Raw,
         github.process,
     );
     let Some(capability) = users

@@ -28,7 +28,6 @@ impl ApprovedUsers {
 
 pub(super) enum LineDiagnostics {
     Silent,
-    Trimmed,
     Raw,
 }
 
@@ -64,11 +63,6 @@ pub(super) fn parse_approved_users(
                 && !trimmed.is_empty()
                 && !trimmed.starts_with('#')
             {
-                let line = if matches!(diagnostics, LineDiagnostics::Trimmed) {
-                    trimmed
-                } else {
-                    line
-                };
                 if parts.len() != 2 {
                     process.diagnostic(&format!("Skipping malformed line: {line}"));
                 } else {
