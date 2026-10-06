@@ -262,7 +262,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
     );
     for host in [
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/../interfaces", world: "fixture" });"#,
-        r#"wasmtime::component::bindgen!("../maestro-extensions-wasm/interfaces");"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces" });"#,
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/world.wit" });"#,
         r##"wasmtime::component::bindgen!({ path: [r#"../maestro-extensions-wasm/interfaces"#, "../maestro-extensions-wasm/interfaces/world.wit"] });"##,
     ] {
@@ -347,4 +347,158 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         r#"wit_bindgen::generate!({ path: ["interfaces"] });"#,
     );
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    for directory in ["wit", "fixture"] {
+        let root = workspace
+            .root
+            .join("crates/maestro-extensions-wasm")
+            .join(directory);
+        std::fs::create_dir(&root).unwrap();
+        std::fs::write(
+            root.join("world.wit"),
+            "package maestro:fixture; world fixture {}",
+        )
+        .unwrap();
+    }
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/lib.rs",
+        r#"wit_bindgen::generate!("fixture");"#,
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/fixture" });"#,
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("same canonical source"), "{error}");
+    source(
+        &workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!("fixture");"#,
+    );
+    let host_wit = workspace
+        .root
+        .join("crates/maestro-extensions-wasmtime/wit");
+    std::fs::create_dir(&host_wit).unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("guest-owned"), "{error}");
+}
+
+#[test]
+fn raw_identifier_declarations_keep_their_owners() {
+    for (declaration, owner, name) in [
+        (
+            "pub struct r#ToolDefinition;",
+            "maestro-tools",
+            "ToolDefinition",
+        ),
+        (
+            "mod r#session_selector_search {}",
+            "maestro-chat",
+            "session_selector_search",
+        ),
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-tui", owner]);
+        source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains("maestro-tui/src/lib.rs:1:")
+                && error.contains(name)
+                && error.contains(&format!("belongs to {owner}")),
+            "{error}"
+        );
+        source(&workspace, "maestro-tui", "src/lib.rs", "");
+        source(&workspace, owner, "src/lib.rs", declaration);
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+}
+
+#[test]
+fn wit_static_paths_decode_rust_string_literals() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    let member = workspace.root.join("crates/maestro-extensions-wasm");
+    for (directory, literal) in [
+        ("interfaces", r#""\x69nterfaces""#),
+        ("interfaces", r#""\u{69}nterfaces""#),
+        ("interfaces", r#""\u{0000_69}nterfaces""#),
+        ("interfaces", "\"inter\\\n    faces\""),
+        ("interfaces", "\"inter\\\r\n    faces\""),
+        ("interfaces", r#"r"interfaces""#),
+        ("interfaces", r##"r#"interfaces"#"##),
+        ("intérfaces", r#""int\u{e9}rfaces""#),
+        ("back\\slash", r#""back\\slash""#),
+        ("double\"quote", r#""double\"quote""#),
+        ("single'quote", r#""single\'quote""#),
+        ("new\nline", r#""new\nline""#),
+        ("tab\tname", r#""tab\tname""#),
+        ("return\rname", r#""return\rname""#),
+    ] {
+        std::fs::create_dir_all(member.join(directory)).unwrap();
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/lib.rs",
+            &format!("wit_bindgen::generate!({{ path: {literal} }});"),
+        );
+        let host_path = format!("../maestro-extensions-wasm/{directory}");
+        source(
+            &workspace,
+            "maestro-extensions-wasmtime",
+            "build.rs",
+            &format!("wasmtime::component::bindgen!({{ path: r###\"{host_path}\"### }});"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Ok(()),
+            "literal: {literal}"
+        );
+    }
+    std::fs::create_dir(member.join("wit")).unwrap();
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/lib.rs",
+        r#"wit_bindgen::generate!("fixture\0");"#,
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for literal in [
+        r#""\qinterfaces""#,
+        r#""\xFF""#,
+        r#""\u{D800}""#,
+        r#""\u{110000}""#,
+        r#""\u{}""#,
+    ] {
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/lib.rs",
+            &format!("wit_bindgen::generate!({{ path: {literal} }});"),
+        );
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(error.contains("requires review"), "{literal}: {error}");
+    }
 }

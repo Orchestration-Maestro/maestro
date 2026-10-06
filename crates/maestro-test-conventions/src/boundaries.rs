@@ -178,11 +178,16 @@ impl WitInputs {
             let body = &tail[1..end.ok_or_else(error)?];
             let mut paths = Vec::new();
             let mut inline = false;
-            if let Some(value) = body.first().and_then(|token| string_literal(token.text)) {
+            if body
+                .first()
+                .and_then(|token| string_literal(token.text))
+                .is_some()
+            {
                 if body.len() != 1 {
                     return Err(error());
                 }
-                paths.push(value);
+                // A shorthand string names a world in the manifest-relative default directory.
+                paths.push("wit".to_owned());
             } else {
                 for (offset, pair) in body.windows(2).enumerate() {
                     if pair[1].text != ":" {
@@ -295,14 +300,80 @@ fn has_prefix(tokens: &[source::Token<'_>], prefix: &[&str]) -> bool {
 }
 
 fn string_literal(text: &str) -> Option<String> {
-    if text.starts_with('"') {
-        return serde_json::from_str(text).ok();
+    if let Some(body) = text.strip_prefix('"') {
+        return cooked_string(body.strip_suffix('"')?);
     }
     let rest = text.strip_prefix('r')?;
     let quote = rest.find('"')?;
-    if !rest[..quote].bytes().all(|byte| byte == b'#') {
+    let hashes = &rest[..quote];
+    if !hashes.bytes().all(|byte| byte == b'#') {
         return None;
     }
-    let end = rest.len().checked_sub(quote + 1)?;
-    Some(rest[quote + 1..end].to_owned())
+    let body = rest[quote + 1..].strip_suffix(hashes)?.strip_suffix('"')?;
+    Some(body.to_owned())
+}
+
+fn cooked_string(body: &str) -> Option<String> {
+    let mut characters = body.chars().peekable();
+    let mut result = String::new();
+    while let Some(character) = characters.next() {
+        if character != '\\' {
+            result.push(character);
+            continue;
+        }
+        let escaped = match characters.next()? {
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            '\\' => '\\',
+            '"' => '"',
+            '\'' => '\'',
+            '0' => '\0',
+            'x' => {
+                let high = characters.next()?.to_digit(16)?;
+                let low = characters.next()?.to_digit(16)?;
+                let value = high * 16 + low;
+                if value > 0x7f {
+                    return None;
+                }
+                char::from_u32(value)?
+            }
+            'u' => {
+                if characters.next()? != '{' {
+                    return None;
+                }
+                let mut value = characters.next()?.to_digit(16)?;
+                let mut digits = 1;
+                loop {
+                    match characters.next()? {
+                        '}' => break,
+                        '_' => {}
+                        character => {
+                            digits += 1;
+                            if digits > 6 {
+                                return None;
+                            }
+                            value = value * 16 + character.to_digit(16)?;
+                        }
+                    }
+                }
+                char::from_u32(value)?
+            }
+            newline @ ('\n' | '\r') => {
+                if newline == '\r' && characters.next()? != '\n' {
+                    return None;
+                }
+                while characters
+                    .peek()
+                    .is_some_and(|character| matches!(character, ' ' | '\t' | '\n' | '\r'))
+                {
+                    characters.next();
+                }
+                continue;
+            }
+            _ => return None,
+        };
+        result.push(escaped);
+    }
+    Some(result)
 }

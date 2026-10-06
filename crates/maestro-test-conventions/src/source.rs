@@ -71,6 +71,14 @@ pub(crate) fn tokens(source: &str) -> Vec<Token<'_>> {
             continue;
         }
         let start = index;
+        let raw_identifier = source[index..].starts_with("r#")
+            && source[index + 2..]
+                .chars()
+                .next()
+                .is_some_and(|character| character.is_alphabetic() || character == '_');
+        if raw_identifier {
+            index += 2;
+        }
         let character = source[index..]
             .chars()
             .next()
@@ -89,7 +97,7 @@ pub(crate) fn tokens(source: &str) -> Vec<Token<'_>> {
         }
         if !character.is_whitespace() {
             result.push(Token {
-                text: &source[start..index],
+                text: &source[if raw_identifier { start + 2 } else { start }..index],
                 start,
             });
         }

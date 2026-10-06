@@ -44,7 +44,8 @@ library-name list is not a general library classifier.
 
 Rust member files, including files outside `src/`, are traversed while skipping
 `target/` and `.git/`. A shared lexer ignores comments and literals when checking
-real type/module declarations. Tool definition/render-context/result-option types
+real type/module declarations, normalizing raw identifiers (`r#name`) to their
+ordinary names. Tool definition/render-context/result-option types
 belong to tools; application selector types and selector modules belong to chat.
 Qualified uses and re-exports are not declarations. Duplicate tool declarations
 are rejected. Planning references in comments retain their separate policy and
@@ -52,8 +53,11 @@ line-accurate diagnostics.
 
 WIT checks recognize actual `wit_bindgen::generate!` and
 `wasmtime::component::bindgen!` declarations. A `path:` may be a static string or
-array of static strings; a shorthand string macro argument is also recognized.
-Paths resolve relative to the declaring member's Cargo manifest. Every input must
+array of static strings. Cooked strings use Rust escapes (including hexadecimal,
+Unicode and line continuations); raw strings keep their literal contents.
+A shorthand string macro argument names a world and
+reads the declaring member's default `wit/` directory, not a path named by the
+string. Paths resolve relative to the declaring member's Cargo manifest. Every input must
 exist inside the canonical guest-authoring member directory, not a copied host
 tree. Directory inputs are roots; file inputs use their containing directory.
 When host and guest both declare inputs, their canonical root sets must agree;
