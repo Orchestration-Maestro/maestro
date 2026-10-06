@@ -95,7 +95,7 @@ impl Runtime for Native {
         #[cfg(windows)]
         {
             use std::os::windows::fs::OpenOptionsExt;
-            options.custom_flags(0x02000000);
+            options.access_mode(0x100).custom_flags(0x02000000);
         }
         let stamp = UNIX_EPOCH + Duration::from_millis(time as u64);
         Ok(options.open(path)?.set_times(

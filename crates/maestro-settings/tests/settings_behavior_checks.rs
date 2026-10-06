@@ -5,21 +5,126 @@ use std::sync::Arc;
 use support::*;
 
 #[test]
+fn prototype_named_unknown_key_has_no_theme_fallback_and_round_trips() {
+    let (m, s, q) = seeded(json!({}), json!({"__proto__":{"theme":"dark"}}));
+    assert_eq!(m.get_theme(), None);
+    m.set_project_extension_paths(vec![]);
+    q.drive();
+    block_on(m.flush());
+    assert!(m.drain_errors().is_empty());
+    assert_eq!(m.get_theme(), None);
+    assert_eq!(
+        disk(s.as_ref(), SettingsScope::Project),
+        json!({"__proto__":{"theme":"dark"},"extensions":[]})
+    );
+}
+
+#[test]
+fn deeply_nested_unknown_objects_load_and_save_unchanged() {
+    for depth in [130, 4379] {
+        nested_unknown_objects_round_trip(depth);
+    }
+}
+
+#[test]
+fn reference_depth_raw_snapshot_drops_on_default_test_stack() {
+    std::thread::spawn(|| {
+        let text = format!("{}{{}}{}", "{\"unknown\":".repeat(4379), "}".repeat(4379));
+        let (m, s, _) = empty();
+        put(s.as_ref(), SettingsScope::Global, &text);
+        block_on(m.reload());
+        assert!(m.drain_errors().is_empty());
+        drop(m.get_global_settings());
+    })
+    .join()
+    .unwrap();
+}
+
+#[test]
+fn beyond_reference_nesting_saves_without_stack_overflow() {
+    nested_unknown_objects_round_trip(10000);
+}
+
+fn nested_unknown_objects_round_trip(depth: usize) {
+    let mut text = String::new();
+    for level in 0..depth {
+        text.push_str("{\n");
+        text.push_str(&"  ".repeat(level + 1));
+        text.push_str("\"unknown\": ");
+    }
+    text.push_str("{}");
+    for level in (0..depth).rev() {
+        text.push('\n');
+        text.push_str(&"  ".repeat(level));
+        text.push('}');
+    }
+    let (m, s, q) = empty();
+    put(s.as_ref(), SettingsScope::Global, &text);
+    block_on(m.reload());
+    assert!(m.drain_errors().is_empty());
+    m.set_enabled_models(None);
+    q.drive();
+    block_on(m.flush());
+    assert!(m.drain_errors().is_empty());
+    assert_eq!(raw(s.as_ref(), SettingsScope::Global).unwrap(), text);
+}
+
+#[test]
+fn very_deep_compact_settings_load_clone_reload_and_drop() {
+    let depth = 100000;
+    let text = format!("{}{{}}{}", "{\"unknown\":".repeat(depth), "}".repeat(depth));
+    let (m, s, _) = empty();
+    put(s.as_ref(), SettingsScope::Global, &text);
+    block_on(m.reload());
+    assert!(m.drain_errors().is_empty());
+    let mut snapshot = m.get_global_settings();
+    for _ in 0..depth {
+        snapshot = snapshot
+            .as_object_mut()
+            .unwrap()
+            .shift_remove("unknown")
+            .unwrap();
+    }
+    assert_eq!(snapshot, json!({}));
+    block_on(m.reload());
+    assert!(m.drain_errors().is_empty());
+    drop(m);
+}
+
+#[test]
+fn decimal_getter_and_save_preserve_exact_binary64_spelling() {
+    let (m, s, q) = empty();
+    let text = "{\n  \"editorPaddingX\": 51.248178375505404\n}";
+    put(s.as_ref(), SettingsScope::Global, text);
+    block_on(m.reload());
+    assert_eq!(m.get_editor_padding_x(), 51.248178375505404);
+    m.set_enabled_models(None);
+    q.drive();
+    assert!(m.drain_errors().is_empty());
+    assert_eq!(raw(s.as_ref(), SettingsScope::Global).unwrap(), text);
+}
+
+#[test]
 fn fresh_enabled_models_survive_thinking_save() {
-    let (m, s, q) = seeded(json!({"enabledModels":["old"]}), json!({}));
+    let (m, s, q) = seeded(
+        json!({"theme":"dark","defaultModel":"claude-sonnet","enabledModels":["old"]}),
+        json!({}),
+    );
     put(
         s.as_ref(),
         SettingsScope::Global,
-        r#"{"enabledModels":["fresh"]}"#,
+        r#"{"theme":"dark","defaultModel":"claude-sonnet","enabledModels":["fresh"]}"#,
     );
     m.set_default_thinking_level("high".into());
     q.drive();
     block_on(m.flush());
     assert_eq!(
         disk(s.as_ref(), SettingsScope::Global),
-        json!({"enabledModels":["fresh"],"defaultThinkingLevel":"high"})
+        json!({"theme":"dark","defaultModel":"claude-sonnet","enabledModels":["fresh"],"defaultThinkingLevel":"high"})
     );
     assert_eq!(m.get_default_thinking_level().as_deref(), Some("high"));
+    assert_eq!(m.get_theme().as_deref(), Some("dark"));
+    assert_eq!(m.get_default_model().as_deref(), Some("claude-sonnet"));
 }
 
 #[test]

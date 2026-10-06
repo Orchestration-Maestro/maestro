@@ -8,6 +8,20 @@ use std::sync::Arc;
 use support::*;
 
 #[test]
+fn native_first_acquisition_sets_directory_timestamp_and_releases() {
+    let scratch = Scratch::new();
+    let storage = scratch.storage();
+    storage
+        .with_lock(SettingsScope::Global, &mut |text| {
+            assert_eq!(text, None);
+            Ok(Some("{}".into()))
+        })
+        .unwrap();
+    assert!(scratch.root.join("user/settings.json").is_file());
+    assert!(!scratch.root.join("user/settings.json.lock").exists());
+}
+
+#[test]
 fn project_read_does_not_create_directory() {
     let scratch = Scratch::new();
     let m = SettingsManager::create(

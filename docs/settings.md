@@ -11,6 +11,16 @@ install packages, discover resources, select models or contact telemetry service
 Unknown keys and wrong-typed values remain present. Each typed getter treats a
 wrong JSON type as unset and applies its own fallback; reads do not write defaults.
 Collection reads are owned copies. Change preferences through setters.
+The key `__proto__` is an ordinary unknown key, not a fallback for typed reads.
+
+Settings parsing has no fixed nesting limit. Native recursive processing grows
+its stack as needed; manager-owned trees are torn down iteratively. Raw snapshots
+remain ordinary `serde_json::Value` values: callers handling very deep snapshots
+must also dismantle objects and arrays iteratively before dropping them, rather
+than relying on the value's recursive destructor. Two-space pretty output is
+retained at every depth. Very deep saves are bounded by available memory, since
+indentation grows quadratically for a single-child chain and storage receives
+one complete output string.
 Package object and warning records retain their original `property_order` through
 typed getter/setter round-trips; additional properties stay in `extra`. New records
 can use an empty property order to serialize their supplied fields in insertion

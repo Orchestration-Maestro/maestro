@@ -1,11 +1,68 @@
 use super::{Map, Value};
+use serde::Deserialize;
+// Use the same stack-growth parameters as the deserialization adapter.
+fn grow<T>(operation: impl FnOnce() -> T) -> T {
+    stacker::maybe_grow(64 * 1024, 2 * 1024 * 1024, operation)
+}
+pub(super) fn clone(value: &Value) -> Value {
+    grow(|| match value {
+        Value::Array(array) => Value::Array(array.iter().map(clone).collect()),
+        Value::Object(map) => Value::Object(clone_map(map)),
+        value => value.clone(),
+    })
+}
+pub(super) fn clone_map(map: &Map<String, Value>) -> Map<String, Value> {
+    map.iter()
+        .map(|(key, value)| (key.clone(), clone(value)))
+        .collect()
+}
+pub(super) fn teardown(value: Value) {
+    let mut pending = vec![value];
+    while let Some(value) = pending.pop() {
+        match value {
+            Value::Array(array) => pending.extend(array),
+            Value::Object(map) => pending.extend(map.into_values()),
+            _ => (),
+        }
+    }
+}
+pub(super) fn replace(target: &mut Value, value: Value) {
+    teardown(std::mem::replace(target, value));
+}
+pub(super) fn insert(map: &mut Map<String, Value>, key: String, value: Value) {
+    if let Some(old) = map.insert(key, value) {
+        teardown(old);
+    }
+}
+pub(super) fn remove(map: &mut Map<String, Value>, key: &str) {
+    if let Some(old) = map.shift_remove(key) {
+        teardown(old);
+    }
+}
+pub(super) struct Owned(pub(super) Value);
+impl std::ops::Deref for Owned {
+    type Target = Value;
+    fn deref(&self) -> &Value {
+        &self.0
+    }
+}
+impl std::ops::DerefMut for Owned {
+    fn deref_mut(&mut self) -> &mut Value {
+        &mut self.0
+    }
+}
+impl Drop for Owned {
+    fn drop(&mut self) {
+        teardown(std::mem::take(&mut self.0));
+    }
+}
 pub(super) fn spread(value: &Value) -> Map<String, Value> {
     match value {
-        Value::Object(map) => map.clone(),
+        Value::Object(map) => clone_map(map),
         Value::Array(array) => array
             .iter()
             .enumerate()
-            .map(|(i, v)| (i.to_string(), v.clone()))
+            .map(|(i, v)| (i.to_string(), clone(v)))
             .collect(),
         Value::String(s) => s
             .encode_utf16()
@@ -21,11 +78,14 @@ pub(super) fn merge(base: &Value, overrides: &Value) -> Value {
         if let (Some(base), Some(over)) =
             (base.get(&key).and_then(Value::as_object), value.as_object())
         {
-            let mut merged = base.clone();
-            merged.extend(over.clone());
-            result.insert(key, Value::Object(merged));
+            let mut merged = clone_map(base);
+            for (key, value) in over {
+                insert(&mut merged, key.clone(), clone(value));
+            }
+            teardown(value);
+            insert(&mut result, key, Value::Object(merged));
         } else {
-            result.insert(key, value);
+            insert(&mut result, key, value);
         }
     }
     Value::Object(result)
@@ -43,7 +103,7 @@ pub(super) fn convert(mut value: Value) -> Result<Value, super::Error> {
         if !map.contains_key("steeringMode")
             && let Some(queue) = map.shift_remove("queueMode")
         {
-            map.insert("steeringMode".into(), queue);
+            insert(map, "steeringMode".into(), queue);
         }
         if !map.contains_key("transport")
             && let Some(enabled) = map.get("websockets").and_then(Value::as_bool)
@@ -52,22 +112,28 @@ pub(super) fn convert(mut value: Value) -> Result<Value, super::Error> {
                 "transport".into(),
                 Value::String(if enabled { "websocket" } else { "sse" }.into()),
             );
-            map.shift_remove("websockets");
+            remove(map, "websockets");
         }
-        if let Some(skills) = map.get("skills").and_then(Value::as_object).cloned() {
+        if let Some(skills) = map.get("skills").and_then(Value::as_object).map(clone_map) {
+            let skills = Owned(Value::Object(skills));
+            let skills = skills.as_object().unwrap();
             if !map.contains_key("enableSkillCommands")
                 && let Some(enabled) = skills.get("enableSkillCommands")
             {
-                map.insert("enableSkillCommands".into(), enabled.clone());
+                insert(map, "enableSkillCommands".into(), clone(enabled));
             }
             if let Some(dirs) = skills
                 .get("customDirectories")
                 .and_then(Value::as_array)
                 .filter(|a| !a.is_empty())
             {
-                map.insert("skills".into(), Value::Array(dirs.clone()));
+                insert(
+                    map,
+                    "skills".into(),
+                    Value::Array(dirs.iter().map(clone).collect()),
+                );
             } else {
-                map.shift_remove("skills");
+                remove(map, "skills");
             }
         }
         if let Some(retry) = map.get_mut("retry").and_then(Value::as_object_mut) {
@@ -80,10 +146,12 @@ pub(super) fn convert(mut value: Value) -> Result<Value, super::Error> {
                 && let Some(delay) = retry.get("maxDelayMs").filter(|v| v.is_number()).cloned()
             {
                 let mut provider = provider;
-                provider.insert("maxRetryDelayMs".into(), delay);
-                retry.insert("provider".into(), Value::Object(provider));
+                insert(&mut provider, "maxRetryDelayMs".into(), delay);
+                insert(retry, "provider".into(), Value::Object(provider));
+            } else {
+                teardown(Value::Object(provider));
             }
-            retry.shift_remove("maxDelayMs");
+            remove(retry, "maxDelayMs");
         }
     }
     Ok(value)
@@ -157,7 +225,7 @@ fn array_index(key: &str) -> Option<u32> {
 }
 pub(super) fn stringify(value: &Value) -> String {
     fn write(value: &Value, depth: usize, out: &mut String) {
-        match value {
+        grow(|| match value {
             Value::Number(number) => {
                 let number = number.as_f64().unwrap();
                 if number == 0.0 {
@@ -200,7 +268,7 @@ pub(super) fn stringify(value: &Value) -> String {
                 out.push(']');
             }
             value => out.push_str(&serde_json::to_string(value).unwrap()),
-        }
+        });
     }
     let mut out = String::new();
     write(value, 0, &mut out);
@@ -208,7 +276,7 @@ pub(super) fn stringify(value: &Value) -> String {
 }
 pub(super) fn parse(text: &str) -> Result<Value, super::Error> {
     fn doubles(value: &mut Value) {
-        match value {
+        grow(|| match value {
             Value::Number(number) => {
                 let n = number.as_f64().unwrap();
                 *value = if n.fract() == 0.0
@@ -224,9 +292,15 @@ pub(super) fn parse(text: &str) -> Result<Value, super::Error> {
             Value::Array(array) => array.iter_mut().for_each(doubles),
             Value::Object(map) => map.values_mut().for_each(doubles),
             _ => (),
-        }
+        });
     }
-    let mut value = serde_json::from_str(text)?;
+    let mut deserializer = serde_json::Deserializer::from_str(text);
+    deserializer.disable_recursion_limit();
+    let mut value = Value::deserialize(serde_stacker::Deserializer::new(&mut deserializer))?;
+    if let Err(error) = deserializer.end() {
+        teardown(value);
+        return Err(error.into());
+    }
     doubles(&mut value);
     Ok(value)
 }

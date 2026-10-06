@@ -12,6 +12,11 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 type Operation<'a> = dyn FnMut(Option<&str>) -> Result<Option<String>, Error> + 'a;
 type Spawn = Arc<dyn Fn(Pin<Box<dyn Future<Output = ()> + Send + 'static>>) + Send + Sync>;
 /// Raw scoped preference values, including unknown properties.
+///
+/// Very deep caller-owned trees must be dismantled iteratively before dropping
+/// them: the underlying value's destructor is recursive. Manager-owned trees
+/// use iterative teardown. Pretty saves retain two-space indentation at every
+/// depth and are bounded by memory for their complete output string.
 pub type Settings = Value;
 /// A preference storage scope.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -132,6 +137,23 @@ struct State {
     errors: Vec<SettingsError>,
     tail: Arc<Completion>,
 }
+impl Drop for State {
+    fn drop(&mut self) {
+        for scope in &mut self.scopes {
+            value::teardown(std::mem::take(scope));
+        }
+        value::teardown(std::mem::take(&mut self.effective));
+        for map in &mut self.root_properties {
+            value::teardown(Value::Object(std::mem::take(map)));
+        }
+        for (_, item) in std::mem::take(&mut self.named) {
+            value::teardown(item);
+        }
+        for (_, item) in std::mem::take(&mut self.effective_named) {
+            value::teardown(item);
+        }
+    }
+}
 /// Owns accepted preferences, immediate publication and an ordered write queue.
 /// The supplied executor must defer polling until after the setter returns and
 /// must drive jobs independently of `flush`. Clones share one cache and queue.
@@ -196,7 +218,7 @@ impl SettingsManager {
     }
     /// Clones a seed into raw in-memory storage before loading it.
     pub fn in_memory(settings: Settings, spawn: Spawn) -> Result<Self, Error> {
-        let settings = value::convert(settings)?;
+        let settings = value::Owned(value::convert(settings)?);
         let storage = Arc::new(InMemorySettingsStorage::new());
         storage.with_lock(SettingsScope::Global, &mut |_| {
             Ok(Some(value::stringify(&settings)))
@@ -204,12 +226,14 @@ impl SettingsManager {
         Ok(Self::from_storage(storage, spawn))
     }
     /// Returns a detached global snapshot. Nonfinite setter values appear as null.
+    /// See [`Settings`] for the teardown obligation of very deep raw snapshots.
     pub fn get_global_settings(&self) -> Settings {
-        self.state.lock().unwrap().scopes[0].clone()
+        value::clone(&self.state.lock().unwrap().scopes[0])
     }
     /// Returns a detached project snapshot.
+    /// See [`Settings`] for the teardown obligation of very deep raw snapshots.
     pub fn get_project_settings(&self) -> Settings {
-        self.state.lock().unwrap().scopes[1].clone()
+        value::clone(&self.state.lock().unwrap().scopes[1])
     }
     /// Waits for the captured queue tail; does not start queued jobs.
     pub async fn flush(&self) {
@@ -224,11 +248,15 @@ impl SettingsManager {
             let mut state = self.state.lock().unwrap();
             match loaded {
                 Ok(value) => {
-                    state.scopes[scope.index()] = value;
-                    state.root_properties[scope.index()].clear();
+                    value::replace(&mut state.scopes[scope.index()], value);
+                    value::teardown(Value::Object(std::mem::take(
+                        &mut state.root_properties[scope.index()],
+                    )));
                     if scope == SettingsScope::Global {
                         state.numbers.clear();
-                        state.named.clear();
+                        for (_, item) in std::mem::take(&mut state.named) {
+                            value::teardown(item);
+                        }
                     }
                     state.failed[scope.index()] = false;
                 }
@@ -245,8 +273,13 @@ impl SettingsManager {
         state.modified = Default::default();
         publish(&mut state);
     }
-    fn read(&self, key: &str) -> Option<Value> {
-        self.state.lock().unwrap().effective.get(key).cloned()
+    fn read(&self, key: &str) -> Option<value::Owned> {
+        self.state
+            .lock()
+            .unwrap()
+            .effective
+            .get(key)
+            .map(|item| value::Owned(value::clone(item)))
     }
     fn set_nested(&self, field: &str, child: &str, value: Value) -> Result<(), Error> {
         let job = {
@@ -285,18 +318,18 @@ impl SettingsManager {
         }
         Ok(())
     }
-    fn nested(&self, field: &str, child: &str) -> Option<Value> {
+    fn nested(&self, field: &str, child: &str) -> Option<value::Owned> {
         let state = self.state.lock().unwrap();
         if state.effective.get(field).is_some_and(Value::is_array)
             && state.scopes[1].get(field).is_none()
             && let Some(v) = state.effective_named.get(&(field.into(), child.into()))
         {
-            return Some(v.clone());
+            return Some(value::Owned(value::clone(v)));
         }
         state
             .effective
             .get(field)
-            .and_then(|v| v.get(child).cloned())
+            .and_then(|v| v.get(child).map(|item| value::Owned(value::clone(item))))
     }
     fn set(&self, scope: SettingsScope, key: &str, value: Option<Value>) {
         self.set_value(scope, key, value, None);
@@ -320,9 +353,9 @@ impl SettingsManager {
                 state.scopes[i].as_object_mut().unwrap()
             };
             if let Some(value) = value {
-                map.insert(key.into(), value);
+                value::insert(map, key.into(), value);
             } else {
-                map.shift_remove(key);
+                value::remove(map, key);
             }
             state.modified[i].mark(key, None);
             capture_write(&mut state, scope)
@@ -338,14 +371,15 @@ impl SettingsManager {
     ) {
         let storage = self.storage.clone();
         let state = self.state.clone();
+        let snapshot = value::Owned(snapshot);
         (self.spawn)(Box::pin(async move {
             Wait(previous).await;
             let result = storage.with_lock(scope, &mut |text| {
-                let current: Value = match text.filter(|s| !s.is_empty()) {
+                let current = value::Owned(match text.filter(|s| !s.is_empty()) {
                     Some(s) => value::convert(value::parse(s)?)?,
                     None => empty(),
-                };
-                let mut current = Value::Object(value::spread(&current));
+                });
+                let mut current = value::Owned(Value::Object(value::spread(&current)));
                 let object = current.as_object_mut().unwrap();
                 for field in &modified.fields {
                     if let Some(children) = modified.nested.get(field)
@@ -356,16 +390,16 @@ impl SettingsManager {
                         let mut nested = object.get(field).map(value::spread).unwrap_or_default();
                         for child in children {
                             if let Some(v) = value.get(child) {
-                                nested.insert(child.clone(), v.clone());
+                                value::insert(&mut nested, child.clone(), value::clone(v));
                             } else {
                                 nested.shift_remove(child);
                             }
                         }
-                        object.insert(field.clone(), Value::Object(nested));
+                        value::insert(object, field.clone(), Value::Object(nested));
                     } else if let Some(value) = snapshot.get(field) {
-                        object.insert(field.clone(), value.clone());
+                        value::insert(object, field.clone(), value::clone(value));
                     } else {
-                        object.shift_remove(field);
+                        value::remove(object, field);
                     }
                 }
                 Ok(Some(value::stringify(&current)))
@@ -436,11 +470,14 @@ impl SettingsManager {
     /// Applies ephemeral one-level overrides without persisting them.
     pub fn apply_overrides(&self, overrides: Settings) {
         let mut state = self.state.lock().unwrap();
-        for key in value::spread(&overrides).keys() {
+        let keys = value::Owned(Value::Object(value::spread(&overrides)));
+        for key in keys.as_object().unwrap().keys() {
             state.effective_numbers.remove(key);
             state.effective_named.retain(|(field, _), _| field != key);
         }
-        state.effective = value::merge(&state.effective, &overrides);
+        let effective = value::merge(&state.effective, &overrides);
+        value::replace(&mut state.effective, effective);
+        value::teardown(overrides);
     }
     /// Returns provider defaults without synthesizing them in raw storage.
     pub fn get_provider_retry_settings(&self) -> ProviderRetrySettings {
@@ -781,7 +818,7 @@ impl SettingsManager {
     }
     /// Returns a detached command argument vector when all members are strings.
     pub fn get_npm_command(&self) -> Option<Vec<String>> {
-        self.read("npmCommand").as_ref().and_then(value::strings)
+        self.read("npmCommand").as_deref().and_then(value::strings)
     }
     /// Publishes a command argument vector or omits its raw property.
     pub fn set_npm_command(&self, command: Option<Vec<String>>) {
@@ -826,7 +863,7 @@ impl PackageSource {
         if let Some(s) = v.as_str() {
             return Some(Self::String(s.into()));
         }
-        let mut extra = v.as_object()?.clone();
+        let mut extra = value::clone_map(v.as_object()?);
         let property_order = extra.keys().cloned().collect();
         let source = extra.shift_remove("source")?.as_str()?.to_owned();
         fn list(map: &mut Map<String, Value>, key: &str) -> Option<Option<Vec<String>>> {
@@ -913,7 +950,7 @@ impl SettingsManager {
     /// Returns detached effective extension paths.
     pub fn get_extension_paths(&self) -> Vec<String> {
         self.read("extensions")
-            .as_ref()
+            .as_deref()
             .and_then(value::strings)
             .unwrap_or_default()
     }
@@ -936,7 +973,7 @@ impl SettingsManager {
     /// Returns detached effective skill paths.
     pub fn get_skill_paths(&self) -> Vec<String> {
         self.read("skills")
-            .as_ref()
+            .as_deref()
             .and_then(value::strings)
             .unwrap_or_default()
     }
@@ -959,7 +996,7 @@ impl SettingsManager {
     /// Returns detached effective prompt template paths.
     pub fn get_prompt_template_paths(&self) -> Vec<String> {
         self.read("prompts")
-            .as_ref()
+            .as_deref()
             .and_then(value::strings)
             .unwrap_or_default()
     }
@@ -982,7 +1019,7 @@ impl SettingsManager {
     /// Returns detached effective theme paths.
     pub fn get_theme_paths(&self) -> Vec<String> {
         self.read("themes")
-            .as_ref()
+            .as_deref()
             .and_then(value::strings)
             .unwrap_or_default()
     }
@@ -1140,9 +1177,9 @@ impl SettingsManager {
 impl SettingsManager {
     /// Returns an explicit clear-on-shrink value; null is false, absence uses the environment.
     pub fn get_clear_on_shrink(&self) -> bool {
-        match self.nested("terminal", "clearOnShrink") {
+        match self.nested("terminal", "clearOnShrink").as_deref() {
             Some(Value::Null) => false,
-            Some(Value::Bool(value)) => value,
+            Some(Value::Bool(value)) => *value,
             _ => std::env::var("MAESTRO_CLEAR_ON_SHRINK").as_deref() == Ok("1"),
         }
     }
@@ -1256,7 +1293,9 @@ pub struct WarningSettings {
 impl SettingsManager {
     /// Returns detached model patterns when all members have the declared type.
     pub fn get_enabled_models(&self) -> Option<Vec<String>> {
-        self.read("enabledModels").as_ref().and_then(value::strings)
+        self.read("enabledModels")
+            .as_deref()
+            .and_then(value::strings)
     }
     /// Replaces or omits global model patterns.
     pub fn set_enabled_models(&self, patterns: Option<Vec<String>>) {
@@ -1269,7 +1308,7 @@ impl SettingsManager {
     /// Returns detached typed thinking budgets, leaving malformed raw members unchanged.
     pub fn get_thinking_budgets(&self) -> Option<ThinkingBudgetsSettings> {
         let value = self.read("thinkingBudgets")?;
-        let mut extra = value.as_object()?.clone();
+        let mut extra = value::clone_map(value.as_object()?);
         Some(ThinkingBudgetsSettings {
             minimal: extra.shift_remove("minimal").and_then(|v| v.as_f64()),
             low: extra.shift_remove("low").and_then(|v| v.as_f64()),
@@ -1282,7 +1321,7 @@ impl SettingsManager {
     pub fn get_warnings(&self) -> WarningSettings {
         let mut extra = self
             .read("warnings")
-            .and_then(|v| v.as_object().cloned())
+            .and_then(|v| v.as_object().map(value::clone_map))
             .unwrap_or_default();
         WarningSettings {
             property_order: extra.keys().cloned().collect(),
@@ -1311,27 +1350,34 @@ impl SettingsManager {
 fn projected(state: &State, i: usize) -> Value {
     if state.scopes[i].is_array() {
         let mut properties = value::spread(&state.scopes[i]);
-        properties.extend(state.root_properties[i].clone());
+        for (key, item) in &state.root_properties[i] {
+            value::insert(&mut properties, key.clone(), value::clone(item));
+        }
         Value::Object(properties)
     } else {
-        state.scopes[i].clone()
+        value::clone(&state.scopes[i])
     }
 }
 fn publish(state: &mut State) {
-    let project = projected(state, 1);
+    let project = value::Owned(projected(state, 1));
     state.effective_numbers = state
         .numbers
         .iter()
         .filter(|(key, _)| project.get(*key).is_none())
         .map(|(key, v)| (key.clone(), *v))
         .collect();
+    for (_, item) in std::mem::take(&mut state.effective_named) {
+        value::teardown(item);
+    }
     state.effective_named = state
         .named
         .iter()
         .filter(|((field, _), _)| project.get(field).is_none())
-        .map(|(key, v)| (key.clone(), v.clone()))
+        .map(|(key, v)| (key.clone(), value::clone(v)))
         .collect();
-    state.effective = value::merge(&projected(state, 0), &project);
+    let global = value::Owned(projected(state, 0));
+    let effective = value::merge(&global, &project);
+    value::replace(&mut state.effective, effective);
 }
 
 fn captured(state: &State, i: usize) -> Value {
@@ -1342,7 +1388,7 @@ fn captured(state: &State, i: usize) -> Value {
                 raw[field] = Value::Object(value::spread(&raw[field]));
             }
             if let Some(map) = raw.get_mut(field).and_then(Value::as_object_mut) {
-                map.insert(child.clone(), value.clone());
+                value::insert(map, child.clone(), value::clone(value));
             }
         }
     }
