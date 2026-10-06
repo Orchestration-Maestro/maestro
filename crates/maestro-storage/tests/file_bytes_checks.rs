@@ -62,7 +62,9 @@ fn directory_names_and_modification_time_are_separate() {
         maestro_storage::FileStorage
             .write_file(&file, b"raw")
             .unwrap();
-        std::fs::File::open(&file)
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&file)
             .unwrap()
             .set_times(std::fs::FileTimes::new().set_modified(expected))
             .unwrap();
