@@ -17,6 +17,31 @@ fn poll<F: std::future::Future + ?Sized>(
 }
 
 #[test]
+fn retained_read_keeps_delivery_after_all_handles_drop() {
+    let stream = queue();
+    let producer = stream.clone();
+    let mut cursor = stream.iter();
+    let mut read = cursor.next();
+    producer.push(1).unwrap();
+    drop(cursor);
+    drop(stream);
+    drop(producer);
+    assert_eq!(poll(&mut read), std::task::Poll::Ready(Some(1)));
+}
+
+#[test]
+fn retained_undelivered_read_stays_pending_after_all_handles_drop() {
+    let stream = queue();
+    let producer = stream.clone();
+    let mut cursor = stream.iter();
+    let mut read = cursor.next();
+    drop(cursor);
+    drop(stream);
+    drop(producer);
+    assert!(poll(&mut read).is_pending());
+}
+
+#[test]
 fn abandoned_pending_reads_release_queue_and_wakers() {
     struct Tracked(std::sync::atomic::AtomicUsize);
     impl std::task::Wake for Tracked {

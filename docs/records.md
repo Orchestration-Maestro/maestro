@@ -73,8 +73,11 @@ objects nested in arrays.
 
 Native generic event and result types must be `Clone + Send + Sync`; browser
 types require `Clone` only. Observations clone stored values after releasing the
-promise and queue locks. Abandoned reads reserve their deliveries while handles
-remain alive, but retain no queue ownership after all handles are dropped.
+promise and queue locks. Retained read futures keep their continuation state
+alive and resolve delivered events even after every cursor and producer handle
+is dropped. Without a delivered event, such a read remains pending. Abandoned
+reads reserve their deliveries while handles remain alive, but retain no queue
+ownership after all handles and read futures are dropped.
 Terminal pushes mark logical completion before extracting the result. A fresh
 read during extraction sees EOF when no events are queued; a previously
 registered consumer still receives the terminal event, then EOF. An exhausted

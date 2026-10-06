@@ -206,6 +206,7 @@ impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
     /// Request an owned read eagerly when the preceding read has settled.
     /// Polling any read or result advances this stream's scheduled continuations.
     /// Dropping an observation does not cancel its reserved delivery.
+    /// A retained observation keeps delivered events after all handles are dropped.
     #[expect(
         clippy::should_implement_trait,
         reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
@@ -240,7 +241,8 @@ impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
                 request(&self.queue, &delivery);
             }
         }
-        Box::pin(Read(promise, driver(&self.queue)))
+        let queue = self.queue.clone();
+        Box::pin(Read(promise, Box::new(move |cx| advance(&queue, cx))))
     }
 }
 #[cfg(target_arch = "wasm32")]
@@ -343,6 +345,7 @@ impl<T: Clone + 'static> AsyncIterator<T> {
     /// Request an owned read eagerly when the preceding read has settled.
     /// Polling any read or result advances this stream's scheduled continuations.
     /// Dropping an observation does not cancel its reserved delivery.
+    /// A retained observation keeps delivered events after all handles are dropped.
     #[expect(
         clippy::should_implement_trait,
         reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
@@ -377,7 +380,8 @@ impl<T: Clone + 'static> AsyncIterator<T> {
                 request(&self.queue, &delivery);
             }
         }
-        Box::pin(Read(promise, driver(&self.queue)))
+        let queue = self.queue.clone();
+        Box::pin(Read(promise, Box::new(move |cx| advance(&queue, cx))))
     }
 }
 
