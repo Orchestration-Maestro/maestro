@@ -154,13 +154,13 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
             q.done |= result.is_some();
             if let Some(waiter) = q.waiting.pop_front() {
-                Some(Promise::publish(&waiter, event.take()))
+                Some(waiter)
             } else {
                 q.queue.push_back(event.take().unwrap());
                 None
             }
         };
-        let delivery = waiter;
+        let delivery = waiter.map(|waiter| Promise::publish(&waiter, event.take()));
         let settlement = result.map(|result| Promise::publish(&self.result, result));
         if let Some(delivery) = delivery {
             notify(delivery);
@@ -293,13 +293,13 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
             q.done |= result.is_some();
             if let Some(waiter) = q.waiting.pop_front() {
-                Some(Promise::publish(&waiter, event.take()))
+                Some(waiter)
             } else {
                 q.queue.push_back(event.take().unwrap());
                 None
             }
         };
-        let delivery = waiter;
+        let delivery = waiter.map(|waiter| Promise::publish(&waiter, event.take()));
         let settlement = result.map(|result| Promise::publish(&self.result, result));
         if let Some(delivery) = delivery {
             notify(delivery);
@@ -440,23 +440,23 @@ fn advance<T: Clone>(queue: &Arc<Mutex<Queue<T>>>, cx: &mut Context<'_>) {
                     request(queue, &delivery);
                 }
             }
+            let waker = cx.waker().clone();
             let value = {
                 let mut delivery = delivery.lock().unwrap_or_else(|p| p.into_inner());
-                if delivery.value.is_none()
-                    && !delivery.wakers.iter().any(|w| w.will_wake(cx.waker()))
+                if delivery.value.is_none() && !delivery.wakers.iter().any(|w| w.will_wake(&waker))
                 {
-                    delivery.wakers.push(cx.waker().clone());
+                    delivery.wakers.push(waker);
                 }
                 delivery.value.clone()
             };
             if let Some(value) = value {
-                let observation = {
+                let read = {
                     let mut state = cursor.lock().unwrap_or_else(|p| p.into_inner());
                     state.exhausted |= value.is_none();
-                    state.reads.pop_front().unwrap().observation
+                    state.reads.pop_front().unwrap()
                 };
                 progressed = true;
-                Promise::settle(&observation, (*value).clone());
+                Promise::settle(&read.observation, (*value).clone());
             }
             let mut state = cursor.lock().unwrap_or_else(|p| p.into_inner());
             if state.reads.is_empty() {

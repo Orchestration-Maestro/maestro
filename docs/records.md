@@ -73,7 +73,9 @@ objects nested in arrays.
 
 Native generic event and result types must be `Clone + Send + Sync`; browser
 types require `Clone` only. Observations clone stored values after releasing the
-promise and queue locks. Retained read futures keep their continuation state
+promise and queue locks. Waker cloning, notification and disposal also run
+outside stream locks, so these operations may reenter the stream.
+Retained read futures keep their continuation state
 alive and resolve delivered events even after every cursor and producer handle
 is dropped. Without a delivered event, such a read remains pending. Abandoned
 reads reserve their deliveries while handles remain alive, but retain no queue
