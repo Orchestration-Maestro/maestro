@@ -5,6 +5,8 @@
 Land a spec on `main` under `docs/specs/` first. Then use `/to-tickets`,
 `/implement` (with `/tdd`, then `/code-review`), `/pr`, and `/retro`.
 Issues link to the spec rather than copying it.
+The current foundation contract is [the Maestro specification](docs/specs/maestro-port.md).
+Deliver crate by crate; write each crate's tickets when that crate is reached.
 
 ## Checks
 
