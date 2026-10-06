@@ -14,6 +14,7 @@ pub struct Request {
 }
 
 pub struct RecordingProcess {
+    pub diagnostics: Vec<String>,
     pub git_head: String,
     pub requests: Vec<Request>,
     pub replies: VecDeque<Result<Value, String>>,
@@ -22,6 +23,7 @@ pub struct RecordingProcess {
 impl Default for RecordingProcess {
     fn default() -> Self {
         Self {
+            diagnostics: vec![],
             git_head: "trusted-head".into(),
             requests: vec![],
             replies: VecDeque::new(),
@@ -39,6 +41,9 @@ impl RecordingProcess {
 }
 
 impl Process for RecordingProcess {
+    fn diagnostic(&mut self, message: &str) {
+        self.diagnostics.push(message.into());
+    }
     fn output(
         &mut self,
         cwd: &Path,
@@ -62,7 +67,24 @@ impl Process for RecordingProcess {
         let response = self
             .replies
             .pop_front()
-            .expect("unexpected process operation")?;
+            .expect("unexpected process operation");
+        let response = match response {
+            Ok(value) => value,
+            Err(error) if error == "gh stderr" => {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::process::ExitStatusExt;
+                    return Ok(Output {
+                        status: ExitStatus::from_raw(256),
+                        stdout: vec![],
+                        stderr: b"  controlled gh failure\n".to_vec(),
+                    });
+                }
+                #[cfg(not(unix))]
+                return Err("controlled gh failure".into());
+            }
+            Err(error) => return Err(error),
+        };
         Ok(Output {
             status: ExitStatus::default(),
             stdout: serde_json::to_vec(&response).unwrap(),

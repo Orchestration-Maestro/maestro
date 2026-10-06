@@ -20,8 +20,8 @@ pub(super) fn approve(
         eprintln!("Commenter does not have write access");
         return Ok(status("skipped", None));
     }
-    let content =
-        std::fs::read_to_string(github.root.join(APPROVED_FILE)).map_err(|e| e.to_string())?;
+    let bytes = std::fs::read(github.root.join(APPROVED_FILE)).map_err(|e| e.to_string())?;
+    let content = String::from_utf8_lossy(&bytes);
     let mut users = parse_approved_users(&content, true);
     let author = e["issue"]["user"]["login"]
         .as_str()

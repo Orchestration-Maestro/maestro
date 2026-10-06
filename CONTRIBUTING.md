@@ -1,90 +1,89 @@
 # Contributing to Maestro
 
-## The one rule
+This guide exists to save both sides time.
 
-You must **understand your code**: explain what it does and how it interacts
-with the system. Generated code is welcome only when you understand it.
-Run your agent from the repository root so it discovers `AGENTS.md`.
+## The One Rule
 
-## Contribution gate
+**You must understand your code.** If you cannot explain what your changes do and how they interact with the rest of the system, your PR will be closed.
 
-New contributors' issues and PRs are auto-closed. Maintainers review
-closed issues daily and reopen worthwhile reports. Reports below the quality
-bar may receive neither reopening nor a reply.
+Using AI to write code is fine. Submitting AI-generated slop without understanding it is not.
 
-Authorized maintainer comments request approval:
+If you use an agent, run it from the repository root directory so it picks up `AGENTS.md` automatically. Your agent must follow the rules and guidelines in that file.
 
-- `lgtmi` requests future issue rights only.
-- `lgtm` requests future issue and PR rights.
+## Contribution Gate
 
-A changed approval becomes effective only after its protected approval PR has
-merged. An already-effective approval receives an immediate reply.
-`lgtmi` never grants PR rights. Write-level collaborators and bots are exempt
-from the issue/PR gates. Approval commands themselves have no bot exemption.
-See [repository policy](docs/repository_policy.md) for exact matching and timing.
+All issues and PRs from new contributors are auto-closed by default.
 
-The current policy has no weekend restriction, maintenance freeze or external
-help destination. Those are configurable data, not an assumed active schedule.
+Maintainers review auto-closed issues daily and reopen worthwhile ones. Issues that do not meet the quality bar below will not be reopened or receive a reply.
 
-## Report quality
+Approval happens through maintainer replies on issues:
 
-Use the bug or contribution proposal form. Keep the report on one screen,
-concrete and in your own voice. Include a reproducible bug or clear request,
-why it matters, and whether you intend to implement it. A maintainer may
-reopen, request approval, or decline; human judgment is final.
+- `lgtmi`: your future issues will not be auto-closed
+- `lgtm`: your future issues and PRs will not be auto-closed
 
-Ignoring this guide twice, spamming agent-generated reports or sending large
-volumes of automated issues can result in permanent account blocking by
-maintainers. The automation does not block accounts.
+`lgtmi` does not grant rights to submit PRs. Only `lgtm` grants rights to submit PRs.
 
-## Before submitting a PR
+## Quality Bar For Issues
 
-Obtain effective `lgtm` approval first. Read `AGENTS.md` and the linked spec.
-Run both commands with a credential-cleared, disposable HOME/config/temp/XDG
-child environment; do not move or delete your actual authentication files:
+If you open an issue, you must use one of the two GitHub issue templates.
 
-```sh
+If you open an issue, keep it short, concrete, and worth reading.
+
+- Keep it concise. If it does not fit on one screen, it is too long.
+- Write in your own voice.
+- State the bug or request clearly.
+- Explain why it matters.
+- If you want to implement the change yourself, say so.
+
+If the issue is real and written well, a maintainer may reopen it, reply `lgtmi`, or reply `lgtm`.
+
+## Blocking
+
+If you ignore this document twice, or if you spam the tracker with agent-generated issues, your GitHub account will be permanently blocked.
+
+If you send a large volume of issues through automation, your GitHub account will be permanently blocked. No taksies backsies.
+
+## Before Submitting a PR
+
+Do not open a PR unless you have already been approved with `lgtm`.
+
+Before submitting a PR:
+
+```bash
 just check
 just test
 ```
 
-Both must pass; shared `just ci` is the merge authority. Follow signed commits,
-protected PRs and the merge queue. Do not edit `CHANGELOG.md`: release automation
-creates it from conventional commits. See the provider checklist in `AGENTS.md`
-when contributing model protocols or providers.
+Both must pass.
 
-## Philosophy and questions
+Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
-Keep the core minimal. Prefer an extension for behavior outside the core's job.
-This repository currently publishes no external support destination; do not
-invent one or use the bug tracker for unrelated questions.
+If you are adding a new provider to `crates/maestro-models`, see `AGENTS.md` for required tests.
+
+## Philosophy
+
+Maestro's core is minimal. If your feature does not belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.
+
+## Questions?
 
 ## FAQ
 
-### Why auto-close new contributions?
+### Why are new issues and PRs auto-closed?
 
-The gate creates a review buffer rather than promising immediate review.
-Reproducible, thoughtfully written reports can be reopened on a maintainer's
-schedule. Submitting generated text without checking it transfers work to
-maintainers instead of helping them.
+Maestro receives more issues than the maintainers can responsibly review in real time. Many reports do not meet the quality bar in this guide or do not follow CONTRIBUTING.md. Some are slung at the repository mindlessly via an agent instead of being reviewed and shaped by the person submitting them. Auto-closing creates a buffer so maintainers can review the tracker on their own schedule and reopen the issues that meet the quality bar.
 
-### Why support a weekend route?
+### Why are weekend issues not reviewed?
 
-Maintainers need uninterrupted time away from triage. The mechanism can select
-configured UTC days and guidance, but the committed schedule is off. No weekend
-report is currently excluded from review by a special schedule.
+The weekend route is configurable and currently off.
 
 ### Why do some issues get no reply?
 
-Replies are maintenance work. Unclear reports, duplicates and low-signal text
-can be closed without discussion, leaving time for actionable bugs and requests.
+A reply is maintenance work too. Low-signal issues, unclear reports, duplicates, and issues that do not follow this guide may be closed without discussion. This keeps time available for reproducible bugs, thoughtful requests, and contributors who have done the work to make their report actionable.
 
-### Why not let automation make final decisions?
+### Why not let AI triage everything?
 
-Automation can summarize and group reports; polished output can still be wrong.
-Maintainers make the final human triage and approval decisions.
+AI can help group duplicates, summarize reports, and spot missing information. It is not trusted to make final maintainer decisions. Polished AI-generated issues can still be wrong, misleading, or expensive to investigate. Human review remains the final gate.
 
-### Are thoughtful contributions welcome?
+### Is this hostile to contributors?
 
-Yes. Short, concrete reports and understood changes are welcome. The gate limits
-burnout and spam; it does not replace maintainer review.
+No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.

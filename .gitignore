@@ -13,7 +13,6 @@ packages/*/dist-firefox/
 
 # Local environment and editor artifacts.
 .env
-.env.*
 .vscode/
 .zed/
 .idea/

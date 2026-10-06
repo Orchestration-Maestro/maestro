@@ -18,7 +18,9 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
                 return Ok(());
             }
         }
-        Err(_) => eprintln!("Could not read APPROVED_CONTRIBUTORS"),
+        Err(error) => github
+            .process
+            .diagnostic(&format!("Could not read APPROVED_CONTRIBUTORS: {error}")),
     }
     if collaborator(get_permission(github, author)) {
         eprintln!("{author} is a collaborator, passing");
@@ -61,12 +63,17 @@ pub(super) fn has_activity(github: &mut Github<'_>, repository: &str, author: &s
         json!({"q":format!("repo:{repository} author:{author}"),"per_page":1}),
     ) {
         Ok(data) if data["total_count"].as_u64().is_some_and(|count| count > 0) => {
-            eprintln!("{author} has activity on {repository}");
+            github.process.diagnostic(&format!(
+                "{author} has opened {} issues/PRs on {repository}",
+                data["total_count"]
+            ));
             true
         }
         Ok(_) => false,
-        Err(_) => {
-            eprintln!("Search failed");
+        Err(error) => {
+            github
+                .process
+                .diagnostic(&format!("Search failed: {error}"));
             false
         }
     }

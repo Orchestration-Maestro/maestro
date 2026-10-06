@@ -168,6 +168,41 @@ fn approval_parser_handles_case_whitespace_and_duplicates() {
 }
 
 #[test]
+fn approval_replaces_invalid_utf8_before_matching_existing_user() {
+    let w = fixture();
+    std::fs::write(
+        w.root.join(".github/APPROVED_CONTRIBUTORS"),
+        b"\xff\nAlice issue\n",
+    )
+    .unwrap();
+    let mut e = event("created");
+    e["comment"]["body"] = json!("lgtmi");
+    let mut p = RecordingProcess::default();
+    p.reply(json!({"permission":"write"}));
+    p.reply(json!({}));
+    assert_eq!(
+        run(
+            &w.root,
+            "approve-contributor",
+            "issue_comment",
+            &e.to_string(),
+            None,
+            &mut p
+        )
+        .unwrap(),
+        vec![
+            ("status".into(), "already".into()),
+            ("capability".into(), "issue".into())
+        ]
+    );
+    assert_eq!(p.requests.len(), 2);
+    assert_eq!(
+        p.requests[1].input.as_ref().unwrap()["body"],
+        "@Alice is already approved."
+    );
+}
+
+#[test]
 fn approval_addition_preserves_lines_and_newline() {
     let w = fixture();
     std::fs::write(
@@ -764,11 +799,25 @@ fn issue_dates_follow_utc_javascript_boundaries() {
         ("2026-10-08T25:00:00Z", None),
         ("not-date", None),
         ("2026-10-09T00:00:00", Some(5)),
+        ("2026-10-09T00:30+02:00", Some(4)),
+        ("2026-10-09T00:00Z", Some(5)),
+        ("2026-10-09T00:30", Some(5)),
+        ("2026-10", Some(4)),
+        ("2026", Some(4)),
+        ("+002026-10-09T00:00:00Z", Some(5)),
+        ("2026-10-09T00:00:00.1234Z", Some(5)),
+        ("2026-10-09t00:00:00z", Some(5)),
+        ("2026-10-09 00:00:00Z", Some(5)),
+        ("2026T00:00Z", Some(4)),
+        ("2026-10T00:00Z", Some(4)),
+        ("2026-10-09T00:00+0200", Some(4)),
+        ("2026-10-09 00:00+0200", Some(4)),
     ] {
         for selected in 0..=6 {
             policy_support::configure(&w, |v| {
                 v["issue_gate"]["weekend_days"] = json!([selected]);
                 v["issue_gate"]["weekend_labels"] = json!(["selected"]);
+                v["issue_gate"]["weekend_message"] = json!("Selected weekend guidance.");
             });
             let mut e = event("opened");
             e["issue"]["created_at"] = json!(date);
@@ -789,6 +838,17 @@ fn issue_dates_follow_utc_javascript_boundaries() {
                 &mut p,
             )
             .unwrap();
+            assert_eq!(
+                p.requests[2].input.as_ref().unwrap()["body"]
+                    .as_str()
+                    .unwrap()
+                    .contains("Selected weekend guidance."),
+                day == Some(selected),
+                "{date} guidance day {selected}"
+            );
+            if day == Some(selected) {
+                assert_eq!(p.requests[3].input, Some(json!({"labels":["selected"]})));
+            }
             assert_eq!(
                 p.requests.len(),
                 if day == Some(selected) { 5 } else { 4 },
@@ -874,7 +934,7 @@ fn activity_read_and_permission_failures_continue() {
     let w = fixture();
     for response in [None, Some(json!([])), Some(json!({"content":false}))] {
         let mut p = RecordingProcess::default();
-        if let Some(v) = response {
+        if let Some(v) = response.clone() {
             p.reply(v);
         } else {
             p.fail();
@@ -889,6 +949,17 @@ fn activity_read_and_permission_failures_continue() {
             &mut p,
         )
         .unwrap();
+        assert_eq!(
+            p.diagnostics,
+            vec![format!(
+                "Could not read APPROVED_CONTRIBUTORS: {}",
+                if response.is_none() {
+                    "controlled failure"
+                } else {
+                    "Expected file content for .github/APPROVED_CONTRIBUTORS"
+                }
+            )]
+        );
         assert_eq!(p.requests.len(), 2);
         assert!(p.requests[1].args[3].contains("collaborators/Alice/permission"));
     }
@@ -919,6 +990,10 @@ fn activity_search_matches_label_only() {
             &mut p,
         )
         .unwrap();
+        assert_eq!(
+            p.diagnostics,
+            vec!["MiXeD has opened 2 issues/PRs on fixture/second"]
+        );
         assert_eq!(p.requests.len(), 5);
         assert_eq!(p.requests[2].args[3], "search/issues");
         assert!(
@@ -975,9 +1050,52 @@ fn activity_search_failures_and_no_matches_pass() {
             None,
             &mut p,
         );
+        assert!(
+            p.diagnostics
+                .contains(&"Could not read APPROVED_CONTRIBUTORS: controlled failure".into())
+        );
+        assert_eq!(
+            p.diagnostics
+                .contains(&"Search failed: controlled failure".into()),
+            found.is_none()
+        );
+        if found == Some(1) {
+            assert!(
+                p.diagnostics
+                    .contains(&"Alice has opened 1 issues/PRs on fixture/remote".into())
+            );
+        }
         assert_eq!(result.is_err(), found == Some(1));
         assert_eq!(p.requests.len(), if found == Some(1) { 4 } else { 3 });
     }
+}
+
+#[test]
+fn activity_diagnostics_preserve_trimmed_gh_stderr() {
+    let w = fixture();
+    policy_support::configure(&w, |v| {
+        v["activity_gate"] = json!({"repositories":["fixture/remote"],"label":"activity"});
+    });
+    let mut p = RecordingProcess::default();
+    p.replies.push_back(Err("gh stderr".into()));
+    p.reply(json!({"permission":"none"}));
+    p.replies.push_back(Err("gh stderr".into()));
+    run(
+        &w.root,
+        "contribution-policy",
+        "issues",
+        &event("opened").to_string(),
+        None,
+        &mut p,
+    )
+    .unwrap();
+    assert_eq!(
+        p.diagnostics,
+        vec![
+            "Could not read APPROVED_CONTRIBUTORS: controlled gh failure",
+            "Search failed: controlled gh failure"
+        ]
+    );
 }
 
 #[test]
@@ -1667,7 +1785,6 @@ fn ignore_patterns_hide_artifacts_not_sources() {
         "cache.tsbuildinfo",
         "cpu.cpuprofile",
         ".env",
-        ".env.local",
         ".vscode/settings.json",
         ".zed/settings.json",
         ".idea/workspace.xml",
@@ -1707,6 +1824,7 @@ fn ignore_patterns_hide_artifacts_not_sources() {
         ".gitignore",
         ".gitattributes",
         ".maestro/prompts/example.md",
+        ".env.local",
     ] {
         assert_eq!(
             git(&w, &["check-ignore", "--no-index", file]).status.code(),
@@ -1761,8 +1879,6 @@ fn contributor_guidance_preserves_current_rules() {
         "why it matters",
         "lgtmi",
         "lgtm",
-        "merged",
-        "human",
         "extension",
         "twice",
         "FAQ",
@@ -1772,6 +1888,52 @@ fn contributor_guidance_preserves_current_rules() {
     ] {
         assert!(contributing.contains(text), "{text}");
     }
+    for paragraph in [
+        "# Contributing to Maestro",
+        "This guide exists to save both sides time.",
+        "## The One Rule",
+        "**You must understand your code.** If you cannot explain what your changes do and how they interact with the rest of the system, your PR will be closed.",
+        "Using AI to write code is fine. Submitting AI-generated slop without understanding it is not.",
+        "If you use an agent, run it from the repository root directory so it picks up `AGENTS.md` automatically. Your agent must follow the rules and guidelines in that file.",
+        "## Contribution Gate",
+        "All issues and PRs from new contributors are auto-closed by default.",
+        "Maintainers review auto-closed issues daily and reopen worthwhile ones. Issues that do not meet the quality bar below will not be reopened or receive a reply.",
+        "Approval happens through maintainer replies on issues:",
+        "- `lgtmi`: your future issues will not be auto-closed\n- `lgtm`: your future issues and PRs will not be auto-closed",
+        "`lgtmi` does not grant rights to submit PRs. Only `lgtm` grants rights to submit PRs.",
+        "## Quality Bar For Issues",
+        "If you open an issue, you must use one of the two GitHub issue templates.",
+        "If you open an issue, keep it short, concrete, and worth reading.",
+        "- Keep it concise. If it does not fit on one screen, it is too long.\n- Write in your own voice.\n- State the bug or request clearly.\n- Explain why it matters.\n- If you want to implement the change yourself, say so.",
+        "If the issue is real and written well, a maintainer may reopen it, reply `lgtmi`, or reply `lgtm`.",
+        "## Blocking",
+        "If you ignore this document twice, or if you spam the tracker with agent-generated issues, your GitHub account will be permanently blocked.",
+        "If you send a large volume of issues through automation, your GitHub account will be permanently blocked. No taksies backsies.",
+        "## Before Submitting a PR",
+        "Do not open a PR unless you have already been approved with `lgtm`.",
+        "Before submitting a PR:",
+        "```bash\njust check\njust test\n```",
+        "Both must pass.",
+        "Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.",
+        "If you are adding a new provider to `crates/maestro-models`, see `AGENTS.md` for required tests.",
+        "## Philosophy",
+        "Maestro's core is minimal. If your feature does not belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.",
+        "## Questions?",
+        "## FAQ",
+        "### Why are new issues and PRs auto-closed?",
+        "Maestro receives more issues than the maintainers can responsibly review in real time. Many reports do not meet the quality bar in this guide or do not follow CONTRIBUTING.md. Some are slung at the repository mindlessly via an agent instead of being reviewed and shaped by the person submitting them. Auto-closing creates a buffer so maintainers can review the tracker on their own schedule and reopen the issues that meet the quality bar.",
+        "### Why are weekend issues not reviewed?",
+        "The weekend route is configurable and currently off.",
+        "### Why do some issues get no reply?",
+        "A reply is maintenance work too. Low-signal issues, unclear reports, duplicates, and issues that do not follow this guide may be closed without discussion. This keeps time available for reproducible bugs, thoughtful requests, and contributors who have done the work to make their report actionable.",
+        "### Why not let AI triage everything?",
+        "AI can help group duplicates, summarize reports, and spot missing information. It is not trusted to make final maintainer decisions. Polished AI-generated issues can still be wrong, misleading, or expensive to investigate. Human review remains the final gate.",
+        "### Is this hostile to contributors?",
+        "No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.",
+    ] {
+        assert!(contributing.contains(paragraph), "{paragraph}");
+    }
+    assert!(contributing.contains("Human review remains the final gate."));
     let agents = std::fs::read_to_string(root.join("AGENTS.md")).unwrap();
     for text in [
         "just check",
@@ -1818,6 +1980,7 @@ fn contributor_guidance_preserves_current_rules() {
         assert!(glossary.contains(text));
     }
     let policy = std::fs::read_to_string(root.join("docs/repository_policy.md")).unwrap();
+    assert!(policy.contains("merged"));
     for text in [
         "repository_policy",
         "GITHUB_OUTPUT",

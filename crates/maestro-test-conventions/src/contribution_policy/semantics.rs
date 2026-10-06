@@ -23,15 +23,29 @@ pub(super) fn command(body: &str) -> Option<&'static str> {
 pub(super) fn weekday(value: &str) -> Option<u32> {
     use chrono::{Datelike, Duration, NaiveDate};
     let (date, time) = value
-        .split_once('T')
+        .split_once(['T', 't', ' '])
         .map_or((value, None), |(d, t)| (d, Some(t)));
-    let parts: Vec<_> = date.split('-').collect();
-    if parts.len() != 3 {
+    let year_len = if date.starts_with(['+', '-']) { 7 } else { 4 };
+    let year_text = date.get(..year_len)?;
+    if !year_text
+        .trim_start_matches(['+', '-'])
+        .bytes()
+        .all(|b| b.is_ascii_digit())
+        || year_text == "-000000"
+    {
         return None;
     }
-    let year = parts[0].parse::<i32>().ok()?;
-    let month = parts[1].parse::<u32>().ok()?;
-    let day = parts[2].parse::<u32>().ok()?;
+    let year = year_text.parse::<i32>().ok()?;
+    let rest = date.get(year_len..)?;
+    let (month, day) = match rest.len() {
+        0 => (1, 1),
+        3 if rest.starts_with('-') => (rest[1..].parse::<u32>().ok()?, 1),
+        6 if rest.starts_with('-') && rest.as_bytes()[3] == b'-' => (
+            rest[1..3].parse::<u32>().ok()?,
+            rest[4..].parse::<u32>().ok()?,
+        ),
+        _ => return None,
+    };
     if !(1..=31).contains(&day) {
         return None;
     }
@@ -40,40 +54,63 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     let Some(time) = time else {
         return Some(date.weekday().num_days_from_sunday());
     };
-    let mut time = time.to_owned();
-    let hour = time.get(..2)?.parse::<u32>().ok()?;
-    let minute = time.get(3..5)?.parse::<u32>().ok()?;
-    let second = time.get(6..8)?.parse::<u32>().ok()?;
-    if hour > 24 || minute > 59 || second > 59 {
+    let (clock, offset) = if let Some(clock) = time.strip_suffix(['Z', 'z']) {
+        (clock, 0)
+    } else if let Some(index) = time.find(['+', '-']) {
+        let zone = time.get(index..)?;
+        let minute_start = match zone.len() {
+            5 => 3,
+            6 if zone.as_bytes()[3] == b':' => 4,
+            _ => return None,
+        };
+        let hour = zone.get(1..3)?.parse::<i64>().ok()?;
+        let minute = zone.get(minute_start..)?.parse::<i64>().ok()?;
+        if hour > 23 || minute > 59 {
+            return None;
+        }
+        let sign = if zone.starts_with('-') { -1 } else { 1 };
+        (time.get(..index)?, sign * (hour * 60 + minute))
+    } else {
+        // Repository runners use UTC for timestamps without an explicit offset.
+        (time, 0)
+    };
+    let (clock, fraction) = clock
+        .split_once('.')
+        .map_or((clock, None), |(c, f)| (c, Some(f)));
+    if !matches!(clock.len(), 5 | 8)
+        || clock.as_bytes()[2] != b':'
+        || (clock.len() == 8 && clock.as_bytes()[5] != b':')
+        || !clock
+            .bytes()
+            .enumerate()
+            .all(|(i, b)| i == 2 || i == 5 || b.is_ascii_digit())
+    {
         return None;
     }
-    let next_day = hour == 24;
-    if next_day {
-        if minute != 0 || second != 0 {
-            return None;
-        }
-        let fraction = time.get(8..).unwrap_or("");
-        if fraction.starts_with('.')
-            && fraction[1..]
-                .chars()
-                .take_while(char::is_ascii_digit)
-                .any(|c| c != '0')
-        {
-            return None;
-        }
-        time.replace_range(..2, "00");
-    }
-    if !time.ends_with('Z') && !time.contains('+') && !time.contains('-') {
-        time.push('Z');
-    }
-    let normalized = format!("{date}T{time}");
-    let date = chrono::DateTime::parse_from_rfc3339(&normalized)
-        .ok()?
-        .with_timezone(&chrono::Utc);
-    let date = if next_day {
-        date.checked_add_signed(Duration::days(1))?
+    let hour = clock[..2].parse::<i64>().ok()?;
+    let minute = clock[3..5].parse::<i64>().ok()?;
+    let second = if clock.len() == 8 {
+        clock[6..].parse::<i64>().ok()?
     } else {
-        date
+        0
     };
-    Some(date.weekday().num_days_from_sunday())
+    if hour > 24
+        || minute > 59
+        || second > 59
+        || fraction.is_some_and(|f| {
+            clock.len() != 8 || f.is_empty() || !f.bytes().all(|b| b.is_ascii_digit())
+        })
+        || (hour == 24
+            && (minute != 0
+                || second != 0
+                || fraction.is_some_and(|f| f.bytes().any(|b| b != b'0'))))
+    {
+        return None;
+    }
+    let datetime = date
+        .and_hms_opt(0, 0, 0)?
+        .checked_add_signed(Duration::seconds(
+            hour * 3600 + minute * 60 + second - offset * 60,
+        ))?;
+    Some(datetime.weekday().num_days_from_sunday())
 }

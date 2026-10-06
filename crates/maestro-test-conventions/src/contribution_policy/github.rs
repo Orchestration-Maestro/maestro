@@ -32,7 +32,7 @@ impl Github<'_> {
         let input = serde_json::to_vec(&data).map_err(|e| e.to_string())?;
         let output = self.process.output(self.root, "gh", &args, Some(&input))?;
         if !output.status.success() {
-            return Err(format!("GitHub operation failed: {method} {endpoint}"));
+            return Err(String::from_utf8_lossy(&output.stderr).trim().into());
         }
         serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())
     }

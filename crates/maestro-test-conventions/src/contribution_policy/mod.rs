@@ -9,6 +9,9 @@ use std::path::Path;
 use std::process::Output;
 
 pub(crate) trait Process {
+    fn diagnostic(&mut self, message: &str) {
+        eprintln!("{message}");
+    }
     fn output(
         &mut self,
         cwd: &Path,
