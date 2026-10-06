@@ -105,3 +105,109 @@ Matt Pocock's five default triage labels. See `docs/agents/triage-labels.md`.
 
 Single-context, with the glossary in `CONTEXT.md` and ADRs in `docs/adr/`.
 See `docs/agents/domain.md`.
+
+## Contribution policy and communication
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md). Maintainers review auto-closed
+issues daily; reports below its quality bar need not receive a reply.
+`lgtmi` requests issue capability; `lgtm` requests issue and PR capability.
+Changes are pending until their signed approval PR merges. Existing effective
+approval is not a grant of a stronger capability. Human triage remains final.
+Use the existing five triage-role mappings, not a parallel package-label list.
+
+Keep communication concise, technical and concrete, without emojis or filler.
+Check external API types and documentation rather than guessing. Prefer
+ordinary top-level imports and clear Rust types. Ask before removing intentional functionality; dependency errors do not justify downgrading behavior. Keep
+configurable keybindings with registered defaults, never hard-coded checks.
+The generated catalog belongs to its generator: change generation inputs or
+logic, never edit generated model records directly.
+
+For issue/PR comments, write the complete text to a temporary file, use
+`gh issue comment --body-file` or `gh pr comment --body-file`, and Preview
+exact text before posting. Post one final concise comment unless asked for more.
+Delete a malformed comment before posting its single correction. Include
+`Closes #<number>` or `Fixes #<number>` for related issue-closing commits.
+
+## Test and Git discipline
+
+`just check` is distinct from `just test`: read the full output, fix warnings,
+and run each changed test file plus focused cases. Use deterministic controlled
+provider fixtures, never live provider APIs, real keys or paid tokens by default.
+All local test, doc, conventions and hook commands must run in a credential-cleared
+child environment with disposable HOME, config, TMPDIR and XDG paths. Never read,
+move or delete actual authentication files to isolate a test. Name regression
+cases after behavior without leading issue numbers.
+
+Analyze remote PR metadata before checking it out. Commit only when authorized.
+Use a feature branch, signed `git commit -S`, protected PRs and the merge queue;
+never directly push to the default branch or bypass hooks/protection.
+
+Stage only your own session files with `git add <specific-file-paths>`.
+Inspect `git status` and the staged diff before committing. Never use
+`git add .`, `git add -A`, `git reset --hard`, `git checkout .`, `git clean -fd`,
+blanket `git stash`, or `git commit --no-verify`. Rebase on current main;
+retain its behavior and assertions. Resolve conflicts only in owned files;
+abort and ask if an unrelated file conflicts. Force-push only with explicit
+standing approval and a fetched-hash lease. Ask for confirmation before an
+instruction overrides these safeguards.
+
+## Provider contribution checklist
+
+This checklist governs contributions as each owning interface is delivered;
+it does not claim an absent product surface is implemented.
+
+1. Add the protocol/provider identity and options through the owning registration
+   interface. Keep vocabulary extensible. Define provider-specific stream options
+   and their common-option mapping. Implement invocation, message/tool conversion
+   and standardized text, thinking, tool-call, usage and stop events.
+2. Export the intended provider surface and option types. Keep lazy registration
+   separate from implementation loading. Add credential detection and nonstandard
+   authentication utilities; do not expose third-party library types.
+3. Update generated catalog acquisition/parsing and map descriptors into the
+   owning Model interface. Document defaults, display names, environment variables,
+   setup instructions and authentication configuration in the relevant feature
+   docs and providers table.
+4. Add a representative stream model even for a reused protocol. Exercise broader
+   token counting/total usage, abort, empty response, context overflow, image
+   limits, Unicode, missing tool result, image tool result and cross-provider
+   handoff cases. Include a provider/model pair per model family where applicable;
+   use controlled credentials and deterministic protocol fixtures.
+5. Document public options, authentication, exports and setup. Run `just check`
+   and `just test`; history remains release-generated, not hand-edited.
+
+## Controlled terminal walkthrough
+
+The terminal frontend/tool is not implemented yet. Once delivered, use its
+published launch command in a local disposable tmux session, not a live provider
+session. Create an 80 by 24 terminal, launch the delivered command, capture startup,
+then send a controlled prompt and special keys. Do not infer startup readiness
+from a fixed sleep. Always clean up the session:
+
+```sh
+tmux new-session -d -s maestro-test -x 80 -y 24
+# Send the delivered terminal launch command followed by Enter.
+tmux capture-pane -t maestro-test -p
+tmux send-keys -t maestro-test 'controlled fixture prompt' Enter
+tmux send-keys -t maestro-test Escape
+tmux send-keys -t maestro-test C-o
+tmux capture-pane -t maestro-test -p
+tmux kill-session -t maestro-test
+```
+
+## Release contribution rules
+
+Keep lockstep package versions. A patch release includes fixes and new features;
+a minor release includes breaking API changes. Release preparation synchronizes
+versions, finalizes generated notes, prepares a conventional commit/tag and
+packages artifacts; separately authorized publication publishes them. Do not
+invent a publisher command before that tooling is delivered. Released history
+is immutable; release automation retains change attribution and creates the
+next release's history from conventional commits. PRs never edit CHANGELOG.md.
+
+## Approved repository-tooling libraries
+
+The private contribution-policy executable may use `base64 =0.23.1` with only
+`std` for GitHub content, and `chrono =0.4.45` with only `std` for UTC metadata
+dates. Neither enables its defaults. Tests may use dev-only `yaml-rust2 =0.13.0`
+without default features to parse actual adapters/templates. These exceptions
+are MIT OR Apache-2.0 and add no internal crate edge or public library API.
