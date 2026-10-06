@@ -1970,3 +1970,30 @@ fn reentrant_serializer_can_write_shared_tool_call() {
     assert_eq!(error.to_string(), "observed");
     assert_eq!(call.read().unwrap().arguments["x"], 2);
 }
+
+#[test]
+fn content_discriminators_preserve_overlapping_fields() {
+    let image =
+        serde_json::json!({"type":"image","data":"bytes","mimeType":"image/png","text":"alt"});
+    assert!(matches!(
+        serde_json::from_value::<InputContent>(image).unwrap(),
+        InputContent::Image(_)
+    ));
+    let thinking = serde_json::json!({"type":"thinking","thinking":"reason","text":"extra"});
+    assert!(matches!(
+        serde_json::from_value::<AssistantContent>(thinking).unwrap(),
+        AssistantContent::Thinking(_)
+    ));
+    let call = serde_json::json!({"type":"toolCall","id":"c","name":"lookup","arguments":{},"thinking":"extra","text":"extra"});
+    assert!(matches!(
+        serde_json::from_value::<AssistantContent>(call).unwrap(),
+        AssistantContent::ToolCall(_)
+    ));
+}
+
+#[test]
+fn assistant_stream_is_exported_from_record_types() {
+    let stream = maestro_models::records::types::AssistantMessageEventStream::new();
+    stream.end(None);
+    assert_eq!(ready(&mut stream.iter().next()), None);
+}

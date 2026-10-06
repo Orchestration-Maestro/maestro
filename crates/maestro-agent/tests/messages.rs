@@ -458,3 +458,61 @@ async fn prompt_admission_detaches_tool_calls_before_input_message_end() {
             .any(|event| matches!(event, AgentEvent::AgentEnd { messages } if messages == &result))
     );
 }
+
+#[test]
+fn prompt_record_lock_does_not_block_abort() {
+    if std::env::var_os("MAESTRO_LOCK_ORDER_CHILD").is_none() {
+        let status = std::process::Command::new("timeout")
+            .args([
+                "5",
+                std::env::current_exe().unwrap().to_str().unwrap(),
+                "--exact",
+                "prompt_record_lock_does_not_block_abort",
+                "--nocapture",
+            ])
+            .env("MAESTRO_LOCK_ORDER_CHILD", "1")
+            .status()
+            .unwrap();
+        assert!(
+            status.success(),
+            "prompt and abort must both finish: {status}"
+        );
+        return;
+    }
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let (agent, _) = setup(
+        vec![Response::Steps(steps("answer"))],
+        AgentOptions::default(),
+    );
+    let input: AssistantMessage = serde_json::from_value(serde_json::json!({
+        "role":"assistant","content":[{"type":"toolCall","id":"call","name":"lookup","arguments":{}}],
+        "api":"synthetic","provider":"script","model":"text","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0
+    })).unwrap();
+    let AssistantContent::ToolCall(call) = &input.content[0] else {
+        panic!()
+    };
+    let guard = call.write().unwrap();
+    let supplied = input.clone();
+    let prompting = agent.clone();
+    let handle = runtime.handle().clone();
+    let (started, entered) = std::sync::mpsc::channel();
+    let (finished, completed) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let _entered = handle.enter();
+        started.send(()).unwrap();
+        let run = prompting
+            .prompt(AgentMessage::Model(Message::Assistant(supplied)), options())
+            .unwrap();
+        finished.send(()).unwrap();
+        handle.block_on(run).unwrap();
+    });
+    entered.recv().unwrap();
+    assert!(
+        completed
+            .recv_timeout(std::time::Duration::from_millis(100))
+            .is_err()
+    );
+    agent.abort();
+    drop(guard);
+    worker.join().unwrap();
+}

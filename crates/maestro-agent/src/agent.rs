@@ -123,6 +123,7 @@ impl Agent {
         message: Option<AgentMessage>,
         mut options: SimpleStreamOptions,
     ) -> Result<RunHandle, AgentError> {
+        let supplied_input: Vec<_> = message.iter().map(crate::run::snapshot_record).collect();
         let mut state = self.inner.lock();
         if state.running {
             return Err(AgentError::Busy);
@@ -153,7 +154,7 @@ impl Agent {
             }
             input
         } else {
-            message.iter().map(crate::run::snapshot_record).collect()
+            supplied_input
         };
         let (sender, receiver) = watch::channel(None);
         state.running = true;

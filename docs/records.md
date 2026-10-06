@@ -60,6 +60,10 @@ clear_api_providers();
 
 ## Record and observation semantics
 
+Content blocks decode by `type`, even when unknown fields overlap another
+variant. `AssistantMessageEventStream` is also exported from `records::types`.
+Diagnostic timestamps are signed Unix milliseconds, including before the epoch.
+
 Whole messages decode by `role`, retaining assistant fields and tool-result
 identifiers and details even when content is empty. Header records enumerate
 canonical array-index keys numerically before insertion-ordered string keys;
@@ -74,7 +78,8 @@ remain alive, but retain no queue ownership after all handles are dropped.
 Terminal pushes mark logical completion before extracting the result. A fresh
 read during extraction sees EOF when no events are queued; a previously
 registered consumer still receives the terminal event, then EOF. An exhausted
-cursor never resumes. Delivery and result publication precede notifications, so
+cursor never resumes. The first read registers eagerly; a chained read registers
+only when its consumer is polled, never inline during a push. Delivery and result publication precede notifications, so
 a reentrant result observer can drain the terminal event before EOF. Shared
 records are cloned before serialization invokes caller code.
 
@@ -83,3 +88,5 @@ first, including keys supplied alongside common options. Explicit JSON null in
 routing sort, throughput, latency and model compatibility remains distinct from
 an absent field when decoded and serialized again. Agent prompt admission copies
 input records, including nested tool calls, independently of caller mutations.
+The copies are made before acquiring agent state, so a caller holding a record
+write lock can still abort the agent.

@@ -158,3 +158,16 @@ fn exhausted_cursor_stays_exhausted_after_end_then_push() {
     );
     holder.lock().unwrap().take();
 }
+
+#[test]
+fn chained_cursor_registration_waits_for_consumer_poll() {
+    let stream = queue();
+    let mut a = stream.iter();
+    drop(a.next());
+    drop(a.next());
+    stream.push(1).unwrap();
+    let mut b = stream.iter();
+    let mut second = b.next();
+    stream.push(2).unwrap();
+    assert_eq!(poll(&mut second), std::task::Poll::Ready(Some(2)));
+}

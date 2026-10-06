@@ -173,13 +173,17 @@ pub fn create_assistant_message_diagnostic(
     details: Option<serde_json::Map<String, serde_json::Value>>,
 ) -> Result<AssistantMessageDiagnostic, ThrownValue> {
     #[cfg(not(target_arch = "wasm32"))]
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as f64;
+    let timestamp = unix_milliseconds(std::time::SystemTime::now());
     #[cfg(target_arch = "wasm32")]
     let timestamp = js_sys::Date::now();
     at_time(r#type, error, details, timestamp)
+}
+#[cfg(not(target_arch = "wasm32"))]
+fn unix_milliseconds(time: std::time::SystemTime) -> f64 {
+    match time.duration_since(std::time::UNIX_EPOCH) {
+        Ok(duration) => duration.as_millis() as f64,
+        Err(error) => -(error.duration().as_millis() as f64),
+    }
 }
 fn at_time(
     r#type: String,
@@ -207,6 +211,19 @@ pub fn append_assistant_message_diagnostic(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn diagnostic_timestamp_accepts_pre_epoch_clock() {
+        let clock = || std::time::UNIX_EPOCH - std::time::Duration::from_millis(1234);
+        let diagnostic = at_time(
+            "kind".into(),
+            &ThrownValue::Undefined,
+            None,
+            unix_milliseconds(clock()),
+        )
+        .unwrap();
+        assert_eq!(diagnostic.timestamp, -1234.0);
+    }
     #[test]
     fn diagnostics_timestamp_uses_supplied_clock() {
         for timestamp in [0.0, 1700000000123.0] {

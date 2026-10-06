@@ -241,7 +241,7 @@ pub struct ToolCall {
     pub thought_signature: Option<String>,
 }
 /// InputContent supplied record.
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(untagged)]
 pub enum InputContent {
     /// Text value.
@@ -250,7 +250,7 @@ pub enum InputContent {
     Image(ImageContent),
 }
 /// AssistantContent supplied record.
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize)]
 #[serde(untagged)]
 pub enum AssistantContent {
     /// Text value.
@@ -259,6 +259,36 @@ pub enum AssistantContent {
     Thinking(ThinkingContent),
     /// ToolCall value.
     ToolCall(#[serde(with = "locked")] Arc<RwLock<ToolCall>>),
+}
+impl<'de> serde::Deserialize<'de> for InputContent {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(serde::Deserialize)]
+        #[serde(tag = "type", rename_all = "camelCase")]
+        enum ByType {
+            Text(TextContent),
+            Image(ImageContent),
+        }
+        Ok(match ByType::deserialize(deserializer)? {
+            ByType::Text(value) => Self::Text(value),
+            ByType::Image(value) => Self::Image(value),
+        })
+    }
+}
+impl<'de> serde::Deserialize<'de> for AssistantContent {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(serde::Deserialize)]
+        #[serde(tag = "type", rename_all = "camelCase")]
+        enum ByType {
+            Text(TextContent),
+            Thinking(ThinkingContent),
+            ToolCall(#[serde(with = "locked")] Arc<RwLock<ToolCall>>),
+        }
+        Ok(match ByType::deserialize(deserializer)? {
+            ByType::Text(value) => Self::Text(value),
+            ByType::Thinking(value) => Self::Thinking(value),
+            ByType::ToolCall(value) => Self::ToolCall(value),
+        })
+    }
 }
 /// UserContent supplied record.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -1044,7 +1074,8 @@ fn ordered_json(value: serde_json::Value) -> serde_json::Value {
     }
 }
 
-use super::{diagnostics::ThrownValue, event_stream::AssistantMessageEventStream};
+use super::diagnostics::ThrownValue;
+pub use super::event_stream::AssistantMessageEventStream;
 use crate::Cancellation;
 /// Supplied asynchronous PayloadCallback hook.
 #[cfg(not(target_arch = "wasm32"))]

@@ -21,42 +21,36 @@ type Observation<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 type Observation<T> = Pin<Box<dyn Future<Output = T>>>;
 
 #[cfg(not(target_arch = "wasm32"))]
-type Continuation = Box<dyn FnOnce() + Send>;
+type Continuation = Box<dyn FnMut(&mut Context<'_>) -> Poll<()> + Send>;
 #[cfg(target_arch = "wasm32")]
-type Continuation = Box<dyn FnOnce()>;
+type Continuation = Box<dyn FnMut(&mut Context<'_>) -> Poll<()>>;
 
 struct Promise<T> {
     value: Option<Arc<T>>,
     wakers: Vec<Waker>,
-    continuations: Vec<Continuation>,
+    continuation: Option<Continuation>,
 }
 impl<T: Clone> Promise<T> {
     fn new() -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self {
             value: None,
             wakers: vec![],
-            continuations: vec![],
+            continuation: None,
         }))
     }
-    fn publish(promise: &Arc<Mutex<Self>>, value: T) -> (Vec<Waker>, Vec<Continuation>) {
+    fn publish(promise: &Arc<Mutex<Self>>, value: T) -> Vec<Waker> {
         let mut p = promise.lock().unwrap_or_else(|p| p.into_inner());
         if p.value.is_some() {
-            return (vec![], vec![]);
+            return vec![];
         }
         p.value = Some(Arc::new(value));
-        (
-            std::mem::take(&mut p.wakers),
-            std::mem::take(&mut p.continuations),
-        )
+        std::mem::take(&mut p.wakers)
     }
     fn settle(promise: &Arc<Mutex<Self>>, value: T) {
         notify(Self::publish(promise, value));
     }
 }
-fn notify((wakes, continuations): (Vec<Waker>, Vec<Continuation>)) {
-    for continuation in continuations {
-        continuation();
-    }
+fn notify(wakes: Vec<Waker>) {
     for waker in wakes {
         waker.wake();
     }
@@ -65,6 +59,21 @@ struct Read<T>(Arc<Mutex<Promise<T>>>);
 impl<T: Clone> Future for Read<T> {
     type Output = T;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T> {
+        let continuation = self
+            .0
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .continuation
+            .take();
+        if let Some(mut continuation) = continuation
+            && continuation(cx).is_pending()
+        {
+            self.0
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .continuation = Some(continuation);
+            return Poll::Pending;
+        }
         let waker = cx.waker().clone();
         let value = {
             let mut p = self.0.lock().unwrap_or_else(|p| p.into_inner());
@@ -204,7 +213,8 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
-    /// Request the next read eagerly; a dropped observation abandons its delivery.
+    /// Register the first read eagerly; chained reads resume when polled.
+    /// Dropping an observation abandons its delivery without canceling the read.
     #[expect(
         clippy::should_implement_trait,
         reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
@@ -215,33 +225,26 @@ impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
         let promise = Promise::new();
         self.pending = Some(promise.clone());
         if let Some(prior) = prior {
-            let target = promise.clone();
+            let target = Arc::downgrade(&promise);
             let weak_queue = Arc::downgrade(&queue);
-            let previous = Arc::downgrade(&prior);
-            let mut continuation: Option<Continuation> = Some(Box::new(move || {
-                let exhausted = previous.upgrade().is_some_and(|previous| {
-                    previous
-                        .lock()
-                        .unwrap_or_else(|p| p.into_inner())
-                        .value
-                        .as_ref()
-                        .is_some_and(|value| value.is_none())
-                });
-                if exhausted {
-                    Promise::settle(&target, None);
-                } else if let Some(queue) = weak_queue.upgrade() {
-                    request(&queue, &target);
+            let mut previous = Read(prior);
+            promise
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .continuation = Some(Box::new(move |cx| match Pin::new(&mut previous).poll(cx) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(value) => {
+                    let Some(target) = target.upgrade() else {
+                        return Poll::Ready(());
+                    };
+                    if value.is_none() {
+                        Promise::settle(&target, None);
+                    } else if let Some(queue) = weak_queue.upgrade() {
+                        request(&queue, &target);
+                    }
+                    Poll::Ready(())
                 }
             }));
-            {
-                let mut prior = prior.lock().unwrap_or_else(|p| p.into_inner());
-                if prior.value.is_none() {
-                    prior.continuations.push(continuation.take().unwrap());
-                }
-            }
-            if let Some(continuation) = continuation {
-                continuation();
-            }
         } else {
             request(&queue, &promise);
         }
@@ -340,7 +343,8 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
 }
 #[cfg(target_arch = "wasm32")]
 impl<T: Clone + 'static> AsyncIterator<T> {
-    /// Request the next read eagerly; a dropped observation abandons its delivery.
+    /// Register the first read eagerly; chained reads resume when polled.
+    /// Dropping an observation abandons its delivery without canceling the read.
     #[expect(
         clippy::should_implement_trait,
         reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
@@ -351,33 +355,26 @@ impl<T: Clone + 'static> AsyncIterator<T> {
         let promise = Promise::new();
         self.pending = Some(promise.clone());
         if let Some(prior) = prior {
-            let target = promise.clone();
+            let target = Arc::downgrade(&promise);
             let weak_queue = Arc::downgrade(&queue);
-            let previous = Arc::downgrade(&prior);
-            let mut continuation: Option<Continuation> = Some(Box::new(move || {
-                let exhausted = previous.upgrade().is_some_and(|previous| {
-                    previous
-                        .lock()
-                        .unwrap_or_else(|p| p.into_inner())
-                        .value
-                        .as_ref()
-                        .is_some_and(|value| value.is_none())
-                });
-                if exhausted {
-                    Promise::settle(&target, None);
-                } else if let Some(queue) = weak_queue.upgrade() {
-                    request(&queue, &target);
+            let mut previous = Read(prior);
+            promise
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .continuation = Some(Box::new(move |cx| match Pin::new(&mut previous).poll(cx) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(value) => {
+                    let Some(target) = target.upgrade() else {
+                        return Poll::Ready(());
+                    };
+                    if value.is_none() {
+                        Promise::settle(&target, None);
+                    } else if let Some(queue) = weak_queue.upgrade() {
+                        request(&queue, &target);
+                    }
+                    Poll::Ready(())
                 }
             }));
-            {
-                let mut prior = prior.lock().unwrap_or_else(|p| p.into_inner());
-                if prior.value.is_none() {
-                    prior.continuations.push(continuation.take().unwrap());
-                }
-            }
-            if let Some(continuation) = continuation {
-                continuation();
-            }
         } else {
             request(&queue, &promise);
         }
