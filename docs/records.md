@@ -78,8 +78,13 @@ remain alive, but retain no queue ownership after all handles are dropped.
 Terminal pushes mark logical completion before extracting the result. A fresh
 read during extraction sees EOF when no events are queued; a previously
 registered consumer still receives the terminal event, then EOF. An exhausted
-cursor never resumes. The first read registers eagerly; a chained read registers
-only when its consumer is polled, never inline during a push. Delivery and result publication precede notifications, so
+cursor never resumes. Each `next()` returns an owned, `'static` observation, so
+multiple reads may be outstanding on one cursor. A read registers eagerly if its
+predecessor has settled; otherwise it waits for that predecessor's continuation.
+Polling any read or result advances the stream's scheduled continuations,
+including those of dropped or unobserved reads. This observation checkpoint is
+the executor's opportunity to resume cursors; `push` itself never runs those
+continuations inline. Delivery and result publication precede notifications, so
 a reentrant result observer can drain the terminal event before EOF. Shared
 records are cloned before serialization invokes caller code.
 

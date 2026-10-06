@@ -21,21 +21,19 @@ type Observation<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 type Observation<T> = Pin<Box<dyn Future<Output = T>>>;
 
 #[cfg(not(target_arch = "wasm32"))]
-type Continuation = Box<dyn FnMut(&mut Context<'_>) -> Poll<()> + Send>;
+type Driver = Box<dyn Fn(&mut Context<'_>) + Send>;
 #[cfg(target_arch = "wasm32")]
-type Continuation = Box<dyn FnMut(&mut Context<'_>) -> Poll<()>>;
+type Driver = Box<dyn Fn(&mut Context<'_>)>;
 
 struct Promise<T> {
     value: Option<Arc<T>>,
     wakers: Vec<Waker>,
-    continuation: Option<Continuation>,
 }
 impl<T: Clone> Promise<T> {
     fn new() -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self {
             value: None,
             wakers: vec![],
-            continuation: None,
         }))
     }
     fn publish(promise: &Arc<Mutex<Self>>, value: T) -> Vec<Waker> {
@@ -55,25 +53,11 @@ fn notify(wakes: Vec<Waker>) {
         waker.wake();
     }
 }
-struct Read<T>(Arc<Mutex<Promise<T>>>);
+struct Read<T>(Arc<Mutex<Promise<T>>>, Driver);
 impl<T: Clone> Future for Read<T> {
     type Output = T;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T> {
-        let continuation = self
-            .0
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .continuation
-            .take();
-        if let Some(mut continuation) = continuation
-            && continuation(cx).is_pending()
-        {
-            self.0
-                .lock()
-                .unwrap_or_else(|p| p.into_inner())
-                .continuation = Some(continuation);
-            return Poll::Pending;
-        }
+        (self.1)(cx);
         let waker = cx.waker().clone();
         let value = {
             let mut p = self.0.lock().unwrap_or_else(|p| p.into_inner());
@@ -97,6 +81,7 @@ struct Queue<T> {
     waiting: VecDeque<Arc<Mutex<Promise<Option<T>>>>>,
     done: bool,
     terminal_admitted: bool,
+    cursors: VecDeque<Arc<Mutex<Cursor<T>>>>,
 }
 /// Shared FIFO producer handle with an independently observed final result.
 pub struct EventStream<T, R = T> {
@@ -119,7 +104,7 @@ impl<T, R> Clone for EventStream<T, R> {
 /// Independent cursor; already registered reads remain reserved when abandoned.
 pub struct AsyncIterator<T> {
     queue: Arc<Mutex<Queue<T>>>,
-    pending: Option<Arc<Mutex<Promise<Option<T>>>>>,
+    cursor: Arc<Mutex<Cursor<T>>>,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventStream<T, R> {
@@ -131,6 +116,7 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
                 waiting: VecDeque::new(),
                 done: false,
                 terminal_admitted: false,
+                cursors: VecDeque::new(),
             })),
             result: Promise::new(),
             is_complete,
@@ -203,52 +189,58 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
     pub fn iter(&self) -> AsyncIterator<T> {
         AsyncIterator {
             queue: self.queue.clone(),
-            pending: None,
+            cursor: Arc::new(Mutex::new(Cursor {
+                reads: VecDeque::new(),
+                exhausted: false,
+                scheduled: false,
+            })),
         }
     }
     /// Observe the result without draining events or starting producer work.
     pub fn result(&self) -> Observation<R> {
-        Box::pin(Read(self.result.clone()))
+        Box::pin(Read(self.result.clone(), driver(&self.queue)))
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl<T: Clone + Send + Sync + 'static> AsyncIterator<T> {
-    /// Register the first read eagerly; chained reads resume when polled.
-    /// Dropping an observation abandons its delivery without canceling the read.
+    /// Request an owned read eagerly when the preceding read has settled.
+    /// Polling any read or result advances this stream's scheduled continuations.
+    /// Dropping an observation does not cancel its reserved delivery.
     #[expect(
         clippy::should_implement_trait,
         reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
     )]
-    pub fn next(&mut self) -> Pin<Box<dyn Future<Output = Option<T>> + Send + '_>> {
-        let prior = self.pending.take();
-        let queue = self.queue.clone();
+    pub fn next(&mut self) -> Observation<Option<T>> {
         let promise = Promise::new();
-        self.pending = Some(promise.clone());
-        if let Some(prior) = prior {
-            let target = Arc::downgrade(&promise);
-            let weak_queue = Arc::downgrade(&queue);
-            let mut previous = Read(prior);
-            promise
+        let delivery = Promise::new();
+        let (eager, exhausted, schedule) = {
+            let mut cursor = self.cursor.lock().unwrap_or_else(|p| p.into_inner());
+            let eager = cursor.reads.is_empty();
+            let exhausted = cursor.exhausted;
+            cursor.reads.push_back(CursorRead {
+                delivery: delivery.clone(),
+                observation: promise.clone(),
+                registered: eager,
+            });
+            let schedule = !cursor.scheduled;
+            cursor.scheduled = true;
+            (eager, exhausted, schedule)
+        };
+        if schedule {
+            self.queue
                 .lock()
                 .unwrap_or_else(|p| p.into_inner())
-                .continuation = Some(Box::new(move |cx| match Pin::new(&mut previous).poll(cx) {
-                Poll::Pending => Poll::Pending,
-                Poll::Ready(value) => {
-                    let Some(target) = target.upgrade() else {
-                        return Poll::Ready(());
-                    };
-                    if value.is_none() {
-                        Promise::settle(&target, None);
-                    } else if let Some(queue) = weak_queue.upgrade() {
-                        request(&queue, &target);
-                    }
-                    Poll::Ready(())
-                }
-            }));
-        } else {
-            request(&queue, &promise);
+                .cursors
+                .push_back(self.cursor.clone());
         }
-        Box::pin(Read(promise))
+        if eager {
+            if exhausted {
+                Promise::settle(&delivery, None);
+            } else {
+                request(&self.queue, &delivery);
+            }
+        }
+        Box::pin(Read(promise, driver(&self.queue)))
     }
 }
 #[cfg(target_arch = "wasm32")]
@@ -261,6 +253,7 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
                 waiting: VecDeque::new(),
                 done: false,
                 terminal_admitted: false,
+                cursors: VecDeque::new(),
             })),
             result: Promise::new(),
             is_complete,
@@ -333,52 +326,150 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
     pub fn iter(&self) -> AsyncIterator<T> {
         AsyncIterator {
             queue: self.queue.clone(),
-            pending: None,
+            cursor: Arc::new(Mutex::new(Cursor {
+                reads: VecDeque::new(),
+                exhausted: false,
+                scheduled: false,
+            })),
         }
     }
     /// Observe the result without draining events or starting producer work.
     pub fn result(&self) -> Observation<R> {
-        Box::pin(Read(self.result.clone()))
+        Box::pin(Read(self.result.clone(), driver(&self.queue)))
     }
 }
 #[cfg(target_arch = "wasm32")]
 impl<T: Clone + 'static> AsyncIterator<T> {
-    /// Register the first read eagerly; chained reads resume when polled.
-    /// Dropping an observation abandons its delivery without canceling the read.
+    /// Request an owned read eagerly when the preceding read has settled.
+    /// Polling any read or result advances this stream's scheduled continuations.
+    /// Dropping an observation does not cancel its reserved delivery.
     #[expect(
         clippy::should_implement_trait,
         reason = "the asynchronous cursor returns an observation future rather than a synchronous Iterator item"
     )]
-    pub fn next(&mut self) -> Pin<Box<dyn Future<Output = Option<T>> + '_>> {
-        let prior = self.pending.take();
-        let queue = self.queue.clone();
+    pub fn next(&mut self) -> Observation<Option<T>> {
         let promise = Promise::new();
-        self.pending = Some(promise.clone());
-        if let Some(prior) = prior {
-            let target = Arc::downgrade(&promise);
-            let weak_queue = Arc::downgrade(&queue);
-            let mut previous = Read(prior);
-            promise
+        let delivery = Promise::new();
+        let (eager, exhausted, schedule) = {
+            let mut cursor = self.cursor.lock().unwrap_or_else(|p| p.into_inner());
+            let eager = cursor.reads.is_empty();
+            let exhausted = cursor.exhausted;
+            cursor.reads.push_back(CursorRead {
+                delivery: delivery.clone(),
+                observation: promise.clone(),
+                registered: eager,
+            });
+            let schedule = !cursor.scheduled;
+            cursor.scheduled = true;
+            (eager, exhausted, schedule)
+        };
+        if schedule {
+            self.queue
                 .lock()
                 .unwrap_or_else(|p| p.into_inner())
-                .continuation = Some(Box::new(move |cx| match Pin::new(&mut previous).poll(cx) {
-                Poll::Pending => Poll::Pending,
-                Poll::Ready(value) => {
-                    let Some(target) = target.upgrade() else {
-                        return Poll::Ready(());
-                    };
-                    if value.is_none() {
-                        Promise::settle(&target, None);
-                    } else if let Some(queue) = weak_queue.upgrade() {
-                        request(&queue, &target);
-                    }
-                    Poll::Ready(())
-                }
-            }));
-        } else {
-            request(&queue, &promise);
+                .cursors
+                .push_back(self.cursor.clone());
         }
-        Box::pin(Read(promise))
+        if eager {
+            if exhausted {
+                Promise::settle(&delivery, None);
+            } else {
+                request(&self.queue, &delivery);
+            }
+        }
+        Box::pin(Read(promise, driver(&self.queue)))
+    }
+}
+
+struct CursorRead<T> {
+    delivery: Arc<Mutex<Promise<Option<T>>>>,
+    observation: Arc<Mutex<Promise<Option<T>>>>,
+    registered: bool,
+}
+struct Cursor<T> {
+    reads: VecDeque<CursorRead<T>>,
+    exhausted: bool,
+    scheduled: bool,
+}
+#[cfg(not(target_arch = "wasm32"))]
+fn driver<T: Clone + Send + Sync + 'static>(queue: &Arc<Mutex<Queue<T>>>) -> Driver {
+    let queue = Arc::downgrade(queue);
+    Box::new(move |cx| {
+        if let Some(queue) = queue.upgrade() {
+            advance(&queue, cx);
+        }
+    })
+}
+#[cfg(target_arch = "wasm32")]
+fn driver<T: Clone + 'static>(queue: &Arc<Mutex<Queue<T>>>) -> Driver {
+    let queue = Arc::downgrade(queue);
+    Box::new(move |cx| {
+        if let Some(queue) = queue.upgrade() {
+            advance(&queue, cx);
+        }
+    })
+}
+fn advance<T: Clone>(queue: &Arc<Mutex<Queue<T>>>, cx: &mut Context<'_>) {
+    let mut cursors = {
+        let mut queue = queue.lock().unwrap_or_else(|p| p.into_inner());
+        std::mem::take(&mut queue.cursors)
+    };
+    loop {
+        let mut pending = VecDeque::new();
+        let mut progressed = false;
+        for cursor in cursors {
+            let (delivery, register, exhausted) = {
+                let mut state = cursor.lock().unwrap_or_else(|p| p.into_inner());
+                let exhausted = state.exhausted;
+                let Some(read) = state.reads.front_mut() else {
+                    state.scheduled = false;
+                    continue;
+                };
+                let register = !read.registered;
+                read.registered = true;
+                (read.delivery.clone(), register, exhausted)
+            };
+            if register {
+                if exhausted {
+                    Promise::settle(&delivery, None);
+                } else {
+                    request(queue, &delivery);
+                }
+            }
+            let value = {
+                let mut delivery = delivery.lock().unwrap_or_else(|p| p.into_inner());
+                if delivery.value.is_none()
+                    && !delivery.wakers.iter().any(|w| w.will_wake(cx.waker()))
+                {
+                    delivery.wakers.push(cx.waker().clone());
+                }
+                delivery.value.clone()
+            };
+            if let Some(value) = value {
+                let observation = {
+                    let mut state = cursor.lock().unwrap_or_else(|p| p.into_inner());
+                    state.exhausted |= value.is_none();
+                    state.reads.pop_front().unwrap().observation
+                };
+                progressed = true;
+                Promise::settle(&observation, (*value).clone());
+            }
+            let mut state = cursor.lock().unwrap_or_else(|p| p.into_inner());
+            if state.reads.is_empty() {
+                state.scheduled = false;
+            } else {
+                pending.push_back(cursor.clone());
+            }
+        }
+        if !progressed {
+            queue
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .cursors
+                .extend(pending);
+            break;
+        }
+        cursors = pending;
     }
 }
 

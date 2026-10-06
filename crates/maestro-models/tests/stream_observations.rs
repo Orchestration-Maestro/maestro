@@ -171,3 +171,11 @@ fn chained_cursor_registration_waits_for_consumer_poll() {
     stream.push(2).unwrap();
     assert_eq!(poll(&mut second), std::task::Poll::Ready(Some(2)));
 }
+
+#[path = "support/stream_interleavings.rs"]
+mod stream_interleavings;
+
+#[test]
+fn cursor_interleavings_match_generator_observations() {
+    stream_interleavings::check_corpus();
+}
