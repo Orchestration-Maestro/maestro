@@ -14,13 +14,11 @@ check:
     {{tooling}} isolate cargo clippy --workspace --all-targets --locked -- -D warnings
     {{tooling}} docs
     {{tooling}} isolate cargo test -p maestro-test-conventions --locked
-    {{tooling}} replay-unfiltered
 
 # Run all workspace tests.
 test *args:
     @echo "Running tests without API keys..."
     {{tooling}} isolate cargo test --workspace --locked "$@"
-    {{tooling}} replay-unfiltered "$@"
 
 # Run the same checks as continuous integration.
 ci: check test

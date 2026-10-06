@@ -286,22 +286,18 @@ fn recipe(workspace: &Workspace, name: &str, failure: &str) -> std::process::Out
 }
 
 #[test]
-#[ignore = "requires the repository's pinned just/prek; runs in just test until shared CI provisions pinned tools"]
 fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
     let workspace = recipe_fixture();
     for (name, expected) in [
         ("build", "build --workspace --locked|\n"),
         (
             "check",
-            "fmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n",
+            "fmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\n",
         ),
-        (
-            "test",
-            "test --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n",
-        ),
+        ("test", "test --workspace --locked|\n"),
         (
             "prepublish",
-            "clean|\nbuild --workspace --locked|\nfmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n",
+            "clean|\nbuild --workspace --locked|\nfmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\n",
         ),
     ] {
         let _ = std::fs::remove_file(workspace.root.join("operations"));
@@ -324,18 +320,10 @@ fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
     assert!(
         std::fs::read_to_string(workspace.root.join("operations"))
             .unwrap()
-            .ends_with("test -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\ntest --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n")
+            .ends_with("test -p maestro-test-conventions --locked|\ntest --workspace --locked|\n")
     );
-    assert_eq!(
-        std::fs::read(workspace.root.join("ignored-arguments")).unwrap(),
-        b"test\0-p\0maestro-test-conventions\0--test\0build_recipes\0--locked\0--\0--ignored\0"
-    );
-    assert_eq!(
-        std::fs::read(workspace.root.join("isolated-ignored-arguments")).unwrap(),
-        b"test\0-p\0maestro-test-conventions\0--test\0isolated_cli\0--locked\0--\0--ignored\0"
-    );
-    std::fs::remove_file(workspace.root.join("ignored-arguments")).unwrap();
-    std::fs::remove_file(workspace.root.join("isolated-ignored-arguments")).unwrap();
+    assert!(!workspace.root.join("ignored-arguments").exists());
+    assert!(!workspace.root.join("isolated-ignored-arguments").exists());
     let path = std::env::join_paths(
         std::iter::once(workspace.root.join("bin"))
             .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
@@ -489,7 +477,6 @@ fn tool_pins_and_hooks_keep_their_existing_checks() {
 }
 
 #[test]
-#[ignore = "requires the repository's pinned just/prek; runs in just test until shared CI provisions pinned tools"]
 fn hook_failures_keep_messages_and_stop_the_commit() {
     let workspace = recipe_fixture();
     git(&workspace, &["init", "-q"]);
@@ -531,7 +518,6 @@ fn hook_failures_keep_messages_and_stop_the_commit() {
 }
 
 #[test]
-#[ignore = "requires the repository's pinned just/prek; runs in just test until shared CI provisions pinned tools"]
 fn syntax_and_commit_hooks_reject_invalid_inputs() {
     let workspace = Workspace::new();
     git(&workspace, &["init", "-q"]);
@@ -865,6 +851,7 @@ fn ci_declaration_keeps_all_targets_and_owner_entries() {
         ])
     );
     assert_eq!(value["browser_build"], false);
+    assert_eq!(value["test_tools"], true);
     for owner in value["wasm_crates"].as_array().unwrap() {
         assert!(
             root.join("crates")
@@ -876,7 +863,6 @@ fn ci_declaration_keeps_all_targets_and_owner_entries() {
 }
 
 #[test]
-#[ignore = "requires the repository's pinned just/prek; runs in just test until shared CI provisions pinned tools"]
 fn pending_hooks_have_explicit_owners_not_fake_success() {
     let workspace = recipe_fixture();
     for (hook, owner) in [
@@ -904,7 +890,6 @@ fn pending_hooks_have_explicit_owners_not_fake_success() {
 }
 
 #[test]
-#[ignore = "requires the repository's pinned just/prek; runs in just test until shared CI provisions pinned tools"]
 fn development_text_keeps_every_section_and_paragraph() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (page, expected) in [

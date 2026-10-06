@@ -43,29 +43,6 @@ fn execute(mut args: Vec<OsString>) -> Result<u8, String> {
             command.args(&args[1..]);
             isolation::run(command)
         }
-        Some("replay-unfiltered") => {
-            if !args.is_empty() {
-                return Ok(0);
-            }
-            for target in ["build_recipes", "isolated_cli"] {
-                let mut command = Command::new("cargo");
-                command.args([
-                    "test",
-                    "-p",
-                    "maestro-test-conventions",
-                    "--test",
-                    target,
-                    "--locked",
-                    "--",
-                    "--ignored",
-                ]);
-                let code = isolation::run(command)?;
-                if code != 0 {
-                    return Ok(code);
-                }
-            }
-            Ok(0)
-        }
         Some("docs") => rustdoc::docs(),
         Some("inactive") => {
             if args.len() != 2 {

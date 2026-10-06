@@ -6,3 +6,4 @@ check_targets = [
     "x86_64-pc-windows-msvc",
 ]
 browser_build = false
+test_tools = true

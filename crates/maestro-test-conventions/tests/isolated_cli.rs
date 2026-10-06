@@ -488,7 +488,6 @@ fn ordinary_cargo_programs_keep_their_environment() {
 }
 
 #[test]
-#[ignore = "requires the repository's pinned just/prek; runs in just test until shared CI provisions pinned tools"]
 fn supported_routes_enter_the_same_isolation_boundary() {
     let workspace = Workspace::new();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

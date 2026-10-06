@@ -3,12 +3,9 @@
 Rust is managed by rustup using `rust-toolchain.toml`. Repository command tools
 are pinned by mise. `just check` runs formatting, Clippy with warnings denied,
 strict public documentation and workspace conventions. `just test` runs the
-workspace tests; `just ci` runs check before test. Unfiltered check and test gates explicitly
-run the ignored `build_recipes` and `isolated_cli` cases in isolated Cargo
-invocations, so local gates and commit hooks still execute every recipe/hook
-assertion. The workspace invocation preserves all caller argument boundaries.
-Any arguments to `just test`, including `--list`, disable the extra invocations;
-selected execution is never widened or repeated.
+workspace tests; `just ci` runs check before test. Each gate runs its selected
+suite once, including every recipe/hook assertion. Caller argument boundaries
+remain intact, and `just test` never widens or repeats selected execution.
 
 ## Private command boundary
 
@@ -86,22 +83,10 @@ supported isolated route and this development guard is not a security boundary.
 
 ## Shared recipe-tool prerequisite
 
-The shared Tests job currently does not provision the caller's pinned just and
-prek executables. Five `build_recipes` cases and the `isolated_cli` route case requiring those
-tools have an explicit ignore reason. Raw shared Cargo execution reports those cases as
-ignored; it does not silently skip tests based on host availability. Local
-`just check` and unfiltered `just test` visibly run these additional isolated
-commands:
-
-```sh
-cargo test -p maestro-test-conventions --test build_recipes --locked -- --ignored
-cargo test -p maestro-test-conventions --test isolated_cli --locked -- --ignored
-```
-
-This also covers pre-commit through `just check`. Tests do not download or install
-tools. Remove the six ignores and the extra recipe lines when
-[shared tool provisioning](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/16)
-is delivered. The shared workflow's workspace test command remains unchanged.
+The caller declares `test_tools = true` in `.github/ci.toml`. Shared CI installs
+the caller's mise-pinned developer tools before its unchanged workspace test
+command, so recipe/hook assertions run by default without ignored cases or
+local replay invocations. Tests do not download or install tools themselves.
 
 ## Workstation fixture safeguards
 
