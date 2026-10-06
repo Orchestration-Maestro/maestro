@@ -144,6 +144,7 @@ pub mod policy {
                 "maestro-tools",
                 "maestro-theme",
                 "maestro-tui",
+                "maestro-resources",
             ],
         ),
         (
