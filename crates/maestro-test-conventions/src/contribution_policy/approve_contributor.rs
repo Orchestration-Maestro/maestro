@@ -10,19 +10,36 @@ pub(super) fn approve(
     app_slug: Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
     let Some(target) = command(e["comment"]["body"].as_str().unwrap_or("")) else {
-        eprintln!("Comment does not match lgtm or lgtmi");
+        github
+            .process
+            .diagnostic("Comment does not match lgtm or lgtmi");
         return Ok(status("skipped", None));
     };
     let commenter = e["comment"]["user"]["login"]
         .as_str()
         .ok_or("Missing commenter")?;
-    if !collaborator(get_permission(github, commenter)) {
-        eprintln!("Commenter does not have write access");
-        return Ok(status("skipped", None));
+    match get_permission(github, commenter) {
+        Ok(permission) if collaborator(permission.as_deref()) => {}
+        Ok(_) => {
+            github
+                .process
+                .diagnostic(&format!("{commenter} does not have write access"));
+            return Ok(status("skipped", None));
+        }
+        Err(_) => {
+            github
+                .process
+                .diagnostic(&format!("{commenter} does not have collaborator access"));
+            return Ok(status("skipped", None));
+        }
     }
     let bytes = std::fs::read(github.root.join(APPROVED_FILE)).map_err(|e| e.to_string())?;
     let content = String::from_utf8_lossy(&bytes);
-    let mut users = parse_approved_users(&content, true);
+    let mut users = parse_approved_users(
+        &content,
+        super::approved_users::LineDiagnostics::Trimmed,
+        github.process,
+    );
     let author = e["issue"]["user"]["login"]
         .as_str()
         .ok_or("Missing author")?;
@@ -30,7 +47,9 @@ pub(super) fn approve(
         .capability(author)
         .filter(|c| *c == "pr" || *c == target)
     {
-        eprintln!("{author} is already approved for {capability}");
+        github
+            .process
+            .diagnostic(&format!("{author} is already approved for {capability}"));
         github.repo_api(
             "POST",
             &format!("issues/{}/comments", e["issue"]["number"]),
@@ -50,6 +69,9 @@ pub(super) fn approve(
         });
         "added"
     };
+    github
+        .process
+        .diagnostic(&format!("Set {author} capability to {target}"));
     let _app = app_slug
         .filter(|s| !s.is_empty())
         .ok_or("Missing approval App slug")?;
@@ -115,7 +137,6 @@ pub(super) fn approve(
     if !output.status.success() {
         return Err("Approval enqueue failed".into());
     }
-    eprintln!("Set {author} pending capability to {target}");
     Ok(status(outcome, Some(target)))
 }
 
@@ -203,11 +224,15 @@ pub(super) fn complete(
     let Some(commenter) = request["user"]["login"].as_str() else {
         return Ok(());
     };
-    if !collaborator(get_permission(github, commenter)) {
+    if !collaborator(get_permission(github, commenter).ok().flatten().as_deref()) {
         return Ok(());
     }
     let content = super::github::get_text_file(github, APPROVED_FILE)?;
-    let users = parse_approved_users(&content, true);
+    let users = parse_approved_users(
+        &content,
+        super::approved_users::LineDiagnostics::Trimmed,
+        github.process,
+    );
     let Some(capability) = users
         .capability(author)
         .filter(|c| *c == target || *c == "pr")

@@ -21,7 +21,6 @@ pub(super) fn command(body: &str) -> Option<&'static str> {
 }
 
 pub(super) fn weekday(value: &str) -> Option<u32> {
-    use chrono::{Datelike, Duration, NaiveDate};
     let (date, time) = value
         .split_once(['T', 't', ' '])
         .map_or((value, None), |(d, t)| (d, Some(t)));
@@ -49,10 +48,21 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     if !(1..=31).contains(&day) {
         return None;
     }
-    let date = NaiveDate::from_ymd_opt(year, month, 1)?
-        .checked_add_signed(Duration::days(i64::from(day) - 1))?;
+    if !(1..=12).contains(&month) {
+        return None;
+    }
+    // MakeDay counts Gregorian days from the epoch, including normalized day overflow.
+    let year = i64::from(year);
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let month_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let days = 365 * (year - 1970) + (year - 1969).div_euclid(4) - (year - 1901).div_euclid(100)
+        + (year - 1601).div_euclid(400)
+        + month_days[(month - 1) as usize]
+        + i64::from(leap && month > 2)
+        + i64::from(day)
+        - 1;
     let Some(time) = time else {
-        return Some(date.weekday().num_days_from_sunday());
+        return clipped_weekday(days * 86_400_000);
     };
     let (clock, offset) = if let Some(clock) = time.strip_suffix(['Z', 'z']) {
         (clock, 0)
@@ -107,10 +117,21 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     {
         return None;
     }
-    let datetime = date
-        .and_hms_opt(0, 0, 0)?
-        .checked_add_signed(Duration::seconds(
-            hour * 3600 + minute * 60 + second - offset * 60,
-        ))?;
-    Some(datetime.weekday().num_days_from_sunday())
+    let millis = fraction.map_or(0, |f| {
+        f.bytes()
+            .take(3)
+            .zip([100, 10, 1])
+            .fold(0, |n, (b, scale)| n + i64::from(b - b'0') * scale)
+    });
+    // MakeDate combines the day and clock; TimeClip rejects values beyond either limit.
+    clipped_weekday(
+        days * 86_400_000 + (hour * 3600 + minute * 60 + second - offset * 60) * 1000 + millis,
+    )
+}
+
+fn clipped_weekday(time: i64) -> Option<u32> {
+    if time.abs() > 8_640_000_000_000_000 {
+        return None;
+    }
+    Some((time.div_euclid(86_400_000) + 4).rem_euclid(7) as u32)
 }

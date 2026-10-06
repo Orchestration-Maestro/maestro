@@ -36,7 +36,7 @@ pub(crate) fn run(
         && e["issue"].get("pull_request").is_none()
     {
         if semantics::command(e["comment"]["body"].as_str().unwrap_or("")).is_none() {
-            eprintln!("Comment does not match lgtm or lgtmi");
+            process.diagnostic("Comment does not match lgtm or lgtmi");
             return Ok(vec![("status".into(), "skipped".into())]);
         }
         let mut github = github::Github {
@@ -62,7 +62,7 @@ pub(crate) fn run(
         };
         let author = item["user"]["login"].as_str().ok_or("Missing author")?;
         if author.ends_with("[bot]") {
-            eprintln!("Skipping bot: {author}");
+            process.diagnostic(&format!("Skipping bot: {author}"));
             return Ok(vec![]);
         }
         let mut github = github::Github {
@@ -75,22 +75,37 @@ pub(crate) fn run(
                 .ok_or("Missing default branch")?,
             process,
         };
-        if github::collaborator(github::get_permission(&mut github, author)) {
-            eprintln!("{author} is a collaborator");
+        let permission = github::get_permission(&mut github, author).ok().flatten();
+        if github::collaborator(permission.as_deref()) {
+            github.process.diagnostic(&format!(
+                "{author} is a collaborator with {} access",
+                permission.as_deref().unwrap_or("")
+            ));
             return Ok(vec![]);
         }
         let content = github::get_text_file(&mut github, approved_users::APPROVED_FILE)?;
-        let users = approved_users::parse_approved_users(&content, true);
-        if users
+        let users = approved_users::parse_approved_users(
+            &content,
+            approved_users::LineDiagnostics::Raw,
+            github.process,
+        );
+        if let Some(capability) = users
             .capability(author)
-            .is_some_and(|c| c == "pr" || workflow == "issue-gate")
+            .filter(|c| *c == "pr" || workflow == "issue-gate")
         {
-            eprintln!("{author} is approved");
+            github.process.diagnostic(&if workflow == "pr-gate" {
+                format!("{author} is approved for PRs")
+            } else {
+                format!("{author} is approved for {capability}")
+            });
             return Ok(vec![]);
         }
         if workflow == "issue-gate" {
             issue_gate::close(&mut github, item)?;
         } else {
+            github
+                .process
+                .diagnostic(&format!("{author} is not approved, closing PR"));
             pr_gate::close_pull_request(&mut github, item)?;
         }
     }

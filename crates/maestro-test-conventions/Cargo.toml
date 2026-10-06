@@ -8,7 +8,6 @@ repository.workspace = true
 [dependencies]
 serde_json.workspace = true
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
-chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 yaml-rust2 = { version = "=0.13.0", default-features = false }

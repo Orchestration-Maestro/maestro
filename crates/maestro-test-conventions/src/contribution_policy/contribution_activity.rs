@@ -5,16 +5,24 @@ use serde_json::{Value, json};
 pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String> {
     let author = item["user"]["login"].as_str().ok_or("Missing author")?;
     if author.ends_with("[bot]") {
-        eprintln!("Skipping bot: {author}");
+        github
+            .process
+            .diagnostic(&format!("Skipping bot: {author}"));
         return Ok(());
     }
     match get_text_file(github, APPROVED_FILE) {
         Ok(content) => {
-            if parse_approved_users(&content, false)
-                .capability(author)
-                .is_some()
+            if parse_approved_users(
+                &content,
+                super::approved_users::LineDiagnostics::Silent,
+                github.process,
+            )
+            .capability(author)
+            .is_some()
             {
-                eprintln!("{author} is in APPROVED_CONTRIBUTORS, passing");
+                github
+                    .process
+                    .diagnostic(&format!("{author} is in APPROVED_CONTRIBUTORS, passing"));
                 return Ok(());
             }
         }
@@ -22,8 +30,12 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
             .process
             .diagnostic(&format!("Could not read APPROVED_CONTRIBUTORS: {error}")),
     }
-    if collaborator(get_permission(github, author)) {
-        eprintln!("{author} is a collaborator, passing");
+    let permission = get_permission(github, author).ok().flatten();
+    if collaborator(permission.as_deref()) {
+        github.process.diagnostic(&format!(
+            "{author} is a collaborator ({}), passing",
+            permission.as_deref().unwrap_or("")
+        ));
         return Ok(());
     }
     let policy: Value = serde_json::from_slice(
@@ -43,6 +55,9 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
         .filter_map(Value::as_str)
     {
         if has_activity(github, repository, author) {
+            github
+                .process
+                .diagnostic(&format!("{author} has configured activity, adding label"));
             let number = item["number"].as_u64().ok_or("Missing issue/PR number")?;
             github.repo_api(
                 "POST",
@@ -52,7 +67,9 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
             return Ok(());
         }
     }
-    eprintln!("{author} has no configured activity, passing");
+    github
+        .process
+        .diagnostic(&format!("{author} has no configured activity, passing"));
     Ok(())
 }
 

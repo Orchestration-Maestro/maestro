@@ -26,7 +26,17 @@ impl ApprovedUsers {
     }
 }
 
-pub(super) fn parse_approved_users(content: &str, diagnostics: bool) -> ApprovedUsers {
+pub(super) enum LineDiagnostics {
+    Silent,
+    Trimmed,
+    Raw,
+}
+
+pub(super) fn parse_approved_users(
+    content: &str,
+    diagnostics: LineDiagnostics,
+    process: &mut dyn super::Process,
+) -> ApprovedUsers {
     let mut result = ApprovedUsers {
         entries: vec![],
         users: HashMap::new(),
@@ -50,11 +60,19 @@ pub(super) fn parse_approved_users(content: &str, diagnostics: bool) -> Approved
                 capability: parts[1].to_lowercase(),
             });
         } else {
-            if diagnostics && !trimmed.is_empty() && !trimmed.starts_with('#') {
-                if parts.len() != 2 {
-                    eprintln!("Skipping malformed line: {line}");
+            if !matches!(diagnostics, LineDiagnostics::Silent)
+                && !trimmed.is_empty()
+                && !trimmed.starts_with('#')
+            {
+                let line = if matches!(diagnostics, LineDiagnostics::Trimmed) {
+                    trimmed
                 } else {
-                    eprintln!("Skipping line with invalid capability: {line}");
+                    line
+                };
+                if parts.len() != 2 {
+                    process.diagnostic(&format!("Skipping malformed line: {line}"));
+                } else {
+                    process.diagnostic(&format!("Skipping line with invalid capability: {line}"));
                 }
             }
             result.entries.push(Entry::Other(line.into()));

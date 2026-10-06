@@ -41,20 +41,20 @@ impl Github<'_> {
     }
 }
 
-pub(super) fn get_permission(github: &mut Github<'_>, username: &str) -> Option<String> {
-    github
-        .repo_api(
-            "GET",
-            &format!("collaborators/{username}/permission"),
-            json!({}),
-        )
-        .ok()?["permission"]
-        .as_str()
-        .map(str::to_owned)
+pub(super) fn get_permission(
+    github: &mut Github<'_>,
+    username: &str,
+) -> Result<Option<String>, String> {
+    let response = github.repo_api(
+        "GET",
+        &format!("collaborators/{username}/permission"),
+        json!({}),
+    )?;
+    Ok(response["permission"].as_str().map(str::to_owned))
 }
 
-pub(super) fn collaborator(permission: Option<String>) -> bool {
-    matches!(permission.as_deref(), Some("admin" | "maintain" | "write"))
+pub(super) fn collaborator(permission: Option<&str>) -> bool {
+    matches!(permission, Some("admin" | "maintain" | "write"))
 }
 
 pub(super) fn get_text_file(github: &mut Github<'_>, path: &str) -> Result<String, String> {

@@ -805,6 +805,11 @@ fn issue_dates_follow_utc_javascript_boundaries() {
         ("2026-10", Some(4)),
         ("2026", Some(4)),
         ("+002026-10-09T00:00:00Z", Some(5)),
+        ("+262143-01-01T00:00:00Z", Some(2)),
+        ("+275760-09-13T00:00:00Z", Some(6)),
+        ("+275760-09-13T00:00:00.001Z", None),
+        ("-271821-04-20T00:00:00Z", Some(2)),
+        ("-271821-04-19T23:59:59.999Z", None),
         ("2026-10-09T00:00:00.1234Z", Some(5)),
         ("2026-10-09t00:00:00z", Some(5)),
         ("2026-10-09 00:00:00Z", Some(5)),
@@ -951,14 +956,17 @@ fn activity_read_and_permission_failures_continue() {
         .unwrap();
         assert_eq!(
             p.diagnostics,
-            vec![format!(
-                "Could not read APPROVED_CONTRIBUTORS: {}",
-                if response.is_none() {
-                    "controlled failure"
-                } else {
-                    "Expected file content for .github/APPROVED_CONTRIBUTORS"
-                }
-            )]
+            vec![
+                format!(
+                    "Could not read APPROVED_CONTRIBUTORS: {}",
+                    if response.is_none() {
+                        "controlled failure"
+                    } else {
+                        "Expected file content for .github/APPROVED_CONTRIBUTORS"
+                    }
+                ),
+                "Alice is a collaborator (write), passing".into()
+            ]
         );
         assert_eq!(p.requests.len(), 2);
         assert!(p.requests[1].args[3].contains("collaborators/Alice/permission"));
@@ -992,7 +1000,10 @@ fn activity_search_matches_label_only() {
         .unwrap();
         assert_eq!(
             p.diagnostics,
-            vec!["MiXeD has opened 2 issues/PRs on fixture/second"]
+            vec![
+                "MiXeD has opened 2 issues/PRs on fixture/second",
+                "MiXeD has configured activity, adding label"
+            ]
         );
         assert_eq!(p.requests.len(), 5);
         assert_eq!(p.requests[2].args[3], "search/issues");
@@ -1093,7 +1104,8 @@ fn activity_diagnostics_preserve_trimmed_gh_stderr() {
         p.diagnostics,
         vec![
             "Could not read APPROVED_CONTRIBUTORS: controlled gh failure",
-            "Search failed: controlled gh failure"
+            "Search failed: controlled gh failure",
+            "Alice has no configured activity, passing"
         ]
     );
 }
@@ -2026,4 +2038,254 @@ fn approval_stale_checkout_fails_before_branch_creation() {
             .iter()
             .all(|r| r.program == "git" || r.args[2] == "GET")
     );
+}
+
+#[test]
+fn reference_branch_diagnostics_preserve_values_and_provenance() {
+    let w = fixture();
+    for (body, permission, expected) in [
+        (
+            "no command",
+            Some("write"),
+            "Comment does not match lgtm or lgtmi",
+        ),
+        ("lgtm", Some("read"), "Reviewer does not have write access"),
+        ("lgtm", None, "Reviewer does not have collaborator access"),
+    ] {
+        let mut e = event("created");
+        e["comment"]["body"] = json!(body);
+        let mut p = RecordingProcess::default();
+        if body == "lgtm" {
+            if let Some(permission) = permission {
+                p.reply(json!({"permission":permission}));
+            } else {
+                p.fail();
+            }
+        }
+        run(
+            &w.root,
+            "approve-contributor",
+            "issue_comment",
+            &e.to_string(),
+            None,
+            &mut p,
+        )
+        .unwrap();
+        assert_eq!(p.diagnostics, vec![expected]);
+        assert_eq!(p.requests.len(), usize::from(body == "lgtm"));
+    }
+    std::fs::write(
+        w.root.join(".github/APPROVED_CONTRIBUTORS"),
+        "  malformed  \n  Invalid bad  \nAlice pr\n",
+    )
+    .unwrap();
+    let mut p = RecordingProcess::default();
+    p.reply(json!({"permission":"write"}));
+    p.reply(json!({}));
+    run(
+        &w.root,
+        "approve-contributor",
+        "issue_comment",
+        &event("created").to_string(),
+        None,
+        &mut p,
+    )
+    .unwrap();
+    assert_eq!(
+        p.diagnostics,
+        vec![
+            "Skipping malformed line: malformed",
+            "Skipping line with invalid capability: Invalid bad",
+            "Alice is already approved for pr",
+        ]
+    );
+    for (content, status) in [("", "added"), ("Alice issue\n", "updated")] {
+        std::fs::write(w.root.join(".github/APPROVED_CONTRIBUTORS"), content).unwrap();
+        let mut p = RecordingProcess::default();
+        policy_support::update_replies(&mut p);
+        let outputs = run(
+            &w.root,
+            "approve-contributor",
+            "issue_comment",
+            &event("created").to_string(),
+            Some("policy-app"),
+            &mut p,
+        )
+        .unwrap();
+        assert_eq!(
+            outputs,
+            vec![
+                ("status".into(), status.into()),
+                ("capability".into(), "pr".into())
+            ]
+        );
+        assert_eq!(p.diagnostics, vec!["Set Alice capability to pr"]);
+    }
+    for pr in [false, true] {
+        let workflow = if pr { "pr-gate" } else { "issue-gate" };
+        let event_name = if pr { "pull_request_target" } else { "issues" };
+        for branch in ["bot", "collaborator", "approved", "unapproved"] {
+            let mut e = policy_support::gate_event(pr);
+            let mut p = RecordingProcess::default();
+            let expected = match branch {
+                "bot" => {
+                    e[if pr { "pull_request" } else { "issue" }]["user"]["login"] =
+                        json!("Helper[bot]");
+                    vec!["Skipping bot: Helper[bot]"]
+                }
+                "collaborator" => {
+                    p.reply(json!({"permission":"maintain"}));
+                    vec!["Alice is a collaborator with maintain access"]
+                }
+                _ => {
+                    p.reply(json!({"permission":"none"}));
+                    policy_support::content(
+                        &mut p,
+                        if branch == "approved" {
+                            "  malformed  \n  Invalid bad  \nAlice pr\n"
+                        } else {
+                            "  malformed  \n  Invalid bad  \n"
+                        },
+                    );
+                    let mut expected = vec![
+                        "Skipping malformed line:   malformed  ",
+                        "Skipping line with invalid capability:   Invalid bad  ",
+                    ];
+                    if branch == "approved" {
+                        expected.push(if pr {
+                            "Alice is approved for PRs"
+                        } else {
+                            "Alice is approved for pr"
+                        });
+                    } else {
+                        p.reply(json!({}));
+                        p.reply(json!({}));
+                        if pr {
+                            expected.push("Alice is not approved, closing PR");
+                        }
+                    }
+                    expected
+                }
+            };
+            run(&w.root, workflow, event_name, &e.to_string(), None, &mut p).unwrap();
+            assert_eq!(p.diagnostics, expected, "{workflow} {branch}");
+            assert_eq!(
+                p.requests.len(),
+                match branch {
+                    "bot" => 0,
+                    "collaborator" => 1,
+                    "approved" => 2,
+                    _ => 4,
+                }
+            );
+        }
+        let mut p = RecordingProcess::default();
+        p.reply(json!({"permission":"none"}));
+        policy_support::content(&mut p, "Alice issue\n");
+        if pr {
+            p.reply(json!({}));
+            p.reply(json!({}));
+        }
+        run(
+            &w.root,
+            workflow,
+            event_name,
+            &policy_support::gate_event(pr).to_string(),
+            None,
+            &mut p,
+        )
+        .unwrap();
+        assert_eq!(
+            p.diagnostics,
+            vec![if pr {
+                "Alice is not approved, closing PR"
+            } else {
+                "Alice is approved for issue"
+            }]
+        );
+    }
+    policy_support::configure(&w, |v| {
+        v["activity_gate"] = json!({"repositories":["fixture/remote"],"label":"activity"});
+    });
+    for branch in [
+        "bot",
+        "approved",
+        "collaborator",
+        "read-error",
+        "match",
+        "no-match",
+        "search-error",
+    ] {
+        let mut e = event("opened");
+        let mut p = RecordingProcess::default();
+        let expected = match branch {
+            "bot" => {
+                e["issue"]["user"]["login"] = json!("Helper[bot]");
+                vec!["Skipping bot: Helper[bot]"]
+            }
+            "approved" => {
+                policy_support::content(&mut p, "Alice issue\n");
+                vec!["Alice is in APPROVED_CONTRIBUTORS, passing"]
+            }
+            "collaborator" | "read-error" => {
+                if branch == "read-error" {
+                    p.fail();
+                } else {
+                    policy_support::content(&mut p, "");
+                }
+                p.reply(json!({"permission":"admin"}));
+                if branch == "read-error" {
+                    vec![
+                        "Could not read APPROVED_CONTRIBUTORS: controlled failure",
+                        "Alice is a collaborator (admin), passing",
+                    ]
+                } else {
+                    vec!["Alice is a collaborator (admin), passing"]
+                }
+            }
+            _ => {
+                policy_support::content(&mut p, "malformed\nInvalid bad\n");
+                p.fail();
+                if branch == "search-error" {
+                    p.fail();
+                } else {
+                    p.reply(json!({"total_count": if branch == "match" { 3 } else { 0 }}));
+                }
+                if branch == "match" {
+                    p.reply(json!({}));
+                    vec![
+                        "Alice has opened 3 issues/PRs on fixture/remote",
+                        "Alice has configured activity, adding label",
+                    ]
+                } else if branch == "search-error" {
+                    vec![
+                        "Search failed: controlled failure",
+                        "Alice has no configured activity, passing",
+                    ]
+                } else {
+                    vec!["Alice has no configured activity, passing"]
+                }
+            }
+        };
+        run(
+            &w.root,
+            "contribution-policy",
+            "issues",
+            &e.to_string(),
+            None,
+            &mut p,
+        )
+        .unwrap();
+        assert_eq!(p.diagnostics, expected, "activity {branch}");
+        assert_eq!(
+            p.requests.len(),
+            match branch {
+                "bot" => 0,
+                "approved" => 1,
+                "collaborator" | "read-error" => 2,
+                "match" => 4,
+                _ => 3,
+            }
+        );
+    }
 }

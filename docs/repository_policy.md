@@ -26,7 +26,9 @@ JSON stdin and explicit argv. No submitted text is evaluated as shell code.
 Created-comment approval emits `status=skipped|already|added|updated`, followed
 by `capability=issue|pr` when present, to `GITHUB_OUTPUT`. Other routes emit no
 step outputs. The approval step is named `update`. Errors produce a nonzero exit
-and credential-free branch diagnostics; success is not printed after a failure.
+and credential-free branch diagnostics. The capability-setting diagnostic reports
+the computed list change before publication, not effective approval; the approval
+reply still waits for the protected merge.
 
 ## Capabilities and event order
 
@@ -116,8 +118,9 @@ comment on or close live items.
 
 ## Dependency closure
 
-Runtime additions are base64 0.23.1 and chrono 0.4.45 (`std` only, defaults off).
-Chrono resolves num-traits 0.2.19, whose build dependency is autocfg 1.5.1.
+Runtime addition is base64 0.23.1 (`std` only, defaults off).
+ISO dates use integer Gregorian day and millisecond arithmetic with the full
+±8.64e15 ms time-value range; no library date range constrains routing.
 Test-only yaml-rust2 0.13.0 (defaults off) resolves arraydeque 0.5.1 and hashlink
 0.12.2; hashlink resolves hashbrown 0.17.1, which resolves foldhash 0.2.0.
 The direct additions and transitive dependencies are MIT OR Apache-2.0, except
