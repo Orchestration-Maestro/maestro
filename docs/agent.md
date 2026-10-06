@@ -45,6 +45,8 @@ or start execution. Both default to `QueueMode::OneAtATime`; `All` consumes the
 current FIFO on one poll. `queue_mode` and `set_queue_mode` inspect/change one
 policy without changing the other. `queue` returns a detached copy; `clear_queue`
 returns removed records in FIFO order and leaves the other queue untouched.
+Initial context and queued records are detached at admission, including nested
+tool calls, so later caller mutation cannot change history or pending input.
 
 Entry steering is polled after awaited agent start, turn start and initial input
 start/end events, before the first model request. It is also polled after a
@@ -54,7 +56,8 @@ entry steering. Follow-up is consumed only after steering is exhausted. There is
 no executable-tool continuation in text execution.
 
 After awaited `TurnEnd` subscribers, `stop_after_turn` sees the terminal assistant,
-completed context and run-local records. True stops before either queue poll;
+completed context and run-local records as independent snapshots. Hook mutation
+cannot change returned records or history. True stops before either queue poll;
 false creates no extra request. Model error/abort stops before this hook and before
 post-turn queue polling. There is no universal turn limit or execution deadline.
 
@@ -69,7 +72,8 @@ end lifecycle. Iterator EOF awaits the independently supplied stream result,
 including producers that close with `end(Some(message))` without a terminal event.
 `MessageUpdate` retains both the outer cumulative snapshot and original nested
 model event. State is reduced before each subscriber observes it. Returned state,
-queue and event values are owned independent snapshots.
+queue and event values are owned independent snapshots. Each update captures
+the shared partial once for both outer and nested message payloads.
 
 Subscribers are awaited in registration order without locks across user code.
 Each event snapshots registrations; unsubscribe is idempotent and affects future

@@ -73,3 +73,9 @@ promise and queue locks. Abandoned reads reserve their deliveries while handles
 remain alive, but retain no queue ownership after all handles are dropped.
 Terminal pushes publish the terminal delivery and final result before notifying
 observers, so a reentrant result observer can drain the terminal event before EOF.
+
+Flattened raw options enumerate the complete object with canonical integer keys
+first, including keys supplied alongside common options. Explicit JSON null in
+routing sort, throughput, latency and model compatibility remains distinct from
+an absent field when decoded and serialized again. Concurrent iteration waits
+for terminal extraction and delivery before observing EOF.

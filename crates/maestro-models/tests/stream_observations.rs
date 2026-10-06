@@ -97,3 +97,35 @@ fn result_wake_drains_terminal_event_before_eof() {
     assert_eq!(*observer.observed.lock().unwrap(), vec![Some(-1), None]);
     assert_eq!(poll(&mut result), std::task::Poll::Ready(-1));
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn concurrent_terminal_extraction_does_not_publish_premature_eof() {
+    let entered = Arc::new(std::sync::Barrier::new(2));
+    let release = Arc::new(std::sync::Barrier::new(2));
+    let extracting = entered.clone();
+    let gated = release.clone();
+    let stream = EventStream::new(
+        Arc::new(|_: &i32| Ok(true)),
+        Arc::new(move |value| {
+            extracting.wait();
+            gated.wait();
+            Ok(*value)
+        }),
+    );
+    let producer = stream.clone();
+    let thread = std::thread::spawn(move || producer.push(-1).unwrap());
+    entered.wait();
+    let mut cursor = stream.iter();
+    let mut read = cursor.next();
+    let before_publication = poll(&mut read);
+    release.wait();
+    thread.join().unwrap();
+    assert!(
+        before_publication.is_pending(),
+        "EOF must wait for terminal publication: {before_publication:?}"
+    );
+    assert_eq!(poll(&mut read), std::task::Poll::Ready(Some(-1)));
+    drop(read);
+    assert_eq!(poll(&mut cursor.next()), std::task::Poll::Ready(None));
+}

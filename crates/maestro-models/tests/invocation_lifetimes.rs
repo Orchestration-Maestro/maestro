@@ -701,6 +701,16 @@ fn terminal_push_leaves_other_waiters_until_end() {
 
 #[test]
 fn records_round_trip_all_wire_shapes() {
+    for wire in [
+        serde_json::json!({"v":1,"id":"message"}),
+        serde_json::json!({"v":1,"id":"message","phase":"commentary"}),
+        serde_json::json!({"v":1,"id":"message","phase":"final_answer"}),
+    ] {
+        let signature: TextSignatureV1 = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(signature.v, 1);
+        assert_eq!(signature.id, "message");
+        assert_eq!(serde_json::to_value(signature).unwrap(), wire);
+    }
     for literal in [
         "openai-completions",
         "mistral-conversations",
@@ -1037,7 +1047,14 @@ fn compatibility_and_routing_fields_round_trip() {
         ),
         (
             "thinkingFormat",
-            &["openai", "zai", "qwen-chat-template"][..],
+            &[
+                "openai",
+                "openrouter",
+                "zai",
+                "deepseek",
+                "qwen",
+                "qwen-chat-template",
+            ][..],
         ),
         ("cacheControlFormat", &["anthropic"][..]),
     ] {
@@ -1708,4 +1725,71 @@ fn diagnostic_json_coercion_propagates_noncallable_to_string() {
         assert_eq!(error.name, "TypeError");
         assert_eq!(error.message, "Cannot convert object to primitive value");
     }
+}
+
+#[test]
+fn flattened_raw_options_enumerate_root_integer_keys_before_base() {
+    let mut extra = serde_json::Map::new();
+    for key in ["z", "10", "2", "01", "a", "4294967295"] {
+        extra.insert(key.into(), serde_json::json!(key));
+    }
+    let options = ProviderStreamOptions {
+        base: StreamOptions {
+            temperature: Some(0.25),
+            ..Default::default()
+        },
+        extra,
+    };
+    let value = serde_json::to_value(&options).unwrap();
+    assert_eq!(
+        value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["2", "10", "temperature", "z", "01", "a", "4294967295"]
+    );
+    assert!(
+        serde_json::to_string(&options)
+            .unwrap()
+            .starts_with("{\"2\":\"2\",\"10\":\"10\",\"temperature\":0.25,")
+    );
+}
+
+#[test]
+fn nullable_routing_and_compat_distinguish_missing_from_explicit_null() {
+    for field in ["sort", "preferred_min_throughput", "preferred_max_latency"] {
+        let missing: OpenRouterRouting = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert!(
+            !serde_json::to_value(&missing)
+                .unwrap()
+                .as_object()
+                .unwrap()
+                .contains_key(field)
+        );
+        let wire = serde_json::json!({field: null});
+        let present: OpenRouterRouting = serde_json::from_value(wire.clone()).unwrap();
+        let value = match field {
+            "sort" => &present.sort,
+            "preferred_min_throughput" => &present.preferred_min_throughput,
+            _ => &present.preferred_max_latency,
+        };
+        assert_eq!(value, &Some(serde_json::Value::Null), "{field}");
+        assert_eq!(serde_json::to_value(&present).unwrap(), wire);
+    }
+    let missing = model("custom");
+    assert!(missing.compat.is_none());
+    assert!(
+        !serde_json::to_value(&missing)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .contains_key("compat")
+    );
+    let mut wire = serde_json::to_value(missing).unwrap();
+    wire["compat"] = serde_json::Value::Null;
+    let present: Model = serde_json::from_value(wire.clone()).unwrap();
+    assert_eq!(present.compat, Some(serde_json::Value::Null));
+    assert_eq!(serde_json::to_value(present).unwrap(), wire);
 }

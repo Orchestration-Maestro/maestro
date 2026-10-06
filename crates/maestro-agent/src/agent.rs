@@ -77,7 +77,7 @@ impl Agent {
                 model,
                 options: options.clone(),
                 state: Mutex::new(Shared {
-                    context: options.context,
+                    context: crate::run::snapshot_context(&options.context),
                     running: false,
                     queues: {
                         let mut queues = crate::queues::Queues::default();
@@ -190,6 +190,7 @@ impl Agent {
     }
     /// Enqueue turn-boundary input without editing history or starting work.
     pub fn steer(&self, message: AgentMessage) {
+        let message = crate::run::snapshot_record(&message);
         self.inner
             .lock()
             .queues
@@ -198,6 +199,7 @@ impl Agent {
     }
     /// Enqueue later input without editing history or starting work.
     pub fn follow_up(&self, message: AgentMessage) {
+        let message = crate::run::snapshot_record(&message);
         self.inner
             .lock()
             .queues

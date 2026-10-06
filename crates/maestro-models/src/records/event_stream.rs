@@ -87,6 +87,7 @@ struct Queue<T> {
     queue: VecDeque<T>,
     waiting: VecDeque<Arc<Mutex<Promise<Option<T>>>>>,
     done: bool,
+    terminal_admitted: bool,
 }
 /// Shared FIFO producer handle with an independently observed final result.
 pub struct EventStream<T, R = T> {
@@ -120,6 +121,7 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
                 queue: VecDeque::new(),
                 waiting: VecDeque::new(),
                 done: false,
+                terminal_admitted: false,
             })),
             result: Promise::new(),
             is_complete,
@@ -128,26 +130,41 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
     }
     /// Push supplied data; callback errors retain their ordered state transitions.
     pub fn push(&self, event: T) -> Result<(), ThrownValue> {
-        if self.queue.lock().unwrap_or_else(|p| p.into_inner()).done {
+        if self
+            .queue
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .terminal_admitted
+        {
             return Ok(());
         }
         let result = if (self.is_complete)(&event)? {
-            self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
-            Some((self.extract_result)(&event)?)
+            self.queue
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .terminal_admitted = true;
+            match (self.extract_result)(&event) {
+                Ok(result) => Some(result),
+                Err(error) => {
+                    self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
+                    return Err(error);
+                }
+            }
         } else {
             None
         };
         let mut event = Some(event);
         let waiter = {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+            q.done |= result.is_some();
             if let Some(waiter) = q.waiting.pop_front() {
-                Some(waiter)
+                Some(Promise::publish(&waiter, event.take()))
             } else {
                 q.queue.push_back(event.take().unwrap());
                 None
             }
         };
-        let delivery = waiter.map(|waiter| Promise::publish(&waiter, event));
+        let delivery = waiter;
         let settlement = result.map(|result| Promise::publish(&self.result, result));
         if let Some(delivery) = delivery {
             notify(delivery);
@@ -162,6 +179,7 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
         let waiting = {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
             q.done = true;
+            q.terminal_admitted = true;
             std::mem::take(&mut q.waiting)
         };
         if let Some(value) = result {
@@ -227,6 +245,7 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
                 queue: VecDeque::new(),
                 waiting: VecDeque::new(),
                 done: false,
+                terminal_admitted: false,
             })),
             result: Promise::new(),
             is_complete,
@@ -235,26 +254,41 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
     }
     /// Push supplied data; callback errors retain their ordered state transitions.
     pub fn push(&self, event: T) -> Result<(), ThrownValue> {
-        if self.queue.lock().unwrap_or_else(|p| p.into_inner()).done {
+        if self
+            .queue
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .terminal_admitted
+        {
             return Ok(());
         }
         let result = if (self.is_complete)(&event)? {
-            self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
-            Some((self.extract_result)(&event)?)
+            self.queue
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .terminal_admitted = true;
+            match (self.extract_result)(&event) {
+                Ok(result) => Some(result),
+                Err(error) => {
+                    self.queue.lock().unwrap_or_else(|p| p.into_inner()).done = true;
+                    return Err(error);
+                }
+            }
         } else {
             None
         };
         let mut event = Some(event);
         let waiter = {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+            q.done |= result.is_some();
             if let Some(waiter) = q.waiting.pop_front() {
-                Some(waiter)
+                Some(Promise::publish(&waiter, event.take()))
             } else {
                 q.queue.push_back(event.take().unwrap());
                 None
             }
         };
-        let delivery = waiter.map(|waiter| Promise::publish(&waiter, event));
+        let delivery = waiter;
         let settlement = result.map(|result| Promise::publish(&self.result, result));
         if let Some(delivery) = delivery {
             notify(delivery);
@@ -269,6 +303,7 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
         let waiting = {
             let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
             q.done = true;
+            q.terminal_admitted = true;
             std::mem::take(&mut q.waiting)
         };
         if let Some(value) = result {

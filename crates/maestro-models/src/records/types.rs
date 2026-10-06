@@ -676,7 +676,7 @@ pub struct OpenRouterRouting {
     pub quantizations: Option<Vec<String>>,
     /// Supplied sort.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
+    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
     pub sort: Option<serde_json::Value>,
     /// Supplied max price.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -684,11 +684,11 @@ pub struct OpenRouterRouting {
     pub max_price: Option<serde_json::Map<String, serde_json::Value>>,
     /// Supplied preferred min throughput.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
+    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
     pub preferred_min_throughput: Option<serde_json::Value>,
     /// Supplied preferred max latency.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
+    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
     pub preferred_max_latency: Option<serde_json::Value>,
 }
 /// VercelGatewayRouting supplied record.
@@ -735,7 +735,7 @@ pub struct Model {
     pub headers: Option<serde_json::Map<String, serde_json::Value>>,
     /// Supplied compat.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
+    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
     pub compat: Option<serde_json::Value>,
 }
 
@@ -1138,7 +1138,7 @@ pub struct StreamOptions {
     pub metadata: Option<serde_json::Map<String, serde_json::Value>>,
 }
 /// Untouched ProviderStreamOptions adapter options.
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Default, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderStreamOptions {
     /// Common options.
@@ -1146,8 +1146,25 @@ pub struct ProviderStreamOptions {
     pub base: StreamOptions,
     /// Supplied extra.
     #[serde(flatten)]
-    #[serde(serialize_with = "serialize_map")]
     pub extra: serde_json::Map<String, serde_json::Value>,
+}
+impl serde::Serialize for ProviderStreamOptions {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        #[derive(serde::Serialize)]
+        struct Flattened<'a> {
+            #[serde(flatten)]
+            base: &'a StreamOptions,
+            #[serde(flatten)]
+            extra: &'a serde_json::Map<String, serde_json::Value>,
+        }
+        serialize_json(
+            &Flattened {
+                base: &self.base,
+                extra: &self.extra,
+            },
+            serializer,
+        )
+    }
 }
 /// Untouched SimpleStreamOptions adapter options.
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]

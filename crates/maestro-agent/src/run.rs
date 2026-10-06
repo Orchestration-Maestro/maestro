@@ -127,15 +127,8 @@ pub(crate) async fn run(
                     break snapshot(&message);
                 }
                 event => {
-                    emit(
-                        &inner,
-                        AgentEvent::MessageUpdate {
-                            message: snapshot(partial(&event)),
-                            assistant_message_event: detach(event),
-                        },
-                        cancellation,
-                    )
-                    .await;
+                    let captured = snapshot(partial(&event));
+                    emit(&inner, update_event(event, captured), cancellation).await;
                 }
             }
         };
@@ -177,7 +170,7 @@ pub(crate) async fn run(
         if let Some(stop) = &inner.options.stop_after_turn {
             let context = snapshot_context(&inner.lock().context);
             if stop(StopAfterTurnContext {
-                message: terminal,
+                message: snapshot_assistant(&terminal),
                 tool_results: vec![],
                 context,
                 new_messages: additions.iter().map(snapshot_record).collect(),
@@ -261,8 +254,15 @@ pub(crate) fn snapshot_assistant(message: &AssistantMessage) -> AssistantMessage
     }
     message
 }
-pub(crate) fn detach(mut event: AssistantMessageEvent) -> AssistantMessageEvent {
-    let owned = Arc::new(std::sync::RwLock::new(snapshot(partial(&event))));
+pub(crate) fn detach(event: AssistantMessageEvent) -> AssistantMessageEvent {
+    let captured = snapshot(partial(&event));
+    detach_with_snapshot(event, captured)
+}
+fn detach_with_snapshot(
+    mut event: AssistantMessageEvent,
+    captured: AssistantMessage,
+) -> AssistantMessageEvent {
+    let owned = Arc::new(std::sync::RwLock::new(captured));
     match &mut event {
         AssistantMessageEvent::Start { partial }
         | AssistantMessageEvent::TextStart { partial, .. }
@@ -325,5 +325,50 @@ pub(crate) fn snapshot_event(event: &AgentEvent) -> AgentEvent {
             message: snapshot_assistant(message),
             assistant_message_event: detach(assistant_message_event.clone()),
         },
+    }
+}
+
+fn update_event(event: AssistantMessageEvent, captured: AssistantMessage) -> AgentEvent {
+    AgentEvent::MessageUpdate {
+        message: captured.clone(),
+        assistant_message_event: detach_with_snapshot(event, captured),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::RwLock;
+
+    #[test]
+    fn shared_partial_mutation_keeps_one_update_snapshot() {
+        let original: AssistantMessage = serde_json::from_value(serde_json::json!({
+            "role":"assistant","content":[{"type":"text","text":"original"}],
+            "api":"controlled","provider":"local","model":"controlled",
+            "usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,
+                     "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},
+            "stopReason":"stop","timestamp":0
+        }))
+        .unwrap();
+        let shared = Arc::new(RwLock::new(original.clone()));
+        let captured = snapshot(&shared);
+        shared.write().unwrap().content = vec![];
+        let update = update_event(
+            AssistantMessageEvent::TextDelta {
+                content_index: 0.0,
+                delta: "original".into(),
+                partial: shared,
+            },
+            captured,
+        );
+        let AgentEvent::MessageUpdate {
+            message,
+            assistant_message_event,
+        } = update
+        else {
+            panic!()
+        };
+        assert_eq!(message, original);
+        assert_eq!(*partial(&assistant_message_event).read().unwrap(), original);
     }
 }
