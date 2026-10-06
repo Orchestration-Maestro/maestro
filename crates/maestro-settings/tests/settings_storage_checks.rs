@@ -394,3 +394,52 @@ fn settings_operations_emit_no_console_output() {
     assert!(result.stdout.is_empty());
     assert!(result.stderr.is_empty());
 }
+
+#[test]
+#[cfg(target_os = "linux")]
+fn session_directory_uses_environment_or_account_home() {
+    if let Ok(home) = std::env::var("SETTINGS_HOME_EXPECTED") {
+        let (m, _) = memory(json!({"sessionDir":"~"}));
+        assert_eq!(m.get_session_dir(), Some(home.clone()));
+        let (m, _) = memory(json!({"sessionDir":"~/sessions"}));
+        assert_eq!(
+            m.get_session_dir(),
+            Some(if home.is_empty() {
+                "sessions".into()
+            } else {
+                format!("{home}/sessions")
+            })
+        );
+        return;
+    }
+    let account = std::process::Command::new("sh")
+        .args(["-c", "getent passwd $(id -u) | cut -d: -f6 | tr -d '\n'"])
+        .env_remove("HOME")
+        .output()
+        .unwrap();
+    assert!(account.status.success());
+    let account = String::from_utf8(account.stdout).unwrap();
+    assert!(!account.is_empty());
+    for home in [None, Some("")] {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "session_directory_uses_environment_or_account_home",
+                "--nocapture",
+            ])
+            .env("SETTINGS_HOME_EXPECTED", home.unwrap_or(&account));
+        if let Some(home) = home {
+            command.env("HOME", home);
+        } else {
+            command.env_remove("HOME");
+        }
+        let result = command.output().unwrap();
+        assert!(
+            result.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
+}

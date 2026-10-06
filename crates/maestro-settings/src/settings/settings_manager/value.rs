@@ -33,9 +33,10 @@ pub(super) fn merge(base: &Value, overrides: &Value) -> Value {
 
 pub(super) fn convert(mut value: Value) -> Result<Value, super::Error> {
     if !value.is_object() && !value.is_array() {
-        return Err(std::io::Error::other(
-            "Cannot use property presence on a primitive settings value",
-        )
+        return Err(std::io::Error::other(format!(
+            "Cannot use 'in' operator to search for 'queueMode' in {}",
+            primitive_text(&value)
+        ))
         .into());
     }
     if let Some(map) = value.as_object_mut() {
@@ -228,4 +229,22 @@ pub(super) fn parse(text: &str) -> Result<Value, super::Error> {
     let mut value = serde_json::from_str(text)?;
     doubles(&mut value);
     Ok(value)
+}
+
+pub(super) fn ordered(mut map: Map<String, Value>, keys: &[String]) -> Map<String, Value> {
+    let mut result = Map::new();
+    for key in keys {
+        if let Some(value) = map.shift_remove(key) {
+            result.insert(key.clone(), value);
+        }
+    }
+    result.extend(map);
+    result
+}
+
+pub(super) fn primitive_text(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.clone(),
+        value => stringify(value),
+    }
 }

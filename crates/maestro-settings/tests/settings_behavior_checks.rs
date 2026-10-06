@@ -61,6 +61,19 @@ fn global_reload_observes_external_values() {
     put(s.as_ref(), SettingsScope::Global, r#"{"theme":"external"}"#);
     block_on(m.reload());
     assert_eq!(m.get_theme().as_deref(), Some("external"));
+    let (m, s, _) = seeded(
+        json!({"theme":"dark","extensions":["/before.ts"]}),
+        json!({}),
+    );
+    put(
+        s.as_ref(),
+        SettingsScope::Global,
+        r#"{"theme":"light","extensions":["/after.ts"],"defaultModel":"claude-sonnet"}"#,
+    );
+    block_on(m.reload());
+    assert_eq!(m.get_theme().as_deref(), Some("light"));
+    assert_eq!(m.get_extension_paths(), vec!["/after.ts"]);
+    assert_eq!(m.get_default_model().as_deref(), Some("claude-sonnet"));
 }
 
 #[test]
@@ -548,6 +561,12 @@ fn snapshots_and_owned_reads_are_detached() {
 
 #[test]
 fn local_extensions_remain_separate_from_packages() {
+    let (m, _) = memory(json!({"extensions":["/local/ext.ts","./relative/ext.ts"]}));
+    assert!(m.get_packages().is_empty());
+    assert_eq!(
+        m.get_extension_paths(),
+        vec!["/local/ext.ts", "./relative/ext.ts"]
+    );
     let (m, _) = memory(json!({"extensions":["./local.ts"],"packages":["npm:a"]}));
     assert_eq!(m.get_extension_paths(), vec!["./local.ts"]);
     assert_eq!(
@@ -562,6 +581,51 @@ fn package_source_filters_keep_shape_and_order() {
     let (m, s, q) = seeded(input.clone(), json!({}));
     let sources = m.get_packages();
     assert_eq!(sources.len(), 2);
+    assert_eq!(
+        sources[0],
+        maestro_settings::PackageSource::String("npm:a".into())
+    );
+    assert_eq!(
+        sources[1],
+        maestro_settings::PackageSource::Object {
+            source: "git:b".into(),
+            extensions: Some(vec![]),
+            skills: Some(vec!["!x".into(), "y".into()]),
+            prompts: Some(vec!["z".into()]),
+            themes: Some(vec!["theme".into()]),
+            extra: serde_json::from_value(json!({"custom":9})).unwrap(),
+            property_order: [
+                "source",
+                "extensions",
+                "skills",
+                "prompts",
+                "themes",
+                "custom"
+            ]
+            .map(str::to_owned)
+            .to_vec(),
+        }
+    );
+    let (reference, _) = memory(
+        json!({"packages":["npm:simple-pkg",{"source":"npm:shitty-extensions","extensions":["extensions/oracle.ts"],"skills":[]}]}),
+    );
+    assert_eq!(
+        reference.get_packages(),
+        vec![
+            maestro_settings::PackageSource::String("npm:simple-pkg".into()),
+            maestro_settings::PackageSource::Object {
+                source: "npm:shitty-extensions".into(),
+                extensions: Some(vec!["extensions/oracle.ts".into()]),
+                skills: Some(vec![]),
+                prompts: None,
+                themes: None,
+                extra: Default::default(),
+                property_order: ["source", "extensions", "skills"]
+                    .map(str::to_owned)
+                    .to_vec(),
+            }
+        ]
+    );
     m.set_packages(sources);
     q.drive();
     assert_eq!(disk(s.as_ref(), SettingsScope::Global), input);
@@ -631,6 +695,33 @@ fn external_package_removal_survives_theme_save() {
         disk(s.as_ref(), SettingsScope::Global)["packages"],
         json!(["old"])
     );
+    let (m, s, q) = seeded(
+        json!({"theme":"dark","packages":["npm:example-adapter"]}),
+        json!({}),
+    );
+    assert_eq!(
+        m.get_packages(),
+        vec![maestro_settings::PackageSource::String(
+            "npm:example-adapter".into()
+        )]
+    );
+    put(
+        s.as_ref(),
+        SettingsScope::Global,
+        r#"{"theme":"dark","packages":[]}"#,
+    );
+    assert_eq!(
+        disk(s.as_ref(), SettingsScope::Global)["packages"],
+        json!([])
+    );
+    m.set_theme("light".into());
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(
+        disk(s.as_ref(), SettingsScope::Global)["packages"],
+        json!([])
+    );
+    assert_eq!(disk(s.as_ref(), SettingsScope::Global)["theme"], "light");
 }
 
 #[test]
@@ -1453,4 +1544,131 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         assert_eq!([b.minimal, b.low, b.medium, b.high], [None; 4]);
         assert_eq!(b.extra["other"], 1);
     }
+}
+
+#[test]
+fn typed_round_trips_preserve_exact_property_positions() {
+    let input = json!({"packages":[{"source":"x","custom":1,"skills":["a"],"extensions":[]}],"warnings":{"anthropicExtraUsage":false,"custom":1}});
+    let expected = "{\n  \"packages\": [\n    {\n      \"source\": \"x\",\n      \"custom\": 1,\n      \"skills\": [\n        \"a\"\n      ],\n      \"extensions\": []\n    }\n  ],\n  \"warnings\": {\n    \"anthropicExtraUsage\": false,\n    \"custom\": 1\n  }\n}";
+    let (m, s, q) = seeded(input, json!({}));
+    m.set_packages(m.get_packages());
+    m.set_warnings(m.get_warnings());
+    q.drive();
+    assert_eq!(
+        raw(s.as_ref(), SettingsScope::Global).as_deref(),
+        Some(expected)
+    );
+}
+
+#[test]
+fn load_reports_storage_failure_after_malformed_callback_text() {
+    struct FailingAfterCallback;
+    impl maestro_settings::SettingsStorage for FailingAfterCallback {
+        fn with_lock(
+            &self,
+            _: SettingsScope,
+            operation: &mut dyn FnMut(Option<&str>) -> Result<Option<String>, Error>,
+        ) -> Result<(), Error> {
+            operation(Some("{"))?;
+            Err(Box::new(Sentinel(42)))
+        }
+    }
+    let m =
+        SettingsManager::from_storage(Arc::new(FailingAfterCallback), Scheduler::default().spawn());
+    for errors in [m.drain_errors(), {
+        block_on(m.reload());
+        m.drain_errors()
+    }] {
+        assert_eq!(errors.len(), 2);
+        for error in errors {
+            assert_eq!(error.error.to_string(), "sentinel-42");
+            assert_eq!(error.error.downcast_ref::<Sentinel>().unwrap().0, 42);
+        }
+    }
+}
+
+#[test]
+fn primitive_conversion_preserves_property_presence_operator_errors() {
+    for (input, expected) in [
+        (
+            json!(null),
+            "Cannot use 'in' operator to search for 'queueMode' in null",
+        ),
+        (
+            json!(true),
+            "Cannot use 'in' operator to search for 'queueMode' in true",
+        ),
+        (
+            json!(1),
+            "Cannot use 'in' operator to search for 'queueMode' in 1",
+        ),
+        (
+            json!("text"),
+            "Cannot use 'in' operator to search for 'queueMode' in text",
+        ),
+    ] {
+        let error = SettingsManager::in_memory(input.clone(), Scheduler::default().spawn())
+            .err()
+            .unwrap();
+        assert_eq!(error.to_string(), expected);
+        let (m, _, _) = seeded(input, json!({}));
+        assert_eq!(m.drain_errors()[0].error.to_string(), expected);
+    }
+}
+
+#[test]
+fn nested_assignment_preserves_primitive_operator_errors() {
+    for (input, expected) in [
+        (
+            json!(true),
+            "Cannot create property 'autoResize' on boolean 'true'",
+        ),
+        (
+            json!(1),
+            "Cannot create property 'autoResize' on number '1'",
+        ),
+        (
+            json!("text"),
+            "Cannot create property 'autoResize' on string 'text'",
+        ),
+    ] {
+        let (m, q) = memory(json!({"images":input}));
+        let before = m.get_global_settings();
+        assert_eq!(
+            m.set_image_auto_resize(false).unwrap_err().to_string(),
+            expected
+        );
+        assert_eq!(m.get_global_settings(), before);
+        assert_eq!(q.len(), 0);
+    }
+}
+
+#[test]
+fn block_images_defaults_to_false() {
+    let (m, _) = memory(json!({}));
+    assert!(!m.get_block_images());
+}
+
+#[test]
+fn block_images_accepts_explicit_true() {
+    let (m, _) = memory(json!({"images":{"blockImages":true}}));
+    assert!(m.get_block_images());
+}
+
+#[test]
+fn block_images_setter_toggles_preference() {
+    let (m, q) = memory(json!({}));
+    assert!(!m.get_block_images());
+    m.set_block_images(true).unwrap();
+    assert!(m.get_block_images());
+    m.set_block_images(false).unwrap();
+    assert!(!m.get_block_images());
+    q.drive();
+}
+
+#[test]
+fn block_images_coexists_with_auto_resize() {
+    let (m, _) = memory(json!({"images":{"autoResize":true,"blockImages":true}}));
+    assert!(m.get_image_auto_resize());
+    assert!(m.get_block_images());
 }

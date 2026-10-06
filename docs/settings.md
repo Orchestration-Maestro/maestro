@@ -11,6 +11,10 @@ install packages, discover resources, select models or contact telemetry service
 Unknown keys and wrong-typed values remain present. Each typed getter treats a
 wrong JSON type as unset and applies its own fallback; reads do not write defaults.
 Collection reads are owned copies. Change preferences through setters.
+Package object and warning records retain their original `property_order` through
+typed getter/setter round-trips; additional properties stay in `extra`. New records
+can use an empty property order to serialize their supplied fields in insertion
+order.
 
 Objects and arrays are accepted roots. Primitive roots, malformed JSON, numeric
 overflow and lone UTF-16 surrogate escapes produce scoped load errors. Missing or
@@ -60,7 +64,9 @@ fallbacks. Explicit false overrides both. Clear-on-shrink null is false without
 an environment fallback; hardware cursor null uses its fallback.
 
 Session directory text is literal except exact `~` and `~/`, which expand the
-host home directory using lexical host join. No whitespace is trimmed.
+host home directory using lexical host join. On Unix, a set `HOME` wins even
+when empty; an unset `HOME` uses the account database. Windows uses `USERPROFILE`
+with the host profile lookup fallback. No whitespace is trimmed.
 Numeric setters floor and clamp width to at least 1, padding to 0–3 and
 an autocomplete limit to 3–20. Their arithmetic preserves NaN. Eight nested
 setters return immediate assignment errors for truthy primitive containers;
@@ -97,6 +103,8 @@ and fresh write data; there is no whole-document admission schema.
 
 `SettingsStorage::with_lock` receives a synchronous raw-text callback. Returning
 `None` preserves bytes; returning `Some` replaces them even with empty text.
+Loads capture raw text in the callback and parse only after storage completes
+successfully, so a storage completion failure takes precedence over malformed text.
 The memory adapter and arbitrary caller adapters work on native and browser
 builds. `FileSettingsStorage` and `SettingsManager::create` are native-only.
 

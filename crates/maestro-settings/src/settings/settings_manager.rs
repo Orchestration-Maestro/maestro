@@ -145,14 +145,15 @@ fn empty() -> Value {
     Value::Object(Map::new())
 }
 fn load(storage: &dyn SettingsStorage, scope: SettingsScope) -> Result<Value, Error> {
-    let mut value = empty();
+    let mut raw = None;
     storage.with_lock(scope, &mut |text| {
-        if let Some(text) = text.filter(|text| !text.is_empty()) {
-            value = value::convert(value::parse(text)?)?;
-        }
+        raw = text.map(str::to_owned);
         Ok(None)
     })?;
-    Ok(value)
+    match raw.filter(|text| !text.is_empty()) {
+        Some(text) => value::convert(value::parse(&text)?),
+        None => Ok(empty()),
+    }
 }
 impl SettingsManager {
     /// Loads global then project text independently through a replaceable adapter.
@@ -264,8 +265,15 @@ impl SettingsManager {
             } else if container.is_array() {
                 state.named.insert((field.into(), child.into()), value);
             } else {
+                let kind = match container {
+                    Value::Bool(_) => "boolean",
+                    Value::Number(_) => "number",
+                    Value::String(_) => "string",
+                    _ => unreachable!(),
+                };
                 return Err(std::io::Error::other(format!(
-                    "Cannot assign property '{child}' to {container}"
+                    "Cannot create property '{child}' on {kind} '{}'",
+                    value::primitive_text(container)
                 ))
                 .into());
             }
@@ -807,6 +815,8 @@ pub enum PackageSource {
         prompts: Option<Vec<String>>,
         /// Theme filters.
         themes: Option<Vec<String>>,
+        /// Original property positions retained through typed round-trips.
+        property_order: Vec<String>,
         /// Additional raw properties.
         extra: Map<String, Value>,
     },
@@ -817,6 +827,7 @@ impl PackageSource {
             return Some(Self::String(s.into()));
         }
         let mut extra = v.as_object()?.clone();
+        let property_order = extra.keys().cloned().collect();
         let source = extra.shift_remove("source")?.as_str()?.to_owned();
         fn list(map: &mut Map<String, Value>, key: &str) -> Option<Option<Vec<String>>> {
             match map.shift_remove(key) {
@@ -826,6 +837,7 @@ impl PackageSource {
         }
         Some(Self::Object {
             source,
+            property_order,
             extensions: list(&mut extra, "extensions")?,
             skills: list(&mut extra, "skills")?,
             prompts: list(&mut extra, "prompts")?,
@@ -842,6 +854,7 @@ impl PackageSource {
                 skills,
                 prompts,
                 themes,
+                property_order,
                 mut extra,
             } => {
                 extra.insert("source".into(), Value::String(source));
@@ -860,7 +873,7 @@ impl PackageSource {
                         extra.shift_remove(key);
                     }
                 }
-                Value::Object(extra)
+                Value::Object(value::ordered(extra, &property_order))
             }
         }
     }
@@ -1157,8 +1170,16 @@ impl SettingsManager {
     pub fn get_session_dir(&self) -> Option<String> {
         let text = self.read("sessionDir")?.as_str()?.to_owned();
         if text == "~" || text.starts_with("~/") {
-            let home = std::env::var(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
-                .unwrap_or_default();
+            // The standard host lookup includes the account database fallback.
+            #[allow(deprecated)]
+            let home = if cfg!(windows) {
+                std::env::home_dir().map(|path| path.into_os_string())
+            } else {
+                std::env::var_os("HOME")
+                    .or_else(|| std::env::home_dir().map(|path| path.into_os_string()))
+            }
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_default();
             if text == "~" {
                 Some(home)
             } else {
@@ -1225,6 +1246,8 @@ pub struct MarkdownSettings {
 /// Typed WarningSettings accessor values; not a file admission schema.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct WarningSettings {
+    /// Original property positions retained through typed round-trips.
+    pub property_order: Vec<String>,
     /// The anthropic extra usage preference.
     pub anthropic_extra_usage: Option<bool>,
     /// Additional raw properties.
@@ -1262,6 +1285,7 @@ impl SettingsManager {
             .and_then(|v| v.as_object().cloned())
             .unwrap_or_default();
         WarningSettings {
+            property_order: extra.keys().cloned().collect(),
             anthropic_extra_usage: extra
                 .shift_remove("anthropicExtraUsage")
                 .and_then(|v| v.as_bool()),
@@ -1276,7 +1300,11 @@ impl SettingsManager {
         } else {
             raw.shift_remove("anthropicExtraUsage");
         }
-        self.set(SettingsScope::Global, "warnings", Some(Value::Object(raw)));
+        self.set(
+            SettingsScope::Global,
+            "warnings",
+            Some(Value::Object(value::ordered(raw, &warnings.property_order))),
+        );
     }
 }
 
