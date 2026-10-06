@@ -24,10 +24,10 @@ const BUILD_INPUTS: &[&str] = &[
     "LANG",
 ];
 
-struct Scratch(PathBuf);
+pub(super) struct Scratch(pub(super) PathBuf);
 
 impl Scratch {
-    fn create() -> Result<Self, String> {
+    pub(super) fn create() -> Result<Self, String> {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         loop {
             // A fixed Unix base avoids accumulating nested temporary path prefixes.
@@ -119,9 +119,7 @@ pub(super) fn run(mut command: Command) -> Result<u8, String> {
 
 pub(super) fn output(mut command: Command) -> Result<std::process::Output, String> {
     let _scratch = prepare(&mut command)?;
-    command
-        .output()
-        .map_err(|error| format!("repository tools: spawn child: {error}"))
+    process::output(&mut command)
 }
 
 #[cfg(unix)]
@@ -144,38 +142,41 @@ mod process {
         if group > 0 {
             // kill is async-signal-safe; only the owned child group is addressed.
             unsafe {
-                kill(-group, 9);
+                kill(-group, 15);
             }
         }
     }
 
-    pub(super) fn run(command: &mut Command) -> Result<u8, String> {
+    fn spawn(command: &mut Command) -> Result<std::process::Child, String> {
         // The executable owns these handlers for its entire process lifetime.
         unsafe {
             signal(2, interrupt as *const () as usize);
             signal(15, interrupt as *const () as usize);
         }
-        let mut child = command
+        let child = command
             .process_group(0)
             .spawn()
             .map_err(|error| format!("repository tools: spawn child: {error}"))?;
         let group = i32::try_from(child.id()).map_err(|error| error.to_string())?;
         GROUP.store(group, Ordering::SeqCst);
         if INTERRUPTED.load(Ordering::SeqCst) != 0 {
-            // A signal arriving during spawn still terminates the owned group.
+            // Let nested owners reap their children before removing their roots.
+            unsafe {
+                kill(-group, 15);
+            }
+        }
+        Ok(child)
+    }
+
+    fn finish(status: std::process::ExitStatus) -> u8 {
+        let group = GROUP.swap(0, Ordering::SeqCst);
+        let interruption = INTERRUPTED.load(Ordering::SeqCst);
+        if interruption == 0 {
+            // Stop descendants that outlived a normally completed direct child.
             unsafe {
                 kill(-group, 9);
             }
         }
-        let status = child
-            .wait()
-            .map_err(|error| format!("repository tools: wait child: {error}"))?;
-        // Reap the direct child, then stop any descendant that outlived it.
-        unsafe {
-            kill(-group, 9);
-        }
-        GROUP.store(0, Ordering::SeqCst);
-        let interruption = INTERRUPTED.load(Ordering::SeqCst);
         let code = if interruption != 0 {
             128 + interruption
         } else {
@@ -183,7 +184,26 @@ mod process {
                 .code()
                 .unwrap_or_else(|| 128 + status.signal().unwrap_or(1))
         };
-        Ok(u8::try_from(code).unwrap_or(1))
+        u8::try_from(code).unwrap_or(1)
+    }
+
+    pub(super) fn run(command: &mut Command) -> Result<u8, String> {
+        let status = spawn(command)?
+            .wait()
+            .map_err(|error| format!("repository tools: wait child: {error}"))?;
+        Ok(finish(status))
+    }
+
+    pub(super) fn output(command: &mut Command) -> Result<std::process::Output, String> {
+        command
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+        let mut output = spawn(command)?
+            .wait_with_output()
+            .map_err(|error| format!("repository tools: wait child: {error}"))?;
+        let code = finish(output.status);
+        output.status = std::process::ExitStatus::from_raw(i32::from(code) << 8);
+        Ok(output)
     }
 }
 
@@ -199,5 +219,10 @@ mod process {
             .code()
             .and_then(|code| u8::try_from(code).ok())
             .unwrap_or(1))
+    }
+    pub(super) fn output(command: &mut Command) -> Result<std::process::Output, String> {
+        command
+            .output()
+            .map_err(|error| format!("repository tools: spawn child: {error}"))
     }
 }

@@ -1,3 +1,6 @@
+#[path = "repository_tools/cargo_directory.rs"]
+mod cargo_directory;
+
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 use std::path::Path;
 use std::process::{Command, ExitCode};
@@ -26,17 +29,8 @@ fn input(path: &Path, root: &Path, target: &Path) -> bool {
 
 fn run() -> Result<(), String> {
     let root = std::env::current_dir().map_err(|error| error.to_string())?;
-    let target = std::env::var_os("CARGO_TARGET_DIR")
-        .map(std::path::PathBuf::from)
-        .map(|path| {
-            if path.is_absolute() {
-                path
-            } else {
-                root.join(path)
-            }
-        })
-        .unwrap_or_else(|| root.join("target"));
     let cargo = std::env::args_os().nth(1).unwrap_or_else(|| "cargo".into());
+    let target = cargo_directory::resolve(&cargo, &root)?;
     let (send, receive) = std::sync::mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |event: notify::Result<Event>| {
         let _ = send.send(event);

@@ -326,6 +326,16 @@ fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
             .unwrap()
             .ends_with("test -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\ntest --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n")
     );
+    assert_eq!(
+        std::fs::read(workspace.root.join("ignored-arguments")).unwrap(),
+        b"test\0-p\0maestro-test-conventions\0--test\0build_recipes\0--locked\0--\0--ignored\0"
+    );
+    assert_eq!(
+        std::fs::read(workspace.root.join("isolated-ignored-arguments")).unwrap(),
+        b"test\0-p\0maestro-test-conventions\0--test\0isolated_cli\0--locked\0--\0--ignored\0"
+    );
+    std::fs::remove_file(workspace.root.join("ignored-arguments")).unwrap();
+    std::fs::remove_file(workspace.root.join("isolated-ignored-arguments")).unwrap();
     let path = std::env::join_paths(
         std::iter::once(workspace.root.join("bin"))
             .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
@@ -342,14 +352,9 @@ fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
         std::fs::read(workspace.root.join("arguments")).unwrap(),
         b"test\0--workspace\0--locked\0literal filter\0\0--\0--exact\0"
     );
-    assert_eq!(
-        std::fs::read(workspace.root.join("ignored-arguments")).unwrap(),
-        b"test\0-p\0maestro-test-conventions\0--test\0build_recipes\0--locked\0--\0--ignored\0"
-    );
-    assert_eq!(
-        std::fs::read(workspace.root.join("isolated-ignored-arguments")).unwrap(),
-        b"test\0-p\0maestro-test-conventions\0--test\0isolated_cli\0--locked\0--\0--ignored\0"
-    );
+    assert!(!workspace.root.join("ignored-arguments").exists());
+    assert!(!workspace.root.join("isolated-ignored-arguments").exists());
+    selected_test_recipes_never_replay_unrequested_cases();
 }
 
 #[test]
@@ -397,7 +402,7 @@ fn dev_watch_rebuilds_changed_sources_without_self_triggering() {
     let workspace = Workspace::new();
     std::fs::create_dir(workspace.root.join("src")).unwrap();
     std::fs::create_dir(workspace.root.join("target")).unwrap();
-    let cargo = workspace.command("builder", "printf 'build\\n'; if test -f fail; then exit 29; fi; if test -f hold; then while test -f hold; do sleep 0.01; done; fi; printf 'generated' > target/output; printf 'done\\n'");
+    let cargo = workspace.command("builder", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s/target\"}\\n' \"$PWD\"; exit 0; fi; printf 'build\\n'; if test -f fail; then exit 29; fi; if test -f hold; then while test -f hold; do sleep 0.01; done; fi; printf 'generated' > target/output; printf 'done\\n'");
     let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
     assert!(watcher.is_file(), "missing persistent watcher");
     let mut child = Command::new(tooling())
@@ -514,6 +519,7 @@ fn hook_failures_keep_messages_and_stop_the_commit() {
         "browser_build = true\n",
     )
     .unwrap();
+    git(&workspace, &["add", "--", "Cargo.toml"]);
     let output = recipe(&workspace, "pre-commit", "never-match");
     assert!(!output.status.success());
     let text = String::from_utf8_lossy(&output.stdout);
@@ -951,5 +957,188 @@ fn development_text_keeps_every_section_and_paragraph() {
         "binary-assets",
     ] {
         assert!(recipes.contains(name), "{name}");
+    }
+}
+
+#[test]
+fn outcome_counts_do_not_depend_on_test_output_or_presentation_mode() {
+    let workspace = Workspace::new();
+    let executable = compile_tests(
+        &workspace,
+        "maestro-models",
+        "#[test] fn passing() { println!(\"... ignored\"); }\n#[test] #[ignore] fn skipped() {}\n",
+    );
+    for args in [
+        vec!["--nocapture"],
+        vec!["--quiet"],
+        vec!["--format", "terse"],
+    ] {
+        let output = Command::new(tooling())
+            .arg("--root")
+            .arg(&workspace.root)
+            .args(["cargo-target", &executable])
+            .args(&args)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{args:?}: {output:?}");
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            text.ends_with(
+                "test result: ok; 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out\n"
+            ),
+            "{args:?}: {text}"
+        );
+    }
+}
+
+#[test]
+fn dev_watch_excludes_cargos_configured_artifact_directory() {
+    use std::io::BufRead;
+    let workspace = Workspace::new();
+    workspace.member("maestro-resources", "maestro-resources", "");
+    std::fs::write(
+        workspace.root.join("Cargo.lock"),
+        "version = 4\n[[package]]\nname = 'maestro-resources'\nversion = '0.1.0'\n",
+    )
+    .unwrap();
+    std::fs::create_dir(workspace.root.join(".cargo")).unwrap();
+    std::fs::write(
+        workspace.root.join(".cargo/config.toml"),
+        "[build]\ntarget-dir = 'alternate artifacts'\n",
+    )
+    .unwrap();
+    std::fs::create_dir(workspace.root.join("alternate artifacts")).unwrap();
+    let real = workspace.cargo();
+    let cargo = workspace.command("configured-builder", &format!("if test \"$1\" = metadata; then exec {:?} \"$@\"; fi; printf 'build\\n'; printf 'generated' > 'alternate artifacts/generated.rs'; printf 'done\\n'", real));
+    let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
+    let mut child = Command::new(tooling())
+        .arg("isolate")
+        .arg(watcher)
+        .arg(cargo)
+        .current_dir(&workspace.root)
+        .env_remove("CARGO_TARGET_DIR")
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    let stdout = child.stdout.take().unwrap();
+    let reader = std::thread::spawn(move || {
+        for line in std::io::BufReader::new(stdout).lines() {
+            if send.send(line.unwrap()).is_err() {
+                break;
+            }
+        }
+    });
+    assert_eq!(
+        receive
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .unwrap(),
+        "build"
+    );
+    assert_eq!(
+        receive
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .unwrap(),
+        "done"
+    );
+    let self_triggered = receive
+        .recv_timeout(std::time::Duration::from_millis(200))
+        .is_ok();
+    Command::new("kill")
+        .args(["-TERM", &child.id().to_string()])
+        .status()
+        .unwrap();
+    assert_eq!(child.wait().unwrap().code(), Some(143));
+    reader.join().unwrap();
+    assert!(
+        !self_triggered,
+        "configured Cargo artifacts triggered another build"
+    );
+}
+
+#[test]
+fn browser_smoke_requires_activation_and_matching_precaptured_staged_paths() {
+    for activated in [false, true] {
+        for (file, matching) in [
+            ("notes.txt", false),
+            ("crates/maestro-models/src/model.rs", true),
+            ("crates/maestro-web/src/view.rs", true),
+            ("Cargo.toml", true),
+            ("Cargo.lock", true),
+        ] {
+            let workspace = Workspace::new();
+            git(&workspace, &["init", "-q"]);
+            std::fs::create_dir(workspace.root.join(".github")).unwrap();
+            std::fs::write(
+                workspace.root.join(".github/ci.toml"),
+                format!("browser_build = {activated}\n"),
+            )
+            .unwrap();
+            let staged = workspace.root.join(file);
+            std::fs::create_dir_all(staged.parent().unwrap()).unwrap();
+            std::fs::write(&staged, "controlled").unwrap();
+            git(&workspace, &["add", "--", file]);
+            let bin = workspace.root.join("bin");
+            std::fs::create_dir(&bin).unwrap();
+            let just = workspace.command("controlled-just", "printf '%s\\n' \"$*\" >> operations");
+            std::os::unix::fs::symlink(just, bin.join("just")).unwrap();
+            let cargo = workspace.command(
+                "controlled-format",
+                "printf 'generated' > Cargo.lock; git add -- Cargo.lock",
+            );
+            let path = std::env::join_paths(
+                std::iter::once(bin)
+                    .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+            )
+            .unwrap();
+            let output = Command::new(tooling())
+                .arg("pre-commit")
+                .current_dir(&workspace.root)
+                .env("PATH", path)
+                .env("CARGO", cargo)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+            let expected = if activated && matching {
+                "check\nbrowser-smoke\n"
+            } else {
+                "check\n"
+            };
+            assert_eq!(
+                std::fs::read_to_string(workspace.root.join("operations")).unwrap(),
+                expected,
+                "activated={activated}, file={file}"
+            );
+        }
+    }
+}
+
+fn selected_test_recipes_never_replay_unrequested_cases() {
+    let workspace = recipe_fixture();
+    let path = std::env::join_paths(
+        std::iter::once(workspace.root.join("bin"))
+            .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+    )
+    .unwrap();
+    for args in [
+        vec!["--", "--list"],
+        vec!["--", "selected_case"],
+        vec!["--", "--include-ignored"],
+        vec!["--", "--ignored"],
+    ] {
+        let _ = std::fs::remove_file(workspace.root.join("operations"));
+        let output = Command::new("just")
+            .arg("test")
+            .args(&args)
+            .current_dir(&workspace.root)
+            .env("PATH", &path)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{args:?}: {output:?}");
+        assert_eq!(
+            std::fs::read_to_string(workspace.root.join("operations")).unwrap(),
+            format!("test --workspace --locked {}|\n", args.join(" ")),
+            "{args:?}"
+        );
     }
 }

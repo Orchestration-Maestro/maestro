@@ -63,6 +63,36 @@ impl Workspace {
         fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
     }
 
+    #[cfg(unix)]
+    #[allow(
+        dead_code,
+        reason = "Cargo fixtures are shared by separate test executables."
+    )]
+    pub fn cargo(&self) -> PathBuf {
+        use std::process::Command;
+        let output = Command::new("rustup")
+            .args(["which", "cargo"])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let cargo = PathBuf::from(String::from_utf8(output.stdout).unwrap().trim());
+        let capped = std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+            .map(|path| path.join("capped"))
+            .find(|path| path.is_file());
+        let Some(capped) = capped else {
+            return cargo;
+        };
+        let uid = Command::new("id").arg("-u").output().unwrap();
+        assert!(uid.status.success());
+        let uid = String::from_utf8(uid.stdout).unwrap();
+        let adapter =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../scripts/run-isolated.sh");
+        self.command("resolved-cargo", &format!(
+            "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{}/bus exec {:?} {:?} isolate {:?} \"$@\"",
+            uid.trim(), capped, adapter, cargo
+        ))
+    }
+
     pub fn list(&self, entries: &[(&str, &str)]) {
         let entries: serde_json::Map<String, serde_json::Value> = entries
             .iter()

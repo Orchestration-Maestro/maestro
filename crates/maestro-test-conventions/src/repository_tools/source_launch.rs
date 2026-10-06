@@ -77,7 +77,7 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
                 .trim_end_matches(['\r', '\n']),
         )
     };
-    if !Path::new(&cargo).is_file() {
+    if !available(shell, Path::new(&cargo)) {
         eprintln!(
             "cargo not found at {}. Run just setup from the repo root first.",
             Path::new(&cargo).display()
@@ -105,14 +105,7 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
     if !status.success() {
         return Ok(super::status_code(status));
     }
-    let target = std::env::var_os("CARGO_TARGET_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| root.join("target"));
-    let target = if target.is_relative() {
-        root.join(target)
-    } else {
-        target
-    };
+    let target = super::cargo_directory::resolve(&cargo, root)?;
     let mut application = Command::new(
         target
             .join("debug")
@@ -124,4 +117,22 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
         .status()
         .map(super::status_code)
         .map_err(|error| format!("repository tools: launch source: {error}"))
+}
+
+fn available(shell: &str, path: &Path) -> bool {
+    #[cfg(unix)]
+    if shell == "bash" {
+        use std::os::unix::ffi::OsStrExt;
+        unsafe extern "C" {
+            fn access(path: *const std::ffi::c_char, mode: i32) -> i32;
+        }
+        let Ok(path) = std::ffi::CString::new(path.as_os_str().as_bytes()) else {
+            return false;
+        };
+        // Match the shell's executable-access check, including directory search permissions.
+        return unsafe { access(path.as_ptr(), 1) == 0 };
+    }
+    #[cfg(not(unix))]
+    let _ = shell;
+    path.is_file()
 }

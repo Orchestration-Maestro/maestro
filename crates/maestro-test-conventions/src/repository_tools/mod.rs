@@ -1,4 +1,5 @@
 mod assets;
+mod cargo_directory;
 mod cargo_target;
 mod format_staged;
 mod isolation;
@@ -41,6 +42,29 @@ fn execute(mut args: Vec<OsString>) -> Result<u8, String> {
             let mut command = Command::new(executable);
             command.args(&args[1..]);
             isolation::run(command)
+        }
+        Some("replay-unfiltered") => {
+            if !args.is_empty() {
+                return Ok(0);
+            }
+            for target in ["build_recipes", "isolated_cli"] {
+                let mut command = Command::new("cargo");
+                command.args([
+                    "test",
+                    "-p",
+                    "maestro-test-conventions",
+                    "--test",
+                    target,
+                    "--locked",
+                    "--",
+                    "--ignored",
+                ]);
+                let code = isolation::run(command)?;
+                if code != 0 {
+                    return Ok(code);
+                }
+            }
+            Ok(0)
         }
         Some("docs") => rustdoc::docs(),
         Some("inactive") => {

@@ -1,3 +1,4 @@
+use super::cargo_directory::{end, field, string};
 use std::ffi::OsString;
 use std::path::Path;
 use std::process::Command;
@@ -79,100 +80,6 @@ pub(super) fn runtime_environment(command: &mut Command) {
             command.env(name, value);
         }
     }
-}
-
-// Cargo supplies valid JSON; spans are traversed without parsing unrelated data.
-fn end(text: &str, start: usize) -> usize {
-    let bytes = text.as_bytes();
-    let mut nesting = 0;
-    let mut quoted = false;
-    let mut escaped = false;
-    for (index, &byte) in bytes.iter().enumerate().skip(start) {
-        if quoted {
-            if escaped {
-                escaped = false;
-            } else if byte == b'\\' {
-                escaped = true;
-            } else if byte == b'"' {
-                quoted = false;
-                if nesting == 0 {
-                    return index + 1;
-                }
-            }
-        } else {
-            match byte {
-                b'"' => quoted = true,
-                b'{' | b'[' => nesting += 1,
-                b'}' | b']' if nesting > 0 => {
-                    nesting -= 1;
-                    if nesting == 0 {
-                        return index + 1;
-                    }
-                }
-                b',' | b'}' | b']' if nesting == 0 => return index,
-                _ => (),
-            }
-        }
-    }
-    text.len()
-}
-
-fn field<'a>(object: &'a str, name: &str) -> Option<&'a str> {
-    let mut cursor = object.find('{')? + 1;
-    loop {
-        while object
-            .as_bytes()
-            .get(cursor)
-            .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b',')
-        {
-            cursor += 1;
-        }
-        if object.as_bytes().get(cursor) != Some(&b'"') {
-            return None;
-        }
-        let key_end = end(object, cursor);
-        let key = string(&object[cursor..key_end]);
-        cursor = key_end;
-        while object
-            .as_bytes()
-            .get(cursor)
-            .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b':')
-        {
-            cursor += 1;
-        }
-        let value_end = end(object, cursor);
-        if key == name {
-            return Some(object[cursor..value_end].trim());
-        }
-        cursor = value_end;
-    }
-}
-
-fn string(text: &str) -> &str {
-    text.strip_prefix('"')
-        .and_then(|text| text.strip_suffix('"'))
-        .unwrap_or("")
-}
-
-fn objects(array: &str) -> Vec<&str> {
-    let mut objects = Vec::new();
-    let mut cursor = 1;
-    while cursor < array.len() {
-        while array
-            .as_bytes()
-            .get(cursor)
-            .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b',')
-        {
-            cursor += 1;
-        }
-        if array.as_bytes().get(cursor) != Some(&b'{') {
-            break;
-        }
-        let next = end(array, cursor);
-        objects.push(&array[cursor..next]);
-        cursor = next;
-    }
-    objects
 }
 
 fn timed_cases(root: &Path, executable: &OsString, args: &[OsString]) -> Result<u8, String> {
@@ -289,7 +196,7 @@ fn timed_cases(root: &Path, executable: &OsString, args: &[OsString]) -> Result<
     use std::io::Write;
     for (name, result) in results.into_inner().unwrap() {
         match result {
-            Ok((output, expired)) => {
+            Ok((output, expired, case_ignored)) => {
                 std::io::stdout()
                     .write_all(&output.stdout)
                     .map_err(|error| error.to_string())?;
@@ -301,7 +208,7 @@ fn timed_cases(root: &Path, executable: &OsString, args: &[OsString]) -> Result<
                     failed += 1;
                 } else if !output.status.success() {
                     failed += 1;
-                } else if String::from_utf8_lossy(&output.stdout).contains("... ignored") {
+                } else if case_ignored {
                     ignored += 1;
                 } else {
                     passed += 1;
@@ -326,7 +233,9 @@ fn run_case(
     executable: &OsString,
     name: &str,
     options: &[OsString],
-) -> Result<(std::process::Output, bool), String> {
+) -> Result<(std::process::Output, bool, bool), String> {
+    let scratch = super::isolation::Scratch::create()?;
+    let outcome = scratch.0.join("outcome");
     let mut command = Command::new(std::env::current_exe().map_err(|error| error.to_string())?);
     command
         .arg("--root")
@@ -335,7 +244,9 @@ fn run_case(
         .arg(executable)
         .arg("--exact")
         .arg(name)
-        .args(options);
+        .args(options)
+        .arg("--logfile")
+        .arg(&outcome);
     command
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
@@ -374,10 +285,21 @@ fn run_case(
     waiter
         .join()
         .map_err(|_| "repository tools: case waiter panicked")?;
-    Ok((
-        result.map_err(|error| format!("repository tools: wait test case: {error}"))?,
-        expired,
-    ))
+    let output = result.map_err(|error| format!("repository tools: wait test case: {error}"))?;
+    let ignored = if output.status.success() && !expired {
+        let outcome = std::fs::read_to_string(&outcome)
+            .map_err(|error| format!("repository tools: read test outcome: {error}"))?;
+        if outcome.starts_with("ok ") {
+            false
+        } else if outcome.starts_with("ignored ") || outcome.starts_with("ignored: ") {
+            true
+        } else {
+            return Err("repository tools: unknown test outcome".into());
+        }
+    } else {
+        false
+    };
+    Ok((output, expired, ignored))
 }
 
 fn deadline() -> std::time::Duration {
@@ -386,4 +308,25 @@ fn deadline() -> std::time::Duration {
         return std::time::Duration::from_millis(value.parse().expect("fixture deadline"));
     }
     std::time::Duration::from_millis(30_000)
+}
+
+fn objects(array: &str) -> Vec<&str> {
+    let mut objects = Vec::new();
+    let mut cursor = 1;
+    while cursor < array.len() {
+        while array
+            .as_bytes()
+            .get(cursor)
+            .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b',')
+        {
+            cursor += 1;
+        }
+        if array.as_bytes().get(cursor) != Some(&b'{') {
+            break;
+        }
+        let next = end(array, cursor);
+        objects.push(&array[cursor..next]);
+        cursor = next;
+    }
+    objects
 }

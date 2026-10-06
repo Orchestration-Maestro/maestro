@@ -223,7 +223,7 @@ fn source_launch_forwards_cwd_and_literal_arguments() {
         "pwd; for arg; do printf '%s\\0' \"$arg\"; done",
     );
     std::fs::copy(app, target.join("debug/maestro")).unwrap();
-    let cargo = workspace.command("cargo", "test \"$1\" = build; exit 0");
+    let cargo = workspace.command("cargo", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s\"}\\n' \"$CARGO_TARGET_DIR\"; else test \"$1\" = build; fi");
     let args = [
         "",
         " space ",
@@ -290,7 +290,7 @@ fn source_no_env_keeps_each_shells_exact_scope() {
     std::fs::create_dir_all(target.join("debug")).unwrap();
     let app = workspace.command("environment-source", "env");
     std::fs::copy(app, target.join("debug/maestro")).unwrap();
-    let cargo = workspace.command("build-source", "exit 0");
+    let cargo = workspace.command("build-source", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s\"}\\n' \"$CARGO_TARGET_DIR\"; else test \"$1\" = build; fi");
     let removed = "ANTHROPIC_API_KEY ANTHROPIC_OAUTH_TOKEN OPENAI_API_KEY GEMINI_API_KEY GROQ_API_KEY CEREBRAS_API_KEY XAI_API_KEY OPENROUTER_API_KEY ZAI_API_KEY MISTRAL_API_KEY MINIMAX_API_KEY MINIMAX_CN_API_KEY AI_GATEWAY_API_KEY OPENCODE_API_KEY COPILOT_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN GOOGLE_APPLICATION_CREDENTIALS GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT GOOGLE_CLOUD_LOCATION AWS_PROFILE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_REGION AWS_DEFAULT_REGION AWS_BEARER_TOKEN_BEDROCK AWS_CONTAINER_CREDENTIALS_RELATIVE_URI AWS_CONTAINER_CREDENTIALS_FULL_URI AWS_WEB_IDENTITY_TOKEN_FILE AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL AZURE_OPENAI_RESOURCE_NAME";
     let retained = [
         "KIMI_API_KEY",
@@ -371,7 +371,7 @@ fn source_launch_reports_missing_cargo_and_build_failures() {
         );
         assert!(output.stdout.is_empty());
         for code in [7, 0] {
-            let cargo = workspace.command("status-source", &format!("exit {code}"));
+            let cargo = workspace.command("status-source", &format!("if test \"$1\" = metadata; then printf '{{\"target_directory\":\"%s\"}}\\n' \"$CARGO_TARGET_DIR\"; else exit {code}; fi"));
             let output = source_adapter(shell)
                 .env("CARGO", cargo)
                 .env("CARGO_TARGET_DIR", &target)
@@ -407,6 +407,7 @@ fn parallel_bootstrap_does_not_share_compiler_outputs() {
         "crates/maestro-test-conventions/src/repository_tools/assets.rs",
         "crates/maestro-test-conventions/src/repository_tools/pre_commit.rs",
         "crates/maestro-test-conventions/src/repository_tools/cargo_target.rs",
+        "crates/maestro-test-conventions/src/repository_tools/cargo_directory.rs",
         "crates/maestro-test-conventions/src/repository_tools/rustdoc.rs",
         "crates/maestro-test-conventions/src/repository_tools/format_staged.rs",
         "crates/maestro-test-conventions/src/repository_tools/isolation.rs",
@@ -542,4 +543,165 @@ fn supported_routes_enter_the_same_isolation_boundary() {
     let config = std::fs::read_to_string(root.join(".cargo/config.toml")).unwrap();
     assert!(config.contains("cargo-target"));
     assert!(config.contains("run-rustdoc.sh"));
+}
+
+#[test]
+fn nested_cancellation_reaps_children_and_removes_both_roots() {
+    cancellation_reaps_children_and_removes_both_roots(false);
+}
+
+#[test]
+fn captured_cancellation_reaps_children_and_removes_both_roots() {
+    cancellation_reaps_children_and_removes_both_roots(true);
+}
+
+fn cancellation_reaps_children_and_removes_both_roots(captured: bool) {
+    use std::io::{BufRead, BufReader};
+    use std::process::Stdio;
+    {
+        let workspace = Workspace::new();
+        let record = workspace.root.join("inner-record");
+        let probe = workspace.command(
+            "nested-child",
+            &format!(
+                "printf '%s\\n%s\\n' \"$HOME\" \"$$\" > {:?}; exec sleep 60",
+                record
+            ),
+        );
+        let operation = if captured {
+            let deps = workspace.root.join("target/debug/deps");
+            std::fs::create_dir_all(&deps).unwrap();
+            format!("cargo-target {:?}", deps.join("fixture-0123456789abcdef"))
+        } else {
+            format!("isolate {probe:?}")
+        };
+        let bridge = workspace.command(
+            "nested-owner",
+            &format!(
+                "printf '%s\\n' \"$HOME\"; export CARGO={probe:?}; exec {:?} {operation}",
+                tooling()
+            ),
+        );
+        let mut runner = Command::new(tooling())
+            .arg("isolate")
+            .arg(bridge)
+            .env("CARGO", &probe)
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut outer = String::new();
+        BufReader::new(runner.stdout.take().unwrap())
+            .read_line(&mut outer)
+            .unwrap();
+        let start = std::time::Instant::now();
+        let inner = loop {
+            if let Ok(text) = std::fs::read_to_string(&record)
+                && text.lines().count() == 2
+            {
+                break text;
+            }
+            assert!(start.elapsed() < std::time::Duration::from_secs(10));
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        };
+        let mut lines = inner.lines();
+        let home = lines.next().unwrap();
+        let pid = lines.next().unwrap();
+        assert!(
+            Command::new("kill")
+                .args(["-TERM", &runner.id().to_string()])
+                .status()
+                .unwrap()
+                .success()
+        );
+        assert_eq!(runner.wait().unwrap().code(), Some(143));
+        let alive = Command::new("kill")
+            .args(["-0", pid])
+            .stderr(Stdio::null())
+            .status()
+            .unwrap()
+            .success();
+        if alive {
+            let _ = Command::new("kill").args(["-KILL", pid]).status();
+        }
+        let outer_remains = std::path::Path::new(outer.trim()).exists();
+        let inner_remains = std::path::Path::new(home).exists();
+        for root in [outer.trim(), home] {
+            if let Some(scratch) = std::path::Path::new(root).parent() {
+                let _ = std::fs::remove_dir_all(scratch);
+            }
+        }
+        assert!(!alive, "captured={captured}: nested child survives TERM");
+        assert!(
+            !outer_remains,
+            "captured={captured}: outer scratch survives TERM"
+        );
+        assert!(
+            !inner_remains,
+            "captured={captured}: inner scratch survives TERM"
+        );
+    }
+}
+
+#[test]
+fn source_launch_uses_cargos_configured_artifact_directory() {
+    let workspace = Workspace::new();
+    workspace.member("maestro", "maestro", "");
+    std::fs::write(
+        workspace.root.join("Cargo.lock"),
+        "version = 4\n[[package]]\nname = 'maestro'\nversion = '0.1.0'\n",
+    )
+    .unwrap();
+    std::fs::write(
+        workspace.root.join("crates/maestro/src/main.rs"),
+        "fn main() { println!(\"configured source launch\"); }\n",
+    )
+    .unwrap();
+    std::fs::create_dir(workspace.root.join(".cargo")).unwrap();
+    std::fs::write(
+        workspace.root.join(".cargo/config.toml"),
+        "[build]\ntarget-dir = 'alternate artifacts'\n",
+    )
+    .unwrap();
+    let cargo = workspace.cargo();
+    for shell in ["bash", "powershell"] {
+        let output = Command::new(tooling())
+            .args(["source", shell])
+            .arg(&workspace.root)
+            .current_dir(&workspace.root)
+            .env("CARGO", &cargo)
+            .env_remove("CARGO_TARGET_DIR")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{shell}: {output:?}");
+        assert_eq!(output.stdout, b"configured source launch\n");
+        assert!(!workspace.root.join("target/debug/maestro").exists());
+        assert!(
+            workspace
+                .root
+                .join("alternate artifacts/debug/maestro")
+                .exists()
+        );
+    }
+}
+
+#[test]
+fn bash_source_launch_reports_present_nonexecutable_cargo() {
+    use std::os::unix::fs::PermissionsExt;
+    let workspace = Workspace::new();
+    let cargo = workspace.root.join("nonexecutable cargo");
+    std::fs::write(&cargo, "#!/bin/sh\nexit 0\n").unwrap();
+    std::fs::set_permissions(&cargo, std::fs::Permissions::from_mode(0o644)).unwrap();
+    let output = source_adapter("bash")
+        .env("CARGO", &cargo)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        format!(
+            "cargo not found at {}. Run just setup from the repo root first.\n",
+            cargo.display()
+        )
+    );
+    assert!(output.stdout.is_empty());
 }

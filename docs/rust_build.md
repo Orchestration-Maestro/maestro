@@ -3,11 +3,12 @@
 Rust is managed by rustup using `rust-toolchain.toml`. Repository command tools
 are pinned by mise. `just check` runs formatting, Clippy with warnings denied,
 strict public documentation and workspace conventions. `just test` runs the
-workspace tests; `just ci` runs check before test. Both check and test explicitly
-run the ignored `build_recipes` and `isolated_cli` cases in explicit isolated Cargo invocations, so
-local gates and commit hooks still execute every recipe/hook assertion. The
-first workspace invocation preserves all caller argument boundaries; the extra
-invocation always checks the pinned-tool-dependent cases.
+workspace tests; `just ci` runs check before test. Unfiltered check and test gates explicitly
+run the ignored `build_recipes` and `isolated_cli` cases in isolated Cargo
+invocations, so local gates and commit hooks still execute every recipe/hook
+assertion. The workspace invocation preserves all caller argument boundaries.
+Any arguments to `just test`, including `--list`, disable the extra invocations;
+selected execution is never widened or repeated.
 
 ## Private command boundary
 
@@ -34,7 +35,9 @@ scripts/run-source.sh [--no-env] [arguments...]
 
 PowerShell uses `scripts/run-source.ps1`. Both launchers build the checkout with
 resolved Cargo, then invoke the built executable from the caller's directory.
-Empty strings, Unicode, whitespace, quotes and wildcards remain literal.
+Empty strings, Unicode, whitespace, quotes and wildcards remain literal. Both
+source launch and developer watch resolve Cargo's artifact directory through
+`cargo metadata`, honoring `build.target-dir` and `CARGO_TARGET_DIR`.
 
 ## Child environments
 
@@ -63,8 +66,10 @@ libtest discovery, then run selected exact cases in isolated children with a
 30,000 ms deadline per case. Other owners retain the whole libtest harness with
 no new deadline. Concurrency comes from `--test-threads`, RUST_TEST_THREADS or
 available parallelism. Timeout failures do not prevent other cases reporting.
-Per-case execution explicitly rejects `--logfile`, rather than overwriting one
-log with several children.
+Per-case execution uses a distinct private libtest outcome log for each child;
+executed, failed and ignored counts do not depend on stdout or presentation
+mode. Caller-supplied `--logfile` is rejected rather than overwritten by several
+children.
 
 `scripts/run-rustdoc.sh` resolves the real rustdoc executable through rustup and
 isolates it without recursion. A PowerShell adapter is available for explicit
@@ -85,7 +90,8 @@ The shared Tests job currently does not provision the caller's pinned just and
 prek executables. Five `build_recipes` cases and the `isolated_cli` route case requiring those
 tools have an explicit ignore reason. Raw shared Cargo execution reports those cases as
 ignored; it does not silently skip tests based on host availability. Local
-`just check` and `just test` visibly run these additional isolated commands:
+`just check` and unfiltered `just test` visibly run these additional isolated
+commands:
 
 ```sh
 cargo test -p maestro-test-conventions --test build_recipes --locked -- --ignored
@@ -108,6 +114,7 @@ The isolation allowlist and production runner have no systemd-bus exception.
 
 ## Failure evidence
 
+Bash source launch checks executable access; PowerShell retains its file check.
 Source launch reports a missing tool as `cargo not found at <resolved-path>. Run
 just setup from the repo root first.` Build failures prevent application launch,
 and application exit statuses propagate. Isolated spawn failures report
@@ -115,8 +122,9 @@ and application exit statuses propagate. Isolated spawn failures report
 artifacts report `repository tools: unknown test artifact: <path>`. A case
 deadline reports `repository tools: test timed out: <name>`. Diagnostics never
 include credential values. Unix interruption removes only owned scratch and
-terminates the owned child process group; an uncatchable kill cannot guarantee
-cleanup.
+propagates termination to nested owners, including captured children. Each
+owner reaps its child before removing its scratch; an uncatchable kill cannot
+guarantee cleanup.
 
 ## Pending activation
 
@@ -142,6 +150,9 @@ browser-smoke (#113 plus browser/application owners), generate-models (#135),
 component-build (component author), examples-check (application), profile-tui
 and profile-rpc (#167), binary (#111), assets and binary-assets (application).
 No absent product crate or artifact is represented as a successful build.
+The pre-commit browser-smoke hook requires activation plus a pre-format staged
+change under `crates/maestro-models/` or `crates/maestro-web/`, or a root
+`Cargo.toml` or `Cargo.lock` change; unrelated staged paths do not trigger it.
 The caller-owned `.github/ci.toml` retains all landed wasm owner entries and four
 foreign targets. `browser_build` stays false until its real recipe exists; the
 shared workflow owns schema validation and guest/native build checks.

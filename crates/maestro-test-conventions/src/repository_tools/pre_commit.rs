@@ -1,6 +1,19 @@
 use std::process::Command;
 
 pub(super) fn run() -> Result<u8, String> {
+    let staged = Command::new("git")
+        .args(["diff", "--cached", "--name-only", "-z"])
+        .output()
+        .map_err(|error| format!("repository tools: capture staged paths: {error}"))?;
+    if !staged.status.success() {
+        return Ok(super::status_code(staged.status));
+    }
+    let selected = staged.stdout.split(|byte| *byte == 0).any(|path| {
+        path.starts_with(b"crates/maestro-models/")
+            || path.starts_with(b"crates/maestro-web/")
+            || path == b"Cargo.toml"
+            || path == b"Cargo.lock"
+    });
     println!("Running formatting, linting, and type checking...");
     let code = super::format_staged::run()?;
     let code = if code == 0 {
@@ -20,7 +33,7 @@ pub(super) fn run() -> Result<u8, String> {
         .unwrap_or_default()
         .lines()
         .any(|line| line.trim() == "browser_build = true");
-    if browser {
+    if browser && selected {
         println!("Running browser smoke check...");
         let code = Command::new("just")
             .arg("browser-smoke")
