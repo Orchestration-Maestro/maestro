@@ -265,7 +265,7 @@ fn recipe_fixture() -> Workspace {
     );
     std::os::unix::fs::symlink(adapter, workspace.root.join("scripts/run-isolated.sh")).unwrap();
     std::fs::create_dir(workspace.root.join("bin")).unwrap();
-    let cargo = workspace.command("cargo-fixture", "printf '%s|%s\\n' \"$*\" \"${RUSTDOCFLAGS-}\" >> operations; case \"$*\" in *--ignored*) printf '%s\\0' \"$@\" > ignored-arguments;; *) printf '%s\\0' \"$@\" > arguments;; esac; case \"$*\" in *\"${RUST_TEST_THREADS:-never-match}\"*) exit 27;; esac");
+    let cargo = workspace.command("cargo-fixture", "printf '%s|%s\\n' \"$*\" \"${RUSTDOCFLAGS-}\" >> operations; case \"$*\" in *isolated_cli*--ignored*) printf '%s\\0' \"$@\" > isolated-ignored-arguments;; *--ignored*) printf '%s\\0' \"$@\" > ignored-arguments;; *) printf '%s\\0' \"$@\" > arguments;; esac; case \"$*\" in *\"${RUST_TEST_THREADS:-never-match}\"*) exit 27;; esac");
     std::os::unix::fs::symlink(cargo, workspace.root.join("bin/cargo")).unwrap();
     workspace
 }
@@ -293,15 +293,15 @@ fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
         ("build", "build --workspace --locked|\n"),
         (
             "check",
-            "fmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\n",
+            "fmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n",
         ),
         (
             "test",
-            "test --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\n",
+            "test --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n",
         ),
         (
             "prepublish",
-            "clean|\nbuild --workspace --locked|\nfmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\n",
+            "clean|\nbuild --workspace --locked|\nfmt --all --check|\nclippy --workspace --all-targets --locked -- -D warnings|\ndoc --workspace --no-deps --locked|-D warnings -D missing_docs\ntest -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n",
         ),
     ] {
         let _ = std::fs::remove_file(workspace.root.join("operations"));
@@ -324,7 +324,7 @@ fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
     assert!(
         std::fs::read_to_string(workspace.root.join("operations"))
             .unwrap()
-            .ends_with("test -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\n")
+            .ends_with("test -p maestro-test-conventions --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\ntest --workspace --locked|\ntest -p maestro-test-conventions --test build_recipes --locked -- --ignored|\ntest -p maestro-test-conventions --test isolated_cli --locked -- --ignored|\n")
     );
     let path = std::env::join_paths(
         std::iter::once(workspace.root.join("bin"))
@@ -345,6 +345,10 @@ fn workspace_recipes_keep_build_check_test_and_prepublish_order() {
     assert_eq!(
         std::fs::read(workspace.root.join("ignored-arguments")).unwrap(),
         b"test\0-p\0maestro-test-conventions\0--test\0build_recipes\0--locked\0--\0--ignored\0"
+    );
+    assert_eq!(
+        std::fs::read(workspace.root.join("isolated-ignored-arguments")).unwrap(),
+        b"test\0-p\0maestro-test-conventions\0--test\0isolated_cli\0--locked\0--\0--ignored\0"
     );
 }
 

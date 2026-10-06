@@ -4,7 +4,7 @@ Rust is managed by rustup using `rust-toolchain.toml`. Repository command tools
 are pinned by mise. `just check` runs formatting, Clippy with warnings denied,
 strict public documentation and workspace conventions. `just test` runs the
 workspace tests; `just ci` runs check before test. Both check and test explicitly
-run the ignored `build_recipes` cases in a second isolated Cargo invocation, so
+run the ignored `build_recipes` and `isolated_cli` cases in explicit isolated Cargo invocations, so
 local gates and commit hooks still execute every recipe/hook assertion. The
 first workspace invocation preserves all caller argument boundaries; the extra
 invocation always checks the pinned-tool-dependent cases.
@@ -82,17 +82,18 @@ supported isolated route and this development guard is not a security boundary.
 ## Shared recipe-tool prerequisite
 
 The shared Tests job currently does not provision the caller's pinned just and
-prek executables. Exactly five `build_recipes` cases requiring those tools have
-an explicit ignore reason. Raw shared Cargo execution reports those cases as
+prek executables. Five `build_recipes` cases and the `isolated_cli` route case requiring those
+tools have an explicit ignore reason. Raw shared Cargo execution reports those cases as
 ignored; it does not silently skip tests based on host availability. Local
-`just check` and `just test` visibly run a second isolated command:
+`just check` and `just test` visibly run these additional isolated commands:
 
 ```sh
 cargo test -p maestro-test-conventions --test build_recipes --locked -- --ignored
+cargo test -p maestro-test-conventions --test isolated_cli --locked -- --ignored
 ```
 
 This also covers pre-commit through `just check`. Tests do not download or install
-tools. Remove the five ignores and both extra recipe lines when
+tools. Remove the six ignores and the extra recipe lines when
 [shared tool provisioning](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/16)
 is delivered. The shared workflow's workspace test command remains unchanged.
 
