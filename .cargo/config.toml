@@ -1,0 +1,8 @@
+[build]
+rustdoc = "scripts/run-rustdoc.sh"
+
+[target.'cfg(unix)']
+runner = ["scripts/run-isolated.sh", "cargo-target"]
+
+[target.'cfg(windows)']
+runner = ["pwsh", "-NoProfile", "-File", "scripts/run-isolated.ps1", "cargo-target"]

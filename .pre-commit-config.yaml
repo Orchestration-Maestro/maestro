@@ -5,6 +5,7 @@ repos:
   - repo: builtin
     hooks:
       - id: check-merge-conflict
+        args: [--assume-in-merge]
       - id: check-yaml
       - id: check-toml
   - repo: local

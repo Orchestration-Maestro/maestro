@@ -230,3 +230,18 @@ behind the stateless overflow pattern value; its enabled dependency is memchr
 2.8.3 (alloc/std; Unlicense OR MIT). Preserve the owned pattern sources and
 ECMAScript character classes. The non-Unicode long-s case-folding difference
 is accepted and qualified explicitly by the model tests.
+
+## Repository command isolation
+
+Supported just check/test/ci/pre-commit routes isolate command children. Cargo's
+native unit/integration/conventions runner classifies artifacts before execution;
+Unix doctests/public documentation use the real rustdoc wrapper. Direct Windows
+doctest routing remains tracked in #186. Raw test binaries are not supported
+isolated routes. Source launch is separate and its optional --no-env switch is
+not test isolation. See [development](docs/development.md) and
+[Rust build tooling](docs/rust_build.md) for exact behavior and activation limits.
+
+Private developer watch may use owner-approved notify =8.2.0, default features
+disabled and macos_kqueue enabled. It adds no public API or internal crate edge;
+the isolation/bootstrap executable remains std-only. Distribution/npm metadata
+is private author scaffolding, not a delivered installable package.

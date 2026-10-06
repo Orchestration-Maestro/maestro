@@ -1,0 +1,28 @@
+{
+  "name": "@orchestration-maestro/maestro-tui",
+  "version": "0.1.0",
+  "description": "Terminal components",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Orchestration-Maestro/maestro.git",
+    "directory": "crates/maestro-tui"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "cargo clean -p maestro-tui",
+    "build": "cargo build -p maestro-tui",
+    "test": "cargo test -p maestro-tui",
+    "dev": "just dev",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "maestroActivation": {
+    "state": "author-scaffolding",
+    "owner": "terminal owner #150; release #111",
+    "artifacts": "Native Cargo artifacts must be staged by the release owner; no install-time compilation."
+  }
+}

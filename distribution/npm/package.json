@@ -1,0 +1,18 @@
+{
+  "name": "maestro-workspace",
+  "private": true,
+  "workspaces": [
+    "maestro-models",
+    "maestro-agent",
+    "maestro-app",
+    "maestro-tui"
+  ],
+  "scripts": {
+    "clean": "just clean",
+    "build": "just build",
+    "dev": "just dev",
+    "check": "just check",
+    "test": "just test",
+    "prepublishOnly": "just prepublish"
+  }
+}

@@ -103,6 +103,7 @@ are later scope, not active foundation concepts.
 - **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
+- **Repository command isolation:** Private conventions-owned child environments and lifetimes shared by native tests, documentation and commit checks; separate from source-development credential removal.
 
 ## Repository contributions
 

@@ -2,46 +2,6 @@
 
 lockfile_version = 3
 
-[[tools.jaq]]
-version = "3.1.1"
-backend = "aqua:01mf02/jaq"
-specifiers = ["3.1.1"]
-
-[tools.jaq."platforms.linux-arm64"]
-checksum = "sha256:bdda42d5a8c060a2c7916b287a227e7750d5fccbd4c37aacf0ab863010921829"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-aarch64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327954"
-
-[tools.jaq."platforms.linux-arm64-musl"]
-checksum = "sha256:bdda42d5a8c060a2c7916b287a227e7750d5fccbd4c37aacf0ab863010921829"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-aarch64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327954"
-
-[tools.jaq."platforms.linux-x64"]
-checksum = "sha256:5922c7b67d9bd6841d6676d1f954410c6bf04b47203dcb661c4f052dfef7f454"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327122"
-
-[tools.jaq."platforms.linux-x64-musl"]
-checksum = "sha256:b9a07a6f10f0305d96d333ea7db69d60704eb4d4e71c98094157e3cc9fe08110"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327739"
-
-[tools.jaq."platforms.macos-arm64"]
-checksum = "sha256:b1a2e63384e156d90bbf61a1142302aa59bfebd8c89e24dfc9b5747618880fcd"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-aarch64-apple-darwin"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502328070"
-
-[tools.jaq."platforms.macos-x64"]
-checksum = "sha256:34b1a9495dbd28df09ad83c832a2ae4be60657d8c24e72f28565cd19b98ed0af"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-apple-darwin"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327833"
-
-[tools.jaq."platforms.windows-x64"]
-checksum = "sha256:7b2f5153d11118c3ccff01859743e09842cabc42ba08f8876489c1be30d1d08d"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-pc-windows-msvc.exe"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502328777"
-
 [[tools.just]]
 version = "1.58.0"
 backend = "aqua:casey/just"

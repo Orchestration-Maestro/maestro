@@ -1,0 +1,60 @@
+{
+  "name": "@orchestration-maestro/maestro-app",
+  "version": "0.1.0",
+  "description": "Application interface",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Orchestration-Maestro/maestro.git",
+    "directory": "crates/maestro-app"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs",
+    "examples",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "cargo clean -p maestro-app",
+    "build": "cargo build -p maestro-app",
+    "test": "cargo test -p maestro-app",
+    "dev": "just dev",
+    "prepublishOnly": "npm run clean && npm run build",
+    "build:binary": "just binary",
+    "copy-assets": "just assets",
+    "copy-binary-assets": "just binary-assets"
+  },
+  "maestroActivation": {
+    "state": "author-scaffolding",
+    "owner": "application owner; release #111",
+    "artifacts": "Native Cargo artifacts must be staged by the release owner; no install-time compilation."
+  },
+  "maestroConfig": {
+    "name": "maestro",
+    "configDir": ".maestro",
+    "bin": "maestro"
+  },
+  "maestroAssets": {
+    "library": [
+      "src/modes/interactive/theme/*.json",
+      "src/modes/interactive/assets/*.png",
+      "src/core/export-html/template.html",
+      "src/core/export-html/template.css",
+      "src/core/export-html/template.js",
+      "src/core/export-html/vendor/*.js"
+    ],
+    "standalone": [
+      "package.json",
+      "README.md",
+      "CHANGELOG.md",
+      "src/modes/interactive/theme/*.json",
+      "src/modes/interactive/assets/*.png",
+      "src/core/export-html/template.html",
+      "src/core/export-html/vendor/*.js",
+      "docs/**",
+      "examples/**"
+    ]
+  }
+}
