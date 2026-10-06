@@ -54,13 +54,23 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - Names follow `maestro-<noun>[-<role>]`.
 - The composition-root crate, `maestro`, owns the binary and only wires.
 
-Conventions check scoped names, inventory classes and direct internal edges from
-both declared and resolved Cargo metadata, including optional, target and build
-edges. Sparse workspaces need no placeholder crates. The test graph is separately
-acyclic; internal dev edges may target only explicitly declared dependency-free
-test-support crates. The current test-support allowlist is empty; the verification
-crate is not a general dev-dependency target. Publish reusable adapter conformance
-from the owning leaf, not a forwarding test crate.
+Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
+through declared and host-resolved Cargo metadata, including optional, target and
+build edges. Classes are distinct from delivery layers: only the binary root,
+conventions checker and terminal scenario harness are dedicated. Sparse workspaces
+need no placeholder crates. Frontends require their full direct sets; the terminal
+adapter and scenario harness require toolkit only. Other non-leaves permit subsets.
+Production and test graphs are separately acyclic; the internal dev-target
+allowlist is empty. The scenario harness is not a general dev-dependency target.
+
+Bounded source/build checks enforce tool/selector ownership, direct runtime-engine
+and toolkit library placement, canonical guest-owned WIT inputs and planning-comment
+policy. They ignore literals/comments when finding declarations. Dynamic WIT inputs
+require review and never count as verified. Manual review still proves generic
+caller context, wiring-only binaries, no frontend application policy, complete
+code-generation evidence and framework/highlighting equivalents. See
+[architecture checks](docs/architecture.md) for commands, diagnostics and limits.
+Publish reusable adapter conformance from the owning leaf, not a forwarding test crate.
 
 ## Libraries and formats
 

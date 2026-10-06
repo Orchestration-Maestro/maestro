@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use serde_json::Value;
 
 /// Numbered planning nouns; technical uses without a number remain valid.
@@ -9,42 +7,25 @@ pub(super) fn check(metadata: &Value) -> Result<(), String> {
     let members = super::array(metadata, "workspace_members")?;
     for package in super::array(metadata, "packages")? {
         if members.contains(&package["id"]) {
-            let manifest = Path::new(super::string(package, "manifest_path")?);
-            scan_directory(manifest.parent().ok_or("manifest has no parent")?)?;
+            let manifest = std::path::Path::new(super::string(package, "manifest_path")?);
+            for path in crate::source::files(manifest.parent().ok_or("manifest has no parent")?)? {
+                check_file(&path)?;
+            }
         }
     }
     Ok(())
 }
 
-fn scan_directory(path: &Path) -> Result<(), String> {
-    for entry in std::fs::read_dir(path).map_err(|error| format!("{}: {error}", path.display()))? {
-        let entry = entry.map_err(|error| format!("{}: {error}", path.display()))?;
-        let path = entry.path();
-        let kind = entry
-            .file_type()
-            .map_err(|error| format!("{}: {error}", path.display()))?;
-        if kind.is_dir()
-            && path
-                .file_name()
-                .is_none_or(|name| name != "target" && name != ".git")
-        {
-            scan_directory(&path)?;
-        } else if kind.is_file() && path.extension().is_some_and(|extension| extension == "rs") {
-            let source = std::fs::read_to_string(&path)
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            for (start, comment) in comments(&source) {
-                if let Some(offset) = forbidden(comment) {
-                    let line = source[..start + offset]
-                        .bytes()
-                        .filter(|byte| *byte == b'\n')
-                        .count()
-                        + 1;
-                    return Err(format!(
-                        "{}:{line}: planning reference in comment",
-                        path.display()
-                    ));
-                }
-            }
+fn check_file(path: &std::path::Path) -> Result<(), String> {
+    let source =
+        std::fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    for (start, comment) in crate::source::comments(&source) {
+        if let Some(offset) = forbidden(comment) {
+            let line = crate::source::line(&source, start + offset);
+            return Err(format!(
+                "{}:{line}: planning reference in comment",
+                path.display()
+            ));
         }
     }
     Ok(())
@@ -114,104 +95,4 @@ fn planning_id(word: &str) -> bool {
         return digits(stage) && digits(number);
     }
     false
-}
-
-// Lex strings and character literals before recognizing comment delimiters.
-// Nested block comments are included; raw strings may contain arbitrary hashes.
-fn comments(source: &str) -> Vec<(usize, &str)> {
-    let bytes = source.as_bytes();
-    let mut result = Vec::new();
-    let mut index = 0;
-    while index < bytes.len() {
-        if bytes[index..].starts_with(b"//") {
-            let start = index + 2;
-            index = start;
-            while index < bytes.len() && bytes[index] != b'\n' {
-                index += 1;
-            }
-            result.push((start, &source[start..index]));
-        } else if bytes[index..].starts_with(b"/*") {
-            let start = index + 2;
-            index = start;
-            let mut depth = 1;
-            while index < bytes.len() && depth > 0 {
-                if bytes[index..].starts_with(b"/*") {
-                    depth += 1;
-                    index += 2;
-                } else if bytes[index..].starts_with(b"*/") {
-                    depth -= 1;
-                    index += 2;
-                } else {
-                    index += 1;
-                }
-            }
-            let end = if depth == 0 { index - 2 } else { index };
-            result.push((start, &source[start..end]));
-        } else if let Some(end) = raw_string_end(bytes, index) {
-            index = end;
-        } else if bytes[index] == b'"' {
-            index = quoted_end(bytes, index, b'"').unwrap_or(bytes.len());
-        } else if bytes[index] == b'\'' {
-            // Lifetimes have no closing quote; only consume a valid character shape.
-            let tail = &source[index + 1..];
-            let length = if tail.starts_with('\\') {
-                quoted_end(bytes, index, b'\'').map(|end| end - index)
-            } else {
-                tail.chars()
-                    .next()
-                    .map(|character| 2 + character.len_utf8())
-            };
-            if let Some(length) = length
-                && bytes.get(index + length - 1) == Some(&b'\'')
-            {
-                index += length;
-            } else {
-                index += 1;
-            }
-        } else {
-            // Advancing bytes is safe here: slicing only follows ASCII delimiters.
-            index += 1;
-        }
-    }
-    result
-}
-
-fn quoted_end(bytes: &[u8], start: usize, quote: u8) -> Option<usize> {
-    let mut index = start + 1;
-    while index < bytes.len() {
-        if bytes[index] == b'\\' {
-            index += 2;
-        } else if bytes[index] == quote {
-            return Some(index + 1);
-        } else {
-            index += 1;
-        }
-    }
-    None
-}
-
-fn raw_string_end(bytes: &[u8], start: usize) -> Option<usize> {
-    if bytes[start] != b'r' {
-        return None;
-    }
-    let mut quote = start + 1;
-    while bytes.get(quote) == Some(&b'#') {
-        quote += 1;
-    }
-    if bytes.get(quote) != Some(&b'"') {
-        return None;
-    }
-    let hashes = quote - start - 1;
-    let mut index = quote + 1;
-    while index < bytes.len() {
-        if bytes[index] == b'"'
-            && bytes
-                .get(index + 1..index + 1 + hashes)
-                .is_some_and(|suffix| suffix.iter().all(|byte| *byte == b'#'))
-        {
-            return Some(index + 1 + hashes);
-        }
-        index += 1;
-    }
-    Some(bytes.len())
 }
