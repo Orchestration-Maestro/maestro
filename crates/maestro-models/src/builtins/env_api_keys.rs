@@ -1,6 +1,6 @@
 use crate::ThrownValue;
 mod platform;
-use platform::{Host, Platform};
+use platform::{EnvironmentValue, Host, Platform};
 use std::collections::HashMap;
 use std::sync::Mutex;
 #[derive(Default)]
@@ -16,19 +16,21 @@ static STATE: State = State {
 /// Report nonempty environment key names in provider precedence order.
 ///
 /// Ambient credentials are excluded. Values are not trimmed or cached. Native
-/// execution reads the process environment; browser host failures are returned.
+/// execution reads the process environment; browser shims use JavaScript truthiness.
+/// Host failures retain their thrown payload.
 /// Bun empty-environment recovery caches its first read, including failure.
 pub fn find_env_keys(provider: &str) -> Result<Option<Vec<String>>, ThrownValue> {
-    find(&Host, &STATE, provider)
+    find_env_keys_with_platform(&Host, &STATE, provider)
 }
 /// Return the first configured environment value, or an ambient auth marker.
 ///
 /// Values are reread after filtering in precedence order, without trimming.
+/// Browser shim values are string-coerced only when returned.
 /// Host failures are returned and ordinary absence is `None`. Native execution
 /// uses process facilities; browser hosts cannot probe native credential files.
 /// Proc recovery and completed Vertex existence probes persist for the process.
 pub fn get_env_api_key(provider: &str) -> Result<Option<String>, ThrownValue> {
-    get(&Host, &STATE, provider)
+    get_env_api_key_with_platform(&Host, &STATE, provider)
 }
 struct Key<'a> {
     name: &'a str,
@@ -87,7 +89,7 @@ fn get_api_key_env_vars(provider: &str) -> Vec<Key<'_>> {
         })
         .collect()
 }
-fn find(
+fn find_env_keys_with_platform(
     p: &impl Platform,
     state: &State,
     provider: &str,
@@ -112,37 +114,44 @@ fn read_key(
     p: &impl Platform,
     state: &State,
     key: &Key<'_>,
-) -> Result<Option<String>, ThrownValue> {
+) -> Result<Option<EnvironmentValue>, ThrownValue> {
     if let Some(value) = nonempty(p.env(key.name)?) {
         return Ok(Some(value));
     }
-    let recovered = proc_env(p, state, key.name)?;
+    let recovered = get_proc_env(p, state, key.name)?.map(EnvironmentValue::string);
     Ok(if key.inherited { None } else { recovered })
 }
-fn get(p: &impl Platform, state: &State, provider: &str) -> Result<Option<String>, ThrownValue> {
+fn get_env_api_key_with_platform(
+    p: &impl Platform,
+    state: &State,
+    provider: &str,
+) -> Result<Option<String>, ThrownValue> {
     if let Some(key) = find_keys(p, state, provider)?.first() {
-        return read_key(p, state, key);
+        return read_key(p, state, key)?
+            .map(EnvironmentValue::into_string)
+            .transpose();
     }
     if provider == "google-vertex" {
-        let credentials = adc(p, state)?;
+        let credentials = has_vertex_adc_credentials(p, state)?;
         let project = nonempty(p.env("GOOGLE_CLOUD_PROJECT")?).is_some()
             || nonempty(p.env("GCLOUD_PROJECT")?).is_some()
-            || proc_env(p, state, "GOOGLE_CLOUD_PROJECT")?.is_some()
-            || proc_env(p, state, "GCLOUD_PROJECT")?.is_some();
+            || get_proc_env(p, state, "GOOGLE_CLOUD_PROJECT")?.is_some()
+            || get_proc_env(p, state, "GCLOUD_PROJECT")?.is_some();
         let location = read(p, state, "GOOGLE_CLOUD_LOCATION")?;
         if credentials && project && location.is_some() {
             return Ok(Some("<authenticated>".into()));
         }
     }
     if provider == "amazon-bedrock"
-        && (bedrock(|key| p.env(key))? || bedrock(|key| proc_env(p, state, key))?)
+        && (bedrock(|key| p.env(key))?
+            || bedrock(|key| Ok(get_proc_env(p, state, key)?.map(EnvironmentValue::string)))?)
     {
         return Ok(Some("<authenticated>".into()));
     }
     Ok(None)
 }
 fn bedrock(
-    mut read: impl FnMut(&str) -> Result<Option<String>, ThrownValue>,
+    mut read: impl FnMut(&str) -> Result<Option<EnvironmentValue>, ThrownValue>,
 ) -> Result<bool, ThrownValue> {
     Ok(nonempty(read("AWS_PROFILE")?).is_some()
         || (nonempty(read("AWS_ACCESS_KEY_ID")?).is_some()
@@ -152,10 +161,10 @@ fn bedrock(
         || nonempty(read("AWS_CONTAINER_CREDENTIALS_FULL_URI")?).is_some()
         || nonempty(read("AWS_WEB_IDENTITY_TOKEN_FILE")?).is_some())
 }
-fn nonempty(value: Option<String>) -> Option<String> {
-    value.filter(|s| !s.is_empty())
+fn nonempty(value: Option<EnvironmentValue>) -> Option<EnvironmentValue> {
+    value.filter(EnvironmentValue::is_truthy)
 }
-fn adc(p: &impl Platform, state: &State) -> Result<bool, ThrownValue> {
+fn has_vertex_adc_credentials(p: &impl Platform, state: &State) -> Result<bool, ThrownValue> {
     if let Some(value) = *state.adc.lock().unwrap() {
         return Ok(value);
     }
@@ -166,7 +175,7 @@ fn adc(p: &impl Platform, state: &State) -> Result<bool, ThrownValue> {
         return Ok(false);
     }
     let path = match read(p, state, "GOOGLE_APPLICATION_CREDENTIALS")? {
-        Some(path) => path,
+        Some(path) => path.into_string()?,
         None => p.join(&p.home()?)?,
     };
     let exists = p.exists(&path);
@@ -176,13 +185,21 @@ fn adc(p: &impl Platform, state: &State) -> Result<bool, ThrownValue> {
 #[path = "../../tests/support/environment_platform_checks.rs"]
 mod environment_platform_checks;
 
-fn read(p: &impl Platform, state: &State, key: &str) -> Result<Option<String>, ThrownValue> {
+fn read(
+    p: &impl Platform,
+    state: &State,
+    key: &str,
+) -> Result<Option<EnvironmentValue>, ThrownValue> {
     if let Some(value) = nonempty(p.env(key)?) {
         return Ok(Some(value));
     }
-    proc_env(p, state, key)
+    Ok(get_proc_env(p, state, key)?.map(EnvironmentValue::string))
 }
-fn proc_env(p: &impl Platform, state: &State, key: &str) -> Result<Option<String>, ThrownValue> {
+fn get_proc_env(
+    p: &impl Platform,
+    state: &State,
+    key: &str,
+) -> Result<Option<String>, ThrownValue> {
     if !p.bun()? || p.own_count()? != 0 {
         return Ok(None);
     }

@@ -106,3 +106,7 @@ an absent field when decoded and serialized again. Agent prompt admission copies
 input records, including nested tool calls, independently of caller mutations.
 The copies are made before acquiring agent state, so a caller holding a record
 write lock can still abort the agent.
+
+Supplied `Error` records retain arbitrary `code`, `errno` and `cause` values
+alongside name, message and stack. Diagnostic extraction still reports only
+string or numeric codes; retained errno and cause are not diagnostic fields.

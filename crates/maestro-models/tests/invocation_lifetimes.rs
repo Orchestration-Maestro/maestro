@@ -1473,6 +1473,8 @@ fn diagnostic_errors_preserve_fields_and_code_kind() {
             message: "message".into(),
             stack: Some(String::new()),
             code,
+            errno: None,
+            cause: None,
         }));
         assert_eq!(
             extract_diagnostic_error(&v).unwrap(),
@@ -1489,6 +1491,8 @@ fn diagnostic_errors_preserve_fields_and_code_kind() {
         message: String::new(),
         stack: None,
         code: Some(ThrownValue::Number(f64::INFINITY)),
+        errno: None,
+        cause: None,
     }));
     let info = extract_diagnostic_error(&empty).unwrap();
     assert_eq!(info.name, None);

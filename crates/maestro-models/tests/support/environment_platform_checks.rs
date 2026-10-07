@@ -19,6 +19,8 @@ struct Controlled {
     join_failure: Cell<bool>,
     process: Cell<bool>,
     substitute_env: Cell<bool>,
+    host_values: RefCell<HashMap<String, (bool, ThrownValue)>>,
+    failures: RefCell<HashMap<String, platform::HostThrown>>,
     scripted: RefCell<HashMap<String, std::collections::VecDeque<Option<String>>>>,
 }
 impl Default for Controlled {
@@ -40,6 +42,8 @@ impl Default for Controlled {
             join_failure: Cell::new(false),
             process: Cell::new(true),
             substitute_env: Cell::new(false),
+            host_values: RefCell::new(HashMap::new()),
+            failures: RefCell::new(HashMap::new()),
             scripted: RefCell::new(HashMap::new()),
         }
     }
@@ -50,17 +54,31 @@ impl Controlled {
     }
 }
 impl Platform for Controlled {
-    fn env(&self, key: &str) -> Result<Option<String>, ThrownValue> {
+    fn env(&self, key: &str) -> Result<Option<EnvironmentValue>, ThrownValue> {
         if !self.process.get() && !self.substitute_env.get() {
             return Err(missing_process());
         }
         self.log.borrow_mut().push(format!("env:{key}"));
+        if let Some(value) = self.failures.borrow().get(key) {
+            return Err(platform::host_thrown(value.clone()).unwrap());
+        }
+        if let Some((truthy, text)) = self.host_values.borrow().get(key) {
+            return Ok(Some(platform::host_environment_value(
+                *truthy,
+                text.clone(),
+            )));
+        }
         if let Some(values) = self.scripted.borrow_mut().get_mut(key)
             && let Some(value) = values.pop_front()
         {
-            return Ok(value);
+            return Ok(value.map(EnvironmentValue::string));
         }
-        Ok(self.values.borrow().get(key).cloned())
+        Ok(self
+            .values
+            .borrow()
+            .get(key)
+            .cloned()
+            .map(EnvironmentValue::string))
     }
     fn home(&self) -> Result<String, ThrownValue> {
         self.log.borrow_mut().push("home".into());
@@ -118,7 +136,7 @@ fn proc_recovery_requires_bun_and_empty_environment() {
             *p.bytes.borrow_mut() = Some(b"OPENAI_API_KEY=recovered\0".to_vec());
             let state = State::default();
             assert_eq!(
-                get(&p, &state, "openai").unwrap(),
+                get_env_api_key_with_platform(&p, &state, "openai").unwrap(),
                 (bun && own == 0).then(|| "recovered".into())
             );
             assert_eq!(p.reads.get(), usize::from(bun && own == 0));
@@ -128,14 +146,18 @@ fn proc_recovery_requires_bun_and_empty_environment() {
     p.bun.set(true);
     p.put("OPENAI_API_KEY", "direct");
     assert_eq!(
-        get(&p, &State::default(), "openai").unwrap(),
+        get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap(),
         Some("direct".into())
     );
     assert_eq!(p.reads.get(), 0);
     let p = Controlled::default();
     p.native.set(false);
     p.bun.set(false);
-    assert!(get(&p, &State::default(), "openai").unwrap().is_none());
+    assert!(
+        get_env_api_key_with_platform(&p, &State::default(), "openai")
+            .unwrap()
+            .is_none()
+    );
     assert_eq!(p.reads.get(), 0);
 }
 const INHERITED: &[(&str, &str)] = &[
@@ -189,11 +211,19 @@ fn proc_entries_split_nul_and_first_equals() {
     *p.bytes.borrow_mut() = Some(bytes);
     let state = State::default();
     for &(provider, _) in INHERITED {
-        assert!(find(&p, &state, provider).unwrap().is_none());
-        assert!(get(&p, &state, provider).unwrap().is_none());
+        assert!(
+            find_env_keys_with_platform(&p, &state, provider)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            get_env_api_key_with_platform(&p, &state, provider)
+                .unwrap()
+                .is_none()
+        );
     }
     assert_eq!(
-        get(&p, &state, "openai").unwrap(),
+        get_env_api_key_with_platform(&p, &state, "openai").unwrap(),
         Some("last=equals".into())
     );
     for (key, value) in [
@@ -206,7 +236,7 @@ fn proc_entries_split_nul_and_first_equals() {
         ("\u{feff}NAME", Some("bom-name")),
         ("FINAL", Some("no-final-nul")),
     ] {
-        assert_eq!(proc_env(&p, &state, key).unwrap().as_deref(), value);
+        assert_eq!(get_proc_env(&p, &state, key).unwrap().as_deref(), value);
     }
     assert_eq!(p.reads.get(), 1);
 }
@@ -220,11 +250,14 @@ fn proc_read_failure_keeps_empty_cache() {
         p.bun.set(true);
         *p.bytes.borrow_mut() = content;
         let state = State::default();
-        let first = get(&p, &state, "openai").unwrap();
+        let first = get_env_api_key_with_platform(&p, &state, "openai").unwrap();
         *p.bytes.borrow_mut() = Some(b"OPENAI_API_KEY=changed\0GROQ_API_KEY=changed\0".to_vec());
-        assert_eq!(get(&p, &state, "openai").unwrap(), first);
         assert_eq!(
-            get(&p, &state, "groq").unwrap(),
+            get_env_api_key_with_platform(&p, &state, "openai").unwrap(),
+            first
+        );
+        assert_eq!(
+            get_env_api_key_with_platform(&p, &state, "groq").unwrap(),
             first.map(|_| "other".into())
         );
         assert_eq!(p.reads.get(), 1);
@@ -243,13 +276,23 @@ fn native_module_readiness_retries_adc_probe() {
             facilities[missing] = false;
             p.facilities.set(facilities);
             let state = State::default();
-            assert!(get(&p, &state, "google-vertex").unwrap().is_none());
+            assert!(
+                get_env_api_key_with_platform(&p, &state, "google-vertex")
+                    .unwrap()
+                    .is_none()
+            );
             assert!(!p.log.borrow().iter().any(|s| s.starts_with("exists:")));
             p.facilities.set([true; 3]);
             let expected = exists.then(|| "<authenticated>".to_owned());
-            assert_eq!(get(&p, &state, "google-vertex").unwrap(), expected);
+            assert_eq!(
+                get_env_api_key_with_platform(&p, &state, "google-vertex").unwrap(),
+                expected
+            );
             p.exists.set(!exists);
-            assert_eq!(get(&p, &state, "google-vertex").unwrap(), expected);
+            assert_eq!(
+                get_env_api_key_with_platform(&p, &state, "google-vertex").unwrap(),
+                expected
+            );
             assert_eq!(
                 p.log
                     .borrow()
@@ -268,6 +311,8 @@ fn missing_process() -> ThrownValue {
         message: "process is not defined".into(),
         stack: None,
         code: None,
+        errno: None,
+        cause: None,
     }))
 }
 fn assert_missing(result: Result<Option<String>, ThrownValue>) {
@@ -289,13 +334,27 @@ fn browser_process_absence_keeps_reference_error() {
         p.substitute_env.set(substitute);
         let state = State::default();
         for provider in ["openai", "google-vertex"] {
-            assert_missing(get(&p, &state, provider));
-            assert_missing(find(&p, &state, provider).map(|v| v.map(|s| s.join(","))));
+            assert_missing(get_env_api_key_with_platform(&p, &state, provider));
+            assert_missing(
+                find_env_keys_with_platform(&p, &state, provider).map(|v| v.map(|s| s.join(","))),
+            );
         }
-        assert_missing(get(&p, &state, "amazon-bedrock"));
-        assert!(find(&p, &state, "amazon-bedrock").unwrap().is_none());
-        assert!(find(&p, &state, "ordinary-unknown").unwrap().is_none());
-        assert!(get(&p, &state, "ordinary-unknown").unwrap().is_none());
+        assert_missing(get_env_api_key_with_platform(&p, &state, "amazon-bedrock"));
+        assert!(
+            find_env_keys_with_platform(&p, &state, "amazon-bedrock")
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            find_env_keys_with_platform(&p, &state, "ordinary-unknown")
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            get_env_api_key_with_platform(&p, &state, "ordinary-unknown")
+                .unwrap()
+                .is_none()
+        );
     }
 }
 #[test]
@@ -304,15 +363,30 @@ fn browser_shim_has_no_native_credential_files() {
     p.native.set(false);
     p.facilities.set([false; 3]);
     let state = State::default();
-    assert!(get(&p, &state, "openai").unwrap().is_none());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "openai")
+            .unwrap()
+            .is_none()
+    );
     p.put("OPENAI_API_KEY", "direct");
-    assert_eq!(get(&p, &state, "openai").unwrap(), Some("direct".into()));
+    assert_eq!(
+        get_env_api_key_with_platform(&p, &state, "openai").unwrap(),
+        Some("direct".into())
+    );
     p.put("GOOGLE_CLOUD_PROJECT", "p");
     p.put("GOOGLE_CLOUD_LOCATION", "l");
-    assert!(get(&p, &state, "google-vertex").unwrap().is_none());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "google-vertex")
+            .unwrap()
+            .is_none()
+    );
     p.facilities.set([true; 3]);
     p.exists.set(true);
-    assert!(get(&p, &state, "google-vertex").unwrap().is_none());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "google-vertex")
+            .unwrap()
+            .is_none()
+    );
     assert!(!p.log.borrow().iter().any(|s| s.starts_with("exists:")));
     assert_eq!(p.reads.get(), 0);
 }
@@ -321,26 +395,46 @@ fn browser_shim_has_no_native_credential_files() {
 fn environment_rechecks_values_without_key_cache() {
     let p = Controlled::default();
     let state = State::default();
-    assert!(find(&p, &state, "openai").unwrap().is_none());
+    assert!(
+        find_env_keys_with_platform(&p, &state, "openai")
+            .unwrap()
+            .is_none()
+    );
     p.put("OPENAI_API_KEY", "first");
-    let mut names = find(&p, &state, "openai").unwrap().unwrap();
+    let mut names = find_env_keys_with_platform(&p, &state, "openai")
+        .unwrap()
+        .unwrap();
     names[0] = "changed-name".into();
     assert_eq!(
-        find(&p, &state, "openai").unwrap(),
+        find_env_keys_with_platform(&p, &state, "openai").unwrap(),
         Some(vec!["OPENAI_API_KEY".into()])
     );
-    assert_eq!(get(&p, &state, "openai").unwrap(), Some("first".into()));
+    assert_eq!(
+        get_env_api_key_with_platform(&p, &state, "openai").unwrap(),
+        Some("first".into())
+    );
     p.put("OPENAI_API_KEY", "second");
-    assert_eq!(get(&p, &state, "openai").unwrap(), Some("second".into()));
+    assert_eq!(
+        get_env_api_key_with_platform(&p, &state, "openai").unwrap(),
+        Some("second".into())
+    );
     p.put("OPENAI_API_KEY", "");
-    assert!(get(&p, &state, "openai").unwrap().is_none());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "openai")
+            .unwrap()
+            .is_none()
+    );
     p.put("GH_TOKEN", "second-token");
     p.scripted.borrow_mut().insert(
         "COPILOT_GITHUB_TOKEN".into(),
         [Some("first-token".into()), None].into(),
     );
     p.log.borrow_mut().clear();
-    assert!(get(&p, &state, "github-copilot").unwrap().is_none());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "github-copilot")
+            .unwrap()
+            .is_none()
+    );
     assert_eq!(
         *p.log.borrow(),
         [
@@ -357,7 +451,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
     let p = Controlled::default();
     p.put("GOOGLE_CLOUD_API_KEY", "key");
     assert_eq!(
-        get(&p, &State::default(), "google-vertex").unwrap(),
+        get_env_api_key_with_platform(&p, &State::default(), "google-vertex").unwrap(),
         Some("key".into())
     );
     assert_eq!(
@@ -367,7 +461,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
     let p = Controlled::default();
     p.exists.set(true);
     assert!(
-        get(&p, &State::default(), "google-vertex")
+        get_env_api_key_with_platform(&p, &State::default(), "google-vertex")
             .unwrap()
             .is_none()
     );
@@ -391,7 +485,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
         p.put("GOOGLE_CLOUD_LOCATION", "l");
         p.exists.set(true);
         assert_eq!(
-            get(&p, &State::default(), "google-vertex").unwrap(),
+            get_env_api_key_with_platform(&p, &State::default(), "google-vertex").unwrap(),
             Some("<authenticated>".into())
         );
         let mut expected = vec![
@@ -409,7 +503,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
     let p = Controlled::default();
     p.put("GOOGLE_APPLICATION_CREDENTIALS", "missing");
     assert!(
-        get(&p, &State::default(), "google-vertex")
+        get_env_api_key_with_platform(&p, &State::default(), "google-vertex")
             .unwrap()
             .is_none()
     );
@@ -426,7 +520,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
             p.exists.set(mask & 1 != 0);
             *p.bytes.borrow_mut() = Some(format!("GOOGLE_APPLICATION_CREDENTIALS=recovered-path\0{project}={}\0GOOGLE_CLOUD_LOCATION={}\0", if mask & 2 != 0 { "p" } else { "" }, if mask & 4 != 0 { "l" } else { "" }).into_bytes());
             assert_eq!(
-                get(&p, &State::default(), "google-vertex").unwrap(),
+                get_env_api_key_with_platform(&p, &State::default(), "google-vertex").unwrap(),
                 (mask == 7).then(|| "<authenticated>".into())
             );
             assert!(p.log.borrow().contains(&"exists:recovered-path".into()));
@@ -438,7 +532,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
         let p = Controlled::default();
         p.home_failure.set(!join);
         p.join_failure.set(join);
-        match get(&p, &State::default(), "google-vertex") {
+        match get_env_api_key_with_platform(&p, &State::default(), "google-vertex") {
             Err(ThrownValue::Json(value)) => {
                 assert_eq!(value, if join { "join error" } else { "home error" })
             }
@@ -451,10 +545,18 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
     p.put("GOOGLE_CLOUD_PROJECT", "p");
     p.put("GOOGLE_CLOUD_LOCATION", "l");
     let state = State::default();
-    assert!(get(&p, &state, "google-vertex").unwrap().is_some());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "google-vertex")
+            .unwrap()
+            .is_some()
+    );
     p.put("GOOGLE_APPLICATION_CREDENTIALS", "second");
     p.exists.set(false);
-    assert!(get(&p, &state, "google-vertex").unwrap().is_some());
+    assert!(
+        get_env_api_key_with_platform(&p, &state, "google-vertex")
+            .unwrap()
+            .is_some()
+    );
     assert!(!p.log.borrow().contains(&"exists:second".into()));
 }
 
@@ -538,7 +640,7 @@ fn adc_join_matches_posix_and_windows_paths() {
         p.put("GOOGLE_CLOUD_PROJECT", "p");
         p.put("GOOGLE_CLOUD_LOCATION", "l");
         assert!(
-            get(&p, &State::default(), "google-vertex")
+            get_env_api_key_with_platform(&p, &State::default(), "google-vertex")
                 .unwrap()
                 .is_none()
         );
@@ -562,7 +664,7 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
     ];
     let p = Controlled::default();
     assert!(
-        get(&p, &State::default(), "amazon-bedrock")
+        get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
             .unwrap()
             .is_none()
     );
@@ -580,7 +682,7 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
         p.put(key, "direct");
         *p.bytes.borrow_mut() = Some(b"AWS_PROFILE=recovered\0".to_vec());
         assert_eq!(
-            get(&p, &State::default(), "amazon-bedrock").unwrap(),
+            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock").unwrap(),
             Some("<authenticated>".into())
         );
         assert_eq!(*p.log.borrow(), direct_order[..=index]);
@@ -590,7 +692,7 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
         p.bun.set(true);
         *p.bytes.borrow_mut() = Some(format!("{key}=recovered\0").into_bytes());
         assert_eq!(
-            get(&p, &State::default(), "amazon-bedrock").unwrap(),
+            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock").unwrap(),
             Some("<authenticated>".into())
         );
         assert_eq!(*p.log.borrow(), direct_order);
@@ -601,7 +703,7 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
     p.put("AWS_ACCESS_KEY_ID", "id");
     p.put("AWS_SECRET_ACCESS_KEY", "secret");
     assert!(
-        get(&p, &State::default(), "amazon-bedrock")
+        get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
             .unwrap()
             .is_some()
     );
@@ -617,7 +719,7 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
     p.bun.set(true);
     *p.bytes.borrow_mut() = Some(b"AWS_ACCESS_KEY_ID=id\0AWS_SECRET_ACCESS_KEY=secret\0".to_vec());
     assert!(
-        get(&p, &State::default(), "amazon-bedrock")
+        get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
             .unwrap()
             .is_some()
     );
@@ -633,7 +735,7 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
         p.bun.set(true);
         *p.bytes.borrow_mut() = Some(bytes.to_vec());
         assert!(
-            get(&p, &State::default(), "amazon-bedrock")
+            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
                 .unwrap()
                 .is_none()
         );
@@ -648,9 +750,170 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
         p.put(direct, "direct-inherited-property");
         *p.bytes.borrow_mut() = Some(format!("{recovered}=recovered\0").into_bytes());
         assert!(
-            get(&p, &State::default(), "amazon-bedrock")
+            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
                 .unwrap()
                 .is_none()
         );
     }
+}
+
+#[test]
+fn environment_helpers_keep_domain_names() {
+    let source = include_str!("../../src/builtins/env_api_keys.rs");
+    assert!(source.contains("fn has_vertex_adc_credentials("));
+    assert!(source.contains("fn get_proc_env("));
+}
+
+#[test]
+fn host_getter_thrown_array_keeps_payload() {
+    let p = Controlled::default();
+    p.failures.borrow_mut().insert(
+        "OPENAI_API_KEY".into(),
+        platform::HostThrown::Json(r#"["controlled-error"]"#.into()),
+    );
+    let failure = get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap_err();
+    assert_eq!(
+        crate::format_thrown_value(&failure).unwrap(),
+        "controlled-error"
+    );
+    assert!(
+        matches!(failure, ThrownValue::Json(value) if value == serde_json::json!(["controlled-error"]))
+    );
+}
+
+#[test]
+fn host_getter_thrown_object_keeps_payload() {
+    let p = Controlled::default();
+    p.failures.borrow_mut().insert(
+        "OPENAI_API_KEY".into(),
+        platform::HostThrown::Json(r#"{"message":"blocked","code":"EHOST"}"#.into()),
+    );
+    let failure = get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap_err();
+    assert_eq!(
+        crate::format_thrown_value(&failure).unwrap(),
+        "[object Object]"
+    );
+    assert!(
+        matches!(failure, ThrownValue::Json(value) if value == serde_json::json!({"message":"blocked","code":"EHOST"}))
+    );
+}
+
+#[test]
+fn host_getter_thrown_error_keeps_metadata() {
+    let p = Controlled::default();
+    p.failures.borrow_mut().insert(
+        "OPENAI_API_KEY".into(),
+        platform::HostThrown::Error(Box::new(crate::Error {
+            name: "HostError".into(),
+            message: "blocked".into(),
+            stack: Some("controlled-stack".into()),
+            code: Some(ThrownValue::Json("EHOST".into())),
+            errno: Some(ThrownValue::Number(5.0)),
+            cause: Some(ThrownValue::Json(serde_json::json!({"message":"root"}))),
+        })),
+    );
+    let failure = get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap_err();
+    let diagnostic = crate::extract_diagnostic_error(&failure).unwrap();
+    assert_eq!(diagnostic.message, "blocked");
+    assert_eq!(diagnostic.name.as_deref(), Some("HostError"));
+    assert_eq!(diagnostic.stack.as_deref(), Some("controlled-stack"));
+    assert_eq!(
+        diagnostic.code,
+        Some(crate::DiagnosticCode::String("EHOST".into()))
+    );
+    let ThrownValue::Error(error) = failure else {
+        panic!("expected Error")
+    };
+    assert!(matches!(error.errno, Some(ThrownValue::Number(5.0))));
+    assert!(
+        matches!(error.cause, Some(ThrownValue::Json(value)) if value == serde_json::json!({"message":"root"}))
+    );
+}
+
+#[test]
+fn browser_boolean_profile_uses_truthiness() {
+    let p = Controlled::default();
+    p.host_values
+        .borrow_mut()
+        .insert("AWS_PROFILE".into(), (true, ThrownValue::Json(true.into())));
+    assert_eq!(
+        get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
+            .unwrap()
+            .as_deref(),
+        Some("<authenticated>")
+    );
+}
+
+#[test]
+fn browser_numeric_key_is_discovered_and_coerced() {
+    let p = Controlled::default();
+    p.host_values
+        .borrow_mut()
+        .insert("OPENAI_API_KEY".into(), (true, ThrownValue::Number(1.0)));
+    assert_eq!(
+        find_env_keys_with_platform(&p, &State::default(), "openai").unwrap(),
+        Some(vec!["OPENAI_API_KEY".into()])
+    );
+    assert_eq!(
+        get_env_api_key_with_platform(&p, &State::default(), "openai")
+            .unwrap()
+            .as_deref(),
+        Some("1")
+    );
+}
+
+#[test]
+fn browser_falsy_values_remain_absent() {
+    for value in [ThrownValue::Number(0.0), ThrownValue::Json("".into())] {
+        let p = Controlled::default();
+        p.host_values
+            .borrow_mut()
+            .insert("OPENAI_API_KEY".into(), (false, value.clone()));
+        p.host_values
+            .borrow_mut()
+            .insert("AWS_PROFILE".into(), (false, value));
+        assert_eq!(
+            find_env_keys_with_platform(&p, &State::default(), "openai").unwrap(),
+            None
+        );
+        assert_eq!(
+            get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap(),
+            None
+        );
+        assert_eq!(
+            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock").unwrap(),
+            None
+        );
+    }
+}
+
+#[test]
+fn browser_discovery_and_ambient_checks_do_not_coerce_values() {
+    let p = Controlled::default();
+    let value = ThrownValue::StringCoercion(std::sync::Arc::new(|| {
+        Err(ThrownValue::Json("coercion failed".into()))
+    }));
+    p.host_values
+        .borrow_mut()
+        .insert("OPENAI_API_KEY".into(), (true, value.clone()));
+    p.host_values
+        .borrow_mut()
+        .insert("AWS_PROFILE".into(), (true, value));
+    assert_eq!(
+        find_env_keys_with_platform(&p, &State::default(), "openai").unwrap(),
+        Some(vec!["OPENAI_API_KEY".into()])
+    );
+    assert_eq!(
+        get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
+            .unwrap()
+            .as_deref(),
+        Some("<authenticated>")
+    );
+    assert_eq!(
+        crate::format_thrown_value(
+            &get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap_err()
+        )
+        .unwrap(),
+        "coercion failed"
+    );
 }

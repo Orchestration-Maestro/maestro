@@ -37,3 +37,5 @@ use maestro_models::{find_env_keys, get_env_api_key};
 assert!(find_env_keys("controlled-unknown-provider").unwrap().is_none());
 assert!(get_env_api_key("controlled-unknown-provider").unwrap().is_none());
 ```
+
+Browser environment shims use JavaScript truthiness for key discovery and ambient signals, including boolean and numeric values. Value lookup returns JavaScript string coercion only after selecting and rereading a key; discovery and ambient checks do not coerce values. Thrown JSON-compatible host values retain their payload, and Error values retain name, message, stack, code, errno and cause.

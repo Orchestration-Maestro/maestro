@@ -1,8 +1,44 @@
+#[cfg(any(test, target_arch = "wasm32"))]
+#[derive(Clone)]
+pub(super) enum HostThrown {
+    Json(String),
+    Error(Box<crate::Error>),
+}
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(super) fn host_thrown(value: HostThrown) -> Result<ThrownValue, serde_json::Error> {
+    match value {
+        HostThrown::Json(text) => serde_json::from_str(&text).map(ThrownValue::Json),
+        HostThrown::Error(error) => Ok(ThrownValue::Error(error)),
+    }
+}
 use crate::ThrownValue;
+pub(super) struct EnvironmentValue {
+    truthy: bool,
+    text: ThrownValue,
+}
+impl EnvironmentValue {
+    pub(super) fn string(value: String) -> Self {
+        Self {
+            truthy: !value.is_empty(),
+            text: ThrownValue::Json(value.into()),
+        }
+    }
+    pub(super) fn is_truthy(&self) -> bool {
+        self.truthy
+    }
+    pub(super) fn into_string(self) -> Result<String, ThrownValue> {
+        crate::format_thrown_value(&self.text)
+    }
+}
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(super) fn host_environment_value(truthy: bool, text: ThrownValue) -> EnvironmentValue {
+    EnvironmentValue { truthy, text }
+}
+
 pub(super) trait Platform {
     fn facilities(&self) -> [bool; 3];
     fn native(&self) -> Result<bool, ThrownValue>;
-    fn env(&self, key: &str) -> Result<Option<String>, ThrownValue>;
+    fn env(&self, key: &str) -> Result<Option<EnvironmentValue>, ThrownValue>;
     fn home(&self) -> Result<String, ThrownValue>;
     fn join(&self, home: &str) -> Result<String, ThrownValue>;
     fn exists(&self, path: &str) -> bool;
@@ -51,8 +87,9 @@ impl Platform for Host {
         std::path::Path::new(path).exists()
     }
 
-    fn env(&self, key: &str) -> Result<Option<String>, ThrownValue> {
-        Ok(std::env::var_os(key).map(|v| v.to_string_lossy().into_owned()))
+    fn env(&self, key: &str) -> Result<Option<EnvironmentValue>, ThrownValue> {
+        Ok(std::env::var_os(key)
+            .map(|v| EnvironmentValue::string(v.to_string_lossy().into_owned())))
     }
 }
 
@@ -84,12 +121,17 @@ mod browser {
     };
     fn thrown(value: JsValue) -> ThrownValue {
         if let Some(error) = value.dyn_ref::<js_sys::Error>() {
-            return ThrownValue::Error(Box::new(crate::Error {
+            return host_thrown(HostThrown::Error(Box::new(crate::Error {
                 name: error.name().into(),
                 message: error.message().into(),
-                stack: None,
-                code: None,
-            }));
+                stack: Reflect::get(&value, &"stack".into())
+                    .ok()
+                    .and_then(|v| v.as_string()),
+                code: metadata(&value, "code"),
+                errno: metadata(&value, "errno"),
+                cause: metadata(&value, "cause"),
+            })))
+            .expect("Error metadata needs no JSON decoding");
         }
         if value.is_undefined() {
             ThrownValue::Undefined
@@ -99,9 +141,27 @@ mod browser {
             ThrownValue::Json(text.into())
         } else if let Some(value) = value.as_bool() {
             ThrownValue::Json(value.into())
+        } else if let Ok(Some(text)) = js_sys::JSON::stringify(&value).map(|text| text.as_string())
+            && let Ok(payload) = host_thrown(HostThrown::Json(text))
+        {
+            payload
         } else {
-            ThrownValue::Json(serde_json::Value::Null)
+            ThrownValue::StringCoercion(std::sync::Arc::new(move || string_value(&value)))
         }
+    }
+    fn string_value(value: &JsValue) -> Result<String, ThrownValue> {
+        let constructor = property(&js_sys::global(), "String")?;
+        let result = constructor
+            .unchecked_ref::<js_sys::Function>()
+            .call1(&JsValue::UNDEFINED, value)
+            .map_err(thrown)?;
+        Ok(String::from(result.unchecked_into::<js_sys::JsString>()))
+    }
+    fn metadata(value: &JsValue, name: &str) -> Option<ThrownValue> {
+        Reflect::get(value, &name.into())
+            .ok()
+            .filter(|v| !v.is_undefined())
+            .map(thrown)
     }
     fn property(target: &JsValue, name: &str) -> Result<JsValue, ThrownValue> {
         Reflect::get(target, &JsValue::from_str(name)).map_err(thrown)
@@ -114,6 +174,8 @@ mod browser {
                 message: "process is not defined".into(),
                 stack: None,
                 code: None,
+                errno: None,
+                cause: None,
             })));
         }
         Ok(process)
@@ -136,9 +198,14 @@ mod browser {
             }
             Ok(version(&process, "node")? || version(&process, "bun")?)
         }
-        fn env(&self, key: &str) -> Result<Option<String>, ThrownValue> {
+        fn env(&self, key: &str) -> Result<Option<EnvironmentValue>, ThrownValue> {
             let env = property(&process()?, "env")?;
-            Ok(property(&env, key)?.as_string())
+            let value = property(&env, key)?;
+            let truthy = value.is_truthy();
+            Ok(Some(host_environment_value(
+                truthy,
+                ThrownValue::StringCoercion(std::sync::Arc::new(move || string_value(&value))),
+            )))
         }
         fn bun(&self) -> Result<bool, ThrownValue> {
             version(&process()?, "bun")
