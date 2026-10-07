@@ -1,12 +1,18 @@
 //! ANSI-aware terminal cell operations.
 use std::{cell::RefCell, collections::VecDeque};
 use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 thread_local! { static WIDTH_CACHE: RefCell<VecDeque<(String, usize)>> = const { RefCell::new(VecDeque::new()) }; }
 fn printable_ascii(s: &str) -> bool {
     s.bytes().all(|b| (0x20..=0x7e).contains(&b))
 }
 fn grapheme_width(s: &str) -> usize {
+    if s.chars()
+        .find(|c| c.width().unwrap_or(0) > 0)
+        .is_some_and(|c| ('🇦'..='🇿').contains(&c))
+    {
+        return 2;
+    }
     UnicodeWidthStr::width(s)
 }
 fn ansi_len(s: &str) -> Option<usize> {
@@ -231,13 +237,13 @@ pub fn normalize_terminal_output(text: &str) -> String {
 }
 
 #[derive(Default)]
-struct Tracker {
+struct AnsiCodeTracker {
     flags: [bool; 8],
     fg: Option<String>,
     bg: Option<String>,
     link: Option<(String, String, String)>,
 }
-impl Tracker {
+impl AnsiCodeTracker {
     fn process(&mut self, s: &str) {
         if let Some(body) = s.strip_prefix("\x1b]8;") {
             let term = if body.ends_with('\x07') {
@@ -364,9 +370,6 @@ impl Tracker {
         s
     }
 }
-fn trim_end(s: &str) -> &str {
-    s.trim_end()
-}
 fn tokens(s: &str) -> Vec<String> {
     let (mut out, mut cur, mut pending, mut space) = (vec![], String::new(), String::new(), false);
     // Space boundaries do not depend on grapheme segmentation.
@@ -394,7 +397,7 @@ fn tokens(s: &str) -> Vec<String> {
     }
     out
 }
-fn break_word(s: &str, max: usize, t: &mut Tracker) -> Vec<String> {
+fn break_long_word(s: &str, max: usize, t: &mut AnsiCodeTracker) -> Vec<String> {
     let (mut out, mut cur, mut w) = (vec![], t.active(), 0);
     for (a, g) in pieces(s, false) {
         if a {
@@ -420,11 +423,11 @@ fn break_word(s: &str, max: usize, t: &mut Tracker) -> Vec<String> {
     }
     out
 }
-fn wrap_line(s: &str, max: usize) -> Vec<String> {
+fn wrap_single_line(s: &str, max: usize) -> Vec<String> {
     if s.is_empty() || visible_width(s) <= max {
         return vec![s.into()];
     }
-    let (mut out, mut cur, mut w, mut t) = (vec![], String::new(), 0, Tracker::default());
+    let (mut out, mut cur, mut w, mut t) = (vec![], String::new(), 0, AnsiCodeTracker::default());
     for token in tokens(s) {
         let n = visible_width(&token);
         let space = token.trim().is_empty();
@@ -433,14 +436,14 @@ fn wrap_line(s: &str, max: usize) -> Vec<String> {
                 cur.push_str(&t.end());
                 out.push(cur);
             }
-            let mut broken = break_word(&token, max, &mut t);
+            let mut broken = break_long_word(&token, max, &mut t);
             cur = broken.pop().unwrap();
             w = visible_width(&cur);
             out.extend(broken);
             continue;
         }
         if w + n > max && w > 0 {
-            let mut line = trim_end(&cur).to_string();
+            let mut line = cur.trim_end().to_string();
             line.push_str(&t.end());
             out.push(line);
             cur = t.active();
@@ -462,18 +465,18 @@ fn wrap_line(s: &str, max: usize) -> Vec<String> {
     if out.is_empty() {
         out.push(String::new())
     }
-    out.into_iter().map(|s| trim_end(&s).to_string()).collect()
+    out.into_iter().map(|s| s.trim_end().to_string()).collect()
 }
 /// Wrap words while retaining ANSI styles, without padding.
 pub fn wrap_text_with_ansi(s: &str, max: usize) -> Vec<String> {
-    let (mut out, mut t) = (vec![], Tracker::default());
+    let (mut out, mut t) = (vec![], AnsiCodeTracker::default());
     for line in s.split('\n') {
         let prefix = if out.is_empty() {
             String::new()
         } else {
             t.active()
         };
-        out.extend(wrap_line(&(prefix + line), max));
+        out.extend(wrap_single_line(&(prefix + line), max));
         t.update(line);
     }
     out
@@ -541,7 +544,7 @@ pub fn slice_by_column(
 ) -> String {
     slice_with_width(line, start_col, length, strict).0
 }
-/// Extract visible columns and their measured width; tabs are zero-width here.
+/// Extract visible columns and their measured width; tabs retain their native grapheme width here.
 pub fn slice_with_width(
     line: &str,
     start_col: usize,
@@ -592,7 +595,7 @@ pub fn extract_segments(
         0usize,
         String::new(),
         false,
-        Tracker::default(),
+        AnsiCodeTracker::default(),
     );
     let end = after_start + after_len;
     for (ansi, g) in pieces(line, false) {

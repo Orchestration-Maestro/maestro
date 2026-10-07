@@ -86,7 +86,7 @@ fn verify_ignore_osc_sequences_terminated_with_st_in_visible_width() {
 
 #[test]
 fn verify_treat_isolated_regional_indicators_as_width_2() {
-    assert_eq!(visible_width("🇨"), 1);
+    assert_eq!(visible_width("🇨"), 2);
     assert_eq!(visible_width("🇨🇳"), 2);
 }
 

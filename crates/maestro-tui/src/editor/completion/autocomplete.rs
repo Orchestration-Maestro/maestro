@@ -41,7 +41,7 @@ pub trait AbortSignal {
 /// Caller-supplied suggestion and insertion behavior.
 #[allow(clippy::type_complexity)]
 pub trait AutocompleteProvider {
-    /// Start suggestions with a display-column cursor position, signal and optional force.
+    /// Start suggestions with a UTF-8 byte-offset cursor position, signal and optional force.
     /// The synchronous prefix runs before returning an owned continuation.
     fn get_suggestions(
         &mut self,
@@ -50,7 +50,7 @@ pub trait AutocompleteProvider {
         cursor_col: usize,
         options: (Rc<dyn AbortSignal>, Option<bool>),
     ) -> Pin<Box<dyn Future<Output = Option<AutocompleteSuggestions>>>>;
-    /// Insert a completion, returning lines and line/display column.
+    /// Insert a completion, returning lines and line/UTF-8 byte offset.
     fn apply_completion(
         &mut self,
         lines: Vec<String>,

@@ -386,14 +386,15 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
             item: AutocompleteItem,
             prefix: &str,
         ) -> (Vec<String>, usize, usize) {
-            assert_eq!((line, col, prefix), (0, 2, "😀"));
+            assert_eq!((line, col, prefix), (0, 4, "😀"));
             lines[line] = item.value;
-            (lines, line, 3)
+            let cursor_col = lines[line].len();
+            (lines, line, cursor_col)
         }
         fn should_trigger_file_completion(
             &mut self,
         ) -> Option<Box<dyn FnMut(&[String], usize, usize) -> bool + '_>> {
-            Some(Box::new(|l, row, col| l[row] == "😀" && col == 2))
+            Some(Box::new(|l, row, col| l[row] == "😀" && col == 4))
         }
     }
     #[derive(Default)]
@@ -547,13 +548,13 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
             let mut first = provider.borrow_mut().get_suggestions(
                 vec!["😀".into()],
                 0,
-                2,
+                4,
                 (signal.clone(), force),
             );
             let second = provider.borrow_mut().get_suggestions(
                 vec!["😀".into()],
                 0,
-                2,
+                4,
                 (signal.clone(), force),
             );
             drop(second);
@@ -569,7 +570,7 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         assert!(provider
             .borrow_mut()
             .should_trigger_file_completion()
-            .unwrap()(&["😀".into()], 0, 2));
+            .unwrap()(&["😀".into()], 0, 4));
         let item = AutocompleteItem {
             value: "abc".into(),
             label: "ABC".into(),
@@ -580,8 +581,22 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         assert_eq!(
             provider
                 .borrow_mut()
-                .apply_completion(vec!["😀".into()], 0, 2, item, "😀"),
+                .apply_completion(vec!["😀".into()], 0, 4, item, "😀"),
             (vec!["abc".into()], 0, 3)
+        );
+        assert_eq!(
+            provider.borrow_mut().apply_completion(
+                vec!["😀".into()],
+                0,
+                4,
+                AutocompleteItem {
+                    value: "界a".into(),
+                    label: "界a".into(),
+                    description: None
+                },
+                "😀",
+            ),
+            (vec!["界a".into()], 0, 4)
         );
     }
     assert_eq!(log.borrow().len(), 12);
