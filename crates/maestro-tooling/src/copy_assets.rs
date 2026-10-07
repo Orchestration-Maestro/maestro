@@ -118,18 +118,19 @@ fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<(
 }
 
 fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
+    let metadata = fs::symlink_metadata(source)?;
+    if metadata.is_symlink() {
+        return copy_link(source, destination);
+    }
+    if !metadata.is_dir() {
+        fs::copy(source, destination)?;
+        return Ok(());
+    }
     fs::create_dir_all(destination)?;
     let mut entries = fs::read_dir(source)?.collect::<io::Result<Vec<_>>>()?;
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
-        let target = destination.join(entry.file_name());
-        if entry.file_type()?.is_symlink() {
-            copy_link(&entry.path(), &target)?;
-        } else if entry.file_type()?.is_dir() {
-            copy_tree(&entry.path(), &target)?;
-        } else {
-            fs::copy(entry.path(), target)?;
-        }
+        copy_tree(&entry.path(), &destination.join(entry.file_name()))?;
     }
     Ok(())
 }

@@ -966,6 +966,35 @@ fn maestro_asset_links_keep_layout_semantics() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
+    let fixture = Fixture::new();
+    let source = asset_inputs(&fixture);
+    standalone_inputs(&source);
+    fs::rename(source.join("docs"), source.join("real-docs")).unwrap();
+    std::os::unix::fs::symlink("real-docs", source.join("docs")).unwrap();
+    let destination = fixture.root.join("standalone");
+    tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &source.join("Cargo.toml"),
+            viewer: &source.join("viewer"),
+        },
+    )
+    .unwrap();
+    assert!(
+        fs::symlink_metadata(destination.join("docs"))
+            .unwrap()
+            .is_symlink()
+    );
+    assert_eq!(
+        fs::read_link(destination.join("docs")).unwrap(),
+        Path::new("real-docs")
+    );
+}
+
 const BROWSER_BUILD_ARGS: [&str; 8] = [
     "build",
     "--locked",
