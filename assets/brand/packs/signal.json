@@ -1,0 +1,135 @@
+{
+  "name": "Signal",
+  "wordmark": "Maestro",
+  "tagline": "Conduct every model.",
+  "palette": {
+    "carbon": "#0B0D10",
+    "graphite": "#1A1F27",
+    "frost": "#E8ECF2",
+    "indigo": "#6C63FF",
+    "lime": "#B6F05A",
+    "fault": "#FF5C7A"
+  },
+  "fonts": {
+    "display": {
+      "family": "Space Grotesk",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/spacegrotesk/OFL.txt",
+      "fallbacks": ["system-ui", "sans-serif"]
+    },
+    "body": {
+      "family": "Space Grotesk",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/spacegrotesk/OFL.txt",
+      "fallbacks": ["system-ui", "sans-serif"]
+    },
+    "mono": {
+      "family": "JetBrains Mono",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/jetbrainsmono/OFL.txt",
+      "fallbacks": ["ui-monospace", "monospace"]
+    }
+  },
+  "type": {
+    "display-xl": {"font": "display", "size": 56, "line-height": 1.1, "weight": 700},
+    "display": {"font": "display", "size": 36, "line-height": 1.1, "weight": 700},
+    "heading": {"font": "display", "size": 24, "line-height": 1.2, "weight": 600},
+    "body": {"font": "body", "size": 16, "line-height": 1.55, "weight": 400},
+    "mono": {"font": "mono", "size": 14, "line-height": 1.7, "weight": 400}
+  },
+  "spacing": {"xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32},
+  "radii": {"none": 0, "control": 6, "panel": 12},
+  "mark": {
+    "template": "../mark.svg",
+    "variants": {
+      "flat": "../mark-flat.svg",
+      "mono": "../mark-mono.svg",
+      "small": "../mark-small.svg"
+    },
+    "minimum-size": 32,
+    "small-minimum-size": 16,
+    "clear-space": 0.0546875,
+    "app-icon-scale": 0.72
+  },
+  "glyphs": {
+    "mark": {"symbol": "✦", "color": "accent"},
+    "working": {"symbol": "✦", "color": "live"},
+    "idle": {"symbol": "✦", "color": "accent"},
+    "passed": {"symbol": "✓", "color": "success"},
+    "failed": {"symbol": "✗", "color": "error"},
+    "tool-step": {"symbol": "┃", "color": "muted"}
+  },
+  "modes": {
+    "dark": {
+      "colors": {
+        "background": "carbon",
+        "panel": "graphite",
+        "text": "frost",
+        "muted": "frost",
+        "accent": "lime",
+        "on-accent": "carbon",
+        "live": "lime",
+        "success": "lime",
+        "warning": "fault",
+        "error": "fault",
+        "border": "indigo",
+        "mark-ring": "indigo",
+        "mark-m": "indigo",
+        "mark-node": "indigo",
+        "mark-live": "lime",
+        "mark-star": "lime"
+      }
+    },
+    "light": {
+      "colors": {
+        "background": "frost",
+        "panel": "frost",
+        "text": "carbon",
+        "muted": "graphite",
+        "accent": "graphite",
+        "on-accent": "frost",
+        "live": "graphite",
+        "success": "graphite",
+        "warning": "carbon",
+        "error": "carbon",
+        "border": "indigo",
+        "mark-ring": "indigo",
+        "mark-m": "indigo",
+        "mark-node": "indigo",
+        "mark-live": "carbon",
+        "mark-star": "carbon"
+      }
+    }
+  },
+  "terminal": {
+    "ansi": {
+      "black": "muted",
+      "red": "error",
+      "green": "success",
+      "yellow": "warning",
+      "blue": "accent",
+      "magenta": "accent",
+      "cyan": "live",
+      "white": "text",
+      "bright-black": "muted",
+      "bright-red": "error",
+      "bright-green": "success",
+      "bright-yellow": "warning",
+      "bright-blue": "accent",
+      "bright-magenta": "accent",
+      "bright-cyan": "live",
+      "bright-white": "text"
+    },
+    "truecolor": {
+      "background": "background",
+      "panel": "panel",
+      "text": "text",
+      "muted": "muted",
+      "accent": "accent",
+      "live": "live",
+      "success": "success",
+      "warning": "warning",
+      "error": "error"
+    }
+  }
+}

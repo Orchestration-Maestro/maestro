@@ -1,4 +1,12 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/dark/mark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/brand/light/mark.svg">
+  <img src="assets/brand/light/mark.svg" alt="Maestro mark" width="96" height="96">
+</picture>
+
 # Maestro
+
+Conduct every model.
 
 Maestro is an agent engine in Rust: the foundation the other Maestro parts
 build on. The implementation is being rebuilt crate by crate, with specs in
@@ -63,6 +71,7 @@ vocabulary.
 
 ## Documentation
 
+- [Identity guide and brand pack](docs/identity.md)
 - [Foundation specification](docs/specs/maestro-port.md)
 - [Architecture checks](docs/architecture.md)
 - [Repository policy](docs/repository_policy.md)

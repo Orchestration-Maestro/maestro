@@ -10,6 +10,8 @@ Using AI to write code is fine. Submitting AI-generated slop without understandi
 
 If you use an agent, run it from the repository root directory so it picks up `AGENTS.md` automatically. Your agent must follow the rules and guidelines in that file.
 
+Use the [identity guide](docs/identity.md) for voice, code naming and brand assets.
+
 ## Contribution Gate
 
 All issues and PRs from new contributors are auto-closed by default.
