@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 /// Temporarily set authentication aside and restore it after the child.
@@ -9,10 +9,10 @@ use std::process::{Command, ExitCode};
 /// Returns native process and filesystem failures.
 pub(crate) fn run(home: &Path, child: &mut Command) -> io::Result<ExitCode> {
     let auth = home.join(".maestro/agent/auth.json");
-    let backup = auth.with_extension("json.bak");
-    let result = run_without_auth(&auth, &backup, child);
+    let mut backup = auth.with_extension("json.bak");
+    let result = run_without_auth(&auth, &mut backup, child);
     let cleanup = if backup.is_file() {
-        move_file(&backup, &auth).map(|()| println!("Restored auth.json"))
+        move_file(&backup, &auth).map(|_| println!("Restored auth.json"))
     } else {
         Ok(())
     };
@@ -28,9 +28,13 @@ pub(crate) fn run(home: &Path, child: &mut Command) -> io::Result<ExitCode> {
     }
 }
 
-fn run_without_auth(auth: &Path, backup: &Path, child: &mut Command) -> io::Result<ExitCode> {
+fn run_without_auth(
+    auth: &Path,
+    backup: &mut PathBuf,
+    child: &mut Command,
+) -> io::Result<ExitCode> {
     if auth.is_file() {
-        move_file(auth, backup)?;
+        *backup = move_file(auth, backup)?;
         println!("Moved auth.json to backup");
     }
     child
@@ -44,7 +48,7 @@ fn run_without_auth(auth: &Path, backup: &Path, child: &mut Command) -> io::Resu
     Ok(super::exit_code(status))
 }
 
-fn move_file(source: &Path, destination: &Path) -> io::Result<()> {
+fn move_file(source: &Path, destination: &Path) -> io::Result<PathBuf> {
     let destination = if destination.is_dir() {
         destination.join(
             source
@@ -54,5 +58,6 @@ fn move_file(source: &Path, destination: &Path) -> io::Result<()> {
     } else {
         destination.to_path_buf()
     };
-    fs::rename(source, destination)
+    fs::rename(source, &destination)?;
+    Ok(destination)
 }

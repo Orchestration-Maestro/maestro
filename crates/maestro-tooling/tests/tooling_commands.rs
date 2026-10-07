@@ -134,6 +134,12 @@ fn drive() {
         check.arg("check");
         let mut smoke = Command::new(&cargo);
         smoke.arg("smoke");
+        match std::env::var("MAESTRO_MISSING_PHASE").as_deref() {
+            Ok("format") => format = Command::new("missing-tool"),
+            Ok("check") => check = Command::new("missing-tool"),
+            Ok("smoke") => smoke = Command::new("missing-tool"),
+            _ => {}
+        }
         tooling::pre_commit::run(
             Path::new(&root),
             &mut format,
@@ -433,12 +439,15 @@ fn maestro_offline_keeps_fixed_backup_move_behavior() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    assert_eq!(
-        fs::read(fixture.auth().with_extension("json.bak").join("auth.json")).unwrap(),
-        b"auth"
+    assert_eq!(fs::read(fixture.auth()).unwrap(), b"auth");
+    assert!(
+        !fixture
+            .auth()
+            .with_extension("json.bak")
+            .join("auth.json")
+            .exists()
     );
-    assert!(!fixture.auth().exists());
-    assert!(!stdout(&output).contains("Restored auth.json"));
+    assert!(stdout(&output).contains("Restored auth.json"));
     assert_auth_move_errors();
     #[cfg(unix)]
     assert_auth_link_restored();
@@ -1101,15 +1110,21 @@ fn assert_hook_phase(phase: &str) {
         text.contains("✅ All pre-commit checks passed!\n"),
         phase == "success"
     );
-    let error = String::from_utf8(output.stderr).unwrap();
-    assert_eq!(
-        error,
-        match phase {
-            "format" | "check" => "❌ Checks failed. Please fix the errors before committing.\n",
-            "smoke" => "❌ Browser smoke check failed.\n",
-            _ => "",
-        }
-    );
+    assert!(output.stderr.is_empty());
+    let failure = match phase {
+        "format" | "check" => "❌ Checks failed. Please fix the errors before committing.\n",
+        "smoke" => "❌ Browser smoke check failed.\n",
+        _ => "",
+    };
+    if !failure.is_empty() {
+        assert!(text.ends_with(failure), "{text}");
+        let announcement = if phase == "smoke" {
+            "Running browser smoke check...\n"
+        } else {
+            "Running formatting, linting, and type checking...\n"
+        };
+        assert!(text.find(announcement).unwrap() < text.find(failure).unwrap());
+    }
     assert_eq!(output.status.success(), phase == "success");
     assert_eq!(
         fixture.receipt("phases"),
@@ -1198,5 +1213,94 @@ fn maestro_hook_selects_smoke_from_original_paths() {
                 b"format\ncheck\n"
             }
         );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_source_announces_non_executable_cargo() {
+    use std::os::unix::fs::PermissionsExt;
+    drive();
+    let fixture = Fixture::new();
+    fs::set_permissions(&fixture.child, fs::Permissions::from_mode(0o644)).unwrap();
+    let output = fixture
+        .invoke(
+            "maestro_source_announces_non_executable_cargo",
+            "run-source",
+            &[],
+        )
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        output.stderr,
+        format!(
+            "cargo not found at {}. Run just setup from the repo root first.\n",
+            fixture.child.display()
+        )
+        .as_bytes()
+    );
+}
+
+#[test]
+fn maestro_browser_missing_tool_logs_smoke_failure() {
+    drive();
+    let fixture = Fixture::new();
+    let entry = fixture
+        .root
+        .join("crates/maestro-models/examples/browser_import_check.rs");
+    fs::create_dir_all(entry.parent().unwrap()).unwrap();
+    fs::write(entry, "fixture").unwrap();
+    fs::remove_file(&fixture.child).unwrap();
+    let output = fixture
+        .invoke(
+            "maestro_browser_missing_tool_logs_smoke_failure",
+            "check-browser-smoke",
+            &[],
+        )
+        .env("TMPDIR", &fixture.root)
+        .output()
+        .unwrap();
+    let log = fixture.root.join("maestro-browser-smoke-errors.log");
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        output.stderr,
+        format!("Browser smoke check failed. See {}\n", log.display()).as_bytes()
+    );
+    assert!(
+        fs::read_to_string(log)
+            .unwrap()
+            .contains("No such file or directory")
+    );
+}
+
+#[test]
+fn maestro_hook_missing_tool_announces_failed_step() {
+    drive();
+    for phase in ["format", "check", "smoke"] {
+        let fixture = Fixture::new();
+        git(&fixture.root, &["init", "--quiet"]);
+        fs::write(fixture.root.join("Cargo.toml"), "manifest").unwrap();
+        git(&fixture.root, &["add", "Cargo.toml"]);
+        let output = fixture
+            .invoke(
+                "maestro_hook_missing_tool_announces_failed_step",
+                "hook",
+                &[],
+            )
+            .env("PATH", std::env::var_os("PATH").unwrap())
+            .env("MAESTRO_MISSING_PHASE", phase)
+            .env("MAESTRO_ACTIVE_SMOKE", "true")
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        let message = if phase == "smoke" {
+            "❌ Browser smoke check failed.\n"
+        } else {
+            "❌ Checks failed. Please fix the errors before committing.\n"
+        };
+        assert!(stdout(&output).ends_with(message), "{}", stdout(&output));
+        assert!(!stdout(&output).contains("All pre-commit checks passed"));
+        assert!(String::from_utf8_lossy(&output.stderr).contains("No such file or directory"));
     }
 }

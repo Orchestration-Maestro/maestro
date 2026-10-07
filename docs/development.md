@@ -44,7 +44,8 @@ mise exec -- just models-dev-compile
 
 The pinned external watcher compiles initially and queues a rebuild when input
 changes during compilation. Earlier terminal output remains visible. It watches
-source and manifest inputs, not Cargo outputs. `dev` covers delivered owners;
+the workspace root, including sibling dependencies and Cargo configuration,
+excluding only `.git` and Cargo's configured target directory. `dev` covers delivered owners;
 `dev-compile` and `models-dev-compile` select models only. Missing owners fail.
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).

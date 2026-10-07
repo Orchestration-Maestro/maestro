@@ -22,15 +22,7 @@ impl Mode {
 }
 
 /// Launch source while preserving native arguments and caller directory.
-///
-/// # Errors
-/// Returns native process and filesystem failures.
-pub(crate) fn run(
-    cargo: &Path,
-    checkout: &Path,
-    arguments: &[OsString],
-    mode: Mode,
-) -> io::Result<ExitCode> {
+pub(crate) fn run(cargo: &Path, checkout: &Path, arguments: &[OsString], mode: Mode) -> ExitCode {
     let mut child = Command::new(cargo);
     child
         .args(["run", "--quiet", "--manifest-path"])
@@ -52,12 +44,17 @@ pub(crate) fn run(
         }
         println!("Running without API keys...");
     }
-    if !cargo.is_file() {
-        eprintln!(
-            "cargo not found at {}. Run just setup from the repo root first.",
-            cargo.display()
-        );
-        return Ok(ExitCode::FAILURE);
+    match child.status() {
+        Ok(status) => super::exit_code(status),
+        Err(error) => {
+            match error.kind() {
+                io::ErrorKind::NotFound | io::ErrorKind::PermissionDenied => eprintln!(
+                    "cargo not found at {}. Run just setup from the repo root first.",
+                    cargo.display()
+                ),
+                _ => eprintln!("{error}"),
+            }
+            ExitCode::FAILURE
+        }
     }
-    child.status().map(super::exit_code)
 }

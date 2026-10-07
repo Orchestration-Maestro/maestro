@@ -231,3 +231,9 @@ The private contribution-policy executable may use `base64 =0.23.1` with only
 dates. Neither enables its defaults. Tests may use dev-only `yaml-rust2 =0.13.0`
 without default features to parse actual adapters/templates. These exceptions
 are MIT OR Apache-2.0 and add no internal crate edge or public library API.
+
+`maestro-tooling` alone may use `cargo_metadata =0.23.1` with default features
+(MIT). Its dependency closure uses MIT OR Apache-2.0 (camino, cargo-platform,
+semver, serde, serde_core, serde_derive, serde_json, itoa, proc-macro2, quote,
+syn, thiserror and thiserror-impl), Unlicense OR MIT (memchr),
+MIT (zmij), and (MIT OR Apache-2.0) AND Unicode-3.0 (unicode-ident).

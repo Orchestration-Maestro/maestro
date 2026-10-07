@@ -46,7 +46,7 @@ models-build:
 # Watch models compiler inputs without generating or copying assets.
 models-dev:
     cargo pkgid -p maestro-models --locked
-    watchexec --watch crates/maestro-models --watch Cargo.toml --watch Cargo.lock --ignore target --on-busy-update=queue --shell=none -- cargo build -p maestro-models --locked
+    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-models --locked
 
 # Run native models tests with literal argument forwarding.
 models-test *args:
@@ -66,7 +66,7 @@ agent-build:
 # Watch agent compiler inputs without generating or copying assets.
 agent-dev:
     cargo pkgid -p maestro-agent --locked
-    watchexec --watch crates/maestro-agent --watch Cargo.toml --watch Cargo.lock --ignore target --on-busy-update=queue --shell=none -- cargo build -p maestro-agent --locked
+    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-agent --locked
 
 # Run native agent tests with literal argument forwarding.
 agent-test *args:
@@ -86,7 +86,7 @@ tui-build:
 # Watch tui compiler inputs without generating or copying assets.
 tui-dev:
     cargo pkgid -p maestro-tui --locked
-    watchexec --watch crates/maestro-tui --watch Cargo.toml --watch Cargo.lock --ignore target --on-busy-update=queue --shell=none -- cargo build -p maestro-tui --locked
+    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-tui --locked
 
 # Run native tui tests with literal argument forwarding.
 tui-test *args:
@@ -108,7 +108,7 @@ app-build:
 # Watch app compiler inputs without generating or copying assets.
 app-dev:
     cargo pkgid -p maestro-app --locked
-    watchexec --watch crates/maestro-app --watch Cargo.toml --watch Cargo.lock --ignore target --on-busy-update=queue --shell=none -- cargo build -p maestro-app --locked
+    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-app --locked
 
 # Run native app tests with literal argument forwarding.
 app-test *args:
@@ -119,7 +119,7 @@ app-prepublish: app-clean app-build
 
 # Watch every delivered owner, retaining compiler output.
 dev:
-    watchexec --watch crates --watch Cargo.toml --watch Cargo.lock --ignore target --on-busy-update=queue --shell=none -- cargo build --workspace --locked
+    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build --workspace --locked
 
 # Select the model compiler without regeneration or asset copying.
 dev-compile: models-dev
@@ -151,17 +151,17 @@ copy-binary-assets source="crates/maestro-app" destination="target/maestro-binar
 # Run the explicitly selected non-provider route in the invocation directory.
 [no-cd]
 test-offline *args:
-    cargo run --quiet --locked --manifest-path '{{justfile_directory()}}/Cargo.toml' -p maestro-tooling --bin development -- test-offline "$@"
+    cargo run --quiet --locked --manifest-path {{quote(justfile_directory() / "Cargo.toml")}} -p maestro-tooling --bin development -- test-offline "$@"
 
 # Launch source without changing the invocation directory.
 [no-cd]
 run-source *args:
-    cargo run --quiet --locked --manifest-path '{{justfile_directory()}}/Cargo.toml' -p maestro-tooling --bin development -- run-source "$@"
+    cargo run --quiet --locked --manifest-path {{quote(justfile_directory() / "Cargo.toml")}} -p maestro-tooling --bin development -- run-source "$@"
 
 # Launch source with Windows switch comparison.
 [no-cd]
 run-source-windows *args:
-    cargo run --quiet --locked --manifest-path '{{justfile_directory()}}/Cargo.toml' -p maestro-tooling --bin development -- run-source-windows "$@"
+    cargo run --quiet --locked --manifest-path {{quote(justfile_directory() / "Cargo.toml")}} -p maestro-tooling --bin development -- run-source-windows "$@"
 
 # Compile the real browser entry when its owner has supplied it.
 check-browser-smoke:

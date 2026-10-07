@@ -17,8 +17,12 @@ pub fn run(
 ) -> io::Result<ExitCode> {
     let paths = capture(root)?;
     println!("Running formatting, linting, and type checking...");
-    if !format.status()?.success() {
-        eprintln!("{CHECK_FAILURE}");
+    if !format
+        .status()
+        .inspect_err(|error| eprintln!("{error}"))
+        .is_ok_and(|status| status.success())
+    {
+        println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
     let surviving: Vec<_> = paths
@@ -35,14 +39,22 @@ pub fn run(
             return Ok(ExitCode::FAILURE);
         }
     }
-    if !check.status()?.success() {
-        eprintln!("{CHECK_FAILURE}");
+    if !check
+        .status()
+        .inspect_err(|error| eprintln!("{error}"))
+        .is_ok_and(|status| status.success())
+    {
+        println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
     if let Some(smoke) = smoke.filter(|_| needs_smoke(&paths)) {
         println!("Running browser smoke check...");
-        if !smoke.status()?.success() {
-            eprintln!("❌ Browser smoke check failed.");
+        if !smoke
+            .status()
+            .inspect_err(|error| eprintln!("{error}"))
+            .is_ok_and(|status| status.success())
+        {
+            println!("❌ Browser smoke check failed.");
             return Ok(ExitCode::FAILURE);
         }
     }
