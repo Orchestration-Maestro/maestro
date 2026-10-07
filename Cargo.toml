@@ -10,6 +10,8 @@ ryu-js = "=1.0.3"
 js-sys = "=0.3.106"
 jsonschema = { version = "=0.58.5", default-features = false }
 
+regress = { version = "=0.12.0", features = ["utf16"] }
+
 [workspace.package]
 edition = "2024"
 license = "MIT"

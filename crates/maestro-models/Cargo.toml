@@ -11,5 +11,7 @@ jsonschema = { workspace = true }
 serde = { workspace = true }
 ryu-js = { workspace = true }
 
+regress = { workspace = true }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = { workspace = true }
