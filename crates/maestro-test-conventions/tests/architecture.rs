@@ -31,6 +31,7 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
         ("maestro-models", "core"),
         ("maestro-test-conventions", "dedicated"),
         ("maestro-storage", "core"),
+        ("maestro-tooling", "dedicated"),
     ] {
         workspace.member("models", name, "");
         workspace.list(&[(name, class)]);

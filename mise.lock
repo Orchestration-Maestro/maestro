@@ -2,46 +2,6 @@
 
 lockfile_version = 3
 
-[[tools.jaq]]
-version = "3.1.1"
-backend = "aqua:01mf02/jaq"
-specifiers = ["3.1.1"]
-
-[tools.jaq."platforms.linux-arm64"]
-checksum = "sha256:bdda42d5a8c060a2c7916b287a227e7750d5fccbd4c37aacf0ab863010921829"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-aarch64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327954"
-
-[tools.jaq."platforms.linux-arm64-musl"]
-checksum = "sha256:bdda42d5a8c060a2c7916b287a227e7750d5fccbd4c37aacf0ab863010921829"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-aarch64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327954"
-
-[tools.jaq."platforms.linux-x64"]
-checksum = "sha256:5922c7b67d9bd6841d6676d1f954410c6bf04b47203dcb661c4f052dfef7f454"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327122"
-
-[tools.jaq."platforms.linux-x64-musl"]
-checksum = "sha256:b9a07a6f10f0305d96d333ea7db69d60704eb4d4e71c98094157e3cc9fe08110"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327739"
-
-[tools.jaq."platforms.macos-arm64"]
-checksum = "sha256:b1a2e63384e156d90bbf61a1142302aa59bfebd8c89e24dfc9b5747618880fcd"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-aarch64-apple-darwin"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502328070"
-
-[tools.jaq."platforms.macos-x64"]
-checksum = "sha256:34b1a9495dbd28df09ad83c832a2ae4be60657d8c24e72f28565cd19b98ed0af"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-apple-darwin"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502327833"
-
-[tools.jaq."platforms.windows-x64"]
-checksum = "sha256:7b2f5153d11118c3ccff01859743e09842cabc42ba08f8876489c1be30d1d08d"
-url = "https://github.com/01mf02/jaq/releases/download/v3.1.1/jaq-x86_64-pc-windows-msvc.exe"
-url_api = "https://api.github.com/repos/01mf02/jaq/releases/assets/502328777"
-
 [[tools.just]]
 version = "1.58.0"
 backend = "aqua:casey/just"
@@ -101,3 +61,43 @@ checksum = "sha256:805632185f4539ca2eb0fd1b3b52ea842cecbc4ba1e749be430df94862135
 url = "https://github.com/j178/prek/releases/download/v0.5.4/prek-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/j178/prek/releases/assets/594535002"
 provenance = "github-attestations"
+
+[[tools.watchexec]]
+version = "2.8.0"
+backend = "aqua:watchexec/watchexec"
+specifiers = ["2.8.0"]
+
+[tools.watchexec."platforms.linux-arm64"]
+checksum = "sha256:aaa5eb7e62e9ce99cad7f14260265aaa9df8884e195c0661ab011825a6d61634"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138796"
+
+[tools.watchexec."platforms.linux-arm64-musl"]
+checksum = "sha256:3961878b21e3c1729279322f4007dd5bbf0032110fbcb5e7b983946a9ceb3bf6"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-unknown-linux-musl.tar.xz"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138804"
+
+[tools.watchexec."platforms.linux-x64"]
+checksum = "sha256:21839e9840ef592b4d571885ccbd692f54ae5bd4231f3caf29fcf31fa7723afe"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138794"
+
+[tools.watchexec."platforms.linux-x64-musl"]
+checksum = "sha256:35ea667cbe4bc96c23ba2a1f46c94c46bc385b67165e3bf621c0e7e4959aa99b"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-unknown-linux-musl.tar.xz"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138798"
+
+[tools.watchexec."platforms.macos-arm64"]
+checksum = "sha256:8da8bdbfb8568138616a082c05a87224e08d5cb2994feb956426291cf0c6fe10"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138836"
+
+[tools.watchexec."platforms.macos-x64"]
+checksum = "sha256:b7f694ad19c1cf168388f3295a5e825425f7dac5cd27cffd2d89a51ed4ab0f22"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138831"
+
+[tools.watchexec."platforms.windows-x64"]
+checksum = "sha256:0c872fc18c8e801f21614c6daf2504a5826d5c705bb67f7a583d879f5410d9ea"
+url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138784"

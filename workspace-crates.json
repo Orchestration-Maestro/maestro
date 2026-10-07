@@ -1,4 +1,5 @@
 {
   "maestro-models": "core",
-  "maestro-test-conventions": "dedicated"
+  "maestro-test-conventions": "dedicated",
+  "maestro-tooling": "dedicated"
 }
