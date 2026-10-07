@@ -42,6 +42,10 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     wit.finish()
 }
 
+const DECLARATION_KINDS: &[&str] = &[
+    "struct", "enum", "union", "trait", "type", "fn", "const", "static", "mod",
+];
+
 #[derive(Default)]
 struct Records {
     declarations: Vec<(String, usize)>,
@@ -49,7 +53,10 @@ struct Records {
 }
 
 impl Records {
-    fn declaration(&mut self, name: &syn::Ident, keyword: proc_macro2::Span) {
+    fn declaration(&mut self, kind: &str, name: &syn::Ident, keyword: proc_macro2::Span) {
+        if !DECLARATION_KINDS.contains(&kind) {
+            return;
+        }
         self.declarations
             .push((name.unraw().to_string(), keyword.start().line));
     }
@@ -64,6 +71,26 @@ impl Records {
         let _ = parser.parse2(tokens);
     }
 
+    fn fragment_header(&mut self, input: syn::parse::ParseStream<'_>) -> bool {
+        let fork = input.fork();
+        if fork.parse::<syn::Visibility>().is_err() {
+            return false;
+        }
+        let Ok(proc_macro2::TokenTree::Ident(keyword)) = fork.parse() else {
+            return false;
+        };
+        let kind = keyword.to_string();
+        if !DECLARATION_KINDS.contains(&kind.as_str()) {
+            return false;
+        }
+        let Ok(name) = fork.parse::<syn::Ident>() else {
+            return false;
+        };
+        self.declaration(&kind, &name, keyword.span());
+        input.advance_to(&fork);
+        true
+    }
+
     fn fragment_item(&mut self, input: syn::parse::ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
         if let Ok(item) = fork.parse::<syn::Item>() {
@@ -73,6 +100,9 @@ impl Records {
         }
         if input.fork().parse::<syn::Macro>().is_ok() {
             self.visit_macro(&input.parse()?);
+            return Ok(());
+        }
+        if self.fragment_header(input) {
             return Ok(());
         }
         match input.parse::<proc_macro2::TokenTree>()? {
@@ -94,29 +124,39 @@ impl Records {
 impl<'ast> Visit<'ast> for Records {
     fn visit_item(&mut self, item: &'ast syn::Item) {
         match item {
-            syn::Item::Struct(item) => self.declaration(&item.ident, item.struct_token.span),
-            syn::Item::Enum(item) => self.declaration(&item.ident, item.enum_token.span),
-            syn::Item::Union(item) => self.declaration(&item.ident, item.union_token.span),
-            syn::Item::Trait(item) => self.declaration(&item.ident, item.trait_token.span),
-            syn::Item::Type(item) => self.declaration(&item.ident, item.type_token.span),
-            syn::Item::Mod(item) => self.declaration(&item.ident, item.mod_token.span),
+            syn::Item::Struct(item) => {
+                self.declaration("struct", &item.ident, item.struct_token.span);
+            }
+            syn::Item::Enum(item) => self.declaration("enum", &item.ident, item.enum_token.span),
+            syn::Item::Union(item) => self.declaration("union", &item.ident, item.union_token.span),
+            syn::Item::Trait(item) => self.declaration("trait", &item.ident, item.trait_token.span),
+            syn::Item::TraitAlias(item) => {
+                self.declaration("trait", &item.ident, item.trait_token.span);
+            }
+            syn::Item::Fn(item) => self.declaration("fn", &item.sig.ident, item.sig.fn_token.span),
+            syn::Item::Const(item) => self.declaration("const", &item.ident, item.const_token.span),
+            syn::Item::Static(item) => {
+                self.declaration("static", &item.ident, item.static_token.span);
+            }
+            syn::Item::Type(item) => self.declaration("type", &item.ident, item.type_token.span),
+            syn::Item::Mod(item) => self.declaration("mod", &item.ident, item.mod_token.span),
             _ => {}
         }
         syn::visit::visit_item(self, item);
     }
 
     fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
-        self.declaration(&item.ident, item.type_token.span);
+        self.declaration("type", &item.ident, item.type_token.span);
         syn::visit::visit_impl_item_type(self, item);
     }
 
     fn visit_trait_item_type(&mut self, item: &'ast syn::TraitItemType) {
-        self.declaration(&item.ident, item.type_token.span);
+        self.declaration("type", &item.ident, item.type_token.span);
         syn::visit::visit_trait_item_type(self, item);
     }
 
     fn visit_foreign_item_type(&mut self, item: &'ast syn::ForeignItemType) {
-        self.declaration(&item.ident, item.type_token.span);
+        self.declaration("type", &item.ident, item.type_token.span);
         syn::visit::visit_foreign_item_type(self, item);
     }
 

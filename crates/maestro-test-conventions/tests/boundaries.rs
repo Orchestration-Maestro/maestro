@@ -587,6 +587,55 @@ fn declarations_in_macro_tokens_keep_their_owners() {
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
 
+#[test]
+fn trait_alias_declarations_keep_their_owners() {
+    for declaration in [
+        "pub trait ToolDefinition = Send;",
+        "macro_rules! define { () => { pub trait ToolDefinition = Send; }; }",
+    ] {
+        assert_tool_declaration_owner(declaration);
+    }
+}
+
+#[test]
+fn fixed_macro_declarations_with_metavariable_types_keep_their_owners() {
+    assert_tool_declaration_owner(
+        "macro_rules! define { ($t:ty) => { struct ToolDefinition { value: $t } }; } define!(u8);",
+    );
+}
+
+#[test]
+fn generated_macro_declaration_names_remain_manual_review() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "macro_rules! define { ($name:ident, $t:ty) => { struct $name { value: $t } }; } define!(ToolDefinition, u8);",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+fn assert_tool_declaration_owner(declaration: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "{}:1: ToolDefinition declaration belongs to maestro-tools, not maestro-tui",
+            workspace
+                .root
+                .join("crates/maestro-tui/src/lib.rs")
+                .display()
+        ))
+    );
+    source(&workspace, "maestro-tui", "src/lib.rs", "");
+    source(&workspace, "maestro-tools", "src/lib.rs", declaration);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
 fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
     let member = workspace.root.join("crates/maestro-extensions-wasm");
     std::fs::create_dir_all(member.join(directory)).unwrap();
