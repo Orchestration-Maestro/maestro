@@ -11,7 +11,9 @@ use std::ffi::OsString;
 use std::process::{Command, ExitCode};
 
 pub(super) fn main() -> ExitCode {
-    match execute(std::env::args_os().skip(1).collect()) {
+    let result = execute(std::env::args_os().skip(1).collect());
+    isolation::finish();
+    match result {
         Ok(code) => ExitCode::from(code),
         Err(error) => {
             eprintln!("{error}");
@@ -35,6 +37,7 @@ fn execute(mut args: Vec<OsString>) -> Result<u8, String> {
     };
     let operation = args.remove(0);
     match operation.to_str() {
+        Some("isolation-owner") => isolation::owner(&args),
         Some("isolate") => {
             let executable = args
                 .first()

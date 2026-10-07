@@ -1164,20 +1164,34 @@ fn outer_term_reaps_nested_timed_cases_and_scratch() {
     cancelled_timed_case(true, true);
 }
 
+#[test]
+fn inner_term_reaps_grandchild_holding_stdout_before_outer_deadline() {
+    cancelled_case_tree(true, true, true);
+}
+
 fn cancelled_timed_case(interrupt: bool, nested_timed: bool) {
+    cancelled_case_tree(interrupt, nested_timed, false);
+}
+
+fn cancelled_case_tree(interrupt: bool, nested_timed: bool, inner_term: bool) {
     let workspace = Workspace::new();
     workspace.member("maestro-models", "maestro-models", "");
     let record_paths =
         ["case-a", "nested-a", "case-b", "nested-b"].map(|name| workspace.root.join(name));
     let runner_paths = ["runner-a", "runner-b"].map(|name| workspace.root.join(name));
+    let grandchild_paths = ["grandchild-a", "grandchild-b"].map(|name| workspace.root.join(name));
     let nested_executable = if nested_timed {
         let source = record_paths.as_chunks::<2>().0.iter().enumerate().map(|(index, paths)| {
             let record = &paths[1];
+            let grandchild = if inner_term {
+                format!("let mut child = std::process::Command::new(\"/bin/sh\").args([\"-c\", {:?}]).spawn().unwrap(); child.wait().unwrap();", format!("trap '' TERM; printf '%s\\n%s\\n' \"$HOME\" \"$$\" > {:?}; exec sleep 60", grandchild_paths[index]))
+            } else { String::new() };
             format!(r#"
 #[test] fn nested_{index}() {{
     unsafe extern "C" {{ fn signal(n: i32, handler: usize) -> usize; }}
     unsafe {{ signal(15, 1); }}
     std::fs::write({record:?}, format!("{{}}\n{{}}\n", std::env::var("HOME").unwrap(), std::process::id())).unwrap();
+    {grandchild}
     std::thread::sleep(std::time::Duration::from_secs(60));
 }}
 "#)
@@ -1287,7 +1301,24 @@ fn cancelled_timed_case(interrupt: bool, nested_timed: bool) {
         assert!(start.elapsed() < std::time::Duration::from_secs(5));
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
-    if interrupt {
+    if inner_term {
+        for path in &grandchild_paths {
+            while !std::fs::read_to_string(path).is_ok_and(|text| text.lines().count() == 2) {
+                assert!(start.elapsed() < std::time::Duration::from_secs(5));
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+        for path in &runner_paths {
+            let record = std::fs::read_to_string(path).unwrap();
+            assert!(
+                Command::new("kill")
+                    .args(["-TERM", record.lines().nth(1).unwrap()])
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+        }
+    } else if interrupt {
         assert!(
             Command::new("kill")
                 .args(["-TERM", &runner_pid.to_string()])
@@ -1302,6 +1333,9 @@ fn cancelled_timed_case(interrupt: bool, nested_timed: bool) {
         .to_vec();
     if nested_timed {
         records.extend(runner_paths.map(|path| std::fs::read_to_string(path).unwrap()));
+    }
+    if inner_term {
+        records.extend(grandchild_paths.map(|path| std::fs::read_to_string(path).unwrap()));
     }
     let alive = records
         .iter()
@@ -1341,7 +1375,13 @@ fn cancelled_timed_case(interrupt: bool, nested_timed: bool) {
         result.expect("runner did not reap a TERM-ignoring case within bounded cancellation");
     assert_eq!(
         output.status.code(),
-        Some(if interrupt { 143 } else { 1 }),
+        Some(if inner_term {
+            0
+        } else if interrupt {
+            143
+        } else {
+            1
+        }),
         "{output:?}"
     );
     if !interrupt {
@@ -1668,4 +1708,384 @@ fn watch_selection_inputs(selections: &[Vec<&str>], dependencies: bool) {
             }
         }
     }
+}
+
+fn compiled_timed_fixture(workspace: &Workspace, source: &str) -> String {
+    workspace.member("maestro-models", "maestro-models", "");
+    std::fs::write(
+        workspace.root.join("crates/maestro-models/src/lib.rs"),
+        source,
+    )
+    .unwrap();
+    let output = fixture_cargo()
+        .args(["test", "--lib", "--no-run", "--message-format=json"])
+        .current_dir(&workspace.root)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    String::from_utf8(output.stdout)
+        .unwrap()
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .find_map(|value| value["executable"].as_str().map(str::to_owned))
+        .unwrap()
+}
+
+fn short_deadline_tools(workspace: &Workspace) -> std::path::PathBuf {
+    let variant = workspace.root.join("timed-tools");
+    let output = Command::new("rustc")
+        .args(["--edition=2024", "--cfg", "test"])
+        .arg(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/bin/repository_tools.rs"
+        ))
+        .arg("-o")
+        .arg(&variant)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    variant
+}
+
+#[test]
+fn literal_separator_discovery_does_not_execute_selected_tests() {
+    separator_discovery(&["--", "selected_case"]);
+}
+
+#[test]
+fn terse_separator_discovery_does_not_execute_selected_tests() {
+    separator_discovery(&["--format", "terse", "--", "selected_case"]);
+    separator_discovery(&["--format=terse", "--", "selected_case"]);
+}
+
+fn separator_discovery(args: &[&str]) {
+    let workspace = Workspace::new();
+    let marker = workspace.root.join("discovery-executed");
+    let executable = compiled_timed_fixture(
+        &workspace,
+        &format!(
+            r#"
+#[test] fn selected_case() {{
+    if !std::env::args().any(|arg| arg == "--exact") {{
+        std::fs::write({marker:?}, "executed during discovery").unwrap();
+    }}
+}}
+#[test] fn excluded_case() {{ panic!("unselected"); }}
+"#
+        ),
+    );
+    let output = Command::new(tooling())
+        .arg("--root")
+        .arg(&workspace.root)
+        .arg("cargo-target")
+        .arg(executable)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(!marker.exists(), "discovery executed a test: {output:?}");
+    assert!(output.status.success(), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stdout)
+            .contains("1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out"),
+        "{output:?}"
+    );
+}
+
+#[test]
+fn hanging_discovery_is_cancelled_at_the_case_deadline() {
+    let workspace = Workspace::new();
+    let executable = compiled_timed_fixture(&workspace, "#[test] fn selected_case() {}\n");
+    let record = workspace.root.join("discovery-child");
+    std::fs::write(&executable, format!("#!/bin/sh\ntrap '' TERM\nprintf '%s\\n%s\\n' \"$HOME\" \"$$\" > {record:?}\nexec sleep 60\n")).unwrap();
+    let variant = short_deadline_tools(&workspace);
+    let child = Command::new(variant)
+        .arg("--root")
+        .arg(&workspace.root)
+        .arg("cargo-target")
+        .arg(executable)
+        .env("MAESTRO_FIXTURE_DEADLINE_MS", "200")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let pid = child.id();
+    let (send, receive) = std::sync::mpsc::channel();
+    let waiter = std::thread::spawn(move || {
+        send.send(child.wait_with_output().unwrap()).unwrap();
+    });
+    let result = receive.recv_timeout(std::time::Duration::from_secs(2));
+    if result.is_err() {
+        Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .status()
+            .unwrap();
+    }
+    waiter.join().unwrap();
+    let output = result.expect("discovery bypassed the case deadline");
+    assert!(!output.status.success(), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("test discovery timed out"),
+        "{output:?}"
+    );
+    let record = std::fs::read_to_string(record).unwrap();
+    assert!(!std::path::Path::new(record.lines().next().unwrap()).exists());
+    assert!(
+        !Command::new("kill")
+            .args(["-0", record.lines().nth(1).unwrap()])
+            .stderr(std::process::Stdio::null())
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
+#[test]
+fn watch_refreshes_registrations_after_adding_a_path_dependency() {
+    dynamic_watch_configuration(false);
+}
+
+fn dynamic_watch_configuration(target_change: bool) {
+    use std::io::BufRead;
+    let workspace = Workspace::new();
+    let external = Workspace::new();
+    workspace.member("watch-fixture", "watch-fixture", "");
+    std::fs::create_dir_all(workspace.root.join(".cargo")).unwrap();
+    std::fs::write(external.root.join("dependency.rs"), "before").unwrap();
+    std::fs::create_dir(workspace.root.join("crates/watch-fixture/new-target")).unwrap();
+    let metadata = serde_json::json!({
+        "target_directory": workspace.root.join("target"),
+        "packages": [{"id":"watch-fixture","name":"watch-fixture","source":null,"manifest_path":workspace.root.join("crates/watch-fixture/Cargo.toml")},
+            {"id":"dependency","name":"dependency","source":null,"manifest_path":external.root.join("Cargo.toml")}],
+        "workspace_members":["watch-fixture"],
+        "resolve":{"nodes":[{"id":"watch-fixture","dependencies":[]},{"id":"dependency","dependencies":[]}]}
+    });
+    let mut updated = metadata.clone();
+    updated["resolve"]["nodes"][0]["dependencies"] = serde_json::json!(["dependency"]);
+    updated["target_directory"] =
+        serde_json::json!(workspace.root.join("crates/watch-fixture/new-target"));
+    let cargo = workspace.command("dynamic-builder", &format!("if test \"$1\" = metadata; then if test -f .cargo/config.toml || grep -q dependency crates/watch-fixture/Cargo.toml; then printf '%s\\n' '{updated}'; else printf '%s\\n' '{metadata}'; fi; else printf 'built\\n'; fi"));
+    let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
+    let mut child = Command::new(tooling())
+        .arg("isolate")
+        .arg(watcher)
+        .arg(cargo)
+        .current_dir(&workspace.root)
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let stdout = child.stdout.take().unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    let reader = std::thread::spawn(move || {
+        for line in std::io::BufReader::new(stdout).lines() {
+            if send.send(line.unwrap()).is_err() {
+                break;
+            }
+        }
+    });
+    assert_eq!(
+        receive
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .unwrap(),
+        "built"
+    );
+    if target_change {
+        std::fs::write(
+            workspace.root.join(".cargo/config.toml"),
+            "[build]\ntarget-dir = 'crates/watch-fixture/new-target'\n",
+        )
+        .unwrap();
+    } else {
+        let manifest = workspace.root.join("crates/watch-fixture/Cargo.toml");
+        let mut text = std::fs::read_to_string(&manifest).unwrap();
+        text.push_str(&format!(
+            "[dependencies]\ndependency = {{ path = {:?} }}\n",
+            external.root
+        ));
+        std::fs::write(manifest, text).unwrap();
+    }
+    let refreshed = receive.recv_timeout(std::time::Duration::from_secs(5));
+    // Drain duplicate events before observing the later independent edit.
+    while receive
+        .recv_timeout(std::time::Duration::from_millis(100))
+        .is_ok()
+    {}
+    if target_change {
+        std::fs::write(
+            workspace
+                .root
+                .join("crates/watch-fixture/new-target/generated.rs"),
+            "artifact",
+        )
+        .unwrap();
+    } else {
+        std::fs::write(external.root.join("dependency.rs"), "after").unwrap();
+    }
+    let later = receive.recv_timeout(std::time::Duration::from_millis(700));
+    assert!(
+        Command::new("kill")
+            .args(["-TERM", &child.id().to_string()])
+            .status()
+            .unwrap()
+            .success()
+    );
+    child.wait().unwrap();
+    reader.join().unwrap();
+    assert_eq!(refreshed.unwrap(), "built");
+    if target_change {
+        assert!(
+            matches!(later, Err(std::sync::mpsc::RecvTimeoutError::Timeout)),
+            "new target artifacts triggered a build: {later:?}"
+        );
+    } else {
+        assert_eq!(
+            later.expect("new path dependency was not registered"),
+            "built"
+        );
+    }
+}
+
+#[test]
+fn watch_refreshes_exclusions_after_changing_the_target_directory() {
+    dynamic_watch_configuration(true);
+}
+
+#[test]
+fn one_case_deadline_leaves_a_concurrent_case_untouched() {
+    let workspace = Workspace::new();
+    let marker = workspace.root.join("concurrent-completed");
+    let executable = compiled_timed_fixture(
+        &workspace,
+        &format!(
+            r#"
+#[test] fn a_hangs() {{ std::thread::sleep(std::time::Duration::from_secs(60)); }}
+#[test] fn b_warms() {{ std::thread::sleep(std::time::Duration::from_millis(300)); }}
+#[test] fn c_completes() {{
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    std::fs::write({marker:?}, "completed").unwrap();
+}}
+"#
+        ),
+    );
+    let output = Command::new(short_deadline_tools(&workspace))
+        .arg("--root")
+        .arg(&workspace.root)
+        .arg("cargo-target")
+        .arg(executable)
+        .arg("--test-threads=2")
+        .env("MAESTRO_FIXTURE_DEADLINE_MS", "500")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert_eq!(std::fs::read_to_string(marker).unwrap(), "completed");
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("2 passed; 1 failed; 0 ignored"),
+        "{output:?}"
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("test timed out: a_hangs"),
+        "{output:?}"
+    );
+}
+
+#[test]
+fn watch_recovers_after_a_path_dependency_requires_a_lock_update() {
+    use std::io::BufRead;
+    let workspace = Workspace::new();
+    let external = Workspace::new();
+    workspace.member("watch-fixture", "watch-fixture", "");
+    external.member("dependency", "dependency", "");
+    let lock = fixture_cargo()
+        .arg("generate-lockfile")
+        .current_dir(&workspace.root)
+        .output()
+        .unwrap();
+    assert!(lock.status.success(), "{lock:?}");
+    let real = workspace.cargo();
+    let cargo = workspace.command("real-watch-builder", &format!("if test \"$1\" = metadata; then exec {real:?} \"$@\"; fi; {real:?} \"$@\" || exit $?; printf 'built\\n'"));
+    let mut child = Command::new(tooling())
+        .arg("isolate")
+        .arg(std::path::Path::new(tooling()).with_file_name("dev_watch"))
+        .arg(cargo)
+        .current_dir(&workspace.root)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+    let err_send = send.clone();
+    let out_reader = std::thread::spawn(move || {
+        for line in std::io::BufReader::new(stdout).lines() {
+            if send.send(line.unwrap()).is_err() {
+                break;
+            }
+        }
+    });
+    let err_reader = std::thread::spawn(move || {
+        for line in std::io::BufReader::new(stderr).lines() {
+            if err_send.send(line.unwrap()).is_err() {
+                break;
+            }
+        }
+    });
+    let wait_for = |needle: &str| {
+        let until = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            let line = receive
+                .recv_timeout(until.saturating_duration_since(std::time::Instant::now()))
+                .ok()?;
+            if line.contains(needle) {
+                return Some(line);
+            }
+        }
+    };
+    assert!(wait_for("built").is_some());
+    let manifest = workspace.root.join("crates/watch-fixture/Cargo.toml");
+    let original = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        format!(
+            "{original}[dependencies]\ndependency = {{ path = {:?} }}\n",
+            external.root.join("crates/dependency")
+        ),
+    )
+    .unwrap();
+    let reported = wait_for("--locked");
+    let lock = fixture_cargo()
+        .arg("generate-lockfile")
+        .current_dir(&workspace.root)
+        .output()
+        .unwrap();
+    assert!(lock.status.success(), "{lock:?}");
+    let recovered = wait_for("built");
+    std::fs::write(
+        external.root.join("crates/dependency/src/lib.rs"),
+        "pub const VALUE: u8 = 2;\n",
+    )
+    .unwrap();
+    let edited = wait_for("built");
+    let alive = child.try_wait().unwrap().is_none();
+    if alive {
+        assert!(
+            Command::new("kill")
+                .args(["-TERM", &child.id().to_string()])
+                .status()
+                .unwrap()
+                .success()
+        );
+    }
+    child.wait().unwrap();
+    out_reader.join().unwrap();
+    err_reader.join().unwrap();
+    assert!(reported.is_some(), "missing locked metadata error");
+    assert!(alive, "watcher exited on a stale lock");
+    assert!(
+        recovered.is_some(),
+        "watcher did not recover after lock update"
+    );
+    assert!(
+        edited.is_some(),
+        "new dependency edit did not trigger build"
+    );
 }

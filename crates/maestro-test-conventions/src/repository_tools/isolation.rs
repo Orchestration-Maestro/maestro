@@ -38,7 +38,7 @@ impl Scratch {
             #[cfg(not(unix))]
             let base = std::env::temp_dir();
             let path = base.join(format!(
-                "maestro-isolated-{}-{}",
+                "mi-{:x}-{:x}",
                 std::process::id(),
                 NEXT.fetch_add(1, Ordering::Relaxed)
             ));
@@ -53,7 +53,9 @@ impl Scratch {
 
 impl Drop for Scratch {
     fn drop(&mut self) {
-        if let Err(error) = fs::remove_dir_all(&self.0) {
+        if let Err(error) = fs::remove_dir_all(&self.0)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
             eprintln!("repository tools: remove scratch: {error}");
         }
     }
@@ -104,7 +106,7 @@ fn prepare(command: &mut Command) -> Result<Scratch, String> {
         .env("TMP", scratch.0.join("tmp"))
         .env("TEMP", scratch.0.join("tmp"));
     command.env("MAESTRO_NO_LOCAL_LLM", "1");
-    for name in ["MAESTRO_CASE_SCRATCH", "MAESTRO_CASE_GROUP"] {
+    for name in ["MAESTRO_CASE_SCRATCH"] {
         if let Some(value) = std::env::var_os(name) {
             command.env(name, value);
         }
@@ -119,13 +121,57 @@ fn prepare(command: &mut Command) -> Result<Scratch, String> {
     Ok(scratch)
 }
 
-pub(super) fn run(mut command: Command) -> Result<u8, String> {
-    let _scratch = prepare(&mut command)?;
+// Each invocation has one owner and one child tree. The runner trusts the owner
+// to exit after its process-table-bounded sweep; there is no fallback timer.
+fn owned(command: Command) -> Result<(Command, Scratch), String> {
+    let mut owner = Command::new(std::env::current_exe().map_err(|error| error.to_string())?);
+    owner
+        .arg("isolation-owner")
+        .arg(command.get_program())
+        .args(command.get_args());
+    if let Some(directory) = command.get_current_dir() {
+        owner.current_dir(directory);
+    }
+    for (name, value) in command.get_envs() {
+        if let Some(value) = value {
+            owner.env(name, value);
+        } else {
+            owner.env_remove(name);
+        }
+    }
+    let scratch = prepare(&mut owner)?;
+    owner.env("MAESTRO_CASE_SCRATCH", &scratch.0);
+    owner.env("MAESTRO_OWNER_SCRATCH", &scratch.0);
+    Ok((owner, scratch))
+}
+
+pub(super) fn owner(args: &[std::ffi::OsString]) -> Result<u8, String> {
+    let executable = args
+        .first()
+        .ok_or("repository tools: expected owner child")?;
+    let scratch = Scratch(
+        std::env::var_os("MAESTRO_OWNER_SCRATCH")
+            .map(PathBuf::from)
+            .ok_or("repository tools: missing owner scratch")?,
+    );
+    let mut command = Command::new(executable);
+    command.args(&args[1..]).env_remove("MAESTRO_OWNER_SCRATCH");
+    let result = process::owner(&mut command);
+    drop(scratch);
+    result
+}
+
+pub(super) fn finish() {
+    process::sweep();
+}
+
+pub(super) fn run(command: Command) -> Result<u8, String> {
+    let (mut command, _scratch) = owned(command)?;
     process::run(&mut command)
 }
 
-pub(super) fn output(mut command: Command) -> Result<std::process::Output, String> {
-    let _scratch = prepare(&mut command)?;
+pub(super) fn output(command: Command) -> Result<std::process::Output, String> {
+    let (mut command, _scratch) = owned(command)?;
     process::output(&mut command)
 }
 
@@ -134,13 +180,10 @@ pub(super) fn interrupted() -> bool {
 }
 
 pub(super) fn case_output(
-    mut command: Command,
+    command: Command,
     deadline: std::time::Duration,
 ) -> Result<(std::process::Output, bool), String> {
-    let scratch = prepare(&mut command)?;
-    command
-        .env("MAESTRO_CASE_SCRATCH", &scratch.0)
-        .env("MAESTRO_CASE_GROUP", "1");
+    let (mut command, _scratch) = owned(command)?;
     process::case_output(&mut command, deadline)
 }
 
@@ -161,15 +204,13 @@ mod process {
     static OWNERS: OnceLock<Mutex<BTreeMap<i32, Owner>>> = OnceLock::new();
 
     struct Owner {
-        leader: bool,
-        timed: bool,
+        group: bool,
     }
 
     unsafe extern "C" {
         fn signal(number: i32, handler: usize) -> usize;
         fn kill(pid: i32, number: i32) -> i32;
         fn write(fd: i32, buffer: *const u8, count: usize) -> isize;
-        #[cfg(target_os = "linux")]
         fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
         #[cfg(target_os = "linux")]
         fn prctl(option: i32, ...) -> i32;
@@ -206,36 +247,31 @@ mod process {
     }
 
     fn cancel(pid: i32, owner: &Owner) {
-        let target = if owner.leader { -pid } else { pid };
         unsafe {
-            kill(target, 15);
-            if owner.timed {
-                kill(target, 9);
-            }
+            kill(
+                if owner.group { -pid } else { pid },
+                if owner.group { 9 } else { 15 },
+            );
         }
     }
 
-    fn spawn(command: &mut Command, timed: bool) -> Result<Child, String> {
+    fn spawn(command: &mut Command, group: bool) -> Result<Child, String> {
         let mut owners = owners().lock().unwrap();
-        let leader = std::env::var_os("MAESTRO_CASE_GROUP").is_none();
-        if leader {
+        if group {
             command.process_group(0);
         }
         #[cfg(target_os = "linux")]
-        if timed {
-            // Adopt descendants so cancelling a whole group also reaps orphaned children.
-            if unsafe { prctl(36, 1, 0, 0, 0) } != 0 {
-                return Err(format!(
-                    "repository tools: adopt case descendants: {}",
-                    std::io::Error::last_os_error()
-                ));
-            }
+        if unsafe { prctl(36, 1, 0, 0, 0) } != 0 {
+            return Err(format!(
+                "repository tools: adopt descendants: {}",
+                std::io::Error::last_os_error()
+            ));
         }
         let child = command
             .spawn()
             .map_err(|error| format!("repository tools: spawn child: {error}"))?;
         let pid = i32::try_from(child.id()).map_err(|error| error.to_string())?;
-        let owner = Owner { leader, timed };
+        let owner = Owner { group };
         if interrupted() {
             cancel(pid, &owner);
         }
@@ -243,17 +279,58 @@ mod process {
         Ok(child)
     }
 
+    pub(super) fn sweep() {
+        #[cfg(target_os = "linux")]
+        loop {
+            // Include every thread's children: concurrent spawns belong to their thread.
+            let mut children = Vec::new();
+            if let Ok(tasks) = std::fs::read_dir("/proc/self/task") {
+                for task in tasks.flatten() {
+                    if let Ok(text) = std::fs::read_to_string(task.path().join("children")) {
+                        children.extend(
+                            text.split_whitespace()
+                                .filter_map(|pid| pid.parse::<i32>().ok()),
+                        );
+                    }
+                }
+            }
+            if children.is_empty() {
+                break;
+            }
+            for pid in &children {
+                unsafe {
+                    kill(*pid, 9);
+                }
+            }
+            for pid in children {
+                unsafe {
+                    waitpid(pid, std::ptr::null_mut(), 0);
+                }
+            }
+        }
+        #[cfg(not(target_os = "linux"))]
+        unsafe {
+            while waitpid(-1, std::ptr::null_mut(), 0) > 0 {}
+        }
+    }
+
+    pub(super) fn owner(command: &mut Command) -> Result<u8, String> {
+        let mut child = spawn(command, true)?;
+        let pid = child.id() as i32;
+        let result = child
+            .wait()
+            .map_err(|error| format!("repository tools: wait child: {error}"));
+        let result = result.map(|status| finish(pid, status));
+        sweep();
+        result
+    }
+
     fn finish(pid: i32, status: std::process::ExitStatus) -> u8 {
         let mut owners = owners().lock().unwrap();
         let owner = owners.remove(&pid).expect("registered child");
-        if owner.leader {
+        if owner.group {
             unsafe {
                 kill(-pid, 9);
-            }
-            #[cfg(target_os = "linux")]
-            if owner.timed {
-                // The direct child has been reaped; drain its adopted group descendants.
-                while unsafe { waitpid(-pid, std::ptr::null_mut(), 0) } > 0 {}
             }
         }
         let interruption = INTERRUPTED.load(Ordering::SeqCst);
@@ -296,7 +373,7 @@ mod process {
         deadline: Option<Duration>,
     ) -> Result<(Output, bool), String> {
         command.stdout(Stdio::piped()).stderr(Stdio::piped());
-        let child = spawn(command, deadline.is_some())?;
+        let child = spawn(command, false)?;
         let pid = child.id() as i32;
         let start = Instant::now();
         let (send, receive) = std::sync::mpsc::channel();
@@ -328,55 +405,216 @@ mod process {
     }
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
 mod process {
-    use std::process::Command;
+    use std::ffi::c_void;
+    use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
+    use std::os::windows::process::CommandExt;
+    use std::process::{Child, Command, Output, Stdio};
+    use std::time::{Duration, Instant};
+
+    // ABI from windows-sys 0.61.2: JOBOBJECT_BASIC_LIMIT_INFORMATION,
+    // JOBOBJECT_EXTENDED_LIMIT_INFORMATION, IO_COUNTERS, THREADENTRY32.
+    #[repr(C)]
+    #[derive(Default)]
+    struct BasicLimits {
+        process_time: i64,
+        job_time: i64,
+        flags: u32,
+        minimum_working_set: usize,
+        maximum_working_set: usize,
+        active_process_limit: u32,
+        affinity: usize,
+        priority: u32,
+        scheduling: u32,
+    }
+    #[repr(C)]
+    #[derive(Default)]
+    struct ExtendedLimits {
+        basic: BasicLimits,
+        io: [u64; 6],
+        process_memory: usize,
+        job_memory: usize,
+        peak_process_memory: usize,
+        peak_job_memory: usize,
+    }
+    #[repr(C)]
+    #[derive(Default)]
+    struct ThreadEntry {
+        size: u32,
+        usage: u32,
+        thread: u32,
+        process: u32,
+        base_priority: i32,
+        delta_priority: i32,
+        flags: u32,
+    }
+    // Signatures and constants from windows-sys 0.61.2, Win32 System:
+    // JobObjects::{CreateJobObjectW, SetInformationJobObject,
+    // AssignProcessToJobObject, TerminateJobObject}, Threading::{OpenThread,
+    // ResumeThread}, Diagnostics::ToolHelp::{CreateToolhelp32Snapshot,
+    // Thread32First, Thread32Next}. SECURITY_ATTRIBUTES is always null.
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn CreateJobObjectW(attributes: *const c_void, name: *const u16) -> *mut c_void;
+        fn SetInformationJobObject(
+            job: *mut c_void,
+            class: i32,
+            info: *const c_void,
+            size: u32,
+        ) -> i32;
+        fn AssignProcessToJobObject(job: *mut c_void, process: *mut c_void) -> i32;
+        fn TerminateJobObject(job: *mut c_void, code: u32) -> i32;
+        fn CreateToolhelp32Snapshot(flags: u32, pid: u32) -> *mut c_void;
+        fn Thread32First(snapshot: *mut c_void, entry: *mut ThreadEntry) -> i32;
+        fn Thread32Next(snapshot: *mut c_void, entry: *mut ThreadEntry) -> i32;
+        fn OpenThread(access: u32, inherit: i32, tid: u32) -> *mut c_void;
+        fn ResumeThread(thread: *mut c_void) -> u32;
+    }
+    const KILL_ON_CLOSE: u32 = 8192; // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    const EXTENDED_LIMITS: i32 = 9; // JobObjectExtendedLimitInformation
+    const SUSPENDED: u32 = 4; // CREATE_SUSPENDED
+    const SNAP_THREADS: u32 = 4; // TH32CS_SNAPTHREAD
+    const RESUME_ACCESS: u32 = 2; // THREAD_SUSPEND_RESUME
+
+    fn error() -> String {
+        std::io::Error::last_os_error().to_string()
+    }
+
+    fn spawn(command: &mut Command) -> Result<(Child, OwnedHandle), String> {
+        // SAFETY: Null attributes/name request a private, non-inheritable job.
+        let raw = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
+        if raw.is_null() {
+            return Err(error());
+        }
+        // SAFETY: The successful creation returns an owned kernel handle.
+        let job = unsafe { OwnedHandle::from_raw_handle(raw) };
+        let limits = ExtendedLimits {
+            basic: BasicLimits {
+                flags: KILL_ON_CLOSE,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        // SAFETY: The buffer has the exact extended-limit layout and length.
+        if unsafe {
+            SetInformationJobObject(
+                raw,
+                EXTENDED_LIMITS,
+                (&limits as *const ExtendedLimits).cast(),
+                std::mem::size_of::<ExtendedLimits>() as u32,
+            )
+        } == 0
+        {
+            return Err(error());
+        }
+        let mut child = command
+            .creation_flags(SUSPENDED)
+            .spawn()
+            .map_err(|error| error.to_string())?;
+        // SAFETY: Both handles are live; suspension prevents unowned descendants.
+        if unsafe { AssignProcessToJobObject(raw, child.as_raw_handle()) } == 0 {
+            let error = error();
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(error);
+        }
+        if let Err(error) = resume(child.id()) {
+            drop(job);
+            let _ = child.wait();
+            return Err(error);
+        }
+        Ok((child, job))
+    }
+
+    fn resume(pid: u32) -> Result<(), String> {
+        // SAFETY: Flags request a read-only snapshot of the system's threads.
+        let raw = unsafe { CreateToolhelp32Snapshot(SNAP_THREADS, 0) };
+        if raw == -1isize as *mut c_void {
+            return Err(error());
+        }
+        // SAFETY: A successful snapshot returns a uniquely owned handle.
+        let snapshot = unsafe { OwnedHandle::from_raw_handle(raw) };
+        let mut entry = ThreadEntry {
+            size: std::mem::size_of::<ThreadEntry>() as u32,
+            ..Default::default()
+        };
+        // SAFETY: The snapshot is live and entry is a writable THREADENTRY32.
+        let mut found = unsafe { Thread32First(snapshot.as_raw_handle(), &mut entry) };
+        while found != 0 {
+            if entry.process == pid {
+                // SAFETY: The ID came from the snapshot; only resume access is requested.
+                let raw = unsafe { OpenThread(RESUME_ACCESS, 0, entry.thread) };
+                if raw.is_null() {
+                    return Err(error());
+                }
+                // SAFETY: OpenThread returned a uniquely owned handle.
+                let thread = unsafe { OwnedHandle::from_raw_handle(raw) };
+                // SAFETY: This is the suspended child's primary thread.
+                if unsafe { ResumeThread(thread.as_raw_handle()) } == u32::MAX {
+                    return Err(error());
+                }
+                return Ok(());
+            }
+            // SAFETY: The snapshot and writable entry remain valid.
+            found = unsafe { Thread32Next(snapshot.as_raw_handle(), &mut entry) };
+        }
+        Err("repository tools: suspended child thread missing".into())
+    }
+
     pub(super) fn interrupted() -> bool {
         false
     }
+    // Each lexical job is closed before returning, including on an error.
+    pub(super) fn sweep() {}
+    pub(super) fn owner(command: &mut Command) -> Result<u8, String> {
+        run(command)
+    }
+    pub(super) fn run(command: &mut Command) -> Result<u8, String> {
+        let (mut child, job) = spawn(command)?;
+        let status = child.wait().map_err(|error| error.to_string());
+        drop(job);
+        status.map(super::super::status_code)
+    }
+    pub(super) fn output(command: &mut Command) -> Result<Output, String> {
+        captured(command, None).map(|(output, _)| output)
+    }
     pub(super) fn case_output(
         command: &mut Command,
-        deadline: std::time::Duration,
-    ) -> Result<(std::process::Output, bool), String> {
-        command
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
-        let child = command.spawn().map_err(|error| error.to_string())?;
-        let pid = child.id();
-        let start = std::time::Instant::now();
+        deadline: Duration,
+    ) -> Result<(Output, bool), String> {
+        captured(command, Some(deadline))
+    }
+    fn captured(
+        command: &mut Command,
+        deadline: Option<Duration>,
+    ) -> Result<(Output, bool), String> {
+        command.stdout(Stdio::piped()).stderr(Stdio::piped());
+        let (child, job) = spawn(command)?;
+        let start = Instant::now();
         let (send, receive) = std::sync::mpsc::channel();
         let waiter = std::thread::spawn(move || {
             let _ = send.send(child.wait_with_output());
         });
-        let (output, expired) = match receive.recv_timeout(deadline) {
-            Ok(output) => (output, start.elapsed() >= deadline),
-            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-                Command::new("taskkill")
-                    .args(["/PID", &pid.to_string(), "/T", "/F"])
-                    .status()
-                    .map_err(|error| error.to_string())?;
-                (receive.recv().map_err(|error| error.to_string())?, true)
+        let (output, expired) = if let Some(deadline) = deadline {
+            match receive.recv_timeout(deadline) {
+                Ok(output) => (output, start.elapsed() >= deadline),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                    // SAFETY: The live job contains only this invocation's subtree.
+                    if unsafe { TerminateJobObject(job.as_raw_handle(), 1) } == 0 {
+                        return Err(error());
+                    }
+                    (receive.recv().map_err(|error| error.to_string())?, true)
+                }
+                Err(error) => return Err(error.to_string()),
             }
-            Err(error) => return Err(error.to_string()),
+        } else {
+            (receive.recv().map_err(|error| error.to_string())?, false)
         };
         waiter
             .join()
             .map_err(|_| "repository tools: child waiter panicked")?;
+        drop(job);
         Ok((output.map_err(|error| error.to_string())?, expired))
-    }
-
-    pub(super) fn run(command: &mut Command) -> Result<u8, String> {
-        let status = command
-            .status()
-            .map_err(|error| format!("repository tools: spawn child: {error}"))?;
-        Ok(status
-            .code()
-            .and_then(|code| u8::try_from(code).ok())
-            .unwrap_or(1))
-    }
-    pub(super) fn output(command: &mut Command) -> Result<std::process::Output, String> {
-        command
-            .output()
-            .map_err(|error| format!("repository tools: spawn child: {error}"))
     }
 }

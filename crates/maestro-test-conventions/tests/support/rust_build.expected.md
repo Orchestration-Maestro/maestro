@@ -67,12 +67,27 @@ libtest discovery, then run selected exact cases in isolated children with a
 30,000 ms deadline per case. Other owners retain the whole libtest harness with
 no new deadline. Concurrency comes from `--test-threads`, RUST_TEST_THREADS or
 available parallelism. Timeout failures do not prevent other cases reporting.
-One process-owner registry tracks active isolated children. Deadlines and runner
-interruption cancel every affected case's process group immediately, then reap
-children and remove owned scratch. Linux adopts orphaned case descendants to
-reap them too. An interrupted timed runner exits 143 for TERM, never success.
-Ordinary isolate owners still propagate TERM to nested owners so they can reap
-children and clean up. Per-case execution uses a distinct private libtest outcome log for each child;
+Each invocation uses the same isolated owner subprocess, with one child in a
+new process group. A deadline or runner interruption sends TERM to that owner,
+which kills the group immediately, reaps descendants and removes its scratch.
+Every Linux owner and runner is a child subreaper: cancellation sweeps all of
+its remaining children, killing and reaping until none remain. The sweep is
+bounded by the process table, not a timer. Exclusively created short scratch
+names keep the six-owner route within native Unix socket path limits. A killed nested owner's descendants
+are adopted by the nearest living owner. Each runner also sweeps at the end of
+its whole run; a case deadline never sweeps another active case's tree. The
+runner trusts its owner to exit after the sweep, with no fallback timer.
+macOS kills process groups and waits for its own children but does not adopt
+escaped descendants; this is weaker than Linux. Windows uses a kill-on-close
+Job Object per invocation, assigning its suspended child before resuming it.
+Native macOS and Windows runtime checks remain staged until release validation.
+An interrupted timed runner exits 143 for TERM, never success.
+
+Discovery uses the same owner and 30,000 ms deadline as a case. Its own listing
+and presentation flags precede caller arguments. Caller presentation flags are
+removed only from discovery, before the first literal `--`; case presentation
+and filter syntax are preserved. Discovery never executes selected tests.
+Per-case execution uses a distinct private libtest outcome log for each child;
 executed, failed and ignored counts do not depend on stdout or presentation
 mode. Caller-supplied `--logfile` is rejected rather than overwritten by several
 children.
@@ -132,7 +147,11 @@ built by Cargo. The watcher accepts repeatable `--package <name>` selections;
 without one it builds the workspace. Browser watch/compiler/CSS/example
 selection activates with the browser crate, not a placeholder build here.
 Changes arriving during a build schedule another build; generated target and
-Git files do not trigger builds. Compiler failures are reported without stopping
+Git files do not trigger builds. Manifest, Cargo configuration and workspace
+layout changes refresh dependency metadata, external watch registrations and
+Cargo target-directory exclusions before the next build. Metadata remains
+locked: a stale lock reports an error without exiting or changing the last good
+registrations; updating the lock lets the watcher retry. Compiler failures are reported without stopping
 the watcher. Launch it through the recipe so interruption terminates its owned
 process group. The notify dependency belongs only to this private developer
 binary, not to the std-only isolation bootstrap.

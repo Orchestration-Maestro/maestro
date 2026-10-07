@@ -783,3 +783,34 @@ fn bash_source_launch_reports_present_nonexecutable_cargo() {
     );
     assert!(output.stdout.is_empty());
 }
+
+#[test]
+fn six_owner_levels_bind_a_native_socket_with_path_headroom() {
+    let mut command = Command::new(tooling());
+    for _ in 0..5 {
+        command.args(["isolate", tooling()]);
+    }
+    command.args(["isolate", "python3", "-c", "import os,socket; p=os.path.join(os.environ['TMPDIR'],'socket'); s=socket.socket(socket.AF_UNIX); s.bind(p); print(len(os.fsencode(p)))"]);
+    // Start this supported route at its real Unix base, not another test's tree.
+    command.env_remove("MAESTRO_CASE_SCRATCH");
+    let output = command.output().unwrap();
+    assert!(
+        output.status.success(),
+        "six owner levels could not bind: {output:?}"
+    );
+    let length: usize = String::from_utf8(output.stdout)
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap();
+    // sockaddr_un.sun_path reserves one byte for NUL on these hosts.
+    let capacity = if cfg!(target_os = "linux") { 107 } else { 103 };
+    assert!(
+        length <= capacity,
+        "socket path has {length} bytes; capacity {capacity}"
+    );
+    println!(
+        "six owner levels: {length} path bytes; {} bytes headroom",
+        capacity - length
+    );
+}

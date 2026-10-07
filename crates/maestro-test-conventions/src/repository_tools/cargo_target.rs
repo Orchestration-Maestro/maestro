@@ -87,7 +87,18 @@ fn timed_cases(executable: &OsString, args: &[OsString]) -> Result<u8, String> {
         let mut command = Command::new(executable);
         command.args(args);
         runtime_environment(&mut command);
-        return super::isolation::run(command);
+        let (output, expired) = super::isolation::case_output(command, deadline())?;
+        use std::io::Write;
+        std::io::stdout()
+            .write_all(&output.stdout)
+            .map_err(|error| error.to_string())?;
+        std::io::stderr()
+            .write_all(&output.stderr)
+            .map_err(|error| error.to_string())?;
+        if expired {
+            return Err("repository tools: test discovery timed out".into());
+        }
+        return Ok(super::status_code(output.status));
     }
     if args
         .iter()
@@ -97,9 +108,30 @@ fn timed_cases(executable: &OsString, args: &[OsString]) -> Result<u8, String> {
     }
     let list = |options: &[OsString]| -> Result<Vec<String>, String> {
         let mut command = Command::new(executable);
-        command.args(options).arg("--list");
+        command.args(["--list", "--format=pretty"]);
+        let mut options = options.iter();
+        while let Some(option) = options.next() {
+            if option == "--" {
+                command.arg(option).args(options);
+                break;
+            }
+            if option == "--format" {
+                options.next();
+                continue;
+            }
+            if option
+                .to_str()
+                .is_some_and(|option| option.starts_with("--format="))
+            {
+                continue;
+            }
+            command.arg(option);
+        }
         runtime_environment(&mut command);
-        let output = super::isolation::output(command)?;
+        let (output, expired) = super::isolation::case_output(command, deadline())?;
+        if expired {
+            return Err("repository tools: test discovery timed out".into());
+        }
         if !output.status.success() {
             use std::io::Write;
             std::io::stderr()
@@ -126,6 +158,9 @@ fn timed_cases(executable: &OsString, args: &[OsString]) -> Result<u8, String> {
         let text = args[cursor]
             .to_str()
             .ok_or("repository tools: invalid libtest option")?;
+        if text == "--" {
+            break;
+        }
         if text == "--exact" {
             cursor += 1;
             continue;

@@ -47,7 +47,7 @@ struct Inputs {
     packages: Vec<(PathBuf, bool)>,
 }
 
-fn inputs(
+fn resolve_inputs(
     cargo: &std::ffi::OsStr,
     root: &Path,
     selection: &[std::ffi::OsString],
@@ -140,17 +140,18 @@ fn run() -> Result<(), String> {
         }
         packages.push(args.next().ok_or("expected package name")?);
     }
-    let inputs = inputs(&cargo, &root, &packages)?;
+    let mut inputs = resolve_inputs(&cargo, &root, &packages)?;
     let mut selection = Vec::new();
     if packages.is_empty() {
         selection.push(std::ffi::OsString::from("--workspace"));
     } else {
-        for package in packages {
+        for package in &packages {
             selection.push("--package".into());
-            selection.push(package);
+            selection.push(package.clone());
         }
     }
-    let target = cargo_directory::resolve(&cargo, &root, &std::env::vars_os().collect::<Vec<_>>())?;
+    let mut target =
+        cargo_directory::resolve(&cargo, &root, &std::env::vars_os().collect::<Vec<_>>())?;
     let (send, receive) = std::sync::mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |event: notify::Result<Event>| {
         let _ = send.send(event);
@@ -159,13 +160,8 @@ fn run() -> Result<(), String> {
     watcher
         .watch(&root, RecursiveMode::Recursive)
         .map_err(|error| error.to_string())?;
-    for (directory, selected) in &inputs.packages {
-        if *selected && !directory.starts_with(&root) {
-            watcher
-                .watch(directory, RecursiveMode::Recursive)
-                .map_err(|error| error.to_string())?;
-        }
-    }
+    let mut registered = BTreeSet::new();
+    register(&mut watcher, &root, &inputs, &mut registered)?;
     loop {
         let status = Command::new(&cargo)
             .args(["build", "--locked"])
@@ -181,17 +177,71 @@ fn run() -> Result<(), String> {
                 .map_err(|error| error.to_string())?
                 .map_err(|error| error.to_string())?;
             if !matches!(event.kind, EventKind::Access(_))
-                && event
-                    .paths
-                    .iter()
-                    .any(|path| input(path, &root, &target, &inputs))
+                && event.paths.iter().any(|path| {
+                    !path.starts_with(&target)
+                        && !path.starts_with(root.join(".git"))
+                        && (input(path, &root, &target, &inputs)
+                            || path.file_name().is_some_and(|name| name == "Cargo.toml")
+                            || path == &root.join(".cargo")
+                            || (matches!(
+                                event.kind,
+                                EventKind::Create(notify::event::CreateKind::Folder)
+                                    | EventKind::Remove(notify::event::RemoveKind::Folder)
+                            ) && (path.join("Cargo.toml").is_file()
+                                || inputs
+                                    .packages
+                                    .iter()
+                                    .any(|(directory, _)| directory == path))))
+                })
             {
                 // Coalesce events already queued, retaining changes during the next build.
                 while let Ok(event) = receive.try_recv() {
                     event.map_err(|error| error.to_string())?;
                 }
+                let refreshed = resolve_inputs(&cargo, &root, &packages).and_then(|inputs| {
+                    cargo_directory::resolve(
+                        &cargo,
+                        &root,
+                        &std::env::vars_os().collect::<Vec<_>>(),
+                    )
+                    .map(|target| (inputs, target))
+                });
+                match refreshed {
+                    Ok((next_inputs, next_target)) => {
+                        register(&mut watcher, &root, &next_inputs, &mut registered)?;
+                        inputs = next_inputs;
+                        target = next_target;
+                    }
+                    Err(error) => eprintln!("developer watch: {error}"),
+                }
                 break;
             }
         }
     }
+}
+
+fn register(
+    watcher: &mut impl Watcher,
+    root: &Path,
+    inputs: &Inputs,
+    registered: &mut BTreeSet<PathBuf>,
+) -> Result<(), String> {
+    let next = inputs
+        .packages
+        .iter()
+        .filter(|(directory, selected)| *selected && !directory.starts_with(root))
+        .map(|(directory, _)| directory.clone())
+        .collect::<BTreeSet<_>>();
+    for directory in registered.difference(&next) {
+        watcher
+            .unwatch(directory)
+            .map_err(|error| error.to_string())?;
+    }
+    for directory in next.difference(registered) {
+        watcher
+            .watch(directory, RecursiveMode::Recursive)
+            .map_err(|error| error.to_string())?;
+    }
+    *registered = next;
+    Ok(())
 }
