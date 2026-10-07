@@ -208,3 +208,24 @@ fn strip_propagates_yaml_failure() {
         parse_frontmatter(s).unwrap_err()
     );
 }
+
+#[test]
+fn resource_error_propagates_into_boxed_error() {
+    fn parse() -> Result<(), Box<dyn std::error::Error>> {
+        maestro_resources::parse_frontmatter("---\nx: [\n---")?;
+        Ok(())
+    }
+    let error = parse().unwrap_err();
+    assert!(error.to_string().contains("line"));
+    assert_eq!(
+        maestro_resources::ResourceError {
+            message: Some("read failed".into())
+        }
+        .to_string(),
+        "read failed"
+    );
+    assert_eq!(
+        maestro_resources::ResourceError { message: None }.to_string(),
+        ""
+    );
+}

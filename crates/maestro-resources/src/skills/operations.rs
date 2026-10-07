@@ -29,14 +29,29 @@ pub trait ResourceOperations {
     /// Tests existence, suppressing filesystem errors.
     fn exists(&self, path: &str) -> bool;
     /// Returns entries in the adapter's observed order.
+    ///
+    /// # Errors
+    /// Returns the adapter failure when the operation cannot be completed.
     fn read_dir(&self, path: &str) -> Result<Vec<Dirent>, ResourceError>;
     /// Reads text with replacement for invalid UTF-8.
+    ///
+    /// # Errors
+    /// Returns the adapter failure when the operation cannot be completed.
     fn read_file(&self, path: &str) -> Result<String, ResourceError>;
     /// Follows links to inspect a path.
+    ///
+    /// # Errors
+    /// Returns the adapter failure when the operation cannot be completed.
     fn stat(&self, path: &str) -> Result<Stats, ResourceError>;
     /// Resolves filesystem aliases.
+    ///
+    /// # Errors
+    /// Returns the adapter failure when the operation cannot be completed.
     fn realpath(&self, path: &str) -> Result<String, ResourceError>;
     /// Returns the process working directory.
+    ///
+    /// # Errors
+    /// Returns the adapter failure when the operation cannot be completed.
     fn current_dir(&self) -> Result<String, ResourceError>;
 }
 /// Native filesystem adapter, unavailable in browser builds.
@@ -49,10 +64,10 @@ impl ResourceOperations for NativeResourceOperations {
     }
     fn read_dir(&self, path: &str) -> Result<Vec<Dirent>, ResourceError> {
         let entries = std::fs::read_dir(path)
-            .map_err(native_error)?
+            .map_err(|error| native_error(&error))?
             .map(|entry| {
-                let entry = entry.map_err(native_error)?;
-                let kind = entry.file_type().map_err(native_error)?;
+                let entry = entry.map_err(|error| native_error(&error))?;
+                let kind = entry.file_type().map_err(|error| native_error(&error))?;
                 Ok(Dirent {
                     name: entry.file_name().to_string_lossy().into_owned(),
                     is_file: kind.is_file(),
@@ -66,7 +81,7 @@ impl ResourceOperations for NativeResourceOperations {
     fn read_file(&self, path: &str) -> Result<String, ResourceError> {
         std::fs::read(path)
             .map(|v| String::from_utf8_lossy(&v).into_owned())
-            .map_err(native_error)
+            .map_err(|error| native_error(&error))
     }
     fn stat(&self, path: &str) -> Result<Stats, ResourceError> {
         std::fs::metadata(path)
@@ -74,12 +89,12 @@ impl ResourceOperations for NativeResourceOperations {
                 is_file: s.is_file(),
                 is_directory: s.is_dir(),
             })
-            .map_err(native_error)
+            .map_err(|error| native_error(&error))
     }
     fn realpath(&self, path: &str) -> Result<String, ResourceError> {
         std::fs::canonicalize(path)
             .map(|p| p.to_string_lossy().into_owned())
-            .map_err(native_error)
+            .map_err(|error| native_error(&error))
     }
     fn current_dir(&self) -> Result<String, ResourceError> {
         std::env::current_dir()
@@ -90,7 +105,7 @@ impl ResourceOperations for NativeResourceOperations {
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
-fn native_error(error: std::io::Error) -> ResourceError {
+fn native_error(error: &std::io::Error) -> ResourceError {
     ResourceError {
         message: Some(error.to_string()),
     }

@@ -35,6 +35,7 @@ pub struct SourceInfo {
 }
 
 /// Copies supplied metadata for a resource path.
+#[must_use]
 pub fn create_source_info(path: &str, metadata: &PathMetadata) -> SourceInfo {
     SourceInfo {
         path: path.into(),

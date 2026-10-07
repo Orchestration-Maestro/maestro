@@ -28,8 +28,16 @@ pub struct LoadSkillsResult {
     pub diagnostics: Vec<ResourceDiagnostic>,
 }
 
+impl LoadSkillsResult {
+    fn empty() -> Self {
+        Self {
+            skills: vec![],
+            diagnostics: vec![],
+        }
+    }
+}
 /// Supplied directory and provenance for one scan.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LoadSkillsFromDirOptions<'a> {
     /// Directory to scan.
     pub dir: &'a str,
@@ -38,7 +46,7 @@ pub struct LoadSkillsFromDirOptions<'a> {
 }
 
 /// Caller-resolved locations for ordered skill discovery.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LoadSkillsOptions<'a> {
     /// Working directory for project paths.
     pub cwd: &'a str,
@@ -54,6 +62,8 @@ pub struct LoadSkillsOptions<'a> {
     pub home: &'a str,
 }
 
+mod discovery;
+use discovery::load_skills_from_dir_internal;
 pub(crate) mod diagnostics;
 pub(crate) mod frontmatter;
 pub(crate) mod operations;
@@ -64,6 +74,9 @@ use crate::{
 };
 
 /// Loads a supplied directory without cross-source deduplication.
+///
+/// # Errors
+/// Scan failures are caught as diagnostics or empty results; none propagate.
 pub fn load_skills_from_dir(
     options: LoadSkillsFromDirOptions<'_>,
     operations: &dyn ResourceOperations,
@@ -75,93 +88,6 @@ pub fn load_skills_from_dir(
         operations,
     ))
 }
-fn load_skills_from_dir_internal(
-    dir: &str,
-    source: &str,
-    include_root_files: bool,
-    operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
-    let mut builder = ignore::gitignore::GitignoreBuilder::new("");
-    builder
-        .case_insensitive(true)
-        .expect("case-insensitive matching is supported");
-    scan(
-        dir,
-        source,
-        include_root_files,
-        operations,
-        &mut builder,
-        dir,
-    )
-}
-fn scan(
-    dir: &str,
-    source: &str,
-    include_root_files: bool,
-    operations: &dyn ResourceOperations,
-    builder: &mut ignore::gitignore::GitignoreBuilder,
-    root: &str,
-) -> LoadSkillsResult {
-    let mut result = LoadSkillsResult {
-        skills: vec![],
-        diagnostics: vec![],
-    };
-    if !operations.exists(dir) {
-        return result;
-    }
-    add_ignore_rules(builder, dir, root, operations);
-    let matcher = builder
-        .build()
-        .expect("only valid ignore rules are retained");
-    let Ok(entries) = operations.read_dir(dir) else {
-        return result;
-    };
-    for entry in &entries {
-        if entry.name != "SKILL.md" {
-            continue;
-        }
-        let path = paths::join(&[dir, &entry.name]);
-        let file = if entry.is_symbolic_link {
-            operations.stat(&path).map(|s| s.is_file).unwrap_or(false)
-        } else {
-            entry.is_file
-        };
-        if !file || ignored(&matcher, &path, root, false) {
-            continue;
-        }
-        return load_skill_from_file(&path, source, operations);
-    }
-    for entry in entries {
-        if entry.name.starts_with('.') || entry.name == "node_modules" {
-            continue;
-        }
-        let path = paths::join(&[dir, &entry.name]);
-        let (directory, file) = if entry.is_symbolic_link {
-            match operations.stat(&path) {
-                Ok(s) => (s.is_directory, s.is_file),
-                Err(_) => continue,
-            }
-        } else {
-            (entry.is_directory, entry.is_file)
-        };
-        let matcher = builder
-            .build()
-            .expect("only valid ignore rules are retained");
-        if ignored(&matcher, &path, root, directory) {
-            continue;
-        }
-        let sub = if directory {
-            scan(&path, source, false, operations, builder, root)
-        } else if file && include_root_files && entry.name.ends_with(".md") {
-            load_skill_from_file(&path, source, operations)
-        } else {
-            continue;
-        };
-        result.skills.extend(sub.skills);
-        result.diagnostics.extend(sub.diagnostics);
-    }
-    result
-}
 fn load_skill_from_file(
     file: &str,
     source: &str,
@@ -171,52 +97,37 @@ fn load_skill_from_file(
         skills: vec![],
         diagnostics: vec![],
     };
-    let parsed = operations
-        .read_file(file)
-        .and_then(|s| parse_frontmatter(&s));
-    let parsed = match parsed {
-        Ok(p) => p,
-        Err(e) => {
-            result.diagnostics.push(warning(
-                file,
-                e.message
-                    .unwrap_or_else(|| "failed to parse skill file".into()),
-            ));
-            return result;
-        }
-    };
-    let description_value = property(&parsed.frontmatter, "description");
-    let description = match description_value.filter(|v| truthy(v)) {
-        None => "",
-        Some(value) => match string(value) {
-            Some(s) => s,
-            None => {
-                result
-                    .diagnostics
-                    .push(warning(file, "skill description must be a string".into()));
-                return result;
-            }
-        },
-    };
+    match read_skill(file, source, operations, &mut result.diagnostics) {
+        Ok(Some(skill)) => result.skills.push(skill),
+        Ok(None) => {}
+        Err(error) => result.diagnostics.push(warning(file, error.to_string())),
+    }
+    result
+}
+fn read_skill(
+    file: &str,
+    source: &str,
+    operations: &dyn ResourceOperations,
+    diagnostics: &mut Vec<ResourceDiagnostic>,
+) -> Result<Option<Skill>, ResourceError> {
+    let content = operations.read_file(file).map_err(|error| ResourceError {
+        message: Some(
+            error
+                .message
+                .unwrap_or_else(|| "failed to parse skill file".into()),
+        ),
+    })?;
+    let parsed = parse_frontmatter(&content)?;
+    let description = metadata_string(&parsed.frontmatter, "description", "")?;
     let dir = paths::dirname(file);
     let parent = paths::basename(&dir);
-    result.diagnostics.extend(
+    diagnostics.extend(
         validate_description(description)
             .into_iter()
             .map(|m| warning(file, m)),
     );
-    let name = match property(&parsed.frontmatter, "name").filter(|v| truthy(v)) {
-        None => parent.as_str(),
-        Some(value) => match string(value) {
-            Some(s) => s,
-            None => {
-                let message = "skill name must be a string";
-                result.diagnostics.push(warning(file, message.into()));
-                return result;
-            }
-        },
-    };
-    result.diagnostics.extend(
+    let name = metadata_string(&parsed.frontmatter, "name", &parent)?;
+    diagnostics.extend(
         validate_name(name, &parent)
             .into_iter()
             .map(|m| warning(file, m)),
@@ -227,16 +138,28 @@ fn load_skill_from_file(
             property(&parsed.frontmatter, "disable-model-invocation"),
             Some(FrontmatterValue::Bool(true))
         );
-        result.skills.push(Skill {
+        return Ok(Some(Skill {
             name: name.into(),
             description: description.into(),
             file_path: file.into(),
             base_dir: dir,
             source_info,
             disable_model_invocation,
-        });
+        }));
     }
-    result
+    Ok(None)
+}
+fn metadata_string<'a>(
+    metadata: &'a FrontmatterValue,
+    key: &str,
+    fallback: &'a str,
+) -> Result<&'a str, ResourceError> {
+    match property(metadata, key).filter(|value| truthy(value)) {
+        None => Ok(fallback),
+        Some(value) => string(value).ok_or_else(|| ResourceError {
+            message: Some(format!("skill {key} must be a string")),
+        }),
+    }
 }
 fn create_skill_source_info(file: &str, dir: &str, source: &str) -> SourceInfo {
     match source {
@@ -249,6 +172,7 @@ fn create_skill_source_info(file: &str, dir: &str, source: &str) -> SourceInfo {
 }
 
 /// Renders visible skills as an escaped XML list.
+#[must_use]
 pub fn format_skills_for_prompt(skills: &[Skill]) -> String {
     let visible = skills
         .iter()
@@ -362,26 +286,70 @@ fn truthy(value: &FrontmatterValue) -> bool {
     }
 }
 /// Loads default directories followed by explicit paths in caller order.
-/// Working-directory resolution errors outside filesystem catches propagate.
+///
+/// # Errors
+/// Propagates working-directory resolution errors outside filesystem catches.
 pub fn load_skills(
     options: LoadSkillsOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> Result<LoadSkillsResult, ResourceError> {
-    let mut result = LoadSkillsResult {
-        skills: vec![],
-        diagnostics: vec![],
+    let mut merge = SkillMerge {
+        result: LoadSkillsResult::empty(),
+        real_paths: std::collections::HashSet::new(),
+        collisions: vec![],
+        operations,
     };
-    let mut real_paths = std::collections::HashSet::new();
-    let mut collisions = vec![];
-    let mut add_skills = |sub: LoadSkillsResult| {
-        result.diagnostics.extend(sub.diagnostics);
+    let user_dir = paths::join(&[options.agent_dir, "skills"]);
+    if options.include_defaults {
+        merge.add_skills(load_skills_from_dir_internal(
+            &user_dir, "user", true, operations,
+        ));
+        let project_dir = paths::resolve(
+            &[options.cwd, options.config_dir_name, "skills"],
+            operations,
+        )?;
+        merge.add_skills(load_skills_from_dir_internal(
+            &project_dir,
+            "project",
+            true,
+            operations,
+        ));
+    }
+    let project_dir = paths::resolve(
+        &[options.cwd, options.config_dir_name, "skills"],
+        operations,
+    )?;
+    for raw in options.skill_paths {
+        let path = resolve_skill_path(raw, options.cwd, options.home, operations)?;
+        if !operations.exists(&path) {
+            merge.add_skills(LoadSkillsResult {
+                skills: vec![],
+                diagnostics: vec![warning(&path, "skill path does not exist".into())],
+            });
+            continue;
+        }
+        let sub = load_explicit(&path, &options, (&user_dir, &project_dir), operations);
+        merge.add_skills(sub);
+    }
+    merge.result.diagnostics.extend(merge.collisions);
+    Ok(merge.result)
+}
+struct SkillMerge<'a> {
+    result: LoadSkillsResult,
+    real_paths: std::collections::HashSet<String>,
+    collisions: Vec<ResourceDiagnostic>,
+    operations: &'a dyn ResourceOperations,
+}
+impl SkillMerge<'_> {
+    fn add_skills(&mut self, sub: LoadSkillsResult) {
+        self.result.diagnostics.extend(sub.diagnostics);
         for skill in sub.skills {
-            let real = crate::canonicalize_path(&skill.file_path, operations);
-            if real_paths.contains(&real) {
+            let real = crate::canonicalize_path(&skill.file_path, self.operations);
+            if self.real_paths.contains(&real) {
                 continue;
             }
-            if let Some(winner) = result.skills.iter().find(|s| s.name == skill.name) {
-                collisions.push(ResourceDiagnostic {
+            if let Some(winner) = self.result.skills.iter().find(|s| s.name == skill.name) {
+                self.collisions.push(ResourceDiagnostic {
                     r#type: "collision".into(),
                     message: format!("name \"{}\" collision", skill.name),
                     path: Some(skill.file_path.clone()),
@@ -395,86 +363,65 @@ pub fn load_skills(
                     }),
                 });
             } else {
-                real_paths.insert(real);
-                result.skills.push(skill)
+                self.real_paths.insert(real);
+                self.result.skills.push(skill);
             }
         }
-    };
-    let user_dir = paths::join(&[options.agent_dir, "skills"]);
-    if options.include_defaults {
-        add_skills(load_skills_from_dir_internal(
-            &user_dir, "user", true, operations,
-        ));
-        let project_dir = paths::resolve(
-            &[options.cwd, options.config_dir_name, "skills"],
-            operations,
-        )?;
-        add_skills(load_skills_from_dir_internal(
-            &project_dir,
-            "project",
-            true,
-            operations,
-        ));
     }
-    let project_dir = paths::resolve(
-        &[options.cwd, options.config_dir_name, "skills"],
-        operations,
-    )?;
-    let source_for = |path: &str| -> Result<&str, ResourceError> {
-        if !options.include_defaults {
-            for (dir, source) in [(&user_dir, "user"), (&project_dir, "project")] {
-                let root = paths::resolve(&[dir], operations)?;
-                let prefix = format!(
-                    "{}{}",
-                    root.trim_end_matches(std::path::MAIN_SEPARATOR),
-                    std::path::MAIN_SEPARATOR
-                );
-                if path == root || path.starts_with(&prefix) {
-                    return Ok(source);
-                }
+}
+fn source_for<'a>(
+    path: &str,
+    options: &LoadSkillsOptions<'_>,
+    roots: (&str, &str),
+    operations: &dyn ResourceOperations,
+) -> Result<&'a str, ResourceError> {
+    if !options.include_defaults {
+        for (dir, source) in [(roots.0, "user"), (roots.1, "project")] {
+            let root = paths::resolve(&[dir], operations)?;
+            let prefix = format!(
+                "{}{}",
+                root.trim_end_matches(std::path::MAIN_SEPARATOR),
+                std::path::MAIN_SEPARATOR
+            );
+            if path == root || path.starts_with(&prefix) {
+                return Ok(source);
             }
         }
-        Ok("path")
-    };
-    for raw in options.skill_paths {
-        let path = resolve_skill_path(raw, options.cwd, options.home, operations)?;
-        if !operations.exists(&path) {
-            add_skills(LoadSkillsResult {
-                skills: vec![],
-                diagnostics: vec![warning(&path, "skill path does not exist".into())],
-            });
-            continue;
-        }
-        let stats = operations.stat(&path);
-        let source = if stats.is_ok() {
-            source_for(&path)
-        } else {
-            Ok("path")
-        };
-        let sub = match stats.and_then(|stats| source.map(|source| (stats, source))) {
-            Ok((stats, source)) if stats.is_directory => {
-                load_skills_from_dir_internal(&path, source, true, operations)
-            }
-            Ok((stats, source)) if stats.is_file && path.ends_with(".md") => {
-                load_skill_from_file(&path, source, operations)
-            }
-            Ok(_) => LoadSkillsResult {
-                skills: vec![],
-                diagnostics: vec![warning(&path, "skill path is not a markdown file".into())],
-            },
-            Err(e) => LoadSkillsResult {
-                skills: vec![],
-                diagnostics: vec![warning(
-                    &path,
-                    e.message
-                        .unwrap_or_else(|| "failed to read skill path".into()),
-                )],
-            },
-        };
-        add_skills(sub);
     }
-    result.diagnostics.extend(collisions);
-    Ok(result)
+    Ok("path")
+}
+// Markdown extensions are deliberately case-sensitive.
+#[allow(clippy::case_sensitive_file_extension_comparisons)]
+fn load_explicit(
+    path: &str,
+    options: &LoadSkillsOptions<'_>,
+    roots: (&str, &str),
+    operations: &dyn ResourceOperations,
+) -> LoadSkillsResult {
+    let loaded = operations.stat(path).and_then(|stats| {
+        source_for(path, options, roots, operations).map(|source| (stats, source))
+    });
+    match loaded {
+        Ok((stats, source)) if stats.is_directory => {
+            load_skills_from_dir_internal(path, source, true, operations)
+        }
+        Ok((stats, source)) if stats.is_file && path.ends_with(".md") => {
+            load_skill_from_file(path, source, operations)
+        }
+        Ok(_) => LoadSkillsResult {
+            skills: vec![],
+            diagnostics: vec![warning(path, "skill path is not a markdown file".into())],
+        },
+        Err(error) => LoadSkillsResult {
+            skills: vec![],
+            diagnostics: vec![warning(
+                path,
+                error
+                    .message
+                    .unwrap_or_else(|| "failed to read skill path".into()),
+            )],
+        },
+    }
 }
 fn normalize_path(input: &str, home: &str) -> String {
     let input = paths::trim(input);
@@ -500,73 +447,4 @@ fn resolve_skill_path(
     } else {
         paths::resolve(&[cwd, &normalized], operations)
     }
-}
-
-const IGNORE_FILE_NAMES: [&str; 3] = [".gitignore", ".ignore", ".fdignore"];
-fn to_posix_path(value: &str) -> String {
-    value.replace(std::path::MAIN_SEPARATOR, "/")
-}
-fn prefix_ignore_pattern(line: &str, prefix: &str) -> Option<String> {
-    let trimmed = paths::trim(line);
-    if trimmed.is_empty() || trimmed.starts_with('#') {
-        return None;
-    }
-    let (negated, pattern) = if let Some(s) = line.strip_prefix('!') {
-        (true, s)
-    } else if let Some(s) = line.strip_prefix("\\!") {
-        (false, s)
-    } else {
-        (false, line)
-    };
-    let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
-    Some(format!(
-        "{}{prefix}{pattern}",
-        if negated { "!" } else { "" }
-    ))
-}
-fn add_ignore_rules(
-    builder: &mut ignore::gitignore::GitignoreBuilder,
-    dir: &str,
-    root: &str,
-    operations: &dyn ResourceOperations,
-) {
-    let relative = dir
-        .strip_prefix(root)
-        .unwrap_or(dir)
-        .trim_start_matches(std::path::MAIN_SEPARATOR);
-    let prefix = if relative.is_empty() {
-        String::new()
-    } else {
-        format!("{}/", to_posix_path(relative))
-    };
-    for name in IGNORE_FILE_NAMES {
-        let path = paths::join(&[dir, name]);
-        if !operations.exists(&path) {
-            continue;
-        }
-        let Ok(content) = operations.read_file(&path) else {
-            continue;
-        };
-        let content = content.replace("\r\n", "\n");
-        for line in content.split('\n') {
-            if let Some(pattern) = prefix_ignore_pattern(line, &prefix) {
-                let _ = builder.add_line(None, &pattern);
-            }
-        }
-    }
-}
-fn ignored(
-    matcher: &ignore::gitignore::Gitignore,
-    path: &str,
-    root: &str,
-    directory: bool,
-) -> bool {
-    let relative = to_posix_path(
-        path.strip_prefix(root)
-            .unwrap_or(path)
-            .trim_start_matches(std::path::MAIN_SEPARATOR),
-    );
-    matcher
-        .matched_path_or_any_parents(&relative, directory)
-        .is_ignore()
 }

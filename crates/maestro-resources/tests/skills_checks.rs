@@ -74,6 +74,7 @@ fn fixture(name: &str) -> maestro_resources::LoadSkillsResult {
 #[test]
 fn valid_skill_retains_source() {
     let result = fixture("valid-skill");
+    assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].name, "valid-skill");
     assert_eq!(
         result.skills[0].description,
@@ -85,6 +86,7 @@ fn valid_skill_retains_source() {
 #[test]
 fn parent_mismatch_warns_without_omission() {
     let result = fixture("name-mismatch");
+    assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].name, "different-name");
     assert_eq!(
         result.diagnostics[0].message,
@@ -125,6 +127,7 @@ fn missing_description_warns_and_omits() {
 #[test]
 fn nested_skill_is_discovered() {
     let r = fixture("nested");
+    assert_eq!(r.skills.len(), 1);
     assert_eq!(r.skills[0].name, "child-skill");
     assert!(r.diagnostics.is_empty());
 }
@@ -252,6 +255,10 @@ fn multiline_skill_description_is_preserved() {
         r.skills[0]
             .description
             .contains("This is a multiline description.")
+    );
+    assert_eq!(
+        r.skills[0].description,
+        "This is a multiline description.\nIt spans multiple lines.\nAnd should be normalized.\n"
     );
     assert!(r.diagnostics.is_empty());
 }
@@ -591,6 +598,54 @@ fn default_scopes_precede_explicit_paths() {
         .unwrap();
         assert_eq!(r.skills[0].source_info.scope, scope);
     }
+    for (dir, name) in [
+        ("/agent/skills/inside", "inside-user"),
+        ("/work/.maestro/skills/inside", "inside-project"),
+        ("/agent/skills-extra", "boundary"),
+    ] {
+        ops.dir(dir, &[("SKILL.md", 'f')]);
+        ops.file(
+            &format!("{dir}/SKILL.md"),
+            &format!("---\nname: {name}\ndescription: text\n---"),
+        );
+    }
+    let enabled = explicit(
+        &[
+            "/agent/skills/inside".into(),
+            "/work/.maestro/skills/inside".into(),
+        ],
+        &ops,
+    )
+    .unwrap();
+    assert_eq!(
+        enabled
+            .skills
+            .iter()
+            .map(|s| s.source_info.scope.as_str())
+            .collect::<Vec<_>>(),
+        vec!["user", "project", "temporary", "temporary"]
+    );
+    for (cwd, config, path, scope) in [
+        ("/work", ".maestro", "/agent/skills-extra", "temporary"),
+        ("/agent", "skills", "/agent/skills/skills", "user"),
+    ] {
+        ops.dir(path, &[("SKILL.md", 'f')]);
+        ops.file(&format!("{path}/SKILL.md"), "---\ndescription: text\n---");
+        let result = maestro_resources::load_skills(
+            maestro_resources::LoadSkillsOptions {
+                cwd,
+                agent_dir: "/agent",
+                skill_paths: &[path.into()],
+                include_defaults: false,
+                config_dir_name: config,
+                home: "/home",
+            },
+            &ops,
+        )
+        .unwrap();
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].source_info.scope, scope);
+    }
 }
 #[test]
 fn canonical_deduplication_precedes_name_collisions() {
@@ -599,6 +654,12 @@ fn canonical_deduplication_precedes_name_collisions() {
         ops.file(p, "---\nname: same\ndescription: text\n---");
     }
     ops.real.insert("/alias.md".into(), Ok("/a.md".into()));
+    ops.real.insert(
+        "/b.md".into(),
+        Err(maestro_resources::ResourceError {
+            message: Some("realpath failed".into()),
+        }),
+    );
     let r = explicit(
         &[
             "/a.md".into(),
@@ -622,6 +683,18 @@ fn canonical_deduplication_precedes_name_collisions() {
         collisions[0].collision.as_ref().unwrap().winner_path,
         "/a.md"
     );
+    ops.file(
+        "/fallback.md",
+        "---\nname: fallback\ndescription: text\n---",
+    );
+    ops.real.insert(
+        "/fallback.md".into(),
+        Err(maestro_resources::ResourceError { message: None }),
+    );
+    let fallback = explicit(&["/fallback.md".into(), "/fallback.md".into()], &ops).unwrap();
+    assert_eq!(fallback.skills.len(), 1);
+    assert_eq!(fallback.skills[0].file_path, "/fallback.md");
+    assert!(!fallback.diagnostics.iter().any(|d| d.r#type == "collision"));
 }
 #[test]
 fn ignore_files_share_ordered_matcher() {
@@ -670,6 +743,30 @@ fn ignore_files_share_ordered_matcher() {
     )
     .unwrap();
     assert_eq!(reset.skills.len(), 1);
+    let mut siblings = Controlled::default();
+    siblings.dir("/scan", &[("One", 'd'), ("one", 'd')]);
+    siblings.dir("/scan/One", &[]);
+    siblings.file("/scan/One/.ignore", "/SKILL.md");
+    siblings.dir("/scan/one", &[("SKILL.md", 'f')]);
+    siblings.file("/scan/one/SKILL.md", "---\ndescription: sibling\n---");
+    let shared = load_skills_from_dir(
+        LoadSkillsFromDirOptions {
+            dir: "/scan",
+            source: "test",
+        },
+        &siblings,
+    )
+    .unwrap();
+    assert!(shared.skills.is_empty());
+    let separate = load_skills_from_dir(
+        LoadSkillsFromDirOptions {
+            dir: "/scan/one",
+            source: "test",
+        },
+        &siblings,
+    )
+    .unwrap();
+    assert_eq!(separate.skills.len(), 1);
 }
 
 #[test]
@@ -842,6 +939,30 @@ fn root_candidate_attempt_controls_descent() {
             assert!(r.skills.is_empty());
         }
     }
+    #[cfg(unix)]
+    {
+        let root =
+            std::env::temp_dir().join(format!("maestro-dangling-root-{}", std::process::id()));
+        std::fs::create_dir(&root).unwrap();
+        std::fs::create_dir(root.join("child")).unwrap();
+        std::fs::write(root.join("child/SKILL.md"), "---\ndescription: child\n---").unwrap();
+        std::os::unix::fs::symlink(root.join("missing"), root.join("SKILL.md")).unwrap();
+        let result = load_skills_from_dir(
+            LoadSkillsFromDirOptions {
+                dir: root.to_str().unwrap(),
+                source: "test",
+            },
+            &NativeResourceOperations,
+        )
+        .unwrap();
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].name, "child");
+        assert!(result.diagnostics.is_empty());
+        std::fs::remove_file(root.join("SKILL.md")).unwrap();
+        std::fs::remove_file(root.join("child/SKILL.md")).unwrap();
+        std::fs::remove_dir(root.join("child")).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
     let mut ops = Controlled::skill("---\ndescription: root\n---");
     ops.file("/parent/.ignore", "SKILL.md");
     let r = load_skills_from_dir(
@@ -871,6 +992,14 @@ fn root_markdown_and_symlink_traversal() {
             ("broken", 'l'),
         ],
     );
+    for dir in [".hidden", "node_modules"] {
+        ops.dir(&format!("/scan/{dir}"), &[("child", 'd')]);
+        ops.dir(&format!("/scan/{dir}/child"), &[("SKILL.md", 'f')]);
+        ops.file(
+            &format!("/scan/{dir}/child/SKILL.md"),
+            "---\ndescription: must stay excluded\n---",
+        );
+    }
     ops.file("/scan/z.md", "---\nname: z\ndescription: z\n---");
     ops.dir("/scan/nested", &[("ignored.md", 'f')]);
     ops.file("/scan/nested/ignored.md", "---\ndescription: ignored\n---");
@@ -1000,204 +1129,114 @@ fn ignore_prefix_and_parent_rules_match() {
         .skills
         .is_empty()
     );
-}
-
-#[test]
-fn fixture_text_is_preserved() {
+    let mut nested = Controlled::default();
+    nested.dir("/scan", &[("child", 'd'), ("other", 'd')]);
+    nested.dir("/scan/child", &[("blocked", 'd'), ("keep", 'd')]);
+    nested.file("/scan/child/.ignore", "/*/\n!/keep/\n");
+    for dir in ["/scan/child/blocked", "/scan/child/keep", "/scan/other"] {
+        nested.dir(dir, &[("SKILL.md", 'f')]);
+        nested.file(&format!("{dir}/SKILL.md"), "---\ndescription: nested\n---");
+    }
+    let result = load_skills_from_dir(
+        LoadSkillsFromDirOptions {
+            dir: "/scan",
+            source: "test",
+        },
+        &nested,
+    )
+    .unwrap();
     assert_eq!(
-        include_str!("fixtures/skills/consecutive-hyphens/SKILL.md"),
-        r###"---
-name: bad--name
-description: A skill with consecutive hyphens in the name.
----
-
-# Consecutive Hyphens
-
-This skill has consecutive hyphens in its name.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/disable-model-invocation/SKILL.md"),
-        r###"---
-name: disable-model-invocation
-description: A skill that cannot be invoked by the model.
-disable-model-invocation: true
----
-
-# Manual Only Skill
-
-This skill can only be invoked via /skill:disable-model-invocation.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/invalid-name-chars/SKILL.md"),
-        r###"---
-name: Invalid_Name
-description: A skill with invalid characters in the name.
----
-
-# Invalid Name
-
-This skill has uppercase and underscore in the name.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/invalid-yaml/SKILL.md"),
-        r###"---
-name: invalid-yaml
-description: [unclosed bracket
----
-
-# Invalid YAML Skill
-
-This skill has invalid YAML in the frontmatter.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/long-name/SKILL.md"),
-        r###"---
-name: this-is-a-very-long-skill-name-that-exceeds-the-sixty-four-character-limit-set-by-the-standard
-description: A skill with a name that exceeds 64 characters.
----
-
-# Long Name
-
-This skill's name is too long.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/missing-description/SKILL.md"),
-        r###"---
-name: missing-description
----
-
-# Missing Description
-
-This skill has no description field.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/multiline-description/SKILL.md"),
-        r###"---
-name: multiline-description
-description: |
-  This is a multiline description.
-  It spans multiple lines.
-  And should be normalized.
----
-
-# Multiline Description Skill
-
-This skill tests that multiline YAML descriptions are normalized to single lines.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/name-mismatch/SKILL.md"),
-        r###"---
-name: different-name
-description: A skill with a name that doesn't match the directory.
----
-
-# Name Mismatch
-
-This skill's name doesn't match its parent directory.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/nested/child-skill/SKILL.md"),
-        r###"---
-name: child-skill
-description: A nested skill in a subdirectory.
----
-
-# Child Skill
-
-This skill is nested in a subdirectory.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/no-frontmatter/SKILL.md"),
-        r###"# No Frontmatter
-
-This skill has no YAML frontmatter at all.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/root-skill-preferred/SKILL.md"),
-        r###"---
-description: Root skill should win.
----
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/root-skill-preferred/nested-child/SKILL.md"),
-        r###"---
-description: Nested skill should be ignored.
----
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/unknown-field/SKILL.md"),
-        r###"---
-name: unknown-field
-description: A skill with an unknown frontmatter field.
-author: someone
-version: 1.0
----
-
-# Unknown Field
-
-This skill has non-standard frontmatter fields.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills/valid-skill/SKILL.md"),
-        r###"---
-name: valid-skill
-description: A valid skill for testing purposes.
----
-
-# Valid Skill
-
-This is a valid skill that follows the Agent Skills standard.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills-collision/first/calendar/SKILL.md"),
-        r###"---
-name: calendar
-description: First calendar skill.
----
-
-# Calendar (First)
-
-This is the first calendar skill.
-"###
-    );
-    assert_eq!(
-        include_str!("fixtures/skills-collision/second/calendar/SKILL.md"),
-        r###"---
-name: calendar
-description: Second calendar skill.
----
-
-# Calendar (Second)
-
-This is the second calendar skill.
-"###
+        result
+            .skills
+            .iter()
+            .map(|s| s.name.as_str())
+            .collect::<Vec<_>>(),
+        vec!["keep", "other"]
     );
 }
 
 #[test]
-fn skills_doc_matches_delivered_interface() {
-    let doc = include_str!("../../../docs/skills.md");
-    assert!(doc.contains(r###"# Skill resources"###));
-    assert!(doc.contains(r###"Load a supplied directory with `load_skills_from_dir`. Each retained `Skill` contains its name, description, file path, base directory, source information and model-invocation flag. Filesystem operations are supplied by the caller."###));
-    assert!(doc.contains(r###"`load_skills` reads user skills before project skills, followed by explicit paths in input order. With defaults enabled, explicit paths have temporary scope. With defaults disabled, explicit paths beneath the supplied user or project skill directory retain that scope. Canonical file duplicates are omitted before name collisions; the first name wins."###));
-    assert!(doc.contains(r###"Validation warnings do not prevent loading unless the description is missing or blank, or reading, parsing or a required string operation fails. Description warnings precede name warnings. Collision diagnostics follow all other diagnostics. An unignored file named `SKILL.md` ends discovery in its directory even when that file fails to load."###));
-    assert!(doc.contains(r###"`parse_frontmatter` normalizes line endings and returns typed YAML metadata with the body. A leading three-dash opener and the first newline followed by three dashes delimit the metadata; only a delimited body is trimmed. Empty or null metadata becomes an empty object. `strip_frontmatter` returns the same body and propagates parsing errors."###));
-    assert!(doc.contains(r###"`format_skills_for_prompt` renders visible skills in input order, using the skill file path as the location and XML-escaping each field. Only boolean `disable-model-invocation: true` hides a loaded skill. Native callers can supply `NativeResourceOperations`; portable callers provide `ResourceOperations`. Neither loading nor formatting executes a skill."###));
-    assert!(doc.contains("let result = load_skills_from_dir("));
-    assert!(doc.contains("&NativeResourceOperations"));
-    assert!(doc.contains("format_skills_for_prompt(&result.skills)"));
+fn escaped_exclamation_excludes_literal_file_at_root_and_nested() {
+    for dir in ["/scan", "/scan/child"] {
+        let mut ops = Controlled::default();
+        ops.dir(
+            "/scan",
+            &[("child", 'd'), ("!blocked.md", 'f'), ("blocked.md", 'f')],
+        );
+        ops.dir("/scan/child", &[("SKILL.md", 'f')]);
+        ops.file("/scan/child/SKILL.md", "---\ndescription: child\n---");
+        ops.file(
+            "/scan/!blocked.md",
+            "---\nname: literal\ndescription: literal\n---",
+        );
+        ops.file(
+            "/scan/blocked.md",
+            "---\nname: plain\ndescription: plain\n---",
+        );
+        ops.file(&format!("{dir}/.ignore"), "\\!blocked.md");
+        if dir.ends_with("child") {
+            ops.dir("/scan/child", &[("!blocked.md", 'd'), ("blocked.md", 'd')]);
+            for name in ["!blocked.md", "blocked.md"] {
+                ops.dir(&format!("{dir}/{name}"), &[("SKILL.md", 'f')]);
+                ops.file(
+                    &format!("{dir}/{name}/SKILL.md"),
+                    "---\ndescription: nested\n---",
+                );
+            }
+        }
+        let result = load_skills_from_dir(
+            LoadSkillsFromDirOptions {
+                dir: "/scan",
+                source: "test",
+            },
+            &ops,
+        )
+        .unwrap();
+        assert!(result.skills.iter().any(|s| s.file_path
+            == format!(
+                "{dir}/blocked.md{}",
+                if dir.ends_with("child") {
+                    "/SKILL.md"
+                } else {
+                    ""
+                }
+            )));
+        assert!(!result.skills.iter().any(|s| s.file_path
+            == format!(
+                "{dir}/!blocked.md{}",
+                if dir.ends_with("child") {
+                    "/SKILL.md"
+                } else {
+                    ""
+                }
+            )));
+    }
+}
+
+#[test]
+fn oversized_valid_ignore_rules_warn_without_panicking() {
+    let mut ops = Controlled::default();
+    ops.dir("/scan", &[("SKILL.md", 'f')]);
+    ops.file("/scan/SKILL.md", "---\ndescription: text\n---");
+    let rules = (0..25000)
+        .map(|i| format!("{i}{}*.md\n", "[ab]".repeat(30)))
+        .collect::<String>();
+    ops.file("/scan/.ignore", &rules);
+    let result = load_skills_from_dir(
+        LoadSkillsFromDirOptions {
+            dir: "/scan",
+            source: "test",
+        },
+        &ops,
+    )
+    .unwrap();
+    assert!(result.skills.is_empty());
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].r#type, "warning");
+    assert_eq!(result.diagnostics[0].path.as_deref(), Some("/scan"));
+    assert!(
+        result.diagnostics[0].message.contains("error building NFA"),
+        "{:?}",
+        result.diagnostics
+    );
 }

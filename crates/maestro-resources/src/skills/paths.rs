@@ -5,6 +5,7 @@ pub fn canonicalize_path(path: &str, operations: &dyn ResourceOperations) -> Str
     operations.realpath(path).unwrap_or_else(|_| path.into())
 }
 /// Tests the six nonlocal source prefixes after trimming.
+#[must_use]
 pub fn is_local_path(value: &str) -> bool {
     let value = trim(value);
     !["npm:", "git:", "github:", "https:", "http:", "ssh:"]
@@ -17,7 +18,7 @@ pub(super) fn trim(value: &str) -> &str {
 pub(super) fn join(parts: &[&str]) -> String {
     let mut path = std::path::PathBuf::new();
     for part in parts {
-        path.push(part)
+        path.push(part);
     }
     path.to_string_lossy().into_owned()
 }
