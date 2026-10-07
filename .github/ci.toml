@@ -1,4 +1,4 @@
-wasm_crates = []
+wasm_crates = ["maestro-models"]
 spelling_words = ["ratatui"]
 privileged_trigger_workflows = [
     ".github/workflows/approve-contributor.yml",
