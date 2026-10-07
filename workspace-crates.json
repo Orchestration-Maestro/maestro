@@ -5,5 +5,6 @@
   "maestro-credentials": "core",
   "maestro-settings": "core",
   "maestro-storage": "core",
-  "maestro-test-conventions": "dedicated"
+  "maestro-test-conventions": "dedicated",
+  "maestro-resources": "core"
 }

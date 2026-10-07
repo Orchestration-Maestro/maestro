@@ -230,3 +230,9 @@ behind the stateless overflow pattern value; its enabled dependency is memchr
 2.8.3 (alloc/std; Unlicense OR MIT). Preserve the owned pattern sources and
 ECMAScript character classes. The non-Unicode long-s case-folding difference
 is accepted and qualified explicitly by the model tests.
+
+## Resource parser libraries
+
+The resource crate uses `yaml-rust2 =0.13.0` and `ignore =0.4.23`, both
+with default features disabled. Parsing and matching use their native behaviour;
+public parser and loader tests qualify the delivered results.

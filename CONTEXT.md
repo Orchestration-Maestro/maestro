@@ -108,3 +108,11 @@ are later scope, not active foundation concepts.
 
 - **Contributor capability:** A recognized `issue` or `pr` entry in the approved-contributor list; `issue` permits issues, while `pr` permits issues and pull requests.
 - **Effective approval:** A contributor capability present on the trusted default branch after its protected approval pull request merges; a pending request is not effective approval.
+
+## Skill resources
+
+- **Skill**: a retained Markdown instruction resource with source information.
+- **SkillFrontmatter**: typed YAML metadata read from a skill file.
+- **SourceInfo**: provenance for one resource path.
+- **PathMetadata**: caller-supplied provenance for resolved paths.
+- **ResourceDiagnostic**: a discovery warning or resource collision.
