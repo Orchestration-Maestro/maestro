@@ -32,6 +32,10 @@ impl Platform for Host {
 
     #[allow(deprecated)]
     fn home(&self) -> Result<String, ThrownValue> {
+        #[cfg(unix)]
+        if let Some(home) = std::env::var_os("HOME") {
+            return Ok(home.to_string_lossy().into_owned());
+        }
         std::env::home_dir()
             .map(|p| p.to_string_lossy().into_owned())
             .ok_or_else(|| {
