@@ -556,7 +556,10 @@ fn faux_explicit_error_follows_content() {
     r.set_responses(vec![FauxResponseStep::Message(msg)]);
     let events = stream(r.get_model(None).unwrap(), context(), None).unwrap();
     let out = collect(&events);
-    assert_eq!(event_name(&out[0]), "start");
+    assert_eq!(
+        out.iter().map(event_name).collect::<Vec<_>>(),
+        ["start", "text_start", "text_delta", "text_end", "error"]
+    );
     assert!(matches!(
         out.last().unwrap(),
         AssistantMessageEvent::Error {
@@ -572,6 +575,13 @@ fn faux_explicit_error_follows_content() {
             .as_deref(),
         Some("upstream failed")
     );
+    if let AssistantMessageEvent::Error { error, .. } = out.last().unwrap() {
+        let terminal = error.read().unwrap();
+        assert_eq!(terminal.stop_reason, StopReason::Error);
+        assert_eq!(terminal.error_message.as_deref(), Some("upstream failed"));
+    } else {
+        panic!("expected terminal error")
+    }
     r.unregister();
 }
 #[test]
@@ -583,7 +593,10 @@ fn faux_explicit_abort_follows_content() {
     r.set_responses(vec![FauxResponseStep::Message(msg)]);
     let events = stream(r.get_model(None).unwrap(), context(), None).unwrap();
     let out = collect(&events);
-    assert_eq!(event_name(&out[0]), "start");
+    assert_eq!(
+        out.iter().map(event_name).collect::<Vec<_>>(),
+        ["start", "text_start", "text_delta", "text_end", "error"]
+    );
     assert!(matches!(
         out.last().unwrap(),
         AssistantMessageEvent::Error {
@@ -599,6 +612,16 @@ fn faux_explicit_abort_follows_content() {
             .as_deref(),
         Some("Request was aborted")
     );
+    if let AssistantMessageEvent::Error { error, .. } = out.last().unwrap() {
+        let terminal = error.read().unwrap();
+        assert_eq!(terminal.stop_reason, StopReason::Aborted);
+        assert_eq!(
+            terminal.error_message.as_deref(),
+            Some("Request was aborted")
+        );
+    } else {
+        panic!("expected terminal error")
+    }
     r.unregister();
 }
 #[test]
@@ -1204,5 +1227,218 @@ fn faux_terminal_reason_and_final_message_are_preserved() {
             assert_eq!(final_message.error_message.as_deref(), Some("explicit"));
         }
     }
+    r.unregister();
+}
+
+#[test]
+fn faux_supplied_usage_is_replaced() {
+    for factory in [false, true] {
+        for cache in [false, true] {
+            let r = register_faux_provider(Default::default());
+            let mut supplied = message("done");
+            supplied.usage = Usage {
+                input: 31.0,
+                output: 37.0,
+                cache_read: 7.0,
+                cache_write: 9.0,
+                total_tokens: 84.0,
+                cost: UsageCost {
+                    input: 1.0,
+                    output: 2.0,
+                    cache_read: 3.0,
+                    cache_write: 4.0,
+                    total: 10.0,
+                },
+            };
+            let step = if factory {
+                FauxResponseStep::Factory(Arc::new(move |_, _, _, _| {
+                    let supplied = supplied.clone();
+                    Box::pin(async move { Ok(supplied) })
+                }))
+            } else {
+                FauxResponseStep::Message(supplied)
+            };
+            r.set_responses(vec![step.clone(), step]);
+            for repeated in [false, true] {
+                let opts = options(
+                    Some("usage"),
+                    Some(if cache {
+                        CacheRetention::Short
+                    } else {
+                        CacheRetention::None
+                    }),
+                );
+                let out = run(complete(r.get_model(None).unwrap(), context(), opts)).unwrap();
+                let usage = out.read().unwrap().usage.clone();
+                let expected = match (cache, repeated) {
+                    (false, _) => (2.0, 1.0, 0.0, 0.0, 3.0),
+                    (true, false) => (2.0, 1.0, 0.0, 2.0, 5.0),
+                    (true, true) => (0.0, 1.0, 2.0, 0.0, 3.0),
+                };
+                assert_eq!(
+                    (
+                        usage.input,
+                        usage.output,
+                        usage.cache_read,
+                        usage.cache_write,
+                        usage.total_tokens
+                    ),
+                    expected
+                );
+                assert_eq!(
+                    usage.cost,
+                    UsageCost {
+                        input: 0.0,
+                        output: 0.0,
+                        cache_read: 0.0,
+                        cache_write: 0.0,
+                        total: 0.0
+                    }
+                );
+            }
+            r.unregister();
+        }
+    }
+}
+
+#[test]
+fn faux_unpaced_reader_cancels_after_first_delta() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let r = register_faux_provider(RegisterFauxProviderOptions {
+            token_size: Some(FauxTokenSize {
+                min: Some(1.0),
+                max: Some(1.0),
+            }),
+            ..Default::default()
+        });
+        let text = "a".repeat(4096);
+        r.set_responses(vec![FauxResponseStep::Message(message(&text))]);
+        let signal = Cancellation::new();
+        let opts = ProviderStreamOptions {
+            base: StreamOptions {
+                signal: Some(signal.clone()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let events = stream(r.get_model(None).unwrap(), context(), Some(opts)).unwrap();
+        let mut iter = events.iter();
+        while let Some(event) = iter.next().await {
+            if matches!(event, AssistantMessageEvent::TextDelta { .. }) {
+                signal.cancel();
+                break;
+            }
+        }
+        let result = events.result().await;
+        let result = result.read().unwrap();
+        assert_eq!(result.stop_reason, StopReason::Aborted);
+        let AssistantContent::Text(content) = &result.content[0] else {
+            panic!()
+        };
+        assert!(!content.text.is_empty());
+        assert!(content.text.len() < text.len());
+        r.unregister();
+    });
+}
+
+#[test]
+fn faux_factory_spawned_cancellation_precedes_ready_response() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let r = register_faux_provider(Default::default());
+        let signal = Cancellation::new();
+        let cancel = signal.clone();
+        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
+            move |_, _, _, _| {
+                let cancel = cancel.clone();
+                tokio::spawn(async move {
+                    cancel.cancel();
+                });
+                Box::pin(async { Ok(message("ready text")) })
+            },
+        ))]);
+        let opts = ProviderStreamOptions {
+            base: StreamOptions {
+                signal: Some(signal),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let out = complete(r.get_model(None).unwrap(), context(), Some(opts))
+            .await
+            .unwrap();
+        assert_eq!(out.read().unwrap().stop_reason, StopReason::Aborted);
+        r.unregister();
+    });
+}
+
+#[test]
+fn faux_completed_factory_wake_does_not_stall_next_invocation() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let r = register_faux_provider(Default::default());
+        let saved = Arc::new(std::sync::Mutex::new(None));
+        let capture = saved.clone();
+        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
+            move |_, _, _, _| {
+                let capture = capture.clone();
+                Box::pin(std::future::poll_fn(move |cx| {
+                    *capture.lock().unwrap() = Some(cx.waker().clone());
+                    Poll::Ready(Ok(message("first")))
+                }))
+            },
+        ))]);
+        complete(r.get_model(None).unwrap(), context(), None)
+            .await
+            .unwrap();
+        saved.lock().unwrap().take().unwrap().wake();
+        r.append_responses(vec![FauxResponseStep::Message(message("second"))]);
+        let out = tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            complete(r.get_model(None).unwrap(), context(), None),
+        )
+        .await
+        .expect("stale wake must not strand the dispatcher")
+        .unwrap();
+        assert_eq!(out.read().unwrap().content, message("second").content);
+        r.unregister();
+    });
+}
+
+#[test]
+fn faux_registration_survives_ambient_runtime_shutdown() {
+    let r = register_faux_provider(Default::default());
+    r.set_responses(vec![
+        FauxResponseStep::Message(message("ambient")),
+        FauxResponseStep::Message(message("fallback")),
+    ]);
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    let first = runtime
+        .block_on(complete(r.get_model(None).unwrap(), context(), None))
+        .unwrap();
+    assert_eq!(first.read().unwrap().content, message("ambient").content);
+    drop(runtime);
+    let events = stream(r.get_model(None).unwrap(), context(), None).unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        send.send(run(events.result())).unwrap();
+    });
+    let second = receive
+        .recv_timeout(std::time::Duration::from_secs(1))
+        .expect("reuse dispatches through the fallback");
+    assert_eq!(second.read().unwrap().content, message("fallback").content);
     r.unregister();
 }

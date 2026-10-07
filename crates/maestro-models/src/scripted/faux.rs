@@ -339,6 +339,7 @@ fn register_with_host(
             message.provider = identity.provider;
             message.model = identity.id;
             let prompt = serialize_context(&context);
+            message.usage = zero_usage();
             message.usage.input = estimate_tokens(&prompt);
             message.usage.output = estimate_tokens(&assistant_content_to_text(&message.content));
             if let Some(session) = options

@@ -883,3 +883,36 @@ fn faux_native_microtasks_precede_zero_timers() {
         );
     });
 }
+
+#[test]
+fn faux_native_factory_runs_between_microtask_markers() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let r = register_faux_provider(Default::default());
+        let order = Arc::new(Mutex::new(vec![]));
+        let factory_order = order.clone();
+        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
+            move |_, _, _, _| {
+                factory_order.lock().unwrap().push("factory");
+                Box::pin(async { Ok(msg("text")) })
+            },
+        ))]);
+        let response = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
+        let marker_order = order.clone();
+        let markers = tokio::spawn(async move {
+            marker_order.lock().unwrap().push("m1");
+            tokio::spawn(async move {
+                marker_order.lock().unwrap().push("m2");
+            })
+            .await
+            .unwrap();
+        });
+        response.result().await;
+        markers.await.unwrap();
+        assert_eq!(*order.lock().unwrap(), ["m1", "factory", "m2"]);
+        r.unregister();
+    });
+}
