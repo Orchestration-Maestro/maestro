@@ -28,9 +28,10 @@ pub(crate) fn check(root: &Path, metadata: &Value) -> Result<(), String> {
             {
                 continue;
             }
-            let lines = syn::parse_file(&contents).map_or_else(
+            let contents = contents.strip_prefix('\u{feff}').unwrap_or(&contents);
+            let lines = syn::parse_file(contents).map_or_else(
                 |_| contents.lines().count(),
-                |syntax| production_lines(&contents, &syntax),
+                |syntax| production_lines(contents, &syntax),
             );
             if lines > 500 {
                 return Err(format!(
@@ -56,6 +57,7 @@ fn production_lines(contents: &str, syntax: &syn::File) -> usize {
         .take(end)
         .enumerate()
         .filter(|(line, text)| {
+            // Span columns and text columns both count Unicode characters.
             text.chars().enumerate().any(|(column, character)| {
                 !character.is_whitespace()
                     && !tests

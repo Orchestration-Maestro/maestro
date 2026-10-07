@@ -302,3 +302,56 @@ fn five_hundred_production_lines_with_separate_test_module_pass() {
     std::fs::write(&path, format!("{items}#[cfg(test)]\nmod tests {{}}\n")).unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+#[test]
+fn leading_byte_order_mark_preserves_production_count() {
+    assert_production_count_unchanged(|source| format!("\u{feff}{source}"));
+}
+
+fn assert_production_count_unchanged(vary: fn(&str) -> String) {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut production = String::new();
+    for index in 0..500 {
+        writeln!(production, "const P{index}: u8 = 0;").unwrap();
+    }
+    for suffix in ["", "const EXTRA: u8 = 0;\n"] {
+        let baseline = format!("#[cfg(test)] mod tests {{}}\n{production}{suffix}");
+        std::fs::write(&path, &baseline).unwrap();
+        let expected = check_workspace(&workspace.root);
+        if suffix.is_empty() {
+            assert_eq!(expected, Ok(()));
+        } else {
+            assert!(
+                expected
+                    .as_ref()
+                    .unwrap_err()
+                    .contains("501 production lines")
+            );
+        }
+        std::fs::write(&path, vary(&baseline)).unwrap();
+        assert_eq!(check_workspace(&workspace.root), expected);
+    }
+}
+
+#[test]
+fn crlf_endings_preserve_production_count() {
+    assert_production_count_unchanged(|source| source.replace('\n', "\r\n"));
+}
+
+#[test]
+fn tab_indented_test_items_preserve_production_count() {
+    assert_production_count_unchanged(|source| source.replace("#[cfg(test)]", "\t#[cfg(test)]"));
+}
+
+#[test]
+fn unicode_before_same_line_test_items_preserves_production_count() {
+    assert_production_count_unchanged(|source| {
+        source.replace(
+            "const P0: u8 = 0;",
+            "const É: &str = \"é\"; #[cfg(test)] const TEST: u8 = 0;",
+        )
+    });
+}
