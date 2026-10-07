@@ -280,7 +280,6 @@ fn maestro_clean_keeps_sources_and_sibling_outputs() {
 #[cfg(unix)]
 #[test]
 fn maestro_dev_rebuilds_and_retains_output() {
-    use std::io::{BufRead, BufReader};
     use std::os::unix::process::CommandExt;
     use std::process::Stdio;
     use std::sync::mpsc;
@@ -289,23 +288,26 @@ fn maestro_dev_rebuilds_and_retains_output() {
     native_workspace(&workspace);
     fs::remove_file(workspace.0.join("bin/watchexec")).unwrap();
     let mut command = workspace.command("dev");
-    command.stderr(Stdio::piped()).process_group(0);
+    command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .process_group(0);
     let mut child = command.spawn().unwrap();
     let (send, receive) = mpsc::channel();
-    let reader = child.stderr.take().unwrap();
-    let thread = std::thread::spawn(move || {
-        for line in BufReader::new(reader).lines() {
-            if send.send(line.unwrap()).is_err() {
-                break;
-            }
-        }
-    });
+    let output = child.stdout.take().unwrap();
+    let error = child.stderr.take().unwrap();
+    let threads = [
+        capture_lines(output, send.clone()),
+        capture_lines(error, send.clone()),
+    ];
+    drop(send);
+    let diagnostics = watcher_diagnostics(&workspace.0);
     let mut transcript = String::new();
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        wait_for_build(&receive, &mut transcript);
+        wait_for_build(&receive, &mut transcript, "initial build", &diagnostics);
         let source = workspace.0.join("crates/maestro-models/src/lib.rs");
         fs::write(&source, "pub fn changed() {}\n").unwrap();
-        wait_for_build(&receive, &mut transcript);
+        wait_for_build(&receive, &mut transcript, "source rebuild", &diagnostics);
         assert_eq!(transcript.matches("Finished `dev`").count(), 2);
         assert!(!transcript.contains("\u{1b}[2J"));
         fs::write(workspace.0.join("target/asset"), "ignored").unwrap();
@@ -325,20 +327,70 @@ fn maestro_dev_rebuilds_and_retains_output() {
     );
     child.wait().unwrap();
     drop(receive);
-    thread.join().unwrap();
+    for thread in threads {
+        thread.join().unwrap();
+    }
     if let Err(error) = result {
         std::panic::resume_unwind(error);
     }
 }
 
-fn wait_for_build(receive: &std::sync::mpsc::Receiver<String>, transcript: &mut String) {
+fn capture_lines(
+    reader: impl std::io::Read + Send + 'static,
+    send: std::sync::mpsc::Sender<String>,
+) -> std::thread::JoinHandle<()> {
+    use std::io::{BufRead, BufReader};
+    std::thread::spawn(move || {
+        for line in BufReader::new(reader).lines() {
+            if send.send(line.unwrap()).is_err() {
+                break;
+            }
+        }
+    })
+}
+
+fn watcher_diagnostics(root: &Path) -> String {
+    let path = std::env::split_paths(&std::env::var_os("PATH").unwrap())
+        .map(|directory| directory.join("watchexec"))
+        .find(|path| path.is_file())
+        .unwrap();
+    let version = Command::new(&path).arg("--version").output().unwrap();
+    let mounts = fs::read_to_string("/proc/mounts").unwrap_or_default();
+    let filesystem = mounts
+        .lines()
+        .filter_map(|line| {
+            let fields: Vec<_> = line.split_whitespace().collect();
+            (fields.len() >= 3 && root.starts_with(fields[1])).then(|| (fields[1], fields[2]))
+        })
+        .max_by_key(|(mount, _)| mount.len())
+        .map_or("unknown", |(_, filesystem)| filesystem);
+    format!(
+        "watcher={} version={} filesystem={filesystem}",
+        path.display(),
+        String::from_utf8_lossy(&version.stdout).trim()
+    )
+}
+
+fn wait_for_build(
+    receive: &std::sync::mpsc::Receiver<String>,
+    transcript: &mut String,
+    phase: &str,
+    diagnostics: &str,
+) {
+    let started = std::time::Instant::now();
     loop {
         let line = receive
             .recv_timeout(std::time::Duration::from_secs(10))
-            .unwrap();
+            .unwrap_or_else(|error| {
+                panic!(
+                    "{phase}: {error} after {} ms (10 s wait); {diagnostics}; watcher output:\n{transcript}",
+                    started.elapsed().as_millis()
+                )
+            });
         transcript.push_str(&line);
         transcript.push('\n');
         if line.contains("Finished `dev`") {
+            eprintln!("{phase}: {} ms", started.elapsed().as_millis());
             return;
         }
     }
