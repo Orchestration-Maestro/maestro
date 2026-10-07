@@ -44,7 +44,7 @@ mod tests {
             ("", "k4n83c7h0j2b"),
             ("hello", "1h6qa0qrowduu"),
             ("\0", "tlnwb21t8w38a"),
-            ("\u{feff}", "1ot1akt19m0c6r"),
+            ("\u{feff}a", "dlr9atvhhasa"),
             ("\u{0085}", "b78s7412emlzt"),
             ("😀", "13wj7r7usi372"),
             ("a😀b", "12yrce3kjl8pw"),
@@ -120,7 +120,7 @@ mod tests {
     }
 
     fn model_fixture(api: &str, compat: &serde_json::Value) -> serde_json::Value {
-        json!({"id":"uncatalogued","name":"Custom","api":api,"provider":"custom","baseUrl":"https://fixture.invalid","reasoning":true,"thinkingLevelMap":{"off":null,"minimal":"tiny","low":"low","medium":"medium","high":"high","xhigh":"max"},"input":["text","image"],"cost":{"input":1.0,"output":2.0,"cacheRead":3.0,"cacheWrite":4.0},"contextWindow":1000.0,"maxTokens":50.0,"headers":{"x":"y"},"compat":compat})
+        json!({"id":"custom-model","name":"Custom","api":api,"provider":"custom","baseUrl":"https://fixture.invalid","reasoning":true,"thinkingLevelMap":{"off":null,"minimal":"tiny","low":"low","medium":"medium","high":"high","xhigh":"max"},"input":["text","image"],"cost":{"input":1.0,"output":2.0,"cacheRead":3.0,"cacheWrite":4.0},"contextWindow":1000.0,"maxTokens":50.0,"headers":{"x":"y"},"compat":compat})
     }
 
     fn compatibility_contracts() {

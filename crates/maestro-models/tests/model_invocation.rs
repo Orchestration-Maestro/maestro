@@ -50,7 +50,7 @@ mod tests {
     }
 
     fn model(api: &str) -> maestro_models::records::types::Model {
-        serde_json::from_value(serde_json::json!({"id":"uncatalogued","name":"Custom","api":api,"provider":"custom","baseUrl":"https://fixture.invalid","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10})).unwrap()
+        serde_json::from_value(serde_json::json!({"id":"custom-model","name":"Custom","api":api,"provider":"custom","baseUrl":"https://fixture.invalid","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10})).unwrap()
     }
     fn context() -> maestro_models::records::types::Context {
         maestro_models::records::types::Context {
