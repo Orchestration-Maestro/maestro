@@ -86,6 +86,14 @@ Keep HTTP/file and asynchronous retrieval, TLS, idna, macros and all other optio
 features disabled; construction must also explicitly use the offline builder.
 No remote schema retrieval is authorized.
 
+Owner-approved settings number formatting: `ryu-js` 1.0.3 with default
+features disabled, private to settings serialization; `serde_json` 1.0.151
+uses `preserve_order` for JSON property insertion order. Settings also uses
+`float_roundtrip` for exact binary64 parsing and `unbounded_depth` with private
+`serde_stacker =0.1.14` and `stacker =0.1.25` adapters for recursive processing;
+both adapters are MIT OR Apache-2.0. Recursive manager-owned JSON teardown is
+iterative; very deep caller-owned raw values require the same care.
+
 Keep one current format for everything. No compatibility code.
 
 ## Public text

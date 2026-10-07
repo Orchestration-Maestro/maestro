@@ -1,0 +1,868 @@
+[
+  {
+    "name": "missing",
+    "key": "packages",
+    "stored": {},
+    "throws": false,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "missing",
+    "key": "extensions",
+    "stored": {},
+    "throws": false,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "missing",
+    "key": "skills",
+    "stored": {},
+    "throws": false,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "missing",
+    "key": "prompts",
+    "stored": {},
+    "throws": false,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "missing",
+    "key": "themes",
+    "stored": {},
+    "throws": false,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "missing",
+    "key": "npmCommand",
+    "stored": {},
+    "throws": false,
+    "text": "{}"
+  },
+  {
+    "name": "missing",
+    "key": "enabledModels",
+    "stored": {},
+    "throws": false,
+    "text": "{}"
+  },
+  {
+    "name": "missing",
+    "key": "warnings",
+    "stored": {},
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "null",
+    "key": "packages",
+    "stored": {
+      "packages": null
+    },
+    "throws": false,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "null",
+    "key": "extensions",
+    "stored": {
+      "extensions": null
+    },
+    "throws": false,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "null",
+    "key": "skills",
+    "stored": {
+      "skills": null
+    },
+    "throws": false,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "null",
+    "key": "prompts",
+    "stored": {
+      "prompts": null
+    },
+    "throws": false,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "null",
+    "key": "themes",
+    "stored": {
+      "themes": null
+    },
+    "throws": false,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "null",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": null
+    },
+    "throws": false,
+    "text": "{}"
+  },
+  {
+    "name": "null",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": null
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": null\n}"
+  },
+  {
+    "name": "null",
+    "key": "warnings",
+    "stored": {
+      "warnings": null
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "false",
+    "key": "packages",
+    "stored": {
+      "packages": false
+    },
+    "throws": true,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "false",
+    "key": "extensions",
+    "stored": {
+      "extensions": false
+    },
+    "throws": true,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "false",
+    "key": "skills",
+    "stored": {
+      "skills": false
+    },
+    "throws": true,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "false",
+    "key": "prompts",
+    "stored": {
+      "prompts": false
+    },
+    "throws": true,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "false",
+    "key": "themes",
+    "stored": {
+      "themes": false
+    },
+    "throws": true,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "false",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": false
+    },
+    "throws": false,
+    "text": "{}"
+  },
+  {
+    "name": "false",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": false
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": false\n}"
+  },
+  {
+    "name": "false",
+    "key": "warnings",
+    "stored": {
+      "warnings": false
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "zero",
+    "key": "packages",
+    "stored": {
+      "packages": 0
+    },
+    "throws": true,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "zero",
+    "key": "extensions",
+    "stored": {
+      "extensions": 0
+    },
+    "throws": true,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "zero",
+    "key": "skills",
+    "stored": {
+      "skills": 0
+    },
+    "throws": true,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "zero",
+    "key": "prompts",
+    "stored": {
+      "prompts": 0
+    },
+    "throws": true,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "zero",
+    "key": "themes",
+    "stored": {
+      "themes": 0
+    },
+    "throws": true,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "zero",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": 0
+    },
+    "throws": false,
+    "text": "{}"
+  },
+  {
+    "name": "zero",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": 0
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": 0\n}"
+  },
+  {
+    "name": "zero",
+    "key": "warnings",
+    "stored": {
+      "warnings": 0
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "packages",
+    "stored": {
+      "packages": ""
+    },
+    "throws": false,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "extensions",
+    "stored": {
+      "extensions": ""
+    },
+    "throws": false,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "skills",
+    "stored": {
+      "skills": ""
+    },
+    "throws": false,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "prompts",
+    "stored": {
+      "prompts": ""
+    },
+    "throws": false,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "themes",
+    "stored": {
+      "themes": ""
+    },
+    "throws": false,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": ""
+    },
+    "throws": false,
+    "text": "{}"
+  },
+  {
+    "name": "empty-string",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": ""
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": \"\"\n}"
+  },
+  {
+    "name": "empty-string",
+    "key": "warnings",
+    "stored": {
+      "warnings": ""
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "packages",
+    "stored": {
+      "packages": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"packages\": [\n    \"a\",\n    \"b\"\n  ]\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "extensions",
+    "stored": {
+      "extensions": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"extensions\": [\n    \"a\",\n    \"b\"\n  ]\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "skills",
+    "stored": {
+      "skills": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"skills\": [\n    \"a\",\n    \"b\"\n  ]\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "prompts",
+    "stored": {
+      "prompts": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"prompts\": [\n    \"a\",\n    \"b\"\n  ]\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "themes",
+    "stored": {
+      "themes": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"themes\": [\n    \"a\",\n    \"b\"\n  ]\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"npmCommand\": [\n    \"a\",\n    \"b\"\n  ]\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": \"ab\"\n}"
+  },
+  {
+    "name": "ascii",
+    "key": "warnings",
+    "stored": {
+      "warnings": "ab"
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {\n    \"0\": \"a\",\n    \"1\": \"b\"\n  }\n}"
+  },
+  {
+    "name": "astral",
+    "key": "packages",
+    "stored": {
+      "packages": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"packages\": [\n    \"a\",\n    \"😀\"\n  ]\n}"
+  },
+  {
+    "name": "astral",
+    "key": "extensions",
+    "stored": {
+      "extensions": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"extensions\": [\n    \"a\",\n    \"😀\"\n  ]\n}"
+  },
+  {
+    "name": "astral",
+    "key": "skills",
+    "stored": {
+      "skills": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"skills\": [\n    \"a\",\n    \"😀\"\n  ]\n}"
+  },
+  {
+    "name": "astral",
+    "key": "prompts",
+    "stored": {
+      "prompts": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"prompts\": [\n    \"a\",\n    \"😀\"\n  ]\n}"
+  },
+  {
+    "name": "astral",
+    "key": "themes",
+    "stored": {
+      "themes": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"themes\": [\n    \"a\",\n    \"😀\"\n  ]\n}"
+  },
+  {
+    "name": "astral",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"npmCommand\": [\n    \"a\",\n    \"😀\"\n  ]\n}"
+  },
+  {
+    "name": "astral",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": \"a😀\"\n}"
+  },
+  {
+    "name": "astral",
+    "key": "warnings",
+    "stored": {
+      "warnings": "a😀"
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {\n    \"0\": \"a\",\n    \"1\": \"\\ud83d\",\n    \"2\": \"\\ude00\"\n  }\n}",
+    "expected": "{\n  \"warnings\": {\n    \"0\": \"a\",\n    \"1\": \"�\",\n    \"2\": \"�\"\n  }\n}",
+    "owner": "OD-27"
+  },
+  {
+    "name": "number",
+    "key": "packages",
+    "stored": {
+      "packages": 7
+    },
+    "throws": true,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "number",
+    "key": "extensions",
+    "stored": {
+      "extensions": 7
+    },
+    "throws": true,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "number",
+    "key": "skills",
+    "stored": {
+      "skills": 7
+    },
+    "throws": true,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "number",
+    "key": "prompts",
+    "stored": {
+      "prompts": 7
+    },
+    "throws": true,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "number",
+    "key": "themes",
+    "stored": {
+      "themes": 7
+    },
+    "throws": true,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "number",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": 7
+    },
+    "throws": true,
+    "text": "{}"
+  },
+  {
+    "name": "number",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": 7
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": 7\n}"
+  },
+  {
+    "name": "number",
+    "key": "warnings",
+    "stored": {
+      "warnings": 7
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "true",
+    "key": "packages",
+    "stored": {
+      "packages": true
+    },
+    "throws": true,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "true",
+    "key": "extensions",
+    "stored": {
+      "extensions": true
+    },
+    "throws": true,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "true",
+    "key": "skills",
+    "stored": {
+      "skills": true
+    },
+    "throws": true,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "true",
+    "key": "prompts",
+    "stored": {
+      "prompts": true
+    },
+    "throws": true,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "true",
+    "key": "themes",
+    "stored": {
+      "themes": true
+    },
+    "throws": true,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "true",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": true
+    },
+    "throws": true,
+    "text": "{}"
+  },
+  {
+    "name": "true",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": true
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": true\n}"
+  },
+  {
+    "name": "true",
+    "key": "warnings",
+    "stored": {
+      "warnings": true
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {}\n}"
+  },
+  {
+    "name": "object",
+    "key": "packages",
+    "stored": {
+      "packages": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": true,
+    "text": "{\n  \"packages\": []\n}"
+  },
+  {
+    "name": "object",
+    "key": "extensions",
+    "stored": {
+      "extensions": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": true,
+    "text": "{\n  \"extensions\": []\n}"
+  },
+  {
+    "name": "object",
+    "key": "skills",
+    "stored": {
+      "skills": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": false,
+    "text": "{\n  \"skills\": []\n}"
+  },
+  {
+    "name": "object",
+    "key": "prompts",
+    "stored": {
+      "prompts": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": true,
+    "text": "{\n  \"prompts\": []\n}"
+  },
+  {
+    "name": "object",
+    "key": "themes",
+    "stored": {
+      "themes": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": true,
+    "text": "{\n  \"themes\": []\n}"
+  },
+  {
+    "name": "object",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": true,
+    "text": "{}"
+  },
+  {
+    "name": "object",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": {\n    \"custom\": 1,\n    \"anthropicExtraUsage\": null\n  }\n}"
+  },
+  {
+    "name": "object",
+    "key": "warnings",
+    "stored": {
+      "warnings": {
+        "custom": 1,
+        "anthropicExtraUsage": null
+      }
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {\n    \"custom\": 1,\n    \"anthropicExtraUsage\": null\n  }\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "packages",
+    "stored": {
+      "packages": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"packages\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "extensions",
+    "stored": {
+      "extensions": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"extensions\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "skills",
+    "stored": {
+      "skills": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"skills\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "prompts",
+    "stored": {
+      "prompts": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"prompts\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "themes",
+    "stored": {
+      "themes": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"themes\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "npmCommand",
+    "stored": {
+      "npmCommand": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"npmCommand\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "enabledModels",
+    "stored": {
+      "enabledModels": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"enabledModels\": [\n    \"a\",\n    null,\n    7,\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+  },
+  {
+    "name": "mixed-array",
+    "key": "warnings",
+    "stored": {
+      "warnings": [
+        "a",
+        null,
+        7,
+        {
+          "source": "x",
+          "extensions": null
+        }
+      ]
+    },
+    "throws": false,
+    "text": "{\n  \"warnings\": {\n    \"0\": \"a\",\n    \"1\": null,\n    \"2\": 7,\n    \"3\": {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  }\n}"
+  }
+]
