@@ -427,7 +427,7 @@ fn forbidden_direct_edges_are_rejected() {
 
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
-    assert_eq!(support::policy::POLICY.len(), 25);
+    assert_eq!(support::policy::POLICY.len(), 26);
     assert_eq!(
         support::policy::POLICY
             .iter()
@@ -1251,12 +1251,12 @@ fn documented_foundation_graph_matches_policy() {
         .map(|&(name, dependencies)| (name, dependencies.iter().copied().collect()))
         .collect();
     assert_eq!(documented, expected);
-    assert_eq!(documented.len(), 25);
+    assert_eq!(documented.len(), 26);
     assert_eq!(documented.values().map(BTreeSet::len).sum::<usize>(), 62);
-    assert_eq!(documented.values().filter(|row| row.is_empty()).count(), 7);
+    assert_eq!(documented.values().filter(|row| row.is_empty()).count(), 8);
     assert!(documented["maestro-resources"].is_empty());
     assert!(documented["maestro-extensions"].contains("maestro-resources"));
     assert!(specification.lines().any(|line| line == "| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |"));
-    assert!(specification.split("\n\n").any(|paragraph| paragraph == "The graph contains 25 crates and 62 permitted internal dependency edges; seven crates remain leaves."));
+    assert!(specification.split("\n\n").any(|paragraph| paragraph == "The graph contains 26 crates and 62 permitted internal dependency edges; eight crates remain leaves."));
     assert!(architecture.split("\n\n").any(|paragraph| paragraph == "The extension domain may depend directly on resources for shared source information. Resources remain a leaf; this permission does not allow the reverse dependency or internal dev-dependencies."));
 }

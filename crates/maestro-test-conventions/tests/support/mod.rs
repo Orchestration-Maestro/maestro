@@ -97,6 +97,7 @@ pub mod policy {
         ("maestro-settings", &[]),
         ("maestro-storage", &[]),
         ("maestro-test-conventions", &[]),
+        ("maestro-tooling", &[]),
         ("maestro-tui", &[]),
         ("maestro-agent", &["maestro-models"]),
         ("maestro-credentials", &["maestro-models"]),
@@ -218,7 +219,7 @@ pub fn exact(name: &str) -> bool {
 pub fn class(name: &str) -> &'static str {
     if matches!(
         name,
-        "maestro" | "maestro-test-conventions" | "maestro-test-terminal"
+        "maestro" | "maestro-test-conventions" | "maestro-test-terminal" | "maestro-tooling"
     ) {
         "dedicated"
     } else {
