@@ -3,23 +3,77 @@ use maestro_models::*;
 use serde_json::{Value, json};
 use std::sync::Arc;
 
+#[derive(Clone, Debug, PartialEq)]
+enum ValidationFailure {
+    UnknownTool,
+    InvalidArguments,
+}
+fn normalized_numbers(value: &Value) -> Value {
+    match value {
+        Value::Number(n) => json!(n.as_f64().unwrap()),
+        Value::Array(values) => Value::Array(values.iter().map(normalized_numbers).collect()),
+        Value::Object(values) => Value::Object(
+            values
+                .iter()
+                .map(|(key, v)| (key.clone(), normalized_numbers(v)))
+                .collect(),
+        ),
+        _ => value.clone(),
+    }
+}
+fn validated_call(tools: &[Tool], call: &ToolCall) -> Result<Value, ValidationFailure> {
+    validate_tool_call(tools, call).map_err(|error| {
+        let ThrownValue::Error(error) = error else {
+            panic!("expected Error instance");
+        };
+        assert_eq!(error.name, "Error");
+        if tools.iter().all(|tool| tool.name != call.name) {
+            assert_eq!(error.message, format!("Tool \"{}\" not found", call.name));
+            return ValidationFailure::UnknownTool;
+        }
+        let prefix = format!("Validation failed for tool \"{}\":\n", call.name);
+        let content = error
+            .message
+            .strip_prefix(&prefix)
+            .expect("exact validation wrapper");
+        let (errors, echo) = content
+            .split_once("\n\nReceived arguments:\n")
+            .expect("exact received wrapper");
+        assert!(!errors.is_empty());
+        let rows: Value =
+            serde_json::from_str(include_str!("fixtures/received_arguments.json")).unwrap();
+        let expected = rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| normalized_numbers(&row["input"]) == normalized_numbers(&call.arguments))
+            .expect("Node echo fixture");
+        assert_eq!(echo, expected["echo"].as_str().unwrap());
+        assert_eq!(
+            error.message,
+            format!("{prefix}{errors}\n\nReceived arguments:\n{echo}")
+        );
+        ValidationFailure::InvalidArguments
+    })
+}
+
 fn tool(schema: Value) -> Tool {
     Tool {
         name: "lookup".into(),
         description: "Look up data".into(),
-        parameters: schema,
+        parameters: schema.into(),
     }
 }
 fn call(arguments: Value) -> ToolCall {
     ToolCall {
         id: "call-id".into(),
         name: "lookup".into(),
-        arguments: arguments.as_object().unwrap().clone(),
+        arguments,
         thought_signature: Some("metadata".into()),
     }
 }
-fn validate(schema: Value, arguments: Value) -> Result<Value, ToolValidationError> {
-    validate_tool_call(&[tool(schema)], &call(arguments)).map(Value::Object)
+fn validate(schema: Value, arguments: Value) -> Result<Value, ValidationFailure> {
+    validated_call(&[tool(schema)], &call(arguments))
 }
 
 #[test]
@@ -40,15 +94,15 @@ fn valid_tool_arguments_return_owned_objects() {
         assert_eq!(completed.id, "call-id");
         assert_eq!(completed.name, "lookup");
         assert_eq!(completed.thought_signature.as_deref(), Some("metadata"));
-        assert_eq!(Some(&completed.arguments), arguments.as_object());
-        let mut result = validate_tool_call(&tools, &completed).unwrap();
-        assert_eq!(Value::Object(result.clone()), arguments);
-        result.insert("changed".into(), json!(true));
-        assert_eq!(Some(&completed.arguments), arguments.as_object());
+        assert_eq!(completed.arguments, arguments);
+        let mut result = validated_call(&tools, &completed).unwrap();
+        assert_eq!(result, arguments);
+        result["changed"] = json!(true);
+        assert_eq!(completed.arguments, arguments);
     }
     assert_eq!(
-        Some(&call(json!({"not-validated":true})).arguments),
-        json!({"not-validated":true}).as_object()
+        call(json!({"not-validated":true})).arguments,
+        json!({"not-validated":true})
     );
 }
 
@@ -124,13 +178,13 @@ fn nested_and_union_coercion_uses_schema_order() {
     let ambiguous = json!({"type":"object","properties":{"x":{"oneOf":[{"type":"integer"},{"type":"number"}]}}});
     assert_eq!(
         validate(ambiguous, json!({"x":"2"})),
-        Err(ToolValidationError::InvalidArguments)
+        Err(ValidationFailure::InvalidArguments)
     );
     let absent_container =
         json!({"type":"object","properties":{"x":{"properties":{"n":{"type":"integer"}}}}});
     assert_eq!(
         validate(absent_container, json!({"x":{"n":"2"}})),
-        Err(ToolValidationError::InvalidArguments)
+        Err(ValidationFailure::InvalidArguments)
     );
     let tuple_branch = json!({"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"x":{"anyOf":[{"type":"array","items":[{"type":"integer"},{"type":"boolean"}]}]}}});
     assert_eq!(
@@ -143,7 +197,10 @@ fn nested_and_union_coercion_uses_schema_order() {
             validate(referenced.clone(), json!({"x":null})),
             Ok(json!({"x":false}))
         );
-        assert_eq!(validate(referenced, json!({"x":"6"})), Ok(json!({"x":6})));
+        assert_eq!(
+            validate(referenced, json!({"x":"6"})),
+            Err(ValidationFailure::InvalidArguments)
+        );
     }
     let root_relative = json!({"type":"object","properties":{"bounds":{"minimum":5},"a/b~é":{"anyOf":[{"type":"integer","$ref":"#/properties/bounds"},{"type":"boolean"}]}}});
     assert_eq!(
@@ -155,34 +212,38 @@ fn nested_and_union_coercion_uses_schema_order() {
 }
 
 #[test]
-fn union_branches_resolve_references_in_nested_resources() {
+fn union_branches_compile_independently_of_nested_resources() {
     let schema = json!({"$id":"https://example.invalid/root","type":"object","properties":{"x":{"$id":"child","$defs":{"limit":{"minimum":5}},"anyOf":[{"type":"integer","$ref":"#/$defs/limit"},{"type":"boolean"}]}}});
     assert_eq!(
         validate(schema.clone(), json!({"x":null})),
         Ok(json!({"x":false}))
     );
-    assert_eq!(validate(schema, json!({"x":"7"})), Ok(json!({"x":7})));
+    assert_eq!(
+        validate(schema, json!({"x":"7"})),
+        Err(ValidationFailure::InvalidArguments)
+    );
 }
 
 #[test]
 fn invalid_tool_arguments_and_schemas_fail_safely() {
     let secret = "RAW_SECRET_SENTINEL";
     assert_eq!(
-        validate_tool_call(&[], &call(json!({"x":secret}))),
-        Err(ToolValidationError::UnknownTool)
+        validated_call(&[], &call(json!({"x":secret}))),
+        Err(ValidationFailure::UnknownTool)
     );
-    for schema in [
-        json!({"type":"invalid"}),
-        json!({"type":42}),
-        json!({"required":true}),
-        json!({"$ref":"https://invalid.example/schema"}),
-        json!({"$schema":"https://invalid.example/dialect"}),
-        json!({"type":"object","properties":{"x":{"type":"integer","minimum":"bad"}}}),
-    ] {
-        assert_eq!(
-            validate(schema, json!({"x":secret})),
-            Err(ToolValidationError::InvalidSchema)
-        );
+    let rows: Value =
+        serde_json::from_str(include_str!("fixtures/retained_validation.json")).unwrap();
+    for row in rows.as_array().unwrap().iter().take(6) {
+        let result =
+            validate_tool_call(&[tool(row["schema"].clone())], &call(row["input"].clone()));
+        if let Some(expected) = row.get("result") {
+            assert_eq!(result.unwrap(), *expected);
+        } else {
+            assert_eq!(
+                format_thrown_value(&result.unwrap_err()).unwrap(),
+                row["error"]
+            );
+        }
     }
     for (kind, value) in [
         ("boolean", json!("1")),
@@ -204,7 +265,7 @@ fn invalid_tool_arguments_and_schemas_fail_safely() {
                 json!({"type":"object","properties":{"x":{"type":kind}}}),
                 json!({"x":value})
             ),
-            Err(ToolValidationError::InvalidArguments),
+            Err(ValidationFailure::InvalidArguments),
             "{kind}: {value}"
         );
     }
@@ -223,27 +284,8 @@ fn invalid_tool_arguments_and_schemas_fail_safely() {
     ] {
         assert_eq!(
             validate(schema, args),
-            Err(ToolValidationError::InvalidArguments)
+            Err(ValidationFailure::InvalidArguments)
         );
-    }
-    for (error, display) in [
-        (ToolValidationError::UnknownTool, "unknown tool declaration"),
-        (
-            ToolValidationError::IncompleteArguments,
-            "incomplete tool arguments",
-        ),
-        (
-            ToolValidationError::InvalidSchema,
-            "invalid or unresolvable tool schema",
-        ),
-        (
-            ToolValidationError::InvalidArguments,
-            "invalid tool arguments",
-        ),
-    ] {
-        assert_eq!(error.to_string(), display);
-        assert!(!format!("{error:?}").contains(secret));
-        let _: &dyn std::error::Error = &error;
     }
 }
 
@@ -263,13 +305,13 @@ fn validation_never_mutates_or_executes() {
         (json!({"nested":{"x":"2"}}), Ok(json!({"nested":{"x":2}}))),
         (
             json!({"nested":{"x":"invalid"}}),
-            Err(ToolValidationError::InvalidArguments),
+            Err(ValidationFailure::InvalidArguments),
         ),
     ] {
         let call = call(arguments);
         let original = call.clone();
-        let result = validate_tool_call(&tools, &call);
-        assert_eq!(result.clone().map(Value::Object), expected);
+        let result = validated_call(&tools, &call);
+        assert_eq!(result.clone(), expected);
         if let Ok(mut object) = result {
             object["nested"]["x"] = json!(999);
         }
@@ -332,11 +374,11 @@ fn remote_schema_references_fail_without_io() {
     );
     let count = responder.requests.clone();
     drop(responder);
-    assert_eq!(outcome, Err(ToolValidationError::InvalidSchema));
+    assert_eq!(outcome, Err(ValidationFailure::InvalidArguments));
     assert_eq!(count.load(Ordering::SeqCst), 0);
     assert_eq!(
         validate(json!({"$ref":"file:///unavailable-schema.json"}), json!({})),
-        Err(ToolValidationError::InvalidSchema)
+        Err(ValidationFailure::InvalidArguments)
     );
 }
 
@@ -371,7 +413,7 @@ fn number_to_string_coercion_uses_standard_spelling() {
         let before = completed.clone();
         let declarations = tools.clone();
         assert_eq!(
-            validate_tool_call(&tools, &completed).map(Value::Object),
+            validated_call(&tools, &completed),
             Ok(json!({"x":expected})),
             "{value}"
         );
@@ -395,7 +437,7 @@ fn number_to_string_coercion_uses_standard_spelling() {
                     json!({"type":"object","properties":{"x":{"type":"string","enum":[previous]}}}),
                     json!({"x":value})
                 ),
-                Err(ToolValidationError::InvalidArguments)
+                Err(ValidationFailure::InvalidArguments)
             );
         }
         assert_eq!(
@@ -422,23 +464,23 @@ fn whitespace_follows_the_standard_set() {
             );
             assert_eq!(
                 validate(schema.clone(), json!({"x":c.to_string()})),
-                Err(ToolValidationError::InvalidArguments)
+                Err(ValidationFailure::InvalidArguments)
             );
             assert_eq!(
                 validate(schema.clone(), json!({"x":format!("4{c}2")})),
-                Err(ToolValidationError::InvalidArguments)
+                Err(ValidationFailure::InvalidArguments)
             );
         }
         for c in "\u{0085}\u{180e}\u{200b}".chars() {
             assert_eq!(
                 validate(schema.clone(), json!({"x":format!("{c}42{c}")})),
-                Err(ToolValidationError::InvalidArguments)
+                Err(ValidationFailure::InvalidArguments)
             );
         }
         let expected = if kind == "number" {
             Ok(json!({"x":42.5}))
         } else {
-            Err(ToolValidationError::InvalidArguments)
+            Err(ValidationFailure::InvalidArguments)
         };
         assert_eq!(
             validate(schema, json!({"x":"\u{feff}42.5\u{feff}"})),

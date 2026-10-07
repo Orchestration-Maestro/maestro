@@ -639,7 +639,7 @@ fn shared_partials_keep_late_signatures_and_replacements() {
     let call = Arc::new(std::sync::RwLock::new(ToolCall {
         id: "id".into(),
         name: "tool".into(),
-        arguments: Default::default(),
+        arguments: serde_json::json!({}),
         thought_signature: None,
     }));
     a.write().unwrap().content = vec![
@@ -683,10 +683,7 @@ fn shared_partials_keep_late_signatures_and_replacements() {
         a.response_id = Some("response".into());
         a.diagnostics = Some(vec![]);
     }
-    call.write()
-        .unwrap()
-        .arguments
-        .insert("partial".into(), serde_json::Value::Null);
+    call.write().unwrap().arguments["partial"] = serde_json::Value::Null;
     call.write().unwrap().thought_signature = Some("late thought".into());
     s.push(AssistantMessageEvent::Done {
         reason: StopReason::Stop,
@@ -996,7 +993,7 @@ fn records_round_trip_all_wire_shapes() {
     let call = ToolCall {
         id: "c".into(),
         name: "t".into(),
-        arguments: nested,
+        arguments: serde_json::Value::Object(nested),
         thought_signature: None,
     };
     let nested_wire = serde_json::to_value(call).unwrap();
@@ -1060,7 +1057,7 @@ fn records_round_trip_all_wire_shapes() {
     let c = ToolCall {
         id: "c".into(),
         name: "n".into(),
-        arguments: keys,
+        arguments: serde_json::Value::Object(keys),
         thought_signature: None,
     };
     let wire = serde_json::to_value(c).unwrap();
@@ -2057,7 +2054,7 @@ fn reentrant_serializer_can_write_shared_tool_call() {
     let call = Arc::new(std::sync::RwLock::new(ToolCall {
         id: "call".into(),
         name: "lookup".into(),
-        arguments: serde_json::json!({"x":1}).as_object().unwrap().clone(),
+        arguments: serde_json::json!({"x":1}),
         thought_signature: None,
     }));
     let content = AssistantContent::ToolCall(call.clone());

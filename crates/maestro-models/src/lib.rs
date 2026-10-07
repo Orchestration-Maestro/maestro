@@ -3,6 +3,10 @@
 #![doc = include_str!("../../../docs/records.md")]
 #![doc = include_str!("../../../docs/model-options.md")]
 #![doc = include_str!("../../../docs/models/catalog.md")]
+mod arguments;
+pub use arguments::{
+    parse_json_with_repair, parse_streaming_json, repair_json, sanitize_surrogates,
+};
 mod auth;
 mod cancellation;
 mod catalog;
@@ -12,7 +16,8 @@ pub mod records;
 mod scalar;
 mod schema;
 mod types;
-mod validation;
+
+pub use arguments::{validate_tool_arguments, validate_tool_call};
 pub use auth::{
     AuthResolver, AuthStatus, RequestAuth, SecretString, TokenExchange, TokenExchangeResult,
 };
@@ -24,8 +29,8 @@ pub use records::headers::*;
 pub use records::session_resources::*;
 pub use records::typebox_helpers::*;
 pub use records::{api_registry::*, diagnostics::*, event_stream::*, stream::*, types::*};
+pub use schema::TSchema;
 pub use types::Failure;
-pub use validation::{ToolValidationError, validate_tool_call};
 
 mod options;
 pub use options::{

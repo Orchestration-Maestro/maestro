@@ -312,7 +312,7 @@ fn tool_call_agent(config: AgentOptions) -> Agent {
         let call = Arc::new(RwLock::new(ToolCall {
             id: "call".into(),
             name: "lookup".into(),
-            arguments: serde_json::json!({"x":1}).as_object().unwrap().clone(),
+            arguments: serde_json::json!({"x":1}),
             thought_signature: None,
         }));
         let message = Arc::new(RwLock::new(AssistantMessage {
@@ -424,7 +424,7 @@ async fn prompt_admission_detaches_tool_calls_before_input_message_end() {
         std::sync::RwLock::new(ToolCall {
             id: "input".into(),
             name: "lookup".into(),
-            arguments: serde_json::json!({"x":1}).as_object().unwrap().clone(),
+            arguments: serde_json::json!({"x":1}),
             thought_signature: None,
         }),
     ))];

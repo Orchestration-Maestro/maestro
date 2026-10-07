@@ -1,0 +1,3247 @@
+[
+  {
+    "schema": {
+      "type": "object",
+      "required": [
+        "a",
+        "b"
+      ]
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "a",
+            "b"
+          ]
+        },
+        "message": "must have required properties a, b"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "object",
+          "required": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    "input": {
+      "x": {}
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#/properties/x",
+        "instancePath": "/x",
+        "params": {
+          "requiredProperties": [
+            "a",
+            "b"
+          ]
+        },
+        "message": "must have required properties a, b"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "a/b~x": {
+          "type": "integer"
+        },
+        "b": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "a",
+        "z"
+      ],
+      "additionalProperties": false
+    },
+    "input": {
+      "a/b~x": "bad",
+      "b": 2,
+      "extra": 3
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "a",
+            "z"
+          ]
+        },
+        "message": "must have required properties a, z"
+      },
+      {
+        "keyword": "additionalProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "additionalProperties": [
+            "extra"
+          ]
+        },
+        "message": "must not have additional properties"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/a/b~x",
+        "instancePath": "/a/b~x",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/b",
+        "instancePath": "/b",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "number"
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "integer"
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "boolean"
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "string"
+    },
+    "input": "bad",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "null"
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "null"
+        },
+        "message": "must be null"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "array"
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "array"
+        },
+        "message": "must be array"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "object"
+    },
+    "input": [],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "object"
+        },
+        "message": "must be object"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": [
+        "boolean",
+        "number"
+      ]
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": [
+            "boolean",
+            "number"
+          ]
+        },
+        "message": "must be either boolean or number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "number",
+      "minimum": 2,
+      "maximum": 3
+    },
+    "input": 1,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minimum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": ">=",
+          "limit": 2
+        },
+        "message": "must be >= 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "number",
+      "minimum": 2,
+      "maximum": 3
+    },
+    "input": 4,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maximum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": "<=",
+          "limit": 3
+        },
+        "message": "must be <= 3"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "exclusiveMinimum": 2
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "exclusiveMinimum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": ">",
+          "limit": 2
+        },
+        "message": "must be > 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "exclusiveMaximum": 2
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "exclusiveMaximum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": "<",
+          "limit": 2
+        },
+        "message": "must be < 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "multipleOf": 3
+    },
+    "input": 4,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "multipleOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "multipleOf": 3
+        },
+        "message": "must be multiple of 3"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "input": 3,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "enum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "allowedValues": [
+            1,
+            2
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "const": "x"
+    },
+    "input": "y",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "const",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "allowedValue": "x"
+        },
+        "message": "must be equal to constant"
+      }
+    ]
+  },
+  {
+    "schema": false,
+    "input": 1,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "boolean",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {},
+        "message": "schema is false"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/anyOf/0",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/anyOf/1",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      },
+      {
+        "keyword": "anyOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {},
+        "message": "must match a schema in anyOf"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "input": 1,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "oneOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "passingSchemas": [
+            0,
+            1
+          ]
+        },
+        "message": "must match exactly one schema in oneOf"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/oneOf/0",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/oneOf/1",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      },
+      {
+        "keyword": "oneOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "passingSchemas": []
+        },
+        "message": "must match exactly one schema in oneOf"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "allOf": [
+        {
+          "minimum": 2
+        },
+        {
+          "maximum": 0
+        }
+      ]
+    },
+    "input": 1,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minimum",
+        "schemaPath": "#/allOf/0",
+        "instancePath": "",
+        "params": {
+          "comparison": ">=",
+          "limit": 2
+        },
+        "message": "must be >= 2"
+      },
+      {
+        "keyword": "maximum",
+        "schemaPath": "#/allOf/1",
+        "instancePath": "",
+        "params": {
+          "comparison": "<=",
+          "limit": 0
+        },
+        "message": "must be <= 0"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "not": {
+        "type": "string"
+      }
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "not",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {},
+        "message": "must not be valid"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "if": {
+        "type": "number"
+      },
+      "then": {
+        "minimum": 3
+      },
+      "else": {
+        "type": "boolean"
+      }
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "if",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "failingKeyword": "then"
+        },
+        "message": "must match \"then\" schema"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "minLength": 3
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minLength",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 3
+        },
+        "message": "must not have fewer than 3 characters"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "maxLength": 1
+    },
+    "input": "xx",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maxLength",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 1
+        },
+        "message": "must not have more than 1 characters"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "pattern": "^a$"
+    },
+    "input": "b",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "pattern",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "pattern": "^a$"
+        },
+        "message": "must match pattern \"^a$\""
+      }
+    ]
+  },
+  {
+    "schema": {
+      "format": "email"
+    },
+    "input": "invalid",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "format",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "format": "email"
+        },
+        "message": "must match format \"email\""
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "array",
+      "minItems": 2
+    },
+    "input": [],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 2
+        },
+        "message": "must not have fewer than 2 items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "array",
+      "maxItems": 1
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maxItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 1
+        },
+        "message": "must not have more than 1 items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "array",
+      "uniqueItems": true
+    },
+    "input": [
+      1,
+      1
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "uniqueItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "duplicateItems": [
+            1
+          ]
+        },
+        "message": "must not have duplicate items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      }
+    },
+    "input": [
+      "x"
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "contains",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "minContains": 1
+        },
+        "message": "must contain at least 1 valid item"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "additionalItems": false
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "boolean",
+        "schemaPath": "#/additionalItems",
+        "instancePath": "/1",
+        "params": {},
+        "message": "schema is false"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "minProperties": 2
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 2
+        },
+        "message": "must not have fewer than 2 properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "maxProperties": 1
+    },
+    "input": {
+      "a": 1,
+      "b": 2
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maxProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 1
+        },
+        "message": "must not have more than 1 properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependentRequired": {
+        "a": [
+          "b",
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependentRequired",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "must have properties b, c when property a is present"
+      },
+      {
+        "keyword": "dependentRequired",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "must have properties b, c when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b",
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependencies",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "must have properties b, c when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "propertyNames": {
+        "pattern": "^a$"
+      }
+    },
+    "input": {
+      "b": 1,
+      "c": 2
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "propertyNames",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "propertyNames": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "property names b, c are invalid"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "properties": {
+        "1": {
+          "type": "number"
+        },
+        "2": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "q",
+        "p"
+      ]
+    },
+    "input": {
+      "1": "x",
+      "2": "x",
+      "z": "x",
+      "a": "x"
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "q",
+            "p"
+          ]
+        },
+        "message": "must have required properties q, p"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/1",
+        "instancePath": "/1",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/2",
+        "instancePath": "/2",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/z",
+        "instancePath": "/z",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/a",
+        "instancePath": "/a",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "required": [
+        "x0",
+        "x1",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x7",
+        "x8",
+        "x9",
+        "x10",
+        "x11"
+      ]
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "x0",
+            "x1",
+            "x2",
+            "x3",
+            "x4",
+            "x5",
+            "x6",
+            "x7",
+            "x8",
+            "x9",
+            "x10",
+            "x11"
+          ]
+        },
+        "message": "must have required properties x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "properties": {
+        "x0": {
+          "type": "number"
+        },
+        "x1": {
+          "type": "number"
+        },
+        "x2": {
+          "type": "number"
+        },
+        "x3": {
+          "type": "number"
+        },
+        "x4": {
+          "type": "number"
+        },
+        "x5": {
+          "type": "number"
+        },
+        "x6": {
+          "type": "number"
+        },
+        "x7": {
+          "type": "number"
+        },
+        "x8": {
+          "type": "number"
+        },
+        "x9": {
+          "type": "number"
+        },
+        "x10": {
+          "type": "number"
+        },
+        "x11": {
+          "type": "number"
+        }
+      }
+    },
+    "input": {
+      "x0": "bad",
+      "x1": "bad",
+      "x2": "bad",
+      "x3": "bad",
+      "x4": "bad",
+      "x5": "bad",
+      "x6": "bad",
+      "x7": "bad",
+      "x8": "bad",
+      "x9": "bad",
+      "x10": "bad",
+      "x11": "bad"
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x0",
+        "instancePath": "/x0",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x1",
+        "instancePath": "/x1",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x2",
+        "instancePath": "/x2",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x3",
+        "instancePath": "/x3",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x4",
+        "instancePath": "/x4",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x5",
+        "instancePath": "/x5",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x6",
+        "instancePath": "/x6",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/x7",
+        "instancePath": "/x7",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "invalid"
+    },
+    "input": "bad",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": 42
+    },
+    "input": "bad",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "required": true
+    },
+    "input": {},
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "number"
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "number"
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "integer"
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "integer"
+    },
+    "input": 1.5,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "boolean"
+    },
+    "input": true,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "boolean"
+    },
+    "input": 0,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "string"
+    },
+    "input": "x",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "string"
+    },
+    "input": 1,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "string"
+        },
+        "message": "must be string"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "null"
+    },
+    "input": null,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "null"
+    },
+    "input": "null",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "null"
+        },
+        "message": "must be null"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "array"
+    },
+    "input": [],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "array"
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "array"
+        },
+        "message": "must be array"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "type": "object"
+    },
+    "input": {},
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "type": "object"
+    },
+    "input": [],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "object"
+        },
+        "message": "must be object"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "required": [
+        "a",
+        "b"
+      ]
+    },
+    "input": {
+      "a": 1,
+      "b": 2
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "required": [
+        "a",
+        "b"
+      ]
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "a",
+            "b"
+          ]
+        },
+        "message": "must have required properties a, b"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "additionalProperties": false
+    },
+    "input": {},
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "additionalProperties": false
+    },
+    "input": {
+      "x": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "additionalProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "additionalProperties": [
+            "x"
+          ]
+        },
+        "message": "must not have additional properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "input": {
+      "x": 2
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "input": {
+      "x": "bad"
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "additionalProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "additionalProperties": [
+            "x"
+          ]
+        },
+        "message": "must not have additional properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b",
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1,
+      "b": 1,
+      "c": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b",
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependencies",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "must have properties b, c when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependentRequired": {
+        "a": [
+          "b",
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1,
+      "b": 1,
+      "c": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "dependentRequired": {
+        "a": [
+          "b",
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependentRequired",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "must have properties b, c when property a is present"
+      },
+      {
+        "keyword": "dependentRequired",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "must have properties b, c when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependentSchemas": {
+        "a": {
+          "required": [
+            "b"
+          ]
+        }
+      }
+    },
+    "input": {
+      "a": 1,
+      "b": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "dependentSchemas": {
+        "a": {
+          "required": [
+            "b"
+          ]
+        }
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#/dependentSchemas/a",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "b"
+          ]
+        },
+        "message": "must have required properties b"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": {
+          "required": [
+            "b"
+          ]
+        }
+      }
+    },
+    "input": {
+      "a": 1,
+      "b": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": {
+          "required": [
+            "b"
+          ]
+        }
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "required",
+        "schemaPath": "#/dependencies/a",
+        "instancePath": "",
+        "params": {
+          "requiredProperties": [
+            "b"
+          ]
+        },
+        "message": "must have required properties b"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "patternProperties": {
+        "^a": {
+          "type": "number"
+        }
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "patternProperties": {
+        "^a": {
+          "type": "number"
+        }
+      }
+    },
+    "input": {
+      "a": "bad"
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/patternProperties/^a",
+        "instancePath": "/a",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "number"
+        }
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "number"
+        }
+      }
+    },
+    "input": {
+      "a": "bad"
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/properties/a",
+        "instancePath": "/a",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "propertyNames": {
+        "pattern": "^a$"
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "propertyNames": {
+        "pattern": "^a$"
+      }
+    },
+    "input": {
+      "b": 1,
+      "c": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "propertyNames",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "propertyNames": [
+            "b",
+            "c"
+          ]
+        },
+        "message": "property names b, c are invalid"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "minProperties": 2
+    },
+    "input": {
+      "a": 1,
+      "b": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "minProperties": 2
+    },
+    "input": {},
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 2
+        },
+        "message": "must not have fewer than 2 properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "maxProperties": 1
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "maxProperties": 1
+    },
+    "input": {
+      "a": 1,
+      "b": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maxProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 1
+        },
+        "message": "must not have more than 1 properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "additionalItems": false
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "additionalItems": false
+    },
+    "input": [
+      1,
+      2,
+      3
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "boolean",
+        "schemaPath": "#/additionalItems",
+        "instancePath": "/1",
+        "params": {},
+        "message": "schema is false"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "items": {
+        "type": "number"
+      }
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "items": {
+        "type": "number"
+      }
+    },
+    "input": [
+      "x"
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/items",
+        "instancePath": "/0",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "prefixItems": [
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "prefixItems": [
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "input": [
+      "x"
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/prefixItems/0",
+        "instancePath": "/0",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      }
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      }
+    },
+    "input": [
+      "x"
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "contains",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "minContains": 1
+        },
+        "message": "must contain at least 1 valid item"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      },
+      "minContains": 2
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      },
+      "minContains": 2
+    },
+    "input": [
+      1
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "contains",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "minContains": 2
+        },
+        "message": "must contain at least 1 valid item"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      },
+      "maxContains": 1
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "contains": {
+        "type": "number"
+      },
+      "maxContains": 1
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "contains",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "minContains": 1,
+          "maxContains": 1
+        },
+        "message": "must contain at least 1 valid item"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "minItems": 2
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "minItems": 2
+    },
+    "input": [
+      1
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 2
+        },
+        "message": "must not have fewer than 2 items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "maxItems": 1
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "maxItems": 1
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maxItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 1
+        },
+        "message": "must not have more than 1 items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "uniqueItems": true
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "uniqueItems": true
+    },
+    "input": [
+      1,
+      1
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "uniqueItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "duplicateItems": [
+            1
+          ]
+        },
+        "message": "must not have duplicate items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "minLength": 2
+    },
+    "input": "xx",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "minLength": 2
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minLength",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 2
+        },
+        "message": "must not have fewer than 2 characters"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "maxLength": 1
+    },
+    "input": "x",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "maxLength": 1
+    },
+    "input": "xx",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maxLength",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "limit": 1
+        },
+        "message": "must not have more than 1 characters"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "format": "email"
+    },
+    "input": "a@example.com",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "format": "email"
+    },
+    "input": "bad",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "format",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "format": "email"
+        },
+        "message": "must match format \"email\""
+      }
+    ]
+  },
+  {
+    "schema": {
+      "pattern": "^a$"
+    },
+    "input": "a",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "pattern": "^a$"
+    },
+    "input": "b",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "pattern",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "pattern": "^a$"
+        },
+        "message": "must match pattern \"^a$\""
+      }
+    ]
+  },
+  {
+    "schema": {
+      "minimum": 2
+    },
+    "input": 2,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "minimum": 2
+    },
+    "input": 1,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minimum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": ">=",
+          "limit": 2
+        },
+        "message": "must be >= 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "maximum": 2
+    },
+    "input": 2,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "maximum": 2
+    },
+    "input": 3,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "maximum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": "<=",
+          "limit": 2
+        },
+        "message": "must be <= 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "exclusiveMinimum": 2
+    },
+    "input": 3,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "exclusiveMinimum": 2
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "exclusiveMinimum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": ">",
+          "limit": 2
+        },
+        "message": "must be > 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "exclusiveMaximum": 2
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "exclusiveMaximum": 2
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "exclusiveMaximum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "comparison": "<",
+          "limit": 2
+        },
+        "message": "must be < 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "multipleOf": 2
+    },
+    "input": 2,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "multipleOf": 2
+    },
+    "input": 3,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "multipleOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "multipleOf": 2
+        },
+        "message": "must be multiple of 2"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "$ref": "#/$defs/n"
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "$ref": "#/$defs/n"
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "$recursiveRef": "#/$defs/n"
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "$recursiveRef": "#/$defs/n"
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "$dynamicRef": "#/$defs/n"
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "$dynamicRef": "#/$defs/n"
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "const": 1
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "const": 1
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "const",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "input": 3,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "enum",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "allowedValues": [
+            1,
+            2
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "if": {
+        "type": "number"
+      },
+      "then": {
+        "minimum": 3
+      },
+      "else": {
+        "type": "boolean"
+      }
+    },
+    "input": 3,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "if": {
+        "type": "number"
+      },
+      "then": {
+        "minimum": 3
+      },
+      "else": {
+        "type": "boolean"
+      }
+    },
+    "input": 2,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "if",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "failingKeyword": "then"
+        },
+        "message": "must match \"then\" schema"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "if": {
+        "type": "number"
+      },
+      "then": {
+        "minimum": 3
+      },
+      "else": {
+        "type": "boolean"
+      }
+    },
+    "input": false,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "if": {
+        "type": "number"
+      },
+      "then": {
+        "minimum": 3
+      },
+      "else": {
+        "type": "boolean"
+      }
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/else",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      },
+      {
+        "keyword": "if",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "failingKeyword": "else"
+        },
+        "message": "must match \"else\" schema"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "not": {
+        "type": "string"
+      }
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "not": {
+        "type": "string"
+      }
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "not",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {},
+        "message": "must not be valid"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "allOf": [
+        {
+          "minimum": 1
+        },
+        {
+          "maximum": 3
+        }
+      ]
+    },
+    "input": 2,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "allOf": [
+        {
+          "minimum": 1
+        },
+        {
+          "maximum": 3
+        }
+      ]
+    },
+    "input": 0,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "minimum",
+        "schemaPath": "#/allOf/0",
+        "instancePath": "",
+        "params": {
+          "comparison": ">=",
+          "limit": 1
+        },
+        "message": "must be >= 1"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/anyOf/0",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/anyOf/1",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      },
+      {
+        "keyword": "anyOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {},
+        "message": "must match a schema in anyOf"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "input": 1,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/oneOf/0",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/oneOf/1",
+        "instancePath": "",
+        "params": {
+          "type": "boolean"
+        },
+        "message": "must be boolean"
+      },
+      {
+        "keyword": "oneOf",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "passingSchemas": []
+        },
+        "message": "must match exactly one schema in oneOf"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "prefixItems": [
+        {
+          "type": "number"
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "input": [
+      1
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "prefixItems": [
+        {
+          "type": "number"
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "input": [
+      1,
+      2
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "unevaluatedItems",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "unevaluatedItems": [
+            1
+          ]
+        },
+        "message": "must not have unevaluated items"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "number"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "number"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "input": {
+      "a": 1,
+      "b": 2
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "unevaluatedProperties",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "unevaluatedProperties": [
+            "b"
+          ]
+        },
+        "message": "must not have unevaluated properties"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "input": [
+      2
+    ],
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "input": [
+      2.5
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/prefixItems/0",
+        "instancePath": "/0",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "input": [
+      "x"
+    ],
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#/items/0",
+        "instancePath": "/0",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#/prefixItems/0",
+        "instancePath": "/0",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b"
+        ]
+      },
+      "dependentRequired": {
+        "a": [
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1,
+      "b": 1,
+      "c": 1
+    },
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b"
+        ]
+      },
+      "dependentRequired": {
+        "a": [
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1,
+      "b": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependentRequired",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "c"
+          ]
+        },
+        "message": "must have properties c when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b"
+        ]
+      },
+      "dependentRequired": {
+        "a": [
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1,
+      "c": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependencies",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b"
+          ]
+        },
+        "message": "must have properties b when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b"
+        ]
+      },
+      "dependentRequired": {
+        "a": [
+          "c"
+        ]
+      }
+    },
+    "input": {
+      "a": 1
+    },
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "dependencies",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "b"
+          ]
+        },
+        "message": "must have properties b when property a is present"
+      },
+      {
+        "keyword": "dependentRequired",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "property": "a",
+          "dependencies": [
+            "c"
+          ]
+        },
+        "message": "must have properties c when property a is present"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        },
+        "i": {
+          "type": "integer"
+        }
+      },
+      "$ref": "#/$defs/n",
+      "$recursiveRef": "#/$defs/i"
+    },
+    "input": 2,
+    "valid": true,
+    "errors": []
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        },
+        "i": {
+          "type": "integer"
+        }
+      },
+      "$ref": "#/$defs/n",
+      "$recursiveRef": "#/$defs/i"
+    },
+    "input": 2.5,
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      }
+    ]
+  },
+  {
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        },
+        "i": {
+          "type": "integer"
+        }
+      },
+      "$ref": "#/$defs/n",
+      "$recursiveRef": "#/$defs/i"
+    },
+    "input": "x",
+    "valid": false,
+    "errors": [
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "number"
+        },
+        "message": "must be number"
+      },
+      {
+        "keyword": "type",
+        "schemaPath": "#",
+        "instancePath": "",
+        "params": {
+          "type": "integer"
+        },
+        "message": "must be integer"
+      }
+    ]
+  }
+]

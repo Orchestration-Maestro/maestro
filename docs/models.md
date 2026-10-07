@@ -16,6 +16,7 @@ can be iterated independently of its result. Event records retain shared message
 and tool-call handles, so earlier handles observe later mutations. Abandoning an
 observation does not stop the producer.
 
-[Conversation projection](conversation-projection.md) and argument validation
+[Conversation projection](conversation-projection.md) and [tool argument parsing
+and validation](models/arguments.md)
 remain explicit pure helpers, not implicit invocation policy. Credential ownership
 is described in [provider credentials](credentials.md).

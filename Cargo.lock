@@ -368,6 +368,8 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "serde_stacker",
+ "stacker",
 ]
 
 [[package]]

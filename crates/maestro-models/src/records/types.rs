@@ -233,9 +233,9 @@ pub struct ToolCall {
     pub id: String,
     /// Supplied name.
     pub name: String,
-    /// Supplied arguments.
-    #[serde(serialize_with = "serialize_map")]
-    pub arguments: serde_json::Map<String, serde_json::Value>,
+    /// Supplied arguments with any JSON root; parsing is not authorization.
+    #[serde(serialize_with = "serialize_json")]
+    pub arguments: serde_json::Value,
     /// Supplied thought signature.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thought_signature: Option<String>,
@@ -455,7 +455,7 @@ impl<'de> serde::Deserialize<'de> for Message {
 /// Tool supplied record.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Tool<TParameters = serde_json::Value> {
+pub struct Tool<TParameters = crate::TSchema> {
     /// Supplied name.
     pub name: String,
     /// Supplied description.
@@ -1031,12 +1031,6 @@ impl PartialEq for AssistantMessageEvent {
     }
 }
 
-fn serialize_map<S: serde::Serializer>(
-    map: &serde_json::Map<String, serde_json::Value>,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    serialize_json(map, serializer)
-}
 pub(super) fn serialize_json<T: serde::Serialize, S: serde::Serializer>(
     value: &T,
     serializer: S,
@@ -1045,8 +1039,8 @@ pub(super) fn serialize_json<T: serde::Serialize, S: serde::Serializer>(
     let value = serde_json::to_value(value).map_err(serde::ser::Error::custom)?;
     ordered_json(value).serialize(serializer)
 }
-fn ordered_json(value: serde_json::Value) -> serde_json::Value {
-    match value {
+pub(crate) fn ordered_json(value: serde_json::Value) -> serde_json::Value {
+    crate::scalar::grow(|| match value {
         serde_json::Value::Array(values) => {
             serde_json::Value::Array(values.into_iter().map(ordered_json).collect())
         }
@@ -1061,7 +1055,10 @@ fn ordered_json(value: serde_json::Value) -> serde_json::Value {
             indices.sort_by_key(|(n, _)| *n);
             let mut ordered = serde_json::Map::new();
             for (_, key) in indices {
-                ordered.insert(key.clone(), ordered_json(map[key].clone()));
+                ordered.insert(
+                    key.clone(),
+                    ordered_json(crate::scalar::clone_json(&map[key])),
+                );
             }
             for (key, value) in map {
                 if !ordered.contains_key(&key) {
@@ -1071,7 +1068,7 @@ fn ordered_json(value: serde_json::Value) -> serde_json::Value {
             serde_json::Value::Object(ordered)
         }
         value => value,
-    }
+    })
 }
 
 use super::diagnostics::ThrownValue;

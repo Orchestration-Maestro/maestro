@@ -10,6 +10,7 @@ From `docs/specs/maestro-port.md`.
 - **Model identity:** The combination of provider ID and model ID.
 - **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
 - **ModelRegistry:** The owner of the usable local model catalog, local overrides and dynamic provider registrations.
+- **TSchema:** Shared JSON Schema identity with out-of-band conversion metadata and a cached offline checker; serialization emits only JSON.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
 - **Model-request projection:** The selected-model view of supplied conversation context, not the stored branch or a history write.
 - **Catalog override:** Partial nested metadata supplied by local model files over base catalog entries.

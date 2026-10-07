@@ -11,41 +11,84 @@ pub(crate) fn trim(text: &str) -> &str {
 }
 
 pub(crate) fn number_string(number: &serde_json::Number) -> Option<String> {
-    let value = number.as_f64()?;
-    if value == 0.0 {
-        return Some("0".into());
+    number
+        .as_f64()
+        .map(|value| ryu_js::Buffer::new().format(value).to_string())
+}
+
+pub(crate) fn pretty_json(value: &serde_json::Value) -> String {
+    fn write(value: &serde_json::Value, depth: usize, out: &mut String) {
+        grow(|| {
+            use serde_json::Value;
+            match value {
+                Value::Number(n) => out.push_str(ryu_js::Buffer::new().format(n.as_f64().unwrap())),
+                Value::Array(values) if !values.is_empty() => {
+                    out.push_str("[\n");
+                    for (i, v) in values.iter().enumerate() {
+                        out.push_str(&"  ".repeat(depth + 1));
+                        write(v, depth + 1, out);
+                        if i + 1 < values.len() {
+                            out.push(',');
+                        }
+                        out.push('\n');
+                    }
+                    out.push_str(&"  ".repeat(depth));
+                    out.push(']');
+                }
+                Value::Object(values) if !values.is_empty() => {
+                    out.push_str("{\n");
+                    for (i, (key, v)) in values.iter().enumerate() {
+                        out.push_str(&"  ".repeat(depth + 1));
+                        out.push_str(&serde_json::to_string(key).unwrap());
+                        out.push_str(": ");
+                        write(v, depth + 1, out);
+                        if i + 1 < values.len() {
+                            out.push(',');
+                        }
+                        out.push('\n');
+                    }
+                    out.push_str(&"  ".repeat(depth));
+                    out.push('}');
+                }
+                _ => out.push_str(&serde_json::to_string(value).unwrap()),
+            }
+        });
     }
-    let decimal = serde_json::Number::from_f64(value)?.to_string();
-    let (sign, unsigned) = if let Some(unsigned) = decimal.strip_prefix('-') {
-        ("-", unsigned)
-    } else {
-        ("", decimal.as_str())
-    };
-    let (mantissa, exponent) = unsigned.split_once('e').unwrap_or((unsigned, "0"));
-    let exponent: i32 = exponent.parse().ok()?;
-    let point = mantissa.find('.').unwrap_or(mantissa.len()) as i32;
-    let digits: String = mantissa.chars().filter(|c| *c != '.').collect();
-    let leading = digits.len() - digits.trim_start_matches('0').len();
-    let digits = digits.trim_start_matches('0').trim_end_matches('0');
-    let position = point + exponent - leading as i32;
-    let length = digits.len() as i32;
-    let rendered = if position > 0 && position <= 21 {
-        if position >= length {
-            format!("{digits}{}", "0".repeat((position - length) as usize))
-        } else {
-            let (whole, fraction) = digits.split_at(position as usize);
-            format!("{whole}.{fraction}")
+    let mut out = String::new();
+    write(
+        &crate::records::types::ordered_json(clone_json(value)),
+        0,
+        &mut out,
+    );
+    out
+}
+
+// Use the serialization adapter's stack-growth parameters for owned recursion.
+pub(crate) fn grow<T>(f: impl FnOnce() -> T) -> T {
+    let defaults = serde_stacker::Deserializer::new(());
+    stacker::maybe_grow(defaults.red_zone, defaults.stack_size, f)
+}
+pub(crate) fn clone_json(value: &serde_json::Value) -> serde_json::Value {
+    grow(|| match value {
+        serde_json::Value::Array(values) => {
+            serde_json::Value::Array(values.iter().map(clone_json).collect())
         }
-    } else if position > -6 && position <= 0 {
-        format!("0.{}{digits}", "0".repeat((-position) as usize))
-    } else {
-        let (first, rest) = digits.split_at(1);
-        let fraction = if rest.is_empty() {
-            String::new()
-        } else {
-            format!(".{rest}")
-        };
-        format!("{first}{fraction}e{:+}", position - 1)
-    };
-    Some(format!("{sign}{rendered}"))
+        serde_json::Value::Object(values) => serde_json::Value::Object(
+            values
+                .iter()
+                .map(|(key, v)| (key.clone(), clone_json(v)))
+                .collect(),
+        ),
+        value => value.clone(),
+    })
+}
+pub(crate) fn drop_json(value: serde_json::Value) {
+    let mut values = vec![value];
+    while let Some(value) = values.pop() {
+        match value {
+            serde_json::Value::Array(items) => values.extend(items),
+            serde_json::Value::Object(items) => values.extend(items.into_values()),
+            _ => {}
+        }
+    }
 }

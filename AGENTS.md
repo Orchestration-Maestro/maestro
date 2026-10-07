@@ -94,6 +94,12 @@ uses `preserve_order` for JSON property insertion order. Settings also uses
 both adapters are MIT OR Apache-2.0. Recursive manager-owned JSON teardown is
 iterative; very deep caller-owned raw values require the same care.
 
+The model crate may use private `regress =0.12.0` with its default
+`backend-pikevm,std` features plus `utf16` for schema-metadata patterns.
+No public regex interface or additional regex dependency is authorized.
+The model crate also uses `serde_stacker =0.1.14`, `stacker =0.1.25`
+and serde_json's `unbounded_depth` feature for deep argument parsing.
+
 Keep one current format for everything. No compatibility code.
 
 ## Public text

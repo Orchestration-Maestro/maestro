@@ -1,0 +1,153 @@
+[
+  {
+    "schema": {
+      "type": "invalid"
+    },
+    "input": {
+      "x": "RAW_SECRET_SENTINEL"
+    },
+    "result": {
+      "x": "RAW_SECRET_SENTINEL"
+    }
+  },
+  {
+    "schema": {
+      "type": 42
+    },
+    "input": {
+      "x": "RAW_SECRET_SENTINEL"
+    },
+    "result": {
+      "x": "RAW_SECRET_SENTINEL"
+    }
+  },
+  {
+    "schema": {
+      "required": true
+    },
+    "input": {
+      "x": "RAW_SECRET_SENTINEL"
+    },
+    "result": {
+      "x": "RAW_SECRET_SENTINEL"
+    }
+  },
+  {
+    "schema": {
+      "$ref": "https://invalid.example/schema"
+    },
+    "input": {
+      "x": "RAW_SECRET_SENTINEL"
+    },
+    "error": "Validation failed for tool \"lookup\":\n  - root: schema is false\n\nReceived arguments:\n{\n  \"x\": \"RAW_SECRET_SENTINEL\"\n}"
+  },
+  {
+    "schema": {
+      "$schema": "https://invalid.example/dialect"
+    },
+    "input": {
+      "x": "RAW_SECRET_SENTINEL"
+    },
+    "result": {
+      "x": "RAW_SECRET_SENTINEL"
+    }
+  },
+  {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": "bad"
+        }
+      }
+    },
+    "input": {
+      "x": "RAW_SECRET_SENTINEL"
+    },
+    "error": "Validation failed for tool \"lookup\":\n  - x: must be integer\n\nReceived arguments:\n{\n  \"x\": \"RAW_SECRET_SENTINEL\"\n}"
+  },
+  {
+    "schema": {
+      "type": "object",
+      "$defs": {
+        "range": {
+          "minimum": 5
+        }
+      },
+      "properties": {
+        "x": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "$ref": "#/$defs/range"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "input": {
+      "x": "6"
+    },
+    "error": "Validation failed for tool \"lookup\":\n  - x: must be integer\n  - x: must be boolean\n  - x: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"x\": \"6\"\n}"
+  },
+  {
+    "schema": {
+      "type": "object",
+      "definitions": {
+        "range": {
+          "minimum": 5
+        }
+      },
+      "properties": {
+        "x": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "$ref": "#/definitions/range"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "input": {
+      "x": "6"
+    },
+    "error": "Validation failed for tool \"lookup\":\n  - x: must be integer\n  - x: must be boolean\n  - x: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"x\": \"6\"\n}"
+  },
+  {
+    "schema": {
+      "$id": "https://example.invalid/root",
+      "type": "object",
+      "properties": {
+        "x": {
+          "$id": "child",
+          "$defs": {
+            "limit": {
+              "minimum": 5
+            }
+          },
+          "anyOf": [
+            {
+              "type": "integer",
+              "$ref": "#/$defs/limit"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "input": {
+      "x": "7"
+    },
+    "error": "Validation failed for tool \"lookup\":\n  - x: must be integer\n  - x: must be boolean\n  - x: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"x\": \"7\"\n}"
+  }
+]

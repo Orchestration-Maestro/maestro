@@ -106,3 +106,9 @@ an absent field when decoded and serialized again. Agent prompt admission copies
 input records, including nested tool calls, independently of caller mutations.
 The copies are made before acquiring agent state, so a caller holding a record
 write lock can still abort the agent.
+
+ToolCall.arguments holds any standard JSON root, including incomplete display
+values. Tool defaults to a shared TSchema parameter handle: clones retain schema
+identity and cached compilation, while serialization emits JSON without hidden
+conversion metadata. See [tool arguments](models/arguments.md) for explicit parsing
+and validation; constructing or projecting a call does not authorize execution.

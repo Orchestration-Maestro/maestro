@@ -1,0 +1,660 @@
+[
+  {
+    "name": "object",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "type": "object",
+          "required": [
+            "n"
+          ],
+          "properties": {
+            "n": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "properties",
+          "n"
+        ],
+        "Number"
+      ]
+    ],
+    "input": {
+      "v": {
+        "n": ""
+      }
+    },
+    "expected": {
+      "v": {
+        "n": 0
+      }
+    }
+  },
+  {
+    "name": "array",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Array"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "items"
+        ],
+        "Number"
+      ]
+    ],
+    "input": {
+      "v": "2"
+    },
+    "expected": {
+      "v": [
+        2
+      ]
+    }
+  },
+  {
+    "name": "tuple",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "type": "array",
+          "additionalItems": false,
+          "items": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "minItems": 2
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Tuple"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "items",
+          "0"
+        ],
+        "Integer"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "items",
+          "1"
+        ],
+        "Boolean"
+      ]
+    ],
+    "input": {
+      "v": [
+        "42.9",
+        "TRUE"
+      ]
+    },
+    "expected": {
+      "v": [
+        42,
+        true
+      ]
+    }
+  },
+  {
+    "name": "union",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Union"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "anyOf",
+          "0"
+        ],
+        "Number"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "anyOf",
+          "1"
+        ],
+        "String"
+      ]
+    ],
+    "input": {
+      "v": "42"
+    },
+    "expected": {
+      "v": 42
+    }
+  },
+  {
+    "name": "union-convert",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Union"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "anyOf",
+          "0"
+        ],
+        "Number"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "anyOf",
+          "1"
+        ],
+        "Boolean"
+      ]
+    ],
+    "input": {
+      "v": "TRUE"
+    },
+    "expected": {
+      "v": 1
+    }
+  },
+  {
+    "name": "intersect",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "n"
+              ],
+              "properties": {
+                "n": {
+                  "type": "number"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "b"
+              ],
+              "properties": {
+                "b": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Intersect"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "allOf",
+          "0"
+        ],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "allOf",
+          "0",
+          "properties",
+          "n"
+        ],
+        "Number"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "allOf",
+          "1"
+        ],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "allOf",
+          "1",
+          "properties",
+          "b"
+        ],
+        "Boolean"
+      ]
+    ],
+    "input": {
+      "v": {
+        "n": "",
+        "b": "TRUE"
+      }
+    },
+    "expected": {
+      "v": {
+        "n": 0,
+        "b": true
+      }
+    }
+  },
+  {
+    "name": "record",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Record"
+      ],
+      [
+        [
+          "properties",
+          "v",
+          "patternProperties",
+          "^.*$"
+        ],
+        "Number"
+      ]
+    ],
+    "input": {
+      "v": {
+        "a": "",
+        "b": "TRUE"
+      }
+    },
+    "expected": {
+      "v": {
+        "a": 0,
+        "b": 1
+      }
+    }
+  },
+  {
+    "name": "literal",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "type": "number",
+          "const": 42
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Literal"
+      ]
+    ],
+    "input": {
+      "v": "42"
+    },
+    "expected": {
+      "v": 42
+    }
+  },
+  {
+    "name": "enum",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "enum": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Enum"
+      ]
+    ],
+    "input": {
+      "v": "2"
+    },
+    "expected": {
+      "v": 2
+    }
+  },
+  {
+    "name": "ref",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "$ref": "N"
+        }
+      },
+      "$defs": {
+        "N": {
+          "type": "number"
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "Ref"
+      ],
+      [
+        [
+          "$defs",
+          "N"
+        ],
+        "Number"
+      ]
+    ],
+    "input": {
+      "v": "2"
+    },
+    "error": "Validation failed for tool \"echo\":\n  - v: schema is false\n\nReceived arguments:\n{\n  \"v\": \"2\"\n}"
+  },
+  {
+    "name": "template",
+    "schema": {
+      "type": "object",
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:.[0-9]+)?$"
+        }
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Object"
+      ],
+      [
+        [
+          "properties",
+          "v"
+        ],
+        "TemplateLiteral"
+      ]
+    ],
+    "input": {
+      "v": 42
+    },
+    "expected": {
+      "v": "42"
+    }
+  },
+  {
+    "name": "root-array",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "kinds": [
+      [
+        [],
+        "Array"
+      ],
+      [
+        [
+          "items"
+        ],
+        "Number"
+      ]
+    ],
+    "input": [
+      "42"
+    ],
+    "expected": [
+      42
+    ]
+  },
+  {
+    "name": "root-tuple",
+    "schema": {
+      "type": "array",
+      "additionalItems": false,
+      "items": [
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 1
+    },
+    "kinds": [
+      [
+        [],
+        "Tuple"
+      ],
+      [
+        [
+          "items",
+          "0"
+        ],
+        "Number"
+      ]
+    ],
+    "input": [
+      "42"
+    ],
+    "expected": [
+      42
+    ]
+  },
+  {
+    "name": "root-number",
+    "schema": {
+      "type": "number"
+    },
+    "kinds": [
+      [
+        [],
+        "Number"
+      ]
+    ],
+    "input": "42",
+    "expected": 42
+  }
+]

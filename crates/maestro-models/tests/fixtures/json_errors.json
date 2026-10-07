@@ -1,0 +1,652 @@
+[
+  {
+    "input": "",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "{",
+    "name": "SyntaxError",
+    "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "{",
+    "name": "SyntaxError",
+    "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "[",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "[",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "{\"a\"",
+    "name": "SyntaxError",
+    "message": "Expected ':' after property name in JSON at position 4 (line 1 column 5)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ':' after property name in JSON at position 4 (line 1 column 5)"
+    }
+  },
+  {
+    "input": "{\"a\"",
+    "name": "SyntaxError",
+    "message": "Expected ':' after property name in JSON at position 4 (line 1 column 5)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ':' after property name in JSON at position 4 (line 1 column 5)"
+    }
+  },
+  {
+    "input": "{\"a\":",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "{\"a\":",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "{\"a\":1",
+    "name": "SyntaxError",
+    "message": "Expected ',' or '}' after property value in JSON at position 6 (line 1 column 7)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or '}' after property value in JSON at position 6 (line 1 column 7)"
+    }
+  },
+  {
+    "input": "{\"a\":1",
+    "name": "SyntaxError",
+    "message": "Expected ',' or '}' after property value in JSON at position 6 (line 1 column 7)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or '}' after property value in JSON at position 6 (line 1 column 7)"
+    }
+  },
+  {
+    "input": "{\"a\":1,}",
+    "name": "SyntaxError",
+    "message": "Expected double-quoted property name in JSON at position 7 (line 1 column 8)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected double-quoted property name in JSON at position 7 (line 1 column 8)"
+    }
+  },
+  {
+    "input": "{\"a\":1,}",
+    "name": "SyntaxError",
+    "message": "Expected double-quoted property name in JSON at position 7 (line 1 column 8)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected double-quoted property name in JSON at position 7 (line 1 column 8)"
+    }
+  },
+  {
+    "input": "{x:1}",
+    "name": "SyntaxError",
+    "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "{x:1}",
+    "name": "SyntaxError",
+    "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "[1 2]",
+    "name": "SyntaxError",
+    "message": "Expected ',' or ']' after array element in JSON at position 3 (line 1 column 4)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or ']' after array element in JSON at position 3 (line 1 column 4)"
+    }
+  },
+  {
+    "input": "[1 2]",
+    "name": "SyntaxError",
+    "message": "Expected ',' or ']' after array element in JSON at position 3 (line 1 column 4)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or ']' after array element in JSON at position 3 (line 1 column 4)"
+    }
+  },
+  {
+    "input": "{\"a\":1 \"b\":2}",
+    "name": "SyntaxError",
+    "message": "Expected ',' or '}' after property value in JSON at position 7 (line 1 column 8)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or '}' after property value in JSON at position 7 (line 1 column 8)"
+    }
+  },
+  {
+    "input": "{\"a\":1 \"b\":2}",
+    "name": "SyntaxError",
+    "message": "Expected ',' or '}' after property value in JSON at position 7 (line 1 column 8)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or '}' after property value in JSON at position 7 (line 1 column 8)"
+    }
+  },
+  {
+    "input": "{\"a\" 1}",
+    "name": "SyntaxError",
+    "message": "Expected ':' after property name in JSON at position 5 (line 1 column 6)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ':' after property name in JSON at position 5 (line 1 column 6)"
+    }
+  },
+  {
+    "input": "{\"a\" 1}",
+    "name": "SyntaxError",
+    "message": "Expected ':' after property name in JSON at position 5 (line 1 column 6)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ':' after property name in JSON at position 5 (line 1 column 6)"
+    }
+  },
+  {
+    "input": "\"abc",
+    "name": "SyntaxError",
+    "message": "Unterminated string in JSON at position 4 (line 1 column 5)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unterminated string in JSON at position 4 (line 1 column 5)"
+    }
+  },
+  {
+    "input": "\"abc",
+    "name": "SyntaxError",
+    "message": "Unterminated string in JSON at position 4 (line 1 column 5)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unterminated string in JSON at position 4 (line 1 column 5)"
+    }
+  },
+  {
+    "input": "\"a\tb\"",
+    "name": "SyntaxError",
+    "message": "Bad control character in string literal in JSON at position 2 (line 1 column 3)"
+  },
+  {
+    "input": "\"\\q\"",
+    "name": "SyntaxError",
+    "message": "Bad escaped character in JSON at position 2 (line 1 column 3)"
+  },
+  {
+    "input": "\"\\uGGGG\"",
+    "name": "SyntaxError",
+    "message": "Bad Unicode escape in JSON at position 3 (line 1 column 4)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Bad Unicode escape in JSON at position 3 (line 1 column 4)"
+    }
+  },
+  {
+    "input": "\"\\uGGGG\"",
+    "name": "SyntaxError",
+    "message": "Bad Unicode escape in JSON at position 3 (line 1 column 4)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Bad Unicode escape in JSON at position 3 (line 1 column 4)"
+    }
+  },
+  {
+    "input": "-",
+    "name": "SyntaxError",
+    "message": "No number after minus sign in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "No number after minus sign in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "-",
+    "name": "SyntaxError",
+    "message": "No number after minus sign in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "No number after minus sign in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "-x",
+    "name": "SyntaxError",
+    "message": "No number after minus sign in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "No number after minus sign in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "-x",
+    "name": "SyntaxError",
+    "message": "No number after minus sign in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "No number after minus sign in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "1e",
+    "name": "SyntaxError",
+    "message": "Exponent part is missing a number in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Exponent part is missing a number in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "1e",
+    "name": "SyntaxError",
+    "message": "Exponent part is missing a number in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Exponent part is missing a number in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "1e+",
+    "name": "SyntaxError",
+    "message": "Exponent part is missing a number in JSON at position 3 (line 1 column 4)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Exponent part is missing a number in JSON at position 3 (line 1 column 4)"
+    }
+  },
+  {
+    "input": "1e+",
+    "name": "SyntaxError",
+    "message": "Exponent part is missing a number in JSON at position 3 (line 1 column 4)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Exponent part is missing a number in JSON at position 3 (line 1 column 4)"
+    }
+  },
+  {
+    "input": "1.",
+    "name": "SyntaxError",
+    "message": "Unterminated fractional number in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unterminated fractional number in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "1.",
+    "name": "SyntaxError",
+    "message": "Unterminated fractional number in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unterminated fractional number in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "true x",
+    "name": "SyntaxError",
+    "message": "Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)"
+    }
+  },
+  {
+    "input": "true x",
+    "name": "SyntaxError",
+    "message": "Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)"
+    }
+  },
+  {
+    "input": "undefined",
+    "name": "SyntaxError",
+    "message": "\"undefined\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"undefined\" is not valid JSON"
+    }
+  },
+  {
+    "input": "undefined",
+    "name": "SyntaxError",
+    "message": "\"undefined\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"undefined\" is not valid JSON"
+    }
+  },
+  {
+    "input": "NaN",
+    "name": "SyntaxError",
+    "message": "\"NaN\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"NaN\" is not valid JSON"
+    }
+  },
+  {
+    "input": "NaN",
+    "name": "SyntaxError",
+    "message": "\"NaN\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"NaN\" is not valid JSON"
+    }
+  },
+  {
+    "input": "Infinity",
+    "name": "SyntaxError",
+    "message": "\"Infinity\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"Infinity\" is not valid JSON"
+    }
+  },
+  {
+    "input": "Infinity",
+    "name": "SyntaxError",
+    "message": "\"Infinity\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"Infinity\" is not valid JSON"
+    }
+  },
+  {
+    "input": "[object Object]",
+    "name": "SyntaxError",
+    "message": "\"[object Object]\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"[object Object]\" is not valid JSON"
+    }
+  },
+  {
+    "input": "[object Object]",
+    "name": "SyntaxError",
+    "message": "\"[object Object]\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "\"[object Object]\" is not valid JSON"
+    }
+  },
+  {
+    "input": "[1,23456789012345678901234567890,x,0,12345678901234567890]",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'x', ...\"234567890,x,0,123456\"... is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'x', ...\"234567890,x,0,123456\"... is not valid JSON"
+    }
+  },
+  {
+    "input": "[1,23456789012345678901234567890,x,0,12345678901234567890]",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'x', ...\"234567890,x,0,123456\"... is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'x', ...\"234567890,x,0,123456\"... is not valid JSON"
+    }
+  },
+  {
+    "input": "[true,false, true,false, x]",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'x', ...\"ue,false, x]\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'x', ...\"ue,false, x]\" is not valid JSON"
+    }
+  },
+  {
+    "input": "[true,false, true,false, x]",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'x', ...\"ue,false, x]\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'x', ...\"ue,false, x]\" is not valid JSON"
+    }
+  },
+  {
+    "input": "[1",
+    "name": "SyntaxError",
+    "message": "Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "[1",
+    "name": "SyntaxError",
+    "message": "Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "[1,",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "[1,",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "01",
+    "name": "SyntaxError",
+    "message": "Unexpected number in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected number in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "01",
+    "name": "SyntaxError",
+    "message": "Unexpected number in JSON at position 1 (line 1 column 2)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected number in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  {
+    "input": "\n\"a\tb\"",
+    "name": "SyntaxError",
+    "message": "Bad control character in string literal in JSON at position 3 (line 2 column 3)"
+  },
+  {
+    "input": "\"a\\",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unterminated string in JSON at position 4 (line 1 column 5)"
+    }
+  },
+  {
+    "input": "\"a\\\\",
+    "name": "SyntaxError",
+    "message": "Unterminated string in JSON at position 4 (line 1 column 5)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unterminated string in JSON at position 4 (line 1 column 5)"
+    }
+  },
+  {
+    "input": "tru",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "tru",
+    "name": "SyntaxError",
+    "message": "Unexpected end of JSON input",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected end of JSON input"
+    }
+  },
+  {
+    "input": "x",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'x', \"x\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'x', \"x\" is not valid JSON"
+    }
+  },
+  {
+    "input": "x",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'x', \"x\" is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'x', \"x\" is not valid JSON"
+    }
+  },
+  {
+    "input": "a very long invalid string",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'a', \"a very lon\"... is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'a', \"a very lon\"... is not valid JSON"
+    }
+  },
+  {
+    "input": "a very long invalid string",
+    "name": "SyntaxError",
+    "message": "Unexpected token 'a', \"a very lon\"... is not valid JSON",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected token 'a', \"a very lon\"... is not valid JSON"
+    }
+  },
+  {
+    "input": "[01234567890123456789012345678901234567890,x]",
+    "name": "SyntaxError",
+    "message": "Unexpected number in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected number in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "[01234567890123456789012345678901234567890,x]",
+    "name": "SyntaxError",
+    "message": "Unexpected number in JSON at position 2 (line 1 column 3)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Unexpected number in JSON at position 2 (line 1 column 3)"
+    }
+  },
+  {
+    "input": "{\"x\":\"\t\",}",
+    "name": "SyntaxError",
+    "message": "Bad control character in string literal in JSON at position 6 (line 1 column 7)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected double-quoted property name in JSON at position 10 (line 1 column 11)"
+    }
+  },
+  {
+    "input": "{\"x\":\"\\t\",}",
+    "name": "SyntaxError",
+    "message": "Expected double-quoted property name in JSON at position 10 (line 1 column 11)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Expected double-quoted property name in JSON at position 10 (line 1 column 11)"
+    }
+  },
+  {
+    "input": "\"😀\\q\"",
+    "name": "SyntaxError",
+    "message": "Bad escaped character in JSON at position 4 (line 1 column 5)"
+  },
+  {
+    "input": "\"😀\\u12\"",
+    "name": "SyntaxError",
+    "message": "Bad Unicode escape in JSON at position 7 (line 1 column 8)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Bad Unicode escape in JSON at position 7 (line 1 column 8)"
+    }
+  },
+  {
+    "input": "\"😀\\u12\"",
+    "name": "SyntaxError",
+    "message": "Bad Unicode escape in JSON at position 7 (line 1 column 8)",
+    "final": {
+      "name": "SyntaxError",
+      "message": "Bad Unicode escape in JSON at position 7 (line 1 column 8)"
+    }
+  }
+]
