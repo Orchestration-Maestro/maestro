@@ -3,14 +3,7 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.dependencies]
-tokio = { version = "1", default-features = false, features = ["rt", "sync"] }
-serde = { version = "=1.0.229", features = ["derive", "rc"] }
 serde_json = { version = "=1.0.151", features = ["preserve_order"] }
-ryu-js = "=1.0.3"
-js-sys = "=0.3.106"
-jsonschema = { version = "=0.58.5", default-features = false }
-
-regress = { version = "=0.12.0", features = ["utf16"] }
 
 [workspace.package]
 edition = "2024"

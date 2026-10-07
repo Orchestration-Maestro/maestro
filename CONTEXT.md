@@ -1,5 +1,8 @@
 # Glossary
 
+The implementation is being rebuilt crate by crate; these terms describe the
+foundation contract, not currently delivered capabilities.
+
 Add terms here when the specs establish their meaning; use one name per concept.
 
 ## Models

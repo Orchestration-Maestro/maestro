@@ -52,7 +52,7 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - Dependencies point one way; core crates never depend on dedicated
   (non-core) crates.
 - Names follow `maestro-<noun>[-<role>]`.
-- The composition-root crate, `maestro`, owns the binary and only wires.
+- When present, the composition-root crate owns the binary and only wires.
 
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
@@ -76,23 +76,7 @@ Publish reusable adapter conformance from the owning leaf, not a forwarding test
 
 The base owner-approved libraries are: tokio, reqwest, serde, serde_json,
 toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
-Also approved for model records: serde 1.0.229 with derive/rc, serde_json
-1.0.151 with preserve_order, ryu-js 1.0.3 and target-local js-sys 0.3.106
-for browser timestamps. Ask before adding any unapproved crate; never add one silently.
-
-Owner-approved model validation exception: `jsonschema` 0.58.5 with default
-features disabled, used only through the model crate's private schema module.
-Keep HTTP/file and asynchronous retrieval, TLS, idna, macros and all other optional
-features disabled; construction must also explicitly use the offline builder.
-No remote schema retrieval is authorized.
-
-Owner-approved settings number formatting: `ryu-js` 1.0.3 with default
-features disabled, private to settings serialization; `serde_json` 1.0.151
-uses `preserve_order` for JSON property insertion order. Settings also uses
-`float_roundtrip` for exact binary64 parsing and `unbounded_depth` with private
-`serde_stacker =0.1.14` and `stacker =0.1.25` adapters for recursive processing;
-both adapters are MIT OR Apache-2.0. Recursive manager-owned JSON teardown is
-iterative; very deep caller-owned raw values require the same care.
+Ask before adding any unapproved crate; never add one silently.
 
 Keep one current format for everything. No compatibility code.
 
@@ -221,12 +205,3 @@ The private contribution-policy executable may use `base64 =0.23.1` with only
 dates. Neither enables its defaults. Tests may use dev-only `yaml-rust2 =0.13.0`
 without default features to parse actual adapters/templates. These exceptions
 are MIT OR Apache-2.0 and add no internal crate edge or public library API.
-
-## Approved overflow matching library
-
-The model crate may use `regress =0.12.0` with default features and `utf16`
-(features backend-pikevm/default/std/utf16; MIT OR Apache-2.0). Keep it private
-behind the stateless overflow pattern value; its enabled dependency is memchr
-2.8.3 (alloc/std; Unlicense OR MIT). Preserve the owned pattern sources and
-ECMAScript character classes. The non-Unicode long-s case-folding difference
-is accepted and qualified explicitly by the model tests.
