@@ -1,9 +1,14 @@
 #![doc = include_str!("../../../docs/records.md")]
 
 pub mod cancellation;
+mod catalog;
 pub mod records;
 
 pub use cancellation::Cancellation;
+pub use catalog::models::{
+    calculate_cost, clamp_thinking_level, get_model, get_models, get_providers,
+    get_supported_thinking_levels, models_are_equal,
+};
 
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
