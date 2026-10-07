@@ -21,14 +21,25 @@ pub(crate) trait Process {
     ) -> Result<Output, String>;
 }
 
+pub(crate) struct Invocation<'a> {
+    pub root: &'a Path,
+    pub workflow: &'a str,
+    pub event_name: &'a str,
+    pub payload: &'a str,
+    pub app_slug: Option<&'a str>,
+}
+
 pub(crate) fn run(
-    root: &Path,
-    workflow: &str,
-    event_name: &str,
-    payload: &str,
-    app_slug: Option<&str>,
+    invocation: &Invocation<'_>,
     process: &mut dyn Process,
 ) -> Result<Vec<(String, String)>, String> {
+    let Invocation {
+        root,
+        workflow,
+        event_name,
+        payload,
+        app_slug,
+    } = *invocation;
     let e: serde_json::Value = serde_json::from_str(payload).map_err(|e| e.to_string())?;
     if workflow == "approve-contributor"
         && event_name == "issue_comment"
@@ -39,75 +50,14 @@ pub(crate) fn run(
             process.diagnostic("Comment does not match lgtm or lgtmi");
             return Ok(vec![("status".into(), "skipped".into())]);
         }
-        let mut github = github::Github {
-            root,
-            repository: e["repository"]["full_name"]
-                .as_str()
-                .ok_or("Missing repository")?,
-            branch: e["repository"]["default_branch"]
-                .as_str()
-                .ok_or("Missing default branch")?,
-            process,
-        };
+        let mut github = github(root, &e, process)?;
         return approve_contributor::approve(&mut github, &e, app_slug);
     }
     if e["action"] == "opened"
         && ((workflow == "issue-gate" && event_name == "issues")
             || (workflow == "pr-gate" && event_name == "pull_request_target"))
     {
-        let item = if workflow == "pr-gate" {
-            &e["pull_request"]
-        } else {
-            &e["issue"]
-        };
-        let author = item["user"]["login"].as_str().ok_or("Missing author")?;
-        if author.ends_with("[bot]") {
-            process.diagnostic(&format!("Skipping bot: {author}"));
-            return Ok(vec![]);
-        }
-        let mut github = github::Github {
-            root,
-            repository: e["repository"]["full_name"]
-                .as_str()
-                .ok_or("Missing repository")?,
-            branch: e["repository"]["default_branch"]
-                .as_str()
-                .ok_or("Missing default branch")?,
-            process,
-        };
-        let permission = github::get_permission(&mut github, author).ok().flatten();
-        if github::collaborator(permission.as_deref()) {
-            github.process.diagnostic(&format!(
-                "{author} is a collaborator with {} access",
-                permission.as_deref().unwrap_or("")
-            ));
-            return Ok(vec![]);
-        }
-        let content = github::get_text_file(&mut github, approved_users::APPROVED_FILE)?;
-        let users = approved_users::parse_approved_users(
-            &content,
-            approved_users::LineDiagnostics::Raw,
-            github.process,
-        );
-        if let Some(capability) = users
-            .capability(author)
-            .filter(|c| *c == "pr" || workflow == "issue-gate")
-        {
-            github.process.diagnostic(&if workflow == "pr-gate" {
-                format!("{author} is approved for PRs")
-            } else {
-                format!("{author} is approved for {capability}")
-            });
-            return Ok(vec![]);
-        }
-        if workflow == "issue-gate" {
-            issue_gate::close(&mut github, item)?;
-        } else {
-            github
-                .process
-                .diagnostic(&format!("{author} is not approved, closing PR"));
-            pr_gate::close_pull_request(&mut github, item)?;
-        }
+        gate(root, workflow, &e, process)?;
     }
     if workflow == "contribution-policy"
         && e["action"] == "opened"
@@ -118,32 +68,14 @@ pub(crate) fn run(
         } else {
             &e["issue"]
         };
-        let mut github = github::Github {
-            root,
-            repository: e["repository"]["full_name"]
-                .as_str()
-                .ok_or("Missing repository")?,
-            branch: e["repository"]["default_branch"]
-                .as_str()
-                .ok_or("Missing default branch")?,
-            process,
-        };
+        let mut github = github(root, &e, process)?;
         contribution_activity::check(&mut github, item)?;
     }
     if workflow == "approve-contributor"
         && event_name == "pull_request_target"
         && e["action"] == "closed"
     {
-        let mut github = github::Github {
-            root,
-            repository: e["repository"]["full_name"]
-                .as_str()
-                .ok_or("Missing repository")?,
-            branch: e["repository"]["default_branch"]
-                .as_str()
-                .ok_or("Missing default branch")?,
-            process,
-        };
+        let mut github = github(root, &e, process)?;
         approve_contributor::complete(&mut github, &e, app_slug)?;
     }
     Ok(vec![])
@@ -193,4 +125,74 @@ impl Process for SystemProcess {
             .wait_with_output()
             .map_err(|e| format!("Could not wait for {program}: {e}"))
     }
+}
+
+fn gate(
+    root: &Path,
+    workflow: &str,
+    e: &serde_json::Value,
+    process: &mut dyn Process,
+) -> Result<(), String> {
+    let item = if workflow == "pr-gate" {
+        &e["pull_request"]
+    } else {
+        &e["issue"]
+    };
+    let author = item["user"]["login"].as_str().ok_or("Missing author")?;
+    if author.ends_with("[bot]") {
+        process.diagnostic(&format!("Skipping bot: {author}"));
+        return Ok(());
+    }
+    let mut github = github(root, e, process)?;
+    let permission = github::get_permission(&mut github, author).ok().flatten();
+    if github::collaborator(permission.as_deref()) {
+        github.process.diagnostic(&format!(
+            "{author} is a collaborator with {} access",
+            permission.as_deref().unwrap_or("")
+        ));
+        return Ok(());
+    }
+    let content = github::get_text_file(&mut github, approved_users::APPROVED_FILE)?;
+    let users = approved_users::parse_approved_users(
+        &content,
+        approved_users::LineDiagnostics::Raw,
+        github.process,
+    );
+    if let Some(capability) = users
+        .capability(author)
+        .filter(|c| *c == "pr" || workflow == "issue-gate")
+    {
+        github.process.diagnostic(&if workflow == "pr-gate" {
+            format!("{author} is approved for PRs")
+        } else {
+            format!("{author} is approved for {capability}")
+        });
+        return Ok(());
+    }
+    if workflow == "issue-gate" {
+        issue_gate::close(&mut github, item)?;
+    } else {
+        github
+            .process
+            .diagnostic(&format!("{author} is not approved, closing PR"));
+        pr_gate::close_pull_request(&mut github, item)?;
+    }
+    Ok(())
+}
+
+fn github<'a>(
+    root: &'a Path,
+    e: &'a serde_json::Value,
+    process: &'a mut dyn Process,
+) -> Result<github::Github<'a>, String> {
+    Ok(github::Github {
+        root,
+        repository: e["repository"]["full_name"]
+            .as_str()
+            .ok_or("Missing repository")?,
+        branch: e["repository"]["default_branch"]
+            .as_str()
+            .ok_or("Missing default branch")?,
+        process,
+    })
 }

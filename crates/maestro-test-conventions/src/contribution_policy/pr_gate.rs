@@ -10,12 +10,12 @@ pub(super) fn close_pull_request(github: &mut Github<'_>, item: &Value) -> Resul
     github.repo_api(
         "POST",
         &format!("issues/{number}/comments"),
-        json!({"body":message}),
+        &json!({"body":message}),
     )?;
     github.repo_api(
         "PATCH",
         &format!("pulls/{number}"),
-        json!({"state":"closed"}),
+        &json!({"state":"closed"}),
     )?;
     Ok(())
 }

@@ -27,11 +27,13 @@ fn execute() -> Result<(), String> {
     let slug = std::env::var("MAESTRO_APPROVAL_APP_SLUG").ok();
     let root = std::env::current_dir().map_err(|e| e.to_string())?;
     let outputs = contribution_policy::run(
-        &root,
-        &workflow,
-        &event,
-        &payload,
-        slug.as_deref(),
+        &contribution_policy::Invocation {
+            root: &root,
+            workflow: &workflow,
+            event_name: &event,
+            payload: &payload,
+            app_slug: slug.as_deref(),
+        },
         &mut contribution_policy::SystemProcess,
     )?;
     if !outputs.is_empty() {

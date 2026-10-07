@@ -3,104 +3,8 @@ use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-struct Rule {
-    class: &'static str,
-    dependencies: &'static [&'static str],
-}
-fn rule(name: &str) -> Option<Rule> {
-    let dependencies: &'static [&'static str] = match name {
-        "maestro-extensions-wasm" => &[],
-        "maestro-models" => &[],
-        "maestro-resources" => &[],
-        "maestro-settings" => &[],
-        "maestro-storage" => &[],
-        "maestro-test-conventions" => &[],
-        "maestro-tooling" => &[],
-        "maestro-tui" => &[],
-        "maestro-agent" => &["maestro-models"],
-        "maestro-credentials" => &["maestro-models"],
-        "maestro-packages" => &["maestro-settings", "maestro-resources"],
-        "maestro-test-terminal" => &["maestro-tui"],
-        "maestro-theme" => &["maestro-tui"],
-        "maestro-tui-crossterm" => &["maestro-tui"],
-        "maestro-catalog" => &["maestro-models", "maestro-credentials"],
-        "maestro-session" => &["maestro-models", "maestro-agent", "maestro-storage"],
-        "maestro-tools" => &[
-            "maestro-models",
-            "maestro-agent",
-            "maestro-tui",
-            "maestro-theme",
-        ],
-        "maestro-export" => &[
-            "maestro-session",
-            "maestro-models",
-            "maestro-tools",
-            "maestro-theme",
-            "maestro-tui",
-        ],
-        "maestro-extensions" => &[
-            "maestro-models",
-            "maestro-agent",
-            "maestro-session",
-            "maestro-catalog",
-            "maestro-tools",
-            "maestro-theme",
-            "maestro-tui",
-            "maestro-resources",
-        ],
-        "maestro-app" => &[
-            "maestro-models",
-            "maestro-agent",
-            "maestro-credentials",
-            "maestro-settings",
-            "maestro-storage",
-            "maestro-catalog",
-            "maestro-session",
-            "maestro-tools",
-            "maestro-resources",
-            "maestro-packages",
-            "maestro-extensions",
-            "maestro-export",
-            "maestro-theme",
-            "maestro-tui",
-        ],
-        "maestro-extensions-wasmtime" => &["maestro-extensions"],
-        "maestro-chat" => &[
-            "maestro-app",
-            "maestro-tui",
-            "maestro-tui-crossterm",
-            "maestro-theme",
-        ],
-        "maestro-cli" => &[
-            "maestro-app",
-            "maestro-tui",
-            "maestro-tui-crossterm",
-            "maestro-theme",
-        ],
-        "maestro-rpc" => &["maestro-app", "maestro-theme"],
-        "maestro-web" => &["maestro-app", "maestro-theme"],
-        "maestro" => &[
-            "maestro-app",
-            "maestro-cli",
-            "maestro-rpc",
-            "maestro-chat",
-            "maestro-web",
-            "maestro-extensions-wasmtime",
-        ],
-        _ => return None,
-    };
-    Some(Rule {
-        class: if matches!(
-            name,
-            "maestro" | "maestro-test-conventions" | "maestro-test-terminal" | "maestro-tooling"
-        ) {
-            "dedicated"
-        } else {
-            "core"
-        },
-        dependencies,
-    })
-}
+mod policy;
+use policy::{Rule, rule};
 
 pub(crate) fn inventory(
     metadata: &Value,
@@ -189,51 +93,7 @@ pub(crate) fn validate_with_support(
         }
     }
     for edge in edges {
-        let policy = |name: &str| {
-            rule(name).or_else(|| {
-                support.contains(&name).then_some(Rule {
-                    class: "core",
-                    dependencies: &[],
-                })
-            })
-        };
-        let from = policy(&edge.from).ok_or("unknown scoped source")?;
-        let to = policy(&edge.to).ok_or("unknown scoped target")?;
-        if from.dependencies.is_empty() {
-            return Err(format!(
-                "{} must not depend on workspace crate {}",
-                edge.from, edge.to
-            ));
-        }
-        if from.class == "core" && to.class == "dedicated" {
-            return Err(format!(
-                "core crate {} must not depend on dedicated crate {}",
-                edge.from, edge.to
-            ));
-        }
-        if edge.kind == Kind::Dev {
-            let target = array(metadata, "packages")?
-                .iter()
-                .find(|package| package["name"] == edge.to && members.contains(&package["id"]));
-            let dependency_free = match target {
-                Some(package) => {
-                    array(package, "dependencies")?.is_empty()
-                        && !edges.iter().any(|other| other.from == edge.to)
-                }
-                None => false,
-            };
-            if !support.contains(&edge.to.as_str()) || !dependency_free {
-                return Err(format!(
-                    "internal dev dependency requires declared dependency-free test support: {} -> {}",
-                    edge.from, edge.to
-                ));
-            }
-        } else if !from.dependencies.contains(&edge.to.as_str()) {
-            return Err(format!(
-                "forbidden production dependency: {} -> {}",
-                edge.from, edge.to
-            ));
-        }
+        validate_edge(metadata, edges, support, edge)?;
     }
     Ok(())
 }
@@ -270,21 +130,7 @@ pub(crate) fn declared(metadata: &Value) -> Result<BTreeSet<Edge>, String> {
             let member = path.as_ref().and_then(|path| names.get(path));
             let dependency_name = string(dependency, "name")?;
             let owner = string(package, "name")?;
-            if dependency_name == "wasmtime-wasi-http"
-                || (dependency_name == "wasmtime" || dependency_name.starts_with("wasmtime-"))
-                    && owner != "maestro-extensions-wasmtime"
-            {
-                return Err(format!(
-                    "{owner}: forbidden runtime library dependency {dependency_name}"
-                ));
-            }
-            if owner == "maestro-tui"
-                && matches!(dependency_name, "ratatui" | "syntect" | "two-face")
-            {
-                return Err(format!(
-                    "{owner}: forbidden toolkit library dependency {dependency_name}"
-                ));
-            }
+            check_library_dependency(owner, dependency_name)?;
             // Registry/git references may be patched to members without exposing a path
             // in --no-deps metadata. Require explicit member paths instead of guessing.
             if names.values().any(|name| name == dependency_name)
@@ -365,43 +211,7 @@ pub(crate) fn resolved(metadata: &Value) -> Result<BTreeSet<Edge>, String> {
     }
     let mut edges = BTreeSet::new();
     for node in nodes {
-        let id = string(node, "id")?;
-        let from = packages
-            .get(id)
-            .ok_or("invalid cargo metadata: unknown resolved node")?;
-        for dependency in array(node, "deps")? {
-            let target = string(dependency, "pkg")?;
-            let to = packages
-                .get(target)
-                .ok_or("invalid cargo metadata: unknown resolved dependency")?;
-            string(dependency, "name")?;
-            let kinds = array(dependency, "dep_kinds")?;
-            if kinds.is_empty() {
-                return Err("invalid cargo metadata: empty dependency kinds".into());
-            }
-            for dependency_kind in kinds {
-                let kind = kind(
-                    dependency_kind
-                        .get("kind")
-                        .ok_or("invalid cargo metadata: missing dependency kind")?,
-                )?;
-                let condition = dependency_kind
-                    .get("target")
-                    .ok_or("invalid cargo metadata: missing dependency target")?;
-                if !condition.is_null() && !condition.is_string() {
-                    return Err("invalid cargo metadata: dependency target".into());
-                }
-                if members.iter().any(|member| member == id)
-                    && members.iter().any(|member| member == target)
-                {
-                    edges.insert(Edge {
-                        from: (*from).into(),
-                        to: (*to).into(),
-                        kind,
-                    });
-                }
-            }
-        }
+        resolve_dependencies(node, &packages, members, &mut edges)?;
     }
     Ok(edges)
 }
@@ -413,7 +223,7 @@ pub(crate) fn complete(metadata: &Value, edges: &BTreeSet<Edge>) -> Result<(), S
             continue;
         }
         let name = string(package, "name")?;
-        if matches!(
+        if !matches!(
             name,
             "maestro-cli"
                 | "maestro-chat"
@@ -422,15 +232,16 @@ pub(crate) fn complete(metadata: &Value, edges: &BTreeSet<Edge>) -> Result<(), S
                 | "maestro-tui-crossterm"
                 | "maestro-test-terminal"
         ) {
-            for required in rule(name).ok_or("unknown scoped source")?.dependencies {
-                if !edges
-                    .iter()
-                    .any(|edge| edge.from == name && edge.to == *required && edge.kind != Kind::Dev)
-                {
-                    return Err(format!(
-                        "{name}: missing required direct dependency {required}"
-                    ));
-                }
+            continue;
+        }
+        for required in rule(name).ok_or("unknown scoped source")?.dependencies {
+            if !edges
+                .iter()
+                .any(|edge| edge.from == name && edge.to == *required && edge.kind != Kind::Dev)
+            {
+                return Err(format!(
+                    "{name}: missing required direct dependency {required}"
+                ));
             }
         }
     }
@@ -461,6 +272,124 @@ pub(crate) fn identities(metadata: &Value) -> Result<(), String> {
     }
     if !members.is_subset(&ids) {
         return Err("invalid cargo metadata: missing member package".into());
+    }
+    Ok(())
+}
+
+fn validate_edge(
+    metadata: &Value,
+    edges: &BTreeSet<Edge>,
+    support: &[&str],
+    edge: &Edge,
+) -> Result<(), String> {
+    let members = array(metadata, "workspace_members")?;
+    let policy = |name: &str| {
+        rule(name).or_else(|| {
+            support.contains(&name).then_some(Rule {
+                class: "core",
+                dependencies: &[],
+            })
+        })
+    };
+    let from = policy(&edge.from).ok_or("unknown scoped source")?;
+    let to = policy(&edge.to).ok_or("unknown scoped target")?;
+    if from.dependencies.is_empty() {
+        return Err(format!(
+            "{} must not depend on workspace crate {}",
+            edge.from, edge.to
+        ));
+    }
+    if from.class == "core" && to.class == "dedicated" {
+        return Err(format!(
+            "core crate {} must not depend on dedicated crate {}",
+            edge.from, edge.to
+        ));
+    }
+    if edge.kind == Kind::Dev {
+        let target = array(metadata, "packages")?
+            .iter()
+            .find(|package| package["name"] == edge.to && members.contains(&package["id"]));
+        let dependency_free = match target {
+            Some(package) => {
+                array(package, "dependencies")?.is_empty()
+                    && !edges.iter().any(|other| other.from == edge.to)
+            }
+            None => false,
+        };
+        if !support.contains(&edge.to.as_str()) || !dependency_free {
+            return Err(format!(
+                "internal dev dependency requires declared dependency-free test support: {} -> {}",
+                edge.from, edge.to
+            ));
+        }
+    } else if !from.dependencies.contains(&edge.to.as_str()) {
+        return Err(format!(
+            "forbidden production dependency: {} -> {}",
+            edge.from, edge.to
+        ));
+    }
+    Ok(())
+}
+
+fn check_library_dependency(owner: &str, dependency_name: &str) -> Result<(), String> {
+    if dependency_name == "wasmtime-wasi-http"
+        || (dependency_name == "wasmtime" || dependency_name.starts_with("wasmtime-"))
+            && owner != "maestro-extensions-wasmtime"
+    {
+        return Err(format!(
+            "{owner}: forbidden runtime library dependency {dependency_name}"
+        ));
+    }
+    if owner == "maestro-tui" && matches!(dependency_name, "ratatui" | "syntect" | "two-face") {
+        return Err(format!(
+            "{owner}: forbidden toolkit library dependency {dependency_name}"
+        ));
+    }
+    Ok(())
+}
+
+fn resolve_dependencies(
+    node: &Value,
+    packages: &BTreeMap<&str, &str>,
+    members: &[Value],
+    edges: &mut BTreeSet<Edge>,
+) -> Result<(), String> {
+    let id = string(node, "id")?;
+    let from = packages
+        .get(id)
+        .ok_or("invalid cargo metadata: unknown resolved node")?;
+    for dependency in array(node, "deps")? {
+        let target = string(dependency, "pkg")?;
+        let to = packages
+            .get(target)
+            .ok_or("invalid cargo metadata: unknown resolved dependency")?;
+        string(dependency, "name")?;
+        let kinds = array(dependency, "dep_kinds")?;
+        if kinds.is_empty() {
+            return Err("invalid cargo metadata: empty dependency kinds".into());
+        }
+        for dependency_kind in kinds {
+            let kind = kind(
+                dependency_kind
+                    .get("kind")
+                    .ok_or("invalid cargo metadata: missing dependency kind")?,
+            )?;
+            let condition = dependency_kind
+                .get("target")
+                .ok_or("invalid cargo metadata: missing dependency target")?;
+            if !condition.is_null() && !condition.is_string() {
+                return Err("invalid cargo metadata: dependency target".into());
+            }
+            if members.iter().any(|member| member == id)
+                && members.iter().any(|member| member == target)
+            {
+                edges.insert(Edge {
+                    from: (*from).into(),
+                    to: (*to).into(),
+                    kind,
+                });
+            }
+        }
     }
     Ok(())
 }

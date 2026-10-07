@@ -8,6 +8,7 @@ use serde_json::Value;
 mod boundaries;
 mod comments;
 mod graph;
+mod quality;
 mod source;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
@@ -16,6 +17,9 @@ mod source;
 /// features for the compiler host so it reads only crates a normal build fetched.
 /// Complete direct sets are checked over both passes; absent future owners are
 /// inactive. Source/WIT checks are structural and do not replace semantic review.
+///
+/// # Errors
+///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     let metadata = metadata_command(root, &["--no-deps"])?;
@@ -59,7 +63,8 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     graph::validate(&metadata, &edges)?;
     graph::complete(&metadata, &edges)?;
     boundaries::check(&metadata)?;
-    comments::check(&metadata)
+    comments::check(&metadata)?;
+    quality::check(&metadata)
 }
 
 fn metadata_command(root: &Path, options: &[&str]) -> Result<Value, String> {

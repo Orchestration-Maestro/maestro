@@ -38,6 +38,10 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
         ));
         return Ok(());
     }
+    label_activity(github, item, author)
+}
+
+fn label_activity(github: &mut Github<'_>, item: &Value, author: &str) -> Result<(), String> {
     let policy: Value = serde_json::from_slice(
         &std::fs::read(github.root.join(".github/repository-policy.json"))
             .map_err(|e| e.to_string())?,
@@ -63,7 +67,7 @@ pub(super) fn check(github: &mut Github<'_>, item: &Value) -> Result<(), String>
             github.repo_api(
                 "POST",
                 &format!("issues/{number}/labels"),
-                json!({"labels":[label]}),
+                &json!({"labels":[label]}),
             )?;
             return Ok(());
         }
@@ -79,7 +83,7 @@ pub(super) fn has_activity(github: &mut Github<'_>, repository: &str, author: &s
     match github.api(
         "GET",
         "search/issues",
-        json!({"q":format!("repo:{repository} author:{author}"),"per_page":1}),
+        &json!({"q":format!("repo:{repository} author:{author}"),"per_page":1}),
     ) {
         Ok(data) if data["total_count"].as_u64().is_some_and(|count| count > 0) => {
             github.process.diagnostic(&format!(

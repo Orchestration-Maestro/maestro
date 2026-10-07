@@ -1,4 +1,8 @@
+#![cfg(test)]
+
 mod support;
+
+use std::fmt::Write;
 
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
@@ -106,6 +110,10 @@ fn crate_list_requires_core_or_dedicated_layers() {
     std::fs::remove_dir(workspace.root.join("workspace-crates.json")).unwrap();
     workspace.list(&[("maestro-app", "core")]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn all_crates_require_their_declared_layer() {
     for &(name, _) in support::policy::POLICY {
         let workspace = Workspace::new();
         workspace.foundation(&[name]);
@@ -328,7 +336,7 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
     let workspace = Workspace::new();
     workspace.list(&[("maestro-session", "core"), ("maestro-storage", "core")]);
     workspace.member("storage", "maestro-storage", "");
-    std::fs::write(workspace.root.join("Cargo.toml"), "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[patch.crates-io]\nmaestro-storage = { path = \"crates/storage\" }\n").unwrap();
+    std::fs::write(workspace.root.join("Cargo.toml"), "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n[patch.crates-io]\nmaestro-storage = { path = \"crates/storage\" }\n").unwrap();
     for kind in [
         "dependencies",
         "dev-dependencies",
@@ -445,23 +453,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             if support::exact(from) && to != &targets[0] {
                 continue;
             }
-            for (kind, extra) in DECLARATIONS {
-                let selected = if support::exact(from) {
-                    targets
-                } else {
-                    std::slice::from_ref(to)
-                };
-                let mut declarations = format!("[{kind}]\n");
-                for (index, target) in selected.iter().enumerate() {
-                    declarations.push_str(&format!("renamed{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}\n"));
-                }
-                workspace.member(from, from, &declarations);
-                assert_eq!(
-                    check_workspace(&workspace.root),
-                    Ok(()),
-                    "{from} -> {to} ({kind}{extra})"
-                );
-            }
+            check_permitted_declarations(&workspace, from, to, targets);
         }
     }
 }
@@ -608,39 +600,7 @@ fn agent_only_allows_models_production_edge() {
             ),
         ]);
         workspace.member("target", to, "");
-        for renamed in [false, true] {
-            for (kind, extra) in [
-                ("dependencies", ""),
-                ("build-dependencies", ""),
-                ("dependencies", ", optional = true"),
-                ("target.'cfg(target_os = \"none\")'.dependencies", ""),
-                ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
-            ] {
-                let name = if renamed { "alias" } else { to };
-                workspace.member(
-                    "agent",
-                    "maestro-agent",
-                    &format!(
-                        "[{kind}]\n{name} = {{ package = {to:?}, path = \"../target\"{extra} }}"
-                    ),
-                );
-                assert_eq!(
-                    check_workspace(&workspace.root),
-                    if to == "maestro-models" {
-                        Ok(())
-                    } else if matches!(to, "maestro" | "maestro-test-conventions") {
-                        Err(format!(
-                            "core crate maestro-agent must not depend on dedicated crate {to}"
-                        ))
-                    } else {
-                        Err(format!(
-                            "forbidden production dependency: maestro-agent -> {to}"
-                        ))
-                    },
-                    "{to} {kind} {renamed} {extra}"
-                );
-            }
-        }
+        check_agent_production_declarations(&workspace, to);
     }
 }
 
@@ -812,7 +772,11 @@ fn packages_use_settings_and_resources() {
         for (kind, extra) in DECLARATIONS {
             let mut dependencies = format!("[{kind}]\n");
             for target in &targets {
-                dependencies.push_str(&format!("{target} = {{ package = \"maestro-{target}\", path = \"../{target}\"{extra} }}\n"));
+                writeln!(
+                    dependencies,
+                    "{target} = {{ package = \"maestro-{target}\", path = \"../{target}\"{extra} }}"
+                )
+                .unwrap();
             }
             workspace.member("packages", "maestro-packages", &dependencies);
             assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -872,36 +836,16 @@ fn frontends_require_complete_direct_dependencies() {
         let workspace = Workspace::new();
         workspace.foundation(&[&[frontend], required].concat());
         for omitted in required {
-            for (kind, extra) in DECLARATIONS {
-                let mut declarations = format!("[{kind}]\n");
-                for (index, target) in required
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, target)| *target != omitted)
-                {
-                    declarations.push_str(&format!(
-                        "alias{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}\n"
-                    ));
-                }
-                workspace.member(frontend, frontend, &declarations);
-                let error = check_workspace(&workspace.root).unwrap_err();
-                assert!(
-                    error.contains(frontend)
-                        && error.contains(omitted)
-                        && error.contains("missing required direct dependency"),
-                    "{error}"
-                );
-                declarations.push_str(&format!(
-                    "restored = {{ package = {omitted:?}, path = \"../{omitted}\"{extra} }}\n"
-                ));
-                workspace.member(frontend, frontend, &declarations);
-                assert_eq!(check_workspace(&workspace.root), Ok(()));
-            }
+            check_frontend_omission(&workspace, frontend, required, omitted);
         }
         let mut mixed = String::new();
         for (index, target) in required.iter().enumerate() {
             let (kind, extra) = DECLARATIONS[if index < 2 { index } else { index + 1 }];
-            mixed.push_str(&format!("[{kind}]\nedge{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}\n"));
+            writeln!(
+                mixed,
+                "[{kind}]\nedge{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+            )
+            .unwrap();
         }
         workspace.member(frontend, frontend, &mixed);
         assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -1007,7 +951,7 @@ fn internal_dev_edges_are_rejected_for_every_member() {
 #[cfg(unix)]
 #[test]
 fn metadata_graph_failures_cross_the_public_interface() {
-    use serde_json::{Value, json};
+    use serde_json::json;
     if let Some(root) = std::env::var_os("MAESTRO_CONVENTIONS_PROBE_ROOT") {
         let result = check_workspace(std::path::Path::new(&root));
         let expected = std::env::var("MAESTRO_CONVENTIONS_EXPECT").unwrap();
@@ -1030,35 +974,14 @@ fn metadata_graph_failures_cross_the_public_interface() {
         {"id": "models-id", "deps": []}, {"id": "storage-id", "deps": []}
     ]}});
     workspace.metadata_probe(&valid, &valid, "ok");
-    for pointer in ["/workspace_members", "/packages/0/id", "/packages/0/name"] {
-        let mut value = valid.clone();
-        *value.pointer_mut(pointer).unwrap() = Value::Null;
-        workspace.metadata_probe(&value, &valid, "invalid cargo metadata");
-        workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
-    }
-    for members in [
-        json!(["agent-id", "agent-id"]),
-        json!(["unknown"]),
-        json!([null]),
-    ] {
-        let mut value = valid.clone();
-        value["workspace_members"] = members;
-        workspace.metadata_probe(&value, &valid, "invalid cargo metadata");
-        workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
-    }
-    for packages in [
-        json!([]),
-        json!([valid["packages"][0].clone(), valid["packages"][0].clone()]),
-    ] {
-        let mut value = valid.clone();
-        value["packages"] = packages;
-        workspace.metadata_probe(&value, &valid, "invalid cargo metadata");
-        workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
-    }
-    let mut duplicate_name = valid.clone();
-    duplicate_name["packages"][1]["name"] = json!("maestro-agent");
-    workspace.metadata_probe(&duplicate_name, &valid, "invalid cargo metadata");
-    workspace.metadata_probe(&valid, &duplicate_name, "invalid cargo metadata");
+    invalid_metadata_identities(&workspace, &valid);
+    invalid_resolved_metadata(&workspace, &valid);
+    complete_resolved_metadata();
+}
+
+#[cfg(unix)]
+fn invalid_resolved_metadata(workspace: &Workspace, valid: &serde_json::Value) {
+    use serde_json::{Value, json};
     for (pointer, replacement) in [
         ("/resolve", Value::Null),
         ("/resolve/nodes", Value::Null),
@@ -1073,7 +996,7 @@ fn metadata_graph_failures_cross_the_public_interface() {
     ] {
         let mut value = valid.clone();
         *value.pointer_mut(pointer).unwrap() = replacement;
-        workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
+        workspace.metadata_probe(valid, &value, "invalid cargo metadata");
     }
     for (parent, key) in [
         ("", "resolve"),
@@ -1090,28 +1013,39 @@ fn metadata_graph_failures_cross_the_public_interface() {
             .as_object_mut()
             .unwrap()
             .remove(key);
-        workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
+        workspace.metadata_probe(valid, &value, "invalid cargo metadata");
     }
+    invalid_resolved_edges(workspace, valid);
+}
+
+#[cfg(unix)]
+fn invalid_resolved_edges(workspace: &Workspace, valid: &serde_json::Value) {
+    use serde_json::json;
     let mut value = valid.clone();
     value["resolve"]["nodes"]
         .as_array_mut()
         .unwrap()
         .push(valid["resolve"]["nodes"][0].clone());
-    workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
+    workspace.metadata_probe(valid, &value, "invalid cargo metadata");
     let mut value = valid.clone();
     value["resolve"]["nodes"].as_array_mut().unwrap().pop();
-    workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
+    workspace.metadata_probe(valid, &value, "invalid cargo metadata");
     let mut value = valid.clone();
     value["resolve"]["nodes"][0]["deps"][0]["pkg"] = json!("storage-id");
     workspace.metadata_probe(
-        &valid,
+        valid,
         &value,
         "forbidden production dependency: maestro-agent -> maestro-storage",
     );
     let mut value = valid.clone();
     value["packages"][1]["name"] = json!("maestro-unknown");
-    workspace.metadata_probe(&valid, &value, "invalid cargo metadata");
-    workspace.metadata_probe(&valid, &valid, "ok");
+    workspace.metadata_probe(valid, &value, "invalid cargo metadata");
+    workspace.metadata_probe(valid, valid, "ok");
+}
+
+#[cfg(unix)]
+fn complete_resolved_metadata() {
+    use serde_json::json;
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-cli"]);
     let names = [
@@ -1259,4 +1193,133 @@ fn documented_foundation_graph_matches_policy() {
     assert!(specification.lines().any(|line| line == "| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |"));
     assert!(specification.split("\n\n").any(|paragraph| paragraph == "The graph contains 26 crates and 62 permitted internal dependency edges; eight crates remain leaves."));
     assert!(architecture.split("\n\n").any(|paragraph| paragraph == "The extension domain may depend directly on resources for shared source information. Resources remain a leaf; this permission does not allow the reverse dependency or internal dev-dependencies."));
+}
+
+fn check_permitted_declarations(workspace: &Workspace, from: &str, to: &str, targets: &[&str]) {
+    for (kind, extra) in DECLARATIONS {
+        let selected = if support::exact(from) {
+            targets
+        } else {
+            std::slice::from_ref(&to)
+        };
+        let mut declarations = format!("[{kind}]\n");
+        for (index, target) in selected.iter().enumerate() {
+            writeln!(
+                declarations,
+                "renamed{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+            )
+            .unwrap();
+        }
+        workspace.member(from, from, &declarations);
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Ok(()),
+            "{from} -> {to} ({kind}{extra})"
+        );
+    }
+}
+
+fn check_agent_production_declarations(workspace: &Workspace, to: &str) {
+    for renamed in [false, true] {
+        for (kind, extra) in [
+            ("dependencies", ""),
+            ("build-dependencies", ""),
+            ("dependencies", ", optional = true"),
+            ("target.'cfg(target_os = \"none\")'.dependencies", ""),
+            ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
+        ] {
+            let name = if renamed { "alias" } else { to };
+            workspace.member(
+                "agent",
+                "maestro-agent",
+                &format!("[{kind}]\n{name} = {{ package = {to:?}, path = \"../target\"{extra} }}"),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                if to == "maestro-models" {
+                    Ok(())
+                } else if matches!(to, "maestro" | "maestro-test-conventions") {
+                    Err(format!(
+                        "core crate maestro-agent must not depend on dedicated crate {to}"
+                    ))
+                } else {
+                    Err(format!(
+                        "forbidden production dependency: maestro-agent -> {to}"
+                    ))
+                },
+                "{to} {kind} {renamed} {extra}"
+            );
+        }
+    }
+}
+
+fn check_frontend_omission(
+    workspace: &Workspace,
+    frontend: &str,
+    required: &[&str],
+    omitted: &str,
+) {
+    for (kind, extra) in DECLARATIONS {
+        let mut declarations = format!("[{kind}]\n");
+        for (index, target) in required
+            .iter()
+            .enumerate()
+            .filter(|(_, target)| **target != omitted)
+        {
+            writeln!(
+                declarations,
+                "alias{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+            )
+            .unwrap();
+        }
+        workspace.member(frontend, frontend, &declarations);
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains(frontend)
+                && error.contains(omitted)
+                && error.contains("missing required direct dependency"),
+            "{error}"
+        );
+        writeln!(
+            declarations,
+            "restored = {{ package = {omitted:?}, path = \"../{omitted}\"{extra} }}"
+        )
+        .unwrap();
+        workspace.member(frontend, frontend, &declarations);
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+}
+
+#[cfg(unix)]
+fn invalid_metadata_identities(workspace: &Workspace, valid: &serde_json::Value) {
+    use serde_json::{Value, json};
+    for pointer in ["/workspace_members", "/packages/0/id", "/packages/0/name"] {
+        let mut value = valid.clone();
+        *value.pointer_mut(pointer).unwrap() = Value::Null;
+        workspace.metadata_probe(&value, valid, "invalid cargo metadata");
+        workspace.metadata_probe(valid, &value, "invalid cargo metadata");
+    }
+    for members in [
+        json!(["agent-id", "agent-id"]),
+        json!(["unknown"]),
+        json!([null]),
+    ] {
+        let mut value = valid.clone();
+        value["workspace_members"] = members;
+        workspace.metadata_probe(&value, valid, "invalid cargo metadata");
+        workspace.metadata_probe(valid, &value, "invalid cargo metadata");
+    }
+    for packages in [
+        json!([]),
+        json!([valid["packages"][0].clone(), valid["packages"][0].clone()]),
+    ] {
+        let mut value = valid.clone();
+        value["packages"] = packages;
+        workspace.metadata_probe(&value, valid, "invalid cargo metadata");
+        workspace.metadata_probe(valid, &value, "invalid cargo metadata");
+    }
+    let mut duplicate_name = valid.clone();
+    duplicate_name["packages"][1]["name"] = json!("maestro-agent");
+    workspace.metadata_probe(&duplicate_name, valid, "invalid cargo metadata");
+    workspace.metadata_probe(valid, &duplicate_name, "invalid cargo metadata");
 }

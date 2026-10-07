@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -20,13 +22,13 @@ impl Workspace {
                     let workspace = Self { root };
                     fs::write(
                         workspace.root.join("Cargo.toml"),
-                        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
+                        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n",
                     )
                     .unwrap();
                     workspace.list(&[]);
                     return workspace;
                 }
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
                 Err(error) => panic!("create fixture: {error}"),
             }
         }
@@ -39,7 +41,7 @@ impl Workspace {
         fs::write(
             root.join("Cargo.toml"),
             format!(
-                "[package]\nname = {name:?}\nversion = \"0.1.0\"\nedition = \"2024\"\n{dependencies}\n"
+                "[package]\nname = {name:?}\nversion = \"0.1.0\"\nedition = \"2024\"\n[lints]\nworkspace = true\n{dependencies}\n"
             ),
         )
         .unwrap();
@@ -60,7 +62,7 @@ impl Workspace {
             ),
         )
         .unwrap();
-        fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
+        fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
     }
 
     pub fn list(&self, entries: &[(&str, &str)]) {
@@ -240,10 +242,12 @@ impl Workspace {
             let mut dependencies = String::new();
             if exact(name) {
                 dependencies.push_str("[dependencies]\n");
-                for target in targets {
-                    pending.push(target);
-                    dependencies.push_str(&format!("{target} = {{ path = \"../{target}\" }}\n"));
-                }
+                pending.extend(targets);
+                dependencies.extend(
+                    targets
+                        .iter()
+                        .map(|target| format!("{target} = {{ path = \"../{target}\" }}\n")),
+                );
             }
             self.member(name, name, &dependencies);
         }

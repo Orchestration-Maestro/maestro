@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use crate::contribution_policy::Process;
 use crate::support::Workspace;
 use serde_json::{Value, json};

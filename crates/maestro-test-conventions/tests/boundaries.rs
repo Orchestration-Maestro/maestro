@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 mod support;
 
 use maestro_test_conventions::check_workspace;
@@ -27,27 +29,7 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
             workspace.external(library);
             let manifest = workspace.root.join(format!("crates/{owner}/Cargo.toml"));
             let baseline = std::fs::read_to_string(&manifest).unwrap();
-            for (kind, extra) in DECLARATIONS {
-                let declaration = format!(
-                    "alias = {{ package = {library:?}, path = \"../../external\"{extra} }}\n"
-                );
-                // Existing normal dependencies share a table with the external alias.
-                let contents = if *kind == "dependencies" && baseline.contains("[dependencies]\n") {
-                    baseline.replace(
-                        "[dependencies]\n",
-                        &format!("[dependencies]\n{declaration}"),
-                    )
-                } else {
-                    format!("{baseline}\n[{kind}]\n{declaration}")
-                };
-                std::fs::write(&manifest, contents).unwrap();
-                if owner == "maestro-extensions-wasmtime" && library != "wasmtime-wasi-http" {
-                    assert_eq!(check_workspace(&workspace.root), Ok(()));
-                } else {
-                    let error = check_workspace(&workspace.root).unwrap_err();
-                    assert!(error.contains(owner) && error.contains(library), "{error}");
-                }
-            }
+            check_runtime_declarations(&workspace, owner, library, &manifest, &baseline);
             std::fs::write(&manifest, &baseline).unwrap();
             assert_eq!(check_workspace(&workspace.root), Ok(()));
         }
@@ -269,6 +251,10 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         source(&workspace, "maestro-extensions-wasmtime", "build.rs", host);
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
+    reject_noncanonical_wit(&workspace, &guest);
+}
+
+fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
     let second = workspace.root.join("crates/maestro-extensions-wasm/second");
     std::fs::create_dir(&second).unwrap();
     std::fs::copy(guest.join("world.wit"), second.join("world.wit")).unwrap();
@@ -277,52 +263,15 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         .join("crates/maestro-extensions-wasmtime/copied");
     std::fs::create_dir(&copied).unwrap();
     std::fs::copy(guest.join("world.wit"), copied.join("world.wit")).unwrap();
-    for (host, expected) in [
-        (
-            r#"wasmtime::component::bindgen!({ path: "copied" });"#,
-            "guest-owned",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/second" });"#,
-            "same canonical source",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ path: "missing" });"#,
-            "cannot resolve",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ path: env!("WIT_PATH") });"#,
-            "requires review",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ path: concat!("../", "interfaces") });"#,
-            "requires review",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ path: WIT_PATH });"#,
-            "requires review",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ path: ["../maestro-extensions-wasm/interfaces", WIT_PATH] });"#,
-            "requires review",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ inline: "package maestro:fixture; world fixture {}" });"#,
-            "guest-owned",
-        ),
-        (
-            r#"wasmtime::component::bindgen!({ world: "fixture" });"#,
-            "requires review",
-        ),
-    ] {
-        source(&workspace, "maestro-extensions-wasmtime", "build.rs", host);
+    for &(host, expected) in NONCANONICAL_WIT {
+        source(workspace, "maestro-extensions-wasmtime", "build.rs", host);
         let error = check_workspace(&workspace.root).unwrap_err();
         assert!(
             error.contains("build.rs:1:") && error.contains(expected),
             "{error}"
         );
         source(
-            &workspace,
+            workspace,
             "maestro-extensions-wasmtime",
             "build.rs",
             r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces" });"#,
@@ -330,7 +279,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
     source(
-        &workspace,
+        workspace,
         "maestro-extensions-wasm",
         "src/lib.rs",
         r#"wit_bindgen::generate!({ path: "../maestro-extensions-wasmtime/copied" });"#,
@@ -341,7 +290,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
             .contains("guest-owned")
     );
     source(
-        &workspace,
+        workspace,
         "maestro-extensions-wasm",
         "src/lib.rs",
         r#"wit_bindgen::generate!({ path: ["interfaces"] });"#,
@@ -539,6 +488,12 @@ fn wit_static_paths_decode_rust_string_literals() {
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
     );
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn invalid_wit_string_literals_require_review() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
     for literal in [
         r#""\qinterfaces""#,
         r#""\xFF""#,
@@ -556,3 +511,71 @@ fn wit_static_paths_decode_rust_string_literals() {
         assert!(error.contains("requires review"), "{literal}: {error}");
     }
 }
+
+fn check_runtime_declarations(
+    workspace: &Workspace,
+    owner: &str,
+    library: &str,
+    manifest: &std::path::Path,
+    baseline: &str,
+) {
+    for (kind, extra) in DECLARATIONS {
+        let declaration =
+            format!("alias = {{ package = {library:?}, path = \"../../external\"{extra} }}\n");
+        // Existing normal dependencies share a table with the external alias.
+        let contents = if *kind == "dependencies" && baseline.contains("[dependencies]\n") {
+            baseline.replace(
+                "[dependencies]\n",
+                &format!("[dependencies]\n{declaration}"),
+            )
+        } else {
+            format!("{baseline}\n[{kind}]\n{declaration}")
+        };
+        std::fs::write(manifest, contents).unwrap();
+        if owner == "maestro-extensions-wasmtime" && library != "wasmtime-wasi-http" {
+            assert_eq!(check_workspace(&workspace.root), Ok(()));
+        } else {
+            let error = check_workspace(&workspace.root).unwrap_err();
+            assert!(error.contains(owner) && error.contains(library), "{error}");
+        }
+    }
+}
+
+const NONCANONICAL_WIT: &[(&str, &str)] = &[
+    (
+        r#"wasmtime::component::bindgen!({ path: "copied" });"#,
+        "guest-owned",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/second" });"#,
+        "same canonical source",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ path: "missing" });"#,
+        "cannot resolve",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ path: env!("WIT_PATH") });"#,
+        "requires review",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ path: concat!("../", "interfaces") });"#,
+        "requires review",
+    ),
+    (
+        r"wasmtime::component::bindgen!({ path: WIT_PATH });",
+        "requires review",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ path: ["../maestro-extensions-wasm/interfaces", WIT_PATH] });"#,
+        "requires review",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ inline: "package maestro:fixture; world fixture {}" });"#,
+        "guest-owned",
+    ),
+    (
+        r#"wasmtime::component::bindgen!({ world: "fixture" });"#,
+        "requires review",
+    ),
+];
