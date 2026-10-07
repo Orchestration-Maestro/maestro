@@ -1,3 +1,6 @@
+use credential_assertions::assert_credential_eq;
+#[path = "support/credential_assertions.rs"]
+mod credential_assertions;
 use maestro_models::*;
 use std::sync::{Arc, Mutex};
 
@@ -351,16 +354,17 @@ fn raw_simple_calls_forward_options_unchanged() {
     stream_simple(model("options"), context(), Some(simple.clone())).unwrap();
     drop(complete(model("options"), context(), Some(raw)));
     drop(complete_simple(model("options"), context(), Some(simple)));
-    assert_eq!(
-        *seen.lock().unwrap(),
-        vec![
+    assert_credential_eq(
+        &(*seen.lock().unwrap()),
+        &(vec![
             None,
             None,
             Some(expected_raw.clone()),
             Some(expected_simple.clone()),
             Some(expected_raw),
-            Some(expected_simple)
-        ]
+            Some(expected_simple),
+        ]),
+        "raw_simple_calls_forward_options_unchanged",
     );
     clear_api_providers();
 }
@@ -1137,7 +1141,11 @@ fn optional_null_and_numeric_values_are_not_normalized() {
         extra,
     };
     let v = serde_json::to_value(o).unwrap();
-    assert_eq!(v["headers"], serde_json::json!({}));
+    assert_credential_eq(
+        &(v["headers"]),
+        &(serde_json::json!({})),
+        "optional_null_and_numeric_values_are_not_normalized",
+    );
     assert_eq!(v["z"], serde_json::Value::Null);
     assert_eq!(v["a"], false);
 }
@@ -1638,9 +1646,21 @@ fn header_entries_become_last_assignment_record() {
     ]
     .map(|(k, v)| (k.into(), v.into()));
     let actual = headers_to_record(entries);
-    assert_eq!(actual["accept"], "a, b");
-    assert_eq!(actual["x-value"], " unchanged ");
-    assert_eq!(actual["set-cookie"], "last=2");
+    assert_credential_eq(
+        &(actual["accept"]),
+        &("a, b"),
+        "header_entries_become_last_assignment_record",
+    );
+    assert_credential_eq(
+        &(actual["x-value"]),
+        &(" unchanged "),
+        "header_entries_become_last_assignment_record",
+    );
+    assert_credential_eq(
+        &(actual["set-cookie"]),
+        &("last=2"),
+        "header_entries_become_last_assignment_record",
+    );
     assert_eq!(
         actual.keys().map(String::as_str).collect::<Vec<_>>(),
         ["accept", "set-cookie", "x-value"]
@@ -1818,7 +1838,11 @@ fn header_records_enumerate_indices_before_strings() {
         record.keys().map(String::as_str).collect::<Vec<_>>(),
         vec!["0", "2", "10", "tail", "01", "4294967295"]
     );
-    assert_eq!(record["tail"], "updated");
+    assert_credential_eq(
+        &(record["tail"]),
+        &("updated"),
+        "header_records_enumerate_indices_before_strings",
+    );
 }
 
 #[test]
@@ -1829,7 +1853,11 @@ fn header_proto_assignment_creates_no_own_property() {
     ]);
     assert!(!record.contains_key("__proto__"));
     assert_eq!(record.len(), 1);
-    assert_eq!(record["ok"], "kept");
+    assert_credential_eq(
+        &(record["ok"]),
+        &("kept"),
+        "header_proto_assignment_creates_no_own_property",
+    );
 }
 
 #[test]

@@ -3,7 +3,9 @@
 #![doc = include_str!("../../../docs/records.md")]
 #![doc = include_str!("../../../docs/model-options.md")]
 #![doc = include_str!("../../../docs/models/catalog.md")]
+#![doc = include_str!("../../../docs/request-authentication.md")]
 mod auth;
+mod builtins;
 mod cancellation;
 mod catalog;
 mod projection;
@@ -16,6 +18,7 @@ mod validation;
 pub use auth::{
     AuthResolver, AuthStatus, RequestAuth, SecretString, TokenExchange, TokenExchangeResult,
 };
+pub use builtins::{find_env_keys, get_env_api_key};
 pub use cancellation::Cancellation;
 pub use catalog::*;
 pub use projection::transform_messages;
