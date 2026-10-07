@@ -5,6 +5,7 @@ use super::{
     event_stream::AssistantMessageEventStream,
     types::*,
 };
+pub use crate::builtins::get_env_api_key;
 use std::{
     future::Future,
     pin::Pin,
