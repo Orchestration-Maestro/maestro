@@ -6,46 +6,83 @@ declaration contains only its name, description and JSON Schema parameters;
 execution callbacks and policy belong to the caller. Tool results have no usage
 or nested-call field.
 
-`project_context` explicitly constructs a pure, deterministic request view.
-Invocation never calls it implicitly. It stores nothing and never edits supplied
-prompt, tools, history or image strings. Tool-result `details` are removed only
-from this explicit projected view; invocation itself forwards them unchanged.
+`transform_messages(&messages, &model, optional_normalizer)` returns an ordered
+model-facing message sequence. Invocation never calls it implicitly. It stores
+nothing and does not write supplied history. Prompt and tools remain caller-owned
+and are not inputs to this function. Original tool-result details, including
+absent, null and object values, remain intact.
 
 ## Preservation and omission
 
-Exact requested provider, API and model equality retains text/call signatures, thinking signatures, signed empty thinking and opaque redacted data.
-Only nonempty signatures count as signed: `Some("")` is unsigned, while a
-signature containing a space is signed without trimming.
-Actual response model/ID do not redefine that equality. Unsigned blank thinking
-is omitted. Foreign replay drops text/call metadata and redacted thinking;
-nonblank readable thinking becomes unsigned text, without exposing opaque data.
-Supplied shared event handles observe later signature updates.
+Exact requested provider, API and model equality retains text/call signatures,
+thinking signatures, signed empty thinking and opaque redacted data. Actual
+response model/ID do not redefine that equality. Only nonempty signatures count
+as signed: `Some("")` is unsigned, while a space is signed without trimming.
+Unsigned blank thinking is omitted. Foreign redacted thinking is dropped;
+nonblank foreign thinking becomes unsigned text without trimming. Foreign text
+always loses its signature; a foreign call loses only a nonempty thought
+signature, retaining `Some("")` even when its identifier changes.
 
-Only foreign calls invoke the supplied deterministic, effect-free
-`normalize_tool_call_id` rule. An identity rule changes nothing. Other rules
-must preserve distinct IDs within a batch. The originating-turn mapping also
-rewrites real and synthetic results; a later same-model turn reusing an ID is
-not affected by an earlier rewrite. Mappings survive synthetic repair and
-intervening turns, so a delayed real result keeps the same rewritten ID as its
-originating call. Names and completed arguments stay exact.
+`None` leaves identifiers untouched. A supplied mutable callback runs once per
+foreign call in source order, receiving the original assistant and target model.
+Identity returns do not update or clear prior mappings. Changed identifiers write
+sequential last-write-wins mappings used by later real results, even across
+same-model reuse and repair boundaries. Empty normalized IDs change calls but
+do not rewrite real results because the result mapping must be nonempty. Earlier
+results are never rewritten retrospectively. Collisions are accepted: one real
+result satisfies all pending calls with that ID; without it each pending call
+receives a synthetic result, including duplicates. Repeated real results remain
+in order. Names and completed arguments are preserved.
 
-Input capability identifiers are supplied data. `image` retains exact base64
-and MIME strings, without fetching, decoding, resizing or re-encoding. Otherwise,
-adjacent image runs become one text block:
+Unchanged tool calls share their original handles; calls with changed signatures
+or identifiers use new handles. Transformation itself does not mutate the input,
+but a callback may modify the original shared call, without a lock held during
+its invocation. There is no purity or uniqueness requirement. Callback panics
+propagate; no recovery output is manufactured. Owned argument snapshots of
+signature-stripped calls are retained across callback mutation.
+
+Input capability identifiers are supplied data. Exact `image` retains base64
+and MIME strings without fetching, decoding, resizing or re-encoding. Otherwise,
+only user block arrays and tool-result blocks are downgraded. User strings and
+assistant content are not image-downgraded. Adjacent image runs become one text:
 
 - User: `(image omitted: model does not support images)`.
 - Tool result: `(tool image omitted: model does not support images)`.
 
-Supplied text blocks always survive unchanged, even adjacent omission-literal
-blocks with distinct replay metadata or supplied literal text following a
-generated omission. A preceding supplied omission literal suppresses a new
-placeholder for the following image run regardless of its replay metadata.
-Ordinary or empty text separates runs; repeated projection preserves the output. At each next user/assistant boundary and transcript end,
-unanswered successful calls receive error results in call order: `No result
-provided`, no details, and the supplied synthetic timestamp. Existing matching
-results prevent duplicates. Error and aborted assistant attempts are
-omitted, without synthesizing their results or inventing completed arguments.
-Repair is not tool execution, a model retry or a history write.
+Supplied text blocks always survive unchanged, including omission literals with
+replay metadata and literals after generated placeholders. A preceding matching
+literal suppresses a following image placeholder regardless of its metadata.
+The other role's literal does not suppress it. Ordinary or empty text separates
+runs; repeated downgrade preserves content. Generated placeholders are unsigned.
+
+The complete first pass performs image/replay/identifier conversion, including
+failed assistants. The second pass repairs prior pending calls before each
+assistant/user boundary and at exhaustion. Error and aborted assistants are then
+omitted, but their first-pass mapping effects and real results survive. Successful
+assistants install their calls as pending; real-result matching uses the current
+normalized IDs as a set. Missing calls receive error results in call order with
+`No result provided`, their tool name and absent details. Each insertion samples
+integer Unix milliseconds internally; there is no supplied clock or timestamp
+and no monotonic-time guarantee. Repair executes no tool and writes no history.
+
+## Controlled example
+
+This offline example needs only the `maestro-models` and `serde_json` crates:
+
+```rust
+use maestro_models::{Message, Model, UserContent, UserMessage, transform_messages};
+
+let model: Model = serde_json::from_value(serde_json::json!({
+    "id": "fixture", "name": "Fixture", "api": "fixture", "provider": "fixture",
+    "baseUrl": "fixture:", "reasoning": false, "input": ["text"],
+    "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    "contextWindow": 128000, "maxTokens": 16000
+})).unwrap();
+let messages = vec![Message::User(UserMessage {
+    content: UserContent::Text("hello".into()), timestamp: 1.0,
+})];
+assert_eq!(transform_messages(&messages, &model, None), messages);
+```
 
 ## Pure argument validation
 
