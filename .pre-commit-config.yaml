@@ -5,6 +5,7 @@ repos:
   - repo: builtin
     hooks:
       - id: check-merge-conflict
+        args: [--assume-in-merge]
       - id: check-yaml
       - id: check-toml
   - repo: local
@@ -18,7 +19,7 @@ repos:
       - id: conventional-commit-header
         name: Commit message opens with a conventional header
         language: pygrep
-        entry: '\A(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: [a-z][^\n]{0,70}\n'
+        entry: '\A(?=[^\n]{1,71}\n)(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: [a-z][^\n]*\n'
         args: [--negate, --multiline]
         stages: [commit-msg]
       - id: eighty-columns
