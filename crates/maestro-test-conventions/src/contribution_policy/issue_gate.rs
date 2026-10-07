@@ -44,7 +44,7 @@ pub(super) fn close(github: &mut Github<'_>, item: &Value) -> Result<(), String>
     github.repo_api(
         "POST",
         &format!("issues/{number}/comments"),
-        json!({"body":message}),
+        &json!({"body":message}),
     )?;
     let mut labels = if weekend {
         policy["issue_gate"]["weekend_labels"]
@@ -66,13 +66,13 @@ pub(super) fn close(github: &mut Github<'_>, item: &Value) -> Result<(), String>
         github.repo_api(
             "POST",
             &format!("issues/{number}/labels"),
-            json!({"labels":labels}),
+            &json!({"labels":labels}),
         )?;
     }
     github.repo_api(
         "PATCH",
         &format!("issues/{number}"),
-        json!({"state":"closed"}),
+        &json!({"state":"closed"}),
     )?;
     Ok(())
 }

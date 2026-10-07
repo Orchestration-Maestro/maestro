@@ -10,7 +10,7 @@ pub(super) struct Github<'a> {
 }
 
 impl Github<'_> {
-    pub fn api(&mut self, method: &str, endpoint: &str, data: Value) -> Result<Value, String> {
+    pub fn api(&mut self, method: &str, endpoint: &str, data: &Value) -> Result<Value, String> {
         let mut args = vec![
             "api".into(),
             "--method".into(),
@@ -21,22 +21,20 @@ impl Github<'_> {
         ];
         if method == "GET" {
             for (key, value) in data.as_object().into_iter().flatten() {
-                let value = if let Some(value) = value.as_str() {
-                    value.to_owned()
-                } else {
-                    value.to_string()
-                };
+                let value = value
+                    .as_str()
+                    .map_or_else(|| value.to_string(), str::to_owned);
                 args.extend(["--raw-field".into(), format!("{key}={value}")]);
             }
         }
-        let input = serde_json::to_vec(&data).map_err(|e| e.to_string())?;
+        let input = serde_json::to_vec(data).map_err(|e| e.to_string())?;
         let output = self.process.output(self.root, "gh", &args, Some(&input))?;
         if !output.status.success() {
             return Err(String::from_utf8_lossy(&output.stderr).trim().into());
         }
         serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())
     }
-    pub fn repo_api(&mut self, method: &str, suffix: &str, data: Value) -> Result<Value, String> {
+    pub fn repo_api(&mut self, method: &str, suffix: &str, data: &Value) -> Result<Value, String> {
         self.api(method, &format!("repos/{}/{suffix}", self.repository), data)
     }
 }
@@ -48,7 +46,7 @@ pub(super) fn get_permission(
     let response = github.repo_api(
         "GET",
         &format!("collaborators/{username}/permission"),
-        json!({}),
+        &json!({}),
     )?;
     Ok(response["permission"].as_str().map(str::to_owned))
 }
@@ -62,7 +60,7 @@ pub(super) fn get_text_file(github: &mut Github<'_>, path: &str) -> Result<Strin
     let response = github.repo_api(
         "GET",
         &format!("contents/{path}"),
-        json!({"ref":github.branch}),
+        &json!({"ref":github.branch}),
     )?;
     let content = response["content"]
         .as_str()

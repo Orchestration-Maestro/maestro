@@ -79,21 +79,12 @@ pub(crate) fn tokens(source: &str) -> Vec<Token<'_>> {
         if raw_identifier {
             index += 2;
         }
-        let character = source[index..]
-            .chars()
-            .next()
-            .expect("nonempty source tail");
+        let Some(character) = source[index..].chars().next() else {
+            break;
+        };
         index += character.len_utf8();
         if character.is_alphabetic() || character == '_' {
-            while let Some(character) = source[index..].chars().next() {
-                if regions.peek().is_some_and(|region| region.start == index) {
-                    break;
-                }
-                if !character.is_alphanumeric() && character != '_' {
-                    break;
-                }
-                index += character.len_utf8();
-            }
+            index = identifier_end(source, index, regions.peek().map(|region| region.start));
         }
         if !character.is_whitespace() {
             result.push(Token {
@@ -126,19 +117,8 @@ fn regions(source: &str) -> Vec<Region> {
         } else if bytes[index..].starts_with(b"/*") {
             let start = index + 2;
             index = start;
-            let mut depth = 1;
-            while index < bytes.len() && depth > 0 {
-                if bytes[index..].starts_with(b"/*") {
-                    depth += 1;
-                    index += 2;
-                } else if bytes[index..].starts_with(b"*/") {
-                    depth -= 1;
-                    index += 2;
-                } else {
-                    index += 1;
-                }
-            }
-            let end = if depth == 0 { index - 2 } else { index };
+            let (end, next) = block_comment_end(bytes, index);
+            index = next;
             result.push(Region {
                 start: start - 2,
                 end: index,
@@ -227,4 +207,30 @@ fn raw_string_end(bytes: &[u8], start: usize) -> Option<usize> {
         index += 1;
     }
     Some(bytes.len())
+}
+
+fn identifier_end(source: &str, mut index: usize, region: Option<usize>) -> usize {
+    while let Some(character) = source[index..].chars().next() {
+        if region == Some(index) || (!character.is_alphanumeric() && character != '_') {
+            break;
+        }
+        index += character.len_utf8();
+    }
+    index
+}
+
+fn block_comment_end(bytes: &[u8], mut index: usize) -> (usize, usize) {
+    let mut depth = 1;
+    while index < bytes.len() && depth > 0 {
+        if bytes[index..].starts_with(b"/*") {
+            depth += 1;
+            index += 2;
+        } else if bytes[index..].starts_with(b"*/") {
+            depth -= 1;
+            index += 2;
+        } else {
+            index += 1;
+        }
+    }
+    (if depth == 0 { index - 2 } else { index }, index)
 }

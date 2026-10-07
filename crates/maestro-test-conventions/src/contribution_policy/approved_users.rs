@@ -26,6 +26,7 @@ impl ApprovedUsers {
     }
 }
 
+#[derive(Clone, Copy)]
 pub(super) enum LineDiagnostics {
     Silent,
     Raw,
@@ -63,11 +64,8 @@ pub(super) fn parse_approved_users(
                 && !trimmed.is_empty()
                 && !trimmed.starts_with('#')
             {
-                if parts.len() != 2 {
-                    process.diagnostic(&format!("Skipping malformed line: {line}"));
-                } else {
-                    process.diagnostic(&format!("Skipping line with invalid capability: {line}"));
-                }
+                let message = malformed_message(line, parts.len());
+                process.diagnostic(&message);
             }
             result.entries.push(Entry::Other(line.into()));
         }
@@ -91,4 +89,12 @@ pub(super) fn stringify_approved_users(entries: &[Entry]) -> String {
         })
         .collect();
     format!("{}\n", lines.join("\n"))
+}
+
+fn malformed_message(line: &str, parts: usize) -> String {
+    if parts == 2 {
+        format!("Skipping line with invalid capability: {line}")
+    } else {
+        format!("Skipping malformed line: {line}")
+    }
 }

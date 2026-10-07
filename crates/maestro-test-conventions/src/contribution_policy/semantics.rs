@@ -24,71 +24,15 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
     let (date, time) = value
         .split_once(['T', 't'])
         .map_or((value, None), |(d, t)| (d, Some(t)));
-    let year_len = if date.starts_with(['+', '-']) { 7 } else { 4 };
-    let year_text = date.get(..year_len)?;
-    if !year_text
-        .trim_start_matches(['+', '-'])
-        .bytes()
-        .all(|b| b.is_ascii_digit())
-    {
-        return None;
-    }
-    if year_text == "-000000" {
-        return None;
-    }
-    let year = year_text.parse::<i32>().ok()?;
-    let rest = date.get(year_len..)?;
-    let (month, day) = match rest.len() {
-        0 => (1, 1),
-        3 if rest.starts_with('-') => (digits(&rest[1..], 2)? as u32, 1),
-        6 if rest.starts_with('-') && rest.as_bytes()[3] == b'-' => (
-            digits(&rest[1..3], 2)? as u32,
-            digits(&rest[4..], 2)? as u32,
-        ),
-        _ => return None,
-    };
-    if !(1..=31).contains(&day) {
-        return None;
-    }
-    if !(1..=12).contains(&month) {
-        return None;
-    }
-    // MakeDay counts Gregorian days from the epoch, including normalized day overflow.
-    let year = i64::from(year);
-    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    let month_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let days = 365 * (year - 1970) + (year - 1969).div_euclid(4) - (year - 1901).div_euclid(100)
-        + (year - 1601).div_euclid(400)
-        + month_days[(month - 1) as usize]
-        + i64::from(leap && month > 2)
-        + i64::from(day)
-        - 1;
+    let days = date_days(date)?;
     let Some(time) = time else {
         return clipped_weekday(days * 86_400_000);
     };
-    let (clock, offset) = if let Some(clock) = time.strip_suffix(['Z', 'z']) {
-        (clock, 0)
-    } else if let Some(index) = time.find(['+', '-']) {
-        let zone = time.get(index..)?;
-        let fields = zone.get(1..)?;
-        let (hour_text, minute_text) = if let Some((hour, minute)) = fields.split_once(':') {
-            (hour, minute)
-        } else if fields.len() == 4 {
-            (fields.get(..2)?, fields.get(2..)?)
-        } else {
-            return None;
-        };
-        let hour = digits(hour_text, 2)?;
-        let minute = digits(minute_text, 2)?;
-        if hour > 23 || minute > 59 {
-            return None;
-        }
-        let sign = if zone.starts_with('-') { -1 } else { 1 };
-        (time.get(..index)?, sign * (hour * 60 + minute))
-    } else {
-        // Repository runners use UTC for timestamps without an explicit offset.
-        (time, 0)
-    };
+    let (clock, offset) = clock_offset(time)?;
+    clipped_weekday(days * 86_400_000 + clock_millis(clock)? - offset * 60_000)
+}
+
+fn clock_millis(clock: &str) -> Option<i64> {
     let (clock, fraction) = clock
         .split_once('.')
         .map_or((clock, None), |(c, f)| (c, Some(f)));
@@ -128,10 +72,77 @@ pub(super) fn weekday(value: &str) -> Option<u32> {
             .zip([100, 10, 1])
             .fold(0, |n, (b, scale)| n + i64::from(b - b'0') * scale)
     });
-    // MakeDate combines the day and clock; TimeClip rejects values beyond either limit.
-    clipped_weekday(
-        days * 86_400_000 + (hour * 3600 + minute * 60 + second - offset * 60) * 1000 + millis,
-    )
+    Some((hour * 3600 + minute * 60 + second) * 1000 + millis)
+}
+
+fn date_days(date: &str) -> Option<i64> {
+    let year_len = if date.starts_with(['+', '-']) { 7 } else { 4 };
+    let year_text = date.get(..year_len)?;
+    if !year_text
+        .trim_start_matches(['+', '-'])
+        .bytes()
+        .all(|b| b.is_ascii_digit())
+    {
+        return None;
+    }
+    if year_text == "-000000" {
+        return None;
+    }
+    let year = year_text.parse::<i32>().ok()?;
+    let rest = date.get(year_len..)?;
+    let (month, day) = match rest.len() {
+        0 => (1, 1),
+        3 if rest.starts_with('-') => (u32::try_from(digits(&rest[1..], 2)?).ok()?, 1),
+        6 if rest.starts_with('-') && rest.as_bytes()[3] == b'-' => (
+            u32::try_from(digits(&rest[1..3], 2)?).ok()?,
+            u32::try_from(digits(&rest[4..], 2)?).ok()?,
+        ),
+        _ => return None,
+    };
+    if !(1..=31).contains(&day) {
+        return None;
+    }
+    if !(1..=12).contains(&month) {
+        return None;
+    }
+    // MakeDay counts Gregorian days from the epoch, including normalized day overflow.
+    let year = i64::from(year);
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let month_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let days = 365 * (year - 1970) + (year - 1969).div_euclid(4) - (year - 1901).div_euclid(100)
+        + (year - 1601).div_euclid(400)
+        + month_days[(month - 1) as usize]
+        + i64::from(leap && month > 2)
+        + i64::from(day)
+        - 1;
+    Some(days)
+}
+
+fn clock_offset(time: &str) -> Option<(&str, i64)> {
+    let result = if let Some(clock) = time.strip_suffix(['Z', 'z']) {
+        (clock, 0)
+    } else if let Some(index) = time.find(['+', '-']) {
+        let zone = time.get(index..)?;
+        let fields = zone.get(1..)?;
+        let (hour_text, minute_text) = if let Some((hour, minute)) = fields.split_once(':') {
+            (hour, minute)
+        } else if fields.len() == 4 {
+            (fields.get(..2)?, fields.get(2..)?)
+        } else {
+            return None;
+        };
+        let hour = digits(hour_text, 2)?;
+        let minute = digits(minute_text, 2)?;
+        if hour > 23 || minute > 59 {
+            return None;
+        }
+        let sign = if zone.starts_with('-') { -1 } else { 1 };
+        (time.get(..index)?, sign * (hour * 60 + minute))
+    } else {
+        // Repository runners use UTC for timestamps without an explicit offset.
+        (time, 0)
+    };
+    Some(result)
 }
 
 fn digits(value: &str, width: usize) -> Option<i64> {
@@ -145,5 +156,5 @@ fn clipped_weekday(time: i64) -> Option<u32> {
     if time.abs() > 8_640_000_000_000_000 {
         return None;
     }
-    Some((time.div_euclid(86_400_000) + 4).rem_euclid(7) as u32)
+    u32::try_from((time.div_euclid(86_400_000) + 4).rem_euclid(7)).ok()
 }

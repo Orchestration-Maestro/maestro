@@ -62,6 +62,17 @@ Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
 If you are adding a new provider, see `AGENTS.md` for required tests.
 
+## Code quality limits
+
+`just check` enforces at most 5 parameters (at most 1 boolean), 60 lines per
+function, cognitive complexity 15, nesting depth 4 and 500 production lines per
+Rust file. Test directories, `tests.rs` and trailing test modules do not count
+against file length. Pedantic Clippy lints are errors; production code may not
+use `unwrap`, `expect` or `panic!`. Unsafe code is forbidden. Thresholds live in
+`clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
+`[lints] workspace = true`. The workspace forbids protected quality lints, so the compiler rejects their
+`allow` and `expect` attributes, including attributes emitted by macros.
+
 ## Philosophy
 
 Maestro's core is minimal. If your feature does not belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.

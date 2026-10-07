@@ -1,9 +1,10 @@
-#[path = "../src/contribution_policy/mod.rs"]
-mod contribution_policy;
+#![cfg(test)]
+
+use maestro_test_conventions::contribution_policy;
 #[path = "support/policy.rs"]
 mod policy_support;
 mod support;
-use contribution_policy::run;
+
 use policy_support::{RecordingProcess, event, fixture};
 use serde_json::json;
 
@@ -17,8 +18,7 @@ fn comment_commands_observe_word_boundaries_and_issue_precedence() {
         assert_eq!(
             run(
                 &w.root,
-                "approve-contributor",
-                "issue_comment",
+                ("approve-contributor", "issue_comment"),
                 &e.to_string(),
                 None,
                 &mut p
@@ -34,8 +34,7 @@ fn comment_commands_observe_word_boundaries_and_issue_precedence() {
     assert_eq!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &e.to_string(),
             None,
             &mut p
@@ -57,8 +56,7 @@ fn comment_commands_observe_word_boundaries_and_issue_precedence() {
         assert_eq!(
             run(
                 &w.root,
-                "approve-contributor",
-                "issue_comment",
+                ("approve-contributor", "issue_comment"),
                 &e.to_string(),
                 Some("policy-app"),
                 &mut p
@@ -85,8 +83,7 @@ fn approval_permissions_skip_before_reading_policy() {
         }
         let result = run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &event("created").to_string(),
             None,
             &mut p,
@@ -108,8 +105,7 @@ fn approval_permissions_skip_before_reading_policy() {
         assert!(
             run(
                 &w.root,
-                "approve-contributor",
-                "issue_comment",
+                ("approve-contributor", "issue_comment"),
                 &e.to_string(),
                 None,
                 &mut p
@@ -148,8 +144,7 @@ fn approval_parser_handles_case_whitespace_and_duplicates() {
         assert_eq!(
             run(
                 &w.root,
-                "approve-contributor",
-                "issue_comment",
+                ("approve-contributor", "issue_comment"),
                 &e.to_string(),
                 None,
                 &mut p
@@ -183,8 +178,7 @@ fn approval_replaces_invalid_utf8_before_matching_existing_user() {
     assert_eq!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &e.to_string(),
             None,
             &mut p
@@ -215,8 +209,7 @@ fn approval_addition_preserves_lines_and_newline() {
     assert_eq!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &event("created").to_string(),
             Some("policy-app"),
             &mut p
@@ -250,8 +243,7 @@ fn approval_addition_preserves_lines_and_newline() {
         policy_support::update_replies(&mut p);
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &e.to_string(),
             Some("policy-app"),
             &mut p,
@@ -274,8 +266,7 @@ fn approval_upgrade_changes_last_duplicate_only() {
     assert_eq!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &event("created").to_string(),
             Some("policy-app"),
             &mut p
@@ -308,8 +299,7 @@ fn approval_already_never_downgrades_or_writes() {
         p.reply(json!({}));
         let outputs = run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &e.to_string(),
             None,
             &mut p,
@@ -336,8 +326,7 @@ fn approval_updates_use_signed_pull_requests() {
     policy_support::update_replies(&mut p);
     run(
         &w.root,
-        "approve-contributor",
-        "issue_comment",
+        ("approve-contributor", "issue_comment"),
         &event("created").to_string(),
         Some("policy-app"),
         &mut p,
@@ -409,7 +398,7 @@ fn gates_exempt_bots_and_write_collaborators() {
             e[field]["user"]["login"] = json!(author);
             let mut p = RecordingProcess::default();
             assert!(
-                run(&w.root, workflow, name, &e.to_string(), None, &mut p)
+                run(&w.root, (workflow, name), &e.to_string(), None, &mut p)
                     .unwrap()
                     .is_empty()
             );
@@ -419,7 +408,7 @@ fn gates_exempt_bots_and_write_collaborators() {
         for permission in ["admin", "maintain", "write"] {
             let mut p = RecordingProcess::default();
             p.reply(json!({"permission":permission}));
-            run(&w.root, workflow, name, &e.to_string(), None, &mut p).unwrap();
+            run(&w.root, (workflow, name), &e.to_string(), None, &mut p).unwrap();
             assert_eq!(p.requests.len(), 1);
         }
     }
@@ -440,8 +429,10 @@ fn gates_distinguish_issue_and_pr_capabilities() {
             }
             run(
                 &w.root,
-                if pr { "pr-gate" } else { "issue-gate" },
-                if pr { "pull_request_target" } else { "issues" },
+                (
+                    if pr { "pr-gate" } else { "issue-gate" },
+                    if pr { "pull_request_target" } else { "issues" },
+                ),
                 &policy_support::gate_event(pr).to_string(),
                 None,
                 &mut p,
@@ -472,8 +463,7 @@ fn gates_parse_malformed_lines_and_last_duplicate() {
         policy_support::content(&mut p, text);
         run(
             &w.root,
-            "pr-gate",
-            "pull_request_target",
+            ("pr-gate", "pull_request_target"),
             &policy_support::gate_event(true).to_string(),
             None,
             &mut p,
@@ -488,8 +478,7 @@ fn gates_parse_malformed_lines_and_last_duplicate() {
     p.reply(json!({}));
     run(
         &w.root,
-        "pr-gate",
-        "pull_request_target",
+        ("pr-gate", "pull_request_target"),
         &policy_support::gate_event(true).to_string(),
         None,
         &mut p,
@@ -507,8 +496,10 @@ fn gates_read_only_default_branch_content() {
         policy_support::content(&mut p, "Alice pr");
         run(
             &w.root,
-            if pr { "pr-gate" } else { "issue-gate" },
-            if pr { "pull_request_target" } else { "issues" },
+            (
+                if pr { "pr-gate" } else { "issue-gate" },
+                if pr { "pull_request_target" } else { "issues" },
+            ),
             &policy_support::gate_event(pr).to_string(),
             None,
             &mut p,
@@ -537,8 +528,10 @@ fn gates_read_only_default_branch_content() {
             assert_eq!(
                 run(
                     &w.root,
-                    if pr { "pr-gate" } else { "issue-gate" },
-                    if pr { "pull_request_target" } else { "issues" },
+                    (
+                        if pr { "pr-gate" } else { "issue-gate" },
+                        if pr { "pull_request_target" } else { "issues" }
+                    ),
                     &policy_support::gate_event(pr).to_string(),
                     None,
                     &mut p
@@ -561,8 +554,7 @@ fn pull_request_guidance_precedes_closure() {
     p.reply(json!({}));
     run(
         &w.root,
-        "pr-gate",
-        "pull_request_target",
+        ("pr-gate", "pull_request_target"),
         &policy_support::gate_event(true).to_string(),
         None,
         &mut p,
@@ -595,7 +587,7 @@ fn github_content_decoding_preserves_utf8() {
         let b64 = base64::engine::general_purpose::STANDARD.encode(text);
         for encoded in [
             b64.clone(),
-            format!(" \n{}\r\n", b64),
+            format!(" \n{b64}\r\n"),
             b64.trim_end_matches('=')
                 .replace('+', "-")
                 .replace('/', "_"),
@@ -605,8 +597,7 @@ fn github_content_decoding_preserves_utf8() {
             p.reply(json!({"content":encoded}));
             run(
                 &w.root,
-                "pr-gate",
-                "pull_request_target",
+                ("pr-gate", "pull_request_target"),
                 &e.to_string(),
                 None,
                 &mut p,
@@ -622,8 +613,7 @@ fn github_content_decoding_preserves_utf8() {
     p.reply(json!({"content":"/yBwcg"}));
     run(
         &w.root,
-        "pr-gate",
-        "pull_request_target",
+        ("pr-gate", "pull_request_target"),
         &e.to_string(),
         None,
         &mut p,
@@ -644,8 +634,7 @@ fn policy_process_inputs_are_not_shell_code() {
     p.reply(json!({}));
     run(
         &w.root,
-        "pr-gate",
-        "pull_request_target",
+        ("pr-gate", "pull_request_target"),
         &e.to_string(),
         None,
         &mut p,
@@ -695,8 +684,7 @@ fn normal_issue_message_weekend_route_is_configured() {
             p.reply(json!({}));
             run(
                 &w.root,
-                "issue-gate",
-                "issues",
+                ("issue-gate", "issues"),
                 &e.to_string(),
                 None,
                 &mut p,
@@ -739,8 +727,7 @@ fn refactor_issue_message_labels_keep_order() {
     p.reply(json!({}));
     run(
         &w.root,
-        "issue-gate",
-        "issues",
+        ("issue-gate", "issues"),
         &event("opened").to_string(),
         None,
         &mut p,
@@ -766,8 +753,7 @@ fn refactor_issue_message_labels_keep_order() {
     p.reply(json!({}));
     run(
         &w.root,
-        "issue-gate",
-        "issues",
+        ("issue-gate", "issues"),
         &event("opened").to_string(),
         None,
         &mut p,
@@ -785,39 +771,7 @@ fn refactor_issue_message_labels_keep_order() {
 #[test]
 fn issue_dates_follow_utc_javascript_boundaries() {
     let w = fixture();
-    for (date, day) in [
-        ("2026-10-08T23:59:59.999Z", Some(4)),
-        ("2026-10-09T00:00:00Z", Some(5)),
-        ("2026-10-09T00:30:00+02:00", Some(4)),
-        ("2026-10-11T23:59:59Z", Some(0)),
-        ("2026-10-12T00:00:00Z", Some(1)),
-        ("2026-10-09", Some(5)),
-        ("2026-10-08T24:00:00Z", Some(5)),
-        ("2026-02-30T00:00:00Z", Some(1)),
-        ("2024-02-29", Some(4)),
-        ("2026-13-01", None),
-        ("2026-10-08T25:00:00Z", None),
-        ("not-date", None),
-        ("2026-10-09T00:00:00", Some(5)),
-        ("2026-10-09T00:30+02:00", Some(4)),
-        ("2026-10-09T00:00Z", Some(5)),
-        ("2026-10-09T00:30", Some(5)),
-        ("2026-10", Some(4)),
-        ("2026", Some(4)),
-        ("+002026-10-09T00:00:00Z", Some(5)),
-        ("+262143-01-01T00:00:00Z", Some(2)),
-        ("+275760-09-13T00:00:00Z", Some(6)),
-        ("+275760-09-13T00:00:00.001Z", None),
-        ("-271821-04-20T00:00:00Z", Some(2)),
-        ("-271821-04-19T23:59:59.999Z", None),
-        ("2026-10-09T00:00:00.1234Z", Some(5)),
-        ("2026-10-09t00:00:00z", Some(5)),
-        ("2026-10-09 00:00:00Z", None),
-        ("2026T00:00Z", Some(4)),
-        ("2026-10T00:00Z", Some(4)),
-        ("2026-10-09T00:00+0200", Some(4)),
-        ("2026-10-09 00:00+0200", None),
-    ] {
+    for &(date, day) in ISSUE_DATES_FOLLOW_UTC_JAVASCRIPT_BOUNDARIES_DATE_DAY {
         for selected in 0..=6 {
             policy_support::configure(&w, |v| {
                 v["issue_gate"]["weekend_days"] = json!([selected]);
@@ -836,8 +790,7 @@ fn issue_dates_follow_utc_javascript_boundaries() {
             p.reply(json!({}));
             run(
                 &w.root,
-                "issue-gate",
-                "issues",
+                ("issue-gate", "issues"),
                 &e.to_string(),
                 None,
                 &mut p,
@@ -871,31 +824,7 @@ fn gate_read_and_action_failures_stop_in_order() {
         v["issue_gate"]["weekend_labels"] = json!(["weekend"]);
     });
     for pr in [false, true] {
-        for failing in 1..=if pr { 3 } else { 4 } {
-            let mut p = RecordingProcess::default();
-            p.reply(json!({"permission":"none"}));
-            if failing == 1 {
-                p.fail();
-            } else {
-                policy_support::content(&mut p, "");
-                for _ in 2..failing {
-                    p.reply(json!({}));
-                }
-                p.fail();
-            }
-            assert!(
-                run(
-                    &w.root,
-                    if pr { "pr-gate" } else { "issue-gate" },
-                    if pr { "pull_request_target" } else { "issues" },
-                    &policy_support::gate_event(pr).to_string(),
-                    None,
-                    &mut p
-                )
-                .is_err()
-            );
-            assert_eq!(p.requests.len(), failing + 1);
-        }
+        check_gate_action_failures(&w, pr);
     }
 }
 
@@ -908,8 +837,10 @@ fn activity_checks_approval_before_permissions() {
             policy_support::content(&mut p, &format!("Alice {cap}\n"));
             run(
                 &w.root,
-                "contribution-policy",
-                if pr { "pull_request_target" } else { "issues" },
+                (
+                    "contribution-policy",
+                    if pr { "pull_request_target" } else { "issues" },
+                ),
                 &policy_support::gate_event(pr).to_string(),
                 None,
                 &mut p,
@@ -924,8 +855,7 @@ fn activity_checks_approval_before_permissions() {
     let mut p = RecordingProcess::default();
     run(
         &w.root,
-        "contribution-policy",
-        "issues",
+        ("contribution-policy", "issues"),
         &e.to_string(),
         None,
         &mut p,
@@ -947,8 +877,7 @@ fn activity_read_and_permission_failures_continue() {
         p.reply(json!({"permission":"write"}));
         run(
             &w.root,
-            "contribution-policy",
-            "issues",
+            ("contribution-policy", "issues"),
             &event("opened").to_string(),
             None,
             &mut p,
@@ -991,8 +920,10 @@ fn activity_search_matches_label_only() {
         p.reply(json!({}));
         run(
             &w.root,
-            "contribution-policy",
-            if pr { "pull_request_target" } else { "issues" },
+            (
+                "contribution-policy",
+                if pr { "pull_request_target" } else { "issues" },
+            ),
             &e.to_string(),
             None,
             &mut p,
@@ -1055,8 +986,7 @@ fn activity_search_failures_and_no_matches_pass() {
         }
         let result = run(
             &w.root,
-            "contribution-policy",
-            "issues",
+            ("contribution-policy", "issues"),
             &event("opened").to_string(),
             None,
             &mut p,
@@ -1093,8 +1023,7 @@ fn activity_diagnostics_preserve_trimmed_gh_stderr() {
     p.replies.push_back(Err("gh stderr".into()));
     run(
         &w.root,
-        "contribution-policy",
-        "issues",
+        ("contribution-policy", "issues"),
         &event("opened").to_string(),
         None,
         &mut p,
@@ -1126,8 +1055,7 @@ fn activity_empty_configuration_does_not_search() {
         p.reply(json!({"permission":"none"}));
         run(
             &w.root,
-            "contribution-policy",
-            "issues",
+            ("contribution-policy", "issues"),
             &event("opened").to_string(),
             None,
             &mut p,
@@ -1157,8 +1085,7 @@ fn approval_completion_requires_trusted_merged_request() {
         p.reply(rejected["pull_request"].clone());
         run(
             &w.root,
-            "approve-contributor",
-            "pull_request_target",
+            ("approve-contributor", "pull_request_target"),
             &rejected.to_string(),
             Some("policy-app"),
             &mut p,
@@ -1170,8 +1097,7 @@ fn approval_completion_requires_trusted_merged_request() {
     policy_support::completion_replies(&mut p, &e, "Alice pr\n");
     run(
         &w.root,
-        "approve-contributor",
-        "pull_request_target",
+        ("approve-contributor", "pull_request_target"),
         &e.to_string(),
         Some("policy-app"),
         &mut p,
@@ -1186,8 +1112,7 @@ fn approval_completion_requires_trusted_merged_request() {
     p.reply(json!([{"filename":"AGENTS.md"}]));
     run(
         &w.root,
-        "approve-contributor",
-        "pull_request_target",
+        ("approve-contributor", "pull_request_target"),
         &e.to_string(),
         Some("policy-app"),
         &mut p,
@@ -1199,28 +1124,9 @@ fn approval_completion_requires_trusted_merged_request() {
 #[test]
 fn approval_status_messages_follow_effective_capability() {
     let w = fixture();
-    for (body, capability, guidance) in [
-        (
-            "LGTM then LGtMi",
-            "issue",
-            "@Alice approved for issues. Your future issues will not be auto-closed. PRs still require `lgtm`.",
-        ),
-        (
-            "lgtmi\nlgtm",
-            "issue",
-            "@Alice approved for issues. Your future issues will not be auto-closed. PRs still require `lgtm`.",
-        ),
-        (
-            "élgtmé",
-            "pr",
-            "@Alice approved for issues and PRs. Your future issues and PRs will not be auto-closed.",
-        ),
-        (
-            "(LGTM)!",
-            "pr",
-            "@Alice approved for issues and PRs. Your future issues and PRs will not be auto-closed.",
-        ),
-    ] {
+    for &(body, capability, guidance) in
+        APPROVAL_STATUS_MESSAGES_FOLLOW_EFFECTIVE_CAPABILITY_BODY_CAPABILITY_GUIDANCE
+    {
         let mut e = event("created");
         e["comment"]["body"] = json!(body);
         let mut p = RecordingProcess::default();
@@ -1228,8 +1134,7 @@ fn approval_status_messages_follow_effective_capability() {
         assert_eq!(
             run(
                 &w.root,
-                "approve-contributor",
-                "issue_comment",
+                ("approve-contributor", "issue_comment"),
                 &e.to_string(),
                 Some("policy-app"),
                 &mut p
@@ -1254,8 +1159,7 @@ fn approval_status_messages_follow_effective_capability() {
         policy_support::completion_replies(&mut p, &e, &format!("Alice {capability}\n"));
         run(
             &w.root,
-            "approve-contributor",
-            "pull_request_target",
+            ("approve-contributor", "pull_request_target"),
             &e.to_string(),
             Some("policy-app"),
             &mut p,
@@ -1311,8 +1215,7 @@ fn approval_completion_rechecks_comment_and_policy() {
         }
         run(
             &w.root,
-            "approve-contributor",
-            "pull_request_target",
+            ("approve-contributor", "pull_request_target"),
             &e.to_string(),
             Some("policy-app"),
             &mut p,
@@ -1324,8 +1227,7 @@ fn approval_completion_rechecks_comment_and_policy() {
     policy_support::completion_replies(&mut p, &e, "Alice pr\n");
     run(
         &w.root,
-        "approve-contributor",
-        "pull_request_target",
+        ("approve-contributor", "pull_request_target"),
         &e.to_string(),
         Some("policy-app"),
         &mut p,
@@ -1343,8 +1245,7 @@ fn approval_failures_never_claim_success() {
     assert!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &event("created").to_string(),
             Some("policy-app"),
             &mut p
@@ -1361,8 +1262,7 @@ fn approval_failures_never_claim_success() {
         assert!(
             run(
                 &w.root,
-                "approve-contributor",
-                "issue_comment",
+                ("approve-contributor", "issue_comment"),
                 &event("created").to_string(),
                 Some("policy-app"),
                 &mut p
@@ -1376,6 +1276,11 @@ fn approval_failures_never_claim_success() {
                 .any(|r| r.args.iter().any(|s| s.ends_with("/comments")))
         );
     }
+}
+
+#[test]
+fn approval_notification_failures_are_reported() {
+    let w = fixture();
     std::fs::write(w.root.join(".github/APPROVED_CONTRIBUTORS"), "Alice pr\n").unwrap();
     let mut p = RecordingProcess::default();
     p.reply(json!({"permission":"admin"}));
@@ -1383,8 +1288,7 @@ fn approval_failures_never_claim_success() {
     assert!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &event("created").to_string(),
             None,
             &mut p
@@ -1400,8 +1304,7 @@ fn approval_failures_never_claim_success() {
     assert!(
         run(
             &w.root,
-            "approve-contributor",
-            "pull_request_target",
+            ("approve-contributor", "pull_request_target"),
             &e.to_string(),
             Some("policy-app"),
             &mut p
@@ -1413,28 +1316,10 @@ fn approval_failures_never_claim_success() {
 
 #[test]
 fn repository_policy_binary_uses_same_entrypoint() {
-    use std::process::Command;
     let w = fixture();
     w.member("unused", "maestro-fixture", "");
-    let payload = w.root.join("event.json");
-    std::fs::write(&payload, "{}").unwrap();
-    for dir in ["home", "config", "tmp", "cache", "data", "state"] {
-        std::fs::create_dir(w.root.join(dir)).unwrap();
-    }
-    let output = Command::new(env!("CARGO_BIN_EXE_repository_policy"))
-        .arg("issue-gate")
-        .current_dir(&w.root)
-        .env_clear()
-        .env("GITHUB_EVENT_NAME", "unrelated")
-        .env("GITHUB_EVENT_PATH", &payload)
-        .env("HOME", w.root.join("home"))
-        .env("TMPDIR", w.root.join("tmp"))
-        .env("XDG_CONFIG_HOME", w.root.join("config"))
-        .env("XDG_CACHE_HOME", w.root.join("cache"))
-        .env("XDG_DATA_HOME", w.root.join("data"))
-        .env("XDG_STATE_HOME", w.root.join("state"))
-        .output()
-        .unwrap();
+    let mut command = controlled_policy_binary(&w.root, "issue-gate", "unrelated", "{}");
+    let output = command.output().unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -1444,8 +1329,7 @@ fn repository_policy_binary_uses_same_entrypoint() {
     assert!(
         run(
             &w.root,
-            "issue-gate",
-            "unrelated",
+            ("issue-gate", "unrelated"),
             "{}",
             None,
             &mut contribution_policy::SystemProcess
@@ -1453,11 +1337,64 @@ fn repository_policy_binary_uses_same_entrypoint() {
         .unwrap()
         .is_empty()
     );
-    let source = std::fs::read_to_string(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/bin/repository_policy.rs"),
+}
+
+#[test]
+fn repository_policy_binary_writes_active_route_outputs() {
+    let w = fixture();
+    let mut payload = event("created");
+    payload["comment"]["body"] = json!("No approval requested");
+    let outputs = w.root.join("outputs");
+    std::fs::write(&outputs, "existing=value\n").unwrap();
+    let output = controlled_policy_binary(
+        &w.root,
+        "approve-contributor",
+        "issue_comment",
+        &payload.to_string(),
     )
+    .env("GITHUB_OUTPUT", &outputs)
+    .output()
     .unwrap();
-    assert!(source.contains("contribution_policy::run("));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        std::fs::read_to_string(outputs).unwrap(),
+        "existing=value\nstatus=skipped\n"
+    );
+}
+
+fn controlled_policy_binary(
+    root: &std::path::Path,
+    workflow: &str,
+    event_name: &str,
+    payload_text: &str,
+) -> std::process::Command {
+    use std::process::Command;
+    let payload = root.join("event.json");
+    std::fs::write(&payload, payload_text).unwrap();
+    for dir in ["home", "config", "tmp", "cache", "data", "state"] {
+        std::fs::create_dir(root.join(dir)).unwrap();
+    }
+    let mut command = Command::new(env!("CARGO_BIN_EXE_repository_policy"));
+    command
+        .arg(workflow)
+        .current_dir(root)
+        .env_clear()
+        .env("GITHUB_EVENT_NAME", event_name)
+        .env("GITHUB_EVENT_PATH", &payload)
+        .env("HOME", root.join("home"))
+        .env("TMPDIR", root.join("tmp"))
+        .env("XDG_CONFIG_HOME", root.join("config"))
+        .env("XDG_CACHE_HOME", root.join("cache"))
+        .env("XDG_DATA_HOME", root.join("data"))
+        .env("XDG_STATE_HOME", root.join("state"));
+    if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
+        command.env("LLVM_PROFILE_FILE", profile);
+    }
+    command
 }
 
 fn repository_root() -> std::path::PathBuf {
@@ -1507,8 +1444,7 @@ fn workflow_routes_accept_only_intended_events() {
                 assert!(
                     run(
                         &w.root,
-                        file,
-                        name,
+                        (file, name),
                         &event(action).to_string(),
                         Some("policy-app"),
                         &mut p
@@ -1520,6 +1456,10 @@ fn workflow_routes_accept_only_intended_events() {
             }
         }
     }
+}
+
+#[test]
+fn approval_routes_ignore_pull_request_comments() {
     let w = fixture();
     let mut e = event("created");
     e["issue"]["pull_request"] = json!({});
@@ -1527,8 +1467,7 @@ fn workflow_routes_accept_only_intended_events() {
     assert!(
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &e.to_string(),
             None,
             &mut p
@@ -1559,108 +1498,7 @@ fn workflow_adapters_keep_credentials_off_head_code() {
         "pr-gate",
         "contribution-policy",
     ] {
-        let y = yaml(&format!(".github/workflows/{file}.yml"));
-        let job = &y["jobs"]["policy"];
-        assert_eq!(job["permissions"]["contents"].as_str(), Some("read"));
-        assert_eq!(job["env"]["TZ"].as_str(), Some("UTC"));
-        for credential in ["GH_TOKEN", "GITHUB_TOKEN"] {
-            assert!(job["env"][credential].is_badvalue());
-            assert!(y["env"][credential].is_badvalue());
-        }
-        let steps = job["steps"].as_vec().unwrap();
-        let checkout = &steps[0];
-        assert_eq!(
-            checkout["uses"].as_str(),
-            Some("actions/checkout@11d5960a326750d5838078e36cf38b85af677262")
-        );
-        assert_eq!(
-            checkout["with"]["ref"].as_str(),
-            Some("${{ github.event.repository.default_branch }}")
-        );
-        assert_eq!(
-            checkout["with"]["persist-credentials"].as_bool(),
-            Some(false)
-        );
-        let mut build_index = None;
-        let mut token_index = None;
-        for (i, step) in steps.iter().enumerate() {
-            if let Some(uses) = step["uses"].as_str() {
-                let sha = uses.split('@').nth(1).unwrap();
-                assert_eq!(sha.len(), 40);
-                assert!(sha.chars().all(|c| c.is_ascii_hexdigit()));
-                if uses.starts_with("actions/create-github-app-token@") {
-                    assert_eq!(file, "approve-contributor");
-                    token_index = Some(i);
-                    assert_eq!(
-                        uses,
-                        "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1"
-                    );
-                    assert_eq!(
-                        step["with"]["client-id"].as_str(),
-                        Some("${{ vars.RELEASE_APP_CLIENT_ID }}")
-                    );
-                    assert_eq!(
-                        step["with"]["private-key"].as_str(),
-                        Some("${{ secrets.RELEASE_APP_PRIVATE_KEY }}")
-                    );
-                    assert_eq!(
-                        step["with"]["owner"].as_str(),
-                        Some("${{ github.repository_owner }}")
-                    );
-                    assert_eq!(
-                        step["with"]["repositories"].as_str(),
-                        Some("${{ github.event.repository.name }}")
-                    );
-                    assert_eq!(step["with"]["permission-contents"].as_str(), Some("write"));
-                    assert_eq!(
-                        step["with"]["permission-pull-requests"].as_str(),
-                        Some("write")
-                    );
-                    assert_eq!(step["with"]["permission-issues"].as_str(), Some("write"));
-                }
-            }
-            if let Some(command) = step["run"].as_str() {
-                assert!(!command.contains("${{"));
-                assert!(!command.contains("github-script"));
-                assert!(!command.contains("git checkout"));
-                if command.contains("cargo build") {
-                    build_index = Some(i);
-                    assert!(command.contains("--locked"));
-                    assert!(step["env"].is_badvalue());
-                }
-                if command.contains("target/debug/repository_policy") {
-                    assert!(command.contains(file));
-                    assert!(step["env"]["GH_TOKEN"].as_str().is_some());
-                    if file == "approve-contributor" {
-                        assert_eq!(
-                            step["env"]["GH_TOKEN"].as_str(),
-                            Some("${{ steps.app.outputs.token }}")
-                        );
-                        assert_eq!(step["id"].as_str(), Some("update"));
-                        assert_eq!(
-                            step["env"]["MAESTRO_APPROVAL_APP_SLUG"].as_str(),
-                            Some("${{ steps.app.outputs.app-slug }}")
-                        );
-                    }
-                }
-            }
-        }
-        assert!(build_index.is_some());
-        if file == "approve-contributor" {
-            assert!(build_index.unwrap() < token_index.unwrap());
-        } else {
-            assert!(token_index.is_none());
-        }
-        if file != "approve-contributor" {
-            assert_eq!(job["permissions"]["issues"].as_str(), Some("write"));
-            assert_eq!(
-                steps.last().unwrap()["env"]["GH_TOKEN"].as_str(),
-                Some("${{ github.token }}")
-            );
-        }
-        if matches!(file, "pr-gate" | "contribution-policy") {
-            assert_eq!(job["permissions"]["pull-requests"].as_str(), Some("write"));
-        }
+        check_workflow_adapter(file);
     }
 }
 
@@ -1785,41 +1623,7 @@ fn ignore_patterns_hide_artifacts_not_sources() {
         w.root.join(".gitignore"),
     )
     .unwrap();
-    for file in [
-        "target/build",
-        "dist/app",
-        "node_modules/pkg",
-        "packages/foo/dist/x",
-        "packages/foo/dist-chrome/x",
-        "packages/foo/dist-firefox/x",
-        "run.log",
-        ".DS_Store",
-        "cache.tsbuildinfo",
-        "cpu.cpuprofile",
-        ".env",
-        ".vscode/settings.json",
-        ".zed/settings.json",
-        ".idea/workspace.xml",
-        "file.swp",
-        "file.swo",
-        "file~",
-        ".npm/cache",
-        "coverage/report",
-        ".nyc_output/result",
-        ".maestro_config/settings",
-        "tui-debug.log",
-        "compaction-results/result",
-        "syntax.jsonl",
-        "out.jsonl",
-        "maestro-session.html",
-        "out.html",
-        "packages/maestro/binaries/exe",
-        "todo.md",
-        "plans/plan.md",
-        ".maestro/hf-sessions/run",
-        ".maestro/hf-sessions-backup/run",
-        "collect.sh",
-    ] {
+    for &file in IGNORE_PATTERNS_HIDE_ARTIFACTS_NOT_SOURCES_FILE {
         assert!(
             git(&w, &["check-ignore", "--no-index", file])
                 .status
@@ -1884,68 +1688,18 @@ fn distribution_keeps_required_license_notices() {
 fn contributor_guidance_preserves_current_rules() {
     let root = repository_root();
     let contributing = std::fs::read_to_string(root.join("CONTRIBUTING.md")).unwrap();
-    for text in [
-        "understand your code",
-        "AGENTS.md",
-        "own voice",
-        "why it matters",
-        "lgtmi",
-        "lgtm",
-        "extension",
-        "twice",
-        "FAQ",
-        "just check",
-        "just test",
-        "CHANGELOG.md",
-    ] {
+    for &text in CONTRIBUTOR_GUIDANCE_PRESERVES_CURRENT_RULES_TEXT {
         assert!(contributing.contains(text), "{text}");
     }
-    for paragraph in [
-        "# Contributing to Maestro",
-        "This guide exists to save both sides time.",
-        "## The One Rule",
-        "**You must understand your code.** If you cannot explain what your changes do and how they interact with the rest of the system, your PR will be closed.",
-        "Using AI to write code is fine. Submitting AI-generated slop without understanding it is not.",
-        "If you use an agent, run it from the repository root directory so it picks up `AGENTS.md` automatically. Your agent must follow the rules and guidelines in that file.",
-        "## Contribution Gate",
-        "All issues and PRs from new contributors are auto-closed by default.",
-        "Maintainers review auto-closed issues daily and reopen worthwhile ones. Issues that do not meet the quality bar below will not be reopened or receive a reply.",
-        "Approval happens through maintainer replies on issues:",
-        "- `lgtmi`: your future issues will not be auto-closed\n- `lgtm`: your future issues and PRs will not be auto-closed",
-        "`lgtmi` does not grant rights to submit PRs. Only `lgtm` grants rights to submit PRs.",
-        "## Quality Bar For Issues",
-        "If you open an issue, you must use one of the two GitHub issue templates.",
-        "If you open an issue, keep it short, concrete, and worth reading.",
-        "- Keep it concise. If it does not fit on one screen, it is too long.\n- Write in your own voice.\n- State the bug or request clearly.\n- Explain why it matters.\n- If you want to implement the change yourself, say so.",
-        "If the issue is real and written well, a maintainer may reopen it, reply `lgtmi`, or reply `lgtm`.",
-        "## Blocking",
-        "If you ignore this document twice, or if you spam the tracker with agent-generated issues, your GitHub account will be permanently blocked.",
-        "If you send a large volume of issues through automation, your GitHub account will be permanently blocked. No taksies backsies.",
-        "## Before Submitting a PR",
-        "Do not open a PR unless you have already been approved with `lgtm`.",
-        "Before submitting a PR:",
-        "```bash\njust check\njust test\n```",
-        "Both must pass.",
-        "Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.",
-        "If you are adding a new provider, see `AGENTS.md` for required tests.",
-        "## Philosophy",
-        "Maestro's core is minimal. If your feature does not belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.",
-        "## Questions?",
-        "## FAQ",
-        "### Why are new issues and PRs auto-closed?",
-        "Maestro receives more issues than the maintainers can responsibly review in real time. Many reports do not meet the quality bar in this guide or do not follow CONTRIBUTING.md. Some are slung at the repository mindlessly via an agent instead of being reviewed and shaped by the person submitting them. Auto-closing creates a buffer so maintainers can review the tracker on their own schedule and reopen the issues that meet the quality bar.",
-        "### Why are weekend issues not reviewed?",
-        "The weekend route is configurable and currently off.",
-        "### Why do some issues get no reply?",
-        "A reply is maintenance work too. Low-signal issues, unclear reports, duplicates, and issues that do not follow this guide may be closed without discussion. This keeps time available for reproducible bugs, thoughtful requests, and contributors who have done the work to make their report actionable.",
-        "### Why not let AI triage everything?",
-        "AI can help group duplicates, summarize reports, and spot missing information. It is not trusted to make final maintainer decisions. Polished AI-generated issues can still be wrong, misleading, or expensive to investigate. Human review remains the final gate.",
-        "### Is this hostile to contributors?",
-        "No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.",
-    ] {
+    for &paragraph in CONTRIBUTOR_GUIDANCE_PRESERVES_CURRENT_RULES_PARAGRAPH {
         assert!(contributing.contains(paragraph), "{paragraph}");
     }
     assert!(contributing.contains("Human review remains the final gate."));
+}
+
+#[test]
+fn agent_guidance_preserves_current_rules() {
+    let root = repository_root();
     let agents = std::fs::read_to_string(root.join("AGENTS.md")).unwrap();
     for text in [
         "just check",
@@ -1987,6 +1741,11 @@ fn contributor_guidance_preserves_current_rules() {
     ] {
         assert!(agents.contains(text), "{text}");
     }
+}
+
+#[test]
+fn policy_documentation_preserves_current_rules() {
+    let root = repository_root();
     let glossary = std::fs::read_to_string(root.join("CONTEXT.md")).unwrap();
     for text in ["Contributor capability", "Effective approval"] {
         assert!(glossary.contains(text));
@@ -2019,8 +1778,7 @@ fn approval_stale_checkout_fails_before_branch_creation() {
     policy_support::update_replies(&mut p);
     let error = run(
         &w.root,
-        "approve-contributor",
-        "issue_comment",
+        ("approve-contributor", "issue_comment"),
         &event("created").to_string(),
         Some("policy-app"),
         &mut p,
@@ -2064,8 +1822,7 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
         }
         run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &e.to_string(),
             None,
             &mut p,
@@ -2074,6 +1831,11 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
         assert_eq!(p.diagnostics, vec![expected]);
         assert_eq!(p.requests.len(), usize::from(body == "lgtm"));
     }
+}
+
+#[test]
+fn approved_user_diagnostics_preserve_raw_lines() {
+    let w = fixture();
     std::fs::write(
         w.root.join(".github/APPROVED_CONTRIBUTORS"),
         "  malformed  \r\n  Invalid bad  \r\nAlice pr\n",
@@ -2084,8 +1846,7 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
     p.reply(json!({}));
     run(
         &w.root,
-        "approve-contributor",
-        "issue_comment",
+        ("approve-contributor", "issue_comment"),
         &event("created").to_string(),
         None,
         &mut p,
@@ -2099,14 +1860,18 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
             "Alice is already approved for pr",
         ]
     );
+}
+
+#[test]
+fn approval_update_diagnostics_preserve_status() {
+    let w = fixture();
     for (content, status) in [("", "added"), ("Alice issue\n", "updated")] {
         std::fs::write(w.root.join(".github/APPROVED_CONTRIBUTORS"), content).unwrap();
         let mut p = RecordingProcess::default();
         policy_support::update_replies(&mut p);
         let outputs = run(
             &w.root,
-            "approve-contributor",
-            "issue_comment",
+            ("approve-contributor", "issue_comment"),
             &event("created").to_string(),
             Some("policy-app"),
             &mut p,
@@ -2121,63 +1886,16 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
         );
         assert_eq!(p.diagnostics, vec!["Set Alice capability to pr"]);
     }
+}
+
+#[test]
+fn gate_diagnostics_preserve_values() {
+    let w = fixture();
     for pr in [false, true] {
         let workflow = if pr { "pr-gate" } else { "issue-gate" };
         let event_name = if pr { "pull_request_target" } else { "issues" };
         for branch in ["bot", "collaborator", "approved", "unapproved"] {
-            let mut e = policy_support::gate_event(pr);
-            let mut p = RecordingProcess::default();
-            let expected = match branch {
-                "bot" => {
-                    e[if pr { "pull_request" } else { "issue" }]["user"]["login"] =
-                        json!("Helper[bot]");
-                    vec!["Skipping bot: Helper[bot]"]
-                }
-                "collaborator" => {
-                    p.reply(json!({"permission":"maintain"}));
-                    vec!["Alice is a collaborator with maintain access"]
-                }
-                _ => {
-                    p.reply(json!({"permission":"none"}));
-                    policy_support::content(
-                        &mut p,
-                        if branch == "approved" {
-                            "  malformed  \n  Invalid bad  \nAlice pr\n"
-                        } else {
-                            "  malformed  \n  Invalid bad  \n"
-                        },
-                    );
-                    let mut expected = vec![
-                        "Skipping malformed line:   malformed  ",
-                        "Skipping line with invalid capability:   Invalid bad  ",
-                    ];
-                    if branch == "approved" {
-                        expected.push(if pr {
-                            "Alice is approved for PRs"
-                        } else {
-                            "Alice is approved for pr"
-                        });
-                    } else {
-                        p.reply(json!({}));
-                        p.reply(json!({}));
-                        if pr {
-                            expected.push("Alice is not approved, closing PR");
-                        }
-                    }
-                    expected
-                }
-            };
-            run(&w.root, workflow, event_name, &e.to_string(), None, &mut p).unwrap();
-            assert_eq!(p.diagnostics, expected, "{workflow} {branch}");
-            assert_eq!(
-                p.requests.len(),
-                match branch {
-                    "bot" => 0,
-                    "collaborator" => 1,
-                    "approved" => 2,
-                    _ => 4,
-                }
-            );
+            check_gate_diagnostics(&w, pr, branch);
         }
         let mut p = RecordingProcess::default();
         p.reply(json!({"permission":"none"}));
@@ -2188,8 +1906,7 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
         }
         run(
             &w.root,
-            workflow,
-            event_name,
+            (workflow, event_name),
             &policy_support::gate_event(pr).to_string(),
             None,
             &mut p,
@@ -2204,6 +1921,11 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
             }]
         );
     }
+}
+
+#[test]
+fn activity_diagnostics_preserve_provenance() {
+    let w = fixture();
     policy_support::configure(&w, |v| {
         v["activity_gate"] = json!({"repositories":["fixture/remote"],"label":"activity"});
     });
@@ -2218,59 +1940,10 @@ fn reference_branch_diagnostics_preserve_values_and_provenance() {
     ] {
         let mut e = event("opened");
         let mut p = RecordingProcess::default();
-        let expected = match branch {
-            "bot" => {
-                e["issue"]["user"]["login"] = json!("Helper[bot]");
-                vec!["Skipping bot: Helper[bot]"]
-            }
-            "approved" => {
-                policy_support::content(&mut p, "Alice issue\n");
-                vec!["Alice is in APPROVED_CONTRIBUTORS, passing"]
-            }
-            "collaborator" | "read-error" => {
-                if branch == "read-error" {
-                    p.fail();
-                } else {
-                    policy_support::content(&mut p, "");
-                }
-                p.reply(json!({"permission":"admin"}));
-                if branch == "read-error" {
-                    vec![
-                        "Could not read APPROVED_CONTRIBUTORS: controlled failure",
-                        "Alice is a collaborator (admin), passing",
-                    ]
-                } else {
-                    vec!["Alice is a collaborator (admin), passing"]
-                }
-            }
-            _ => {
-                policy_support::content(&mut p, "malformed\nInvalid bad\n");
-                p.fail();
-                if branch == "search-error" {
-                    p.fail();
-                } else {
-                    p.reply(json!({"total_count": if branch == "match" { 3 } else { 0 }}));
-                }
-                if branch == "match" {
-                    p.reply(json!({}));
-                    vec![
-                        "Alice has opened 3 issues/PRs on fixture/remote",
-                        "Alice has fixture/remote activity, adding label",
-                    ]
-                } else if branch == "search-error" {
-                    vec![
-                        "Search failed: controlled failure",
-                        "Alice has no fixture/remote activity, passing",
-                    ]
-                } else {
-                    vec!["Alice has no fixture/remote activity, passing"]
-                }
-            }
-        };
+        let expected = activity_diagnostic_replies(&mut p, &mut e, branch);
         run(
             &w.root,
-            "contribution-policy",
-            "issues",
+            ("contribution-policy", "issues"),
             &e.to_string(),
             None,
             &mut p,
@@ -2304,8 +1977,7 @@ fn activity_no_match_diagnostic_names_every_configured_repository() {
     p.reply(json!({"total_count":0}));
     run(
         &w.root,
-        "contribution-policy",
-        "issues",
+        ("contribution-policy", "issues"),
         &event("opened").to_string(),
         None,
         &mut p,
@@ -2323,221 +1995,7 @@ fn activity_no_match_diagnostic_names_every_configured_repository() {
 #[test]
 fn issue_dates_match_v8_differential_corpus() {
     let w = fixture();
-    for (date, day) in [
-        ("-000000-10-09", None),
-        ("202-10-09T00:00:00+02:30", None),
-        ("02026-10-09T00:00:00+02:30", None),
-        ("+026-10-09T00:00:00+02:30", None),
-        ("-026-10-09T00:00:00+02:30", None),
-        ("a026-10-09T00:00:00+02:30", None),
-        ("９026-10-09T00:00:00+02:30", None),
-        ("202 -10-09T00:00:00+02:30", None),
-        ("202x-10-09T00:00:00+02:30", None),
-        ("2026-1-09T00:00:00+02:30", None),
-        ("2026-010-09T00:00:00+02:30", None),
-        ("2026-+0-09T00:00:00+02:30", None),
-        ("2026--0-09T00:00:00+02:30", None),
-        ("2026-a0-09T00:00:00+02:30", None),
-        ("2026-９0-09T00:00:00+02:30", None),
-        ("2026-1 -09T00:00:00+02:30", None),
-        ("2026-1x-09T00:00:00+02:30", None),
-        ("2026-10-0T00:00:00+02:30", None),
-        ("2026-10-009T00:00:00+02:30", None),
-        ("2026-10-+9T00:00:00+02:30", None),
-        ("2026-10--9T00:00:00+02:30", None),
-        ("2026-10-a9T00:00:00+02:30", None),
-        ("2026-10-９9T00:00:00+02:30", None),
-        ("2026-10-0 T00:00:00+02:30", None),
-        ("2026-10-0xT00:00:00+02:30", None),
-        ("2026-10-09T0:00:00+02:30", None),
-        ("2026-10-09T000:00:00+02:30", None),
-        ("2026-10-09T+0:00:00+02:30", None),
-        ("2026-10-09T-0:00:00+02:30", None),
-        ("2026-10-09Ta0:00:00+02:30", None),
-        ("2026-10-09T９0:00:00+02:30", None),
-        ("2026-10-09T0 :00:00+02:30", None),
-        ("2026-10-09T0x:00:00+02:30", None),
-        ("2026-10-09T00:0:00+02:30", None),
-        ("2026-10-09T00:000:00+02:30", None),
-        ("2026-10-09T00:+0:00+02:30", None),
-        ("2026-10-09T00:-0:00+02:30", None),
-        ("2026-10-09T00:a0:00+02:30", None),
-        ("2026-10-09T00:９0:00+02:30", None),
-        ("2026-10-09T00:0 :00+02:30", None),
-        ("2026-10-09T00:0x:00+02:30", None),
-        ("2026-10-09T00:00:0+02:30", None),
-        ("2026-10-09T00:00:000+02:30", None),
-        ("2026-10-09T00:00:+0+02:30", None),
-        ("2026-10-09T00:00:-0+02:30", None),
-        ("2026-10-09T00:00:a0+02:30", None),
-        ("2026-10-09T00:00:９0+02:30", None),
-        ("2026-10-09T00:00:0 +02:30", None),
-        ("2026-10-09T00:00:0x+02:30", None),
-        ("2026-10-09T00:00:00+0:30", None),
-        ("2026-10-09T00:00:00+002:30", None),
-        ("2026-10-09T00:00:00++2:30", None),
-        ("2026-10-09T00:00:00+-2:30", None),
-        ("2026-10-09T00:00:00+a2:30", None),
-        ("2026-10-09T00:00:00+９2:30", None),
-        ("2026-10-09T00:00:00+0 :30", None),
-        ("2026-10-09T00:00:00+0x:30", None),
-        ("2026-10-09T00:00:00+02:3", None),
-        ("2026-10-09T00:00:00+02:030", None),
-        ("2026-10-09T00:00:00+02:+0", None),
-        ("2026-10-09T00:00:00+02:-0", None),
-        ("2026-10-09T00:00:00+02:a0", None),
-        ("2026-10-09T00:00:00+02:９0", None),
-        ("2026-10-09T00:00:00+02:3 ", None),
-        ("2026-10-09T00:00:00+02:3x", None),
-        ("2026-10-09T00:00:00Z", Some(5)),
-        ("2026-10-09T00:00:00z", Some(5)),
-        ("2026-10-09T00:00:00+02:30", Some(4)),
-        ("2026-10-09T00:00:00-02:30", Some(5)),
-        ("2026-10-09T00:00:00+0230", Some(4)),
-        ("2026-10-09T00:00:00-0230", Some(5)),
-        ("2026-10-09T00:00:00+02", None),
-        ("2026-10-09T00:00:00-02", None),
-        ("2026-10-09T00:00:00", Some(5)),
-        ("2026-10-09T00:00:00+24:00", None),
-        ("2026-10-09T00:00:00+00:60", None),
-        ("2026-10-09T00:00:00+2:00", None),
-        ("2026-10-09T00:00:00+-1:00", None),
-        ("2026-10-09T00:00:00.Z", None),
-        ("2026-10-09T00:00:00.1Z", Some(5)),
-        ("2026-10-09T00:00:00.12Z", Some(5)),
-        ("2026-10-09T00:00:00.123Z", Some(5)),
-        ("2026-10-09T00:00:00.1234Z", Some(5)),
-        ("2026-10-09T00:00:00.12345Z", Some(5)),
-        ("2026-10-09T00:00:00.123456Z", Some(5)),
-        ("2026-10-09T00:00:00.1234567Z", Some(5)),
-        ("2026-10-09T00:00:00.12345678Z", Some(5)),
-        ("2026-10-09T00:00:00.123456789Z", Some(5)),
-        ("2026-10-09t00:00:00Z", Some(5)),
-        ("2026-10-09t00:00:00z", Some(5)),
-        ("2026-10-09t00:00:00+02:30", Some(4)),
-        ("2026-10-09t00:00:00-02:30", Some(5)),
-        ("2026-10-09t00:00:00+0230", Some(4)),
-        ("2026-10-09t00:00:00-0230", Some(5)),
-        ("2026-10-09t00:00:00+02", None),
-        ("2026-10-09t00:00:00-02", None),
-        ("2026-10-09t00:00:00", Some(5)),
-        ("2026-10-09t00:00:00+24:00", None),
-        ("2026-10-09t00:00:00+00:60", None),
-        ("2026-10-09t00:00:00+2:00", None),
-        ("2026-10-09t00:00:00+-1:00", None),
-        ("2026-10-09t00:00:00.Z", None),
-        ("2026-10-09t00:00:00.1Z", Some(5)),
-        ("2026-10-09t00:00:00.12Z", Some(5)),
-        ("2026-10-09t00:00:00.123Z", Some(5)),
-        ("2026-10-09t00:00:00.1234Z", Some(5)),
-        ("2026-10-09t00:00:00.12345Z", Some(5)),
-        ("2026-10-09t00:00:00.123456Z", Some(5)),
-        ("2026-10-09t00:00:00.1234567Z", Some(5)),
-        ("2026-10-09t00:00:00.12345678Z", Some(5)),
-        ("2026-10-09t00:00:00.123456789Z", Some(5)),
-        ("2026-10-09 00:00:00Z", None),
-        ("2026-10-09 00:00:00z", None),
-        ("2026-10-09 00:00:00+02:30", None),
-        ("2026-10-09 00:00:00-02:30", None),
-        ("2026-10-09 00:00:00+0230", None),
-        ("2026-10-09 00:00:00-0230", None),
-        ("2026-10-09 00:00:00+02", None),
-        ("2026-10-09 00:00:00-02", None),
-        ("2026-10-09 00:00:00", None),
-        ("2026-10-09 00:00:00+24:00", None),
-        ("2026-10-09 00:00:00+00:60", None),
-        ("2026-10-09 00:00:00+2:00", None),
-        ("2026-10-09 00:00:00+-1:00", None),
-        ("2026-10-09 00:00:00.Z", None),
-        ("2026-10-09 00:00:00.1Z", None),
-        ("2026-10-09 00:00:00.12Z", None),
-        ("2026-10-09 00:00:00.123Z", None),
-        ("2026-10-09 00:00:00.1234Z", None),
-        ("2026-10-09 00:00:00.12345Z", None),
-        ("2026-10-09 00:00:00.123456Z", None),
-        ("2026-10-09 00:00:00.1234567Z", None),
-        ("2026-10-09 00:00:00.12345678Z", None),
-        ("2026-10-09 00:00:00.123456789Z", None),
-        ("2026", Some(4)),
-        ("2026T00:00Z", Some(4)),
-        ("2026T00:00:00Z", Some(4)),
-        ("2026-10", Some(4)),
-        ("2026-10T00:00Z", Some(4)),
-        ("2026-10T00:00:00Z", Some(4)),
-        ("2026-10-09", Some(5)),
-        ("2026-10-09T00:00Z", Some(5)),
-        ("+002026", Some(4)),
-        ("+002026T00:00Z", Some(4)),
-        ("+002026T00:00:00Z", Some(4)),
-        ("+002026-10", Some(4)),
-        ("+002026-10T00:00Z", Some(4)),
-        ("+002026-10T00:00:00Z", Some(4)),
-        ("+002026-10-09", Some(5)),
-        ("+002026-10-09T00:00Z", Some(5)),
-        ("+002026-10-09T00:00:00Z", Some(5)),
-        ("-000000-10-09T00:00Z", None),
-        ("-000000-10-09T00:00:00Z", None),
-        ("2026-00-09T00:00:00+02:30", None),
-        ("2026-13-09T00:00:00+02:30", None),
-        ("2026-99-09T00:00:00+02:30", None),
-        ("2026-10-00T00:00:00+02:30", None),
-        ("2026-10-32T00:00:00+02:30", None),
-        ("2026-10-99T00:00:00+02:30", None),
-        ("2026-10-09T24:00:00+02:30", Some(5)),
-        ("2026-10-09T25:00:00+02:30", None),
-        ("2026-10-09T99:00:00+02:30", None),
-        ("2026-10-09T00:60:00+02:30", None),
-        ("2026-10-09T00:99:00+02:30", None),
-        ("2026-10-09T00:00:60+02:30", None),
-        ("2026-10-09T00:00:99+02:30", None),
-        ("2026-10-09T24:00Z", Some(6)),
-        ("2026-10-09T24:00+02:00", Some(5)),
-        ("2026-10-09T24:00-02:00", Some(6)),
-        ("2026-10-09T24:00:00Z", Some(6)),
-        ("2026-10-09T24:00:00+02:00", Some(5)),
-        ("2026-10-09T24:00:00-02:00", Some(6)),
-        ("2026-10-09T24:00:01Z", None),
-        ("2026-10-09T24:00:01+02:00", None),
-        ("2026-10-09T24:00:01-02:00", None),
-        ("2026-10-09T24:01:00Z", None),
-        ("2026-10-09T24:01:00+02:00", None),
-        ("2026-10-09T24:01:00-02:00", None),
-        ("2026-10-09T24:00:00.000Z", Some(6)),
-        ("2026-10-09T24:00:00.000+02:00", Some(5)),
-        ("2026-10-09T24:00:00.000-02:00", Some(6)),
-        ("2026-10-09T24:00:00.001Z", None),
-        ("2026-10-09T24:00:00.001+02:00", None),
-        ("2026-10-09T24:00:00.001-02:00", None),
-        ("2026-10-09T24:00:00.0001Z", None),
-        ("2026-10-09T24:00:00.0001+02:00", None),
-        ("2026-10-09T24:00:00.0001-02:00", None),
-        ("+275760-09-13T00:00:00Z", Some(6)),
-        ("+275760-09-13T00:00:00.001Z", None),
-        ("+275760-09-13T23:59:59.999Z", None),
-        ("+275760-09-13T00:00:00+00:01", Some(5)),
-        ("+275760-09-13T00:00:00-00:01", None),
-        ("-271821-04-20T00:00:00Z", Some(2)),
-        ("-271821-04-20T00:00:00.001Z", Some(2)),
-        ("-271821-04-20T23:59:59.999Z", Some(2)),
-        ("-271821-04-20T00:00:00+00:01", None),
-        ("-271821-04-20T00:00:00-00:01", Some(2)),
-        ("+275760-09-14T00:00:00Z", None),
-        ("+275760-09-14T00:00:00.001Z", None),
-        ("+275760-09-14T23:59:59.999Z", None),
-        ("+275760-09-14T00:00:00+00:01", None),
-        ("+275760-09-14T00:00:00-00:01", None),
-        ("-271821-04-19T00:00:00Z", None),
-        ("-271821-04-19T00:00:00.001Z", None),
-        ("-271821-04-19T23:59:59.999Z", None),
-        ("-271821-04-19T00:00:00+00:01", None),
-        ("-271821-04-19T00:00:00-00:01", None),
-        ("2026-10-+9T00:00:00Z", None),
-        ("2026-+1-01T00:00:00Z", None),
-        ("2026-1-01T00:00:00Z", None),
-        ("2026-10-09T00:00:00+1:00", None),
-        ("2026-02-30T00:00:00Z", Some(1)),
-        ("2024-02-29T00:00:00Z", Some(4)),
-    ] {
+    for &(date, day) in ISSUE_DATES_MATCH_V8_DIFFERENTIAL_CORPUS_DATE_DAY {
         for selected in 0..=6 {
             policy_support::configure(&w, |v| {
                 v["issue_gate"]["weekend_days"] = json!([selected]);
@@ -2554,8 +2012,7 @@ fn issue_dates_match_v8_differential_corpus() {
             p.reply(json!({}));
             run(
                 &w.root,
-                "issue-gate",
-                "issues",
+                ("issue-gate", "issues"),
                 &e.to_string(),
                 None,
                 &mut p,
@@ -2578,5 +2035,686 @@ fn issue_dates_match_v8_differential_corpus() {
                 "{date} day {selected}"
             );
         }
+    }
+}
+
+fn run(
+    root: &std::path::Path,
+    route: (&str, &str),
+    payload: &str,
+    app_slug: Option<&str>,
+    process: &mut dyn contribution_policy::Process,
+) -> Result<Vec<(String, String)>, String> {
+    contribution_policy::run(
+        &contribution_policy::Invocation {
+            root,
+            workflow: route.0,
+            event_name: route.1,
+            payload,
+            app_slug,
+        },
+        process,
+    )
+}
+
+const ISSUE_DATES_FOLLOW_UTC_JAVASCRIPT_BOUNDARIES_DATE_DAY: &[(&str, Option<u32>)] = &[
+    ("2026-10-08T23:59:59.999Z", Some(4)),
+    ("2026-10-09T00:00:00Z", Some(5)),
+    ("2026-10-09T00:30:00+02:00", Some(4)),
+    ("2026-10-11T23:59:59Z", Some(0)),
+    ("2026-10-12T00:00:00Z", Some(1)),
+    ("2026-10-09", Some(5)),
+    ("2026-10-08T24:00:00Z", Some(5)),
+    ("2026-02-30T00:00:00Z", Some(1)),
+    ("2024-02-29", Some(4)),
+    ("2026-13-01", None),
+    ("2026-10-08T25:00:00Z", None),
+    ("not-date", None),
+    ("2026-10-09T00:00:00", Some(5)),
+    ("2026-10-09T00:30+02:00", Some(4)),
+    ("2026-10-09T00:00Z", Some(5)),
+    ("2026-10-09T00:30", Some(5)),
+    ("2026-10", Some(4)),
+    ("2026", Some(4)),
+    ("+002026-10-09T00:00:00Z", Some(5)),
+    ("+262143-01-01T00:00:00Z", Some(2)),
+    ("+275760-09-13T00:00:00Z", Some(6)),
+    ("+275760-09-13T00:00:00.001Z", None),
+    ("-271821-04-20T00:00:00Z", Some(2)),
+    ("-271821-04-19T23:59:59.999Z", None),
+    ("2026-10-09T00:00:00.1234Z", Some(5)),
+    ("2026-10-09t00:00:00z", Some(5)),
+    ("2026-10-09 00:00:00Z", None),
+    ("2026T00:00Z", Some(4)),
+    ("2026-10T00:00Z", Some(4)),
+    ("2026-10-09T00:00+0200", Some(4)),
+    ("2026-10-09 00:00+0200", None),
+];
+
+const ISSUE_DATES_MATCH_V8_DIFFERENTIAL_CORPUS_DATE_DAY: &[(&str, Option<u32>)] = &[
+    ("-000000-10-09", None),
+    ("202-10-09T00:00:00+02:30", None),
+    ("02026-10-09T00:00:00+02:30", None),
+    ("+026-10-09T00:00:00+02:30", None),
+    ("-026-10-09T00:00:00+02:30", None),
+    ("a026-10-09T00:00:00+02:30", None),
+    ("９026-10-09T00:00:00+02:30", None),
+    ("202 -10-09T00:00:00+02:30", None),
+    ("202x-10-09T00:00:00+02:30", None),
+    ("2026-1-09T00:00:00+02:30", None),
+    ("2026-010-09T00:00:00+02:30", None),
+    ("2026-+0-09T00:00:00+02:30", None),
+    ("2026--0-09T00:00:00+02:30", None),
+    ("2026-a0-09T00:00:00+02:30", None),
+    ("2026-９0-09T00:00:00+02:30", None),
+    ("2026-1 -09T00:00:00+02:30", None),
+    ("2026-1x-09T00:00:00+02:30", None),
+    ("2026-10-0T00:00:00+02:30", None),
+    ("2026-10-009T00:00:00+02:30", None),
+    ("2026-10-+9T00:00:00+02:30", None),
+    ("2026-10--9T00:00:00+02:30", None),
+    ("2026-10-a9T00:00:00+02:30", None),
+    ("2026-10-９9T00:00:00+02:30", None),
+    ("2026-10-0 T00:00:00+02:30", None),
+    ("2026-10-0xT00:00:00+02:30", None),
+    ("2026-10-09T0:00:00+02:30", None),
+    ("2026-10-09T000:00:00+02:30", None),
+    ("2026-10-09T+0:00:00+02:30", None),
+    ("2026-10-09T-0:00:00+02:30", None),
+    ("2026-10-09Ta0:00:00+02:30", None),
+    ("2026-10-09T９0:00:00+02:30", None),
+    ("2026-10-09T0 :00:00+02:30", None),
+    ("2026-10-09T0x:00:00+02:30", None),
+    ("2026-10-09T00:0:00+02:30", None),
+    ("2026-10-09T00:000:00+02:30", None),
+    ("2026-10-09T00:+0:00+02:30", None),
+    ("2026-10-09T00:-0:00+02:30", None),
+    ("2026-10-09T00:a0:00+02:30", None),
+    ("2026-10-09T00:９0:00+02:30", None),
+    ("2026-10-09T00:0 :00+02:30", None),
+    ("2026-10-09T00:0x:00+02:30", None),
+    ("2026-10-09T00:00:0+02:30", None),
+    ("2026-10-09T00:00:000+02:30", None),
+    ("2026-10-09T00:00:+0+02:30", None),
+    ("2026-10-09T00:00:-0+02:30", None),
+    ("2026-10-09T00:00:a0+02:30", None),
+    ("2026-10-09T00:00:９0+02:30", None),
+    ("2026-10-09T00:00:0 +02:30", None),
+    ("2026-10-09T00:00:0x+02:30", None),
+    ("2026-10-09T00:00:00+0:30", None),
+    ("2026-10-09T00:00:00+002:30", None),
+    ("2026-10-09T00:00:00++2:30", None),
+    ("2026-10-09T00:00:00+-2:30", None),
+    ("2026-10-09T00:00:00+a2:30", None),
+    ("2026-10-09T00:00:00+９2:30", None),
+    ("2026-10-09T00:00:00+0 :30", None),
+    ("2026-10-09T00:00:00+0x:30", None),
+    ("2026-10-09T00:00:00+02:3", None),
+    ("2026-10-09T00:00:00+02:030", None),
+    ("2026-10-09T00:00:00+02:+0", None),
+    ("2026-10-09T00:00:00+02:-0", None),
+    ("2026-10-09T00:00:00+02:a0", None),
+    ("2026-10-09T00:00:00+02:９0", None),
+    ("2026-10-09T00:00:00+02:3 ", None),
+    ("2026-10-09T00:00:00+02:3x", None),
+    ("2026-10-09T00:00:00Z", Some(5)),
+    ("2026-10-09T00:00:00z", Some(5)),
+    ("2026-10-09T00:00:00+02:30", Some(4)),
+    ("2026-10-09T00:00:00-02:30", Some(5)),
+    ("2026-10-09T00:00:00+0230", Some(4)),
+    ("2026-10-09T00:00:00-0230", Some(5)),
+    ("2026-10-09T00:00:00+02", None),
+    ("2026-10-09T00:00:00-02", None),
+    ("2026-10-09T00:00:00", Some(5)),
+    ("2026-10-09T00:00:00+24:00", None),
+    ("2026-10-09T00:00:00+00:60", None),
+    ("2026-10-09T00:00:00+2:00", None),
+    ("2026-10-09T00:00:00+-1:00", None),
+    ("2026-10-09T00:00:00.Z", None),
+    ("2026-10-09T00:00:00.1Z", Some(5)),
+    ("2026-10-09T00:00:00.12Z", Some(5)),
+    ("2026-10-09T00:00:00.123Z", Some(5)),
+    ("2026-10-09T00:00:00.1234Z", Some(5)),
+    ("2026-10-09T00:00:00.12345Z", Some(5)),
+    ("2026-10-09T00:00:00.123456Z", Some(5)),
+    ("2026-10-09T00:00:00.1234567Z", Some(5)),
+    ("2026-10-09T00:00:00.12345678Z", Some(5)),
+    ("2026-10-09T00:00:00.123456789Z", Some(5)),
+    ("2026-10-09t00:00:00Z", Some(5)),
+    ("2026-10-09t00:00:00z", Some(5)),
+    ("2026-10-09t00:00:00+02:30", Some(4)),
+    ("2026-10-09t00:00:00-02:30", Some(5)),
+    ("2026-10-09t00:00:00+0230", Some(4)),
+    ("2026-10-09t00:00:00-0230", Some(5)),
+    ("2026-10-09t00:00:00+02", None),
+    ("2026-10-09t00:00:00-02", None),
+    ("2026-10-09t00:00:00", Some(5)),
+    ("2026-10-09t00:00:00+24:00", None),
+    ("2026-10-09t00:00:00+00:60", None),
+    ("2026-10-09t00:00:00+2:00", None),
+    ("2026-10-09t00:00:00+-1:00", None),
+    ("2026-10-09t00:00:00.Z", None),
+    ("2026-10-09t00:00:00.1Z", Some(5)),
+    ("2026-10-09t00:00:00.12Z", Some(5)),
+    ("2026-10-09t00:00:00.123Z", Some(5)),
+    ("2026-10-09t00:00:00.1234Z", Some(5)),
+    ("2026-10-09t00:00:00.12345Z", Some(5)),
+    ("2026-10-09t00:00:00.123456Z", Some(5)),
+    ("2026-10-09t00:00:00.1234567Z", Some(5)),
+    ("2026-10-09t00:00:00.12345678Z", Some(5)),
+    ("2026-10-09t00:00:00.123456789Z", Some(5)),
+    ("2026-10-09 00:00:00Z", None),
+    ("2026-10-09 00:00:00z", None),
+    ("2026-10-09 00:00:00+02:30", None),
+    ("2026-10-09 00:00:00-02:30", None),
+    ("2026-10-09 00:00:00+0230", None),
+    ("2026-10-09 00:00:00-0230", None),
+    ("2026-10-09 00:00:00+02", None),
+    ("2026-10-09 00:00:00-02", None),
+    ("2026-10-09 00:00:00", None),
+    ("2026-10-09 00:00:00+24:00", None),
+    ("2026-10-09 00:00:00+00:60", None),
+    ("2026-10-09 00:00:00+2:00", None),
+    ("2026-10-09 00:00:00+-1:00", None),
+    ("2026-10-09 00:00:00.Z", None),
+    ("2026-10-09 00:00:00.1Z", None),
+    ("2026-10-09 00:00:00.12Z", None),
+    ("2026-10-09 00:00:00.123Z", None),
+    ("2026-10-09 00:00:00.1234Z", None),
+    ("2026-10-09 00:00:00.12345Z", None),
+    ("2026-10-09 00:00:00.123456Z", None),
+    ("2026-10-09 00:00:00.1234567Z", None),
+    ("2026-10-09 00:00:00.12345678Z", None),
+    ("2026-10-09 00:00:00.123456789Z", None),
+    ("2026", Some(4)),
+    ("2026T00:00Z", Some(4)),
+    ("2026T00:00:00Z", Some(4)),
+    ("2026-10", Some(4)),
+    ("2026-10T00:00Z", Some(4)),
+    ("2026-10T00:00:00Z", Some(4)),
+    ("2026-10-09", Some(5)),
+    ("2026-10-09T00:00Z", Some(5)),
+    ("+002026", Some(4)),
+    ("+002026T00:00Z", Some(4)),
+    ("+002026T00:00:00Z", Some(4)),
+    ("+002026-10", Some(4)),
+    ("+002026-10T00:00Z", Some(4)),
+    ("+002026-10T00:00:00Z", Some(4)),
+    ("+002026-10-09", Some(5)),
+    ("+002026-10-09T00:00Z", Some(5)),
+    ("+002026-10-09T00:00:00Z", Some(5)),
+    ("-000000-10-09T00:00Z", None),
+    ("-000000-10-09T00:00:00Z", None),
+    ("2026-00-09T00:00:00+02:30", None),
+    ("2026-13-09T00:00:00+02:30", None),
+    ("2026-99-09T00:00:00+02:30", None),
+    ("2026-10-00T00:00:00+02:30", None),
+    ("2026-10-32T00:00:00+02:30", None),
+    ("2026-10-99T00:00:00+02:30", None),
+    ("2026-10-09T24:00:00+02:30", Some(5)),
+    ("2026-10-09T25:00:00+02:30", None),
+    ("2026-10-09T99:00:00+02:30", None),
+    ("2026-10-09T00:60:00+02:30", None),
+    ("2026-10-09T00:99:00+02:30", None),
+    ("2026-10-09T00:00:60+02:30", None),
+    ("2026-10-09T00:00:99+02:30", None),
+    ("2026-10-09T24:00Z", Some(6)),
+    ("2026-10-09T24:00+02:00", Some(5)),
+    ("2026-10-09T24:00-02:00", Some(6)),
+    ("2026-10-09T24:00:00Z", Some(6)),
+    ("2026-10-09T24:00:00+02:00", Some(5)),
+    ("2026-10-09T24:00:00-02:00", Some(6)),
+    ("2026-10-09T24:00:01Z", None),
+    ("2026-10-09T24:00:01+02:00", None),
+    ("2026-10-09T24:00:01-02:00", None),
+    ("2026-10-09T24:01:00Z", None),
+    ("2026-10-09T24:01:00+02:00", None),
+    ("2026-10-09T24:01:00-02:00", None),
+    ("2026-10-09T24:00:00.000Z", Some(6)),
+    ("2026-10-09T24:00:00.000+02:00", Some(5)),
+    ("2026-10-09T24:00:00.000-02:00", Some(6)),
+    ("2026-10-09T24:00:00.001Z", None),
+    ("2026-10-09T24:00:00.001+02:00", None),
+    ("2026-10-09T24:00:00.001-02:00", None),
+    ("2026-10-09T24:00:00.0001Z", None),
+    ("2026-10-09T24:00:00.0001+02:00", None),
+    ("2026-10-09T24:00:00.0001-02:00", None),
+    ("+275760-09-13T00:00:00Z", Some(6)),
+    ("+275760-09-13T00:00:00.001Z", None),
+    ("+275760-09-13T23:59:59.999Z", None),
+    ("+275760-09-13T00:00:00+00:01", Some(5)),
+    ("+275760-09-13T00:00:00-00:01", None),
+    ("-271821-04-20T00:00:00Z", Some(2)),
+    ("-271821-04-20T00:00:00.001Z", Some(2)),
+    ("-271821-04-20T23:59:59.999Z", Some(2)),
+    ("-271821-04-20T00:00:00+00:01", None),
+    ("-271821-04-20T00:00:00-00:01", Some(2)),
+    ("+275760-09-14T00:00:00Z", None),
+    ("+275760-09-14T00:00:00.001Z", None),
+    ("+275760-09-14T23:59:59.999Z", None),
+    ("+275760-09-14T00:00:00+00:01", None),
+    ("+275760-09-14T00:00:00-00:01", None),
+    ("-271821-04-19T00:00:00Z", None),
+    ("-271821-04-19T00:00:00.001Z", None),
+    ("-271821-04-19T23:59:59.999Z", None),
+    ("-271821-04-19T00:00:00+00:01", None),
+    ("-271821-04-19T00:00:00-00:01", None),
+    ("2026-10-+9T00:00:00Z", None),
+    ("2026-+1-01T00:00:00Z", None),
+    ("2026-1-01T00:00:00Z", None),
+    ("2026-10-09T00:00:00+1:00", None),
+    ("2026-02-30T00:00:00Z", Some(1)),
+    ("2024-02-29T00:00:00Z", Some(4)),
+];
+
+const APPROVAL_STATUS_MESSAGES_FOLLOW_EFFECTIVE_CAPABILITY_BODY_CAPABILITY_GUIDANCE: &[(
+    &str,
+    &str,
+    &str,
+)] = &[
+    (
+        "LGTM then LGtMi",
+        "issue",
+        "@Alice approved for issues. Your future issues will not be auto-closed. PRs still require `lgtm`.",
+    ),
+    (
+        "lgtmi\nlgtm",
+        "issue",
+        "@Alice approved for issues. Your future issues will not be auto-closed. PRs still require `lgtm`.",
+    ),
+    (
+        "élgtmé",
+        "pr",
+        "@Alice approved for issues and PRs. Your future issues and PRs will not be auto-closed.",
+    ),
+    (
+        "(LGTM)!",
+        "pr",
+        "@Alice approved for issues and PRs. Your future issues and PRs will not be auto-closed.",
+    ),
+];
+
+const IGNORE_PATTERNS_HIDE_ARTIFACTS_NOT_SOURCES_FILE: &[&str] = &[
+    "target/build",
+    "dist/app",
+    "node_modules/pkg",
+    "packages/foo/dist/x",
+    "packages/foo/dist-chrome/x",
+    "packages/foo/dist-firefox/x",
+    "run.log",
+    ".DS_Store",
+    "cache.tsbuildinfo",
+    "cpu.cpuprofile",
+    ".env",
+    ".vscode/settings.json",
+    ".zed/settings.json",
+    ".idea/workspace.xml",
+    "file.swp",
+    "file.swo",
+    "file~",
+    ".npm/cache",
+    "coverage/report",
+    ".nyc_output/result",
+    ".maestro_config/settings",
+    "tui-debug.log",
+    "compaction-results/result",
+    "syntax.jsonl",
+    "out.jsonl",
+    "maestro-session.html",
+    "out.html",
+    "packages/maestro/binaries/exe",
+    "todo.md",
+    "plans/plan.md",
+    ".maestro/hf-sessions/run",
+    ".maestro/hf-sessions-backup/run",
+    "collect.sh",
+];
+
+const CONTRIBUTOR_GUIDANCE_PRESERVES_CURRENT_RULES_PARAGRAPH: &[&str] = &[
+    "# Contributing to Maestro",
+    "This guide exists to save both sides time.",
+    "## The One Rule",
+    "**You must understand your code.** If you cannot explain what your changes do and how they interact with the rest of the system, your PR will be closed.",
+    "Using AI to write code is fine. Submitting AI-generated slop without understanding it is not.",
+    "If you use an agent, run it from the repository root directory so it picks up `AGENTS.md` automatically. Your agent must follow the rules and guidelines in that file.",
+    "## Contribution Gate",
+    "All issues and PRs from new contributors are auto-closed by default.",
+    "Maintainers review auto-closed issues daily and reopen worthwhile ones. Issues that do not meet the quality bar below will not be reopened or receive a reply.",
+    "Approval happens through maintainer replies on issues:",
+    "- `lgtmi`: your future issues will not be auto-closed\n- `lgtm`: your future issues and PRs will not be auto-closed",
+    "`lgtmi` does not grant rights to submit PRs. Only `lgtm` grants rights to submit PRs.",
+    "## Quality Bar For Issues",
+    "If you open an issue, you must use one of the two GitHub issue templates.",
+    "If you open an issue, keep it short, concrete, and worth reading.",
+    "- Keep it concise. If it does not fit on one screen, it is too long.\n- Write in your own voice.\n- State the bug or request clearly.\n- Explain why it matters.\n- If you want to implement the change yourself, say so.",
+    "If the issue is real and written well, a maintainer may reopen it, reply `lgtmi`, or reply `lgtm`.",
+    "## Blocking",
+    "If you ignore this document twice, or if you spam the tracker with agent-generated issues, your GitHub account will be permanently blocked.",
+    "If you send a large volume of issues through automation, your GitHub account will be permanently blocked. No taksies backsies.",
+    "## Before Submitting a PR",
+    "Do not open a PR unless you have already been approved with `lgtm`.",
+    "Before submitting a PR:",
+    "```bash\njust check\njust test\n```",
+    "Both must pass.",
+    "Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.",
+    "If you are adding a new provider, see `AGENTS.md` for required tests.",
+    "## Philosophy",
+    "Maestro's core is minimal. If your feature does not belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.",
+    "## Questions?",
+    "## FAQ",
+    "### Why are new issues and PRs auto-closed?",
+    "Maestro receives more issues than the maintainers can responsibly review in real time. Many reports do not meet the quality bar in this guide or do not follow CONTRIBUTING.md. Some are slung at the repository mindlessly via an agent instead of being reviewed and shaped by the person submitting them. Auto-closing creates a buffer so maintainers can review the tracker on their own schedule and reopen the issues that meet the quality bar.",
+    "### Why are weekend issues not reviewed?",
+    "The weekend route is configurable and currently off.",
+    "### Why do some issues get no reply?",
+    "A reply is maintenance work too. Low-signal issues, unclear reports, duplicates, and issues that do not follow this guide may be closed without discussion. This keeps time available for reproducible bugs, thoughtful requests, and contributors who have done the work to make their report actionable.",
+    "### Why not let AI triage everything?",
+    "AI can help group duplicates, summarize reports, and spot missing information. It is not trusted to make final maintainer decisions. Polished AI-generated issues can still be wrong, misleading, or expensive to investigate. Human review remains the final gate.",
+    "### Is this hostile to contributors?",
+    "No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.",
+];
+
+const CONTRIBUTOR_GUIDANCE_PRESERVES_CURRENT_RULES_TEXT: &[&str] = &[
+    "understand your code",
+    "AGENTS.md",
+    "own voice",
+    "why it matters",
+    "lgtmi",
+    "lgtm",
+    "extension",
+    "twice",
+    "FAQ",
+    "just check",
+    "just test",
+    "CHANGELOG.md",
+];
+
+fn check_workflow_adapter(file: &str) {
+    let y = yaml(&format!(".github/workflows/{file}.yml"));
+    let job = &y["jobs"]["policy"];
+    assert_eq!(job["permissions"]["contents"].as_str(), Some("read"));
+    assert_eq!(job["env"]["TZ"].as_str(), Some("UTC"));
+    for credential in ["GH_TOKEN", "GITHUB_TOKEN"] {
+        assert!(job["env"][credential].is_badvalue());
+        assert!(y["env"][credential].is_badvalue());
+    }
+    let steps = job["steps"].as_vec().unwrap();
+    let checkout = &steps[0];
+    assert_eq!(
+        checkout["uses"].as_str(),
+        Some("actions/checkout@11d5960a326750d5838078e36cf38b85af677262")
+    );
+    assert_eq!(
+        checkout["with"]["ref"].as_str(),
+        Some("${{ github.event.repository.default_branch }}")
+    );
+    assert_eq!(
+        checkout["with"]["persist-credentials"].as_bool(),
+        Some(false)
+    );
+    let mut build_index = None;
+    let mut token_index = None;
+    for (i, step) in steps.iter().enumerate() {
+        if check_workflow_action(file, step) {
+            token_index = Some(i);
+        }
+        if check_workflow_command(file, step) {
+            build_index = Some(i);
+        }
+    }
+    check_workflow_permissions(file, job, build_index, token_index);
+}
+
+fn check_workflow_action(file: &str, step: &yaml_rust2::Yaml) -> bool {
+    let mut token = false;
+    if let Some(uses) = step["uses"].as_str() {
+        let sha = uses.split('@').nth(1).unwrap();
+        assert_eq!(sha.len(), 40);
+        assert!(sha.chars().all(|c| c.is_ascii_hexdigit()));
+        if uses.starts_with("actions/create-github-app-token@") {
+            assert_eq!(file, "approve-contributor");
+            token = true;
+            assert_eq!(
+                uses,
+                "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1"
+            );
+            assert_eq!(
+                step["with"]["client-id"].as_str(),
+                Some("${{ vars.RELEASE_APP_CLIENT_ID }}")
+            );
+            assert_eq!(
+                step["with"]["private-key"].as_str(),
+                Some("${{ secrets.RELEASE_APP_PRIVATE_KEY }}")
+            );
+            assert_eq!(
+                step["with"]["owner"].as_str(),
+                Some("${{ github.repository_owner }}")
+            );
+            assert_eq!(
+                step["with"]["repositories"].as_str(),
+                Some("${{ github.event.repository.name }}")
+            );
+            assert_eq!(step["with"]["permission-contents"].as_str(), Some("write"));
+            assert_eq!(
+                step["with"]["permission-pull-requests"].as_str(),
+                Some("write")
+            );
+            assert_eq!(step["with"]["permission-issues"].as_str(), Some("write"));
+        }
+    }
+    token
+}
+
+fn check_workflow_command(file: &str, step: &yaml_rust2::Yaml) -> bool {
+    let mut build = false;
+    if let Some(command) = step["run"].as_str() {
+        assert!(!command.contains("${{"));
+        assert!(!command.contains("github-script"));
+        assert!(!command.contains("git checkout"));
+        if command.contains("cargo build") {
+            build = true;
+            assert!(command.contains("--locked"));
+            assert!(step["env"].is_badvalue());
+        }
+        if command.contains("target/debug/repository_policy") {
+            assert!(command.contains(file));
+            assert!(step["env"]["GH_TOKEN"].as_str().is_some());
+            if file == "approve-contributor" {
+                assert_eq!(
+                    step["env"]["GH_TOKEN"].as_str(),
+                    Some("${{ steps.app.outputs.token }}")
+                );
+                assert_eq!(step["id"].as_str(), Some("update"));
+                assert_eq!(
+                    step["env"]["MAESTRO_APPROVAL_APP_SLUG"].as_str(),
+                    Some("${{ steps.app.outputs.app-slug }}")
+                );
+            }
+        }
+    }
+    build
+}
+
+fn check_gate_diagnostics(w: &support::Workspace, pr: bool, branch: &str) {
+    let workflow = if pr { "pr-gate" } else { "issue-gate" };
+    let event_name = if pr { "pull_request_target" } else { "issues" };
+    let mut e = policy_support::gate_event(pr);
+    let mut p = RecordingProcess::default();
+    let expected = gate_diagnostic_replies(&mut p, &mut e, pr, branch);
+    run(
+        &w.root,
+        (workflow, event_name),
+        &e.to_string(),
+        None,
+        &mut p,
+    )
+    .unwrap();
+    assert_eq!(p.diagnostics, expected, "{workflow} {branch}");
+    assert_eq!(
+        p.requests.len(),
+        match branch {
+            "bot" => 0,
+            "collaborator" => 1,
+            "approved" => 2,
+            _ => 4,
+        }
+    );
+}
+
+fn gate_diagnostic_replies(
+    p: &mut RecordingProcess,
+    e: &mut serde_json::Value,
+    pr: bool,
+    branch: &str,
+) -> Vec<&'static str> {
+    match branch {
+        "bot" => {
+            e[if pr { "pull_request" } else { "issue" }]["user"]["login"] = json!("Helper[bot]");
+            vec!["Skipping bot: Helper[bot]"]
+        }
+        "collaborator" => {
+            p.reply(json!({"permission":"maintain"}));
+            vec!["Alice is a collaborator with maintain access"]
+        }
+        _ => {
+            p.reply(json!({"permission":"none"}));
+            policy_support::content(
+                p,
+                if branch == "approved" {
+                    "  malformed  \n  Invalid bad  \nAlice pr\n"
+                } else {
+                    "  malformed  \n  Invalid bad  \n"
+                },
+            );
+            let mut expected = vec![
+                "Skipping malformed line:   malformed  ",
+                "Skipping line with invalid capability:   Invalid bad  ",
+            ];
+            if branch == "approved" {
+                expected.push(if pr {
+                    "Alice is approved for PRs"
+                } else {
+                    "Alice is approved for pr"
+                });
+            } else {
+                p.reply(json!({}));
+                p.reply(json!({}));
+                if pr {
+                    expected.push("Alice is not approved, closing PR");
+                }
+            }
+            expected
+        }
+    }
+}
+
+fn activity_diagnostic_replies(
+    p: &mut RecordingProcess,
+    e: &mut serde_json::Value,
+    branch: &str,
+) -> Vec<&'static str> {
+    match branch {
+        "bot" => {
+            e["issue"]["user"]["login"] = json!("Helper[bot]");
+            vec!["Skipping bot: Helper[bot]"]
+        }
+        "approved" => {
+            policy_support::content(p, "Alice issue\n");
+            vec!["Alice is in APPROVED_CONTRIBUTORS, passing"]
+        }
+        "collaborator" | "read-error" => {
+            if branch == "read-error" {
+                p.fail();
+            } else {
+                policy_support::content(p, "");
+            }
+            p.reply(json!({"permission":"admin"}));
+            if branch == "read-error" {
+                vec![
+                    "Could not read APPROVED_CONTRIBUTORS: controlled failure",
+                    "Alice is a collaborator (admin), passing",
+                ]
+            } else {
+                vec!["Alice is a collaborator (admin), passing"]
+            }
+        }
+        _ => {
+            policy_support::content(p, "malformed\nInvalid bad\n");
+            p.fail();
+            if branch == "search-error" {
+                p.fail();
+            } else {
+                p.reply(json!({"total_count": if branch == "match" { 3 } else { 0 }}));
+            }
+            if branch == "match" {
+                p.reply(json!({}));
+                vec![
+                    "Alice has opened 3 issues/PRs on fixture/remote",
+                    "Alice has fixture/remote activity, adding label",
+                ]
+            } else if branch == "search-error" {
+                vec![
+                    "Search failed: controlled failure",
+                    "Alice has no fixture/remote activity, passing",
+                ]
+            } else {
+                vec!["Alice has no fixture/remote activity, passing"]
+            }
+        }
+    }
+}
+
+fn check_gate_action_failures(w: &support::Workspace, pr: bool) {
+    for failing in 1..=if pr { 3 } else { 4 } {
+        let mut p = RecordingProcess::default();
+        p.reply(json!({"permission":"none"}));
+        if failing == 1 {
+            p.fail();
+        } else {
+            policy_support::content(&mut p, "");
+            for _ in 2..failing {
+                p.reply(json!({}));
+            }
+            p.fail();
+        }
+        assert!(
+            run(
+                &w.root,
+                (
+                    if pr { "pr-gate" } else { "issue-gate" },
+                    if pr { "pull_request_target" } else { "issues" }
+                ),
+                &policy_support::gate_event(pr).to_string(),
+                None,
+                &mut p
+            )
+            .is_err()
+        );
+        assert_eq!(p.requests.len(), failing + 1);
+    }
+}
+
+fn check_workflow_permissions(
+    file: &str,
+    job: &yaml_rust2::Yaml,
+    build_index: Option<usize>,
+    token_index: Option<usize>,
+) {
+    let steps = job["steps"].as_vec().unwrap();
+    assert!(build_index.is_some());
+    if file == "approve-contributor" {
+        assert!(build_index.unwrap() < token_index.unwrap());
+    } else {
+        assert!(token_index.is_none());
+    }
+    if file != "approve-contributor" {
+        assert_eq!(job["permissions"]["issues"].as_str(), Some("write"));
+        assert_eq!(
+            steps.last().unwrap()["env"]["GH_TOKEN"].as_str(),
+            Some("${{ github.token }}")
+        );
+    }
+    if matches!(file, "pr-gate" | "contribution-policy") {
+        assert_eq!(job["permissions"]["pull-requests"].as_str(), Some("write"));
     }
 }

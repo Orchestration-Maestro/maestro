@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 mod support;
 
 use maestro_test_conventions::check_workspace;
@@ -78,7 +80,7 @@ fn technical_comments_and_planning_text_outside_comments_pass() {
     workspace.list(&[("maestro-models", "core")]);
     std::fs::write(
         workspace.root.join("crates/models/src/lib.rs"),
-        r####"
+        r###"
 //! the JSON-RPC specification; an async task; step 1 of the parse.
 /// phase one writes the intent; UTF-16; S3-compatible; x86_64; 0x1F.
 /* Outer /* technical */ nested comment. */
@@ -90,7 +92,7 @@ const CHARACTER: char = '"';
 const ESCAPED: char = '\'';
 fn borrow<'a>(value: &'a str) -> &'a str { value }
 // Technical Unicode: café 🦀.
-"####,
+"###,
     )
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));

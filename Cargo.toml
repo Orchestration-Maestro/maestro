@@ -9,3 +9,18 @@ serde_json = { version = "=1.0.151", features = ["preserve_order"] }
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/Orchestration-Maestro/maestro"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+forbidden_lint_groups = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "forbid", priority = -1 }
+too_many_arguments = "forbid"
+fn_params_excessive_bools = "forbid"
+too_many_lines = "forbid"
+cognitive_complexity = "forbid"
+excessive_nesting = "forbid"
+unwrap_used = "forbid"
+expect_used = "forbid"
+panic = "forbid"
