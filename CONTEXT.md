@@ -73,7 +73,7 @@ are later scope, not active foundation concepts.
 - **SettingsManager:** The owner of accepted preferences, one-level merging, runtime overrides, immediate publication and ordered queued persistence through replaceable raw-text storage. Reload independently retains failed scopes and clears overrides; errors drain separately.
 - **Configuration root:** The explicitly selected user configuration directory.
 - **Session directory:** The resolved location supplied to the session owner.
-- **File-write lock:** Cooperating writer exclusion with canonical lockfile paths, stale/heartbeat/compromise handling and operation-specific contention schedules.
+- **File-write lock:** Native OS file locking for mutual exclusion, preserving application-owned ordering and retries without leases, heartbeats or compromise handling.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
