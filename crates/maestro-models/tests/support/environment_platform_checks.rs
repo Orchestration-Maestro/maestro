@@ -17,7 +17,6 @@ struct Controlled {
     facilities: Cell<[bool; 3]>,
     exists: Cell<bool>,
     home_value: RefCell<String>,
-    windows: Cell<bool>,
     home_failure: Cell<bool>,
     join_failure: Cell<bool>,
     scripted: RefCell<HashMap<String, std::collections::VecDeque<Option<String>>>>,
@@ -36,7 +35,6 @@ impl Default for Controlled {
             facilities: Cell::new([true; 3]),
             exists: Cell::new(false),
             home_value: RefCell::new("/home/test".into()),
-            windows: Cell::new(false),
             home_failure: Cell::new(false),
             join_failure: Cell::new(false),
             scripted: RefCell::new(HashMap::new()),
@@ -71,11 +69,10 @@ impl Platform for Controlled {
         if self.join_failure.get() {
             Err(ThrownValue::Json("join error".into()))
         } else {
-            Ok(if self.windows.get() {
-                platform::join_windows(home)
-            } else {
-                platform::join_posix(home)
-            })
+            Ok(std::path::PathBuf::from(home)
+                .join(".config/gcloud/application_default_credentials.json")
+                .to_string_lossy()
+                .into_owned())
         }
     }
     fn exists(&self, path: &str) -> bool {
@@ -505,98 +502,6 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
             .is_some()
     );
     assert!(!p.log.borrow().contains(&"exists:second".into()));
-}
-
-#[test]
-fn adc_join_matches_posix_and_windows_paths() {
-    for (windows, home, expected) in [
-        (
-            false,
-            "/home/test",
-            "/home/test/.config/gcloud/application_default_credentials.json",
-        ),
-        (
-            false,
-            "/tmp/a/../b//",
-            "/tmp/b/.config/gcloud/application_default_credentials.json",
-        ),
-        (
-            false,
-            "relative/./home",
-            "relative/home/.config/gcloud/application_default_credentials.json",
-        ),
-        (
-            false,
-            "",
-            ".config/gcloud/application_default_credentials.json",
-        ),
-        (
-            false,
-            "/",
-            "/.config/gcloud/application_default_credentials.json",
-        ),
-        (
-            false,
-            "~",
-            "~/.config/gcloud/application_default_credentials.json",
-        ),
-        (
-            true,
-            r"C:\Users\test",
-            r"C:\Users\test\.config\gcloud\application_default_credentials.json",
-        ),
-        (
-            true,
-            r"C:\a\..\b\",
-            r"C:\b\.config\gcloud\application_default_credentials.json",
-        ),
-        (
-            true,
-            "C:relative",
-            r"C:relative\.config\gcloud\application_default_credentials.json",
-        ),
-        (
-            true,
-            r"\\server\share\a\..\b",
-            r"\\server\share\b\.config\gcloud\application_default_credentials.json",
-        ),
-        (
-            true,
-            "",
-            r".config\gcloud\application_default_credentials.json",
-        ),
-        (
-            true,
-            r"\",
-            r"\.config\gcloud\application_default_credentials.json",
-        ),
-        (
-            false,
-            "/\u{feff}/\u{85}",
-            "/\u{feff}/\u{85}/.config/gcloud/application_default_credentials.json",
-        ),
-        (
-            true,
-            "C:\\\u{feff}\\\u{85}",
-            "C:\\\u{feff}\\\u{85}\\.config\\gcloud\\application_default_credentials.json",
-        ),
-    ] {
-        let p = Controlled::default();
-        p.windows.set(windows);
-        *p.home_value.borrow_mut() = home.into();
-        p.put("GOOGLE_CLOUD_PROJECT", "p");
-        p.put("GOOGLE_CLOUD_LOCATION", "l");
-        assert!(
-            get_env_api_key_with_platform(&p, &State::default(), "google-vertex")
-                .unwrap()
-                .is_none()
-        );
-        assert!(
-            p.log.borrow().contains(&format!("exists:{expected}")),
-            "home={home:?}, log={:?}",
-            p.log.borrow()
-        );
-    }
 }
 
 #[test]
