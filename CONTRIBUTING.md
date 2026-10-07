@@ -58,7 +58,7 @@ Both must pass.
 
 Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
-If you are adding a new provider to `crates/maestro-models`, see `AGENTS.md` for required tests.
+If you are adding a new provider, see `AGENTS.md` for required tests.
 
 ## Philosophy
 
