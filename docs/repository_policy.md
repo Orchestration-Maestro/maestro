@@ -8,10 +8,10 @@ just check
 just test
 ```
 
-Use a credential-cleared child with fresh HOME/config/TMPDIR/XDG directories
-for every local test/doc/conventions/hook command. Leave actual authentication
-untouched. Shared `just ci` is the merge authority. Fixtures never mutate live
-issues or pull requests or call a provider.
+As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test
+script removes the specified provider credentials and sets the agent's auth file
+aside, restoring it on exit. Shared `just ci` is the merge authority. Fixtures never
+mutate live issues or pull requests or call a provider.
 
 ## Invocation and outputs
 
