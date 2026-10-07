@@ -148,6 +148,8 @@ Browser smoke covers Firefox/Safari, real touch/IME and real HiDPI devicePixelCo
 
 ## R12 — Documentation, examples, repository tooling and release
 
+Development commands (offline test launcher, source launchers, commit hook, asset copying, browser smoke check) and contribution gates live in `maestro-tooling`, which is never shipped, has wiring-only binaries and exposes its library to integration tests.
+
 Deliver current offline API/usage/model/session/settings/tools/extensions/package/terminal/browser/platform/RPC documentation, every executable SDK/extension/demo example and all fixtures/assets. Examples remain examples: an optional subagent, permission guard, sandbox or planner does not make that capability built-in. Port example functionality into Rust component guests and qualify author builds; do not load legacy source examples. Executable code controls behavior and wire acceptance; correct stale documentation and examples to the delivered behavior, listing each correction once. Do not invent historical Maestro releases.
 
 Give every contribution guide, issue template, automation workflow, prompt, ignore file, package manifest, lockfile, compiler/lint/test/build configuration, profiling/analysis tool and packaging script a named Rust-setup counterpart. Use mise to pin just and prek, just recipes as the commands, and prek for the mandatory commit hook: these are the Rust counterparts of npm scripts and the husky hook. Remove unused jaq from mise.toml and mise.lock in the foundation tooling change. Keep YAML issue templates, workflows and prek configuration, including its YAML, TOML and merge-conflict checks. Keep shared CI, not a second build/quality system. Respect dependency-free leaf crates, declared normal/optional/target/build edges, isolated test helpers, frontend independence and wiring-only executable roots through metadata-based convention tests. Shared workflow changes require a separate issue/clone in their repository; the application ticket cannot silently edit that repository.
@@ -174,6 +176,7 @@ An em dash means no internal dependencies.
 | `maestro-settings` | own accepted preferences | — | 0 |
 | `maestro-storage` | access transcript bytes | — | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
+| `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | — | 0 |
 | `maestro-agent` | run an agent | `maestro-models` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models` | 1 |
@@ -194,13 +197,13 @@ An em dash means no internal dependencies.
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime` | 6 |
 
-The graph contains 25 crates and 62 permitted internal dependency edges; seven crates remain leaves.
+The graph contains 26 crates and 62 permitted internal dependency edges; eight crates remain leaves.
 
 ### Crate order
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-storage`, `maestro-test-conventions`, `maestro-tui`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-storage`, `maestro-test-conventions`, `maestro-tooling`, `maestro-tui`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`

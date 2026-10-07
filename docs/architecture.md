@@ -9,12 +9,13 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 The extension domain may depend directly on resources for shared source information. Resources remain a leaf; this permission does not allow the reverse dependency or internal dev-dependencies.
 
 `workspace-crates.json` lists actual workspace members with string-valued classes.
-The binary composition root, conventions checker and terminal scenario harness
-are `dedicated`; all product libraries and adapters are `core`. Classes are not
-numeric delivery layers. Known absent entries do not require placeholder crates;
-unknown actual members are rejected.
+The binary composition root, conventions checker, terminal scenario harness and
+repository tooling are `dedicated`; all product libraries and adapters are `core`.
+Repository tooling (`maestro-tooling`) is development-only, never shipped and has
+no internal dependencies. Classes are not numeric delivery layers. Known absent
+entries do not require placeholder crates; unknown actual members are rejected.
 
-Seven leaves have no internal dependencies. Other crates may use a subset of
+Eight leaves have no internal dependencies. Other crates may use a subset of
 their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.

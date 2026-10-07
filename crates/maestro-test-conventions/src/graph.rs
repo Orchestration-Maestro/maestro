@@ -15,6 +15,7 @@ fn rule(name: &str) -> Option<Rule> {
         "maestro-settings" => &[],
         "maestro-storage" => &[],
         "maestro-test-conventions" => &[],
+        "maestro-tooling" => &[],
         "maestro-tui" => &[],
         "maestro-agent" => &["maestro-models"],
         "maestro-credentials" => &["maestro-models"],
@@ -91,7 +92,7 @@ fn rule(name: &str) -> Option<Rule> {
     Some(Rule {
         class: if matches!(
             name,
-            "maestro" | "maestro-test-conventions" | "maestro-test-terminal"
+            "maestro" | "maestro-test-conventions" | "maestro-test-terminal" | "maestro-tooling"
         ) {
             "dedicated"
         } else {

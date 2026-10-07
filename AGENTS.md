@@ -57,9 +57,11 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker and terminal scenario harness are dedicated. Sparse workspaces
-need no placeholder crates. Frontends require their full direct sets; the terminal
-adapter and scenario harness require toolkit only. Other non-leaves permit subsets.
+conventions checker, terminal scenario harness and repository tooling are dedicated.
+Repository tooling (`maestro-tooling`) is development-only, never shipped and has
+no internal dependencies. Sparse workspaces need no placeholder crates. Frontends
+require their full direct sets; the terminal adapter and scenario harness require
+toolkit only. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic; the internal dev-target
 allowlist is empty. The scenario harness is not a general dev-dependency target.
 
