@@ -183,7 +183,7 @@ fn explicit_locations_do_not_discover_ambient_installations() {
             &Cancellation::new(),
         )
         .unwrap();
-    assert_eq!(request(memory, "chosen").0.failure, None);
+    assert_eq!(request(memory, "chosen").0.err(), None);
     assert_eq!(
         std::fs::read_to_string(unrelated_home.join("credentials.json")).unwrap(),
         "untouched-home"
@@ -226,15 +226,15 @@ fn native_helpers_are_lazy_private_and_directory_bound() {
         assert!(credentials.status("chosen").configured);
         assert!(!first.join("invocations").exists());
         credentials.set_runtime_auth("chosen".into(), Some(auth("override")));
-        assert_eq!(request(credentials.clone(), "chosen").0.failure, None);
+        assert_eq!(request(credentials.clone(), "chosen").0.err(), None);
         assert!(!first.join("invocations").exists());
         credentials.set_runtime_auth("chosen".into(), None);
         let (result, adapter) = request(credentials, "chosen");
-        assert_eq!(result.failure, None);
-        assert_secret(
-            &adapter.calls()[0].options.auth,
-            "STDOUT_SENTINEL",
-            "stored",
+        assert_eq!(result.err(), None);
+        assert_secret(&adapter.resolutions()[0], "STDOUT_SENTINEL", "stored");
+        assert_eq!(
+            adapter.calls()[0].options.api_key.as_deref(),
+            Some("STDOUT_SENTINEL")
         );
         let same = NativeSecretResolver::new(first.clone()).unwrap();
         assert_eq!(

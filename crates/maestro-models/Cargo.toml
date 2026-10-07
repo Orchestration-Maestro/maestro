@@ -8,3 +8,8 @@ repository.workspace = true
 [dependencies]
 serde_json = { workspace = true }
 jsonschema = { workspace = true }
+serde = { workspace = true }
+ryu-js = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = { workspace = true }

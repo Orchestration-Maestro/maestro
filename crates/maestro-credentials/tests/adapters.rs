@@ -123,14 +123,14 @@ fn reload_failure_preserves_last_valid_snapshot() {
     );
     assert_eq!(credentials.list(), vec!["selected"]);
     assert_eq!(
-        request(credentials.clone(), "selected").0.failure,
+        request(credentials.clone(), "selected").0.err(),
         Some(Failure::AuthenticationFailed)
     );
     storage
         .fail
         .store(false, std::sync::atomic::Ordering::SeqCst);
     credentials.reload(&Cancellation::new()).unwrap();
-    assert_eq!(request(credentials, "selected").0.failure, None);
+    assert_eq!(request(credentials, "selected").0.err(), None);
     let scratch = Scratch::new();
     let path = scratch.0.join("credentials.json");
     let file = Arc::new(FileCredentialStorage::new(path.clone()).unwrap());
@@ -179,8 +179,9 @@ fn same_caller_accepts_storage_adapter_swaps() {
         r#"{"selected":{"type":"api_key","key":"same"}}"#,
     ) {
         let (result, adapter) = request(owner(storage), "selected");
-        assert_eq!(result.failure, None);
-        assert_secret(&adapter.calls()[0].options.auth, "same", "stored");
+        assert_eq!(result.err(), None);
+        assert_secret(&adapter.resolutions()[0], "same", "stored");
+        assert_eq!(adapter.calls()[0].options.api_key.as_deref(), Some("same"));
     }
     for storage in [
         memory() as Arc<dyn CredentialStorage>,
@@ -252,24 +253,15 @@ fn cancelled_storage_waiter_cannot_release_writer() {
     owned_rx.recv().unwrap();
     let signal = Cancellation::new();
     let request_signal = signal.clone();
-    let fake = scripted(1);
+    let fake = controlled();
     let adapter = fake.clone();
-    let mut models = Models::new(Arc::new(|| 123));
-    models.register(model("chosen"), fake).unwrap();
     let request = std::thread::spawn(move || {
-        block_on(models.complete(
-            model("chosen"),
-            context(),
-            StreamOptions {
-                auth_resolver: Some(credentials),
-                cancellation: request_signal,
-                ..Default::default()
-            },
-        ))
+        block_on(credentials.resolve("chosen".into(), request_signal))
+            .map(|resolved| fake.invoke(model("chosen"), context(), resolved))
     });
     entered_rx.recv().unwrap();
     signal.cancel();
-    assert_eq!(request.join().unwrap().failure, Some(Failure::Cancelled));
+    assert_eq!(request.join().unwrap().err(), Some(Failure::Cancelled));
     assert!(adapter.calls().is_empty());
     let (third_tx, third_rx) = std::sync::mpsc::channel();
     let third = std::thread::spawn(move || {

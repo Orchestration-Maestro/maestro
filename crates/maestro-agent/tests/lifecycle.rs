@@ -12,12 +12,12 @@ async fn prompt_emits_ordered_events_and_terminal_history() {
         },
         ..Default::default()
     };
-    let (agent, provider) = setup(vec![Script::Steps(steps("hello"))], config);
+    let (agent, provider) = setup(vec![Response::Steps(steps("hello"))], config);
     let events = capture(&agent);
     let mut request = options();
-    request.session_affinity = Some("session".into());
-    request.temperature = Some(0.3);
-    request.output_limit = Some(0);
+    request.base.session_id = Some("session".into());
+    request.base.temperature = Some(0.3);
+    request.base.max_tokens = Some(0.0);
     let input = user("question");
     let result = agent.prompt(input.clone(), request).unwrap().await.unwrap();
     assert_eq!(
@@ -40,8 +40,8 @@ async fn prompt_emits_ordered_events_and_terminal_history() {
     let AgentMessage::Model(Message::Assistant(terminal)) = &result[1] else {
         panic!()
     };
-    assert_eq!(terminal.timestamp, 42);
-    assert_eq!(terminal.stop_reason, Some(StopReason::Stop));
+    assert_eq!(terminal.timestamp, 42.0);
+    assert_eq!(terminal.stop_reason, StopReason::Stop);
     assert_eq!(agent.state().context.messages, result);
     assert!(!agent.state().is_running);
     assert!(agent.state().streaming_message.is_none());
@@ -66,13 +66,10 @@ async fn prompt_emits_ordered_events_and_terminal_history() {
         calls[0].context.system_prompt.as_deref(),
         Some("instructions")
     );
-    assert!(calls[0].context.tools.is_empty());
-    assert_eq!(
-        calls[0].options.session_affinity.as_deref(),
-        Some("session")
-    );
+    assert!(calls[0].context.tools.as_ref().unwrap().is_empty());
+    assert_eq!(calls[0].options.session_id.as_deref(), Some("session"));
     assert_eq!(calls[0].options.temperature, Some(0.3));
-    assert_eq!(calls[0].options.output_limit, Some(0));
+    assert_eq!(calls[0].options.max_tokens, Some(0.0));
 }
 
 #[tokio::test]
@@ -85,7 +82,7 @@ async fn continue_uses_history_without_reemitting_it() {
             content: vec![],
             details: None,
             is_error: false,
-            timestamp: 19,
+            timestamp: 19.0,
         })),
     ] {
         let config = AgentOptions {
@@ -95,7 +92,7 @@ async fn continue_uses_history_without_reemitting_it() {
             },
             ..Default::default()
         };
-        let (agent, provider) = setup(vec![Script::Steps(steps("continued"))], config);
+        let (agent, provider) = setup(vec![Response::Steps(steps("continued"))], config);
         let events = capture(&agent);
         let result = agent.continue_run(options()).unwrap().await.unwrap();
         assert_eq!(result.len(), 1);
@@ -127,7 +124,7 @@ async fn overlapping_prompt_and_continue_are_busy() {
     let (wait, entered, release) = gate();
     let mut response = vec![wait];
     response.extend(steps("done"));
-    let (agent, provider) = setup(vec![Script::Steps(response)], AgentOptions::default());
+    let (agent, provider) = setup(vec![Response::Steps(response)], AgentOptions::default());
     let events = capture(&agent);
     let handle = agent.prompt(user("first"), options()).unwrap();
     entered.await.unwrap();
@@ -164,7 +161,10 @@ async fn continue_requires_history_and_queued_input_for_assistant_tail() {
     ));
     assert_eq!(empty.queue(Queue::Steering), vec![user("queued")]);
     assert!(provider.calls().is_empty());
-    let (agent, provider) = setup(vec![Script::Steps(steps("tail"))], AgentOptions::default());
+    let (agent, provider) = setup(
+        vec![Response::Steps(steps("tail"))],
+        AgentOptions::default(),
+    );
     agent
         .prompt(user("first"), options())
         .unwrap()
@@ -181,7 +181,7 @@ async fn continue_requires_history_and_queued_input_for_assistant_tail() {
 
 #[tokio::test]
 async fn scripted_model_adapters_swap_without_caller_changes() {
-    async fn caller(script: Script) -> Vec<AgentMessage> {
+    async fn caller(script: Response) -> Vec<AgentMessage> {
         let (agent, _) = setup(vec![script], AgentOptions::default());
         agent
             .prompt(user("same caller"), options())
@@ -189,8 +189,8 @@ async fn scripted_model_adapters_swap_without_caller_changes() {
             .await
             .unwrap()
     }
-    let explicit = caller(Script::Steps(steps("same response"))).await;
-    let factory = caller(Script::Factory(Box::new(|call| {
+    let explicit = caller(Response::Steps(steps("same response"))).await;
+    let factory = caller(Response::Factory(Box::new(|call| {
         Box::pin(async move {
             assert_eq!(call.context.messages.len(), 1);
             Ok(steps("same response"))
@@ -204,8 +204,8 @@ async fn scripted_model_adapters_swap_without_caller_changes() {
 async fn successive_prompts_preserve_conversation_context() {
     let (agent, provider) = setup(
         vec![
-            Script::Steps(steps("first answer")),
-            Script::Factory(Box::new(|call| {
+            Response::Steps(steps("first answer")),
+            Response::Factory(Box::new(|call| {
                 Box::pin(async move {
                     assert_eq!(call.context.messages.len(), 3);
                     assert_eq!(

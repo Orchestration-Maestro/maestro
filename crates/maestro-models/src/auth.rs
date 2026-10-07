@@ -56,14 +56,6 @@ pub trait AuthResolver: Send + Sync {
         cancellation: Cancellation,
     ) -> Pin<Box<dyn Future<Output = Result<RequestAuth, Failure>> + Send + '_>>;
 }
-pub(crate) fn validate(auth: RequestAuth) -> Result<RequestAuth, Failure> {
-    if matches!(&auth, RequestAuth::Secret { secret, .. } if secret.expose().is_empty()) {
-        Err(Failure::MissingAuthentication)
-    } else {
-        Ok(auth)
-    }
-}
-
 /// Provider exchange outputs returned to the credential owner without expiry policy.
 #[derive(Clone, Debug)]
 pub struct TokenExchangeResult {

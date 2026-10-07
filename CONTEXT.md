@@ -8,12 +8,14 @@ From `docs/specs/maestro-port.md`.
 
 - **Provider:** A named source of model descriptors and authentication behavior; a protocol adapter owns invocation and wire conversion.
 - **Model identity:** The combination of provider ID and model ID.
-- **Protocol adapter:** An implementation of a registered model protocol, including projection, authentication defaults, wire conversion and usage interpretation.
+- **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
 - **ModelRegistry:** The owner of the usable local model catalog, local overrides and dynamic provider registrations.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
 - **Model-request projection:** The selected-model view of supplied conversation context, not the stored branch or a history write.
 - **Catalog override:** Partial nested metadata supplied by local model files over base catalog entries.
-- **Captured model:** The effective registered metadata retained by one request despite later registry changes.
+- **ApiProvider:** Ordered protocol registration holding raw and simple invocation callbacks.
+- **EventStream:** Producer-owned FIFO with independently observable result.
+- **AssistantMessageEventStream:** EventStream specialization retaining shared assistant-message handles.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
@@ -29,7 +31,7 @@ From `docs/specs/maestro-port.md`.
 
 - **Requested thinking:** The application's supplied effort choice.
 - **Effective thinking:** The supported choice used for this request.
-- **Request capability:** A registered declaration of supported request behavior.
+- **Model descriptor:** Caller-supplied invocation data, independent of catalog membership.
 
 ## Application foundation
 

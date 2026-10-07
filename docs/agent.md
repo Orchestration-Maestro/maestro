@@ -1,8 +1,7 @@
 # Streamed agent conversations
 
-`maestro-agent` owns text-conversation execution. Inject `Arc<Models>` and an
-explicit `Model`; the shared model registry owns adapter selection, authentication,
-request projection and stream normalization. The agent does not execute tools,
+`maestro-agent` owns text-conversation execution. Inject an `ApiStreamSimpleFunction` and an
+explicit `Model`. The supplied callable owns model invocation. The agent does not execute tools,
 retry requests or persist sessions.
 
 ## Prompt and continuation
@@ -31,10 +30,10 @@ receives a detached message view and shared cancellation before `convert_message
 Neither changes raw history. Default transformation is identity; default conversion
 passes model records through and filters application records.
 
-Supply `StreamOptions` per run, including request authentication and cancellation.
-The agent forwards them unchanged for every turn, with the current separate system
-prompt and no tool declarations. Supported preferences are resolved by models,
-not by agent defaults. Authoritative model terminal records replace partials;
+Supply `SimpleStreamOptions` per run. The agent forwards them for every turn,
+with the current separate system prompt and no tool declarations. A missing
+signal receives a run-local cancellation handle; supplied signals stay shared.
+Authentication and provider preferences belong to the supplied callable. Authoritative model terminal records replace partials;
 usage, response identity and failures are never rebuilt from deltas. Error/aborted
 assistant outcomes are conversation records, not `AgentError` or retry requests.
 Unexpected tool content remains data; no invented result or tool continuation runs.
@@ -46,6 +45,8 @@ or start execution. Both default to `QueueMode::OneAtATime`; `All` consumes the
 current FIFO on one poll. `queue_mode` and `set_queue_mode` inspect/change one
 policy without changing the other. `queue` returns a detached copy; `clear_queue`
 returns removed records in FIFO order and leaves the other queue untouched.
+Initial context and queued records are detached at admission, including nested
+tool calls, so later caller mutation cannot change history or pending input.
 
 Entry steering is polled after awaited agent start, turn start and initial input
 start/end events, before the first model request. It is also polled after a
@@ -55,7 +56,8 @@ entry steering. Follow-up is consumed only after steering is exhausted. There is
 no executable-tool continuation in text execution.
 
 After awaited `TurnEnd` subscribers, `stop_after_turn` sees the terminal assistant,
-completed context and run-local records. True stops before either queue poll;
+completed context and run-local records as independent snapshots. Hook mutation
+cannot change returned records or history. True stops before either queue poll;
 false creates no extra request. Model error/abort stops before this hook and before
 post-turn queue polling. There is no universal turn limit or execution deadline.
 
@@ -64,10 +66,14 @@ post-turn queue polling. There is no universal turn limit or execution deadline.
 Prompt order is agent start, turn start, input start/end, assistant start,
 cumulative updates, assistant end, turn end, agent end. Continuation does not
 re-emit existing history. Subsequent turns start before queued message events.
-Even a setup failure without model start has balanced assistant start/end events.
+Even a terminal error event without model start has balanced assistant start/end events.
+An invocation setup error settles an error assistant through the same history and
+end lifecycle. Iterator EOF awaits the independently supplied stream result,
+including producers that close with `end(Some(message))` without a terminal event.
 `MessageUpdate` retains both the outer cumulative snapshot and original nested
 model event. State is reduced before each subscriber observes it. Returned state,
-queue and event values are owned independent snapshots.
+queue and event values are owned independent snapshots. Each update captures
+the shared partial once for both outer and nested message payloads.
 
 Subscribers are awaited in registration order without locks across user code.
 Each event snapshots registrations; unsubscribe is idempotent and affects future
@@ -87,38 +93,37 @@ application settlement (retry, compaction and application work have other owners
 ## Credential-free example
 
 ```rust
-use maestro_agent::{Agent, AgentMessage, AgentOptions};
-use maestro_models::{InputContent, Message, Model, ModelIdentity, Models,
-    ProviderUpdate, RequestAuth, Script, ScriptStep, ScriptedProvider,
-    StopReason, StreamOptions, TextContent, UserMessage};
-use std::sync::Arc;
-
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-let model = Model {
-    identity: ModelIdentity {
-        provider: "example".into(), model: "text".into(), operation: "chat".into(),
-    },
-    name: "Synthetic text".into(), endpoint: "synthetic:endpoint".into(),
-    chat: Some(maestro_models::ChatMetadata { context_window: None }),
-    protocol: "synthetic".into(), rates: None, capabilities: Default::default(),
-    headers: Default::default(), input: vec!["text".into()],
+use maestro_agent::{Agent, AgentMessage, AgentOptions};
+use maestro_models::*;
+use std::sync::{Arc, RwLock};
+let descriptor = Model {
+    id: "synthetic".into(), name: "Synthetic".into(), api: "synthetic".into(),
+    provider: "local".into(), base_url: String::new(), reasoning: false,
+    thinking_level_map: None, input: vec!["text".into()],
+    cost: TokenRates { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 0.0 },
+    context_window: 0.0, max_tokens: 0.0, headers: None, compat: None,
 };
-let provider = Arc::new(ScriptedProvider::new(vec![Script::Steps(vec![
-    ScriptStep::Update(ProviderUpdate::Done { reason: StopReason::Stop }),
-])]));
-let mut models = Models::new(Arc::new(|| 42));
-models.register(model.clone(), provider)?;
-let agent = Agent::new(Arc::new(models), model, AgentOptions::default());
+fn produce(model: Model) -> Result<AssistantMessageEventStream, ThrownValue> {
+    let message = Arc::new(RwLock::new(AssistantMessage {
+        content: vec![], api: model.api, provider: model.provider, model: model.id,
+        response_model: None, response_id: None, diagnostics: None,
+        usage: Usage { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 0.0,
+            total_tokens: 0.0, cost: UsageCost { input: 0.0, output: 0.0,
+                cache_read: 0.0, cache_write: 0.0, total: 0.0 } },
+        stop_reason: StopReason::Stop, error_message: None, timestamp: 0.0,
+    }));
+    let stream = create_assistant_message_event_stream();
+    stream.push(AssistantMessageEvent::Start { partial: message.clone() })?;
+    stream.push(AssistantMessageEvent::Done { reason: StopReason::Stop, message })?;
+    Ok(stream)
+}
+let supplied: ApiStreamSimpleFunction = Arc::new(|model, _, _| produce(model));
+let agent = Agent::new(supplied, descriptor, AgentOptions::default());
 let input = AgentMessage::Model(Message::User(UserMessage {
-    content: vec![InputContent::Text(TextContent {
-        text: "Hello".into(), replay_metadata: None,
-    })], timestamp: 17,
+    content: UserContent::Text("Hello".into()), timestamp: 17.0,
 }));
-let options = StreamOptions {
-    auth: Some(RequestAuth::ConfiguredWithoutSecret { source: None }),
-    ..Default::default()
-};
-let new_messages = agent.prompt(input, options)?.await?;
+let new_messages = agent.prompt(input, SimpleStreamOptions::default())?.await?;
 assert_eq!(new_messages.len(), 2);
 agent.wait_for_idle().await?;
 # Ok(())

@@ -9,7 +9,10 @@ use support::*;
 
 #[tokio::test]
 async fn subscribers_are_awaited_in_registration_order() {
-    let (agent, _) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let (agent, _) = setup(
+        vec![Response::Steps(steps("reply"))],
+        AgentOptions::default(),
+    );
     let (wait, entered, release) = gate();
     let held = Mutex::new(Some(wait));
     let order = Arc::new(Mutex::new(vec![]));
@@ -24,7 +27,7 @@ async fn subscribers_are_awaited_in_registration_order() {
         let first = first.clone();
         Box::pin(async move {
             first.lock().unwrap().push((label(&event), 1));
-            if let Some(ScriptStep::Wait(wait)) = wait {
+            if let Some(Action::Wait(wait)) = wait {
                 wait.await;
             }
         })
@@ -56,7 +59,10 @@ async fn subscribers_are_awaited_in_registration_order() {
 
 #[tokio::test]
 async fn agent_end_handlers_and_accepted_work_precede_idle_and_completion() {
-    let (agent, _) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let (agent, _) = setup(
+        vec![Response::Steps(steps("reply"))],
+        AgentOptions::default(),
+    );
     let (handler, entered, release) = gate();
     let (child, child_entered, child_release) = gate();
     let accepted = Mutex::new(Some((handler, child)));
@@ -67,7 +73,7 @@ async fn agent_end_handlers_and_accepted_work_precede_idle_and_completion() {
             None
         };
         Box::pin(async move {
-            if let Some((ScriptStep::Wait(handler), ScriptStep::Wait(child))) = work {
+            if let Some((Action::Wait(handler), Action::Wait(child))) = work {
                 handler.await;
                 tokio::spawn(child).await.unwrap();
             }
@@ -114,7 +120,7 @@ async fn abort_signals_current_work_without_clearing_queues() {
     let mut response = steps("partial");
     response.insert(2, wait);
     let (agent, provider) = setup(
-        vec![Script::Steps(response), Script::Steps(steps("fresh"))],
+        vec![Response::Steps(response), Response::Steps(steps("fresh"))],
         config,
     );
     let events = capture(&agent);
@@ -132,7 +138,14 @@ async fn abort_signals_current_work_without_clearing_queues() {
     agent.abort();
     let result = handle.await.unwrap();
     assert!(seen.lock().unwrap().as_ref().unwrap().is_cancelled());
-    assert!(provider.calls()[0].options.cancellation.is_cancelled());
+    assert!(
+        provider.calls()[0]
+            .options
+            .signal
+            .as_ref()
+            .unwrap()
+            .is_cancelled()
+    );
     assert!(
         signals
             .lock()
@@ -143,12 +156,12 @@ async fn abort_signals_current_work_without_clearing_queues() {
     let AgentMessage::Model(Message::Assistant(terminal)) = &result[1] else {
         panic!()
     };
-    assert_eq!(terminal.stop_reason, Some(StopReason::Aborted));
+    assert_eq!(terminal.stop_reason, StopReason::Aborted);
     assert_eq!(
         terminal.content,
         vec![AssistantContent::Text(TextContent {
             text: "partial".into(),
-            replay_metadata: None
+            text_signature: None
         })]
     );
     assert_eq!(agent.queue(Queue::Steering), vec![user("s")]);
@@ -170,12 +183,22 @@ async fn abort_signals_current_work_without_clearing_queues() {
         .unwrap()
         .await
         .unwrap();
-    assert!(!provider.calls()[1].options.cancellation.is_cancelled());
+    assert!(
+        !provider.calls()[1]
+            .options
+            .signal
+            .as_ref()
+            .unwrap()
+            .is_cancelled()
+    );
 }
 
 #[tokio::test]
 async fn abort_waits_for_accepted_subscribers() {
-    let (agent, provider) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let (agent, provider) = setup(
+        vec![Response::Steps(steps("reply"))],
+        AgentOptions::default(),
+    );
     let (wait, entered, release) = gate();
     let work = Mutex::new(Some(wait));
     let (cancelled_tx, cancelled_rx) = tokio::sync::oneshot::channel();
@@ -197,7 +220,7 @@ async fn abort_waits_for_accepted_subscribers() {
             None
         };
         Box::pin(async move {
-            if let Some(ScriptStep::Wait(cleanup)) = accepted {
+            if let Some(Action::Wait(cleanup)) = accepted {
                 let child = tokio::spawn(cleanup);
                 signal.cancelled().await;
                 notify.unwrap().send(()).unwrap();
@@ -216,7 +239,14 @@ async fn abort_waits_for_accepted_subscribers() {
     pending(&mut idle).await;
     assert_eq!(events.lock().unwrap().len(), count);
     assert!(agent.state().is_running);
-    assert!(provider.calls()[0].options.cancellation.is_cancelled());
+    assert!(
+        provider.calls()[0]
+            .options
+            .signal
+            .as_ref()
+            .unwrap()
+            .is_cancelled()
+    );
     release.send(()).unwrap();
     handle.await.unwrap();
     idle.await.unwrap();
@@ -227,29 +257,29 @@ async fn abort_waits_for_accepted_subscribers() {
 async fn model_error_and_abort_end_without_retry_or_queue_drain() {
     for (script, failure, content) in [
         (
-            Script::SetupFailure(Failure::AdapterFailed),
+            Response::Failure(Failure::AdapterFailed),
             Failure::AdapterFailed,
             vec![],
         ),
         (
-            Script::Steps(vec![
-                ScriptStep::Update(ProviderUpdate::TextStart { content_index: 0 }),
-                ScriptStep::Update(ProviderUpdate::TextDelta {
+            Response::Steps(vec![
+                Action::Update(Update::TextStart { content_index: 0 }),
+                Action::Update(Update::TextDelta {
                     content_index: 0,
                     delta: "partial".into(),
                 }),
-                ScriptStep::Update(ProviderUpdate::Error {
+                Action::Update(Update::Error {
                     failure: Failure::Transport,
                 }),
             ]),
             Failure::Transport,
             vec![AssistantContent::Text(TextContent {
                 text: "partial".into(),
-                replay_metadata: None,
+                text_signature: None,
             })],
         ),
         (
-            Script::SetupFailure(Failure::Cancelled),
+            Response::Failure(Failure::Cancelled),
             Failure::Cancelled,
             vec![],
         ),
@@ -276,15 +306,15 @@ async fn model_error_and_abort_end_without_retry_or_queue_drain() {
         let AgentMessage::Model(Message::Assistant(terminal)) = &result[1] else {
             panic!()
         };
-        assert_eq!(terminal.failure, Some(failure));
+        assert_eq!(terminal.error_message, Some(failure.to_string()));
         assert_eq!(terminal.content, content);
         assert_eq!(
             terminal.stop_reason,
-            Some(if failure == Failure::Cancelled {
+            if failure == Failure::Cancelled {
                 StopReason::Aborted
             } else {
                 StopReason::Error
-            })
+            }
         );
         assert_eq!(provider.calls().len(), 1);
         assert_eq!(agent.queue(Queue::Steering), vec![user("s")]);
@@ -326,7 +356,7 @@ async fn dropping_prompt_handle_does_not_cancel_owned_run() {
     let (wait, entered, release) = gate();
     let mut response = vec![wait];
     response.extend(steps("survived"));
-    let (agent, provider) = setup(vec![Script::Steps(response)], AgentOptions::default());
+    let (agent, provider) = setup(vec![Response::Steps(response)], AgentOptions::default());
     let events = capture(&agent);
     let handle = agent.prompt(user("input"), options()).unwrap();
     entered.await.unwrap();
@@ -335,7 +365,14 @@ async fn dropping_prompt_handle_does_not_cancel_owned_run() {
     pending(&mut idle).await;
     drop(idle);
     assert!(agent.state().is_running);
-    assert!(!provider.calls()[0].options.cancellation.is_cancelled());
+    assert!(
+        !provider.calls()[0]
+            .options
+            .signal
+            .as_ref()
+            .unwrap()
+            .is_cancelled()
+    );
     release.send(()).unwrap();
     agent.wait_for_idle().await.unwrap();
     assert_eq!(agent.state().context.messages.len(), 2);
@@ -352,13 +389,16 @@ async fn dropping_prompt_handle_does_not_cancel_owned_run() {
 
 #[tokio::test]
 async fn unsubscribe_stops_future_acceptance_without_dropping_accepted_delivery() {
-    let (agent, _) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let (agent, _) = setup(
+        vec![Response::Steps(steps("reply"))],
+        AgentOptions::default(),
+    );
     let (first, entered, release) = gate();
     let held = Mutex::new(Some(first));
     agent.subscribe(Arc::new(move |_, _| {
         let work = held.lock().unwrap().take();
         Box::pin(async move {
-            if let Some(ScriptStep::Wait(wait)) = work {
+            if let Some(Action::Wait(wait)) = work {
                 wait.await;
             }
         })
@@ -371,7 +411,7 @@ async fn unsubscribe_stops_future_acceptance_without_dropping_accepted_delivery(
         observed.lock().unwrap().push(event);
         let work = work.lock().unwrap().take();
         Box::pin(async move {
-            if let Some(ScriptStep::Wait(wait)) = work {
+            if let Some(Action::Wait(wait)) = work {
                 wait.await;
             }
         })
@@ -424,13 +464,16 @@ fn starting_without_runtime_fails_before_mutation() {
 
 #[tokio::test]
 async fn owned_task_failure_is_not_reported_as_successful_idle() {
-    let (agent, _) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let (agent, _) = setup(
+        vec![Response::Steps(steps("reply"))],
+        AgentOptions::default(),
+    );
     let (wait, entered, release) = gate();
     let held = Mutex::new(Some(wait));
     agent.subscribe(Arc::new(move |_, _| {
         let work = held.lock().unwrap().take();
         Box::pin(async move {
-            if let Some(ScriptStep::Wait(wait)) = work {
+            if let Some(Action::Wait(wait)) = work {
                 wait.await;
                 panic!("intentional callback contract violation");
             }
@@ -478,7 +521,7 @@ fn completion_wake_can_read_state() {
             let (wait, entered, release) = gate();
             let mut response = vec![wait];
             response.extend(steps("reply"));
-            let (agent, _) = setup(vec![Script::Steps(response)], AgentOptions::default());
+            let (agent, _) = setup(vec![Response::Steps(response)], AgentOptions::default());
             let mut handle = agent.prompt(user("input"), options()).unwrap();
             entered.await.unwrap();
             let (observed, observation) = tokio::sync::oneshot::channel();
@@ -535,4 +578,71 @@ fn idle_unsubscribe_allows_listener_cleanup_to_read_state() {
     assert!(!state.is_running);
     assert!(state.context.messages.is_empty());
     worker.join().unwrap();
+}
+
+#[tokio::test]
+async fn setup_failure_settles_assistant_history_and_lifecycle() {
+    let (agent, provider) = setup(vec![Response::SetupFailure], AgentOptions::default());
+    let events = capture(&agent);
+    let result = agent
+        .prompt(user("input"), options())
+        .unwrap()
+        .await
+        .expect("setup errors settle normally");
+    let AgentMessage::Model(Message::Assistant(message)) = &result[1] else {
+        panic!()
+    };
+    assert_eq!(message.stop_reason, StopReason::Error);
+    assert_eq!(message.error_message.as_deref(), Some("setup failed"));
+    assert!(message.content.is_empty());
+    assert_eq!(agent.state().context.messages, result);
+    assert!(!agent.state().is_running);
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(
+        events.lock().unwrap().iter().map(label).collect::<Vec<_>>(),
+        vec![
+            "agent_start",
+            "turn_start",
+            "message_start",
+            "message_end",
+            "message_start",
+            "message_end",
+            "turn_end",
+            "agent_end"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn iterator_eof_settles_supplied_stream_result() {
+    let (agent, provider) = setup(vec![Response::EndOnly], AgentOptions::default());
+    let events = capture(&agent);
+    let result = agent
+        .prompt(user("input"), options())
+        .unwrap()
+        .await
+        .expect("EOF awaits the supplied result");
+    let AgentMessage::Model(Message::Assistant(message)) = &result[1] else {
+        panic!()
+    };
+    assert_eq!(message.stop_reason, StopReason::Stop);
+    assert_eq!(message.timestamp, 42.0);
+    assert_eq!(message.model, "text");
+    assert_eq!(message.error_message, None);
+    assert_eq!(agent.state().context.messages, result);
+    assert!(!agent.state().is_running);
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(
+        events.lock().unwrap().iter().map(label).collect::<Vec<_>>(),
+        vec![
+            "agent_start",
+            "turn_start",
+            "message_start",
+            "message_end",
+            "message_start",
+            "message_end",
+            "turn_end",
+            "agent_end"
+        ]
+    );
 }

@@ -1,5 +1,7 @@
 //! Owned transcript values and execution contracts.
-use maestro_models::{AssistantMessage, Cancellation, Message, ModelEvent, ToolResultMessage};
+use maestro_models::{
+    AssistantMessage, AssistantMessageEvent, Cancellation, Message, ToolResultMessage,
+};
 use serde_json::Value;
 use std::{future::Future, pin::Pin, sync::Arc};
 
@@ -38,10 +40,6 @@ pub struct AgentState {
 }
 /// Ordered low-level execution events, not application settlement.
 #[derive(Clone, Debug, PartialEq)]
-#[expect(
-    clippy::large_enum_variant,
-    reason = "message updates are the most frequent event and carry owned snapshots; boxing would allocate on every update"
-)]
 pub enum AgentEvent {
     /// A run begins.
     AgentStart,
@@ -69,7 +67,7 @@ pub enum AgentEvent {
         /// Independent outer cumulative snapshot.
         message: AssistantMessage,
         /// Original owned model event, including its nested snapshot.
-        assistant_message_event: ModelEvent,
+        assistant_message_event: AssistantMessageEvent,
     },
     /// An authoritative completed record.
     MessageEnd {

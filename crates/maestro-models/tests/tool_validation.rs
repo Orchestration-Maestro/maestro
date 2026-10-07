@@ -1,21 +1,22 @@
 mod support;
 use maestro_models::*;
 use serde_json::{Value, json};
+use std::sync::Arc;
 
-fn tool(schema: Value) -> ToolDeclaration {
-    ToolDeclaration {
+fn tool(schema: Value) -> Tool {
+    Tool {
         name: "lookup".into(),
         description: "Look up data".into(),
         parameters: schema,
     }
 }
 fn call(arguments: Value) -> ToolCall {
-    ToolCall::new(
-        "call-id".into(),
-        "lookup".into(),
-        arguments.as_object().unwrap().clone(),
-        Some("metadata".into()),
-    )
+    ToolCall {
+        id: "call-id".into(),
+        name: "lookup".into(),
+        arguments: arguments.as_object().unwrap().clone(),
+        thought_signature: Some("metadata".into()),
+    }
 }
 fn validate(schema: Value, arguments: Value) -> Result<Value, ToolValidationError> {
     validate_tool_call(&[tool(schema)], &call(arguments)).map(Value::Object)
@@ -38,15 +39,15 @@ fn valid_tool_arguments_return_owned_objects() {
         let completed = call(arguments.clone());
         assert_eq!(completed.id, "call-id");
         assert_eq!(completed.name, "lookup");
-        assert_eq!(completed.replay_metadata.as_deref(), Some("metadata"));
-        assert_eq!(completed.arguments(), arguments.as_object());
+        assert_eq!(completed.thought_signature.as_deref(), Some("metadata"));
+        assert_eq!(Some(&completed.arguments), arguments.as_object());
         let mut result = validate_tool_call(&tools, &completed).unwrap();
         assert_eq!(Value::Object(result.clone()), arguments);
         result.insert("changed".into(), json!(true));
-        assert_eq!(completed.arguments(), arguments.as_object());
+        assert_eq!(Some(&completed.arguments), arguments.as_object());
     }
     assert_eq!(
-        call(json!({"not-validated":true})).arguments(),
+        Some(&call(json!({"not-validated":true})).arguments),
         json!({"not-validated":true}).as_object()
     );
 }
@@ -170,20 +171,6 @@ fn invalid_tool_arguments_and_schemas_fail_safely() {
         validate_tool_call(&[], &call(json!({"x":secret}))),
         Err(ToolValidationError::UnknownTool)
     );
-    let events = support::conformance::run(vec![
-        support::conformance::tool_start(0),
-        ProviderUpdate::Error {
-            failure: Failure::Transport,
-        },
-    ]);
-    let AssistantContent::ToolCall(partial) = &support::conformance::terminal(&events).content[0]
-    else {
-        panic!()
-    };
-    assert_eq!(
-        validate_tool_call(&[tool(json!({}))], partial),
-        Err(ToolValidationError::IncompleteArguments)
-    );
     for schema in [
         json!({"type":"invalid"}),
         json!({"type":42}),
@@ -262,10 +249,7 @@ fn invalid_tool_arguments_and_schemas_fail_safely() {
 
 #[test]
 fn validation_never_mutates_or_executes() {
-    use std::sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
-    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
     let counter = AtomicUsize::new(0);
     let execute = || {
         counter.fetch_add(1, Ordering::SeqCst);
@@ -292,33 +276,6 @@ fn validation_never_mutates_or_executes() {
         assert_eq!(call, original);
         assert_eq!(tools, before);
     }
-    let fake = Arc::new(ScriptedProvider::new(vec![support::conformance::steps(
-        vec![support::conformance::done()],
-    )]));
-    let context = Context {
-        tools: tools.clone(),
-        messages: vec![Message::Assistant(AssistantMessage {
-            content: vec![AssistantContent::ToolCall(call(json!({"invalid":true})))],
-            ..{
-                let events = support::conformance::run(vec![support::conformance::done()]);
-                support::conformance::terminal(&events).clone()
-            }
-        })],
-        ..support::conformance::context()
-    };
-    support::block_on(support::conformance::registry(fake.clone()).complete(
-        support::conformance::model(),
-        context,
-        support::auth::local(),
-    ));
-    assert_eq!(fake.calls().len(), 1);
-    let Message::Assistant(a) = &fake.calls()[0].context.messages[0] else {
-        panic!()
-    };
-    let AssistantContent::ToolCall(c) = &a.content[0] else {
-        panic!()
-    };
-    assert_eq!(c.arguments(), json!({"invalid":true}).as_object());
     assert_eq!(counter.load(Ordering::SeqCst), 0);
     execute();
     assert_eq!(counter.load(Ordering::SeqCst), 1);
@@ -330,7 +287,6 @@ fn remote_schema_references_fail_without_io() {
         io::Write,
         net::{SocketAddr, TcpListener, TcpStream},
         sync::{
-            Arc,
             atomic::{AtomicUsize, Ordering},
             mpsc,
         },

@@ -109,3 +109,16 @@ impl Drop for Waiter<'_> {
         }
     }
 }
+
+impl serde::Serialize for Cancellation {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        serializer.serialize_map(Some(0))?.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for Cancellation {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let _ = serde_json::Value::deserialize(deserializer)?;
+        Ok(Self::new())
+    }
+}

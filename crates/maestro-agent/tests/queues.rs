@@ -8,7 +8,7 @@ async fn queue_modes_default_independently_and_preserve_fifo() {
     for steering in [QueueMode::OneAtATime, QueueMode::All] {
         for follow_up in [QueueMode::OneAtATime, QueueMode::All] {
             let (agent, provider) = setup(
-                (0..5).map(|_| Script::Steps(steps("answer"))).collect(),
+                (0..5).map(|_| Response::Steps(steps("answer"))).collect(),
                 AgentOptions::default(),
             );
             assert_eq!(agent.queue_mode(Queue::Steering), QueueMode::OneAtATime);
@@ -85,7 +85,7 @@ async fn steering_is_polled_at_entry_and_after_complete_turn() {
     let mut response = steps("first");
     response.insert(2, wait);
     let (agent, provider) = setup(
-        vec![Script::Steps(response), Script::Steps(steps("second"))],
+        vec![Response::Steps(response), Response::Steps(steps("second"))],
         AgentOptions::default(),
     );
     agent.steer(user("entry"));
@@ -98,7 +98,7 @@ async fn steering_is_polled_at_entry_and_after_complete_turn() {
             None
         };
         Box::pin(async move {
-            if let Some(ScriptStep::Wait(wait)) = wait {
+            if let Some(Action::Wait(wait)) = wait {
                 wait.await;
             }
         })
@@ -125,7 +125,7 @@ async fn follow_up_waits_until_steering_is_exhausted() {
         atomic::{AtomicBool, Ordering},
     };
     let (agent, provider) = setup(
-        (0..4).map(|_| Script::Steps(steps("reply"))).collect(),
+        (0..4).map(|_| Response::Steps(steps("reply"))).collect(),
         AgentOptions::default(),
     );
     agent.follow_up(user("later"));
@@ -167,7 +167,7 @@ async fn assistant_tail_restart_prioritizes_steering_without_double_drain() {
     for mode in [QueueMode::OneAtATime, QueueMode::All] {
         for steering in [true, false] {
             let (agent, provider) = setup(
-                (0..5).map(|_| Script::Steps(steps("reply"))).collect(),
+                (0..5).map(|_| Response::Steps(steps("reply"))).collect(),
                 AgentOptions::default(),
             );
             agent.prompt(user("old"), options()).unwrap().await.unwrap();
@@ -221,7 +221,7 @@ async fn stop_after_turn_true_leaves_both_queues_untouched() {
         })),
         ..Default::default()
     };
-    let (agent, provider) = setup(vec![Script::Steps(steps("done"))], config);
+    let (agent, provider) = setup(vec![Response::Steps(steps("done"))], config);
     let events = capture(&agent);
     let (wait, entered, release) = gate();
     let wait = Mutex::new(Some(wait));
@@ -236,7 +236,7 @@ async fn stop_after_turn_true_leaves_both_queues_untouched() {
         };
         let finished = finished.clone();
         Box::pin(async move {
-            if let Some(ScriptStep::Wait(wait)) = accepted {
+            if let Some(Action::Wait(wait)) = accepted {
                 wait.await;
                 finished.store(true, Ordering::SeqCst);
             }
@@ -263,7 +263,7 @@ async fn stop_after_turn_false_does_not_invent_continuation() {
     for hook in [None, Some(Arc::new(|_: StopAfterTurnContext| -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + Send>> { Box::pin(async { false }) }) as StopAfterTurn)] {
         for queued in [false, true] {
             let config = AgentOptions { stop_after_turn: hook.clone(), ..Default::default() };
-            let (agent, provider) = setup((0..3).map(|_| Script::Steps(steps("reply"))).collect(), config);
+            let (agent, provider) = setup((0..3).map(|_| Response::Steps(steps("reply"))).collect(), config);
             if queued { agent.follow_up(user("later")); }
             let result = agent.prompt(user("initial"), options()).unwrap().await.unwrap();
             assert_eq!(provider.calls().len(), if queued {2} else {1});
@@ -278,7 +278,10 @@ async fn first_turn_start_steering_joins_the_first_request() {
         Arc,
         atomic::{AtomicBool, Ordering},
     };
-    let (agent, provider) = setup(vec![Script::Steps(steps("reply"))], AgentOptions::default());
+    let (agent, provider) = setup(
+        vec![Response::Steps(steps("reply"))],
+        AgentOptions::default(),
+    );
     let owner = agent.clone();
     let once = AtomicBool::new(false);
     agent.subscribe(Arc::new(move |event, _| {
@@ -319,8 +322,8 @@ async fn follow_up_restart_polls_agent_start_steering_before_first_request() {
     use std::sync::Arc;
     let (agent, provider) = setup(
         vec![
-            Script::Steps(steps("old reply")),
-            Script::Steps(steps("continued")),
+            Response::Steps(steps("old reply")),
+            Response::Steps(steps("continued")),
         ],
         AgentOptions::default(),
     );
