@@ -8,10 +8,17 @@ mod semantics;
 use std::path::Path;
 use std::process::Output;
 
-pub(crate) trait Process {
+/// Supplies process execution and diagnostics for repository policy.
+pub trait Process {
+    /// Emits an informational policy diagnostic.
     fn diagnostic(&mut self, message: &str) {
         eprintln!("{message}");
     }
+    /// Runs a program in the supplied directory with optional standard input.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic when the program cannot be started or waited for.
     fn output(
         &mut self,
         cwd: &Path,
@@ -21,15 +28,26 @@ pub(crate) trait Process {
     ) -> Result<Output, String>;
 }
 
-pub(crate) struct Invocation<'a> {
+/// Trusted event metadata supplied to a repository policy.
+pub struct Invocation<'a> {
+    /// Directory containing the trusted repository policy files.
     pub root: &'a Path,
+    /// Repository workflow name to execute.
     pub workflow: &'a str,
+    /// GitHub event name.
     pub event_name: &'a str,
+    /// JSON event payload.
     pub payload: &'a str,
+    /// Expected approval application identity, when required.
     pub app_slug: Option<&'a str>,
 }
 
-pub(crate) fn run(
+/// Applies a repository policy and returns workflow output key-value pairs.
+///
+/// # Errors
+///
+/// Returns a diagnostic for invalid metadata or failed policy operations.
+pub fn run(
     invocation: &Invocation<'_>,
     process: &mut dyn Process,
 ) -> Result<Vec<(String, String)>, String> {
@@ -81,7 +99,8 @@ pub(crate) fn run(
     Ok(vec![])
 }
 
-pub(crate) struct SystemProcess;
+/// Executes policy commands as native subprocesses.
+pub struct SystemProcess;
 
 impl Process for SystemProcess {
     fn output(
@@ -195,4 +214,49 @@ fn github<'a>(
             .ok_or("Missing default branch")?,
         process,
     })
+}
+
+/// Executes a workflow from command-line arguments and GitHub environment values.
+///
+/// # Errors
+///
+/// Returns a diagnostic for invalid inputs, failed policy operations or outputs.
+pub fn execute() -> Result<(), String> {
+    use std::io::Write;
+    let mut args = std::env::args().skip(1);
+    let workflow = args.next().ok_or("Expected workflow argument")?;
+    if args.next().is_some()
+        || !matches!(
+            workflow.as_str(),
+            "approve-contributor" | "issue-gate" | "pr-gate" | "contribution-policy"
+        )
+    {
+        return Err("Expected one supported workflow argument".into());
+    }
+    let event = std::env::var("GITHUB_EVENT_NAME").map_err(|e| e.to_string())?;
+    let path = std::env::var("GITHUB_EVENT_PATH").map_err(|e| e.to_string())?;
+    let payload = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let slug = std::env::var("MAESTRO_APPROVAL_APP_SLUG").ok();
+    let root = std::env::current_dir().map_err(|e| e.to_string())?;
+    let outputs = run(
+        &Invocation {
+            root: &root,
+            workflow: &workflow,
+            event_name: &event,
+            payload: &payload,
+            app_slug: slug.as_deref(),
+        },
+        &mut SystemProcess,
+    )?;
+    if !outputs.is_empty() {
+        let path = std::env::var("GITHUB_OUTPUT").map_err(|e| e.to_string())?;
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(path)
+            .map_err(|e| e.to_string())?;
+        for (key, value) in outputs {
+            writeln!(file, "{key}={value}").map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }

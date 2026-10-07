@@ -1,7 +1,6 @@
 #![cfg(test)]
 
-#[path = "../src/contribution_policy/mod.rs"]
-mod contribution_policy;
+use maestro_test_conventions::contribution_policy;
 #[path = "support/policy.rs"]
 mod policy_support;
 mod support;
@@ -1325,7 +1324,8 @@ fn repository_policy_binary_uses_same_entrypoint() {
     for dir in ["home", "config", "tmp", "cache", "data", "state"] {
         std::fs::create_dir(w.root.join(dir)).unwrap();
     }
-    let output = Command::new(env!("CARGO_BIN_EXE_repository_policy"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_repository_policy"));
+    command
         .arg("issue-gate")
         .current_dir(&w.root)
         .env_clear()
@@ -1336,9 +1336,11 @@ fn repository_policy_binary_uses_same_entrypoint() {
         .env("XDG_CONFIG_HOME", w.root.join("config"))
         .env("XDG_CACHE_HOME", w.root.join("cache"))
         .env("XDG_DATA_HOME", w.root.join("data"))
-        .env("XDG_STATE_HOME", w.root.join("state"))
-        .output()
-        .unwrap();
+        .env("XDG_STATE_HOME", w.root.join("state"));
+    if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
+        command.env("LLVM_PROFILE_FILE", profile);
+    }
+    let output = command.output().unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -1360,7 +1362,12 @@ fn repository_policy_binary_uses_same_entrypoint() {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/bin/repository_policy.rs"),
     )
     .unwrap();
-    assert!(source.contains("contribution_policy::run("));
+    assert!(source.contains("contribution_policy::execute("));
+    let library = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/contribution_policy/mod.rs"),
+    )
+    .unwrap();
+    assert!(library.contains("let outputs = run("));
 }
 
 fn repository_root() -> std::path::PathBuf {

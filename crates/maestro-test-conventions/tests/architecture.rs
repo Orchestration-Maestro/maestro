@@ -336,7 +336,13 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
     let workspace = Workspace::new();
     workspace.list(&[("maestro-session", "core"), ("maestro-storage", "core")]);
     workspace.member("storage", "maestro-storage", "");
-    std::fs::write(workspace.root.join("Cargo.toml"), "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n[patch.crates-io]\nmaestro-storage = { path = \"crates/storage\" }\n").unwrap();
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        format!("{text}[patch.crates-io]\nmaestro-storage = {{ path = \"crates/storage\" }}\n"),
+    )
+    .unwrap();
     for kind in [
         "dependencies",
         "dev-dependencies",

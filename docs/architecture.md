@@ -79,14 +79,16 @@ scratch workspaces, not certified as delivered capabilities.
 
 ## Quality checks
 
-Member manifests are parsed as TOML and must set the boolean `lints.workspace`
-to `true`. Rust files are parsed before checking attributes: protected lint
-allowances, Clippy group allowances and `warnings` allowances are forbidden,
-including `expect`, nested items and conditional `cfg_attr` attributes.
-Unparsable files fail with a diagnostic naming the file. Test files are exempt
-from the 500-line production limit, but not from allowance checks. Items carrying
-`cfg(test)` are excluded by their source spans, regardless of attribute order;
-a trailing test item's suffix is excluded only when no production item follows.
+The root manifest must forbid every protected quality lint; member manifests
+are parsed as TOML and must set the boolean `lints.workspace` to `true`.
+The compiler rejects protected-lint allowances, including attributes emitted by
+macros and conditional attributes. Lint-group allowances fail because the
+workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
+Test files are exempt from the 500-line production limit. Files that parse as
+Rust modules exclude items carrying `cfg(test)` by their source spans, regardless
+of attribute order; a trailing test item's suffix is excluded only when no
+production item follows. Other Rust inputs, such as included expressions, count
+all their lines as production. Rust validity belongs to the compiler.
 
 ## Commands and failure evidence
 

@@ -5,6 +5,9 @@ use std::process::Command;
 
 use serde_json::Value;
 
+/// Executes trusted repository contribution policies through a process adapter.
+pub mod contribution_policy;
+
 mod boundaries;
 mod comments;
 mod graph;
@@ -64,7 +67,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     graph::complete(&metadata, &edges)?;
     boundaries::check(&metadata)?;
     comments::check(&metadata)?;
-    quality::check(&metadata)
+    quality::check(root, &metadata)
 }
 
 fn metadata_command(root: &Path, options: &[&str]) -> Result<Value, String> {

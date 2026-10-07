@@ -22,24 +22,6 @@ fn production_files_stop_at_five_hundred_lines() {
 }
 
 #[test]
-fn quality_lint_allowances_are_rejected() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    std::fs::write(
-        &path,
-        "#![allow(clippy::too_many_lines, reason = \"scheduled for re-implementation\")]\n",
-    )
-    .unwrap();
-    assert!(
-        check_workspace(&workspace.root)
-            .unwrap_err()
-            .contains("quality lint allowance")
-    );
-}
-
-#[test]
 fn all_crates_must_inherit_workspace_lints() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
@@ -93,35 +75,6 @@ fn test_files_and_trailing_test_modules_do_not_count() {
 }
 
 #[test]
-fn quality_allowances_are_attributes_not_innocent_source_tokens() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    std::fs::write(
-        &path,
-        "fn allow(unwrap_used: usize) {}\nconst TEXT: &str = \"#[allow(clippy::unwrap_used)]\";\n",
-    )
-    .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-    for attribute in [
-        "#[allow(clippy::unwrap_used)]",
-        "#![allow(clippy::pedantic)]",
-        "#[cfg_attr(unix, allow(clippy::too_many_lines))]",
-        "#![allow(unsafe_code)]",
-        "#[allow(clippy::doc_markdown)]",
-        "#[expect(clippy::unwrap_used)]",
-    ] {
-        std::fs::write(&path, format!("{attribute}\nfn fixture() {{}}\n")).unwrap();
-        assert!(
-            check_workspace(&workspace.root)
-                .unwrap_err()
-                .contains("quality lint allowance")
-        );
-    }
-}
-
-#[test]
 fn multiple_trailing_test_modules_do_not_count() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
@@ -162,27 +115,6 @@ fn lint_inheritance_uses_the_manifest_table() {
     )
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
-}
-
-#[test]
-fn lint_groups_are_rejected_at_every_attribute_depth() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    for contents in [
-        "#![allow(clippy::restriction)]\n",
-        "fn outer() { #[expect(clippy::pedantic)] fn nested() {} }\n",
-        "#[cfg_attr(test, allow(clippy::all))] fn fixture() {}\n",
-    ] {
-        std::fs::write(&path, contents).unwrap();
-        assert!(
-            check_workspace(&workspace.root)
-                .unwrap_err()
-                .contains("quality lint allowance"),
-            "{contents}"
-        );
-    }
 }
 
 #[test]
@@ -229,13 +161,105 @@ fn nested_test_items_do_not_count_as_production() {
 }
 
 #[test]
-fn invalid_rust_source_reports_its_file() {
+fn protected_lints_cannot_be_downgraded_to_deny() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    std::fs::write(&path, "fn broken( {").unwrap();
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace("unwrap_used = \"forbid\"", "unwrap_used = \"deny\""),
+    )
+    .unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("unwrap_used must be forbid")
+    );
+}
+
+#[test]
+fn missing_protected_lints_are_rejected() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(&manifest, text.replace("panic = \"forbid\"\n", "")).unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("panic must be forbid")
+    );
+}
+
+#[test]
+fn protected_lints_accept_string_and_priority_table_forms() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace(
+            "unwrap_used = \"forbid\"",
+            "unwrap_used = { level = \"forbid\", priority = 1 }",
+        ),
+    )
+    .unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn included_expression_files_pass_and_count_as_production() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let root = workspace.root.join("crates/tui/src");
+    std::fs::write(
+        root.join("lib.rs"),
+        "pub fn value() -> u8 { include!(\"value.rs\") }\n",
+    )
+    .unwrap();
+    let fragment = root.join("value.rs");
+    std::fs::write(&fragment, "1_u8\n").unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    std::fs::write(
+        &fragment,
+        format!("{}1_u8\n", "// Technical.\n".repeat(499)),
+    )
+    .unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    std::fs::write(
+        &fragment,
+        format!("{}1_u8\n", "// Technical.\n".repeat(500)),
+    )
+    .unwrap();
     let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&path.display().to_string()), "{error}");
-    assert!(error.contains("cannot parse"), "{error}");
+    assert!(error.contains("value.rs: 501 production lines"), "{error}");
+}
+
+#[test]
+fn forbidden_lint_groups_cannot_be_downgraded() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace(
+            "forbidden_lint_groups = \"forbid\"",
+            "forbidden_lint_groups = \"deny\"",
+        ),
+    )
+    .unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("forbidden_lint_groups must be forbid")
+    );
 }
