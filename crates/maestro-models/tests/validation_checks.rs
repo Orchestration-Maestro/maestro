@@ -875,3 +875,60 @@ fn primitive_round_trip_coercion_still_runs_final_validation() {
         "Validation failed for tool \"echo\":\n  - root: must be string\n\nReceived arguments:\ntrue"
     );
 }
+
+#[test]
+fn argument_path_tears_down_deep_temporaries_in_subprocess() {
+    const MODE: &str = "MAESTRO_DEEP_ARGUMENT_MODE";
+    let Ok(mode) = std::env::var(MODE) else {
+        for mode in ["valid", "error"] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .arg("--exact")
+                .arg("argument_path_tears_down_deep_temporaries_in_subprocess")
+                .arg("--nocapture")
+                .env(MODE, mode)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{mode}: {}\n{}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    };
+    let depth = 100_000;
+    let input = format!("{}0{}", "[".repeat(depth), "]".repeat(depth));
+    let call = call(parse_json_with_repair(&input).unwrap());
+    let result = validate_tool_arguments(
+        &tool(if mode == "valid" {
+            json!({})
+        } else {
+            json!(false)
+        }),
+        &call,
+    );
+    let mut pending = vec![call.arguments];
+    if mode == "valid" {
+        let value = result.unwrap();
+        let mut leaf = &value;
+        for _ in 0..depth {
+            leaf = &leaf[0];
+        }
+        assert_eq!(leaf, &json!(0));
+        pending.push(value);
+    } else {
+        let ThrownValue::Error(error) = result.unwrap_err() else {
+            panic!("expected Error");
+        };
+        assert_eq!(error.name, "TypeError");
+        assert_eq!(error.message, "Invalid value used as weak map key");
+    }
+    while let Some(value) = pending.pop() {
+        match value {
+            Value::Array(items) => pending.extend(items),
+            Value::Object(items) => pending.extend(items.into_values()),
+            _ => {}
+        }
+    }
+}

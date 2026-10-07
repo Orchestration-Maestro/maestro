@@ -18,7 +18,7 @@ fn declaration() -> Tool {
     Tool {
         name: "lookup".into(),
         description: "Look up data".into(),
-        parameters: json!({"type":"object"}),
+        parameters: json!({"type":"object"}).into(),
     }
 }
 fn result(id: &str) -> Message {
@@ -149,7 +149,7 @@ fn tool_call(
     Arc::new(std::sync::RwLock::new(ToolCall {
         id,
         name,
-        arguments,
+        arguments: serde_json::Value::Object(arguments),
         thought_signature,
     }))
 }
@@ -828,7 +828,10 @@ fn normalizer_callback_observes_unlocked_original_calls() {
                     let mut c = c.try_write().expect("normalizer must run without a guard");
                     assert_eq!(c.thought_signature.as_deref(), signature);
                     c.id = "mutated".into();
-                    c.arguments.insert("x".into(), json!(2));
+                    c.arguments
+                        .as_object_mut()
+                        .unwrap()
+                        .insert("x".into(), json!(2));
                     returned.into()
                 }),
             );
@@ -1004,10 +1007,13 @@ fn transformation_preserves_input_values_and_result_details() {
     assert_eq!(a, &metadata);
     assert_eq!(
         calls(&output[1])[0].read().unwrap().arguments,
-        json!({"x":1}).as_object().unwrap().clone()
+        json!({"x":1})
     );
     assert_eq!(source.system_prompt.as_deref(), Some("prompt"));
-    assert_eq!(source.tools, Some(vec![declaration()]));
+    assert_eq!(
+        serde_json::to_value(&source.tools).unwrap(),
+        serde_json::to_value(Some(vec![declaration()])).unwrap()
+    );
     let prompt_and_tools = context();
     assert_eq!(
         prompt_and_tools.system_prompt.as_deref(),

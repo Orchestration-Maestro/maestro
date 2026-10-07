@@ -1,5 +1,9 @@
 //! Identity-bearing schemas with offline checker compilation.
+//! Opaque checker teardown grows its stack. If that allocation fails before
+//! teardown starts, the opaque allocation is leaked rather than recursively
+//! destroyed on an insufficient stack; owned JSON still tears down iteratively.
 use crate::ThrownValue;
+use crate::scalar::OwnedJson;
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
@@ -14,7 +18,7 @@ pub struct TSchema {
     state: Arc<Mutex<State>>,
 }
 struct State {
-    json: Arc<Value>,
+    json: Arc<OwnedJson>,
     kinds: BTreeMap<Vec<String>, String>,
     legacy: bool,
     checker: Option<Arc<Checker>>,
@@ -24,7 +28,7 @@ impl TSchema {
     pub fn new(json: Value, kinds: BTreeMap<Vec<String>, String>, has_typebox_kind: bool) -> Self {
         Self {
             state: Arc::new(Mutex::new(State {
-                json: Arc::new(json),
+                json: Arc::new(OwnedJson::new(json)),
                 kinds,
                 legacy: has_typebox_kind,
                 checker: None,
@@ -52,7 +56,7 @@ impl TSchema {
         let old = {
             let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
             (
-                std::mem::replace(&mut state.json, Arc::new(json)),
+                std::mem::replace(&mut state.json, Arc::new(OwnedJson::new(json))),
                 std::mem::replace(&mut state.kinds, kinds),
                 std::mem::replace(&mut state.legacy, has_typebox_kind),
             )
@@ -76,7 +80,7 @@ impl TSchema {
         {
             return Ok(cached);
         }
-        let json = self.json();
+        let json = OwnedJson::new(self.json());
         let checker = Arc::new(build(&json)?);
         if !json.is_object() && !json.is_array() {
             return Err(ThrownValue::Error(Box::new(crate::Error {
@@ -131,12 +135,21 @@ impl<'de> serde::Deserialize<'de> for TSchema {
 // Maximum measured compiler/check frame cost across native debug and release.
 const STACK_BYTES_PER_LEVEL: usize = 6341;
 pub(crate) struct Checker {
-    validator: jsonschema::Validator,
+    validator: Option<jsonschema::Validator>,
     stack_size: usize,
 }
 impl Checker {
     pub(crate) fn is_valid(&self, value: &Value) -> Result<bool, ThrownValue> {
-        foreign_stack(self.stack_size, || self.validator.is_valid(value))
+        foreign_stack(self.stack_size, || {
+            self.validator.as_ref().unwrap().is_valid(value)
+        })
+    }
+}
+impl Drop for Checker {
+    fn drop(&mut self) {
+        if foreign_stack(self.stack_size, || drop(self.validator.take())).is_err() {
+            std::mem::forget(self.validator.take());
+        }
     }
 }
 fn foreign_stack<T>(bytes: usize, f: impl FnOnce() -> T) -> Result<T, ThrownValue> {
@@ -175,7 +188,7 @@ fn nesting_depth(schema: &Value) -> usize {
     deepest
 }
 pub(crate) fn build(schema: &Value) -> Result<Checker, ThrownValue> {
-    let normalized = normalize(schema);
+    let normalized = OwnedJson::new(normalize(schema));
     let defaults = serde_stacker::Deserializer::new(());
     let stack_size = nesting_depth(&normalized)
         .checked_mul(STACK_BYTES_PER_LEVEL)
@@ -193,10 +206,9 @@ pub(crate) fn build(schema: &Value) -> Result<Checker, ThrownValue> {
             .should_validate_formats(true)
             .build(&normalized)
     })?;
-    crate::scalar::drop_json(normalized);
     result
         .map(|validator| Checker {
-            validator,
+            validator: Some(validator),
             stack_size,
         })
         .map_err(|e| crate::records::diagnostics::error(e.to_string()))
@@ -226,7 +238,7 @@ pub(crate) fn errors(schema: &Value, value: &Value) -> Result<Vec<String>, Throw
     let checker = build(schema)?;
     let mut diagnostics = Vec::new();
     foreign_stack(checker.stack_size, || {
-        for e in checker.validator.iter_errors(value) {
+        for e in checker.validator.as_ref().unwrap().iter_errors(value) {
             collect_error(schema, value, &e, &mut diagnostics)?;
         }
         Ok::<_, ThrownValue>(())
@@ -679,16 +691,21 @@ fn normalize_at(schema: &Value, root: &Value) -> Value {
                 serde_json::json!({})
             };
         };
-        let Value::Object(mut object) = crate::scalar::clone_json(schema) else {
-            unreachable!()
-        };
-        object.shift_remove("$schema");
+        let mut normalized = OwnedJson::new(crate::scalar::clone_json(schema));
+        let object = normalized.as_object_mut().unwrap();
+        if let Some(old) = object.shift_remove("$schema") {
+            crate::scalar::drop_json(old);
+        }
         if !source.contains_key("$ref")
             && let Some(reference) = object.shift_remove("$recursiveRef")
         {
-            object.insert("$ref".into(), reference);
+            if let Some(old) = object.insert("$ref".into(), reference) {
+                crate::scalar::drop_json(old);
+            }
         } else {
-            object.shift_remove("$recursiveRef");
+            if let Some(old) = object.shift_remove("$recursiveRef") {
+                crate::scalar::drop_json(old);
+            }
         }
         if let Some(reference) = source.get("$ref").and_then(Value::as_str) {
             let resolved = reference == "#"
@@ -713,8 +730,8 @@ fn normalize_at(schema: &Value, root: &Value) -> Value {
                 }
                 _ => false,
             };
-            if !usable {
-                object.shift_remove("type");
+            if !usable && let Some(old) = object.shift_remove("type") {
+                crate::scalar::drop_json(old);
             }
         }
         for key in [
@@ -724,15 +741,18 @@ fn normalize_at(schema: &Value, root: &Value) -> Value {
             "exclusiveMaximum",
             "multipleOf",
         ] {
-            if object.get(key).is_some_and(|v| !v.is_number()) {
-                object.shift_remove(key);
+            if object.get(key).is_some_and(|v| !v.is_number())
+                && let Some(old) = object.shift_remove(key)
+            {
+                crate::scalar::drop_json(old);
             }
         }
         if object
             .get("required")
             .is_some_and(|v| !v.as_array().is_some_and(|a| a.iter().all(Value::is_string)))
+            && let Some(old) = object.shift_remove("required")
         {
-            object.shift_remove("required");
+            crate::scalar::drop_json(old);
         }
         for key in [
             "properties",
@@ -743,14 +763,16 @@ fn normalize_at(schema: &Value, root: &Value) -> Value {
         ] {
             if let Some(map) = object.get_mut(key).and_then(Value::as_object_mut) {
                 for v in map.values_mut() {
-                    *v = normalize_at(v, root);
+                    let next = normalize_at(v, root);
+                    crate::scalar::replace_json(v, next);
                 }
             }
         }
         for key in ["allOf", "anyOf", "oneOf", "prefixItems"] {
             if let Some(array) = object.get_mut(key).and_then(Value::as_array_mut) {
                 for v in array {
-                    *v = normalize_at(v, root);
+                    let next = normalize_at(v, root);
+                    crate::scalar::replace_json(v, next);
                 }
             }
         }
@@ -772,46 +794,55 @@ fn normalize_at(schema: &Value, root: &Value) -> Value {
                     && let Some(array) = v.as_array_mut()
                 {
                     for v in array {
-                        *v = normalize_at(v, root);
+                        let next = normalize_at(v, root);
+                        crate::scalar::replace_json(v, next);
                     }
                 } else {
-                    *v = normalize_at(v, root);
+                    let next = normalize_at(v, root);
+                    crate::scalar::replace_json(v, next);
                 }
             }
         }
         if object.get("items").is_some_and(Value::is_array) {
             let tuple = object.shift_remove("items").unwrap();
-            object.insert("prefixItems".into(), tuple);
-            if let Some(extra) = object.shift_remove("additionalItems") {
-                object.insert("items".into(), extra);
+            if let Some(old) = object.insert("prefixItems".into(), tuple) {
+                crate::scalar::drop_json(old);
+            }
+            if let Some(extra) = object.shift_remove("additionalItems")
+                && let Some(old) = object.insert("items".into(), extra)
+            {
+                crate::scalar::drop_json(old);
             }
         } else {
-            object.shift_remove("additionalItems");
+            if let Some(old) = object.shift_remove("additionalItems") {
+                crate::scalar::drop_json(old);
+            }
         }
-        if let Some(dependencies) = object
-            .shift_remove("dependencies")
-            .and_then(|v| v.as_object().cloned())
-        {
-            for (key, nested) in dependencies {
-                let keyword = if nested.is_array() {
-                    "dependentRequired"
-                } else {
-                    "dependentSchemas"
-                };
-                let entry = object
-                    .entry(keyword)
-                    .or_insert_with(|| serde_json::json!({}));
-                if let Some(map) = entry.as_object_mut()
-                    && !source.contains_key(keyword)
-                {
-                    map.insert(
-                        key,
-                        if nested.is_array() {
-                            nested
+        if let Some(dependencies) = object.shift_remove("dependencies") {
+            let mut dependencies = OwnedJson::new(dependencies);
+            if let Some(map) = dependencies.as_object_mut() {
+                for (key, nested) in std::mem::take(map) {
+                    let nested = OwnedJson::new(nested);
+                    let keyword = if nested.is_array() {
+                        "dependentRequired"
+                    } else {
+                        "dependentSchemas"
+                    };
+                    let entry = object
+                        .entry(keyword)
+                        .or_insert_with(|| serde_json::json!({}));
+                    if let Some(map) = entry.as_object_mut()
+                        && !source.contains_key(keyword)
+                    {
+                        let next = if nested.is_array() {
+                            nested.into_value()
                         } else {
                             normalize_at(&nested, root)
-                        },
-                    );
+                        };
+                        if let Some(old) = map.insert(key, next) {
+                            crate::scalar::drop_json(old);
+                        }
+                    }
                 }
             }
         }
@@ -839,20 +870,24 @@ fn normalize_at(schema: &Value, root: &Value) -> Value {
                                 .map(|(key, v)| (key.clone(), normalize_at(v, root)))
                                 .collect(),
                         ),
-                        _ => nested,
+                        _ => nested.into_value(),
                     };
                     branches.push(serde_json::json!({compiled_key:nested}));
                 }
             }
         }
-        Value::Object(object)
+        normalized.into_value()
     })
 }
 
-fn extra_constraints(schema: &Value) -> Vec<(&str, &str, Value)> {
+fn extra_constraints(schema: &Value) -> Vec<(&str, &str, OwnedJson)> {
     let mut extra = Vec::new();
     if schema["items"].is_array() && schema["prefixItems"].is_array() {
-        extra.push(("prefixItems", "prefixItems", schema["prefixItems"].clone()));
+        extra.push((
+            "prefixItems",
+            "prefixItems",
+            OwnedJson::new(crate::scalar::clone_json(&schema["prefixItems"])),
+        ));
     }
     if let Some(entries) = schema["dependencies"].as_object() {
         for (source_key, compiled_key, want_array) in [
@@ -863,10 +898,10 @@ fn extra_constraints(schema: &Value) -> Vec<(&str, &str, Value)> {
                 let map: serde_json::Map<_, _> = entries
                     .iter()
                     .filter(|(_, v)| v.is_array() == want_array)
-                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .map(|(k, v)| (k.clone(), crate::scalar::clone_json(v)))
                     .collect();
                 if !map.is_empty() {
-                    extra.push((source_key, compiled_key, Value::Object(map)));
+                    extra.push((source_key, compiled_key, OwnedJson::new(Value::Object(map))));
                 }
             }
         }
@@ -874,7 +909,11 @@ fn extra_constraints(schema: &Value) -> Vec<(&str, &str, Value)> {
     if schema.get("$ref").is_some()
         && let Some(reference) = schema.get("$recursiveRef")
     {
-        extra.push(("$recursiveRef", "$ref", reference.clone()));
+        extra.push((
+            "$recursiveRef",
+            "$ref",
+            OwnedJson::new(crate::scalar::clone_json(reference)),
+        ));
     }
     extra
 }
@@ -920,6 +959,46 @@ mod stack_measurements {
             error.message,
             "Unable to allocate stack for schema checking"
         );
+    }
+    struct ObserveDrop(Arc<AtomicUsize>);
+    impl Drop for ObserveDrop {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+    impl<'i> jsonschema::Keyword<'i> for ObserveDrop {
+        fn validate(&self, _: &'i Value) -> Result<(), jsonschema::ValidationError<'i>> {
+            Ok(())
+        }
+        fn is_valid(&self, _: &'i Value) -> bool {
+            true
+        }
+    }
+    fn force_stack_allocation_failure(checker: &mut super::Checker) {
+        checker.stack_size = usize::MAX;
+    }
+    #[test]
+    fn failed_stack_allocation_defers_opaque_validator_cleanup() {
+        for force_failure in [false, true] {
+            let count = Arc::new(AtomicUsize::new(0));
+            let observed = count.clone();
+            let validator = jsonschema::options()
+                .offline()
+                .with_keyword("dropObservation", move |_, _, _| {
+                    Ok(Box::new(ObserveDrop(observed.clone())))
+                })
+                .build(&json!({"dropObservation":true}))
+                .unwrap();
+            let mut checker = super::Checker {
+                validator: Some(validator),
+                stack_size: serde_stacker::Deserializer::new(()).stack_size,
+            };
+            if force_failure {
+                force_stack_allocation_failure(&mut checker);
+            }
+            drop(checker);
+            assert_eq!(count.load(Ordering::SeqCst), usize::from(!force_failure));
+        }
     }
     #[test]
     fn foreign_schema_calls_measure_per_level_stack() {

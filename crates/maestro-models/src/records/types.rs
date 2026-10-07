@@ -1036,8 +1036,13 @@ pub(super) fn serialize_json<T: serde::Serialize, S: serde::Serializer>(
     serializer: S,
 ) -> Result<S::Ok, S::Error> {
     use serde::Serialize;
-    let value = serde_json::to_value(value).map_err(serde::ser::Error::custom)?;
-    ordered_json(value).serialize(serializer)
+    let value = value
+        .serialize(serde_stacker::Serializer::new(
+            serde_json::value::Serializer,
+        ))
+        .map_err(serde::ser::Error::custom)?;
+    let ordered = crate::scalar::OwnedJson::new(ordered_json(value));
+    ordered.serialize(serde_stacker::Serializer::new(serializer))
 }
 pub(crate) fn ordered_json(value: serde_json::Value) -> serde_json::Value {
     crate::scalar::grow(|| match value {
@@ -1063,6 +1068,8 @@ pub(crate) fn ordered_json(value: serde_json::Value) -> serde_json::Value {
             for (key, value) in map {
                 if !ordered.contains_key(&key) {
                     ordered.insert(key, ordered_json(value));
+                } else {
+                    crate::scalar::drop_json(value);
                 }
             }
             serde_json::Value::Object(ordered)

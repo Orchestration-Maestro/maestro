@@ -83,8 +83,13 @@ impl Parser<'_> {
             if self.at >= self.text.len() {
                 return Value::Object(object);
             }
-            let Ok(Value::String(key)) = self.string() else {
-                return Value::Object(object);
+            let key = match self.string() {
+                Ok(Value::String(key)) => key,
+                Ok(value) => {
+                    crate::scalar::drop_json(value);
+                    return Value::Object(object);
+                }
+                Err(()) => return Value::Object(object),
             };
             self.blank();
             self.at += 1;
@@ -92,7 +97,11 @@ impl Parser<'_> {
                 return Value::Object(object);
             };
             if key != "__proto__" {
-                object.insert(key, value);
+                if let Some(old) = object.insert(key, value) {
+                    crate::scalar::drop_json(old);
+                }
+            } else {
+                crate::scalar::drop_json(value);
             }
             self.blank();
             if self.peek() == Some(b',') {

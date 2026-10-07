@@ -99,10 +99,12 @@ pub(super) fn decode(json: &str) -> Result<serde_json::Value, crate::ThrownValue
     use serde::Deserialize;
     let mut reader = serde_json::Deserializer::from_str(&normalized);
     reader.disable_recursion_limit();
-    let value = serde_json::Value::deserialize(serde_stacker::Deserializer::new(&mut reader))
-        .map_err(|_| super::json_errors::error(json))?;
+    let value = crate::scalar::OwnedJson::new(
+        serde_json::Value::deserialize(serde_stacker::Deserializer::new(&mut reader))
+            .map_err(|_| super::json_errors::error(json))?,
+    );
     reader.end().map_err(|_| super::json_errors::error(json))?;
-    Ok(value)
+    Ok(value.into_value())
 }
 
 /// Return an owned best-effort display value from cumulative JSON text.

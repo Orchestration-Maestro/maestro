@@ -55,11 +55,8 @@ pub(crate) fn pretty_json(value: &serde_json::Value) -> String {
         });
     }
     let mut out = String::new();
-    write(
-        &crate::records::types::ordered_json(clone_json(value)),
-        0,
-        &mut out,
-    );
+    let ordered = OwnedJson::new(crate::records::types::ordered_json(clone_json(value)));
+    write(&ordered, 0, &mut out);
     out
 }
 
@@ -91,4 +88,34 @@ pub(crate) fn drop_json(value: serde_json::Value) {
             _ => {}
         }
     }
+}
+
+// Keeps intermediate JSON safe to discard on ordinary and early returns.
+pub(crate) struct OwnedJson(serde_json::Value);
+impl OwnedJson {
+    pub(crate) fn new(value: serde_json::Value) -> Self {
+        Self(value)
+    }
+    pub(crate) fn into_value(mut self) -> serde_json::Value {
+        std::mem::take(&mut self.0)
+    }
+}
+impl std::ops::Deref for OwnedJson {
+    type Target = serde_json::Value;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl std::ops::DerefMut for OwnedJson {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+impl Drop for OwnedJson {
+    fn drop(&mut self) {
+        drop_json(std::mem::take(&mut self.0));
+    }
+}
+pub(crate) fn replace_json(target: &mut serde_json::Value, next: serde_json::Value) {
+    drop_json(std::mem::replace(target, next));
 }

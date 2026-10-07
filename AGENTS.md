@@ -99,6 +99,8 @@ The model crate may use private `regress =0.12.0` with its default
 No public regex interface or additional regex dependency is authorized.
 The model crate also uses `serde_stacker =0.1.14`, `stacker =0.1.25`
 and serde_json's `unbounded_depth` feature for deep argument parsing.
+Model-owned JSON tears down iteratively; opaque checker destruction uses
+its compiler stack sizing and leaks only if that stack cannot be allocated.
 
 Keep one current format for everything. No compatibility code.
 
