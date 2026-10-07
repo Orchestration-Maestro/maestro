@@ -130,3 +130,34 @@ fn bus_prefix_tail_and_unsubscribe_keep_ownership() {
     assert_eq!(log.borrow().last(), Some(&"sync"));
     assert!(bus.tails.borrow().is_empty());
 }
+
+#[test]
+fn command_capabilities_do_not_leak_into_tool_context() {
+    use maestro_extensions_wasm::{
+        ExtensionCommandContext, ExtensionContext, ExtensionFuture, SessionOutcome,
+    };
+    use std::rc::Rc;
+
+    fn ordinary(context: Rc<dyn ExtensionContext>) {
+        let _ = context.compact(None);
+        let _ = context.signal();
+    }
+    fn command(context: Rc<dyn ExtensionCommandContext>) {
+        let wait: ExtensionFuture<'_, ()> = context.wait_for_idle();
+        drop(wait);
+        let new: ExtensionFuture<'_, SessionOutcome> = context.new_session(None);
+        drop(new);
+        let fork: ExtensionFuture<'_, SessionOutcome> = context.fork("entry".into(), None);
+        drop(fork);
+        let navigate: ExtensionFuture<'_, SessionOutcome> =
+            context.navigate_tree("target".into(), None);
+        drop(navigate);
+        let switch: ExtensionFuture<'_, SessionOutcome> =
+            context.switch_session("session".into(), None);
+        drop(switch);
+        let reload: ExtensionFuture<'_, ()> = context.reload();
+        drop(reload);
+    }
+    let _: fn(Rc<dyn ExtensionContext>) = ordinary;
+    let _: fn(Rc<dyn ExtensionCommandContext>) = command;
+}

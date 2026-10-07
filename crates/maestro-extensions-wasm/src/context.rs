@@ -14,7 +14,54 @@ pub trait AbortSignal {
     /// Wait.
     fn wait(&self) -> ExtensionFuture<'_, ()>;
 }
-/// Extension Context.
+/// Ordinary event and tool capabilities retained independently of callback completion.
+///
+/// Ownership does not make a retired context valid. Implementations report the
+/// supplied stale-context error rather than retargeting a captured context.
+/// Extracted session and UI capabilities retain their original raw-object lifetime.
+/// Session replacement, reload, navigation and waiting are command-only operations.
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::ExtensionContext;
+/// fn ordinary(context: &dyn ExtensionContext) {
+///     let _ = context.wait_for_idle();
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::ExtensionContext;
+/// fn ordinary(context: &dyn ExtensionContext) {
+///     let _ = context.new_session(None);
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::ExtensionContext;
+/// fn ordinary(context: &dyn ExtensionContext) {
+///     let _ = context.fork(String::new(), None);
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::ExtensionContext;
+/// fn ordinary(context: &dyn ExtensionContext) {
+///     let _ = context.navigate_tree(String::new(), None);
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::ExtensionContext;
+/// fn ordinary(context: &dyn ExtensionContext) {
+///     let _ = context.switch_session(String::new(), None);
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use maestro_extensions_wasm::ExtensionContext;
+/// fn ordinary(context: &dyn ExtensionContext) {
+///     let _ = context.reload();
+/// }
+/// ```
 pub trait ExtensionContext {
     /// Ui.
     fn ui(&self) -> Result<Rc<ExtensionUIContext>, Error>;
@@ -40,7 +87,7 @@ pub trait ExtensionContext {
     fn shutdown(&self) -> Result<(), Error>;
     /// Get context usage.
     fn get_context_usage(&self) -> Result<Option<ContextUsage>, Error>;
-    /// Compact.
+    /// Request compaction without awaiting its completion; completion uses the supplied callbacks.
     fn compact(&self, options: Option<CompactOptions>) -> Result<(), Error>;
     /// Get system prompt.
     fn get_system_prompt(&self) -> Result<String, Error>;
@@ -103,13 +150,13 @@ pub trait ReplacedSessionContext: ExtensionCommandContext {
         options: Option<SendUserMessageOptions>,
     ) -> ExtensionFuture<'_, ()>;
 }
-/// With Session.
+/// A callback awaited with the fresh context belonging to its replacement operation.
 pub type WithSession = Rc<dyn Fn(Rc<dyn ReplacedSessionContext>) -> ExtensionFuture<'static, ()>>;
 /// New Session Command Options.
 pub struct NewSessionCommandOptions {
     /// Parent session.
     pub parent_session: Option<String>,
-    /// Setup.
+    /// Setup of the new writable session, awaited before continuing its replacement.
     pub setup: Option<SessionSetup>,
     /// With session.
     pub with_session: Option<WithSession>,
