@@ -30,6 +30,7 @@ pub trait Focusable {
     fn set_focused(&mut self, focused: bool);
 }
 /// Detect focus capability, regardless of current focus state.
+#[must_use]
 pub fn is_focusable(component: Option<&dyn Component>) -> bool {
     component.is_some_and(|c| c.focusable().is_some())
 }
@@ -43,6 +44,7 @@ pub struct Container {
 }
 impl Container {
     /// Construct an empty group.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -78,21 +80,21 @@ impl Component for Container {
 pub enum OverlayAnchor {
     /// Center.
     Center,
-    /// TopLeft.
+    /// `TopLeft`.
     TopLeft,
-    /// TopRight.
+    /// `TopRight`.
     TopRight,
-    /// BottomLeft.
+    /// `BottomLeft`.
     BottomLeft,
-    /// BottomRight.
+    /// `BottomRight`.
     BottomRight,
-    /// TopCenter.
+    /// `TopCenter`.
     TopCenter,
-    /// BottomCenter.
+    /// `BottomCenter`.
     BottomCenter,
-    /// LeftCenter.
+    /// `LeftCenter`.
     LeftCenter,
-    /// RightCenter.
+    /// `RightCenter`.
     RightCenter,
 }
 /// Individually optional side margins.

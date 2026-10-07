@@ -1,5 +1,13 @@
 //! Caller-supplied completion contracts.
 use std::{future::Future, pin::Pin, rc::Rc};
+/// A cursor's location in editor text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CursorPosition {
+    /// Zero-based line index.
+    pub line: usize,
+    /// UTF-8 byte offset within the line.
+    pub col: usize,
+}
 /// A suggested insertion with display metadata.
 pub struct AutocompleteItem {
     /// Inserted value.
@@ -46,23 +54,21 @@ pub trait AutocompleteProvider {
     fn get_suggestions(
         &mut self,
         lines: Vec<String>,
-        cursor_line: usize,
-        cursor_col: usize,
+        cursor: CursorPosition,
         options: (Rc<dyn AbortSignal>, Option<bool>),
     ) -> Pin<Box<dyn Future<Output = Option<AutocompleteSuggestions>>>>;
     /// Insert a completion, returning lines and line/UTF-8 byte offset.
     fn apply_completion(
         &mut self,
         lines: Vec<String>,
-        cursor_line: usize,
-        cursor_col: usize,
+        cursor: CursorPosition,
         item: AutocompleteItem,
         prefix: &str,
-    ) -> (Vec<String>, usize, usize);
+    ) -> (Vec<String>, CursorPosition);
     /// Optional file-completion trigger capability; defaults to absent.
     fn should_trigger_file_completion(
         &mut self,
-    ) -> Option<Box<dyn FnMut(&[String], usize, usize) -> bool + '_>> {
+    ) -> Option<Box<dyn FnMut(&[String], CursorPosition) -> bool + '_>> {
         None
     }
 }

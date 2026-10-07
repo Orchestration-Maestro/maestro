@@ -1,5 +1,5 @@
 #![allow(clippy::type_complexity)]
-use maestro_tui::{Component, Container};
+use maestro_tui::{Component, Container, CursorPosition};
 use std::{cell::RefCell, rc::Rc};
 struct Mutable {
     text: String,
@@ -355,8 +355,7 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         fn get_suggestions(
             &mut self,
             lines: Vec<String>,
-            line: usize,
-            col: usize,
+            CursorPosition { line, col }: CursorPosition,
             (signal, force): (Rc<dyn AbortSignal>, Option<bool>),
         ) -> Pin<Box<dyn Future<Output = Option<AutocompleteSuggestions>>>> {
             self.log.borrow_mut().push(format!(
@@ -382,20 +381,27 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         fn apply_completion(
             &mut self,
             mut lines: Vec<String>,
-            line: usize,
-            col: usize,
+            CursorPosition { line, col }: CursorPosition,
             item: AutocompleteItem,
             prefix: &str,
-        ) -> (Vec<String>, usize, usize) {
+        ) -> (Vec<String>, CursorPosition) {
             assert_eq!((line, col, prefix), (0, 4, "😀"));
             lines[line] = item.value;
             let cursor_col = lines[line].len();
-            (lines, line, cursor_col)
+            (
+                lines,
+                CursorPosition {
+                    line,
+                    col: cursor_col,
+                },
+            )
         }
         fn should_trigger_file_completion(
             &mut self,
-        ) -> Option<Box<dyn FnMut(&[String], usize, usize) -> bool + '_>> {
-            Some(Box::new(|l, row, col| l[row] == "😀" && col == 4))
+        ) -> Option<Box<dyn FnMut(&[String], CursorPosition) -> bool + '_>> {
+            Some(Box::new(|l, cursor| {
+                l[cursor.line] == "😀" && cursor.col == 4
+            }))
         }
     }
     #[derive(Default)]
@@ -548,14 +554,12 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         for force in [None, Some(false), Some(true)] {
             let mut first = provider.borrow_mut().get_suggestions(
                 vec!["😀".into()],
-                0,
-                4,
+                CursorPosition { line: 0, col: 4 },
                 (signal.clone(), force),
             );
             let second = provider.borrow_mut().get_suggestions(
                 vec!["😀".into()],
-                0,
-                4,
+                CursorPosition { line: 0, col: 4 },
                 (signal.clone(), force),
             );
             drop(second);
@@ -571,7 +575,9 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         assert!(provider
             .borrow_mut()
             .should_trigger_file_completion()
-            .unwrap()(&["😀".into()], 0, 4));
+            .unwrap()(
+            &["😀".into()], CursorPosition { line: 0, col: 4 }
+        ));
         let item = AutocompleteItem {
             value: "abc".into(),
             label: "ABC".into(),
@@ -580,16 +586,18 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
         assert_eq!(item.label, "ABC");
         assert_eq!(item.description.as_deref(), Some("description"));
         assert_eq!(
-            provider
-                .borrow_mut()
-                .apply_completion(vec!["😀".into()], 0, 4, item, "😀"),
-            (vec!["abc".into()], 0, 3)
+            provider.borrow_mut().apply_completion(
+                vec!["😀".into()],
+                CursorPosition { line: 0, col: 4 },
+                item,
+                "😀"
+            ),
+            (vec!["abc".into()], CursorPosition { line: 0, col: 3 })
         );
         assert_eq!(
             provider.borrow_mut().apply_completion(
                 vec!["😀".into()],
-                0,
-                4,
+                CursorPosition { line: 0, col: 4 },
                 AutocompleteItem {
                     value: "界a".into(),
                     label: "界a".into(),
@@ -597,7 +605,7 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
                 },
                 "😀",
             ),
-            (vec!["界a".into()], 0, 4)
+            (vec!["界a".into()], CursorPosition { line: 0, col: 4 })
         );
     }
     assert_eq!(log.borrow().len(), 12);
@@ -655,9 +663,11 @@ fn editor_and_completion_contracts_keep_caller_callbacks() {
     signal.abort();
     assert_eq!(fired.get(), 21);
     assert!(signal.aborted());
-    let mut cancelled = p1
-        .borrow_mut()
-        .get_suggestions(vec!["😀".into()], 0, 2, (signal, None));
+    let mut cancelled = p1.borrow_mut().get_suggestions(
+        vec!["😀".into()],
+        CursorPosition { line: 0, col: 2 },
+        (signal, None),
+    );
     assert!(matches!(
         cancelled.as_mut().poll(&mut cx),
         Poll::Ready(None)

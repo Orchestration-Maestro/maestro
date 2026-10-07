@@ -39,6 +39,8 @@ assert_eq!(text.render(8), ["Hello\x1b[0m...\x1b[0m"]);
 ```
 
 Only the first LF-delimited line is displayed. Absent padding defaults to zero;
-vertical padding is symmetric. Very small viewports may return over-wide lines
-because the available content width is at least one. Padding counts are unsigned; insufficient room uses saturating subtraction. Replace retained text by replacing the component;
-there is no setter or native terminal requirement.
+vertical padding is symmetric. Horizontal padding is bounded by the viewport,
+with left padding allocated before right padding. Content may have zero available columns.
+Padding counts are unsigned; insufficient room uses saturating subtraction.
+Replace retained text by replacing the component; there is no setter or native
+terminal requirement.

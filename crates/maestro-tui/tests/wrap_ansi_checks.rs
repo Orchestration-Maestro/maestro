@@ -159,3 +159,15 @@ fn verify_does_not_emit_osc_8_sequences_on_lines_that_are_outside_the_hyperlink(
     assert_eq!(w[0].matches("\x1b]8;;https://example.com\x1b\\").count(), 1);
     assert_eq!(w[0].matches("\x1b]8;;\x1b\\").count(), 1);
 }
+
+#[test]
+fn wrapping_avoids_style_only_overflow_lines() {
+    assert_eq!(
+        wrap_text_with_ansi("\x1b[31ma 界", 1),
+        ["\x1b[31ma", "\x1b[31m界"]
+    );
+    assert_eq!(
+        wrap_text_with_ansi("\x1b[31m\u{200b}界", 1),
+        ["\x1b[31m\u{200b}界"]
+    );
+}

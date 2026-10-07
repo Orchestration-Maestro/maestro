@@ -10,10 +10,10 @@ assert_eq!(truncate_to_width("Hello world", 8, None, None),
 assert_eq!(wrap_text_with_ansi("hello world", 6), ["hello", "world"]);
 ```
 
-Both visible_width() and truncate_to_width() correctly handle ANSI escape codes:
+Both `visible_width()` and `truncate_to_width()` correctly handle ANSI escape codes:
 
-- visible_width() ignores ANSI codes when calculating width
-- truncate_to_width() preserves ANSI codes and properly closes them when truncating
+- `visible_width()` ignores ANSI codes when calculating width
+- `truncate_to_width()` preserves ANSI codes and properly closes them when truncating
 
 ```rust
 use maestro_tui::{visible_width, truncate_to_width};

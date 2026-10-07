@@ -38,6 +38,6 @@ pub use components::{
     tui::{OverlayAnchor, OverlayHandle, OverlayMargin, OverlayOptions, SizeValue},
 };
 pub use editor::completion::autocomplete::{
-    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, SlashCommand,
+    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CursorPosition, SlashCommand,
 };
 pub use terminal::Terminal;

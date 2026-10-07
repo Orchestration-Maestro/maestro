@@ -90,3 +90,26 @@ fn verify_normalizes_thai_and_lao_am_vowels_only_for_terminal_output() {
         );
     }
 }
+
+#[test]
+fn truncation_closes_bel_hyperlinks_before_ellipsis() {
+    check_truncated_hyperlink("\x07");
+}
+
+#[test]
+fn truncation_closes_st_hyperlinks_before_ellipsis() {
+    check_truncated_hyperlink("\x1b\\");
+}
+
+fn check_truncated_hyperlink(terminator: &str) {
+    let open = format!("\x1b]8;;u{terminator}");
+    let close = format!("\x1b]8;;{terminator}");
+    assert_eq!(
+        truncate_to_width(&format!("{open}abcdef{close}"), 4, Some("…"), None),
+        format!("{open}abc{close}\x1b[0m…\x1b[0m")
+    );
+    assert_eq!(
+        truncate_to_width(&format!("{open}abcdef{close}"), 4, Some(""), None),
+        format!("{open}abcd{close}\x1b[0m")
+    );
+}

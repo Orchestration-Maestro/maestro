@@ -299,11 +299,14 @@ fn terminal_documentation_matches_delivered_examples() {
     use std::{cell::RefCell, rc::Rc};
     let text = include_str!("../../../docs/terminal.md");
     let components = include_str!("../../../docs/terminal/components.md");
+    assert!(components.contains("Horizontal padding is bounded by the viewport"));
+    assert!(components.contains("Content may have zero available columns"));
+    assert!(!components.contains("available content width is at least one"));
     for block in [
         "Use the provided utilities to ensure lines fit:",
-        "Both visible_width() and truncate_to_width() correctly handle ANSI escape codes:",
-        "visible_width() ignores ANSI codes when calculating width",
-        "truncate_to_width() preserves ANSI codes and properly closes them when truncating",
+        "Both `visible_width()` and `truncate_to_width()` correctly handle ANSI escape codes:",
+        "`visible_width()` ignores ANSI codes when calculating width",
+        "`truncate_to_width()` preserves ANSI codes and properly closes them when truncating",
     ] {
         assert!(text.contains(block));
     }
