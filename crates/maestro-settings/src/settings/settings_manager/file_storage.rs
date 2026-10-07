@@ -52,6 +52,7 @@ fn transaction<'a>(
     path: &Path,
     operation: &'a mut Operation<'a>,
 ) -> Result<(), Error> {
+    let _section = super::lease::Section::enter();
     let exists = path.exists();
     let mut lease = if exists {
         Some(Lease::acquire(path)?)

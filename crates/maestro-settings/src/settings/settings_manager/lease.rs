@@ -6,6 +6,7 @@ use std::{
     sync::{Arc, Mutex, OnceLock},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+pub(super) use termination::Section;
 
 pub(super) struct LeaseError {
     pub(super) code: &'static str,
@@ -66,12 +67,9 @@ trait Runtime: Send + Sync {
     fn utimes(&self, path: &Path, time: i64) -> Result<(), Error>;
     fn remove(&self, path: &Path) -> Result<(), Error>;
     fn delay(&self, ms: u64);
-    fn precision(&self) -> Option<Precision>;
-    fn cache_precision(&self, precision: Precision);
     fn registry(&self) -> Registry;
 }
 struct Native;
-static PRECISION: OnceLock<Precision> = OnceLock::new();
 static REGISTRY: OnceLock<Registry> = OnceLock::new();
 impl Runtime for Native {
     fn now(&self) -> i64 {
@@ -111,12 +109,6 @@ impl Runtime for Native {
     fn delay(&self, ms: u64) {
         std::thread::sleep(Duration::from_millis(ms));
     }
-    fn precision(&self) -> Option<Precision> {
-        PRECISION.get().copied()
-    }
-    fn cache_precision(&self, precision: Precision) {
-        let _ = PRECISION.set(precision);
-    }
     fn registry(&self) -> Registry {
         REGISTRY.get_or_init(Registry::default).clone()
     }
@@ -128,9 +120,6 @@ fn remove(runtime: &dyn Runtime, path: &Path) -> Result<(), Error> {
     }
 }
 fn probe(runtime: &dyn Runtime, path: &Path) -> Result<(i64, Precision), Error> {
-    if let Some(precision) = runtime.precision() {
-        return Ok((runtime.stat(path)?, precision));
-    }
     let now = runtime.now();
     runtime.utimes(path, ((now + 999) / 1000) * 1000 + 5)?;
     let mtime = runtime.stat(path)?;
@@ -139,7 +128,6 @@ fn probe(runtime: &dyn Runtime, path: &Path) -> Result<(i64, Precision), Error> 
     } else {
         Precision::Milliseconds
     };
-    runtime.cache_precision(precision);
     Ok((mtime, precision))
 }
 fn attempt(
@@ -386,7 +374,6 @@ mod tests {
     struct Fake {
         now: AtomicI64,
         mtime: Mutex<Option<i64>>,
-        precision: Mutex<Option<Precision>>,
         seconds: bool,
         events: Mutex<Vec<String>>,
         failures: Mutex<VecDeque<(&'static str, std::io::ErrorKind)>>,
@@ -399,7 +386,6 @@ mod tests {
             Arc::new(Self {
                 now: AtomicI64::new(now),
                 mtime: Mutex::new(mtime),
-                precision: Mutex::new(None),
                 seconds,
                 events: Mutex::new(Vec::new()),
                 failures: Mutex::new(VecDeque::new()),
@@ -484,12 +470,6 @@ mod tests {
                 *self.mtime.lock().unwrap() = None;
             }
         }
-        fn precision(&self) -> Option<Precision> {
-            *self.precision.lock().unwrap()
-        }
-        fn cache_precision(&self, p: Precision) {
-            *self.precision.lock().unwrap() = Some(p);
-        }
         fn registry(&self) -> Registry {
             self.registry.clone()
         }
@@ -553,8 +533,13 @@ mod tests {
             );
             assert_eq!(f.count("utimes"), 1);
             l.release().unwrap();
+            f.now.store(32002, Ordering::SeqCst);
             let mut l = Lease::acquire_with(file(), f.clone()).unwrap();
-            assert_eq!(f.count("utimes"), 1);
+            assert_eq!(
+                l.state.lock().unwrap().mtime,
+                if seconds { 33000 } else { 33005 }
+            );
+            assert_eq!(f.count("utimes"), 2);
             l.release().unwrap();
         }
         let f = Fake::new(20000, Some(10000), false);
@@ -569,6 +554,18 @@ mod tests {
             assert_eq!(f.count("remove"), 1);
             assert!(f.mtime.lock().unwrap().is_none());
         }
+    }
+    #[test]
+    fn second_acquisition_timestamp_fault_removes_directory() {
+        let f = Fake::new(20001, None, false);
+        let mut first = Lease::acquire_with(file(), f.clone()).unwrap();
+        first.release().unwrap();
+        f.now.store(32002, Ordering::SeqCst);
+        f.fail("utimes", std::io::ErrorKind::PermissionDenied);
+        let error = Lease::acquire_with(file(), f.clone()).err().unwrap();
+        assert_eq!(error.to_string(), "sentinel utimes");
+        assert_eq!(f.count("utimes"), 2);
+        assert!(f.mtime.lock().unwrap().is_none());
     }
     #[test]
     fn heartbeat_renewal_retry_and_compromise() {

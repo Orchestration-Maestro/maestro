@@ -152,14 +152,17 @@ ten attempts with nine 20ms gaps. The lease uses a 10000ms stale threshold and
 release acquired locks, with release failures taking precedence. Writes are
 in-place: partial bytes may remain after failure. There is no rename, fsync or
 rollback guarantee. UTF-8 file decoding replaces malformed byte sequences.
-On the first native lease acquisition, process-wide exit cleanup is installed.
+On the first native synchronous storage operation, process-wide exit cleanup is installed.
 It removes every held directory on a normal return from main or
 `std::process::exit`, including exit from a locked callback or another thread.
 Removal errors are ignored; cleanup never waits for a lease registry mutex.
-Unix acquisition also takes over the supported termination signals only while
+Native storage also takes over the supported Unix termination signals only while
 their disposition is default, leaving ignored or already-handled signals alone.
-The handler records the first signal while any synchronous locked section is
-active. After the last section completes its write and release, the default
+The handler records the first signal while any synchronous storage section is
+active, including missing-file callbacks before directory creation or acquisition,
+in-memory callbacks and queued writes through caller-supplied storage. Each lease
+acquisition probes timestamp precision anew. After the last section completes its
+write and release, the default
 signal action is restored and the signal is re-raised. With no active section,
 it is re-raised immediately. This is process-wide handling, not per-manager
 cancellation. Windows console INT/HUP events use the same section deferral and

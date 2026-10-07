@@ -2176,3 +2176,75 @@ fn owned_view_edits_refresh_typed_projection_without_mutating_manager() {
     assert_eq!(warnings.extra()["custom"], true);
     assert!(m.get_warnings().extra().is_empty());
 }
+
+#[test]
+fn reload_project_callback_does_not_capture_failed_global_marks() {
+    struct Reentrant {
+        controlled: Controlled,
+        manager: std::sync::Mutex<Option<SettingsManager>>,
+        armed: std::sync::atomic::AtomicBool,
+    }
+    impl maestro_settings::SettingsStorage for Reentrant {
+        fn with_lock(
+            &self,
+            scope: SettingsScope,
+            operation: &mut dyn FnMut(Option<&str>) -> Result<Option<String>, Error>,
+        ) -> Result<(), Error> {
+            if scope == SettingsScope::Project
+                && self.armed.swap(false, std::sync::atomic::Ordering::SeqCst)
+            {
+                put(
+                    &self.controlled.inner,
+                    SettingsScope::Global,
+                    r#"{"theme":"external"}"#,
+                );
+                self.manager
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .unwrap()
+                    .set_default_model("model".into());
+            }
+            self.controlled.with_lock(scope, operation)
+        }
+    }
+    let storage = Arc::new(Reentrant {
+        controlled: Controlled::default(),
+        manager: std::sync::Mutex::new(None),
+        armed: std::sync::atomic::AtomicBool::new(false),
+    });
+    put(
+        &storage.controlled.inner,
+        SettingsScope::Global,
+        r#"{"theme":"initial"}"#,
+    );
+    let scheduler = Scheduler::default();
+    let manager = SettingsManager::from_storage(storage.clone(), scheduler.spawn());
+    *storage.manager.lock().unwrap() = Some(manager.clone());
+    storage
+        .controlled
+        .failures
+        .lock()
+        .unwrap()
+        .push(SettingsScope::Global);
+    manager.set_theme("failed".into());
+    scheduler.drive();
+    assert_eq!(manager.drain_errors().len(), 1);
+    put(
+        &storage.controlled.inner,
+        SettingsScope::Global,
+        r#"{"theme":"reloaded"}"#,
+    );
+    storage
+        .armed
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    block_on(manager.reload());
+    assert_eq!(manager.get_theme().as_deref(), Some("reloaded"));
+    scheduler.drive();
+    block_on(manager.flush());
+    assert_eq!(
+        disk(&storage.controlled.inner, SettingsScope::Global),
+        json!({"theme":"external","defaultModel":"model"})
+    );
+    storage.manager.lock().unwrap().take();
+}

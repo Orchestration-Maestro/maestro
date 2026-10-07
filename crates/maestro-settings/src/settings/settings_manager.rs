@@ -71,6 +71,8 @@ impl SettingsStorage for InMemorySettingsStorage {
         scope: SettingsScope,
         operation: &'a mut Operation<'a>,
     ) -> Result<(), Error> {
+        #[cfg(not(target_arch = "wasm32"))]
+        let _section = lease::Section::enter();
         let current = self.text.lock().unwrap()[scope.index()].clone();
         if let Some(next) = operation(current.as_deref())? {
             self.text.lock().unwrap()[scope.index()] = Some(next);
@@ -225,6 +227,8 @@ impl SettingsManager {
     }
     /// Clones a seed into raw in-memory storage before loading it.
     pub fn in_memory(settings: Settings, spawn: Spawn) -> Result<Self, Error> {
+        #[cfg(not(target_arch = "wasm32"))]
+        let _section = lease::Section::enter();
         let settings = value::Owned(value::convert(settings)?);
         let storage = Arc::new(InMemorySettingsStorage::new());
         storage.with_lock(SettingsScope::Global, &mut |_| {
@@ -275,9 +279,11 @@ impl SettingsManager {
                     });
                 }
             }
+            if scope == SettingsScope::Global {
+                state.modified = Default::default();
+            }
         }
         let mut state = self.state.lock().unwrap();
-        state.modified = Default::default();
         publish(&mut state);
     }
     fn read(&self, key: &str) -> Option<value::Owned> {
@@ -383,6 +389,8 @@ impl SettingsManager {
         let snapshot = value::Owned(snapshot);
         (self.spawn)(Box::pin(async move {
             Wait(previous).await;
+            #[cfg(not(target_arch = "wasm32"))]
+            let _section = lease::Section::enter();
             let result = storage.with_lock(scope, &mut |text| {
                 let current = value::Owned(match text.filter(|s| !s.is_empty()) {
                     Some(s) => value::convert(value::parse(s)?)?,

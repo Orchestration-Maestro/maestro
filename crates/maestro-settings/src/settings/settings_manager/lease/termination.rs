@@ -48,11 +48,11 @@ fn register(path: &Path) -> &'static Entry {
     HEAD.store(entry, Ordering::Release);
     entry
 }
-pub(super) struct Section {
+pub(in super::super) struct Section {
     entry: Option<&'static Entry>,
 }
 impl Section {
-    pub(super) fn enter() -> Self {
+    pub(in super::super) fn enter() -> Self {
         STATE.fetch_add(SECTION, Ordering::SeqCst);
         INIT.call_once(|| {
             // SAFETY: cleanup has C ABI, remains valid for process lifetime and never unwinds.
@@ -63,12 +63,12 @@ impl Section {
         });
         Self { entry: None }
     }
-    pub(super) fn unhold(&self) {
+    pub(in super::super) fn unhold(&self) {
         if let Some(entry) = self.entry {
             entry.held.store(false, Ordering::Release);
         }
     }
-    pub(super) fn hold(&mut self, path: &Path) {
+    pub(in super::super) fn hold(&mut self, path: &Path) {
         let entry = register(path);
         entry.held.store(true, Ordering::Release);
         self.entry = Some(entry);
