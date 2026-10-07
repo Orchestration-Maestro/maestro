@@ -110,3 +110,7 @@ write lock can still abort the agent.
 Supplied `Error` records retain arbitrary `code`, `errno` and `cause` values
 alongside name, message and stack. Diagnostic extraction still reports only
 string or numeric codes; retained errno and cause are not diagnostic fields.
+
+`Model` and `ProviderResponse` Debug output retains header names but redacts every
+header value. Their serialized records remain unchanged. Supplied option records
+have no Debug implementation; credential values must not be logged.

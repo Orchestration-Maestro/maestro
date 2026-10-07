@@ -1,3 +1,6 @@
+use credential_assertions::assert_credential_eq;
+#[path = "support/credential_assertions.rs"]
+mod credential_assertions;
 use maestro_models::*;
 
 fn model(limit: f64) -> Model {
@@ -116,11 +119,12 @@ fn base_options_choose_key_without_trimming() {
                 ..Default::default()
             };
             let expected = resolved.filter(|key| !key.is_empty()).or(supplied);
-            assert_eq!(
-                build_base_options(&model(0.0), Some(options), resolved)
+            assert_credential_eq(
+                &(build_base_options(&model(0.0), Some(options), resolved)
                     .api_key
-                    .as_deref(),
-                expected
+                    .as_deref()),
+                &(expected),
+                "base_options_choose_key_without_trimming",
             );
         }
     }
@@ -195,22 +199,36 @@ fn base_options_forward_every_common_field() {
             );
             assert_eq!(result.temperature, Some(0.0));
             assert_eq!(result.max_tokens, Some(0.0));
-            assert_eq!(result.api_key.as_deref(), Some("key"));
+            assert_credential_eq(
+                &(result.api_key.as_deref()),
+                &(Some("key")),
+                "base_options_forward_every_common_field",
+            );
             assert_eq!(result.transport, Some(transport.clone()));
             assert_eq!(result.cache_retention, Some(retention));
             assert_eq!(result.session_id.as_deref(), Some(""));
             assert_eq!(result.timeout_ms, Some(0.0));
             assert_eq!(result.max_retries, Some(0.0));
             assert_eq!(result.max_retry_delay_ms, Some(0.0));
-            assert_eq!(result.headers, Some(headers));
-            assert_eq!(result.metadata, Some(metadata));
-            assert_eq!(
-                result.headers.as_ref().unwrap().keys().collect::<Vec<_>>(),
-                ["z", "a"]
+            assert_credential_eq(
+                &(result.headers),
+                &(Some(headers)),
+                "base_options_forward_every_common_field",
             );
-            assert_eq!(
-                result.metadata.as_ref().unwrap().keys().collect::<Vec<_>>(),
-                ["z", "a"]
+            assert_credential_eq(
+                &(result.metadata),
+                &(Some(metadata)),
+                "base_options_forward_every_common_field",
+            );
+            assert_credential_eq(
+                &(result.headers.as_ref().unwrap().keys().collect::<Vec<_>>()),
+                &(["z", "a"]),
+                "base_options_forward_every_common_field",
+            );
+            assert_credential_eq(
+                &(result.metadata.as_ref().unwrap().keys().collect::<Vec<_>>()),
+                &(["z", "a"]),
+                "base_options_forward_every_common_field",
             );
             assert!(Arc::ptr_eq(&payload, result.on_payload.as_ref().unwrap()));
             assert!(Arc::ptr_eq(&response, result.on_response.as_ref().unwrap()));

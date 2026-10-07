@@ -1,3 +1,6 @@
+use credential_assertions::assert_credential_eq;
+#[path = "support/credential_assertions.rs"]
+mod credential_assertions;
 use maestro_models::get_model;
 
 #[test]
@@ -46,8 +49,9 @@ fn fireworks_key_is_reported_and_resolved() {
         maestro_models::find_env_keys("fireworks").unwrap(),
         Some(vec!["FIREWORKS_API_KEY".into()])
     );
-    assert_eq!(
-        maestro_models::get_env_api_key("fireworks").unwrap(),
-        Some("test-fireworks-key".into())
+    assert_credential_eq(
+        &(maestro_models::get_env_api_key("fireworks").unwrap()),
+        &(Some("test-fireworks-key".into())),
+        "fireworks_key_is_reported_and_resolved",
     );
 }
