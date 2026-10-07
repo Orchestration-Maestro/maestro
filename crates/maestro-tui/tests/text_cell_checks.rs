@@ -164,8 +164,11 @@ fn wrapping_preserves_literal_lines_whitespace_and_overwide_graphemes() {
         ("", 1, vec![""]),
         ("a\n\n", 2, vec!["a", "", ""]),
         ("a  ", 3, vec!["a  "]),
-        ("界", 1, vec!["", "界"]),
-        ("a", 0, vec!["", "a"]),
+        ("界", 1, vec!["界"]),
+        ("a", 0, vec!["a"]),
+        ("界a", 0, vec!["界", "a"]),
+        ("a界", 1, vec!["a", "界"]),
+        ("\u{200b}界", 1, vec!["\u{200b}界"]),
         ("ab\u{feff}", 1, vec!["a", "b\u{feff}"]),
         ("ab\u{85}", 1, vec!["a", "b", ""]),
         ("\x1b[31ma\nb", 2, vec!["\x1b[31ma", "\x1b[31mb"]),
@@ -271,8 +274,8 @@ fn truncation_covers_empty_fractional_and_nonfinite_widths() {
 fn truncated_text_preserves_small_width_and_repeat_semantics() {
     use maestro_tui::{Component, TruncatedText};
     for (width, px, py, expected) in [
-        (1, 1, 0, vec![" a "]),
-        (0, 0, 0, vec!["a"]),
+        (1, 1, 0, vec![" "]),
+        (0, 0, 0, vec![""]),
         (3, 0, 2, vec!["   ", "   ", "a  ", "   ", "   "]),
     ] {
         let mut t = TruncatedText::new("a".into(), Some(px), Some(py));
@@ -282,7 +285,7 @@ fn truncated_text_preserves_small_width_and_repeat_semantics() {
     }
     assert_eq!(
         TruncatedText::new("a".into(), Some(2), None).render(1),
-        ["  a  "]
+        [" "]
     );
     assert_eq!(
         TruncatedText::new("a".into(), Some(1), None).render(5),
@@ -336,5 +339,17 @@ fn terminal_documentation_matches_delivered_examples() {
     assert_eq!(
         TruncatedText::new("Hello world\nignored".into(), None, None).render(8),
         ["Hello\x1b[0m...\x1b[0m"]
+    );
+}
+
+#[test]
+fn column_endpoints_saturate_without_overflow() {
+    assert_eq!(
+        slice_with_width("abc", 1, usize::MAX, None),
+        ("bc".into(), 2)
+    );
+    assert_eq!(
+        extract_segments("abc", 3, usize::MAX, 1, None),
+        ("abc".into(), 3, "".into(), 0)
     );
 }

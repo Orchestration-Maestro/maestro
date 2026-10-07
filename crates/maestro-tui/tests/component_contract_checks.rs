@@ -15,6 +15,7 @@ impl Component for Mutable {
 }
 #[test]
 fn container_observes_shared_children_in_order() {
+    assert_eq!(maestro_tui::components::tui::visible_width("界"), 2);
     let log = Rc::new(RefCell::new(vec![]));
     let first = Rc::new(RefCell::new(Mutable {
         text: "first".into(),

@@ -24,22 +24,16 @@ impl Component for TruncatedText {
     fn render(&mut self, width: usize) -> Vec<String> {
         let empty = " ".repeat(width);
         let mut result = Vec::new();
-        let mut i = 0;
-        while i < self.padding_y {
-            result.push(empty.clone());
-            i += 1;
-        }
-        let available = width.saturating_sub(self.padding_x * 2).max(1);
+        result.extend(std::iter::repeat_n(empty.clone(), self.padding_y));
+        let left_padding = self.padding_x.min(width);
+        let right_padding = self.padding_x.min(width - left_padding);
+        let available = width - left_padding - right_padding;
         let text = self.text.split('\n').next().unwrap_or("");
         let display = truncate_to_width(text, available, None, None);
-        let line = " ".repeat(self.padding_x) + &display + &" ".repeat(self.padding_x);
+        let line = " ".repeat(left_padding) + &display + &" ".repeat(right_padding);
         let padding = " ".repeat(width.saturating_sub(visible_width(&line)));
         result.push(line + &padding);
-        let mut i = 0;
-        while i < self.padding_y {
-            result.push(empty.clone());
-            i += 1;
-        }
+        result.extend(std::iter::repeat_n(empty.clone(), self.padding_y));
         result
     }
 }

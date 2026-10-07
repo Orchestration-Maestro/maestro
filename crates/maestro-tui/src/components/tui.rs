@@ -1,4 +1,5 @@
 //! Synchronous component composition.
+pub use crate::text::utils::visible_width;
 use std::{cell::RefCell, rc::Rc};
 /// A terminal presentation component.
 pub trait Component {

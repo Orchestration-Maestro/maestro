@@ -2,6 +2,7 @@
 use crate::{Component, editor::completion::autocomplete::AutocompleteProvider};
 use std::{cell::RefCell, rc::Rc};
 /// Caller-supplied logical editor content and optional capabilities.
+/// Implementers handle input by overriding [`Component::handle_input`].
 #[allow(clippy::type_complexity)]
 pub trait EditorComponent: Component {
     /// Get text.
