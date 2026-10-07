@@ -8,13 +8,6 @@ use std::collections::HashMap;
 struct Controlled {
     values: RefCell<HashMap<String, String>>,
     log: RefCell<Vec<String>>,
-    bun: Cell<bool>,
-    native: Cell<bool>,
-    own: Cell<usize>,
-    bytes: RefCell<Option<Vec<u8>>>,
-    reads: Cell<usize>,
-    recovery_checks: Cell<usize>,
-    facilities: Cell<[bool; 3]>,
     exists: Cell<bool>,
     home_value: RefCell<String>,
     home_failure: Cell<bool>,
@@ -26,13 +19,6 @@ impl Default for Controlled {
         Self {
             values: RefCell::new(HashMap::new()),
             log: RefCell::new(Vec::new()),
-            bun: Cell::new(false),
-            native: Cell::new(true),
-            own: Cell::new(0),
-            bytes: RefCell::new(None),
-            reads: Cell::new(0),
-            recovery_checks: Cell::new(0),
-            facilities: Cell::new([true; 3]),
             exists: Cell::new(false),
             home_value: RefCell::new("/home/test".into()),
             home_failure: Cell::new(false),
@@ -56,237 +42,34 @@ impl Platform for Controlled {
         }
         Ok(self.values.borrow().get(key).cloned())
     }
-    fn home(&self) -> Result<String, ThrownValue> {
+    fn home(&self) -> Result<std::path::PathBuf, ThrownValue> {
         self.log.borrow_mut().push("home".into());
         if self.home_failure.get() {
             Err(ThrownValue::Json("home error".into()))
         } else {
-            Ok(self.home_value.borrow().clone())
+            Ok(self.home_value.borrow().clone().into())
         }
     }
-    fn join(&self, home: &str) -> Result<String, ThrownValue> {
-        self.log.borrow_mut().push(format!("join:{home}"));
+    fn join(&self, home: &std::path::Path) -> Result<std::path::PathBuf, ThrownValue> {
+        self.log
+            .borrow_mut()
+            .push(format!("join:{}", home.display()));
         if self.join_failure.get() {
             Err(ThrownValue::Json("join error".into()))
         } else {
-            Ok(std::path::PathBuf::from(home)
-                .join(".config/gcloud/application_default_credentials.json")
-                .to_string_lossy()
-                .into_owned())
+            Ok(home.join(".config/gcloud/application_default_credentials.json"))
         }
     }
-    fn exists(&self, path: &str) -> bool {
-        self.log.borrow_mut().push(format!("exists:{path}"));
+    fn exists(&self, path: &std::path::Path) -> bool {
+        self.log
+            .borrow_mut()
+            .push(format!("exists:{}", path.display()));
         self.exists.get()
     }
-    fn facilities(&self) -> [bool; 3] {
-        self.facilities.get()
-    }
     fn native(&self) -> Result<bool, ThrownValue> {
-        Ok(self.native.get())
-    }
-    fn bun(&self) -> Result<bool, ThrownValue> {
-        self.recovery_checks.set(self.recovery_checks.get() + 1);
-        Ok(self.bun.get())
-    }
-    fn own_count(&self) -> Result<usize, ThrownValue> {
-        Ok(self.own.get())
-    }
-    fn proc_bytes(&self) -> Option<Vec<u8>> {
-        self.reads.set(self.reads.get() + 1);
-        self.bytes.borrow().clone()
+        Ok(true)
     }
 }
-#[test]
-fn proc_recovery_requires_bun_and_empty_environment() {
-    for bun in [false, true] {
-        for own in [0, 1] {
-            let p = Controlled::default();
-            p.bun.set(bun);
-            p.own.set(own);
-            *p.bytes.borrow_mut() = Some(b"OPENAI_API_KEY=recovered\0".to_vec());
-            let state = State::default();
-            assert_credential_eq(
-                &(get_env_api_key_with_platform(&p, &state, "openai").unwrap()),
-                &((bun && own == 0).then(|| "recovered".into())),
-                "proc_recovery_requires_bun_and_empty_environment",
-            );
-            assert_eq!(p.reads.get(), usize::from(bun && own == 0));
-        }
-    }
-    let p = Controlled::default();
-    p.bun.set(true);
-    p.put("OPENAI_API_KEY", "direct");
-    assert_credential_eq(
-        &(get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap()),
-        &(Some("direct".into())),
-        "proc_recovery_requires_bun_and_empty_environment",
-    );
-    assert_eq!(p.reads.get(), 0);
-    let p = Controlled::default();
-    p.native.set(false);
-    p.bun.set(false);
-    assert!(
-        get_env_api_key_with_platform(&p, &State::default(), "openai")
-            .unwrap()
-            .is_none()
-    );
-    assert_eq!(p.reads.get(), 0);
-}
-const INHERITED: &[(&str, &str)] = &[
-    ("constructor", "function Object() { [native code] }"),
-    (
-        "__defineGetter__",
-        "function __defineGetter__() { [native code] }",
-    ),
-    (
-        "__defineSetter__",
-        "function __defineSetter__() { [native code] }",
-    ),
-    (
-        "hasOwnProperty",
-        "function hasOwnProperty() { [native code] }",
-    ),
-    (
-        "__lookupGetter__",
-        "function __lookupGetter__() { [native code] }",
-    ),
-    (
-        "__lookupSetter__",
-        "function __lookupSetter__() { [native code] }",
-    ),
-    (
-        "isPrototypeOf",
-        "function isPrototypeOf() { [native code] }",
-    ),
-    (
-        "propertyIsEnumerable",
-        "function propertyIsEnumerable() { [native code] }",
-    ),
-    ("toString", "function toString() { [native code] }"),
-    ("valueOf", "function valueOf() { [native code] }"),
-    ("__proto__", "[object Object]"),
-    (
-        "toLocaleString",
-        "function toLocaleString() { [native code] }",
-    ),
-];
-
-#[test]
-fn proc_entries_split_nul_and_first_equals() {
-    let p = Controlled::default();
-    p.bun.set(true);
-    let mut bytes = b"OPENAI_API_KEY=first\0OPENAI_API_KEY=last=equals\0EMPTY=\0noequal\0=leading\0\0BOM=\xef\xbb\xbfvalue\0BAD=\xff\0UNICODE=\xe9\x9b\xaa\0\xef\xbb\xbfNAME=bom-name\0".to_vec();
-    for &(_, key) in INHERITED {
-        bytes.extend_from_slice(format!("{key}=controlled-key\0").as_bytes());
-    }
-    bytes.extend_from_slice(b"FINAL=no-final-nul");
-    *p.bytes.borrow_mut() = Some(bytes);
-    let state = State::default();
-    for &(provider, _) in INHERITED {
-        assert!(
-            find_env_keys_with_platform(&p, &state, provider)
-                .unwrap()
-                .is_none()
-        );
-        assert!(
-            get_env_api_key_with_platform(&p, &state, provider)
-                .unwrap()
-                .is_none()
-        );
-    }
-    assert_credential_eq(
-        &(get_env_api_key_with_platform(&p, &state, "openai").unwrap()),
-        &(Some("last=equals".into())),
-        "proc_entries_split_nul_and_first_equals",
-    );
-    for (key, value) in [
-        ("EMPTY", None),
-        ("noequal", None),
-        ("", None),
-        ("BOM", Some("\u{feff}value")),
-        ("BAD", Some("\u{fffd}")),
-        ("UNICODE", Some("雪")),
-        ("\u{feff}NAME", Some("bom-name")),
-        ("FINAL", Some("no-final-nul")),
-    ] {
-        assert_credential_eq(
-            &(get_proc_env(&p, &state, key).unwrap().as_deref()),
-            &(value),
-            "proc_entries_split_nul_and_first_equals",
-        );
-    }
-    assert_eq!(p.reads.get(), 1);
-}
-#[test]
-fn proc_read_failure_keeps_empty_cache() {
-    for content in [
-        None,
-        Some(b"OPENAI_API_KEY=original\0GROQ_API_KEY=other\0".to_vec()),
-    ] {
-        let p = Controlled::default();
-        p.bun.set(true);
-        *p.bytes.borrow_mut() = content;
-        let state = State::default();
-        let first = get_env_api_key_with_platform(&p, &state, "openai").unwrap();
-        *p.bytes.borrow_mut() = Some(b"OPENAI_API_KEY=changed\0GROQ_API_KEY=changed\0".to_vec());
-        assert_credential_eq(
-            &(get_env_api_key_with_platform(&p, &state, "openai").unwrap()),
-            &(first),
-            "proc_read_failure_keeps_empty_cache",
-        );
-        assert_credential_eq(
-            &(get_env_api_key_with_platform(&p, &state, "groq").unwrap()),
-            &(first.map(|_| "other".into())),
-            "proc_read_failure_keeps_empty_cache",
-        );
-        assert_eq!(p.reads.get(), 1);
-    }
-}
-
-#[test]
-fn native_module_readiness_retries_adc_probe() {
-    for missing in 0..3 {
-        for exists in [false, true] {
-            let p = Controlled::default();
-            p.exists.set(exists);
-            p.put("GOOGLE_CLOUD_PROJECT", "p");
-            p.put("GOOGLE_CLOUD_LOCATION", "l");
-            let mut facilities = [true; 3];
-            facilities[missing] = false;
-            p.facilities.set(facilities);
-            let state = State::default();
-            assert!(
-                get_env_api_key_with_platform(&p, &state, "google-vertex")
-                    .unwrap()
-                    .is_none()
-            );
-            assert!(!p.log.borrow().iter().any(|s| s.starts_with("exists:")));
-            p.facilities.set([true; 3]);
-            let expected = exists.then(|| "<authenticated>".to_owned());
-            assert_credential_eq(
-                &(get_env_api_key_with_platform(&p, &state, "google-vertex").unwrap()),
-                &(expected),
-                "native_module_readiness_retries_adc_probe",
-            );
-            p.exists.set(!exists);
-            assert_credential_eq(
-                &(get_env_api_key_with_platform(&p, &state, "google-vertex").unwrap()),
-                &(expected),
-                "native_module_readiness_retries_adc_probe",
-            );
-            assert_eq!(
-                p.log
-                    .borrow()
-                    .iter()
-                    .filter(|s| s.starts_with("exists:"))
-                    .count(),
-                1
-            );
-        }
-    }
-}
-
 fn assert_missing(result: Result<Option<String>, ThrownValue>) {
     match result {
         Err(ThrownValue::Error(e)) => {
@@ -309,17 +92,11 @@ fn browser_process_absence_keeps_reference_error() {
         "__proto__",
     ] {
         assert_missing(get_env_api_key_with_platform(&p, &state, provider));
-        assert_missing(
-            find_env_keys_with_platform(&p, &state, provider).map(|v| v.map(|s| s.join(","))),
-        );
+        assert_missing(find_env_keys_with_platform(&p, provider).map(|v| v.map(|s| s.join(","))));
     }
     assert_missing(get_env_api_key_with_platform(&p, &state, "amazon-bedrock"));
     for provider in ["amazon-bedrock", "ordinary-unknown"] {
-        assert!(
-            find_env_keys_with_platform(&p, &state, provider)
-                .unwrap()
-                .is_none()
-        );
+        assert!(find_env_keys_with_platform(&p, provider).unwrap().is_none());
     }
     assert!(
         get_env_api_key_with_platform(&p, &state, "ordinary-unknown")
@@ -327,25 +104,18 @@ fn browser_process_absence_keeps_reference_error() {
             .is_none()
     );
     assert!(state.adc.lock().unwrap().is_none());
-    assert!(state.proc.lock().unwrap().is_none());
 }
 
 #[test]
 fn environment_rechecks_values_without_key_cache() {
     let p = Controlled::default();
     let state = State::default();
-    assert!(
-        find_env_keys_with_platform(&p, &state, "openai")
-            .unwrap()
-            .is_none()
-    );
+    assert!(find_env_keys_with_platform(&p, "openai").unwrap().is_none());
     p.put("OPENAI_API_KEY", "first");
-    let mut names = find_env_keys_with_platform(&p, &state, "openai")
-        .unwrap()
-        .unwrap();
+    let mut names = find_env_keys_with_platform(&p, "openai").unwrap().unwrap();
     names[0] = "changed-name".into();
     assert_eq!(
-        find_env_keys_with_platform(&p, &state, "openai").unwrap(),
+        find_env_keys_with_platform(&p, "openai").unwrap(),
         Some(vec!["OPENAI_API_KEY".into()])
     );
     assert_credential_eq(
@@ -456,22 +226,6 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
             .iter()
             .any(|s| s == "home" || s.starts_with("join:"))
     );
-    for project in ["GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"] {
-        for mask in 0..8 {
-            let p = Controlled::default();
-            p.bun.set(true);
-            p.exists.set(mask & 1 != 0);
-            *p.bytes.borrow_mut() = Some(format!("GOOGLE_APPLICATION_CREDENTIALS=recovered-path\0{project}={}\0GOOGLE_CLOUD_LOCATION={}\0", if mask & 2 != 0 { "p" } else { "" }, if mask & 4 != 0 { "l" } else { "" }).into_bytes());
-            assert_credential_eq(
-                &(get_env_api_key_with_platform(&p, &State::default(), "google-vertex").unwrap()),
-                &((mask == 7).then(|| "<authenticated>".into())),
-                "vertex_short_circuit_order_matches_ambient_lookup",
-            );
-            assert!(p.log.borrow().contains(&"exists:recovered-path".into()));
-            assert!(!p.log.borrow().contains(&"home".into()));
-            assert_eq!(p.reads.get(), 1);
-        }
-    }
     for join in [false, true] {
         let p = Controlled::default();
         p.home_failure.set(!join);
@@ -505,7 +259,7 @@ fn vertex_short_circuit_order_matches_ambient_lookup() {
 }
 
 #[test]
-fn bedrock_checks_direct_signals_before_proc_signals() {
+fn bedrock_checks_direct_signals_in_order() {
     let direct_order = [
         "env:AWS_PROFILE",
         "env:AWS_ACCESS_KEY_ID",
@@ -521,7 +275,6 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
             .is_none()
     );
     assert_eq!(*p.log.borrow(), direct_order);
-    assert_eq!(p.recovery_checks.get(), 6);
     for (key, index) in [
         ("AWS_PROFILE", 0),
         ("AWS_BEARER_TOKEN_BEDROCK", 2),
@@ -530,28 +283,13 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
         ("AWS_WEB_IDENTITY_TOKEN_FILE", 5),
     ] {
         let p = Controlled::default();
-        p.bun.set(true);
         p.put(key, "direct");
-        *p.bytes.borrow_mut() = Some(b"AWS_PROFILE=recovered\0".to_vec());
         assert_credential_eq(
             &(get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock").unwrap()),
             &(Some("<authenticated>".into())),
-            "bedrock_checks_direct_signals_before_proc_signals",
+            "bedrock_checks_direct_signals_in_order",
         );
         assert_eq!(*p.log.borrow(), direct_order[..=index]);
-        assert_eq!(p.reads.get(), 0);
-        assert_eq!(p.recovery_checks.get(), 0);
-        let p = Controlled::default();
-        p.bun.set(true);
-        *p.bytes.borrow_mut() = Some(format!("{key}=recovered\0").into_bytes());
-        assert_credential_eq(
-            &(get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock").unwrap()),
-            &(Some("<authenticated>".into())),
-            "bedrock_checks_direct_signals_before_proc_signals",
-        );
-        assert_eq!(*p.log.borrow(), direct_order);
-        assert_eq!(p.reads.get(), 1);
-        assert_eq!(p.recovery_checks.get(), index + 1);
     }
     let p = Controlled::default();
     p.put("AWS_ACCESS_KEY_ID", "id");
@@ -569,44 +307,4 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
             "env:AWS_SECRET_ACCESS_KEY"
         ]
     );
-    let p = Controlled::default();
-    p.bun.set(true);
-    *p.bytes.borrow_mut() = Some(b"AWS_ACCESS_KEY_ID=id\0AWS_SECRET_ACCESS_KEY=secret\0".to_vec());
-    assert!(
-        get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
-            .unwrap()
-            .is_some()
-    );
-    assert_eq!(p.recovery_checks.get(), 3);
-    for bytes in [
-        b"AWS_ACCESS_KEY_ID=id\0".as_slice(),
-        b"AWS_SECRET_ACCESS_KEY=secret\0",
-        b"AWS_SESSION_TOKEN=token\0",
-        b"AWS_PROFILE=\0AWS_BEARER_TOKEN_BEDROCK=\0",
-        b"",
-    ] {
-        let p = Controlled::default();
-        p.bun.set(true);
-        *p.bytes.borrow_mut() = Some(bytes.to_vec());
-        assert!(
-            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
-                .unwrap()
-                .is_none()
-        );
-        assert_eq!(p.reads.get(), 1);
-    }
-    for (direct, recovered) in [
-        ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"),
-        ("AWS_SECRET_ACCESS_KEY", "AWS_ACCESS_KEY_ID"),
-    ] {
-        let p = Controlled::default();
-        p.bun.set(true);
-        p.put(direct, "direct-inherited-property");
-        *p.bytes.borrow_mut() = Some(format!("{recovered}=recovered\0").into_bytes());
-        assert!(
-            get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
-                .unwrap()
-                .is_none()
-        );
-    }
 }

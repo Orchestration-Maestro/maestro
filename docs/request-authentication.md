@@ -29,7 +29,7 @@ Native home-directory lookup uses `std::env::home_dir` unchanged: empty HOME on 
 
 Amazon Bedrock recognizes AWS_PROFILE, paired AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, AWS_BEARER_TOKEN_BEDROCK, AWS_CONTAINER_CREDENTIALS_RELATIVE_URI, AWS_CONTAINER_CREDENTIALS_FULL_URI or AWS_WEB_IDENTITY_TOKEN_FILE. Any nonempty alternative returns `<authenticated>` without loading or refreshing credentials. These signals never appear in find_env_keys.
 
-Native lookup uses the process environment and native filesystem. The empty-environment proc recovery branch is restricted to a Bun host and caches both successful and failed reads; ordinary native Rust execution is not that host. A temporarily unavailable native filesystem facility does not cache absence. Browser lookup does not read page-defined environment shims. Mapped providers fail during discovery with ReferenceError and message process is not defined. Amazon Bedrock has no discovery keys but fails with the same error during value lookup. Unknown providers return None.
+Native lookup uses the process environment and native filesystem. Browser lookup does not read page-defined environment shims. Mapped providers fail during discovery with ReferenceError and message process is not defined. Amazon Bedrock has no discovery keys but fails with the same error during value lookup. Unknown providers return None.
 
 The helpers emit no console output, execute no secret command, perform no network request and impose no global authentication gate. They expose environment values only through the deliberate value lookup. Stored credentials, login, token refresh and provider invocation remain separate operations.
 

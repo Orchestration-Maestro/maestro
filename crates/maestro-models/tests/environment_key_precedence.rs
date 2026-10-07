@@ -528,3 +528,36 @@ fn environment_helpers_leave_output_streams_empty() {
     assert_eq!(output.stderr, b"");
     assert_eq!(output.stdout, b"\nrunning 1 test\n");
 }
+
+#[cfg(unix)]
+#[test]
+fn vertex_non_utf8_home_finds_default_credentials() {
+    use std::os::unix::ffi::OsStringExt;
+    if child() {
+        assert_credential_eq(
+            &get_env_api_key("google-vertex").unwrap(),
+            &Some("<authenticated>".into()),
+            "vertex_non_utf8_home_finds_default_credentials",
+        );
+        return;
+    }
+    let fixture = Fixture::new();
+    let home = fixture
+        .root
+        .join(std::ffi::OsString::from_vec(b"home-\xff".to_vec()));
+    let credentials = home.join(".config/gcloud/application_default_credentials.json");
+    std::fs::create_dir_all(credentials.parent().unwrap()).unwrap();
+    std::fs::write(credentials, b"").unwrap();
+    let output = fixture
+        .command("vertex_non_utf8_home_finds_default_credentials")
+        .env("HOME", home)
+        .env("GOOGLE_CLOUD_PROJECT", "controlled-project")
+        .env("GOOGLE_CLOUD_LOCATION", "controlled-location")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+}
