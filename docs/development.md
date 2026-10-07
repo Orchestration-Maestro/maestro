@@ -45,8 +45,11 @@ mise exec -- just models-dev-compile
 The pinned external watcher compiles initially and queues a rebuild when input
 changes during compilation. Earlier terminal output remains visible. It watches
 the workspace root, including sibling dependencies and Cargo configuration,
-excluding only `.git` and Cargo's configured target directory. `dev` covers delivered owners;
+excluding only `.git`; each change is compared literally with Cargo's current
+target directory before compiling. `dev` covers delivered owners;
 `dev-compile` and `models-dev-compile` select models only. Missing owners fail.
+Cargo stages a brand-new target directory under a temporary sibling name, so the
+first switch to a not-yet-existing target can cause one extra build.
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
 The catalog owner's package build will invoke its generator when
@@ -93,7 +96,8 @@ mise exec -- just test -p maestro-tooling maestro_source_without_switch_preserve
 Ordinary tests use Cargo/libtest directly, including filters, ignored cases and
 doctests. Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the
-fixed backup path, restoring a regular backup on every ordinary return. It runs
+fixed backup path, restoring exactly the entry moved by that run on every
+ordinary return. Pre-existing backups are left untouched when no auth entry moves. It runs
 `just test` in the invocation directory and ignores wrapper arguments. It is not
 a universal sandbox. Do not use it alongside another process editing that auth
 file. Tooling regressions instead use disposable authentication fixtures and

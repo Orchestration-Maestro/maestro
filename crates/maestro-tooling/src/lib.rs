@@ -16,6 +16,8 @@ pub mod run_source;
 /// Run explicitly credential-free tests.
 pub mod run_tests;
 
+mod watch;
+
 pub(crate) const CREDENTIALS: &[&str] = &[
     "ANTHROPIC_API_KEY",
     "ANTHROPIC_OAUTH_TOKEN",
@@ -62,20 +64,8 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .split_first()
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
-        Some("target-directory") => {
-            let metadata = cargo_metadata::MetadataCommand::new()
-                .cargo_path(cargo)
-                .no_deps()
-                .exec()
-                .map_err(io::Error::other)?;
-            if let Ok(directory) = metadata
-                .target_directory
-                .strip_prefix(&metadata.workspace_root)
-            {
-                println!("{directory}/");
-            }
-            Ok(ExitCode::SUCCESS)
-        }
+        Some("watch") => watch::run(args),
+        Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {
             let home =
                 std::env::var_os("HOME").ok_or_else(|| io::Error::other("HOME is not set"))?;

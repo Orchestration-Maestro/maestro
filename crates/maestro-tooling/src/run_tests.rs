@@ -9,32 +9,22 @@ use std::process::{Command, ExitCode};
 /// Returns native process and filesystem failures.
 pub(crate) fn run(home: &Path, child: &mut Command) -> io::Result<ExitCode> {
     let auth = home.join(".maestro/agent/auth.json");
-    let mut backup = auth.with_extension("json.bak");
+    let mut backup = None;
     let result = run_without_auth(&auth, &mut backup, child);
-    let cleanup = if backup.is_file() {
-        move_file(&backup, &auth).map(|_| println!("Restored auth.json"))
-    } else {
-        Ok(())
-    };
-    match result {
-        Err(error) => {
-            cleanup?;
-            Err(error)
-        }
-        Ok(status) => {
-            cleanup?;
-            Ok(status)
-        }
+    if let Some(backup) = backup {
+        move_file(&backup, &auth)?;
+        println!("Restored auth.json");
     }
+    result
 }
 
 fn run_without_auth(
     auth: &Path,
-    backup: &mut PathBuf,
+    backup: &mut Option<PathBuf>,
     child: &mut Command,
 ) -> io::Result<ExitCode> {
     if auth.is_file() {
-        *backup = move_file(auth, backup)?;
+        *backup = Some(move_file(auth, &auth.with_extension("json.bak"))?);
         println!("Moved auth.json to backup");
     }
     child

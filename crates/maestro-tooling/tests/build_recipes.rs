@@ -26,12 +26,11 @@ impl Workspace {
 use std::{env, fs, io::Write, path::Path};
 fn main() {
     let args: Vec<_> = env::args().skip(1).collect();
-    if args.last().map(String::as_str) == Some("target-directory") {
+    if args.first().map(String::as_str) == Some("run") && env::var_os("MAESTRO_REAL_CARGO").is_some() {
         if let Some(binary) = env::var_os("MAESTRO_DEVELOPMENT") {
-            std::process::exit(std::process::Command::new(binary).arg("target-directory").status().unwrap().code().unwrap());
+            let start = args.iter().position(|arg| arg == "--").unwrap() + 1;
+            std::process::exit(std::process::Command::new(binary).args(&args[start..]).status().unwrap().code().unwrap());
         }
-        println!("{}", env::current_dir().unwrap().join("target").display());
-        return;
     }
     if let Some(cargo) = env::var_os("MAESTRO_REAL_CARGO") {
         std::process::exit(std::process::Command::new(cargo).args(&args).status().unwrap().code().unwrap());
@@ -295,38 +294,66 @@ fn maestro_clean_keeps_sources_and_sibling_outputs() {
 #[cfg(unix)]
 #[test]
 fn maestro_dev_rebuilds_and_retains_output() {
-    assert_watch_rebuild("dev", "crates/maestro-models/src/lib.rs", false);
+    assert_watch_rebuild("dev", "crates/maestro-models/src/lib.rs", "target");
 }
 
 #[cfg(unix)]
 #[test]
 fn maestro_selected_watch_rebuilds_sibling_dependencies() {
-    assert_watch_rebuild("models-dev", "crates/maestro-agent/src/lib.rs", false);
+    assert_watch_rebuild("models-dev", "crates/maestro-agent/src/lib.rs", "target");
 }
 
 #[cfg(unix)]
 #[test]
 fn maestro_selected_watch_rebuilds_cargo_configuration() {
-    assert_watch_rebuild("models-dev", ".cargo/config.toml", false);
+    assert_watch_rebuild("models-dev", ".cargo/config.toml", "target");
 }
 
 #[cfg(unix)]
 #[test]
 fn maestro_watch_ignores_configured_target_directory() {
-    assert_watch_rebuild("models-dev", "crates/maestro-models/src/lib.rs", true);
+    assert_watch_rebuild(
+        "models-dev",
+        "crates/maestro-models/src/lib.rs",
+        "crates/maestro-models/compiler-output",
+    );
 }
 
 #[cfg(unix)]
-fn assert_watch_rebuild(recipe: &str, changed: &str, custom_target: bool) {
+#[test]
+fn maestro_watch_ignores_literal_bracketed_target_directory() {
+    assert_watch_rebuild("models-dev", "crates/maestro-models/src/lib.rs", "[out]");
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_watch_ignores_target_directory_changed_during_watch() {
+    assert_watch_rebuild("models-dev", ".cargo/config.toml:new-output", "target");
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_watch_survives_rebuilding_its_development_binary() {
+    assert_watch_rebuild("dev", "crates/maestro-tooling/src/watch.rs", "target");
+}
+
+#[cfg(unix)]
+fn assert_watch_rebuild(recipe: &str, changed: &str, target: &str) {
     use std::os::unix::process::CommandExt;
     use std::process::Stdio;
     use std::sync::mpsc;
     let workspace = Workspace::new();
-    let target = prepare_watch_workspace(&workspace, custom_target);
+    prepare_watch_workspace(&workspace, target);
+    let binary = if changed.starts_with("crates/maestro-tooling/") {
+        prepare_tooling_owner(&workspace);
+        workspace.0.join("target/debug/development")
+    } else {
+        PathBuf::from(env!("CARGO_BIN_EXE_development"))
+    };
     let mut command = workspace.command(recipe);
     command
         .env("MAESTRO_REAL_CARGO", env!("CARGO"))
-        .env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"));
+        .env("MAESTRO_DEVELOPMENT", binary);
     command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -362,7 +389,7 @@ fn assert_watch_rebuild(recipe: &str, changed: &str, custom_target: bool) {
 }
 
 #[cfg(unix)]
-fn prepare_watch_workspace(workspace: &Workspace, custom_target: bool) -> &'static str {
+fn prepare_watch_workspace(workspace: &Workspace, target: &str) {
     native_workspace(workspace);
     fs::remove_file(workspace.0.join("bin/watchexec")).unwrap();
     fs::write(workspace.0.join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
@@ -375,23 +402,53 @@ fn prepare_watch_workspace(workspace: &Workspace, custom_target: bool) -> &'stat
             .success()
     );
     fs::create_dir(workspace.0.join(".cargo")).unwrap();
-    let target = if custom_target {
-        "crates/maestro-models/compiler-output"
-    } else {
-        "target"
-    };
     fs::write(
         workspace.0.join(".cargo/config.toml"),
         format!("[build]\ntarget-dir = '{target}'\n"),
     )
     .unwrap();
     fs::create_dir_all(workspace.0.join(target)).unwrap();
+    fs::create_dir_all(workspace.0.join("new-output")).unwrap();
     fs::rename(
         workspace.0.join("bin/cargo-proxy"),
         workspace.0.join("bin/cargo"),
     )
     .unwrap();
-    target
+}
+
+#[cfg(unix)]
+fn prepare_tooling_owner(workspace: &Workspace) {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let root = workspace.0.join("crates/maestro-tooling");
+    copy_tree(&source.join("src"), &root.join("src"));
+    fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
+    fs::copy(
+        source.join("../../Cargo.toml"),
+        workspace.0.join("Cargo.toml"),
+    )
+    .unwrap();
+    assert!(
+        Command::new(env!("CARGO"))
+            .current_dir(&workspace.0)
+            .args(["build", "-p", "maestro-tooling", "--bin", "development"])
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
+#[cfg(unix)]
+fn copy_tree(source: &Path, destination: &Path) {
+    fs::create_dir_all(destination).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let destination = destination.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_tree(&entry.path(), &destination);
+        } else {
+            fs::copy(entry.path(), destination).unwrap();
+        }
+    }
 }
 
 #[cfg(unix)]
@@ -405,9 +462,12 @@ fn assert_watch_events(
     use std::time::Duration;
     let mut transcript = String::new();
     wait_for_build(receive, &mut transcript, "initial build", diagnostics);
+    let (changed, target) = changed.split_once(':').unwrap_or((changed, target));
     let source = workspace.0.join(changed);
     let contents = if changed == ".cargo/config.toml" {
         format!("[build]\ntarget-dir = '{target}'\nincremental = false\n")
+    } else if changed.starts_with("crates/maestro-tooling/") {
+        fs::read_to_string(&source).unwrap() + "\n"
     } else {
         "pub fn changed() {}\n".into()
     };
@@ -424,6 +484,24 @@ fn assert_watch_events(
         assert!(
             !line.contains("Finished `dev`"),
             "unexpected rebuild: {line}; {transcript}"
+        );
+    }
+    if changed.starts_with("crates/maestro-tooling/") {
+        fs::write(
+            workspace.0.join("crates/maestro-agent/src/lib.rs"),
+            "pub fn after_replacement() {}\n",
+        )
+        .unwrap();
+        wait_for_build(
+            receive,
+            &mut transcript,
+            "replaced binary rebuild",
+            diagnostics,
+        );
+        assert_eq!(
+            transcript.matches("Finished `dev`").count(),
+            3,
+            "{transcript}"
         );
     }
 }
@@ -471,6 +549,7 @@ fn wait_for_build(
     diagnostics: &str,
 ) {
     let started = std::time::Instant::now();
+    let mut compiled = false;
     loop {
         let line = receive
             .recv_timeout(std::time::Duration::from_secs(10))
@@ -482,7 +561,8 @@ fn wait_for_build(
             });
         transcript.push_str(&line);
         transcript.push('\n');
-        if line.contains("[Command was successful]") {
+        compiled |= line.contains("Finished `dev`");
+        if compiled && line.contains("[Command was successful]") {
             eprintln!("{phase}: {} ms", started.elapsed().as_millis());
             return;
         }
@@ -519,12 +599,12 @@ fn maestro_dev_compile_excludes_generation_and_other_owners() {
         "maestro-tui",
         "maestro-app",
     ] {
-        assert!(log.contains(&format!("--|cargo|build|-p|{owner}|--locked")));
+        assert!(log.contains(&format!("--|watch|build|-p|{owner}|--locked")));
     }
     assert!(!log.contains("generate"));
     assert!(!log.contains("copy"));
     assert!(!log.contains("clear"));
-    assert!(log.contains("--on-busy-update=queue|--shell=none"));
+    assert!(log.contains("--bin|development|--|watch|build"));
     native_workspace(&workspace);
     fs::remove_dir_all(workspace.0.join("crates/maestro-models")).unwrap();
     assert!(!workspace.run("models-dev").status.success());
@@ -822,40 +902,4 @@ fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
         "--manifest-path|{}",
         workspace.0.join("Cargo.toml").display()
     )));
-}
-
-#[test]
-fn maestro_target_directory_reports_cargo_configuration() {
-    let workspace = Workspace::new();
-    native_workspace(&workspace);
-    fs::create_dir(workspace.0.join(".cargo")).unwrap();
-    fs::write(
-        workspace.0.join(".cargo/config.toml"),
-        "[build]\ntarget-dir = 'compiler output'\n",
-    )
-    .unwrap();
-    let output = Command::new(env!("CARGO_BIN_EXE_development"))
-        .current_dir(&workspace.0)
-        .arg("target-directory")
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert_eq!(output.stdout, b"compiler output/\n");
-    assert!(output.stderr.is_empty());
-    let output = Command::new(env!("CARGO_BIN_EXE_development"))
-        .current_dir(&workspace.0)
-        .arg("target-directory")
-        .env(
-            "CARGO_TARGET_DIR",
-            workspace.0.with_extension("external-target"),
-        )
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    assert!(output.stdout.is_empty());
-    assert!(output.stderr.is_empty());
 }

@@ -337,6 +337,35 @@ fn maestro_offline_restores_auth_after_child_results() {
     assert!(stdout(&output).contains("Restored auth.json\n"));
 }
 
+#[cfg(unix)]
+#[test]
+fn maestro_offline_restores_relative_auth_link_from_backup_directory() {
+    drive();
+    let fixture = Fixture::new();
+    fs::write(fixture.auth().with_file_name("credentials"), "auth").unwrap();
+    std::os::unix::fs::symlink("credentials", fixture.auth()).unwrap();
+    fs::create_dir(fixture.auth().with_extension("json.bak")).unwrap();
+    let output = fixture
+        .invoke(
+            "maestro_offline_restores_relative_auth_link_from_backup_directory",
+            "test-offline",
+            &[],
+        )
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        fs::read_link(fixture.auth()).unwrap(),
+        Path::new("credentials")
+    );
+    assert_eq!(fs::read(fixture.auth()).unwrap(), b"auth");
+    assert!(stdout(&output).contains("Restored auth.json\n"));
+}
+
 fn assert_auth_move_errors() {
     let fixture = Fixture::new();
     fs::write(fixture.auth(), "auth").unwrap();
@@ -392,9 +421,7 @@ fn assert_auth_link_restored() {
     assert_eq!(fixture.receipt("auth-present"), b"no");
 }
 
-#[test]
-fn maestro_offline_keeps_fixed_backup_move_behavior() {
-    drive();
+fn assert_auth_preexisting_backup() {
     for original in [None, Some("new auth")] {
         let fixture = Fixture::new();
         fs::write(fixture.auth().with_extension("json.bak"), "old backup").unwrap();
@@ -410,12 +437,24 @@ fn maestro_offline_keeps_fixed_backup_move_behavior() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        assert_eq!(
-            fs::read(fixture.auth()).unwrap(),
-            original.unwrap_or("old backup").as_bytes()
-        );
-        assert!(stdout(&output).contains("Restored auth.json\n"));
+        if let Some(original) = original {
+            assert_eq!(fs::read(fixture.auth()).unwrap(), original.as_bytes());
+            assert!(stdout(&output).contains("Restored auth.json\n"));
+        } else {
+            assert!(!fixture.auth().exists());
+            assert_eq!(
+                fs::read(fixture.auth().with_extension("json.bak")).unwrap(),
+                b"old backup"
+            );
+            assert!(!stdout(&output).contains("Restored auth.json\n"));
+        }
     }
+}
+
+#[test]
+fn maestro_offline_keeps_fixed_backup_move_behavior() {
+    drive();
+    assert_auth_preexisting_backup();
     let fixture = Fixture::new();
     let output = fixture
         .invoke(
@@ -1036,6 +1075,44 @@ fn stage_deleted_path(root: &Path) {
 
 #[test]
 fn maestro_hook_restages_only_captured_paths() {
+    assert_hook_restages_only_captured_paths();
+}
+
+#[test]
+fn maestro_hook_fixtures_exclude_ambient_credentials() {
+    if std::env::var_os("MAESTRO_DRIVER").is_none() {
+        let fixture = Fixture::new();
+        let output = fixture
+            .invoke(
+                "maestro_hook_fixtures_exclude_ambient_credentials",
+                "fixture-hook",
+                &[],
+            )
+            .envs(
+                ["RUSTUP_HOME", "CARGO_HOME", "RUSTUP_TOOLCHAIN"]
+                    .into_iter()
+                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+            )
+            .env("SYNTHETIC_TEST_API_KEY", "secret-value")
+            .env("PATH", std::env::var_os("PATH").unwrap())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    assert_eq!(
+        std::env::var("SYNTHETIC_TEST_API_KEY").unwrap(),
+        "secret-value"
+    );
+    assert_hook_restages_only_captured_paths();
+}
+
+fn assert_hook_restages_only_captured_paths() {
     let fixture = Fixture::new();
     git(&fixture.root, &["init", "--quiet"]);
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
@@ -1055,15 +1132,24 @@ fn maestro_hook_restages_only_captured_paths() {
     );
     let mut format = Command::new(&fixture.child);
     format
+        .env_clear()
+        .env("PATH", std::env::var_os("PATH").unwrap())
+        .env("TMPDIR", &fixture.root)
         .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
         .env("HOME", &fixture.root)
         .env("MAESTRO_FORMAT_ROOT", &fixture.root);
     let mut check = Command::new(&fixture.child);
     check
+        .env_clear()
+        .env("PATH", std::env::var_os("PATH").unwrap())
+        .env("TMPDIR", &fixture.root)
         .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
         .env("HOME", &fixture.root);
     check.env("MAESTRO_CHECK_INDEX", &fixture.root);
     tooling::pre_commit::run(&fixture.root, &mut format, &mut check, None).unwrap();
+    for entry in fs::read_dir(fixture.root.join("receipt/env")).unwrap() {
+        assert_ne!(fs::read(entry.unwrap().path()).unwrap(), b"secret-value");
+    }
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
         let output = git(&fixture.root, &["show", &format!(":{name}")]);
         assert_eq!(output.stdout, b"formatted");

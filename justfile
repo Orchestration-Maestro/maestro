@@ -46,7 +46,7 @@ models-build:
 # Watch models compiler inputs without generating or copying assets.
 models-dev:
     cargo pkgid -p maestro-models --locked
-    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-models --locked
+    cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-models --locked
 
 # Run native models tests with literal argument forwarding.
 models-test *args:
@@ -66,7 +66,7 @@ agent-build:
 # Watch agent compiler inputs without generating or copying assets.
 agent-dev:
     cargo pkgid -p maestro-agent --locked
-    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-agent --locked
+    cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-agent --locked
 
 # Run native agent tests with literal argument forwarding.
 agent-test *args:
@@ -86,7 +86,7 @@ tui-build:
 # Watch tui compiler inputs without generating or copying assets.
 tui-dev:
     cargo pkgid -p maestro-tui --locked
-    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-tui --locked
+    cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-tui --locked
 
 # Run native tui tests with literal argument forwarding.
 tui-test *args:
@@ -108,7 +108,7 @@ app-build:
 # Watch app compiler inputs without generating or copying assets.
 app-dev:
     cargo pkgid -p maestro-app --locked
-    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build -p maestro-app --locked
+    cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-app --locked
 
 # Run native app tests with literal argument forwarding.
 app-test *args:
@@ -119,7 +119,7 @@ app-prepublish: app-clean app-build
 
 # Watch every delivered owner, retaining compiler output.
 dev:
-    target_directory="$(cargo run --quiet --locked -p maestro-tooling --bin development -- target-directory)" || exit "$?"; set --; if [ -n "$target_directory" ]; then set -- --ignore "/$target_directory"; fi; watchexec --watch {{quote(justfile_directory())}} --ignore-nothing --ignore /.git/ "$@" --on-busy-update=queue --shell=none -- cargo build --workspace --locked
+    cargo run --quiet --locked -p maestro-tooling --bin development -- watch build --workspace --locked
 
 # Select the model compiler without regeneration or asset copying.
 dev-compile: models-dev
