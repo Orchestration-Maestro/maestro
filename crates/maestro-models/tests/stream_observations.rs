@@ -122,17 +122,14 @@ fn result_wake_drains_terminal_event_before_eof() {
 }
 
 #[test]
-fn reentrant_terminal_extraction_observes_eof() {
+fn reentrant_terminal_extraction_waits_for_delivery() {
     let holder = Arc::new(Mutex::new(None::<EventStream<i32>>));
     let observing = holder.clone();
     let stream = EventStream::new(
         Arc::new(|_: &i32| Ok(true)),
         Arc::new(move |value| {
             let stream = observing.lock().unwrap().as_ref().unwrap().clone();
-            assert_eq!(
-                poll(&mut stream.iter().next()),
-                std::task::Poll::Ready(None)
-            );
+            assert!(poll(&mut stream.iter().next()).is_pending());
             Ok(*value)
         }),
     );

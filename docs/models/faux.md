@@ -115,9 +115,10 @@ Defaults: provider `faux`, model `faux-1` / `Faux Model`, base URL
 `http://localhost:0`, text and image input, context window 128000, maximum
 output 16384, zero prices. Registration generates an isolated API identifier;
 builders use API `faux`. Supplied model fields are accepted without validation.
-Default chunks contain 3–5 estimated tokens, with four UTF-16 units per token.
+Default chunks contain 3–5 estimated tokens, with four characters per token.
 Text, single blocks, lists and empty lists are accepted. Usage and cache costs
-remain zero, including for models with supplied prices.
+remain zero, including for models with supplied prices. Total tokens count each
+input and output token once; cache writes are already included in input.
 
 Factories receive the context, untouched options, live shared call counter and
 requested model. The response hook runs first. Exhaustion returns the error
@@ -125,12 +126,12 @@ above with estimated usage; hook and factory failures retain their supplied
 error text with zero usage. Cancellation retains the streamed prefix and full
 estimated usage, with `Request was aborted`. Earlier partial events are owned
 snapshots; terminal events and results share one message handle. Tool arguments
-remain empty until their end event. Chunk slicing counts UTF-16 units; broken
-surrogates become replacement characters, while accumulated valid pairs survive.
+remain empty until their end event.
 
 The native host runs producers on one lazy process-wide, time-enabled Tokio
 runtime, independently of the caller's executor. Browser producers use standard
-local async execution and promise-backed timers. Positive pacing waits for its scheduled
+local async execution; a timer callback resolves a promise, awaited through
+`JsFuture`, while unpaced chunks await an already-resolved promise. Positive pacing waits for its scheduled
 timer even after cancellation. If a thrown value's own string
 conversion fails, the host reports the uncaught error but leaves that invocation
 unsettled and keeps running. No credentials, network, bundled activation or
@@ -138,8 +139,10 @@ runtime controls are needed by callers.
 
 Native facilities determine runtime details: generated IDs retain the
 `prefix:milliseconds:base36` format but render a random integer rather than a
-fraction; JSON uses serde_json's number spelling, integer precision and property
-order; floating-point min/max use Rust's NaN handling; native pacing uses Duration
+fraction; Unicode counts and chunks use Rust characters rather than 16-bit units,
+so non-BMP text has different token counts and is never split within a character.
+JSON uses plain serde serialization, keeping its number spelling, integer precision
+and insertion order without integer-key sorting; floating-point min/max use Rust's NaN handling; native pacing uses Duration
 and Tokio without a one-millisecond fallback, signed-32-bit ceiling or overflow
 warning (unrepresentable durations panic). Browser pacing uses the browser timer
 as-is. Non-error JSON failures use JSON text instead of object or array coercion,

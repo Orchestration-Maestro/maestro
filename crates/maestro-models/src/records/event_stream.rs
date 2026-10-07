@@ -139,7 +139,6 @@ impl<T: Clone + Send + Sync + 'static, R: Clone + Send + Sync + 'static> EventSt
             {
                 let mut queue = self.queue.lock().unwrap_or_else(|p| p.into_inner());
                 queue.terminal_admitted = true;
-                queue.done = true;
             }
             match (self.extract_result)(&event) {
                 Ok(result) => Some(result),
@@ -278,7 +277,6 @@ impl<T: Clone + 'static, R: Clone + 'static> EventStream<T, R> {
             {
                 let mut queue = self.queue.lock().unwrap_or_else(|p| p.into_inner());
                 queue.terminal_admitted = true;
-                queue.done = true;
             }
             match (self.extract_result)(&event) {
                 Ok(result) => Some(result),

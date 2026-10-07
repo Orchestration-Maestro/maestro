@@ -773,6 +773,34 @@ fn observation_drops_do_not_abort_producer() {
 }
 
 #[test]
+fn terminal_extraction_does_not_close_iteration_before_delivery() {
+    let entered = Arc::new(std::sync::Barrier::new(2));
+    let released = Arc::new(std::sync::Barrier::new(2));
+    let extractor_entered = entered.clone();
+    let extractor_released = released.clone();
+    let stream = EventStream::new(
+        Arc::new(|_: &u8| Ok(true)),
+        Arc::new(move |event: &u8| {
+            extractor_entered.wait();
+            extractor_released.wait();
+            Ok(*event)
+        }),
+    );
+    let producer = stream.clone();
+    let worker = std::thread::spawn(move || producer.push(7).unwrap());
+    entered.wait();
+    let mut cursor = stream.iter();
+    let mut next = cursor.next();
+    let before_delivery = poll(&mut next);
+    released.wait();
+    worker.join().unwrap();
+    assert!(before_delivery.is_pending());
+    assert_eq!(ready(&mut next), Some(7));
+    assert_eq!(ready(&mut cursor.next()), None);
+    assert_eq!(ready(&mut stream.result()), 7);
+}
+
+#[test]
 fn generic_callback_failures_keep_ordered_state() {
     let order = Arc::new(Mutex::new(vec![]));
     let p = order.clone();
@@ -990,7 +1018,7 @@ fn records_round_trip_all_wire_shapes() {
                 .keys()
                 .map(String::as_str)
                 .collect::<Vec<_>>(),
-            ["2", "10", "01", "4294967295"]
+            ["10", "2", "01", "4294967295"]
         );
     }
     let call = ToolCall {
@@ -1007,7 +1035,7 @@ fn records_round_trip_all_wire_shapes() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["2", "10", "01", "4294967295"]
+        ["10", "2", "01", "4294967295"]
     );
     let mut descriptor = model("ordered");
     descriptor.headers = Some(keys.clone());
@@ -1054,7 +1082,7 @@ fn records_round_trip_all_wire_shapes() {
                 .keys()
                 .map(String::as_str)
                 .collect::<Vec<_>>(),
-            ["2", "10", "01", "4294967295"]
+            ["10", "2", "01", "4294967295"]
         );
     }
     let c = ToolCall {
@@ -1071,7 +1099,7 @@ fn records_round_trip_all_wire_shapes() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["2", "10", "01", "4294967295"]
+        ["10", "2", "01", "4294967295"]
     );
 }
 
@@ -1851,7 +1879,7 @@ fn diagnostic_json_coercion_propagates_noncallable_to_string() {
 }
 
 #[test]
-fn flattened_raw_options_enumerate_root_integer_keys_before_base() {
+fn flattened_raw_options_preserve_native_serialization_order() {
     let mut extra = serde_json::Map::new();
     for key in ["z", "10", "2", "01", "a", "4294967295"] {
         extra.insert(key.into(), serde_json::json!(key));
@@ -1871,12 +1899,12 @@ fn flattened_raw_options_enumerate_root_integer_keys_before_base() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["2", "10", "temperature", "z", "01", "a", "4294967295"]
+        ["temperature", "z", "10", "2", "01", "a", "4294967295"]
     );
     assert!(
         serde_json::to_string(&options)
             .unwrap()
-            .starts_with("{\"2\":\"2\",\"10\":\"10\",\"temperature\":0.25,")
+            .starts_with("{\"temperature\":0.25,\"z\":\"z\",\"10\":\"10\",\"2\":\"2\",")
     );
 }
 

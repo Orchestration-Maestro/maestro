@@ -225,51 +225,6 @@ fn faux_uncaught_conversion_reports_without_settlement() {
     r.unregister();
 }
 #[test]
-fn faux_utf16_slicing_preserves_boundaries() {
-    let h = Controlled::new();
-    let r = h.register(RegisterFauxProviderOptions {
-        token_size: Some(FauxTokenSize {
-            min: Some(1.0),
-            max: Some(1.0),
-        }),
-        ..Default::default()
-    });
-    let text = "abc😀def\u{feff}\u{85}";
-    r.set_responses(vec![FauxResponseStep::Message(msg(text))]);
-    let s = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-    h.drain();
-    let out = events(&s);
-    let deltas = out
-        .iter()
-        .filter_map(|e| {
-            if let AssistantMessageEvent::TextDelta { delta, partial, .. } = e {
-                Some((delta.clone(), partial.read().unwrap().content.clone()))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-    assert_eq!(deltas[0].0, "abc�");
-    assert_eq!(deltas[1].0, "�def");
-    let AssistantContent::Text(t) = &deltas[1].1[0] else {
-        panic!()
-    };
-    assert_eq!(t.text, "abc😀def");
-    assert_eq!(
-        ready(s.result()).read().unwrap().content,
-        vec![AssistantContent::Text(faux_text(text.into()))]
-    );
-    assert_eq!(estimate_tokens("a😀b"), 1.0);
-    assert_eq!(
-        content_to_text(&[InputContent::Image(ImageContent {
-            data: "a😀b".into(),
-            mime_type: "image/png".into()
-        })]),
-        "[image:image/png:4]"
-    );
-    r.unregister();
-}
-#[test]
 fn faux_chunk_range_normalizes_like_numbers() {
     let h = Controlled::new();
     let text = "abcdefghijklmnopqrstuvwxyz";
@@ -304,7 +259,7 @@ fn faux_chunk_range_normalizes_like_numbers() {
             out.iter()
                 .filter_map(
                     |e| if let AssistantMessageEvent::TextDelta { delta, .. } = e {
-                        Some(delta.encode_utf16().count())
+                        Some(delta.chars().count())
                     } else {
                         None
                     }

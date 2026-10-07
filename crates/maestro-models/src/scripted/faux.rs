@@ -201,7 +201,7 @@ pub fn faux_assistant_message(
     }
 }
 fn estimate_tokens(text: &str) -> f64 {
-    (text.encode_utf16().count() as f64 / 4.0).ceil()
+    (text.chars().count() as f64 / 4.0).ceil()
 }
 /// Install the opt-in simulator callbacks.
 pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProviderRegistration {
@@ -347,22 +347,20 @@ fn register_with_host(
                     .insert(session.clone(), prompt.clone());
                 if let Some(previous) = previous.filter(|s| !s.is_empty()) {
                     let prefix = previous
-                        .encode_utf16()
-                        .zip(prompt.encode_utf16())
+                        .chars()
+                        .zip(prompt.chars())
                         .take_while(|(a, b)| a == b)
                         .count();
                     message.usage.cache_read = (prefix as f64 / 4.0).ceil();
                     message.usage.cache_write =
-                        ((prompt.encode_utf16().count() - prefix) as f64 / 4.0).ceil();
+                        ((prompt.chars().count() - prefix) as f64 / 4.0).ceil();
                     message.usage.input = (message.usage.input - message.usage.cache_read).max(0.0);
                 } else {
                     message.usage.cache_write = message.usage.input;
                 }
             }
-            message.usage.total_tokens = message.usage.input
-                + message.usage.output
-                + message.usage.cache_read
-                + message.usage.cache_write;
+            message.usage.total_tokens =
+                message.usage.input + message.usage.output + message.usage.cache_read;
             if step_was_empty {
                 finish(&output, message);
             } else {
@@ -447,7 +445,7 @@ fn content_to_text(content: &[InputContent]) -> String {
         .map(|b| match b {
             InputContent::Text(t) => t.text.clone(),
             InputContent::Image(i) => {
-                format!("[image:{}:{}]", i.mime_type, i.data.encode_utf16().count())
+                format!("[image:{}:{}]", i.mime_type, i.data.chars().count())
             }
         })
         .collect::<Vec<_>>()
@@ -527,8 +525,8 @@ fn split_string_by_token_size(
     min: f64,
     max: f64,
     host: &dyn host::Host,
-) -> Vec<Vec<u16>> {
-    let units = text.encode_utf16().collect::<Vec<_>>();
+) -> Vec<String> {
+    let units = text.chars().collect::<Vec<_>>();
     let mut chunks = vec![];
     let mut index = 0.0;
     while index < units.len() as f64 {
@@ -536,17 +534,21 @@ fn split_string_by_token_size(
         let chars = 1.0_f64.max(size * 4.0);
         let start = index as usize;
         let end = (index + chars) as usize;
-        chunks.push(units[start.min(units.len())..end.min(units.len())].to_vec());
+        chunks.push(
+            units[start.min(units.len())..end.min(units.len())]
+                .iter()
+                .collect(),
+        );
         index += chars;
     }
     if chunks.is_empty() {
-        chunks.push(vec![])
+        chunks.push(String::new())
     }
     chunks
 }
-async fn schedule_chunk(host: &dyn host::Host, chunk: &[u16], rate: Option<f64>) {
+async fn schedule_chunk(host: &dyn host::Host, chunk: &str, rate: Option<f64>) {
     if let Some(rate) = rate.filter(|r| *r > 0.0) {
-        let delay = (chunk.len() as f64 / 4.0).ceil() / rate * 1000.0;
+        let delay = estimate_tokens(chunk) / rate * 1000.0;
         host.timer(delay).await;
     } else {
         host.microtask().await;
@@ -628,19 +630,15 @@ async fn stream_with_deltas(
         };
         output.push(start).unwrap();
         let chunks = split_string_by_token_size(&text, min, max, host);
-        let mut accumulated = vec![];
         for chunk in chunks {
             schedule_chunk(host, &chunk, rate).await;
             if aborted(&partial) {
                 return;
             }
-            accumulated.extend(&chunk);
-            let delta = String::from_utf16_lossy(&chunk);
+            let delta = chunk;
             match &mut partial.content[index] {
-                AssistantContent::Text(t) => t.text = String::from_utf16_lossy(&accumulated),
-                AssistantContent::Thinking(t) => {
-                    t.thinking = String::from_utf16_lossy(&accumulated)
-                }
+                AssistantContent::Text(t) => t.text.push_str(&delta),
+                AssistantContent::Thinking(t) => t.thinking.push_str(&delta),
                 _ => {}
             }
             let event = match kind {

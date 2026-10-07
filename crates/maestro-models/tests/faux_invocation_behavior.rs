@@ -314,10 +314,7 @@ fn faux_usage_serializes_all_context_roles() {
     let usage = out.read().unwrap().usage.clone();
     // Literal serialization includes the tool schema in supplied property order.
     let prompt = "system:sys\n\nuser:hello\n[image:image/png:4]\n\nassistant:prior\n\ntoolResult:echo\ntool out\n\ntools:[{\"name\":\"echo\",\"description\":\"Echo back text\",\"parameters\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]}}]";
-    assert_eq!(
-        usage.input,
-        (prompt.encode_utf16().count() as f64 / 4.0).ceil()
-    );
+    assert_eq!(usage.input, (prompt.chars().count() as f64 / 4.0).ceil());
     assert_eq!(usage.output, 1.0);
     assert_eq!(usage.cache_read, 0.0);
     assert_eq!(usage.cache_write, 0.0);
@@ -1095,10 +1092,10 @@ fn faux_cache_prefix_rounding_and_persistence() {
         ..Default::default()
     });
     for (text, retention, expected) in [
-        ("abc😀x", None, (3.0, 0.0, 3.0, 7.0)),
-        ("abc😀xy", Some(CacheRetention::Short), (0.0, 3.0, 1.0, 5.0)),
+        ("abc😀x", None, (3.0, 0.0, 3.0, 4.0)),
+        ("abc😀xy", Some(CacheRetention::Short), (0.0, 3.0, 1.0, 4.0)),
         ("abc😀", Some(CacheRetention::Long), (0.0, 3.0, 0.0, 4.0)),
-        ("abcZ", None, (1.0, 2.0, 1.0, 5.0)),
+        ("abcZ", None, (1.0, 2.0, 1.0, 4.0)),
         ("no cache", Some(CacheRetention::None), (4.0, 0.0, 0.0, 5.0)),
         ("abcZ", None, (0.0, 3.0, 0.0, 4.0)),
     ] {
@@ -1243,7 +1240,7 @@ fn faux_supplied_usage_is_replaced() {
                 let usage = out.read().unwrap().usage.clone();
                 let expected = match (cache, repeated) {
                     (false, _) => (2.0, 1.0, 0.0, 0.0, 3.0),
-                    (true, false) => (2.0, 1.0, 0.0, 2.0, 5.0),
+                    (true, false) => (2.0, 1.0, 0.0, 2.0, 3.0),
                     (true, true) => (0.0, 1.0, 2.0, 0.0, 3.0),
                 };
                 assert_eq!(

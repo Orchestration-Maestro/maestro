@@ -178,7 +178,6 @@ pub struct ProviderResponse {
     /// Supplied status.
     pub status: f64,
     /// Supplied headers.
-    #[serde(serialize_with = "serialize_json")]
     pub headers: serde_json::Map<String, serde_json::Value>,
 }
 /// TextSignatureV1 supplied record.
@@ -234,7 +233,6 @@ pub struct ToolCall {
     /// Supplied name.
     pub name: String,
     /// Supplied arguments.
-    #[serde(serialize_with = "serialize_map")]
     pub arguments: serde_json::Map<String, serde_json::Value>,
     /// Supplied thought signature.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -415,10 +413,7 @@ pub struct ToolResultMessage<TDetails = serde_json::Value> {
         deserialize_with = "present_value",
         bound(deserialize = "TDetails: serde::Deserialize<'de>")
     )]
-    #[serde(
-        serialize_with = "serialize_json",
-        bound(serialize = "TDetails: serde::Serialize")
-    )]
+    #[serde(bound(serialize = "TDetails: serde::Serialize"))]
     pub details: Option<TDetails>,
     /// Supplied is error.
     pub is_error: bool,
@@ -461,10 +456,7 @@ pub struct Tool<TParameters = serde_json::Value> {
     /// Supplied description.
     pub description: String,
     /// Supplied parameters.
-    #[serde(
-        serialize_with = "serialize_json",
-        bound(serialize = "TParameters: serde::Serialize")
-    )]
+    #[serde(bound(serialize = "TParameters: serde::Serialize"))]
     pub parameters: TParameters,
 }
 /// Context supplied record.
@@ -706,19 +698,18 @@ pub struct OpenRouterRouting {
     pub quantizations: Option<Vec<String>>,
     /// Supplied sort.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
+    #[serde(deserialize_with = "present_value")]
     pub sort: Option<serde_json::Value>,
     /// Supplied max price.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
     pub max_price: Option<serde_json::Map<String, serde_json::Value>>,
     /// Supplied preferred min throughput.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
+    #[serde(deserialize_with = "present_value")]
     pub preferred_min_throughput: Option<serde_json::Value>,
     /// Supplied preferred max latency.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
+    #[serde(deserialize_with = "present_value")]
     pub preferred_max_latency: Option<serde_json::Value>,
 }
 /// VercelGatewayRouting supplied record.
@@ -749,7 +740,6 @@ pub struct Model {
     pub reasoning: bool,
     /// Supplied thinking level map.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
     pub thinking_level_map: Option<ThinkingLevelMap>,
     /// Supplied input.
     pub input: Vec<String>,
@@ -761,11 +751,10 @@ pub struct Model {
     pub max_tokens: f64,
     /// Supplied headers.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
     pub headers: Option<serde_json::Map<String, serde_json::Value>>,
     /// Supplied compat.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
+    #[serde(deserialize_with = "present_value")]
     pub compat: Option<serde_json::Value>,
 }
 
@@ -1031,49 +1020,6 @@ impl PartialEq for AssistantMessageEvent {
     }
 }
 
-fn serialize_map<S: serde::Serializer>(
-    map: &serde_json::Map<String, serde_json::Value>,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    serialize_json(map, serializer)
-}
-pub(super) fn serialize_json<T: serde::Serialize, S: serde::Serializer>(
-    value: &T,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    use serde::Serialize;
-    let value = serde_json::to_value(value).map_err(serde::ser::Error::custom)?;
-    ordered_json(value).serialize(serializer)
-}
-fn ordered_json(value: serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Array(values) => {
-            serde_json::Value::Array(values.into_iter().map(ordered_json).collect())
-        }
-        serde_json::Value::Object(map) => {
-            let mut indices: Vec<_> = map
-                .keys()
-                .filter_map(|key| {
-                    let n = key.parse::<u32>().ok()?;
-                    (n != u32::MAX && n.to_string() == *key).then_some((n, key))
-                })
-                .collect();
-            indices.sort_by_key(|(n, _)| *n);
-            let mut ordered = serde_json::Map::new();
-            for (_, key) in indices {
-                ordered.insert(key.clone(), ordered_json(map[key].clone()));
-            }
-            for (key, value) in map {
-                if !ordered.contains_key(&key) {
-                    ordered.insert(key, ordered_json(value));
-                }
-            }
-            serde_json::Value::Object(ordered)
-        }
-        value => value,
-    }
-}
-
 use super::diagnostics::ThrownValue;
 pub use super::event_stream::AssistantMessageEventStream;
 use crate::Cancellation;
@@ -1153,7 +1099,6 @@ pub struct StreamOptions {
     pub on_response: Option<ResponseCallback>,
     /// Supplied headers.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
     pub headers: Option<serde_json::Map<String, serde_json::Value>>,
     /// Supplied timeout ms.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1166,7 +1111,6 @@ pub struct StreamOptions {
     pub max_retry_delay_ms: Option<f64>,
     /// Supplied metadata.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_json")]
     pub metadata: Option<serde_json::Map<String, serde_json::Value>>,
 }
 /// Untouched ProviderStreamOptions adapter options.
@@ -1189,7 +1133,7 @@ impl serde::Serialize for ProviderStreamOptions {
             #[serde(flatten)]
             extra: &'a serde_json::Map<String, serde_json::Value>,
         }
-        serialize_json(
+        serde::Serialize::serialize(
             &Flattened {
                 base: &self.base,
                 extra: &self.extra,

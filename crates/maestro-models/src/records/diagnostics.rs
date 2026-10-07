@@ -78,7 +78,6 @@ pub struct AssistantMessageDiagnostic {
     pub error: Option<DiagnosticErrorInfo>,
     /// Unmodified supplied details.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "super::types::serialize_json")]
     pub details: Option<serde_json::Map<String, serde_json::Value>>,
 }
 pub(crate) fn error(message: String) -> ThrownValue {
