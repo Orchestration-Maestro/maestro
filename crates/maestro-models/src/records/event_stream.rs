@@ -84,6 +84,8 @@ struct Queue<T> {
     cursors: VecDeque<Arc<Mutex<Cursor<T>>>>,
 }
 /// Shared FIFO producer handle with an independently observed final result.
+/// Observations clone `T` and `R`; use shared handles such as `Arc<RwLock<_>>`
+/// for live objects whose mutations must remain visible to events and results.
 pub struct EventStream<T, R = T> {
     queue: Arc<Mutex<Queue<T>>>,
     result: Arc<Mutex<Promise<R>>>,

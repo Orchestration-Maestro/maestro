@@ -1,5 +1,6 @@
 //! Ordered protocol registrations shared by the execution realm.
 use super::{diagnostics::error, types::*};
+use std::sync::{Arc, RwLock};
 
 /// Raw callable adapter, including provider-specific options.
 pub type ApiStreamFunction = StreamFunction<ProviderStreamOptions>;
@@ -15,8 +16,11 @@ pub struct ApiProvider {
     /// Simple invocation callback.
     pub stream_simple: ApiStreamSimpleFunction,
 }
+/// Live registered callbacks shared by lookup and enumeration.
+pub type ApiProviderHandle = Arc<RwLock<ApiProvider>>;
 struct Entry {
-    provider: ApiProvider,
+    api: Api,
+    provider: ApiProviderHandle,
     source: Option<String>,
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -37,7 +41,7 @@ pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
     let raw = provider.stream;
     let simple = provider.stream_simple;
     let wrapped = ApiProvider {
-        api,
+        api: api.clone(),
         stream: std::sync::Arc::new(move |model, context, options| {
             if model.api != raw_api {
                 return Err(error(format!(
@@ -59,10 +63,11 @@ pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
     };
     let retired = with_registry(|r| {
         let entry = Entry {
-            provider: wrapped,
+            api,
+            provider: Arc::new(RwLock::new(wrapped)),
             source: source_id,
         };
-        if let Some(i) = r.iter().position(|e| e.provider.api == entry.provider.api) {
+        if let Some(i) = r.iter().position(|e| e.api == entry.api) {
             Some(std::mem::replace(&mut r[i], entry))
         } else {
             r.push(entry);
@@ -71,16 +76,13 @@ pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
     });
     drop(retired);
 }
-/// Retrieve retained wrapped callbacks, or none when absent.
-pub fn get_api_provider(api: &str) -> Option<ApiProvider> {
-    with_registry(|r| {
-        r.iter()
-            .find(|e| e.provider.api == api)
-            .map(|e| e.provider.clone())
-    })
+/// Retrieve live wrapped callbacks, or none when absent.
+/// Mutating the provider changes later dispatch without changing its registration key.
+pub fn get_api_provider(api: &str) -> Option<ApiProviderHandle> {
+    with_registry(|r| r.iter().find(|e| e.api == api).map(|e| e.provider.clone()))
 }
-/// Enumerate registrations in insertion order.
-pub fn get_api_providers() -> Vec<ApiProvider> {
+/// Enumerate live registrations in insertion order.
+pub fn get_api_providers() -> Vec<ApiProviderHandle> {
     with_registry(|r| r.iter().map(|e| e.provider.clone()).collect())
 }
 /// Remove registrations matching a supplied source, distinct from absent source.

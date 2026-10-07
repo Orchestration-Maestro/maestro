@@ -79,6 +79,100 @@ fn provider(api: &str) -> ApiProvider {
     }
 }
 #[test]
+fn lookup_provider_mutation_changes_later_dispatch() {
+    let _guard = REGISTRY.lock().unwrap();
+    clear_api_providers();
+    register_api_provider(provider("live"), None);
+    let handle = get_api_provider("live").unwrap();
+    assert!(Arc::ptr_eq(&handle, &get_api_providers()[0]));
+    let mut retained = handle.write().unwrap();
+    let calls = Arc::new(Mutex::new(vec![]));
+    let raw_calls = calls.clone();
+    let raw_handle = Arc::downgrade(&handle);
+    retained.stream = Arc::new(move |_, _, _| {
+        let live = raw_handle.upgrade().unwrap();
+        let _write = live.try_write().expect("dispatch released provider lock");
+        assert!(get_api_provider("missing").is_none());
+        raw_calls.lock().unwrap().push("raw");
+        Ok(AssistantMessageEventStream::new())
+    });
+    let simple_calls = calls.clone();
+    let simple_handle = Arc::downgrade(&handle);
+    retained.stream_simple = Arc::new(move |_, _, _| {
+        let live = simple_handle.upgrade().unwrap();
+        let _write = live.try_write().expect("dispatch released provider lock");
+        assert!(get_api_provider("missing").is_none());
+        simple_calls.lock().unwrap().push("simple");
+        Ok(AssistantMessageEventStream::new())
+    });
+    retained.api = "renamed".into();
+    drop(retained);
+    stream(model("live"), context(), None).unwrap();
+    stream_simple(model("live"), context(), None).unwrap();
+    assert_eq!(*calls.lock().unwrap(), ["raw", "simple"]);
+    assert!(get_api_provider("live").is_some());
+    assert!(get_api_provider("renamed").is_none());
+    clear_api_providers();
+}
+
+#[test]
+fn enumerated_provider_mutation_changes_later_dispatch() {
+    let _guard = REGISTRY.lock().unwrap();
+    clear_api_providers();
+    register_api_provider(provider("enumerated"), None);
+    let handle = get_api_providers().remove(0);
+    assert!(Arc::ptr_eq(&handle, &get_api_providers()[0]));
+    let mut retained = handle.write().unwrap();
+    let calls = Arc::new(Mutex::new(vec![]));
+    let raw_calls = calls.clone();
+    let raw_handle = Arc::downgrade(&handle);
+    retained.stream = Arc::new(move |_, _, _| {
+        let live = raw_handle.upgrade().unwrap();
+        let _write = live.try_write().expect("dispatch released provider lock");
+        assert!(get_api_provider("missing").is_none());
+        raw_calls.lock().unwrap().push("raw");
+        Ok(AssistantMessageEventStream::new())
+    });
+    let simple_calls = calls.clone();
+    let simple_handle = Arc::downgrade(&handle);
+    retained.stream_simple = Arc::new(move |_, _, _| {
+        let live = simple_handle.upgrade().unwrap();
+        let _write = live.try_write().expect("dispatch released provider lock");
+        assert!(get_api_provider("missing").is_none());
+        simple_calls.lock().unwrap().push("simple");
+        Ok(AssistantMessageEventStream::new())
+    });
+    drop(retained);
+    stream(model("enumerated"), context(), None).unwrap();
+    stream_simple(model("enumerated"), context(), None).unwrap();
+    assert_eq!(*calls.lock().unwrap(), ["raw", "simple"]);
+    clear_api_providers();
+}
+
+#[test]
+fn generic_shared_events_and_results_keep_live_identity() {
+    let value = Arc::new(std::sync::RwLock::new(1));
+    let stream = EventStream::new(Arc::new(|_| Ok(false)), Arc::new(|v| Ok(Arc::clone(v))));
+    let mut first = stream.iter();
+    let mut second = stream.iter();
+    stream.push(value.clone()).unwrap();
+    stream.push(value.clone()).unwrap();
+    let delivered = ready(&mut first.next()).unwrap();
+    *delivered.write().unwrap() = 2;
+    let other = ready(&mut second.next()).unwrap();
+    assert!(Arc::ptr_eq(&delivered, &other));
+    assert_eq!(*other.read().unwrap(), 2);
+    stream.end(Some(value));
+    let result = ready(&mut stream.result());
+    assert!(Arc::ptr_eq(&other, &result));
+    *result.write().unwrap() = 3;
+    assert_eq!(*delivered.read().unwrap(), 3);
+    let repeated = ready(&mut stream.result());
+    assert!(Arc::ptr_eq(&result, &repeated));
+    assert_eq!(*repeated.read().unwrap(), 3);
+}
+
+#[test]
 fn api_registry_replacement_keeps_position_and_source() {
     let _guard = REGISTRY.lock().unwrap();
     clear_api_providers();
@@ -109,7 +203,7 @@ fn api_registry_replacement_keeps_position_and_source() {
     assert_eq!(
         get_api_providers()
             .iter()
-            .map(|p| p.api.as_str())
+            .map(|p| p.read().unwrap().api.clone())
             .collect::<Vec<_>>(),
         ["a", "b"]
     );
@@ -117,7 +211,8 @@ fn api_registry_replacement_keeps_position_and_source() {
     assert!(get_api_provider("a").is_some());
     unregister_api_providers("new");
     assert!(get_api_provider("a").is_none());
-    (retained.stream)(model("a"), context(), None).unwrap();
+    let callback = retained.read().unwrap().stream.clone();
+    callback(model("a"), context(), None).unwrap();
     register_api_provider(provider("a"), Some(String::new()));
     unregister_api_providers("missing");
     unregister_api_providers("");
@@ -126,7 +221,7 @@ fn api_registry_replacement_keeps_position_and_source() {
     assert_eq!(
         get_api_providers()
             .iter()
-            .map(|p| p.api.as_str())
+            .map(|p| p.read().unwrap().api.clone())
             .collect::<Vec<_>>(),
         ["b", "a"]
     );
@@ -162,7 +257,7 @@ fn wrappers_reject_other_api_before_adapter() {
         },
         None,
     );
-    let callbacks = get_api_provider("right").unwrap();
+    let callbacks = get_api_provider("right").unwrap().read().unwrap().clone();
     assert_eq!(
         text_error(
             (callbacks.stream)(model("wrong"), context(), None)
@@ -1625,7 +1720,7 @@ fn observable_errors_match_exact_text() {
         );
     }
     register_api_provider(provider("right"), None);
-    let p = get_api_provider("right").unwrap();
+    let p = get_api_provider("right").unwrap().read().unwrap().clone();
     assert_eq!(
         text_error((p.stream)(model("wrong"), context(), None).err().unwrap()),
         "Mismatched api: wrong expected right"

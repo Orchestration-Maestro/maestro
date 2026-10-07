@@ -60,6 +60,12 @@ clear_api_providers();
 
 ## Record and observation semantics
 
+Provider lookup and enumeration return live `ApiProviderHandle` values. Updating
+a handle's callbacks changes later dispatch; changing its `api` field does not
+change the registry key. Dispatch releases the provider read lock before calling
+the selected callback. Generic streams preserve live object identity when event
+and result types are shared handles such as `Arc<RwLock<_>>`.
+
 Content blocks decode by `type`, even when unknown fields overlap another
 variant. `AssistantMessageEventStream` is also exported from `records::types`.
 Diagnostic timestamps are signed Unix milliseconds, including before the epoch.
