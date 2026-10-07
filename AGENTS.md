@@ -221,3 +221,12 @@ The private contribution-policy executable may use `base64 =0.23.1` with only
 dates. Neither enables its defaults. Tests may use dev-only `yaml-rust2 =0.13.0`
 without default features to parse actual adapters/templates. These exceptions
 are MIT OR Apache-2.0 and add no internal crate edge or public library API.
+
+## Approved overflow matching library
+
+The model crate may use `regress =0.12.0` with default features and `utf16`
+(features backend-pikevm/default/std/utf16; MIT OR Apache-2.0). Keep it private
+behind the stateless overflow pattern value; its enabled dependency is memchr
+2.8.3 (alloc/std; Unlicense OR MIT). Preserve the owned pattern sources and
+ECMAScript character classes. The non-Unicode long-s case-folding difference
+is accepted and qualified explicitly by the model tests.
