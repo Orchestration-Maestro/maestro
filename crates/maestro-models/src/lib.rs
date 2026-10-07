@@ -1,7 +1,9 @@
-//! Caller-supplied model invocation with shared producer-owned event lifetimes.
+//! Caller-supplied model invocation, offline descriptors and shared producer-owned events.
 #![doc = include_str!("../../../docs/records.md")]
+#![doc = include_str!("../../../docs/models/catalog.md")]
 mod auth;
 mod cancellation;
+mod catalog;
 mod projection;
 /// Supplied records and independent invocation modules.
 pub mod records;
@@ -13,6 +15,7 @@ pub use auth::{
     AuthResolver, AuthStatus, RequestAuth, SecretString, TokenExchange, TokenExchangeResult,
 };
 pub use cancellation::Cancellation;
+pub use catalog::*;
 pub use projection::project_context;
 pub use records::hash::*;
 pub use records::headers::*;
