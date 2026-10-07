@@ -932,3 +932,17 @@ fn argument_path_tears_down_deep_temporaries_in_subprocess() {
         }
     }
 }
+
+#[test]
+fn array_object_unions_keep_interpreted_acceptance() {
+    // Qualified library difference: the reference compiled accelerator rejects this,
+    // while live Errors is empty and the reference reports "Unknown validation error".
+    for schema in [
+        json!({"type":["array","object"],"properties":{"0":{"type":"number"}}}),
+        json!({"type":["array","object"],"additionalProperties":{"type":"number"}}),
+        json!({"type":["array","object"],"properties":{"1":{"type":"boolean"}},"additionalProperties":{"type":"number"}}),
+    ] {
+        let input = json!(["42", "true"]);
+        assert_eq!(validate(schema, input.clone()).unwrap(), input);
+    }
+}
