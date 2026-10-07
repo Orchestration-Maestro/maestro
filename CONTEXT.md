@@ -28,6 +28,8 @@ From `docs/specs/maestro-port.md`.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.
 - **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects.
 - **Scripted simulator:** An opt-in protocol adapter with queued responses, builders, chunking, pacing, usage/cache simulation and request-observing factories.
+- **Faux registration:** A temporary scripted-simulator registration owning ordered models, the remaining response queue and a live invocation counter.
+- **Faux response factory:** A request-observing function resolving a queued assistant response from context, supplied options, live registration state and the requested model.
 
 - **Requested thinking:** The application's supplied effort choice.
 - **Effective thinking:** The supported choice used for this request.

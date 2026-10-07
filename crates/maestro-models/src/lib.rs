@@ -3,6 +3,7 @@
 #![doc = include_str!("../../../docs/records.md")]
 #![doc = include_str!("../../../docs/model-options.md")]
 #![doc = include_str!("../../../docs/models/catalog.md")]
+#![doc = include_str!("../../../docs/models/faux.md")]
 mod auth;
 mod cancellation;
 mod catalog;
@@ -11,6 +12,8 @@ mod projection;
 pub mod records;
 mod scalar;
 mod schema;
+mod scripted;
+pub use scripted::*;
 mod types;
 mod validation;
 pub use auth::{

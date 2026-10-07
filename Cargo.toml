@@ -3,7 +3,10 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.dependencies]
-tokio = { version = "1", default-features = false, features = ["rt", "sync"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "time"] }
+getrandom = { version = "=0.3.4", default-features = false }
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
 serde = { version = "=1.0.229", features = ["derive", "rc"] }
 serde_json = { version = "=1.0.151", features = ["preserve_order"] }
 ryu-js = "=1.0.3"
