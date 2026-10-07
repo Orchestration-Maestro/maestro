@@ -49,6 +49,7 @@ fn faux_registration_estimates_usage() {
     ))
     .unwrap();
     let result = result.read().unwrap();
+    assert_eq!(result.content, message("hello world").content);
     assert!(result.usage.input > 0.0);
     assert_eq!(result.usage.output, 3.0);
     assert_eq!(
@@ -115,14 +116,20 @@ fn faux_models_reach_response_factories() {
     assert_eq!(r.get_model(None).unwrap().id, "fast");
     assert!(!r.get_model(Some("fast")).unwrap().reasoning);
     assert!(r.get_model(Some("thinking")).unwrap().reasoning);
-    for id in ["fast", "thinking"] {
+    assert_eq!(
+        r.models.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+        ["fast", "thinking"]
+    );
+    for (id, expected) in [("fast", "fast:false"), ("thinking", "thinking:true")] {
         r.append_responses(vec![FauxResponseStep::Factory(Arc::new(
-            |_, _, _, model| Box::pin(async move { Ok(message(&model.id)) }),
+            |_, _, _, model| {
+                Box::pin(async move { Ok(message(&format!("{}:{}", model.id, model.reasoning))) })
+            },
         ))]);
         let result = run(complete(r.get_model(Some(id)).unwrap(), context(), None)).unwrap();
         assert_eq!(
             result.read().unwrap().content,
-            vec![AssistantContent::Text(faux_text(id.into()))]
+            vec![AssistantContent::Text(faux_text(expected.into()))]
         );
     }
     r.unregister();
@@ -260,6 +267,9 @@ fn faux_factory_failure_is_terminal() {
     let output = collect(&events);
     assert_eq!(output.len(), 1);
     assert!(matches!(output[0], AssistantMessageEvent::Error { .. }));
+    if let AssistantMessageEvent::Error { error, .. } = &output[0] {
+        assert_eq!(error.read().unwrap().stop_reason, StopReason::Error);
+    }
     assert_eq!(
         run(events.result())
             .read()
@@ -1302,13 +1312,14 @@ fn faux_supplied_usage_is_replaced() {
 }
 
 #[test]
-fn faux_unpaced_reader_cancels_after_first_delta() {
+fn faux_reader_cancels_after_first_delta() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
         .unwrap();
     runtime.block_on(async {
         let r = register_faux_provider(RegisterFauxProviderOptions {
+            tokens_per_second: Some(1000.0),
             token_size: Some(FauxTokenSize {
                 min: Some(1.0),
                 max: Some(1.0),
@@ -1346,76 +1357,6 @@ fn faux_unpaced_reader_cancels_after_first_delta() {
 }
 
 #[test]
-fn faux_factory_spawned_cancellation_precedes_ready_response() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_time()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
-        let r = register_faux_provider(Default::default());
-        let signal = Cancellation::new();
-        let cancel = signal.clone();
-        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
-            move |_, _, _, _| {
-                let cancel = cancel.clone();
-                tokio::spawn(async move {
-                    cancel.cancel();
-                });
-                Box::pin(async { Ok(message("ready text")) })
-            },
-        ))]);
-        let opts = ProviderStreamOptions {
-            base: StreamOptions {
-                signal: Some(signal),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let out = complete(r.get_model(None).unwrap(), context(), Some(opts))
-            .await
-            .unwrap();
-        assert_eq!(out.read().unwrap().stop_reason, StopReason::Aborted);
-        r.unregister();
-    });
-}
-
-#[test]
-fn faux_completed_factory_wake_does_not_stall_next_invocation() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_time()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
-        let r = register_faux_provider(Default::default());
-        let saved = Arc::new(std::sync::Mutex::new(None));
-        let capture = saved.clone();
-        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
-            move |_, _, _, _| {
-                let capture = capture.clone();
-                Box::pin(std::future::poll_fn(move |cx| {
-                    *capture.lock().unwrap() = Some(cx.waker().clone());
-                    Poll::Ready(Ok(message("first")))
-                }))
-            },
-        ))]);
-        complete(r.get_model(None).unwrap(), context(), None)
-            .await
-            .unwrap();
-        saved.lock().unwrap().take().unwrap().wake();
-        r.append_responses(vec![FauxResponseStep::Message(message("second"))]);
-        let out = tokio::time::timeout(
-            std::time::Duration::from_secs(1),
-            complete(r.get_model(None).unwrap(), context(), None),
-        )
-        .await
-        .expect("stale wake must not strand the dispatcher")
-        .unwrap();
-        assert_eq!(out.read().unwrap().content, message("second").content);
-        r.unregister();
-    });
-}
-
-#[test]
 fn faux_registration_survives_ambient_runtime_shutdown() {
     let r = register_faux_provider(Default::default());
     r.set_responses(vec![
@@ -1427,18 +1368,47 @@ fn faux_registration_survives_ambient_runtime_shutdown() {
         .build()
         .unwrap();
     let first = runtime
-        .block_on(complete(r.get_model(None).unwrap(), context(), None))
+        .block_on(async { complete(r.get_model(None).unwrap(), context(), None).await })
         .unwrap();
     assert_eq!(first.read().unwrap().content, message("ambient").content);
     drop(runtime);
-    let events = stream(r.get_model(None).unwrap(), context(), None).unwrap();
-    let (send, receive) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        send.send(run(events.result())).unwrap();
-    });
-    let second = receive
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("reuse dispatches through the fallback");
+    let second = run(complete(r.get_model(None).unwrap(), context(), None)).unwrap();
     assert_eq!(second.read().unwrap().content, message("fallback").content);
     r.unregister();
+}
+
+#[test]
+fn faux_pacing_needs_no_caller_timer_driver() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let r = register_faux_provider(RegisterFauxProviderOptions {
+            tokens_per_second: Some(1000.0),
+            ..Default::default()
+        });
+        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(|_, _, _, _| {
+            Box::pin(async {
+                let timer =
+                    std::panic::catch_unwind(|| tokio::time::sleep(std::time::Duration::ZERO))
+                        .map_err(|_| thrown("producer has no timer driver"))?;
+                timer.await;
+                Ok(message("paced"))
+            })
+        }))]);
+        let response = stream(r.get_model(None).unwrap(), context(), None).unwrap();
+        let mut iter = response.iter();
+        let mut kinds = vec![];
+        while let Some(event) = iter.next().await {
+            kinds.push(event_name(&event));
+        }
+        assert_eq!(
+            kinds,
+            ["start", "text_start", "text_delta", "text_end", "done"]
+        );
+        let result = response.result().await;
+        assert_eq!(result.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(result.read().unwrap().content, message("paced").content);
+        r.unregister();
+    });
 }

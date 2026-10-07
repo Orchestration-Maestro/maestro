@@ -226,8 +226,8 @@ are MIT OR Apache-2.0 and add no internal crate edge or public library API.
 
 The opt-in model simulator uses native `tokio =1.53.2`, defaults disabled,
 features `rt`, `sync`, `time`, and `getrandom =0.3.4`, defaults disabled.
-Its private browser host uses target-local `wasm-bindgen =0.2.129` with
-defaults, alongside `js-sys =0.3.106`.
+Its private browser host uses target-local `wasm-bindgen =0.2.129` and
+`wasm-bindgen-futures =0.4.79` with defaults, alongside `js-sys =0.3.106`.
 All use MIT OR Apache-2.0 (Tokio: MIT). Runtime types stay private; the model
 crate remains an internal-dependency-free leaf.
 

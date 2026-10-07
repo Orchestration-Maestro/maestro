@@ -76,7 +76,7 @@ pub struct RegisterFauxProviderOptions {
     pub provider: Option<String>,
     /// Ordered model definitions.
     pub models: Option<Vec<FauxModelDefinition>>,
-    /// Estimated output tokens per second; absent yields microtasks.
+    /// Estimated output tokens per second; absent yields without a pacing delay.
     pub tokens_per_second: Option<f64>,
     /// Random chunk-size bounds in estimated tokens.
     pub token_size: Option<FauxTokenSize>,
@@ -283,19 +283,15 @@ fn register_with_host(
         scheduler.spawn(Box::pin(async move {
             let hook_result =
                 if let Some(hook) = options.as_ref().and_then(|o| o.base.on_response.as_ref()) {
-                    await_microtask(
-                        hook(
-                            ProviderResponse {
-                                status: 200.0,
-                                headers: serde_json::Map::new(),
-                            },
-                            model.clone(),
-                        ),
-                        host.as_ref(),
+                    hook(
+                        ProviderResponse {
+                            status: 200.0,
+                            headers: serde_json::Map::new(),
+                        },
+                        model.clone(),
                     )
                     .await
                 } else {
-                    host.microtask().await;
                     Ok(())
                 };
             if let Err(value) = hook_result {
@@ -306,11 +302,8 @@ fn register_with_host(
             let mut message = match step {
                 Some(FauxResponseStep::Message(message)) => message,
                 Some(FauxResponseStep::Factory(factory)) => {
-                    let result = await_microtask(
-                        factory(context.clone(), options.clone(), state, model.clone()),
-                        host.as_ref(),
-                    )
-                    .await;
+                    let result =
+                        factory(context.clone(), options.clone(), state, model.clone()).await;
                     match result {
                         Ok(message) => message,
                         Err(value) => {
@@ -863,22 +856,4 @@ fn radix36_fraction(fraction: f64) -> String {
             .map(|n| char::from(if n < 10 { b'0' + n } else { b'a' + n - 10 }))
             .collect()
     }
-}
-async fn await_microtask<T>(
-    mut future: Pin<Box<impl Future<Output = T> + ?Sized>>,
-    host: &dyn host::Host,
-) -> T {
-    let mut pending = false;
-    let result = std::future::poll_fn(|cx| match future.as_mut().poll(cx) {
-        std::task::Poll::Pending => {
-            pending = true;
-            std::task::Poll::Pending
-        }
-        std::task::Poll::Ready(result) => std::task::Poll::Ready(result),
-    })
-    .await;
-    if !pending {
-        host.microtask().await;
-    }
-    result
 }

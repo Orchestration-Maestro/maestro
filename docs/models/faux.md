@@ -108,7 +108,7 @@ Notes:
 - `registration.unregister()` removes the temporary provider from the global API registry.
 - Usage is estimated at roughly 1 token per 4 characters. When `session_id` is present and `cache_retention` is not `None`, prompt cache reads and writes are simulated automatically.
 - Tool call arguments stream incrementally via `toolcall_delta` chunks.
-- By default, each streamed chunk is emitted on its own microtask. Set `tokens_per_second` to pace chunk delivery in real time.
+- By default, each streamed chunk yields without a pacing delay. Set `tokens_per_second` to pace chunk delivery in real time.
 - The intended use is one deterministic scripted flow per registration. If you need independent concurrent flows, register separate faux providers.
 
 Defaults: provider `faux`, model `faux-1` / `Faux Model`, base URL
@@ -128,9 +128,9 @@ snapshots; terminal events and results share one message handle. Tool arguments
 remain empty until their end event. Chunk slicing counts UTF-16 units; broken
 surrogates become replacement characters, while accumulated valid pairs survive.
 
-The native host runs an owned FIFO dispatcher on an ambient Tokio runtime, or
-one lazy process-wide runtime when no runtime is present. Browser producers use
-microtasks and promise-backed timers. Positive pacing waits for its scheduled
+The native host runs producers on one lazy process-wide, time-enabled Tokio
+runtime, independently of the caller's executor. Browser producers use standard
+local async execution and promise-backed timers. Positive pacing waits for its scheduled
 timer even after cancellation. Native timers apply the host's minimum of one
 millisecond and truncate fractional insertion delays; oversized delays use one
 millisecond with the two-line overflow warning. If a thrown value's own string

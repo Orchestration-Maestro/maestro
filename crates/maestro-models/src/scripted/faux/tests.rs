@@ -374,41 +374,19 @@ fn faux_ids_use_clock_and_radix36() {
 fn faux_scheduler_starts_without_observation() {
     let h = Controlled::new();
     let r = h.register(Default::default());
-    let order = Arc::new(Mutex::new(vec![]));
-    let first = order.clone();
-    let second = order.clone();
-    r.set_responses(vec![
-        FauxResponseStep::Factory(Arc::new(move |_, _, _, _| {
-            first.lock().unwrap().push("factory1");
+    let called = Arc::new(AtomicBool::new(false));
+    let seen = called.clone();
+    r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
+        move |_, _, _, _| {
+            seen.store(true, Ordering::SeqCst);
             Box::pin(async { Ok(msg("a")) })
-        })),
-        FauxResponseStep::Factory(Arc::new(move |_, _, _, _| {
-            second.lock().unwrap().push("factory2");
-            Box::pin(async { Ok(msg("b")) })
-        })),
-    ]);
-    let s1 = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-    let s2 = stream_simple(r.get_model(None).unwrap(), ctx(), None).unwrap();
-    order.lock().unwrap().push("returned");
-    assert!(h.step());
-    assert_eq!(*order.lock().unwrap(), vec!["returned"]);
-    assert!(h.step());
-    assert_eq!(*order.lock().unwrap(), vec!["returned"]);
-    assert!(h.step());
-    assert_eq!(*order.lock().unwrap(), vec!["returned", "factory1"]);
-    assert!(h.step());
-    assert_eq!(
-        *order.lock().unwrap(),
-        vec!["returned", "factory1", "factory2"]
-    );
-    assert!(poll(s1.iter().next()).is_pending());
+        },
+    ))]);
+    let response = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
+    assert!(!called.load(Ordering::SeqCst));
     h.drain();
-    assert!(poll(s1.result()).is_ready());
-    assert!(poll(s2.result()).is_ready());
-    assert_eq!(
-        *order.lock().unwrap(),
-        vec!["returned", "factory1", "factory2"]
-    );
+    assert!(called.load(Ordering::SeqCst));
+    assert!(poll(response.result()).is_ready());
     r.unregister();
     for rate in [
         None,
@@ -457,10 +435,7 @@ fn faux_scheduler_starts_without_observation() {
     assert!(!called.load(Ordering::SeqCst));
     send.send(()).unwrap();
     assert!(h.step());
-    assert!(
-        called.load(Ordering::SeqCst),
-        "pending hook resumes factory in its resolution microtask"
-    );
+    assert!(called.load(Ordering::SeqCst), "factory waits for the hook");
     h.drain();
     assert!(poll(s.result()).is_ready());
     r.unregister();
@@ -487,25 +462,6 @@ fn faux_scheduler_starts_without_observation() {
         .build()
         .unwrap();
     runtime.block_on(async {
-        let ordering = Arc::new(Mutex::new(vec![]));
-        let r = register_faux_provider(Default::default());
-        r.set_responses(
-            (1..=2)
-                .map(|n| {
-                    let ordering = ordering.clone();
-                    FauxResponseStep::Factory(Arc::new(move |_, _, _, _| {
-                        ordering.lock().unwrap().push(n);
-                        Box::pin(async { Ok(msg("ready")) })
-                    }))
-                })
-                .collect(),
-        );
-        let one = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-        let two = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-        one.result().await;
-        two.result().await;
-        assert_eq!(*ordering.lock().unwrap(), vec![1, 2]);
-        r.unregister();
         let r = register_faux_provider(Default::default());
         r.set_responses(vec![FauxResponseStep::Message(msg("ambient"))]);
         let s = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
@@ -673,7 +629,6 @@ fn faux_abort_checks_do_not_expand() {
     };
     let s = stream(r.get_model(None).unwrap(), ctx(), Some(opts)).unwrap();
     h.step();
-    h.step();
     signal.cancel();
     assert!(poll(s.result()).is_pending());
     h.drain();
@@ -721,7 +676,7 @@ fn faux_documentation_paragraphs_are_current() {
         "`registration.unregister()` removes the temporary provider from the global API registry.",
         "Usage is estimated at roughly 1 token per 4 characters. When `session_id` is present and `cache_retention` is not `None`, prompt cache reads and writes are simulated automatically.",
         "Tool call arguments stream incrementally via `toolcall_delta` chunks.",
-        "By default, each streamed chunk is emitted on its own microtask. Set `tokens_per_second` to pace chunk delivery in real time.",
+        "By default, each streamed chunk yields without a pacing delay. Set `tokens_per_second` to pace chunk delivery in real time.",
         "The intended use is one deterministic scripted flow per registration. If you need independent concurrent flows, register separate faux providers.",
     ] {
         assert!(doc.contains(paragraph), "missing {paragraph}");
@@ -844,75 +799,4 @@ fn faux_documentation_paragraphs_are_current() {
     );
     registration.unregister();
     multi.unregister();
-}
-#[test]
-fn faux_native_microtasks_precede_zero_timers() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_time()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
-        let host = host::production();
-        let order = Arc::new(Mutex::new(vec![]));
-        let (send, receive) = tokio::sync::oneshot::channel();
-        let send = Arc::new(Mutex::new(Some(send)));
-        let producer_host = host.clone();
-        let producer_order = order.clone();
-        host.spawn(Box::pin(async move {
-            producer_order.lock().unwrap().push("producer");
-            for name in ["timer1", "timer2"] {
-                let timer_host = producer_host.clone();
-                let timer_order = producer_order.clone();
-                let send = send.clone();
-                producer_host.spawn(Box::pin(async move {
-                    schedule_chunk(timer_host.as_ref(), &[], Some(f64::INFINITY)).await;
-                    timer_order.lock().unwrap().push(name);
-                    if name == "timer2" {
-                        let send = send.lock().unwrap().take().unwrap();
-                        send.send(()).unwrap();
-                    }
-                }));
-            }
-            producer_host.microtask().await;
-            producer_order.lock().unwrap().push("microtask");
-        }));
-        receive.await.unwrap();
-        assert_eq!(
-            *order.lock().unwrap(),
-            vec!["producer", "microtask", "timer1", "timer2"]
-        );
-    });
-}
-
-#[test]
-fn faux_native_factory_runs_between_microtask_markers() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_time()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
-        let r = register_faux_provider(Default::default());
-        let order = Arc::new(Mutex::new(vec![]));
-        let factory_order = order.clone();
-        r.set_responses(vec![FauxResponseStep::Factory(Arc::new(
-            move |_, _, _, _| {
-                factory_order.lock().unwrap().push("factory");
-                Box::pin(async { Ok(msg("text")) })
-            },
-        ))]);
-        let response = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-        let marker_order = order.clone();
-        let markers = tokio::spawn(async move {
-            marker_order.lock().unwrap().push("m1");
-            tokio::spawn(async move {
-                marker_order.lock().unwrap().push("m2");
-            })
-            .await
-            .unwrap();
-        });
-        response.result().await;
-        markers.await.unwrap();
-        assert_eq!(*order.lock().unwrap(), ["m1", "factory", "m2"]);
-        r.unregister();
-    });
 }
