@@ -59,6 +59,17 @@ pub(crate) fn check(metadata: &Value) -> Result<(), String> {
                     name,
                     "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
                 ) {
+                    // The guest author view cannot depend on the host's tool crate.
+                    if owner == "maestro-extensions-wasm"
+                        && name == "ToolDefinition"
+                        && path
+                            == manifest
+                                .parent()
+                                .ok_or("manifest has no parent")?
+                                .join("src/extension.rs")
+                    {
+                        continue;
+                    }
                     let line = source::line(&contents, pair[0].start);
                     if owner != "maestro-tools" {
                         return Err(format!(

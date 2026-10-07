@@ -1,0 +1,1251 @@
+package maestro:extension;
+
+/// Extension data exchanged with the host.
+interface types {
+    /// An arbitrary JSON value encoded as text.
+    type json = string;
+    /// Error.
+    record error {
+        /// Message.
+        message: string,
+        /// Stack.
+        stack: option<string>,
+    }
+    /// Registered Command Options.
+    record registered-command-options {
+        /// Description.
+        description: option<string>,
+        /// Get argument completions.
+        get-argument-completions: option<registered-command-options-get-argument-completions-callback>,
+        /// Handler.
+        handler: registered-command-options-handler-callback,
+    }
+    /// Extension Shortcut Options.
+    record extension-shortcut-options {
+        /// Description.
+        description: option<string>,
+        /// Handler.
+        handler: extension-shortcut-options-handler-callback,
+    }
+    /// Flag Value.
+    variant flag-value {
+        /// Boolean.
+        boolean(bool),
+        /// String.
+        %string(string),
+    }
+    /// Flag Type.
+    enum flag-type {
+        /// Boolean.
+        boolean,
+        /// String.
+        %string,
+    }
+    /// Extension Flag Options.
+    record extension-flag-options {
+        /// Description.
+        description: option<string>,
+        /// Type.
+        %type: flag-type,
+        /// Default.
+        default: option<flag-value>,
+    }
+    /// Autocomplete Item.
+    record autocomplete-item {
+        /// Value.
+        value: string,
+        /// Label.
+        label: string,
+        /// Description.
+        description: option<string>,
+    }
+    /// Thinking Level.
+    enum thinking-level {
+        /// Off.
+        off,
+        /// Minimal.
+        minimal,
+        /// Low.
+        low,
+        /// Medium.
+        medium,
+        /// High.
+        high,
+        /// Xhigh.
+        xhigh,
+    }
+    /// Tool Execution Mode.
+    enum tool-execution-mode {
+        /// Sequential.
+        sequential,
+        /// Parallel.
+        parallel,
+    }
+    /// Render Shell.
+    enum render-shell {
+        /// Default.
+        default,
+        /// SelfDrawn.
+        self-drawn,
+    }
+    /// Tool Definition.
+    record tool-definition {
+        /// Name.
+        name: string,
+        /// Label.
+        label: string,
+        /// Description.
+        description: string,
+        /// Prompt snippet.
+        prompt-snippet: option<string>,
+        /// Prompt guidelines.
+        prompt-guidelines: option<list<string>>,
+        /// Parameters.
+        parameters: json,
+        /// Render shell.
+        render-shell: option<render-shell>,
+        /// Prepare arguments.
+        prepare-arguments: option<tool-definition-prepare-arguments-callback>,
+        /// Execution mode.
+        execution-mode: option<tool-execution-mode>,
+        /// Execute.
+        execute: abort-signal,
+    }
+    /// Text Content.
+    record text-content {
+        /// Text.
+        text: string,
+        /// Text signature.
+        text-signature: option<string>,
+    }
+    /// Image Content.
+    record image-content {
+        /// Data.
+        data: string,
+        /// Mime type.
+        mime-type: string,
+    }
+    /// Content Part.
+    variant content-part {
+        /// Text.
+        text(text-content),
+        /// Image.
+        image(image-content),
+    }
+    /// User Content.
+    variant user-content {
+        /// Text.
+        text(string),
+        /// Blocks.
+        blocks(list<content-part>),
+    }
+    /// Agent Tool Result.
+    record agent-tool-result {
+        /// Content.
+        content: list<content-part>,
+        /// Details.
+        details: option<json>,
+        /// Terminate.
+        terminate: option<bool>,
+    }
+    /// Custom Message.
+    record custom-message {
+        /// Custom type.
+        custom-type: string,
+        /// Content.
+        content: user-content,
+        /// Display.
+        display: bool,
+        /// Details.
+        details: option<json>,
+    }
+    /// Message Delivery.
+    enum message-delivery {
+        /// Steer.
+        steer,
+        /// FollowUp.
+        follow-up,
+        /// NextTurn.
+        next-turn,
+    }
+    /// User Message Delivery.
+    enum user-message-delivery {
+        /// Steer.
+        steer,
+        /// FollowUp.
+        follow-up,
+    }
+    /// Send Message Options.
+    record send-message-options {
+        /// Trigger turn.
+        trigger-turn: option<bool>,
+        /// Deliver as.
+        deliver-as: option<message-delivery>,
+    }
+    /// Send User Message Options.
+    record send-user-message-options {
+        /// Deliver as.
+        deliver-as: option<user-message-delivery>,
+    }
+    /// Source Info.
+    record source-info {
+        /// Path.
+        path: string,
+        /// Source.
+        source: string,
+        /// Scope.
+        scope: string,
+        /// Origin.
+        origin: string,
+        /// Base dir.
+        base-dir: option<string>,
+    }
+    /// Tool Info.
+    record tool-info {
+        /// Name.
+        name: string,
+        /// Description.
+        description: string,
+        /// Parameters.
+        parameters: json,
+        /// Source info.
+        source-info: source-info,
+    }
+    /// Slash Command Info.
+    record slash-command-info {
+        /// Name.
+        name: string,
+        /// Description.
+        description: option<string>,
+        /// Source.
+        source: string,
+        /// Source info.
+        source-info: source-info,
+    }
+    /// Extension Error.
+    record extension-error {
+        /// Extension path.
+        extension-path: string,
+        /// Event.
+        event: string,
+        /// Error.
+        %error: string,
+        /// Stack.
+        stack: option<string>,
+    }
+    /// A retained host capability.
+    resource extension-ui-context;
+    /// Context Usage.
+    record context-usage {
+        /// Tokens.
+        tokens: option<f64>,
+        /// Context window.
+        context-window: f64,
+        /// Percent.
+        percent: option<f64>,
+    }
+    /// Compact Options.
+    record compact-options {
+        /// Custom instructions.
+        custom-instructions: option<string>,
+        /// On complete.
+        on-complete: option<compact-options-on-complete-callback>,
+        /// On error.
+        on-error: option<compact-options-on-error-callback>,
+    }
+    /// New Session Command Options.
+    record new-session-command-options {
+        /// Parent session.
+        parent-session: option<string>,
+        /// Setup.
+        setup: option<new-session-command-options-setup-callback>,
+        /// With session.
+        with-session: option<with-session>,
+    }
+    /// Fork Position.
+    enum fork-position {
+        /// Before.
+        before,
+        /// At.
+        at,
+    }
+    /// Fork Options.
+    record fork-options {
+        /// Position.
+        position: option<fork-position>,
+        /// With session.
+        with-session: option<with-session>,
+    }
+    /// Switch Session Options.
+    record switch-session-options {
+        /// With session.
+        with-session: option<with-session>,
+    }
+    /// Navigate Tree Options.
+    record navigate-tree-options {
+        /// Summarize.
+        summarize: option<bool>,
+        /// Custom instructions.
+        custom-instructions: option<string>,
+        /// Replace instructions.
+        replace-instructions: option<bool>,
+        /// Label.
+        label: option<string>,
+    }
+    /// Session Outcome.
+    record session-outcome {
+        /// Cancelled.
+        cancelled: bool,
+    }
+    /// New Session Options.
+    record new-session-options {
+        /// Id.
+        id: option<string>,
+        /// Parent session.
+        parent-session: option<string>,
+    }
+    /// Session Context.
+    record session-context {
+        /// Messages.
+        messages: list<json>,
+        /// Thinking level.
+        thinking-level: string,
+        /// Model.
+        model: option<session-model>,
+    }
+    /// Session Model.
+    record session-model {
+        /// Provider.
+        provider: string,
+        /// Model id.
+        model-id: string,
+    }
+    /// Auth Status.
+    record auth-status {
+        /// Configured.
+        configured: bool,
+        /// Source.
+        source: option<string>,
+        /// Label.
+        label: option<string>,
+    }
+    /// Resolved Request Auth.
+    variant resolved-request-auth {
+        /// Success.
+        success(resolved-request-auth-success),
+        /// Failure.
+        failure(resolved-request-auth-failure),
+    }
+    /// Thinking Level Map.
+    type thinking-level-map = list<tuple<thinking-level, option<string>>>;
+    /// Model Cost.
+    record model-cost {
+        /// Input.
+        input: f64,
+        /// Output.
+        output: f64,
+        /// Cache read.
+        cache-read: f64,
+        /// Cache write.
+        cache-write: f64,
+    }
+    /// Modality.
+    enum modality {
+        /// Text.
+        text,
+        /// Image.
+        image,
+    }
+    /// Model.
+    record model {
+        /// Id.
+        id: string,
+        /// Name.
+        name: string,
+        /// Api.
+        api: string,
+        /// Provider.
+        provider: string,
+        /// Base url.
+        base-url: string,
+        /// Reasoning.
+        reasoning: bool,
+        /// Thinking level map.
+        thinking-level-map: option<thinking-level-map>,
+        /// Input.
+        input: list<modality>,
+        /// Cost.
+        cost: model-cost,
+        /// Context window.
+        context-window: f64,
+        /// Max tokens.
+        max-tokens: f64,
+        /// Headers.
+        headers: option<list<tuple<string, string>>>,
+        /// Compat.
+        compat: option<model-compat>,
+    }
+    /// Model Compat.
+    variant model-compat {
+        /// OpenAICompletions.
+        open-ai-completions(open-ai-completions-compat),
+        /// OpenAIResponses.
+        open-ai-responses(open-ai-responses-compat),
+        /// AnthropicMessages.
+        anthropic-messages(anthropic-messages-compat),
+    }
+    /// Open AICompletions Compat.
+    record open-ai-completions-compat {
+        /// Supports store.
+        supports-store: option<bool>,
+        /// Supports developer role.
+        supports-developer-role: option<bool>,
+        /// Supports reasoning effort.
+        supports-reasoning-effort: option<bool>,
+        /// Supports usage in streaming.
+        supports-usage-in-streaming: option<bool>,
+        /// Max tokens field.
+        max-tokens-field: option<string>,
+        /// Requires tool result name.
+        requires-tool-result-name: option<bool>,
+        /// Requires assistant after tool result.
+        requires-assistant-after-tool-result: option<bool>,
+        /// Requires thinking as text.
+        requires-thinking-as-text: option<bool>,
+        /// Requires reasoning content on assistant messages.
+        requires-reasoning-content-on-assistant-messages: option<bool>,
+        /// Thinking format.
+        thinking-format: option<string>,
+        /// Open router routing.
+        open-router-routing: option<open-router-routing>,
+        /// Vercel gateway routing.
+        vercel-gateway-routing: option<vercel-gateway-routing>,
+        /// Zai tool stream.
+        zai-tool-stream: option<bool>,
+        /// Supports strict mode.
+        supports-strict-mode: option<bool>,
+        /// Cache control format.
+        cache-control-format: option<string>,
+        /// Send session affinity headers.
+        send-session-affinity-headers: option<bool>,
+        /// Supports long cache retention.
+        supports-long-cache-retention: option<bool>,
+    }
+    /// Open AIResponses Compat.
+    record open-ai-responses-compat {
+        /// Send session id header.
+        send-session-id-header: option<bool>,
+        /// Supports long cache retention.
+        supports-long-cache-retention: option<bool>,
+    }
+    /// Anthropic Messages Compat.
+    record anthropic-messages-compat {
+        /// Supports eager tool input streaming.
+        supports-eager-tool-input-streaming: option<bool>,
+        /// Supports long cache retention.
+        supports-long-cache-retention: option<bool>,
+    }
+    /// Open Router Routing.
+    record open-router-routing {
+        /// Allow fallbacks.
+        allow-fallbacks: option<bool>,
+        /// Require parameters.
+        require-parameters: option<bool>,
+        /// Data collection.
+        data-collection: option<string>,
+        /// Zdr.
+        zdr: option<bool>,
+        /// Enforce distillable text.
+        enforce-distillable-text: option<bool>,
+        /// Order.
+        order: option<list<string>>,
+        /// Only.
+        only: option<list<string>>,
+        /// Ignore.
+        ignore: option<list<string>>,
+        /// Quantizations.
+        quantizations: option<list<string>>,
+        /// Sort.
+        sort: option<routing-sort>,
+        /// Max price.
+        max-price: option<max-price>,
+        /// Preferred min throughput.
+        preferred-min-throughput: option<routing-percentiles>,
+        /// Preferred max latency.
+        preferred-max-latency: option<routing-percentiles>,
+    }
+    /// Routing Sort.
+    variant routing-sort {
+        /// Name.
+        name(string),
+        /// Fields.
+        fields(routing-sort-fields),
+    }
+    /// Number Or String.
+    variant number-or-string {
+        /// Number.
+        number(f64),
+        /// String.
+        %string(string),
+    }
+    /// Max Price.
+    record max-price {
+        /// Prompt.
+        prompt: option<number-or-string>,
+        /// Completion.
+        completion: option<number-or-string>,
+        /// Image.
+        image: option<number-or-string>,
+        /// Audio.
+        audio: option<number-or-string>,
+        /// Request.
+        request: option<number-or-string>,
+    }
+    /// Routing Percentiles.
+    variant routing-percentiles {
+        /// Number.
+        number(f64),
+        /// Fields.
+        fields(routing-percentiles-fields),
+    }
+    /// Vercel Gateway Routing.
+    record vercel-gateway-routing {
+        /// Only.
+        only: option<list<string>>,
+        /// Order.
+        order: option<list<string>>,
+    }
+    /// Build System Prompt Options.
+    record build-system-prompt-options {
+        /// Custom prompt.
+        custom-prompt: option<string>,
+        /// Selected tools.
+        selected-tools: option<list<string>>,
+        /// Tool snippets.
+        tool-snippets: option<list<tuple<string, string>>>,
+        /// Prompt guidelines.
+        prompt-guidelines: option<list<string>>,
+        /// Append system prompt.
+        append-system-prompt: option<string>,
+        /// Cwd.
+        cwd: string,
+        /// Context files.
+        context-files: option<list<context-file>>,
+        /// Skills.
+        skills: option<list<skill>>,
+    }
+    /// Context File.
+    record context-file {
+        /// Path.
+        path: string,
+        /// Content.
+        content: string,
+    }
+    /// Skill.
+    record skill {
+        /// Name.
+        name: string,
+        /// Description.
+        description: string,
+        /// File path.
+        file-path: string,
+        /// Base dir.
+        base-dir: string,
+        /// Source info.
+        source-info: source-info,
+        /// Disable model invocation.
+        disable-model-invocation: bool,
+    }
+    /// Bash Result.
+    record bash-result {
+        /// Output.
+        output: string,
+        /// Exit code.
+        exit-code: option<f64>,
+        /// Cancelled.
+        cancelled: bool,
+        /// Truncated.
+        truncated: bool,
+        /// Full output path.
+        full-output-path: option<string>,
+    }
+    /// A retained host capability.
+    resource bash-operations;
+    /// Assistant Message Event.
+    variant assistant-message-event {
+        /// Start.
+        start(assistant-message-event-start),
+        /// TextStart.
+        text-start(assistant-message-event-text-start),
+        /// TextDelta.
+        text-delta(assistant-message-event-text-delta),
+        /// TextEnd.
+        text-end(assistant-message-event-text-end),
+        /// ThinkingStart.
+        thinking-start(assistant-message-event-thinking-start),
+        /// ThinkingDelta.
+        thinking-delta(assistant-message-event-thinking-delta),
+        /// ThinkingEnd.
+        thinking-end(assistant-message-event-thinking-end),
+        /// ToolcallStart.
+        toolcall-start(assistant-message-event-toolcall-start),
+        /// ToolcallDelta.
+        toolcall-delta(assistant-message-event-toolcall-delta),
+        /// ToolcallEnd.
+        toolcall-end(assistant-message-event-toolcall-end),
+        /// Done.
+        done(assistant-message-event-done),
+        /// Error.
+        %error(assistant-message-event-error),
+    }
+    /// Tool Call.
+    record tool-call {
+        /// Id.
+        id: string,
+        /// Name.
+        name: string,
+        /// Arguments.
+        arguments: json,
+        /// Thought signature.
+        thought-signature: option<string>,
+    }
+    /// Resources Discover Event.
+    record resources-discover-event {
+        /// Cwd.
+        cwd: string,
+        /// Reason.
+        reason: resources-discover-reason,
+    }
+    /// Resources Discover Reason.
+    enum resources-discover-reason {
+        /// Startup.
+        startup,
+        /// Reload.
+        reload,
+    }
+    /// Resources Discover Result.
+    record resources-discover-result {
+        /// Skill paths.
+        skill-paths: option<list<string>>,
+        /// Prompt paths.
+        prompt-paths: option<list<string>>,
+        /// Theme paths.
+        theme-paths: option<list<string>>,
+    }
+    /// Session Start Event.
+    record session-start-event {
+        /// Reason.
+        reason: session-start-reason,
+        /// Previous session file.
+        previous-session-file: option<string>,
+    }
+    /// Session Start Reason.
+    enum session-start-reason {
+        /// Startup.
+        startup,
+        /// Reload.
+        reload,
+        /// New.
+        new,
+        /// Resume.
+        resume,
+        /// Fork.
+        fork,
+    }
+    /// Session Before Switch Event.
+    record session-before-switch-event {
+        /// Reason.
+        reason: session-switch-reason,
+        /// Target session file.
+        target-session-file: option<string>,
+    }
+    /// Session Switch Reason.
+    enum session-switch-reason {
+        /// New.
+        new,
+        /// Resume.
+        resume,
+    }
+    /// Session Before Fork Event.
+    record session-before-fork-event {
+        /// Entry id.
+        entry-id: string,
+        /// Position.
+        position: fork-position,
+    }
+    /// Session Before Compact Event.
+    record session-before-compact-event {
+        /// Preparation.
+        preparation: compaction-preparation,
+        /// Branch entries.
+        branch-entries: list<json>,
+        /// Custom instructions.
+        custom-instructions: option<string>,
+        /// Signal.
+        signal: abort-signal,
+    }
+    /// Session Compact Event.
+    record session-compact-event {
+        /// Compaction entry.
+        compaction-entry: compaction-entry,
+        /// From extension.
+        from-extension: bool,
+    }
+    /// Session Shutdown Event.
+    record session-shutdown-event {
+        /// Reason.
+        reason: session-shutdown-reason,
+        /// Target session file.
+        target-session-file: option<string>,
+    }
+    /// Session Shutdown Reason.
+    enum session-shutdown-reason {
+        /// Quit.
+        quit,
+        /// Reload.
+        reload,
+        /// New.
+        new,
+        /// Resume.
+        resume,
+        /// Fork.
+        fork,
+    }
+    /// Tree Preparation.
+    record tree-preparation {
+        /// Target id.
+        target-id: string,
+        /// Old leaf id.
+        old-leaf-id: option<string>,
+        /// Common ancestor id.
+        common-ancestor-id: option<string>,
+        /// Entries to summarize.
+        entries-to-summarize: list<json>,
+        /// User wants summary.
+        user-wants-summary: bool,
+        /// Custom instructions.
+        custom-instructions: option<string>,
+        /// Replace instructions.
+        replace-instructions: option<bool>,
+        /// Label.
+        label: option<string>,
+    }
+    /// Session Before Tree Event.
+    record session-before-tree-event {
+        /// Preparation.
+        preparation: tree-preparation,
+        /// Signal.
+        signal: abort-signal,
+    }
+    /// Session Tree Event.
+    record session-tree-event {
+        /// New leaf id.
+        new-leaf-id: option<string>,
+        /// Old leaf id.
+        old-leaf-id: option<string>,
+        /// Summary entry.
+        summary-entry: option<json>,
+        /// From extension.
+        from-extension: option<bool>,
+    }
+    /// Context Event.
+    record context-event {
+        /// Messages.
+        messages: list<json>,
+    }
+    /// Context Event Result.
+    record context-event-result {
+        /// Messages.
+        messages: option<list<json>>,
+    }
+    /// Before Provider Request Event.
+    record before-provider-request-event {
+        /// Payload.
+        payload: json,
+    }
+    /// After Provider Response Event.
+    record after-provider-response-event {
+        /// Status.
+        status: f64,
+        /// Headers.
+        headers: list<tuple<string, string>>,
+    }
+    /// Before Agent Start Event.
+    record before-agent-start-event {
+        /// Prompt.
+        prompt: string,
+        /// Images.
+        images: option<list<image-content>>,
+        /// System prompt.
+        system-prompt: string,
+        /// System prompt options.
+        system-prompt-options: build-system-prompt-options,
+    }
+    /// Agent Start Event.
+    record agent-start-event {
+    }
+    /// Agent End Event.
+    record agent-end-event {
+        /// Messages.
+        messages: list<json>,
+    }
+    /// Turn Start Event.
+    record turn-start-event {
+        /// Turn index.
+        turn-index: f64,
+        /// Timestamp.
+        timestamp: f64,
+    }
+    /// Turn End Event.
+    record turn-end-event {
+        /// Turn index.
+        turn-index: f64,
+        /// Message.
+        message: json,
+        /// Tool results.
+        tool-results: list<json>,
+    }
+    /// Message Start Event.
+    record message-start-event {
+        /// Message.
+        message: json,
+    }
+    /// Message End Event.
+    record message-end-event {
+        /// Message.
+        message: json,
+    }
+    /// Message Update Event.
+    record message-update-event {
+        /// Message.
+        message: json,
+        /// Assistant message event.
+        assistant-message-event: assistant-message-event,
+    }
+    /// Tool Execution Start Event.
+    record tool-execution-start-event {
+        /// Tool call id.
+        tool-call-id: string,
+        /// Tool name.
+        tool-name: string,
+        /// Args.
+        args: json,
+    }
+    /// Tool Execution Update Event.
+    record tool-execution-update-event {
+        /// Tool call id.
+        tool-call-id: string,
+        /// Tool name.
+        tool-name: string,
+        /// Args.
+        args: json,
+        /// Partial result.
+        partial-result: json,
+    }
+    /// Tool Execution End Event.
+    record tool-execution-end-event {
+        /// Tool call id.
+        tool-call-id: string,
+        /// Tool name.
+        tool-name: string,
+        /// Result.
+        %result: json,
+        /// Is error.
+        is-error: bool,
+    }
+    /// Model Select Event.
+    record model-select-event {
+        /// Model.
+        model: model,
+        /// Previous model.
+        previous-model: option<model>,
+        /// Source.
+        source: model-select-source,
+    }
+    /// Model Select Source.
+    enum model-select-source {
+        /// Set.
+        set,
+        /// Cycle.
+        cycle,
+        /// Restore.
+        restore,
+    }
+    /// Thinking Level Select Event.
+    record thinking-level-select-event {
+        /// Level.
+        level: thinking-level,
+        /// Previous level.
+        previous-level: thinking-level,
+    }
+    /// User Bash Event.
+    record user-bash-event {
+        /// Command.
+        command: string,
+        /// Exclude from context.
+        exclude-from-context: bool,
+        /// Cwd.
+        cwd: string,
+    }
+    /// Input Event.
+    record input-event {
+        /// Text.
+        text: string,
+        /// Images.
+        images: option<list<image-content>>,
+        /// Source.
+        source: input-source,
+    }
+    /// Input Source.
+    enum input-source {
+        /// Interactive.
+        interactive,
+        /// Rpc.
+        rpc,
+        /// Extension.
+        extension,
+    }
+    /// Input Event Result.
+    variant input-event-result {
+        /// Continue.
+        continue,
+        /// Transform.
+        transform(input-event-result-transform),
+        /// Handled.
+        handled,
+    }
+    /// Tool Call Event.
+    record tool-call-event {
+        /// Tool call id.
+        tool-call-id: string,
+        /// Tool name.
+        tool-name: string,
+        /// Input.
+        input: json,
+    }
+    /// Tool Result Event.
+    record tool-result-event {
+        /// Tool call id.
+        tool-call-id: string,
+        /// Tool name.
+        tool-name: string,
+        /// Input.
+        input: json,
+        /// Content.
+        content: list<content-part>,
+        /// Is error.
+        is-error: bool,
+        /// Details.
+        details: option<json>,
+    }
+    /// Tool Call Event Result.
+    record tool-call-event-result {
+        /// Block.
+        block: option<bool>,
+        /// Reason.
+        reason: option<string>,
+    }
+    /// Tool Result Event Result.
+    record tool-result-event-result {
+        /// Content.
+        content: option<list<content-part>>,
+        /// Details.
+        details: option<json>,
+        /// Is error.
+        is-error: option<bool>,
+    }
+    /// Message End Event Result.
+    record message-end-event-result {
+        /// Message.
+        message: option<json>,
+    }
+    /// Before Agent Start Event Result.
+    record before-agent-start-event-result {
+        /// Message.
+        message: option<custom-message>,
+        /// System prompt.
+        system-prompt: option<string>,
+    }
+    /// Session Before Switch Result.
+    record session-before-switch-result {
+        /// Cancel.
+        cancel: option<bool>,
+    }
+    /// Session Before Fork Result.
+    record session-before-fork-result {
+        /// Cancel.
+        cancel: option<bool>,
+        /// Skip conversation restore.
+        skip-conversation-restore: option<bool>,
+    }
+    /// Session Before Compact Result.
+    record session-before-compact-result {
+        /// Cancel.
+        cancel: option<bool>,
+        /// Compaction.
+        compaction: option<compaction-result>,
+    }
+    /// Session Before Tree Result.
+    record session-before-tree-result {
+        /// Cancel.
+        cancel: option<bool>,
+        /// Summary.
+        summary: option<branch-summary>,
+        /// Custom instructions.
+        custom-instructions: option<string>,
+        /// Replace instructions.
+        replace-instructions: option<bool>,
+        /// Label.
+        label: option<string>,
+    }
+    /// Branch Summary.
+    record branch-summary {
+        /// Summary.
+        summary: string,
+        /// Details.
+        details: option<json>,
+    }
+    /// User Bash Event Result.
+    record user-bash-event-result {
+        /// Operations.
+        operations: option<bash-operations>,
+        /// Result.
+        %result: option<bash-result>,
+    }
+    /// Compaction Result.
+    record compaction-result {
+        /// Summary.
+        summary: string,
+        /// First kept entry id.
+        first-kept-entry-id: string,
+        /// Tokens before.
+        tokens-before: f64,
+        /// Details.
+        details: option<json>,
+    }
+    /// Compaction Settings.
+    record compaction-settings {
+        /// Enabled.
+        enabled: bool,
+        /// Reserve tokens.
+        reserve-tokens: f64,
+        /// Keep recent tokens.
+        keep-recent-tokens: f64,
+    }
+    /// File Operations.
+    record file-operations {
+        /// Read.
+        read: list<string>,
+        /// Written.
+        written: list<string>,
+        /// Edited.
+        edited: list<string>,
+    }
+    /// Compaction Preparation.
+    record compaction-preparation {
+        /// First kept entry id.
+        first-kept-entry-id: string,
+        /// Messages to summarize.
+        messages-to-summarize: list<json>,
+        /// Turn prefix messages.
+        turn-prefix-messages: list<json>,
+        /// Is split turn.
+        is-split-turn: bool,
+        /// Tokens before.
+        tokens-before: f64,
+        /// Previous summary.
+        previous-summary: option<string>,
+        /// File ops.
+        file-ops: file-operations,
+        /// Settings.
+        settings: compaction-settings,
+    }
+    /// Compaction Entry.
+    record compaction-entry {
+        /// Id.
+        id: string,
+        /// Parent id.
+        parent-id: option<string>,
+        /// Timestamp.
+        timestamp: string,
+        /// Summary.
+        summary: string,
+        /// First kept entry id.
+        first-kept-entry-id: string,
+        /// Tokens before.
+        tokens-before: f64,
+        /// Details.
+        details: option<json>,
+        /// From hook.
+        from-hook: option<bool>,
+    }
+    /// Fields of the resolved-request-auth-success variant.
+    record resolved-request-auth-success {
+        /// Api key.
+        api-key: option<string>,
+        /// Headers.
+        headers: option<list<tuple<string, string>>>,
+    }
+    /// Fields of the resolved-request-auth-failure variant.
+    record resolved-request-auth-failure {
+        /// Error.
+        %error: string,
+    }
+    /// Fields of the routing-sort-fields variant.
+    record routing-sort-fields {
+        /// By.
+        by: option<string>,
+        /// Partition.
+        partition: option<option<string>>,
+    }
+    /// Fields of the routing-percentiles-fields variant.
+    record routing-percentiles-fields {
+        /// P50.
+        p50: option<f64>,
+        /// P75.
+        p75: option<f64>,
+        /// P90.
+        p90: option<f64>,
+        /// P99.
+        p99: option<f64>,
+    }
+    /// Fields of the assistant-message-event-start variant.
+    record assistant-message-event-start {
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-text-start variant.
+    record assistant-message-event-text-start {
+        /// Content index.
+        content-index: f64,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-text-delta variant.
+    record assistant-message-event-text-delta {
+        /// Content index.
+        content-index: f64,
+        /// Delta.
+        delta: string,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-text-end variant.
+    record assistant-message-event-text-end {
+        /// Content index.
+        content-index: f64,
+        /// Content.
+        content: string,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-thinking-start variant.
+    record assistant-message-event-thinking-start {
+        /// Content index.
+        content-index: f64,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-thinking-delta variant.
+    record assistant-message-event-thinking-delta {
+        /// Content index.
+        content-index: f64,
+        /// Delta.
+        delta: string,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-thinking-end variant.
+    record assistant-message-event-thinking-end {
+        /// Content index.
+        content-index: f64,
+        /// Content.
+        content: string,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-toolcall-start variant.
+    record assistant-message-event-toolcall-start {
+        /// Content index.
+        content-index: f64,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-toolcall-delta variant.
+    record assistant-message-event-toolcall-delta {
+        /// Content index.
+        content-index: f64,
+        /// Delta.
+        delta: string,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-toolcall-end variant.
+    record assistant-message-event-toolcall-end {
+        /// Content index.
+        content-index: f64,
+        /// Tool call.
+        tool-call: tool-call,
+        /// Partial.
+        partial: json,
+    }
+    /// Fields of the assistant-message-event-done variant.
+    record assistant-message-event-done {
+        /// Reason.
+        reason: string,
+        /// Message.
+        message: json,
+    }
+    /// Fields of the assistant-message-event-error variant.
+    record assistant-message-event-error {
+        /// Reason.
+        reason: string,
+        /// Error.
+        %error: json,
+    }
+    /// Fields of the input-event-result-transform variant.
+    record input-event-result-transform {
+        /// Text.
+        text: string,
+        /// Images.
+        images: option<list<image-content>>,
+    }
+    /// A retained author callback.
+    resource registered-command-options-get-argument-completions-callback;
+    /// A retained author callback.
+    resource registered-command-options-handler-callback;
+    /// A retained author callback.
+    resource extension-shortcut-options-handler-callback;
+    /// A retained author callback.
+    resource tool-definition-prepare-arguments-callback;
+    /// A retained author callback.
+    resource tool-definition-execute-callback;
+    /// A retained author callback.
+    resource compact-options-on-complete-callback;
+    /// A retained author callback.
+    resource compact-options-on-error-callback;
+    /// A retained author callback.
+    resource new-session-command-options-setup-callback;
+    /// A retained author callback.
+    resource abort-signal;
+    /// A retained author callback.
+    resource with-session;
+    /// A node in a flat session tree snapshot.
+    record session-tree-node-flat {
+        /// Arbitrary session entry.
+        entry: json,
+        /// Indices of the child nodes.
+        children: list<u32>,
+        /// Optional label.
+        label: option<string>,
+        /// Optional label timestamp.
+        label-timestamp: option<string>,
+    }
+    /// A session tree snapshot.
+    record session-tree-snapshot {
+        /// Flat nodes.
+        nodes: list<session-tree-node-flat>,
+        /// Root node indices.
+        roots: list<u32>,
+    }
+}

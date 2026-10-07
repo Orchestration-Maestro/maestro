@@ -1,5 +1,6 @@
 {
   "maestro-agent": "core",
+  "maestro-extensions-wasm": "core",
   "maestro": "dedicated",
   "maestro-models": "core",
   "maestro-credentials": "core",

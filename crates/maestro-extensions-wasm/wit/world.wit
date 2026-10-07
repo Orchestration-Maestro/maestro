@@ -1,0 +1,5 @@
+package maestro:extension;
+
+world extension {
+    import types;
+}

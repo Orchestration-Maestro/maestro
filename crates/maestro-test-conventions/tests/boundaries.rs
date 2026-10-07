@@ -556,3 +556,52 @@ fn wit_static_paths_decode_rust_string_literals() {
         assert!(error.contains("requires review"), "{literal}: {error}");
     }
 }
+
+#[test]
+fn guest_tool_definition_view_keeps_the_domain_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-extensions-wasm"]);
+    source(
+        &workspace,
+        "maestro-tools",
+        "src/lib.rs",
+        "pub struct ToolDefinition;",
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/extension.rs",
+        "pub struct ToolDefinition;",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for name in ["ToolRenderContext", "ToolRenderResultOptions"] {
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/extension.rs",
+            &format!("pub struct {name};"),
+        );
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains(name) && error.contains("belongs to maestro-tools"),
+            "{error}"
+        );
+    }
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/extension.rs",
+        "pub struct ToolDefinition;",
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/other.rs",
+        "pub struct ToolDefinition;",
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains("src/other.rs") && error.contains("belongs to maestro-tools"),
+        "{error}"
+    );
+}
