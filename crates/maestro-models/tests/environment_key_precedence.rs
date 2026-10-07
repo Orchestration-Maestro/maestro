@@ -47,16 +47,16 @@ fn provider_table_reports_each_configured_key() {
         let value = std::env::var("TEST_VALUE").unwrap();
         let expected = (!value.is_empty()).then_some(value);
         assert_eq!(
-            find_env_keys(&provider).unwrap(),
+            find_env_keys(&provider),
             expected.as_ref().map(|_| vec![key])
         );
         assert_credential_eq(
-            &(get_env_api_key(&provider).unwrap()),
+            &(get_env_api_key(&provider)),
             &(expected),
             "provider_table_reports_each_configured_key",
         );
         assert_credential_eq(
-            &(maestro_models::records::stream::get_env_api_key(&provider).unwrap()),
+            &(maestro_models::records::stream::get_env_api_key(&provider)),
             &(expected),
             "provider_table_reports_each_configured_key",
         );
@@ -100,11 +100,11 @@ fn account_tokens_keep_declared_precedence() {
             .map(|s| (*s).into())
             .collect();
         assert_eq!(
-            find_env_keys(&provider).unwrap(),
+            find_env_keys(&provider),
             (!expected.is_empty()).then_some(expected.clone())
         );
         assert_credential_eq(
-            &(get_env_api_key(&provider).unwrap()),
+            &(get_env_api_key(&provider)),
             &(expected.first().map(|k| std::env::var(k).unwrap())),
             "account_tokens_keep_declared_precedence",
         );
@@ -133,17 +133,17 @@ fn key_strings_keep_nonempty_whitespace() {
     if child() {
         let value = std::env::var("OPENAI_API_KEY").unwrap();
         assert_credential_eq(
-            &(get_env_api_key("openai").unwrap()),
+            &(get_env_api_key("openai")),
             &((!value.is_empty()).then_some(value.clone())),
             "key_strings_keep_nonempty_whitespace",
         );
         assert_eq!(
-            find_env_keys("openai").unwrap(),
+            find_env_keys("openai"),
             (!value.is_empty()).then_some(vec!["OPENAI_API_KEY".into()])
         );
         for provider in ["OPENAI", " openai ", "\u{feff}openai", "\u{85}openai"] {
-            assert!(find_env_keys(provider).unwrap().is_none());
-            assert!(get_env_api_key(provider).unwrap().is_none());
+            assert!(find_env_keys(provider).is_none());
+            assert!(get_env_api_key(provider).is_none());
         }
         return;
     }
@@ -159,10 +159,10 @@ fn key_strings_keep_nonempty_whitespace() {
 fn unknown_providers_do_not_search_arbitrary_variables() {
     if child() {
         for provider in ["unknown", "", "openai-codex", "UNKNOWN_API_KEY"] {
-            assert!(find_env_keys(provider).unwrap().is_none());
-            assert!(get_env_api_key(provider).unwrap().is_none());
+            assert!(find_env_keys(provider).is_none());
+            assert!(get_env_api_key(provider).is_none());
         }
-        assert!(find_env_keys("amazon-bedrock").unwrap().is_none());
+        assert!(find_env_keys("amazon-bedrock").is_none());
         return;
     }
     Fixture::new().run(
@@ -220,31 +220,22 @@ const INHERITED: &[(&str, &str)] = &[
 ];
 
 #[test]
-fn inherited_provider_names_keep_key_coercions() {
+fn unknown_provider_names_ignore_inherited_variables() {
     if child() {
         let provider = std::env::var("TEST_PROVIDER").unwrap();
-        let key = INHERITED.iter().find(|(p, _)| *p == provider).unwrap().1;
-        let value = std::env::var(key).ok().filter(|s| !s.is_empty());
-        assert_eq!(
-            find_env_keys(&provider).unwrap(),
-            value.as_ref().map(|_| vec![key.into()])
-        );
-        assert_credential_eq(
-            &(get_env_api_key(&provider).unwrap()),
-            &(value),
-            "inherited_provider_names_keep_key_coercions",
-        );
+        assert!(find_env_keys(&provider).is_none());
+        assert!(get_env_api_key(&provider).is_none());
         return;
     }
     let fixture = Fixture::new();
     for &(provider, key) in INHERITED {
         fixture.run(
-            "inherited_provider_names_keep_key_coercions",
+            "unknown_provider_names_ignore_inherited_variables",
             &[("TEST_PROVIDER", provider)],
         );
         for value in ["", "controlled-key"] {
             fixture.run(
-                "inherited_provider_names_keep_key_coercions",
+                "unknown_provider_names_ignore_inherited_variables",
                 &[("TEST_PROVIDER", provider), (key, value)],
             );
         }
@@ -255,11 +246,11 @@ fn vertex_key_preempts_all_ambient_requirements() {
     if child() {
         let key = std::env::var("GOOGLE_CLOUD_API_KEY").unwrap();
         assert_eq!(
-            find_env_keys("google-vertex").unwrap(),
+            find_env_keys("google-vertex"),
             (!key.is_empty()).then_some(vec!["GOOGLE_CLOUD_API_KEY".into()])
         );
         assert_credential_eq(
-            &(get_env_api_key("google-vertex").unwrap()),
+            &(get_env_api_key("google-vertex")),
             &((!key.is_empty()).then_some(key)),
             "vertex_key_preempts_all_ambient_requirements",
         );
@@ -275,10 +266,10 @@ fn vertex_key_preempts_all_ambient_requirements() {
 #[test]
 fn vertex_marker_requires_file_project_and_location() {
     if child() {
-        assert!(find_env_keys("google-vertex").unwrap().is_none());
+        assert!(find_env_keys("google-vertex").is_none());
         let expected = std::env::var("TEST_EXPECT").unwrap() == "yes";
         assert_credential_eq(
-            &(get_env_api_key("google-vertex").unwrap()),
+            &(get_env_api_key("google-vertex")),
             &(expected.then(|| "<authenticated>".into())),
             "vertex_marker_requires_file_project_and_location",
         );
@@ -359,7 +350,7 @@ fn vertex_explicit_path_masks_default_credentials() {
     if child() {
         let expected = std::env::var("TEST_EXPECT").unwrap() == "yes";
         assert_credential_eq(
-            &(get_env_api_key("google-vertex").unwrap()),
+            &(get_env_api_key("google-vertex")),
             &(expected.then(|| "<authenticated>".into())),
             "vertex_explicit_path_masks_default_credentials",
         );
@@ -411,7 +402,7 @@ fn vertex_probe_results_persist_within_process() {
         let exists = std::env::var("TEST_EXISTS").unwrap() == "yes";
         let expected = exists.then(|| "<authenticated>".to_owned());
         assert_credential_eq(
-            &(get_env_api_key("google-vertex").unwrap()),
+            &(get_env_api_key("google-vertex")),
             &(expected),
             "vertex_probe_results_persist_within_process",
         );
@@ -421,7 +412,7 @@ fn vertex_probe_results_persist_within_process() {
             std::fs::write(path, "").unwrap();
         }
         assert_credential_eq(
-            &(get_env_api_key("google-vertex").unwrap()),
+            &(get_env_api_key("google-vertex")),
             &(expected),
             "vertex_probe_results_persist_within_process",
         );
@@ -448,9 +439,9 @@ fn vertex_probe_results_persist_within_process() {
 fn bedrock_signals_return_only_authenticated_marker() {
     if child() {
         let expected = std::env::var("TEST_EXPECT").unwrap() == "yes";
-        assert!(find_env_keys("amazon-bedrock").unwrap().is_none());
+        assert!(find_env_keys("amazon-bedrock").is_none());
         assert_credential_eq(
-            &(get_env_api_key("amazon-bedrock").unwrap()),
+            &(get_env_api_key("amazon-bedrock")),
             &(expected.then(|| "<authenticated>".into())),
             "bedrock_signals_return_only_authenticated_marker",
         );
@@ -505,17 +496,17 @@ fn bedrock_signals_return_only_authenticated_marker() {
 fn environment_helpers_leave_output_streams_empty() {
     if child() {
         assert_credential_eq(
-            &(get_env_api_key("fireworks").unwrap()),
+            &(get_env_api_key("fireworks")),
             &(Some("controlled-key".into())),
             "environment_helpers_leave_output_streams_empty",
         );
-        assert!(find_env_keys("unknown").unwrap().is_none());
+        assert!(find_env_keys("unknown").is_none());
         assert_credential_eq(
-            &(get_env_api_key("amazon-bedrock").unwrap()),
+            &(get_env_api_key("amazon-bedrock")),
             &(Some("<authenticated>".into())),
             "environment_helpers_leave_output_streams_empty",
         );
-        assert!(get_env_api_key("google-vertex").unwrap().is_none());
+        assert!(get_env_api_key("google-vertex").is_none());
         std::process::exit(0);
     }
     let output = Fixture::new().run(
@@ -535,7 +526,7 @@ fn vertex_non_utf8_home_finds_default_credentials() {
     use std::os::unix::ffi::OsStringExt;
     if child() {
         assert_credential_eq(
-            &get_env_api_key("google-vertex").unwrap(),
+            &get_env_api_key("google-vertex"),
             &Some("<authenticated>".into()),
             "vertex_non_utf8_home_finds_default_credentials",
         );
@@ -551,6 +542,37 @@ fn vertex_non_utf8_home_finds_default_credentials() {
     let output = fixture
         .command("vertex_non_utf8_home_finds_default_credentials")
         .env("HOME", home)
+        .env("GOOGLE_CLOUD_PROJECT", "controlled-project")
+        .env("GOOGLE_CLOUD_LOCATION", "controlled-location")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn vertex_non_utf8_explicit_path_finds_credentials() {
+    use std::os::unix::ffi::OsStringExt;
+    if child() {
+        assert_credential_eq(
+            &get_env_api_key("google-vertex"),
+            &Some("<authenticated>".into()),
+            "vertex_non_utf8_explicit_path_finds_credentials",
+        );
+        return;
+    }
+    let fixture = Fixture::new();
+    let credentials = fixture
+        .root
+        .join(std::ffi::OsString::from_vec(b"adc-\xff".to_vec()));
+    std::fs::write(&credentials, b"").unwrap();
+    let output = fixture
+        .command("vertex_non_utf8_explicit_path_finds_credentials")
+        .env("GOOGLE_APPLICATION_CREDENTIALS", credentials)
         .env("GOOGLE_CLOUD_PROJECT", "controlled-project")
         .env("GOOGLE_CLOUD_LOCATION", "controlled-location")
         .output()

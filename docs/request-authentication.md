@@ -19,23 +19,45 @@ sensitive surfaces and must not be logged.
 
 ## Environment credentials
 
-find_env_keys reports the nonempty environment-variable names for a provider in precedence order; it does not return their values or list ambient credential signals. get_env_api_key returns the first value or the ambient marker `<authenticated>`. Both return Result with None for ordinary absence. Provider names are exact and values are not trimmed.
+`find_env_keys(provider)` returns nonempty API-key variable names in precedence
+order, or `None`. `get_env_api_key(provider)` returns the first value, an ambient
+`<authenticated>` marker, or `None`. Values are not trimmed or cached. Provider
+names are exact. Neither function performs network requests or loads credentials.
 
-Anthropic checks ANTHROPIC_OAUTH_TOKEN before ANTHROPIC_API_KEY. GitHub Copilot checks COPILOT_GITHUB_TOKEN, GH_TOKEN and GITHUB_TOKEN in that order. Fireworks checks FIREWORKS_API_KEY. The built-in provider table also retains its inherited-name string coercions; an unknown provider otherwise has no key.
+Anthropic checks `ANTHROPIC_OAUTH_TOKEN` before `ANTHROPIC_API_KEY`. GitHub Copilot
+checks `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, then `GITHUB_TOKEN`. Fireworks checks
+`FIREWORKS_API_KEY`. Ambient signals never appear in `find_env_keys`.
 
-Google Vertex first checks GOOGLE_CLOUD_API_KEY. Without that key, it requires an existing GOOGLE_APPLICATION_CREDENTIALS path, or the conventional home/.config/gcloud/application_default_credentials.json path when no explicit path is set, plus GOOGLE_CLOUD_PROJECT or GCLOUD_PROJECT and GOOGLE_CLOUD_LOCATION. Only existence is checked; an explicit missing path does not fall back. The completed existence probe is cached for the process lifetime.
+Google Vertex first checks `GOOGLE_CLOUD_API_KEY`. Otherwise it requires an
+existing `GOOGLE_APPLICATION_CREDENTIALS` path, or the home directory's
+`.config/gcloud/application_default_credentials.json` when that variable is
+absent or empty, plus `GOOGLE_CLOUD_PROJECT` or `GCLOUD_PROJECT` and
+`GOOGLE_CLOUD_LOCATION`. An explicit missing path does not fall back. Only
+existence is checked, and that result is cached for the process lifetime.
+Credential paths retain native operating-system characters, including non-UTF-8
+paths on Unix.
 
-Native home-directory lookup uses `std::env::home_dir` unchanged: empty HOME on Unix or USERPROFILE on Windows falls back to the account home, and short nonempty USERPROFILE values are accepted. Native credential-path joining uses `PathBuf::join` without lexical normalization of dot or parent components; paths containing symlinks and parent components can therefore probe a different location.
+Amazon Bedrock recognizes `AWS_PROFILE`, paired `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY`, `AWS_BEARER_TOKEN_BEDROCK`,
+`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`, `AWS_CONTAINER_CREDENTIALS_FULL_URI`,
+or `AWS_WEB_IDENTITY_TOKEN_FILE`. Any nonempty alternative returns the marker
+without checking credential contents.
 
-Amazon Bedrock recognizes AWS_PROFILE, paired AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, AWS_BEARER_TOKEN_BEDROCK, AWS_CONTAINER_CREDENTIALS_RELATIVE_URI, AWS_CONTAINER_CREDENTIALS_FULL_URI or AWS_WEB_IDENTITY_TOKEN_FILE. Any nonempty alternative returns `<authenticated>` without loading or refreshing credentials. These signals never appear in find_env_keys.
+### Native behavior differences
 
-Native lookup uses the process environment and native filesystem. Browser lookup does not read page-defined environment shims. Mapped providers fail during discovery with ReferenceError and message process is not defined. Amazon Bedrock has no discovery keys but fails with the same error during value lookup. Unknown providers return None.
-
-The helpers emit no console output, execute no secret command, perform no network request and impose no global authentication gate. They expose environment values only through the deliberate value lookup. Stored credentials, login, token refresh and provider invocation remain separate operations.
+- Unknown providers, including `constructor` and other object-property names,
+  return `None`; no inherited-property lookup is performed.
+- Browser builds use the empty standard environment and return `None` rather
+  than reporting a missing-global error. Page-defined environment shims are not
+  read.
+- Standard Rust environment, home-directory and filesystem facilities are used
+  directly: non-UTF-8 secret values are not strings, home lookup uses the native
+  account fallback, and path joining does not lexically normalize components.
+  There is no runtime-specific environment recovery or import-readiness race.
 
 ```rust
 use maestro_models::{find_env_keys, get_env_api_key};
 
-assert!(find_env_keys("controlled-unknown-provider").unwrap().is_none());
-assert!(get_env_api_key("controlled-unknown-provider").unwrap().is_none());
+assert!(find_env_keys("controlled-unknown-provider").is_none());
+assert!(get_env_api_key("controlled-unknown-provider").is_none());
 ```

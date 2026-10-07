@@ -46,11 +46,11 @@ fn fireworks_key_is_reported_and_resolved() {
         return;
     }
     assert_eq!(
-        maestro_models::find_env_keys("fireworks").unwrap(),
+        maestro_models::find_env_keys("fireworks"),
         Some(vec!["FIREWORKS_API_KEY".into()])
     );
     assert_credential_eq(
-        &(maestro_models::get_env_api_key("fireworks").unwrap()),
+        &(maestro_models::get_env_api_key("fireworks")),
         &(Some("test-fireworks-key".into())),
         "fireworks_key_is_reported_and_resolved",
     );
