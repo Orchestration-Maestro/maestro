@@ -60,7 +60,7 @@ The application diagnostic command owner activates this command; it is not avail
 ```bash
 just test                                      # Run non-LLM tests without API keys
 just test                                      # Run all workspace tests
-just test -p maestro-models --test conformance  # Run a selected integration test
+just test -p maestro-models --test stream_observations  # Run a selected integration test
 ```
 
 All supported default test routes are isolated; tests use controlled fixtures rather than live providers. See [Rust build tooling](rust_build.md) for runner and platform limits.

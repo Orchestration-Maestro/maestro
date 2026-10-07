@@ -390,7 +390,7 @@ fn dev_watch_rebuilds_changed_sources_without_self_triggering() {
     let workspace = Workspace::new();
     std::fs::create_dir(workspace.root.join("src")).unwrap();
     std::fs::create_dir(workspace.root.join("target")).unwrap();
-    let cargo = workspace.command("builder", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s/target\"}\\n' \"$PWD\"; exit 0; fi; if test -f fail; then printf 'build\\n'; exit 29; fi; printf 'build\\n'; if test -f hold; then while test -f hold; do sleep 0.01; done; fi; printf 'generated' > target/output; printf 'done\\n'");
+    let cargo = workspace.command("builder", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s/target\",\"packages\":[{\"id\":\"watch-fixture\",\"name\":\"watch-fixture\",\"source\":null,\"manifest_path\":\"%s/Cargo.toml\"}],\"workspace_members\":[\"watch-fixture\"],\"resolve\":{\"nodes\":[{\"id\":\"watch-fixture\",\"dependencies\":[]}]}}\\n' \"$PWD\" \"$PWD\"; exit 0; fi; if test -f fail; then printf 'build\\n'; exit 29; fi; printf 'build\\n'; if test -f hold; then while test -f hold; do sleep 0.01; done; fi; printf 'generated' > target/output; printf 'done\\n'");
     let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
     assert!(watcher.is_file(), "missing persistent watcher");
     let mut child = Command::new(tooling())
@@ -1146,19 +1146,71 @@ fn selected_test_recipes_never_replay_unrequested_cases() {
 
 #[test]
 fn term_ignoring_case_times_out_and_removes_nested_scratch() {
-    cancelled_timed_case(false);
+    cancelled_timed_case(false, false);
 }
 
 #[test]
 fn interrupted_timed_runner_reaps_case_and_exits_143() {
-    cancelled_timed_case(true);
+    cancelled_timed_case(true, false);
 }
 
-fn cancelled_timed_case(interrupt: bool) {
+#[test]
+fn outer_deadline_reaps_nested_timed_cases_and_scratch() {
+    cancelled_timed_case(false, true);
+}
+
+#[test]
+fn outer_term_reaps_nested_timed_cases_and_scratch() {
+    cancelled_timed_case(true, true);
+}
+
+fn cancelled_timed_case(interrupt: bool, nested_timed: bool) {
     let workspace = Workspace::new();
     workspace.member("maestro-models", "maestro-models", "");
     let record_paths =
         ["case-a", "nested-a", "case-b", "nested-b"].map(|name| workspace.root.join(name));
+    let runner_paths = ["runner-a", "runner-b"].map(|name| workspace.root.join(name));
+    let nested_executable = if nested_timed {
+        let source = record_paths.as_chunks::<2>().0.iter().enumerate().map(|(index, paths)| {
+            let record = &paths[1];
+            format!(r#"
+#[test] fn nested_{index}() {{
+    unsafe extern "C" {{ fn signal(n: i32, handler: usize) -> usize; }}
+    unsafe {{ signal(15, 1); }}
+    std::fs::write({record:?}, format!("{{}}\n{{}}\n", std::env::var("HOME").unwrap(), std::process::id())).unwrap();
+    std::thread::sleep(std::time::Duration::from_secs(60));
+}}
+"#)
+        }).collect::<String>();
+        std::fs::create_dir_all(workspace.root.join("crates/maestro-models/tests")).unwrap();
+        std::fs::write(
+            workspace.root.join("crates/maestro-models/tests/nested.rs"),
+            source,
+        )
+        .unwrap();
+        let output = fixture_cargo()
+            .args([
+                "test",
+                "--test",
+                "nested",
+                "--no-run",
+                "--message-format=json",
+            ])
+            .current_dir(&workspace.root)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        Some(
+            String::from_utf8(output.stdout)
+                .unwrap()
+                .lines()
+                .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+                .find_map(|value| value["executable"].as_str().map(str::to_owned))
+                .unwrap(),
+        )
+    } else {
+        None
+    };
     let source = record_paths.as_chunks::<2>().0.iter().enumerate().map(|(index, paths)| {
         let record = &paths[0];
         let nested = &paths[1];
@@ -1173,9 +1225,11 @@ fn cancelled_timed_case(interrupt: bool) {
 }}
 "#,
         tool = tooling(),
-        script = format!(
-            "trap '' TERM; printf '%s\\n%s\\n' \"$HOME\" \"$$\" > {nested:?}; exec sleep 60"
-        )
+        script = if let Some(executable) = &nested_executable {
+            format!("printf '%s\\n%s\\n' \"$HOME\" \"$$\" > {runner:?}; exec {tool:?} --root {root:?} cargo-target {executable:?} --exact nested_{index}", runner = runner_paths[index], tool = tooling(), root = workspace.root)
+        } else {
+            format!("trap '' TERM; printf '%s\\n%s\\n' \"$HOME\" \"$$\" > {nested:?}; exec sleep 60")
+        }
     )}).collect::<String>();
     std::fs::write(
         workspace.root.join("crates/maestro-models/src/lib.rs"),
@@ -1183,7 +1237,7 @@ fn cancelled_timed_case(interrupt: bool) {
     )
     .unwrap();
     let output = fixture_cargo()
-        .args(["test", "--no-run", "--message-format=json"])
+        .args(["test", "--lib", "--no-run", "--message-format=json"])
         .current_dir(&workspace.root)
         .output()
         .unwrap();
@@ -1243,7 +1297,12 @@ fn cancelled_timed_case(interrupt: bool) {
         );
     }
     let result = receive.recv_timeout(std::time::Duration::from_secs(3));
-    let records = record_paths.map(|path| std::fs::read_to_string(path).unwrap());
+    let mut records = record_paths
+        .map(|path| std::fs::read_to_string(path).unwrap())
+        .to_vec();
+    if nested_timed {
+        records.extend(runner_paths.map(|path| std::fs::read_to_string(path).unwrap()));
+    }
     let alive = records
         .iter()
         .map(|record| {
@@ -1260,7 +1319,7 @@ fn cancelled_timed_case(interrupt: bool) {
         .map(|record| std::path::Path::new(record.lines().next().unwrap()).exists())
         .collect::<Vec<_>>();
     // Bound failed-regression cleanup too, without letting it count as runner cleanup.
-    if result.is_err() {
+    if result.is_err() || alive.iter().any(|alive| *alive) {
         for record in &records {
             let _ = Command::new("kill")
                 .args(["-KILL", record.lines().nth(1).unwrap()])
@@ -1302,7 +1361,7 @@ fn cancelled_timed_case(interrupt: bool) {
         remains.iter().all(|remains| !remains),
         "case scratch remains: {remains:?}"
     );
-    for records in records.as_chunks::<2>().0 {
+    for records in records[..4].as_chunks::<2>().0 {
         let outer = std::path::Path::new(records[0].lines().next().unwrap())
             .parent()
             .unwrap();
@@ -1427,13 +1486,30 @@ fn asset_globs_exclude_dot_files_but_recursive_copies_keep_them() {
 
 #[test]
 fn watch_selection_rebuilds_only_selected_packages() {
+    watch_selection_inputs(
+        &[
+            vec!["maestro-models"],
+            vec!["maestro-models", "maestro-agent"],
+            vec!["maestro-app"],
+            vec!["maestro-tui"],
+        ],
+        false,
+    );
+}
+
+#[test]
+fn watch_selection_ignores_unselected_package_edits() {
+    watch_selection_inputs(&[vec!["maestro-models"]], false);
+}
+
+#[test]
+fn watch_selection_observes_path_dependencies_and_shared_configuration() {
+    watch_selection_inputs(&[vec!["maestro-agent"]], true);
+}
+
+fn watch_selection_inputs(selections: &[Vec<&str>], dependencies: bool) {
     use std::io::BufRead;
-    for selected in [
-        vec!["maestro-models"],
-        vec!["maestro-models", "maestro-agent"],
-        vec!["maestro-app"],
-        vec!["maestro-tui"],
-    ] {
+    for selected in selections {
         let workspace = Workspace::new();
         let owners = [
             "maestro-models",
@@ -1443,7 +1519,15 @@ fn watch_selection_rebuilds_only_selected_packages() {
             "maestro-settings",
         ];
         for owner in owners {
-            workspace.member(owner, owner, "");
+            workspace.member(
+                owner,
+                owner,
+                if dependencies && owner == "maestro-agent" {
+                    "[dependencies]\nmaestro-models = { path = \"../maestro-models\" }"
+                } else {
+                    ""
+                },
+            );
             std::fs::write(
                 workspace.root.join(format!("crates/{owner}/src/lib.rs")),
                 "pub const VALUE: u8 = 1;",
@@ -1457,7 +1541,7 @@ fn watch_selection_rebuilds_only_selected_packages() {
             .unwrap();
         assert!(output.status.success(), "{output:?}");
         let real = workspace.cargo();
-        let cargo = workspace.command("observed-builder", &format!("if test \"$1\" = metadata; then exec {real:?} \"$@\"; fi; {real:?} \"$@\" || exit $?; printf 'built\\n'"));
+        let cargo = workspace.command("observed-builder", &format!("if test \"$1\" = metadata; then exec {real:?} \"$@\"; fi; {real:?} \"$@\" --message-format=json > artifacts || exit $?; printf 'built\\n'"));
         let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
         let mut command = Command::new(tooling());
         command
@@ -1466,7 +1550,7 @@ fn watch_selection_rebuilds_only_selected_packages() {
             .arg(cargo)
             .current_dir(&workspace.root)
             .stdout(std::process::Stdio::piped());
-        for owner in &selected {
+        for owner in selected {
             command.args(["--package", owner]);
         }
         let mut child = command.spawn().unwrap();
@@ -1485,12 +1569,70 @@ fn watch_selection_rebuilds_only_selected_packages() {
                 .unwrap(),
             "built"
         );
+        std::fs::write(
+            workspace.root.join("crates/maestro-settings/src/lib.rs"),
+            "pub const VALUE: u8 = 3;",
+        )
+        .unwrap();
+        let unrelated = receive.recv_timeout(std::time::Duration::from_millis(500));
+        if unrelated.is_ok() {
+            Command::new("kill")
+                .args(["-TERM", &child.id().to_string()])
+                .status()
+                .unwrap();
+            child.wait().unwrap();
+            reader.join().unwrap();
+            panic!("unselected package edit triggered a build: {unrelated:?}");
+        }
+        assert!(matches!(
+            unrelated,
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+        ));
         let artifact = |owner: &str| {
-            workspace
-                .root
-                .join(format!("target/debug/lib{}.rlib", owner.replace('-', "_")))
+            let messages = std::fs::read_to_string(workspace.root.join("artifacts")).unwrap();
+            messages
+                .lines()
+                .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+                .find_map(|message| {
+                    if message["reason"] != "compiler-artifact"
+                        || message["target"]["name"] != owner.replace('-', "_")
+                    {
+                        return None;
+                    }
+                    message["filenames"]
+                        .as_array()?
+                        .iter()
+                        .filter_map(|value| value.as_str())
+                        .find(|path| path.ends_with(".rlib"))
+                        .map(std::path::PathBuf::from)
+                })
         };
-        let before = owners.map(|owner| std::fs::read(artifact(owner)).ok());
+        let before = owners.map(|owner| artifact(owner).and_then(|path| std::fs::read(path).ok()));
+        if dependencies {
+            std::fs::write(
+                workspace.root.join("crates/maestro-models/src/lib.rs"),
+                "pub const VALUE: u8 = 4;",
+            )
+            .unwrap();
+            assert_eq!(
+                receive
+                    .recv_timeout(std::time::Duration::from_secs(20))
+                    .unwrap(),
+                "built"
+            );
+            assert_ne!(
+                before[0],
+                artifact("maestro-models").and_then(|path| std::fs::read(path).ok()),
+                "path dependency did not rebuild"
+            );
+            std::fs::write(workspace.root.join("Cargo.toml"), "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n# shared configuration change\n").unwrap();
+            assert_eq!(
+                receive
+                    .recv_timeout(std::time::Duration::from_secs(20))
+                    .unwrap(),
+                "built"
+            );
+        }
         for owner in owners {
             std::fs::write(
                 workspace.root.join(format!("crates/{owner}/src/lib.rs")),
@@ -1504,7 +1646,7 @@ fn watch_selection_rebuilds_only_selected_packages() {
                 .unwrap(),
             "built"
         );
-        let after = owners.map(|owner| std::fs::read(artifact(owner)).ok());
+        let after = owners.map(|owner| artifact(owner).and_then(|path| std::fs::read(path).ok()));
         Command::new("kill")
             .args(["-TERM", &child.id().to_string()])
             .status()
@@ -1512,7 +1654,7 @@ fn watch_selection_rebuilds_only_selected_packages() {
         assert_eq!(child.wait().unwrap().code(), Some(143));
         reader.join().unwrap();
         for (index, owner) in owners.iter().enumerate() {
-            if selected.contains(owner) {
+            if selected.contains(owner) || (dependencies && *owner == "maestro-models") {
                 assert!(before[index].is_some(), "selected artifact absent: {owner}");
                 assert_ne!(
                     before[index], after[index],

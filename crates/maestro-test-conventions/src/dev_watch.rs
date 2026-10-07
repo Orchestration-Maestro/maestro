@@ -2,7 +2,8 @@
 mod cargo_directory;
 
 use notify::{Event, EventKind, RecursiveMode, Watcher};
-use std::path::Path;
+use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 pub(super) fn main() -> ExitCode {
@@ -15,8 +16,23 @@ pub(super) fn main() -> ExitCode {
     }
 }
 
-fn input(path: &Path, root: &Path, target: &Path) -> bool {
+fn input(path: &Path, root: &Path, target: &Path, inputs: &Inputs) -> bool {
     if path.starts_with(target) || path.starts_with(root.join(".git")) {
+        return false;
+    }
+    let shared = path.strip_prefix(root).is_ok_and(|relative| {
+        matches!(
+            relative.to_str(),
+            Some("Cargo.toml" | "Cargo.lock" | "justfile" | "rust-toolchain.toml" | "mise.toml")
+        ) || relative.starts_with(".cargo")
+    });
+    let selected = inputs
+        .packages
+        .iter()
+        .filter(|(directory, _)| path.starts_with(directory))
+        .max_by_key(|(directory, _)| directory.components().count())
+        .is_some_and(|(_, selected)| *selected);
+    if !shared && !selected {
         return false;
     }
     matches!(
@@ -25,6 +41,92 @@ fn input(path: &Path, root: &Path, target: &Path) -> bool {
     ) || path
         .file_name()
         .is_some_and(|name| name == "Cargo.lock" || name == "justfile")
+}
+
+struct Inputs {
+    packages: Vec<(PathBuf, bool)>,
+}
+
+fn inputs(
+    cargo: &std::ffi::OsStr,
+    root: &Path,
+    selection: &[std::ffi::OsString],
+) -> Result<Inputs, String> {
+    let output = Command::new(cargo)
+        .args(["metadata", "--format-version=1", "--locked"])
+        .current_dir(root)
+        .output()
+        .map_err(|error| error.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).into_owned());
+    }
+    let metadata: serde_json::Value =
+        serde_json::from_slice(&output.stdout).map_err(|error| error.to_string())?;
+    let packages = metadata["packages"]
+        .as_array()
+        .ok_or("Cargo packages missing")?;
+    let mut selected = BTreeSet::new();
+    if selection.is_empty() {
+        for id in metadata["workspace_members"]
+            .as_array()
+            .ok_or("Cargo workspace members missing")?
+        {
+            selected.insert(id.as_str().ok_or("Cargo package ID missing")?.to_owned());
+        }
+    } else {
+        for name in selection {
+            let package = packages
+                .iter()
+                .find(|package| package["name"].as_str().is_some_and(|value| name == value))
+                .ok_or_else(|| format!("unknown watch package: {}", name.to_string_lossy()))?;
+            selected.insert(
+                package["id"]
+                    .as_str()
+                    .ok_or("Cargo package ID missing")?
+                    .to_owned(),
+            );
+        }
+    }
+    let nodes = metadata["resolve"]["nodes"]
+        .as_array()
+        .ok_or("Cargo dependency graph missing")?;
+    let mut pending = selected.iter().cloned().collect::<Vec<_>>();
+    while let Some(id) = pending.pop() {
+        let node = nodes
+            .iter()
+            .find(|node| node["id"].as_str() == Some(&id))
+            .ok_or("Cargo dependency node missing")?;
+        for dependency in node["dependencies"]
+            .as_array()
+            .ok_or("Cargo dependencies missing")?
+        {
+            let dependency = dependency.as_str().ok_or("Cargo dependency ID missing")?;
+            if selected.insert(dependency.to_owned()) {
+                pending.push(dependency.to_owned());
+            }
+        }
+    }
+    let mut inputs = Inputs {
+        packages: Vec::new(),
+    };
+    for package in packages
+        .iter()
+        .filter(|package| package["source"].is_null())
+    {
+        let manifest = Path::new(
+            package["manifest_path"]
+                .as_str()
+                .ok_or("Cargo manifest path missing")?,
+        );
+        inputs.packages.push((
+            manifest
+                .parent()
+                .ok_or("Cargo package directory missing")?
+                .to_owned(),
+            selected.contains(package["id"].as_str().ok_or("Cargo package ID missing")?),
+        ));
+    }
+    Ok(inputs)
 }
 
 fn run() -> Result<(), String> {
@@ -38,6 +140,7 @@ fn run() -> Result<(), String> {
         }
         packages.push(args.next().ok_or("expected package name")?);
     }
+    let inputs = inputs(&cargo, &root, &packages)?;
     let mut selection = Vec::new();
     if packages.is_empty() {
         selection.push(std::ffi::OsString::from("--workspace"));
@@ -56,6 +159,13 @@ fn run() -> Result<(), String> {
     watcher
         .watch(&root, RecursiveMode::Recursive)
         .map_err(|error| error.to_string())?;
+    for (directory, selected) in &inputs.packages {
+        if *selected && !directory.starts_with(&root) {
+            watcher
+                .watch(directory, RecursiveMode::Recursive)
+                .map_err(|error| error.to_string())?;
+        }
+    }
     loop {
         let status = Command::new(&cargo)
             .args(["build", "--locked"])
@@ -71,7 +181,10 @@ fn run() -> Result<(), String> {
                 .map_err(|error| error.to_string())?
                 .map_err(|error| error.to_string())?;
             if !matches!(event.kind, EventKind::Access(_))
-                && event.paths.iter().any(|path| input(path, &root, &target))
+                && event
+                    .paths
+                    .iter()
+                    .any(|path| input(path, &root, &target, &inputs))
             {
                 // Coalesce events already queued, retaining changes during the next build.
                 while let Ok(event) = receive.try_recv() {

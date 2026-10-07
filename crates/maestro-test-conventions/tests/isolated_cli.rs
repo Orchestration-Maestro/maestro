@@ -223,7 +223,7 @@ fn source_launch_forwards_cwd_and_literal_arguments() {
         "pwd; for arg; do printf '%s\\0' \"$arg\"; done",
     );
     std::fs::copy(app, target.join("debug/maestro")).unwrap();
-    let cargo = workspace.command("cargo", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s\"}\\n' \"$CARGO_TARGET_DIR\"; else test \"$1\" = build; fi");
+    let cargo = workspace.command("cargo", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s\"}\\n' \"$CARGO_TARGET_DIR\"; else test \"$1\" = build; printf '{\"reason\":\"compiler-artifact\",\"target\":{\"name\":\"maestro\",\"kind\":[\"bin\"]},\"executable\":\"%s/debug/maestro\"}\\n' \"$CARGO_TARGET_DIR\"; fi");
     let args = [
         "",
         " space ",
@@ -269,6 +269,60 @@ fn source_launch_forwards_cwd_and_literal_arguments() {
     }
 }
 
+#[test]
+fn source_launch_uses_configured_native_artifact_without_running_stale_binary() {
+    let version = Command::new("rustc").arg("-vV").output().unwrap();
+    assert!(version.status.success());
+    let text = String::from_utf8(version.stdout).unwrap();
+    let native = text
+        .lines()
+        .find_map(|line| line.strip_prefix("host: "))
+        .unwrap();
+    let mut failures = Vec::new();
+    for shell in ["bash", "powershell"] {
+        for stale in [false, true] {
+            let workspace = Workspace::new();
+            workspace.member("maestro", "maestro", "");
+            std::fs::write(
+                workspace.root.join("crates/maestro/src/main.rs"),
+                "fn main() { println!(\"fresh configured binary\"); }",
+            )
+            .unwrap();
+            std::fs::create_dir(workspace.root.join(".cargo")).unwrap();
+            std::fs::write(
+                workspace.root.join(".cargo/config.toml"),
+                format!("[build]\ntarget = {native:?}\n"),
+            )
+            .unwrap();
+            let target = workspace.root.join("target");
+            if stale {
+                std::fs::create_dir_all(target.join("debug")).unwrap();
+                let app = workspace.command("stale-source", "printf 'stale binary\\n'");
+                std::fs::copy(app, target.join("debug/maestro")).unwrap();
+            }
+            let real = workspace.cargo();
+            let cargo = workspace.command(
+                "native-source-builder",
+                &format!("cd {root:?}; exec {real:?} \"$@\"", root = workspace.root),
+            );
+            let lock = Command::new(&cargo)
+                .arg("generate-lockfile")
+                .output()
+                .unwrap();
+            assert!(lock.status.success(), "{lock:?}");
+            let output = source_adapter(shell)
+                .env("CARGO", &cargo)
+                .env("CARGO_TARGET_DIR", &target)
+                .output()
+                .unwrap();
+            if !output.status.success() || output.stdout != b"fresh configured binary\n" {
+                failures.push(format!("{shell}, stale={stale}: {output:?}"));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
 fn source_adapter(shell: &str) -> Command {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scripts");
     if shell == "bash" {
@@ -290,7 +344,7 @@ fn source_no_env_keeps_each_shells_exact_scope() {
     std::fs::create_dir_all(target.join("debug")).unwrap();
     let app = workspace.command("environment-source", "env");
     std::fs::copy(app, target.join("debug/maestro")).unwrap();
-    let cargo = workspace.command("build-source", &format!(r#"env > {:?}/$1-environment; if test "$1" = metadata; then printf '{{"target_directory":"%s"}}\n' "$CARGO_TARGET_DIR"; else test "$1" = build; fi"#, workspace.root));
+    let cargo = workspace.command("build-source", &format!(r#"env > {:?}/$1-environment; if test "$1" = metadata; then printf '{{"target_directory":"%s"}}\n' "$CARGO_TARGET_DIR"; else test "$1" = build; printf '{{"reason":"compiler-artifact","target":{{"name":"maestro","kind":["bin"]}},"executable":"%s/debug/maestro"}}\n' "$CARGO_TARGET_DIR"; fi"#, workspace.root));
     let removed = "ANTHROPIC_API_KEY ANTHROPIC_OAUTH_TOKEN OPENAI_API_KEY GEMINI_API_KEY GROQ_API_KEY CEREBRAS_API_KEY XAI_API_KEY OPENROUTER_API_KEY ZAI_API_KEY MISTRAL_API_KEY MINIMAX_API_KEY MINIMAX_CN_API_KEY AI_GATEWAY_API_KEY OPENCODE_API_KEY COPILOT_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN GOOGLE_APPLICATION_CREDENTIALS GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT GOOGLE_CLOUD_LOCATION AWS_PROFILE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_REGION AWS_DEFAULT_REGION AWS_BEARER_TOKEN_BEDROCK AWS_CONTAINER_CREDENTIALS_RELATIVE_URI AWS_CONTAINER_CREDENTIALS_FULL_URI AWS_WEB_IDENTITY_TOKEN_FILE AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL AZURE_OPENAI_RESOURCE_NAME";
     let retained = [
         "KIMI_API_KEY",
@@ -396,7 +450,7 @@ fn source_launch_reports_missing_cargo_and_build_failures() {
         );
         assert!(output.stdout.is_empty());
         for code in [7, 0] {
-            let cargo = workspace.command("status-source", &format!("if test \"$1\" = metadata; then printf '{{\"target_directory\":\"%s\"}}\\n' \"$CARGO_TARGET_DIR\"; else exit {code}; fi"));
+            let cargo = workspace.command("status-source", &format!("if test \"$1\" = metadata; then printf '{{\"target_directory\":\"%s\"}}\\n' \"$CARGO_TARGET_DIR\"; else printf '{{\"reason\":\"compiler-artifact\",\"target\":{{\"name\":\"maestro\",\"kind\":[\"bin\"]}},\"executable\":\"%s/debug/maestro\"}}\\n' \"$CARGO_TARGET_DIR\"; exit {code}; fi"));
             let output = source_adapter(shell)
                 .env("CARGO", cargo)
                 .env("CARGO_TARGET_DIR", &target)

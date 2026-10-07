@@ -1,6 +1,8 @@
+use super::cargo_directory::{decode, field, string};
 use std::ffi::OsString;
+use std::io::BufRead;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 const REMOVED: &[&str] = &[
     "ANTHROPIC_API_KEY",
@@ -98,21 +100,53 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
     }
     let mut build = Command::new(&cargo);
     build
-        .args(["build", "-p", "maestro", "--locked"])
+        .args([
+            "build",
+            "-p",
+            "maestro",
+            "--locked",
+            "--message-format=json",
+        ])
         .current_dir(root);
     configure(&mut build);
-    let status = build
-        .status()
+    let mut child = build
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("repository tools: build source: {error}"))?;
+    let mut executable = None;
+    for line in std::io::BufReader::new(child.stdout.take().expect("piped build output")).lines() {
+        let line = line.map_err(|error| error.to_string())?;
+        match field(&line, "reason").map(string) {
+            Some("compiler-artifact") => {
+                let target = field(&line, "target").unwrap_or("{}");
+                if field(target, "name").map(string) == Some("maestro")
+                    && field(target, "kind") == Some("[\"bin\"]")
+                    && let Some(path) = field(&line, "executable").filter(|path| *path != "null")
+                {
+                    executable = Some(decode(string(path))?);
+                }
+            }
+            Some("compiler-message") => {
+                if let Some(rendered) = field(&line, "message")
+                    .and_then(|message| field(message, "rendered"))
+                    .filter(|rendered| *rendered != "null")
+                {
+                    eprint!("{}", decode(string(rendered))?);
+                }
+            }
+            _ => (),
+        }
+    }
+    let status = child
+        .wait()
         .map_err(|error| format!("repository tools: build source: {error}"))?;
     if !status.success() {
         return Ok(super::status_code(status));
     }
-    let target = super::cargo_directory::resolve(&cargo, root, &environment)?;
-    let mut application = Command::new(
-        target
-            .join("debug")
-            .join(format!("maestro{}", std::env::consts::EXE_SUFFIX)),
-    );
+    // Retain Cargo directory diagnostics without inferring the binary's layout.
+    let _target = super::cargo_directory::resolve(&cargo, root, &environment)?;
+    let mut application =
+        Command::new(executable.ok_or("repository tools: Cargo executable missing")?);
     application.args(args);
     configure(&mut application);
     application

@@ -217,7 +217,7 @@ mod process {
 
     fn spawn(command: &mut Command, timed: bool) -> Result<Child, String> {
         let mut owners = owners().lock().unwrap();
-        let leader = timed || std::env::var_os("MAESTRO_CASE_GROUP").is_none();
+        let leader = std::env::var_os("MAESTRO_CASE_GROUP").is_none();
         if leader {
             command.process_group(0);
         }

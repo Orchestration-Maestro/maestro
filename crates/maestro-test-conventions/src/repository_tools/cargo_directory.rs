@@ -23,7 +23,7 @@ pub(super) fn resolve(
     decode(string(value)).map(PathBuf::from)
 }
 
-fn decode(text: &str) -> Result<String, String> {
+pub(super) fn decode(text: &str) -> Result<String, String> {
     let mut decoded = String::new();
     let mut chars = text.chars();
     while let Some(character) = chars.next() {
