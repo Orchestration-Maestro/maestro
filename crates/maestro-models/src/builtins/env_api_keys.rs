@@ -1,6 +1,6 @@
 use crate::ThrownValue;
 mod platform;
-use platform::{EnvironmentValue, Host, Platform};
+use platform::{Host, Platform};
 use std::collections::HashMap;
 use std::sync::Mutex;
 #[derive(Default)]
@@ -16,8 +16,8 @@ static STATE: State = State {
 /// Report nonempty environment key names in provider precedence order.
 ///
 /// Ambient credentials are excluded. Values are not trimmed or cached. Native
-/// execution reads the process environment; browser shims use JavaScript truthiness.
-/// Host failures retain their thrown payload.
+/// execution reads the process environment. Browser mapped providers fail with
+/// a missing-process error; unknown providers return no keys.
 /// Bun empty-environment recovery caches its first read, including failure.
 pub fn find_env_keys(provider: &str) -> Result<Option<Vec<String>>, ThrownValue> {
     find_env_keys_with_platform(&Host, &STATE, provider)
@@ -25,7 +25,7 @@ pub fn find_env_keys(provider: &str) -> Result<Option<Vec<String>>, ThrownValue>
 /// Return the first configured environment value, or an ambient auth marker.
 ///
 /// Values are reread after filtering in precedence order, without trimming.
-/// Browser shim values are string-coerced only when returned.
+/// Browser mapped providers and Bedrock fail with a missing-process error.
 /// Host failures are returned and ordinary absence is `None`. Native execution
 /// uses process facilities; browser hosts cannot probe native credential files.
 /// Proc recovery and completed Vertex existence probes persist for the process.
@@ -114,11 +114,11 @@ fn read_key(
     p: &impl Platform,
     state: &State,
     key: &Key<'_>,
-) -> Result<Option<EnvironmentValue>, ThrownValue> {
+) -> Result<Option<String>, ThrownValue> {
     if let Some(value) = nonempty(p.env(key.name)?) {
         return Ok(Some(value));
     }
-    let recovered = get_proc_env(p, state, key.name)?.map(EnvironmentValue::string);
+    let recovered = get_proc_env(p, state, key.name)?;
     Ok(if key.inherited { None } else { recovered })
 }
 fn get_env_api_key_with_platform(
@@ -127,9 +127,7 @@ fn get_env_api_key_with_platform(
     provider: &str,
 ) -> Result<Option<String>, ThrownValue> {
     if let Some(key) = find_keys(p, state, provider)?.first() {
-        return read_key(p, state, key)?
-            .map(EnvironmentValue::into_string)
-            .transpose();
+        return read_key(p, state, key);
     }
     if provider == "google-vertex" {
         let credentials = has_vertex_adc_credentials(p, state)?;
@@ -143,15 +141,14 @@ fn get_env_api_key_with_platform(
         }
     }
     if provider == "amazon-bedrock"
-        && (bedrock(|key| p.env(key))?
-            || bedrock(|key| Ok(get_proc_env(p, state, key)?.map(EnvironmentValue::string)))?)
+        && (bedrock(|key| p.env(key))? || bedrock(|key| get_proc_env(p, state, key))?)
     {
         return Ok(Some("<authenticated>".into()));
     }
     Ok(None)
 }
 fn bedrock(
-    mut read: impl FnMut(&str) -> Result<Option<EnvironmentValue>, ThrownValue>,
+    mut read: impl FnMut(&str) -> Result<Option<String>, ThrownValue>,
 ) -> Result<bool, ThrownValue> {
     Ok(nonempty(read("AWS_PROFILE")?).is_some()
         || (nonempty(read("AWS_ACCESS_KEY_ID")?).is_some()
@@ -161,8 +158,8 @@ fn bedrock(
         || nonempty(read("AWS_CONTAINER_CREDENTIALS_FULL_URI")?).is_some()
         || nonempty(read("AWS_WEB_IDENTITY_TOKEN_FILE")?).is_some())
 }
-fn nonempty(value: Option<EnvironmentValue>) -> Option<EnvironmentValue> {
-    value.filter(EnvironmentValue::is_truthy)
+fn nonempty(value: Option<String>) -> Option<String> {
+    value.filter(|value| !value.is_empty())
 }
 fn has_vertex_adc_credentials(p: &impl Platform, state: &State) -> Result<bool, ThrownValue> {
     if let Some(value) = *state.adc.lock().unwrap() {
@@ -175,7 +172,7 @@ fn has_vertex_adc_credentials(p: &impl Platform, state: &State) -> Result<bool, 
         return Ok(false);
     }
     let path = match read(p, state, "GOOGLE_APPLICATION_CREDENTIALS")? {
-        Some(path) => path.into_string()?,
+        Some(path) => path,
         None => p.join(&p.home()?)?,
     };
     let exists = p.exists(&path);
@@ -185,15 +182,11 @@ fn has_vertex_adc_credentials(p: &impl Platform, state: &State) -> Result<bool, 
 #[path = "../../tests/support/environment_platform_checks.rs"]
 mod environment_platform_checks;
 
-fn read(
-    p: &impl Platform,
-    state: &State,
-    key: &str,
-) -> Result<Option<EnvironmentValue>, ThrownValue> {
+fn read(p: &impl Platform, state: &State, key: &str) -> Result<Option<String>, ThrownValue> {
     if let Some(value) = nonempty(p.env(key)?) {
         return Ok(Some(value));
     }
-    Ok(get_proc_env(p, state, key)?.map(EnvironmentValue::string))
+    get_proc_env(p, state, key)
 }
 fn get_proc_env(
     p: &impl Platform,

@@ -171,8 +171,8 @@ pub enum Transport {
     /// Auto value.
     Auto,
 }
-/// ProviderResponse supplied record. Header values are redacted in Debug.
-#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+/// ProviderResponse supplied record.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderResponse {
     /// Supplied status.
@@ -180,22 +180,6 @@ pub struct ProviderResponse {
     /// Supplied headers.
     #[serde(serialize_with = "serialize_json")]
     pub headers: serde_json::Map<String, serde_json::Value>,
-}
-struct RedactedHeaders<'a>(&'a serde_json::Map<String, serde_json::Value>);
-impl std::fmt::Debug for RedactedHeaders<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_map()
-            .entries(self.0.keys().map(|name| (name, "[REDACTED]")))
-            .finish()
-    }
-}
-impl std::fmt::Debug for ProviderResponse {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ProviderResponse")
-            .field("status", &self.status)
-            .field("headers", &RedactedHeaders(&self.headers))
-            .finish()
-    }
 }
 /// TextSignatureV1 supplied record.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -747,8 +731,8 @@ pub struct VercelGatewayRouting {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub order: Option<Vec<String>>,
 }
-/// Model supplied record. Header values are redacted in Debug.
-#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+/// Model supplied record.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Model {
     /// Supplied id.
@@ -783,26 +767,6 @@ pub struct Model {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_json", deserialize_with = "present_value")]
     pub compat: Option<serde_json::Value>,
-}
-
-impl std::fmt::Debug for Model {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Model")
-            .field("id", &self.id)
-            .field("name", &self.name)
-            .field("api", &self.api)
-            .field("provider", &self.provider)
-            .field("base_url", &self.base_url)
-            .field("reasoning", &self.reasoning)
-            .field("thinking_level_map", &self.thinking_level_map)
-            .field("input", &self.input)
-            .field("cost", &self.cost)
-            .field("context_window", &self.context_window)
-            .field("max_tokens", &self.max_tokens)
-            .field("headers", &self.headers.as_ref().map(RedactedHeaders))
-            .field("compat", &self.compat)
-            .finish()
-    }
 }
 
 fn present_value<'de, D: serde::Deserializer<'de>, T: serde::Deserialize<'de>>(

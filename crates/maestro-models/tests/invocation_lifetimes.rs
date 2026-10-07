@@ -1481,8 +1481,6 @@ fn diagnostic_errors_preserve_fields_and_code_kind() {
             message: "message".into(),
             stack: Some(String::new()),
             code,
-            errno: None,
-            cause: None,
         }));
         assert_eq!(
             extract_diagnostic_error(&v).unwrap(),
@@ -1499,8 +1497,6 @@ fn diagnostic_errors_preserve_fields_and_code_kind() {
         message: String::new(),
         stack: None,
         code: Some(ThrownValue::Number(f64::INFINITY)),
-        errno: None,
-        cause: None,
     }));
     let info = extract_diagnostic_error(&empty).unwrap();
     assert_eq!(info.name, None);
@@ -2123,50 +2119,4 @@ fn assistant_stream_is_exported_from_record_types() {
     let stream = maestro_models::records::types::AssistantMessageEventStream::new();
     stream.end(None);
     assert_eq!(ready(&mut stream.iter().next()), None);
-}
-
-#[test]
-fn provider_response_debug_redacts_every_header_value() {
-    let response = ProviderResponse {
-        status: 200.0,
-        headers: serde_json::json!({"Authorization":"controlled-auth-secret", "x-custom":"controlled-custom-secret"}).as_object().unwrap().clone(),
-    };
-    let debug = format!("{response:?}");
-    assert!(
-        !debug.contains("controlled-auth-secret"),
-        "Authorization leaked"
-    );
-    assert!(
-        !debug.contains("controlled-custom-secret"),
-        "custom header leaked"
-    );
-    assert!(debug.contains("Authorization") && debug.contains("x-custom"));
-    assert!(debug.contains("200"));
-    assert!(
-        serde_json::to_value(response).unwrap()["headers"]["Authorization"]
-            == "controlled-auth-secret",
-        "response serialization changed"
-    );
-}
-
-#[test]
-fn model_debug_redacts_every_header_value() {
-    let mut descriptor = model("header-debug");
-    descriptor.headers = Some(serde_json::json!({"Authorization":"controlled-model-auth-secret", "x-custom":"controlled-model-custom-secret"}).as_object().unwrap().clone());
-    let debug = format!("{descriptor:?}");
-    assert!(
-        !debug.contains("controlled-model-auth-secret"),
-        "Authorization leaked"
-    );
-    assert!(
-        !debug.contains("controlled-model-custom-secret"),
-        "custom header leaked"
-    );
-    assert!(debug.contains("Authorization") && debug.contains("x-custom"));
-    assert!(debug.contains("header-debug"));
-    assert!(
-        serde_json::to_value(descriptor).unwrap()["headers"]["Authorization"]
-            == "controlled-model-auth-secret",
-        "model serialization changed"
-    );
 }

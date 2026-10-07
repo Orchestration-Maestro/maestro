@@ -20,10 +20,6 @@ struct Controlled {
     windows: Cell<bool>,
     home_failure: Cell<bool>,
     join_failure: Cell<bool>,
-    process: Cell<bool>,
-    substitute_env: Cell<bool>,
-    host_values: RefCell<HashMap<String, (bool, ThrownValue)>>,
-    failures: RefCell<HashMap<String, platform::HostThrown>>,
     scripted: RefCell<HashMap<String, std::collections::VecDeque<Option<String>>>>,
 }
 impl Default for Controlled {
@@ -43,10 +39,6 @@ impl Default for Controlled {
             windows: Cell::new(false),
             home_failure: Cell::new(false),
             join_failure: Cell::new(false),
-            process: Cell::new(true),
-            substitute_env: Cell::new(false),
-            host_values: RefCell::new(HashMap::new()),
-            failures: RefCell::new(HashMap::new()),
             scripted: RefCell::new(HashMap::new()),
         }
     }
@@ -57,31 +49,14 @@ impl Controlled {
     }
 }
 impl Platform for Controlled {
-    fn env(&self, key: &str) -> Result<Option<EnvironmentValue>, ThrownValue> {
-        if !self.process.get() && !self.substitute_env.get() {
-            return Err(missing_process());
-        }
+    fn env(&self, key: &str) -> Result<Option<String>, ThrownValue> {
         self.log.borrow_mut().push(format!("env:{key}"));
-        if let Some(value) = self.failures.borrow().get(key) {
-            return Err(platform::host_thrown(value.clone()).unwrap());
-        }
-        if let Some((truthy, text)) = self.host_values.borrow().get(key) {
-            return Ok(Some(platform::host_environment_value(
-                *truthy,
-                text.clone(),
-            )));
-        }
         if let Some(values) = self.scripted.borrow_mut().get_mut(key)
             && let Some(value) = values.pop_front()
         {
-            return Ok(value.map(EnvironmentValue::string));
+            return Ok(value);
         }
-        Ok(self
-            .values
-            .borrow()
-            .get(key)
-            .cloned()
-            .map(EnvironmentValue::string))
+        Ok(self.values.borrow().get(key).cloned())
     }
     fn home(&self) -> Result<String, ThrownValue> {
         self.log.borrow_mut().push("home".into());
@@ -115,11 +90,7 @@ impl Platform for Controlled {
     }
     fn bun(&self) -> Result<bool, ThrownValue> {
         self.recovery_checks.set(self.recovery_checks.get() + 1);
-        if !self.process.get() {
-            Err(missing_process())
-        } else {
-            Ok(self.bun.get())
-        }
+        Ok(self.bun.get())
     }
     fn own_count(&self) -> Result<usize, ThrownValue> {
         Ok(self.own.get())
@@ -319,22 +290,6 @@ fn native_module_readiness_retries_adc_probe() {
     }
 }
 
-fn missing_process() -> ThrownValue {
-    ThrownValue::Error(Box::new(crate::Error {
-        name: "ReferenceError".into(),
-        message: "process is not defined".into(),
-        stack: None,
-        code: None,
-        errno: None,
-        cause: None,
-    }))
-}
-fn expect_host_failure(result: Result<Option<String>, ThrownValue>) -> ThrownValue {
-    match result {
-        Err(failure) => failure,
-        Ok(_) => panic!("expected host failure"),
-    }
-}
 fn assert_missing(result: Result<Option<String>, ThrownValue>) {
     match result {
         Err(ThrownValue::Error(e)) => {
@@ -346,70 +301,36 @@ fn assert_missing(result: Result<Option<String>, ThrownValue>) {
 }
 #[test]
 fn browser_process_absence_keeps_reference_error() {
-    for substitute in [false, true] {
-        let p = Controlled::default();
-        p.process.set(false);
-        p.native.set(false);
-        p.facilities.set([false; 3]);
-        p.substitute_env.set(substitute);
-        let state = State::default();
-        for provider in ["openai", "google-vertex"] {
-            assert_missing(get_env_api_key_with_platform(&p, &state, provider));
-            assert_missing(
-                find_env_keys_with_platform(&p, &state, provider).map(|v| v.map(|s| s.join(","))),
-            );
-        }
-        assert_missing(get_env_api_key_with_platform(&p, &state, "amazon-bedrock"));
-        assert!(
-            find_env_keys_with_platform(&p, &state, "amazon-bedrock")
-                .unwrap()
-                .is_none()
+    let p = platform::Browser;
+    let state = State::default();
+    for provider in [
+        "openai",
+        "anthropic",
+        "github-copilot",
+        "google-vertex",
+        "toString",
+        "__proto__",
+    ] {
+        assert_missing(get_env_api_key_with_platform(&p, &state, provider));
+        assert_missing(
+            find_env_keys_with_platform(&p, &state, provider).map(|v| v.map(|s| s.join(","))),
         );
+    }
+    assert_missing(get_env_api_key_with_platform(&p, &state, "amazon-bedrock"));
+    for provider in ["amazon-bedrock", "ordinary-unknown"] {
         assert!(
-            find_env_keys_with_platform(&p, &state, "ordinary-unknown")
-                .unwrap()
-                .is_none()
-        );
-        assert!(
-            get_env_api_key_with_platform(&p, &state, "ordinary-unknown")
+            find_env_keys_with_platform(&p, &state, provider)
                 .unwrap()
                 .is_none()
         );
     }
-}
-#[test]
-fn browser_shim_has_no_native_credential_files() {
-    let p = Controlled::default();
-    p.native.set(false);
-    p.facilities.set([false; 3]);
-    let state = State::default();
     assert!(
-        get_env_api_key_with_platform(&p, &state, "openai")
+        get_env_api_key_with_platform(&p, &state, "ordinary-unknown")
             .unwrap()
             .is_none()
     );
-    p.put("OPENAI_API_KEY", "direct");
-    assert_credential_eq(
-        &(get_env_api_key_with_platform(&p, &state, "openai").unwrap()),
-        &(Some("direct".into())),
-        "browser_shim_has_no_native_credential_files",
-    );
-    p.put("GOOGLE_CLOUD_PROJECT", "p");
-    p.put("GOOGLE_CLOUD_LOCATION", "l");
-    assert!(
-        get_env_api_key_with_platform(&p, &state, "google-vertex")
-            .unwrap()
-            .is_none()
-    );
-    p.facilities.set([true; 3]);
-    p.exists.set(true);
-    assert!(
-        get_env_api_key_with_platform(&p, &state, "google-vertex")
-            .unwrap()
-            .is_none()
-    );
-    assert!(!p.log.borrow().iter().any(|s| s.starts_with("exists:")));
-    assert_eq!(p.reads.get(), 0);
+    assert!(state.adc.lock().unwrap().is_none());
+    assert!(state.proc.lock().unwrap().is_none());
 }
 
 #[test]
@@ -783,185 +704,4 @@ fn bedrock_checks_direct_signals_before_proc_signals() {
                 .is_none()
         );
     }
-}
-
-#[test]
-fn environment_helpers_keep_domain_names() {
-    let source = include_str!("../../src/builtins/env_api_keys.rs");
-    assert!(source.contains("fn has_vertex_adc_credentials("));
-    assert!(source.contains("fn get_proc_env("));
-}
-
-#[test]
-fn host_getter_thrown_array_keeps_payload() {
-    let p = Controlled::default();
-    p.failures.borrow_mut().insert(
-        "OPENAI_API_KEY".into(),
-        platform::HostThrown::Json(r#"["controlled-error"]"#.into()),
-    );
-    let failure = expect_host_failure(get_env_api_key_with_platform(
-        &p,
-        &State::default(),
-        "openai",
-    ));
-    assert_eq!(
-        crate::format_thrown_value(&failure).unwrap(),
-        "controlled-error"
-    );
-    assert!(
-        matches!(failure, ThrownValue::Json(value) if value == serde_json::json!(["controlled-error"]))
-    );
-}
-
-#[test]
-fn host_getter_thrown_object_keeps_payload() {
-    let p = Controlled::default();
-    p.failures.borrow_mut().insert(
-        "OPENAI_API_KEY".into(),
-        platform::HostThrown::Json(r#"{"message":"blocked","code":"EHOST"}"#.into()),
-    );
-    let failure = expect_host_failure(get_env_api_key_with_platform(
-        &p,
-        &State::default(),
-        "openai",
-    ));
-    assert_eq!(
-        crate::format_thrown_value(&failure).unwrap(),
-        "[object Object]"
-    );
-    assert!(
-        matches!(failure, ThrownValue::Json(value) if value == serde_json::json!({"message":"blocked","code":"EHOST"}))
-    );
-}
-
-#[test]
-fn host_getter_thrown_error_keeps_metadata() {
-    let p = Controlled::default();
-    p.failures.borrow_mut().insert(
-        "OPENAI_API_KEY".into(),
-        platform::HostThrown::Error(Box::new(crate::Error {
-            name: "HostError".into(),
-            message: "blocked".into(),
-            stack: Some("controlled-stack".into()),
-            code: Some(ThrownValue::Json("EHOST".into())),
-            errno: Some(ThrownValue::Number(5.0)),
-            cause: Some(ThrownValue::Json(serde_json::json!({"message":"root"}))),
-        })),
-    );
-    let failure = expect_host_failure(get_env_api_key_with_platform(
-        &p,
-        &State::default(),
-        "openai",
-    ));
-    let diagnostic = crate::extract_diagnostic_error(&failure).unwrap();
-    assert_eq!(diagnostic.message, "blocked");
-    assert_eq!(diagnostic.name.as_deref(), Some("HostError"));
-    assert_eq!(diagnostic.stack.as_deref(), Some("controlled-stack"));
-    assert_eq!(
-        diagnostic.code,
-        Some(crate::DiagnosticCode::String("EHOST".into()))
-    );
-    let ThrownValue::Error(error) = failure else {
-        panic!("expected Error")
-    };
-    assert!(matches!(error.errno, Some(ThrownValue::Number(5.0))));
-    assert!(
-        matches!(error.cause, Some(ThrownValue::Json(value)) if value == serde_json::json!({"message":"root"}))
-    );
-}
-
-#[test]
-fn browser_boolean_profile_uses_truthiness() {
-    let p = Controlled::default();
-    p.host_values
-        .borrow_mut()
-        .insert("AWS_PROFILE".into(), (true, ThrownValue::Json(true.into())));
-    assert_credential_eq(
-        &(get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
-            .unwrap()
-            .as_deref()),
-        &(Some("<authenticated>")),
-        "browser_boolean_profile_uses_truthiness",
-    );
-}
-
-#[test]
-fn browser_numeric_key_is_discovered_and_coerced() {
-    let p = Controlled::default();
-    p.host_values
-        .borrow_mut()
-        .insert("OPENAI_API_KEY".into(), (true, ThrownValue::Number(1.0)));
-    assert_eq!(
-        find_env_keys_with_platform(&p, &State::default(), "openai").unwrap(),
-        Some(vec!["OPENAI_API_KEY".into()])
-    );
-    assert_credential_eq(
-        &(get_env_api_key_with_platform(&p, &State::default(), "openai")
-            .unwrap()
-            .as_deref()),
-        &(Some("1")),
-        "browser_numeric_key_is_discovered_and_coerced",
-    );
-}
-
-#[test]
-fn browser_falsy_values_remain_absent() {
-    for value in [ThrownValue::Number(0.0), ThrownValue::Json("".into())] {
-        let p = Controlled::default();
-        p.host_values
-            .borrow_mut()
-            .insert("OPENAI_API_KEY".into(), (false, value.clone()));
-        p.host_values
-            .borrow_mut()
-            .insert("AWS_PROFILE".into(), (false, value));
-        assert_eq!(
-            find_env_keys_with_platform(&p, &State::default(), "openai").unwrap(),
-            None
-        );
-        assert_credential_eq(
-            &(get_env_api_key_with_platform(&p, &State::default(), "openai").unwrap()),
-            &(None),
-            "browser_falsy_values_remain_absent",
-        );
-        assert_credential_eq(
-            &(get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock").unwrap()),
-            &(None),
-            "browser_falsy_values_remain_absent",
-        );
-    }
-}
-
-#[test]
-fn browser_discovery_and_ambient_checks_do_not_coerce_values() {
-    let p = Controlled::default();
-    let value = ThrownValue::StringCoercion(std::sync::Arc::new(|| {
-        Err(ThrownValue::Json("coercion failed".into()))
-    }));
-    p.host_values
-        .borrow_mut()
-        .insert("OPENAI_API_KEY".into(), (true, value.clone()));
-    p.host_values
-        .borrow_mut()
-        .insert("AWS_PROFILE".into(), (true, value));
-    assert_eq!(
-        find_env_keys_with_platform(&p, &State::default(), "openai").unwrap(),
-        Some(vec!["OPENAI_API_KEY".into()])
-    );
-    assert_credential_eq(
-        &(get_env_api_key_with_platform(&p, &State::default(), "amazon-bedrock")
-            .unwrap()
-            .as_deref()),
-        &(Some("<authenticated>")),
-        "browser_discovery_and_ambient_checks_do_not_coerce_values",
-    );
-    assert_credential_eq(
-        &(crate::format_thrown_value(&expect_host_failure(get_env_api_key_with_platform(
-            &p,
-            &State::default(),
-            "openai",
-        )))
-        .unwrap()),
-        &("coercion failed"),
-        "browser_discovery_and_ambient_checks_do_not_coerce_values",
-    );
 }

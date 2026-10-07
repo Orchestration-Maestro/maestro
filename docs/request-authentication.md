@@ -27,7 +27,7 @@ Google Vertex first checks GOOGLE_CLOUD_API_KEY. Without that key, it requires a
 
 Amazon Bedrock recognizes AWS_PROFILE, paired AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, AWS_BEARER_TOKEN_BEDROCK, AWS_CONTAINER_CREDENTIALS_RELATIVE_URI, AWS_CONTAINER_CREDENTIALS_FULL_URI or AWS_WEB_IDENTITY_TOKEN_FILE. Any nonempty alternative returns `<authenticated>` without loading or refreshing credentials. These signals never appear in find_env_keys.
 
-Native lookup uses the process environment and native filesystem. The empty-environment proc recovery branch is restricted to a Bun host and caches both successful and failed reads; ordinary native Rust execution is not that host. A temporarily unavailable native filesystem facility does not cache absence. Browser hosts have no native credential files; a missing process object produces ReferenceError with message process is not defined when the selected branch reads it. An ordinary unknown provider can still return None without reading process.
+Native lookup uses the process environment and native filesystem. The empty-environment proc recovery branch is restricted to a Bun host and caches both successful and failed reads; ordinary native Rust execution is not that host. A temporarily unavailable native filesystem facility does not cache absence. Browser lookup does not read page-defined environment shims. Mapped providers fail during discovery with ReferenceError and message process is not defined. Amazon Bedrock has no discovery keys but fails with the same error during value lookup. Unknown providers return None.
 
 The helpers emit no console output, execute no secret command, perform no network request and impose no global authentication gate. They expose environment values only through the deliberate value lookup. Stored credentials, login, token refresh and provider invocation remain separate operations.
 
@@ -37,5 +37,3 @@ use maestro_models::{find_env_keys, get_env_api_key};
 assert!(find_env_keys("controlled-unknown-provider").unwrap().is_none());
 assert!(get_env_api_key("controlled-unknown-provider").unwrap().is_none());
 ```
-
-Browser environment shims use JavaScript truthiness for key discovery and ambient signals, including boolean and numeric values. Value lookup returns JavaScript string coercion only after selecting and rereading a key; discovery and ambient checks do not coerce values. Thrown JSON-compatible host values retain their payload, and Error values retain name, message, stack, code, errno and cause.

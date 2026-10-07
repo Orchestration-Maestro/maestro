@@ -12,10 +12,6 @@ pub struct Error {
     pub stack: Option<String>,
     /// Supplied arbitrary code value.
     pub code: Option<ThrownValue>,
-    /// Supplied arbitrary operating-system error number.
-    pub errno: Option<ThrownValue>,
-    /// Supplied arbitrary cause.
-    pub cause: Option<ThrownValue>,
 }
 /// An arbitrary thrown value or supplied string-conversion callback.
 #[derive(Clone)]
@@ -91,8 +87,6 @@ pub(crate) fn error(message: String) -> ThrownValue {
         message,
         stack: None,
         code: None,
-        errno: None,
-        cause: None,
     }))
 }
 
@@ -125,8 +119,6 @@ fn json_string(value: &serde_json::Value) -> Result<String, ThrownValue> {
                     message: "Cannot convert object to primitive value".into(),
                     stack: None,
                     code: None,
-                    errno: None,
-                    cause: None,
                 })));
             }
             "[object Object]".into()
