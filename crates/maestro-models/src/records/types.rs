@@ -1045,7 +1045,7 @@ pub(super) fn serialize_json<T: serde::Serialize, S: serde::Serializer>(
     let value = serde_json::to_value(value).map_err(serde::ser::Error::custom)?;
     ordered_json(value).serialize(serializer)
 }
-pub(crate) fn ordered_json(value: serde_json::Value) -> serde_json::Value {
+fn ordered_json(value: serde_json::Value) -> serde_json::Value {
     match value {
         serde_json::Value::Array(values) => {
             serde_json::Value::Array(values.into_iter().map(ordered_json).collect())

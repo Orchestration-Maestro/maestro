@@ -131,9 +131,16 @@ surrogates become replacement characters, while accumulated valid pairs survive.
 The native host runs producers on one lazy process-wide, time-enabled Tokio
 runtime, independently of the caller's executor. Browser producers use standard
 local async execution and promise-backed timers. Positive pacing waits for its scheduled
-timer even after cancellation. Native timers apply the host's minimum of one
-millisecond and truncate fractional insertion delays; oversized delays use one
-millisecond with the two-line overflow warning. If a thrown value's own string
+timer even after cancellation. If a thrown value's own string
 conversion fails, the host reports the uncaught error but leaves that invocation
 unsettled and keeps running. No credentials, network, bundled activation or
 runtime controls are needed by callers.
+
+Native facilities determine runtime details: generated IDs retain the
+`prefix:milliseconds:base36` format but render a random integer rather than a
+fraction; JSON uses serde_json's number spelling, integer precision and property
+order; floating-point min/max use Rust's NaN handling; native pacing uses Duration
+and Tokio without a one-millisecond fallback, signed-32-bit ceiling or overflow
+warning (unrepresentable durations panic). Browser pacing uses the browser timer
+as-is. Non-error JSON failures use JSON text instead of object or array coercion,
+and numeric failures use Rust number formatting. Error messages remain verbatim.

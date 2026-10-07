@@ -73,9 +73,9 @@ impl Host for Production {
     fn timer(&self, milliseconds: f64) -> Work {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let delay = normalize_native_delay(milliseconds, self);
+            let delay = std::time::Duration::from_secs_f64(milliseconds / 1000.0);
             Box::pin(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(delay as u64)).await;
+                tokio::time::sleep(delay).await;
             })
         }
         #[cfg(target_arch = "wasm32")]
@@ -126,20 +126,6 @@ fn runtime() -> &'static tokio::runtime::Handle {
         });
         rx.recv().unwrap()
     })
-}
-#[cfg(not(target_arch = "wasm32"))]
-pub(super) fn normalize_native_delay(delay: f64, host: &dyn Host) -> f64 {
-    if delay > 2147483647.0 {
-        host.stderr(&format!(
-            "{} does not fit into a 32-bit signed integer.\nTimeout duration was set to 1.\n",
-            ryu_js::Buffer::new().format(delay)
-        ));
-        1.0
-    } else if !delay.is_finite() || delay < 1.0 {
-        1.0
-    } else {
-        delay.trunc()
-    }
 }
 #[cfg(not(target_arch = "wasm32"))]
 fn signed_milliseconds(time: std::time::SystemTime) -> f64 {

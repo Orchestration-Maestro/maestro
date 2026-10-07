@@ -212,11 +212,8 @@ fn register_with_host(
     host: Arc<dyn host::Host>,
 ) -> FauxProviderRegistration {
     let size = options.token_size.unwrap_or_default();
-    let min = js_max(
-        1.0,
-        js_min(size.min.unwrap_or(3.0), size.max.unwrap_or(5.0)),
-    );
-    let max = js_max(min, size.max.unwrap_or(5.0));
+    let min = 1.0_f64.max(size.min.unwrap_or(3.0).min(size.max.unwrap_or(5.0)));
+    let max = min.max(size.max.unwrap_or(5.0));
     let rate = options.tokens_per_second;
     let api = options
         .api
@@ -467,7 +464,7 @@ fn assistant_content_to_text(content: &[AssistantContent]) -> String {
                 format!(
                     "{}:{}",
                     t.name,
-                    compact_json(&serde_json::Value::Object(t.arguments.clone()))
+                    serde_json::to_string(&t.arguments).unwrap()
                 )
             }
         })
@@ -501,26 +498,9 @@ fn serialize_context(context: &Context) -> String {
         });
     }
     if let Some(tools) = context.tools.as_ref().filter(|t| !t.is_empty()) {
-        parts.push(format!(
-            "tools:{}",
-            compact_json(&serde_json::to_value(tools).unwrap())
-        ));
+        parts.push(format!("tools:{}", serde_json::to_string(tools).unwrap()));
     }
     parts.join("\n\n")
-}
-fn js_min(a: f64, b: f64) -> f64 {
-    if a.is_nan() || b.is_nan() {
-        f64::NAN
-    } else {
-        a.min(b)
-    }
-}
-fn js_max(a: f64, b: f64) -> f64 {
-    if a.is_nan() || b.is_nan() {
-        f64::NAN
-    } else {
-        a.max(b)
-    }
 }
 fn finish(output: &AssistantMessageEventStream, message: AssistantMessage) {
     let reason = message.stop_reason.clone();
@@ -553,7 +533,7 @@ fn split_string_by_token_size(
     let mut index = 0.0;
     while index < units.len() as f64 {
         let size = min + (host.random() * (max - min + 1.0)).floor();
-        let chars = js_max(1.0, size * 4.0);
+        let chars = 1.0_f64.max(size * 4.0);
         let start = index as usize;
         let end = (index + chars) as usize;
         chunks.push(units[start.min(units.len())..end.min(units.len())].to_vec());
@@ -623,7 +603,7 @@ async fn stream_with_deltas(
             }
             AssistantContent::ToolCall(t) => {
                 let mut t = t.read().unwrap().clone();
-                let text = compact_json(&serde_json::Value::Object(t.arguments.clone()));
+                let text = serde_json::to_string(&t.arguments).unwrap();
                 t.arguments.clear();
                 t.thought_signature = None;
                 partial
@@ -722,7 +702,10 @@ fn caught_error(
 ) {
     let text = match &value {
         ThrownValue::Error(error) => Ok(error.message.clone()),
-        _ => format_thrown_value(&value),
+        ThrownValue::Undefined => Ok("undefined".into()),
+        ThrownValue::Json(value) => Ok(serde_json::to_string(value).unwrap()),
+        ThrownValue::Number(value) => Ok(value.to_string()),
+        ThrownValue::StringCoercion(convert) => convert(),
     };
     match text {
         Ok(text) => finish(
@@ -752,108 +735,27 @@ fn caught_error(
                         format!("{}: {}", error.name, error.message)
                     }
                 }
-                _ => format_thrown_value(&value).unwrap_or_default(),
+                _ => format!("{value:?}"),
             };
             host.stderr(&format!("{text}\n"));
         }
     }
 }
-fn compact_json(value: &serde_json::Value) -> String {
-    fn write(value: &serde_json::Value, out: &mut String) {
-        match value {
-            serde_json::Value::Number(n) => {
-                out.push_str(ryu_js::Buffer::new().format(n.as_f64().unwrap()))
-            }
-            serde_json::Value::Array(values) => {
-                out.push('[');
-                for (i, v) in values.iter().enumerate() {
-                    if i > 0 {
-                        out.push(',')
-                    }
-                    write(v, out)
-                }
-                out.push(']')
-            }
-            serde_json::Value::Object(map) => {
-                out.push('{');
-                for (i, (k, v)) in map.iter().enumerate() {
-                    if i > 0 {
-                        out.push(',')
-                    }
-                    out.push_str(&serde_json::to_string(k).unwrap());
-                    out.push(':');
-                    write(v, out)
-                }
-                out.push('}')
-            }
-            v => out.push_str(&serde_json::to_string(v).unwrap()),
-        }
-    }
-    let ordered = crate::records::types::ordered_json(value.clone());
-    let mut out = String::new();
-    write(&ordered, &mut out);
-    out
-}
-
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests;
 fn random_id(prefix: &str, host: &dyn host::Host) -> String {
-    let time = host.clock();
-    let random = host.random();
+    let mut random = (host.random() * 9007199254740992.0) as u64;
+    let mut digits = Vec::new();
+    loop {
+        digits.push(char::from_digit((random % 36) as u32, 36).unwrap());
+        random /= 36;
+        if random == 0 {
+            break;
+        }
+    }
     format!(
         "{prefix}:{}:{}",
-        ryu_js::Buffer::new().format(time),
-        radix36_fraction(random)
+        host.clock(),
+        digits.iter().rev().collect::<String>()
     )
-}
-fn radix36_fraction(fraction: f64) -> String {
-    #[cfg(target_arch = "wasm32")]
-    {
-        return js_sys::Number::from(fraction)
-            .to_string_with_radix(36)
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .chars()
-            .skip(2)
-            .collect();
-    }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let mut fraction = fraction;
-        if fraction == 0.0 {
-            return String::new();
-        }
-        let mut delta = (f64::from_bits(fraction.to_bits() + 1) - fraction) * 0.5;
-        let mut digits = vec![];
-        loop {
-            fraction *= 36.0;
-            delta *= 36.0;
-            let digit = fraction as u8;
-            fraction -= f64::from(digit);
-            digits.push(digit);
-            if (fraction > 0.5 || (fraction == 0.5 && digit % 2 == 1)) && fraction + delta > 1.0 {
-                let mut i = digits.len();
-                loop {
-                    i -= 1;
-                    if digits[i] < 35 {
-                        digits[i] += 1;
-                        digits.truncate(i + 1);
-                        break;
-                    }
-                    if i == 0 {
-                        return String::new();
-                    }
-                }
-                break;
-            }
-            if fraction < delta {
-                break;
-            }
-        }
-        digits
-            .into_iter()
-            .map(|n| char::from(if n < 10 { b'0' + n } else { b'a' + n - 10 }))
-            .collect()
-    }
 }

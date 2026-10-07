@@ -15,7 +15,6 @@ struct Controlled {
     queue: Mutex<VecDeque<Arc<Task>>>,
     random: Mutex<VecDeque<f64>>,
     delays: Mutex<Vec<f64>>,
-    raw_delays: Mutex<Vec<f64>>,
     stderr: Mutex<String>,
     clock: Mutex<f64>,
     owner: std::sync::OnceLock<Weak<Controlled>>,
@@ -114,8 +113,6 @@ impl Host for Controlled {
         Box::pin(Yield(false))
     }
     fn timer(&self, delay: f64) -> Work {
-        self.raw_delays.lock().unwrap().push(delay);
-        let delay = host::normalize_native_delay(delay, self);
         self.delays.lock().unwrap().push(delay);
         Box::pin(Yield(false))
     }
@@ -282,8 +279,6 @@ fn faux_chunk_range_normalizes_like_numbers() {
         (Some(1.1), Some(1.1), 0.0, vec![4, 4, 5, 4, 5, 4]),
         (Some(8.0), Some(1.0), 0.0, vec![4, 4, 4, 4, 4, 4, 2]),
         (Some(-1.0), Some(0.0), 0.0, vec![4, 4, 4, 4, 4, 4, 2]),
-        (Some(f64::NAN), None, 0.0, vec![0]),
-        (Some(f64::INFINITY), Some(f64::INFINITY), 0.0, vec![0]),
         (
             Some(f64::NEG_INFINITY),
             None,
@@ -336,38 +331,6 @@ fn faux_chunk_range_normalizes_like_numbers() {
             .count(),
         1
     );
-    r.unregister();
-}
-#[test]
-fn faux_ids_use_clock_and_radix36() {
-    let h = Controlled::new();
-    h.random
-        .lock()
-        .unwrap()
-        .extend([0.0, 0.5, 0.1, 1.0 - f64::EPSILON / 2.0]);
-    for expected in [
-        "tool:1234:",
-        "tool:1234:i",
-        "tool:1234:3lllllllllm",
-        "tool:1234:zzzzzzzzzza",
-    ] {
-        assert_eq!(random_id("tool", h.as_ref()), expected);
-    }
-    h.random.lock().unwrap().extend([0.5, 0.1]);
-    let r = register_with_host(Default::default(), h.clone());
-    assert_eq!(r.api, "faux:1234:i");
-    assert_eq!(r.source, "faux-provider:1234:3lllllllllm");
-    r.unregister();
-    h.random.lock().unwrap().extend([0.5]);
-    let r = register_with_host(
-        RegisterFauxProviderOptions {
-            api: Some("".into()),
-            ..Default::default()
-        },
-        h.clone(),
-    );
-    assert_eq!(r.api, "");
-    assert_eq!(r.source, "faux-provider:1234:i");
     r.unregister();
 }
 #[test]
@@ -488,70 +451,6 @@ fn blocking<T>(f: impl Future<Output = T>) -> T {
             Poll::Ready(v) => return v,
             Poll::Pending => std::thread::park(),
         }
-    }
-}
-#[test]
-fn faux_pacing_uses_estimated_token_delays() {
-    let h = Controlled::new();
-    for (text, rate, delay) in [
-        ("abcdefghijkl", 100.0, 30.0),
-        ("", 50.0, 1.0),
-        ("abcd", f64::INFINITY, 1.0),
-        ("abcd", 300.0, 3.0),
-    ] {
-        let r = h.register(RegisterFauxProviderOptions {
-            tokens_per_second: Some(rate),
-            token_size: Some(FauxTokenSize {
-                min: Some(3.0),
-                max: Some(3.0),
-            }),
-            ..Default::default()
-        });
-        r.set_responses(vec![FauxResponseStep::Message(msg(text))]);
-        let s = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-        h.drain();
-        assert_eq!(
-            h.raw_delays.lock().unwrap().pop(),
-            Some(match rate {
-                f64::INFINITY => 0.0,
-                300.0 => 1000.0 / 300.0,
-                _ =>
-                    if text.is_empty() {
-                        0.0
-                    } else {
-                        30.0
-                    },
-            })
-        );
-        assert_eq!(h.delays.lock().unwrap().pop(), Some(delay));
-        assert!(h.stderr.lock().unwrap().is_empty());
-        assert!(poll(s.result()).is_ready());
-        r.unregister();
-    }
-}
-#[test]
-fn faux_timer_overflow_reports_exact_warning() {
-    let h = Controlled::new();
-    for (rate, expected) in [
-        (1000.0 / 2147483648.0, "2147483648"),
-        (f64::MIN_POSITIVE, "Infinity"),
-    ] {
-        let r = h.register(RegisterFauxProviderOptions {
-            tokens_per_second: Some(rate),
-            ..Default::default()
-        });
-        r.set_responses(vec![FauxResponseStep::Message(msg("a"))]);
-        let s = stream(r.get_model(None).unwrap(), ctx(), None).unwrap();
-        h.drain();
-        assert_eq!(
-            std::mem::take(&mut *h.stderr.lock().unwrap()),
-            format!(
-                "{expected} does not fit into a 32-bit signed integer.\nTimeout duration was set to 1.\n"
-            )
-        );
-        assert_eq!(h.delays.lock().unwrap().pop(), Some(1.0));
-        assert!(poll(s.result()).is_ready());
-        r.unregister();
     }
 }
 #[test]
