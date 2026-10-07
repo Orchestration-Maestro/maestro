@@ -1,6 +1,6 @@
 wasm_crates = ["maestro-models"]
 test_tools = true
-spelling_words = ["ratatui"]
+spelling_words = ["ratatui", "relace"]
 privileged_trigger_workflows = [
     ".github/workflows/approve-contributor.yml",
     ".github/workflows/contribution-policy.yml",

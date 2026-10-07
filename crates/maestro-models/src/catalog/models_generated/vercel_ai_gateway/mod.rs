@@ -1,0 +1,64 @@
+// Generated model descriptor data.
+
+use crate::Model;
+use indexmap::IndexMap;
+mod alibaba_qwen3_max;
+mod alibaba_qwen_3_14b;
+mod anthropic_claude_3_haiku;
+mod anthropic_claude_sonnet_4_5;
+mod arcee_ai_trinity_large_preview;
+mod bytedance_seed_1_6;
+mod cohere_command_a;
+mod deepseek_deepseek_r1;
+mod google_gemini_2_0_flash;
+mod google_gemma_4_31b_it;
+mod inception_mercury_2;
+mod kwaipilot_kat_coder_pro_v2;
+mod meituan_longcat_flash_chat;
+mod meta_llama_3_1_70b;
+mod minimax_minimax_m2;
+mod mistral_codestral;
+mod moonshotai_kimi_k2;
+mod nvidia_nemotron_nano_12b_v2_vl;
+mod openai_gpt_4_turbo;
+mod openai_gpt_5_2_pro;
+mod openai_gpt_5_nano;
+mod openai_gpt_oss_safeguard_20b;
+mod perplexity_sonar;
+mod xai_grok_3;
+mod xai_grok_4_20_multi_agent_beta;
+mod xiaomi_mimo_v2_flash;
+mod zai_glm_4_5;
+mod zai_glm_5_turbo;
+pub(super) fn models() -> IndexMap<&'static str, Model> {
+    let mut models = IndexMap::new();
+    models.extend(alibaba_qwen_3_14b::models());
+    models.extend(alibaba_qwen3_max::models());
+    models.extend(anthropic_claude_3_haiku::models());
+    models.extend(anthropic_claude_sonnet_4_5::models());
+    models.extend(arcee_ai_trinity_large_preview::models());
+    models.extend(bytedance_seed_1_6::models());
+    models.extend(cohere_command_a::models());
+    models.extend(deepseek_deepseek_r1::models());
+    models.extend(google_gemini_2_0_flash::models());
+    models.extend(google_gemma_4_31b_it::models());
+    models.extend(inception_mercury_2::models());
+    models.extend(kwaipilot_kat_coder_pro_v2::models());
+    models.extend(meituan_longcat_flash_chat::models());
+    models.extend(meta_llama_3_1_70b::models());
+    models.extend(minimax_minimax_m2::models());
+    models.extend(mistral_codestral::models());
+    models.extend(moonshotai_kimi_k2::models());
+    models.extend(nvidia_nemotron_nano_12b_v2_vl::models());
+    models.extend(openai_gpt_4_turbo::models());
+    models.extend(openai_gpt_5_nano::models());
+    models.extend(openai_gpt_5_2_pro::models());
+    models.extend(openai_gpt_oss_safeguard_20b::models());
+    models.extend(perplexity_sonar::models());
+    models.extend(xai_grok_3::models());
+    models.extend(xai_grok_4_20_multi_agent_beta::models());
+    models.extend(xiaomi_mimo_v2_flash::models());
+    models.extend(zai_glm_4_5::models());
+    models.extend(zai_glm_5_turbo::models());
+    models
+}
