@@ -116,6 +116,15 @@ controlled processes, without provider calls or operator credentials.
 `tui-test-ansi` explicitly selects terminal wrapping tests. These commands fail
 when their owning crate is absent; no placeholder product package is installed.
 
+The following command groups are unavailable until delivered by their owners:
+
+| Command group | Corresponding command | Owning issue | Availability |
+| --- | --- | --- | --- |
+| Profiling and diagnostics | `profile:tui`, `profile:rpc` | [#241](https://github.com/Orchestration-Maestro/maestro/issues/241) | unavailable until delivered |
+| Version, publish and release | `version:patch/minor/major/set`, `publish`, `publish:dry`, `release:patch/minor/major` | [#81](https://github.com/Orchestration-Maestro/maestro/issues/81) | unavailable until delivered |
+| Real platform archives | `build-binaries.sh` | [#111](https://github.com/Orchestration-Maestro/maestro/issues/111) | unavailable until delivered |
+| Browser library and example builds | Library `clean/build/dev/dev:tsc/check`; example `clean/build/dev/preview/check` | [#113](https://github.com/Orchestration-Maestro/maestro/issues/113) | unavailable until delivered |
+
 - `maestro-models`: model interfaces, providers and catalog data.
 - `maestro-agent`: conversation execution.
 - `maestro-tui`: terminal components.
