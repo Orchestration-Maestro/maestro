@@ -25,6 +25,22 @@ fn numbered_planning_comments_are_rejected_with_file_and_line() {
     }
 }
 
+#[test]
+fn crlf_and_lf_sources_report_identical_comment_lines() {
+    let workspace = Workspace::new();
+    workspace.member("models", "maestro-models", "");
+    workspace.list(&[("maestro-models", "core")]);
+    let path = workspace.root.join("crates/models/src/lib.rs");
+    let lf = "\u{feff}#!/usr/bin/env rustx\nconst TEXT: &str = r#\"first\nsecond\"#;\n\n// café ticket 1\n";
+    std::fs::write(&path, lf).unwrap();
+    let expected = check_workspace(&workspace.root).unwrap_err();
+    assert_location(&expected, &path, 5);
+    std::fs::write(&path, lf.replace('\n', "\r\n")).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Err(expected));
+    std::fs::write(&path, lf.replace("ticket 1", "Technical")).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
 fn assert_location(error: &str, expected: &std::path::Path, line: usize) {
     let suffix = format!(":{line}: planning reference in comment");
     let reported = error.strip_suffix(&suffix).expect(error);

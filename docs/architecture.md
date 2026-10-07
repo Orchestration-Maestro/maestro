@@ -46,7 +46,9 @@ Review also checks equivalent new framework/highlighting libraries; the finite
 library-name list is not a general library classifier.
 
 Rust member files, including files outside `src/`, are traversed while skipping
-`target/` and `.git/`. Each file is read once and parsed once with native Rust syntax. Declaration
+`target/` and `.git/`. Each file is read once; a leading byte-order mark is removed
+and physical CRLF is converted to LF before native Rust parsing. Parsing, comment
+lexing, production line counts and WIT literals share that canonical text. Declaration
 checks use that syntax tree, with bounded native token groups for literal
 macro bodies and included fragments; no macro expansion is performed.
 Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/render-context/result-option types
@@ -60,9 +62,9 @@ Rust validity, while the quality checker still counts their production lines.
 WIT checks recognize actual `wit_bindgen::generate!` and
 `wasmtime::component::bindgen!` declarations. A `path:` may be a static string or
 array of static strings. Cooked strings use Rust escapes (including hexadecimal,
-Unicode and line continuations). Physical CRLF within cooked literals becomes
-LF, while escaped carriage returns remain carriage returns; raw strings keep
-their literal contents.
+Unicode and line continuations). Physical CRLF within cooked and raw literals
+becomes LF through shared source normalization, while escaped carriage returns
+remain carriage returns; raw strings otherwise keep their literal contents.
 A shorthand string macro argument names a world and
 reads the declaring member's default `wit/` directory, not a path named by the
 string. Paths resolve relative to the declaring member's Cargo manifest. Every input must

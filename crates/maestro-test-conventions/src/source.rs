@@ -28,9 +28,11 @@ pub(crate) fn load(metadata: &Metadata) -> Result<Vec<Member>, String> {
                 .map(|path| {
                     let contents = std::fs::read_to_string(&path)
                         .map_err(|error| format!("{}: {error}", path.display()))?;
-                    let syntax =
-                        syn::parse_file(contents.strip_prefix('\u{feff}').unwrap_or(&contents))
-                            .ok();
+                    let contents = contents
+                        .strip_prefix('\u{feff}')
+                        .unwrap_or(&contents)
+                        .replace("\r\n", "\n");
+                    let syntax = syn::parse_file(&contents).ok();
                     Ok(Source {
                         path,
                         contents,
@@ -78,10 +80,7 @@ pub(crate) fn line(source: &str, offset: usize) -> usize {
 }
 
 pub(crate) fn comments(source: &str) -> Vec<(usize, &str)> {
-    let mut offset = source
-        .strip_prefix('\u{feff}')
-        .map_or(0, |_| '\u{feff}'.len_utf8());
-    offset += ra_ap_rustc_lexer::strip_shebang(&source[offset..]).unwrap_or(0);
+    let mut offset = ra_ap_rustc_lexer::strip_shebang(source).unwrap_or(0);
     let mut comments = Vec::new();
     for token in ra_ap_rustc_lexer::tokenize(&source[offset..], FrontmatterAllowed::No) {
         let length = token.len as usize;

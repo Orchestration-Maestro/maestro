@@ -11,21 +11,21 @@ use policy::rule;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum Layer {
+enum CrateClass {
     Core,
     Dedicated,
 }
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Class {
-    Known(Layer),
+    Known(CrateClass),
     Invalid(serde::de::IgnoredAny),
 }
 impl Class {
     fn name(&self, name: &str) -> Result<&str, String> {
         match self {
-            Self::Known(Layer::Core) => Ok("core"),
-            Self::Known(Layer::Dedicated) => Ok("dedicated"),
+            Self::Known(CrateClass::Core) => Ok("core"),
+            Self::Known(CrateClass::Dedicated) => Ok("dedicated"),
             Self::Invalid(_) => Err(format!(
                 "invalid layer for {name}: expected core or dedicated"
             )),

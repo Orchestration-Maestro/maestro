@@ -457,6 +457,7 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
         ("tab\tname", r#""tab\tname""#),
         ("return\rname", r#""return\rname""#),
         ("physical\nnewline", "\"physical\r\nnewline\""),
+        ("physical\nnewline", "r#\"physical\r\nnewline\"#"),
         ("physical\rnewline", r#""physical\rnewline""#),
     ] {
         assert_static_path(&workspace, directory, literal);

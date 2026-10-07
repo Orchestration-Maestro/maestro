@@ -26,10 +26,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     {
         return Ok(());
     }
-    let contents = source
-        .contents
-        .strip_prefix('\u{feff}')
-        .unwrap_or(&source.contents);
+    let contents = &source.contents;
     let lines = source.syntax.as_ref().map_or_else(
         || contents.lines().count(),
         |syntax| production_lines(contents, syntax),
