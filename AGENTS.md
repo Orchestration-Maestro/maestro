@@ -230,3 +230,10 @@ behind the stateless overflow pattern value; its enabled dependency is memchr
 2.8.3 (alloc/std; Unlicense OR MIT). Preserve the owned pattern sources and
 ECMAScript character classes. The non-Unicode long-s case-folding difference
 is accepted and qualified explicitly by the model tests.
+
+## Terminal presentation libraries
+
+`maestro-tui` is a core leaf with no internal dependencies or terminal framework.
+It uses `unicode-segmentation =1.13.3` and `unicode-width =0.2.2`, both without
+default features (MIT OR Apache-2.0), behind owned cell/grapheme interfaces.
+Native terminal IO is not part of this library.

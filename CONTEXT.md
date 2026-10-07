@@ -108,3 +108,19 @@ are later scope, not active foundation concepts.
 
 - **Contributor capability:** A recognized `issue` or `pr` entry in the approved-contributor list; `issue` permits issues, while `pr` permits issues and pull requests.
 - **Effective approval:** A contributor capability present on the trusted default branch after its protected approval pull request merges; a pending request is not effective approval.
+
+## Terminal presentation
+
+- **Component:** Synchronous rendering, optional input and invalidation contract.
+- **Container:** An ordered group of shared child components.
+- **Focusable:** A component's readable and assignable focus state.
+- **TruncatedText:** Retained first-line text with horizontal and vertical padding.
+- **Terminal:** The caller-supplied terminal lifecycle and raw-output contract.
+- **EditorComponent:** Logical editor content and optional assignable callbacks.
+- **AutocompleteItem:** Completion insertion value, label and optional description.
+- **AutocompleteSuggestions:** Ordered completion items with their matched prefix.
+- **AutocompleteProvider:** Caller-supplied suggestion and insertion operations.
+- **SlashCommand:** Command metadata with optional argument completion.
+- **AbortSignal:** Abort state with identity-based listener registration/removal.
+- **OverlayOptions:** Optional sizing, position, margin and visibility data.
+- **OverlayHandle:** The caller-supplied overlay visibility/focus contract.
