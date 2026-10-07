@@ -14,7 +14,7 @@ unchanged; adapters own payload policy, credentials, I/O and provider defaults.
 Payload hooks can keep or replace a submitted value; response hooks observe
 status and copied headers before the adapter consumes a response body.
 
-The [offline model catalog](models/catalog.md) provides owned embedded descriptors,
+The [offline model catalog](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/catalog.md) provides owned embedded descriptors,
 exact lookup, thinking-level selection, identity comparison and flat-rate costs.
 
 ## Controlled registered invocation

@@ -2,25 +2,23 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod codestral_latest;
-mod devstral_2512;
-mod labs_devstral_small_2512;
-mod magistral_medium_latest;
-mod ministral_3b_latest;
-mod mistral_large_2411;
-mod mistral_small_2603;
-mod open_mistral_7b;
-mod pixtral_12b;
+mod codestral;
+mod devstral;
+mod magistral;
+mod ministral;
+#[path = "mistral.rs"]
+mod mistral_data;
+mod mixtral;
+mod pixtral;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(codestral_latest::models());
-    models.extend(devstral_2512::models());
-    models.extend(labs_devstral_small_2512::models());
-    models.extend(magistral_medium_latest::models());
-    models.extend(ministral_3b_latest::models());
-    models.extend(mistral_large_2411::models());
-    models.extend(mistral_small_2603::models());
-    models.extend(open_mistral_7b::models());
-    models.extend(pixtral_12b::models());
+    models.extend(codestral::models_0());
+    models.extend(devstral::models_1());
+    models.extend(magistral::models_7());
+    models.extend(ministral::models_9());
+    models.extend(mistral_data::models_11());
+    models.extend(mistral_data::models_21());
+    models.extend(mixtral::models_24());
+    models.extend(pixtral::models_26());
     models
 }

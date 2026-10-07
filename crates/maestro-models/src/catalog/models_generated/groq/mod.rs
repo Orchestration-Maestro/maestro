@@ -2,25 +2,26 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod deepseek_r1_distill_llama_70b;
-mod gemma2_9b_it;
-mod groq_compound;
-mod llama_3_1_8b_instant;
-mod meta_llama_llama_4_maverick_17b_128e_instruct;
-mod mistral_saba_24b;
-mod moonshotai_kimi_k2_instruct;
-mod openai_gpt_oss_120b;
-mod qwen_qwq_32b;
+mod deepseek;
+mod gemma;
+#[path = "groq.rs"]
+mod groq_data;
+mod llama;
+mod meta_llama;
+mod mistral;
+mod moonshotai;
+mod openai;
+mod qwen;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(deepseek_r1_distill_llama_70b::models());
-    models.extend(gemma2_9b_it::models());
-    models.extend(groq_compound::models());
-    models.extend(llama_3_1_8b_instant::models());
-    models.extend(meta_llama_llama_4_maverick_17b_128e_instruct::models());
-    models.extend(mistral_saba_24b::models());
-    models.extend(moonshotai_kimi_k2_instruct::models());
-    models.extend(openai_gpt_oss_120b::models());
-    models.extend(qwen_qwq_32b::models());
+    models.extend(deepseek::models_0());
+    models.extend(gemma::models_1());
+    models.extend(groq_data::models_2());
+    models.extend(llama::models_4());
+    models.extend(meta_llama::models_8());
+    models.extend(mistral::models_10());
+    models.extend(moonshotai::models_11());
+    models.extend(openai::models_13());
+    models.extend(qwen::models_16());
     models
 }

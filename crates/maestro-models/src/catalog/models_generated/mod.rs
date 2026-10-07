@@ -1,4 +1,9 @@
 // Generated model descriptor data.
+// Files use the vendor segment, or the leading model family for unqualified IDs.
+// Strip account/router, workers-ai/@cf and regional inference-profile prefixes;
+// strip labs-/open- before taking an unqualified family. Normalize to Rust casing.
+// Group each family in recorded order; greedily split only above 500 formatted
+// lines, using _1, _2, ... suffixes. Assembly retains original registry order.
 
 mod amazon_bedrock;
 mod anthropic;

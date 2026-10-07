@@ -2,19 +2,21 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod claude_3_5_haiku;
-mod claude_opus_4_6;
-mod gpt_4;
-mod gpt_5_5;
-mod o1;
-mod workers_ai_cf_moonshotai_kimi_k2_5;
+mod claude;
+mod gpt;
+mod moonshotai;
+mod nvidia;
+mod o;
+mod zai_org;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(claude_3_5_haiku::models());
-    models.extend(claude_opus_4_6::models());
-    models.extend(gpt_4::models());
-    models.extend(gpt_5_5::models());
-    models.extend(o1::models());
-    models.extend(workers_ai_cf_moonshotai_kimi_k2_5::models());
+    models.extend(claude::models_0());
+    models.extend(claude::models_10());
+    models.extend(gpt::models_15());
+    models.extend(gpt::models_25());
+    models.extend(o::models_26());
+    models.extend(moonshotai::models_31());
+    models.extend(nvidia::models_33());
+    models.extend(zai_org::models_34());
     models
 }

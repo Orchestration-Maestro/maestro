@@ -28,6 +28,18 @@ one, falling back to off when none is available.
 all unrelated metadata is ignored. These infallible helpers require neither
 catalog membership nor a registered protocol adapter.
 
+## Generated data layout
+
+Generated descriptors use `<provider>/<family>.rs`. The family is the vendor
+segment for qualified IDs or the leading model-family segment (before a hyphen,
+dot or digit) for unqualified IDs. Account/model/router, `workers-ai/@cf` and
+regional inference-profile prefixes are stripped first; unqualified `labs-` and
+`open-` prefixes are also stripped. Names use lowercase Rust snake casing.
+Each family retains recorded order and is greedily partitioned only when its
+formatted file would exceed 500 lines, using `_1`, `_2`, … suffixes for all of its
+partitions. Provider assembly preserves original registry order, including
+interleaved families; filenames never determine enumeration order.
+
 ## Controlled catalog example
 
 ```rust

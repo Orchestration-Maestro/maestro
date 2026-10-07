@@ -2,15 +2,14 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod gemini_1_5_flash;
-mod gemini_2_5_flash_preview_05_20;
-mod gemini_flash_latest;
-mod gemma_3_27b_it;
+mod gemini_1;
+mod gemini_2;
+mod gemma;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(gemini_1_5_flash::models());
-    models.extend(gemini_2_5_flash_preview_05_20::models());
-    models.extend(gemini_flash_latest::models());
-    models.extend(gemma_3_27b_it::models());
+    models.extend(gemini_1::models_0());
+    models.extend(gemini_1::models_10());
+    models.extend(gemini_2::models_18());
+    models.extend(gemma::models_24());
     models
 }

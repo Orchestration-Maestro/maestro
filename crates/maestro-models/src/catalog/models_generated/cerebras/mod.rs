@@ -2,15 +2,15 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod gpt_oss_120b;
-mod llama3_1_8b;
-mod qwen_3_235b_a22b_instruct_2507;
-mod zai_glm_4_7;
+mod gpt;
+mod llama;
+mod qwen;
+mod zai;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(gpt_oss_120b::models());
-    models.extend(llama3_1_8b::models());
-    models.extend(qwen_3_235b_a22b_instruct_2507::models());
-    models.extend(zai_glm_4_7::models());
+    models.extend(gpt::models_0());
+    models.extend(llama::models_1());
+    models.extend(qwen::models_2());
+    models.extend(zai::models_3());
     models
 }

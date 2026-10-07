@@ -2,9 +2,10 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod minimax_m2_7;
+#[path = "minimax.rs"]
+mod minimax_data;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(minimax_m2_7::models());
+    models.extend(minimax_data::models_0());
     models
 }

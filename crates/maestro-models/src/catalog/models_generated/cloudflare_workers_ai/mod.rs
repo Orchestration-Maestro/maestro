@@ -2,9 +2,19 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod cf_google_gemma_4_26b_a4b_it;
+mod google;
+mod meta;
+mod moonshotai;
+mod nvidia;
+mod openai;
+mod zai_org;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(cf_google_gemma_4_26b_a4b_it::models());
+    models.extend(google::models_0());
+    models.extend(meta::models_1());
+    models.extend(moonshotai::models_2());
+    models.extend(nvidia::models_4());
+    models.extend(openai::models_5());
+    models.extend(zai_org::models_7());
     models
 }

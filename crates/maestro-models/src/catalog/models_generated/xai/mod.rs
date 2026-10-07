@@ -2,13 +2,12 @@
 
 use crate::Model;
 use indexmap::IndexMap;
+mod grok_1;
 mod grok_2;
-mod grok_3_mini;
-mod grok_4_20_0309_reasoning;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(grok_2::models());
-    models.extend(grok_3_mini::models());
-    models.extend(grok_4_20_0309_reasoning::models());
+    models.extend(grok_1::models_0());
+    models.extend(grok_1::models_10());
+    models.extend(grok_2::models_20());
     models
 }

@@ -2,9 +2,9 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod glm_4_5_air;
+mod glm;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(glm_4_5_air::models());
+    models.extend(glm::models_0());
     models
 }

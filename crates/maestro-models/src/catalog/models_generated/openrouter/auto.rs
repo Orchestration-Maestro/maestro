@@ -1,6 +1,6 @@
 // Generated model descriptor data.
 use crate::{Model, ModelCost, ModelInput};
-pub(super) fn models() -> [(&'static str, Model); 1] {
+pub(super) fn models_26() -> [(&'static str, Model); 1] {
     [("auto", auto())]
 }
 fn auto() -> Model {

@@ -2,11 +2,20 @@
 
 use crate::Model;
 use indexmap::IndexMap;
-mod accounts_fireworks_models_deepseek_v3p1;
-mod accounts_fireworks_models_kimi_k2_instruct;
+mod deepseek;
+mod glm;
+mod gpt;
+mod kimi;
+mod minimax;
+mod qwen;
 pub(super) fn models() -> IndexMap<&'static str, Model> {
     let mut models = IndexMap::new();
-    models.extend(accounts_fireworks_models_deepseek_v3p1::models());
-    models.extend(accounts_fireworks_models_kimi_k2_instruct::models());
+    models.extend(deepseek::models_0());
+    models.extend(glm::models_3());
+    models.extend(gpt::models_8());
+    models.extend(kimi::models_10());
+    models.extend(minimax::models_14());
+    models.extend(qwen::models_17());
+    models.extend(kimi::models_18());
     models
 }
