@@ -1,4 +1,10 @@
 wasm_crates = []
+spelling_words = ["ratatui"]
+privileged_trigger_workflows = [
+    ".github/workflows/approve-contributor.yml",
+    ".github/workflows/contribution-policy.yml",
+    ".github/workflows/pr-gate.yml",
+]
 check_targets = [
     "aarch64-unknown-linux-gnu",
     "x86_64-apple-darwin",
