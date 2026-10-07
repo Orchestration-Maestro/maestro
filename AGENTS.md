@@ -83,6 +83,8 @@ Keep one current format for everything. No compatibility code.
 ## Public text
 
 Describe Maestro in its own words. Name no other agent tool.
+Follow the [identity guide](docs/identity.md) for voice, code naming and brand
+assets. Consumers read brand values from the pack, never hard-code them.
 
 ## Agent skills
 

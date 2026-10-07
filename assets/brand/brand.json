@@ -1,0 +1,121 @@
+{
+  "name": "Forge",
+  "wordmark": "Maestro",
+  "tagline": "Conduct every model.",
+  "palette": {
+    "forge-black": "#0E0B09",
+    "oxide": "#2A1F1A",
+    "rust-copper": "#B7410E",
+    "burnished-brass": "#D9A066",
+    "molten-ember": "#FF6A1A",
+    "vector-steel": "#5E7383",
+    "bone": "#F2E8DC"
+  },
+  "fonts": {
+    "display": {
+      "family": "Barlow Condensed",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/barlowcondensed/OFL.txt",
+      "fallbacks": ["system-ui", "sans-serif"]
+    },
+    "body": {
+      "family": "Barlow",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/barlow/OFL.txt",
+      "fallbacks": ["system-ui", "sans-serif"]
+    },
+    "mono": {
+      "family": "JetBrains Mono",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/jetbrainsmono/OFL.txt",
+      "fallbacks": ["ui-monospace", "monospace"]
+    }
+  },
+  "type": {
+    "display-xl": {"font": "display", "size": 56, "line-height": 1.1, "weight": 700},
+    "display": {"font": "display", "size": 36, "line-height": 1.1, "weight": 700},
+    "heading": {"font": "display", "size": 24, "line-height": 1.2, "weight": 600},
+    "body": {"font": "body", "size": 16, "line-height": 1.55, "weight": 400},
+    "mono": {"font": "mono", "size": 14, "line-height": 1.7, "weight": 400}
+  },
+  "spacing": {"xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32},
+  "radii": {"none": 0, "control": 4, "panel": 8},
+  "mark": {
+    "template": "mark.svg",
+    "minimum-size": 32,
+    "clear-space": 0.0546875
+  },
+  "modes": {
+    "dark": {
+      "colors": {
+        "background": "forge-black",
+        "panel": "oxide",
+        "text": "bone",
+        "muted": "burnished-brass",
+        "accent": "burnished-brass",
+        "on-accent": "forge-black",
+        "live": "molten-ember",
+        "success": "molten-ember",
+        "warning": "burnished-brass",
+        "error": "molten-ember",
+        "border": "vector-steel",
+        "mark-ring": "rust-copper",
+        "mark-m": "rust-copper",
+        "mark-node": "rust-copper",
+        "mark-live": "molten-ember",
+        "mark-star": "molten-ember"
+      }
+    },
+    "light": {
+      "colors": {
+        "background": "bone",
+        "panel": "bone",
+        "text": "forge-black",
+        "muted": "oxide",
+        "accent": "rust-copper",
+        "on-accent": "bone",
+        "live": "rust-copper",
+        "success": "rust-copper",
+        "warning": "oxide",
+        "error": "rust-copper",
+        "border": "vector-steel",
+        "mark-ring": "rust-copper",
+        "mark-m": "rust-copper",
+        "mark-node": "rust-copper",
+        "mark-live": "rust-copper",
+        "mark-star": "rust-copper"
+      }
+    }
+  },
+  "terminal": {
+    "ansi": {
+      "black": "muted",
+      "red": "error",
+      "green": "success",
+      "yellow": "warning",
+      "blue": "accent",
+      "magenta": "accent",
+      "cyan": "live",
+      "white": "text",
+      "bright-black": "muted",
+      "bright-red": "error",
+      "bright-green": "success",
+      "bright-yellow": "warning",
+      "bright-blue": "accent",
+      "bright-magenta": "accent",
+      "bright-cyan": "live",
+      "bright-white": "text"
+    },
+    "truecolor": {
+      "background": "background",
+      "panel": "panel",
+      "text": "text",
+      "muted": "muted",
+      "accent": "accent",
+      "live": "live",
+      "success": "success",
+      "warning": "warning",
+      "error": "error"
+    }
+  }
+}
