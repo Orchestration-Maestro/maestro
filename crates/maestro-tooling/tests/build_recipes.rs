@@ -536,7 +536,6 @@ fn prepare_watch_workspace(workspace: &Workspace, target: &str) {
     .unwrap();
 }
 
-#[cfg(unix)]
 fn prepare_tooling_owner(workspace: &Workspace) {
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.0.join("crates/maestro-tooling");
@@ -557,7 +556,6 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     );
 }
 
-#[cfg(unix)]
 fn copy_tree(source: &Path, destination: &Path) {
     fs::create_dir_all(destination).unwrap();
     for entry in fs::read_dir(source).unwrap() {
