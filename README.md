@@ -52,7 +52,7 @@ Technical wording such as "the JSON-RPC specification", "an async task",
 ## Workspace crate rules
 
 `maestro-test-conventions` runs automatically with the workspace tests. Add
-new members to `workspace-crates.json` with a `core` or `dedicated` layer.
+new members to `workspace-crates.json` with a `core` or `dedicated` class.
 Only the conventions checker is currently implemented. Planned crate classes
 and dependency boundaries remain defined by the foundation specification.
 

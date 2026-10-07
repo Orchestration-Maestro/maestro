@@ -1,30 +1,24 @@
-use serde_json::Value;
+use crate::source::{Member, Source};
 
 /// Numbered planning nouns; technical uses without a number remain valid.
 const NUMBERED: &[&str] = &["slice", "spec", "task", "ticket", "issue", "pr"];
 
-pub(super) fn check(metadata: &Value) -> Result<(), String> {
-    let members = super::array(metadata, "workspace_members")?;
-    for package in super::array(metadata, "packages")? {
-        if members.contains(&package["id"]) {
-            let manifest = std::path::Path::new(super::string(package, "manifest_path")?);
-            for path in crate::source::files(manifest.parent().ok_or("manifest has no parent")?)? {
-                check_file(&path)?;
-            }
+pub(super) fn check(members: &[Member]) -> Result<(), String> {
+    for member in members {
+        for source in &member.sources {
+            check_file(source)?;
         }
     }
     Ok(())
 }
 
-fn check_file(path: &std::path::Path) -> Result<(), String> {
-    let source =
-        std::fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    for (start, comment) in crate::source::comments(&source) {
+fn check_file(source: &Source) -> Result<(), String> {
+    for (start, comment) in crate::source::comments(&source.contents) {
         if let Some(offset) = forbidden(comment) {
-            let line = crate::source::line(&source, start + offset);
+            let line = crate::source::line(&source.contents, start + offset);
             return Err(format!(
                 "{}:{line}: planning reference in comment",
-                path.display()
+                source.path.display()
             ));
         }
     }

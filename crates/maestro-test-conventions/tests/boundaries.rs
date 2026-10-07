@@ -88,6 +88,7 @@ fn source(workspace: &Workspace, owner: &str, relative: &str, contents: &str) {
 
 #[test]
 fn tool_declarations_have_one_owner() {
+    tool_declaration_kinds();
     for name in [
         "ToolDefinition",
         "ToolRenderContext",
@@ -252,6 +253,9 @@ fn wit_codegen_inputs_share_one_canonical_source() {
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
     reject_noncanonical_wit(&workspace, &guest);
+    wit_ownership_without_both_sides();
+    #[cfg(unix)]
+    wit_symlink_ownership(&workspace, &guest);
 }
 
 fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
@@ -434,10 +438,9 @@ fn raw_identifier_declarations_keep_their_owners() {
 }
 
 #[test]
-fn wit_static_paths_decode_rust_string_literals() {
+fn maestro_conventions_decodes_static_paths_as_rust() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
-    let member = workspace.root.join("crates/maestro-extensions-wasm");
     for (directory, literal) in [
         ("interfaces", r#""\x69nterfaces""#),
         ("interfaces", r#""\u{69}nterfaces""#),
@@ -453,28 +456,13 @@ fn wit_static_paths_decode_rust_string_literals() {
         ("new\nline", r#""new\nline""#),
         ("tab\tname", r#""tab\tname""#),
         ("return\rname", r#""return\rname""#),
+        ("physical\nnewline", "\"physical\r\nnewline\""),
+        ("physical\nnewline", "r#\"physical\r\nnewline\"#"),
+        ("physical\rnewline", r#""physical\rnewline""#),
     ] {
-        std::fs::create_dir_all(member.join(directory)).unwrap();
-        source(
-            &workspace,
-            "maestro-extensions-wasm",
-            "src/lib.rs",
-            &format!("wit_bindgen::generate!({{ path: {literal} }});"),
-        );
-        let host_path = format!("../maestro-extensions-wasm/{directory}");
-        source(
-            &workspace,
-            "maestro-extensions-wasmtime",
-            "build.rs",
-            &format!("wasmtime::component::bindgen!({{ path: {host_path:?} }});"),
-        );
-        assert_eq!(
-            check_workspace(&workspace.root),
-            Ok(()),
-            "literal: {literal}"
-        );
+        assert_static_path(&workspace, directory, literal);
     }
-    std::fs::create_dir(member.join("wit")).unwrap();
+    std::fs::create_dir(workspace.root.join("crates/maestro-extensions-wasm/wit")).unwrap();
     source(
         &workspace,
         "maestro-extensions-wasm",
@@ -488,28 +476,6 @@ fn wit_static_paths_decode_rust_string_literals() {
         r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
     );
     assert_eq!(check_workspace(&workspace.root), Ok(()));
-}
-
-#[test]
-fn invalid_wit_string_literals_require_review() {
-    let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
-    for literal in [
-        r#""\qinterfaces""#,
-        r#""\xFF""#,
-        r#""\u{D800}""#,
-        r#""\u{110000}""#,
-        r#""\u{}""#,
-    ] {
-        source(
-            &workspace,
-            "maestro-extensions-wasm",
-            "src/lib.rs",
-            &format!("wit_bindgen::generate!({{ path: {literal} }});"),
-        );
-        let error = check_workspace(&workspace.root).unwrap_err();
-        assert!(error.contains("requires review"), "{literal}: {error}");
-    }
 }
 
 fn check_runtime_declarations(
@@ -579,3 +545,337 @@ const NONCANONICAL_WIT: &[(&str, &str)] = &[
         "requires review",
     ),
 ];
+
+#[test]
+fn declarations_in_macro_tokens_keep_their_owners() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    for (relative, contents) in [
+        (
+            "src/lib.rs",
+            "macro_rules! records { () => { pub struct ToolDefinition; }; }",
+        ),
+        (
+            "included.rs",
+            "{ wrapper! { pub enum ToolDefinition { A } } }",
+        ),
+        (
+            "src/lib.rs",
+            "outer! { inner! { pub type ToolDefinition = (); } }",
+        ),
+    ] {
+        source(&workspace, "maestro-tui", relative, contents);
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains("ToolDefinition declaration belongs to maestro-tools"),
+            "{error}"
+        );
+        source(&workspace, "maestro-tui", relative, "");
+        source(&workspace, "maestro-tools", relative, contents);
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        source(&workspace, "maestro-tools", relative, "");
+    }
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        r#"#[example(value = nested!(struct ToolDefinition;))]
+        fn innocent() { let _ = "struct ToolDefinition"; }
+        macro_rules! lookalike { () => { #[example(struct ToolDefinition)] fn fine() {} }; }
+        "#,
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn trait_alias_declarations_keep_their_owners() {
+    for declaration in [
+        "pub trait ToolDefinition = Send;",
+        "macro_rules! define { () => { pub trait ToolDefinition = Send; }; }",
+    ] {
+        assert_tool_declaration_owner(declaration);
+    }
+}
+
+#[test]
+fn declarations_after_shebang_keep_their_owners() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    let declaration = "#!/usr/bin/env rust-script\npub struct ToolDefinition;";
+    source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "{}:2: ToolDefinition declaration belongs to maestro-tools, not maestro-tui",
+            workspace
+                .root
+                .join("crates/maestro-tui/src/lib.rs")
+                .display()
+        ))
+    );
+    source(&workspace, "maestro-tui", "src/lib.rs", "");
+    source(&workspace, "maestro-tools", "src/lib.rs", declaration);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn metavariable_keywords_do_not_declare_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "macro_rules! define { ($type:ident) => { $type ToolDefinition; }; }",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn contextual_union_and_raw_keywords_are_not_declarations() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    for contents in [
+        "fn union() {} fn innocent() { x.union(ToolDefinition); }",
+        "wrapper! { r#type ToolDefinition; struct $ToolDefinition; }",
+        "paste! { struct [<Tool Definition>]; } concat_idents! { Tool, Definition }",
+    ] {
+        source(&workspace, "maestro-tui", "src/lib.rs", contents);
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{contents}");
+    }
+    for declaration in [
+        "pub union ToolDefinition<T> { value: T }",
+        "pub union ToolDefinition where u8: Copy { value: u8 }",
+    ] {
+        assert_tool_declaration_owner(declaration);
+    }
+}
+
+#[test]
+fn functions_constants_and_statics_do_not_declare_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    for declaration in [
+        "pub fn config_selector() {}",
+        "pub const ToolDefinition: () = ();",
+        "pub static ToolRenderContext: () = ();",
+    ] {
+        source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{declaration}");
+    }
+}
+
+#[test]
+fn associated_types_in_macro_templates_keep_their_owners() {
+    assert_tool_declaration_owner(
+        "macro_rules! associated { () => { type ToolDefinition; }; } pub trait Owner { associated!(); }",
+    );
+}
+
+#[test]
+fn fixed_macro_declarations_with_metavariable_types_keep_their_owners() {
+    assert_tool_declaration_owner(
+        "macro_rules! define { ($t:ty) => { struct ToolDefinition { value: $t } }; } define!(u8);",
+    );
+}
+
+#[test]
+fn generated_macro_declaration_names_remain_manual_review() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "macro_rules! define { ($name:ident, $t:ty) => { struct $name { value: $t } }; } define!(ToolDefinition, u8);",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+fn assert_tool_declaration_owner(declaration: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "{}:1: ToolDefinition declaration belongs to maestro-tools, not maestro-tui",
+            workspace
+                .root
+                .join("crates/maestro-tui/src/lib.rs")
+                .display()
+        ))
+    );
+    source(&workspace, "maestro-tui", "src/lib.rs", "");
+    source(&workspace, "maestro-tools", "src/lib.rs", declaration);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
+    let member = workspace.root.join("crates/maestro-extensions-wasm");
+    std::fs::create_dir_all(member.join(directory)).unwrap();
+    source(
+        workspace,
+        "maestro-extensions-wasm",
+        "src/lib.rs",
+        &format!("wit_bindgen::generate!({{ path: {literal} }});"),
+    );
+    let host_path = format!("../maestro-extensions-wasm/{directory}");
+    let host = format!("wasmtime::component::bindgen!({{ path: {host_path:?} }});");
+    source(workspace, "maestro-extensions-wasmtime", "build.rs", &host);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Ok(()),
+        "literal: {literal}"
+    );
+    if directory.starts_with("physical") {
+        let other = if directory.contains('\r') {
+            "physical\nnewline"
+        } else {
+            "physical\rnewline"
+        };
+        std::fs::create_dir_all(member.join(other)).unwrap();
+        let wrong = format!("../maestro-extensions-wasm/{other}");
+        source(
+            workspace,
+            "maestro-extensions-wasmtime",
+            "build.rs",
+            &format!("wasmtime::component::bindgen!({{ path: {wrong:?} }});"),
+        );
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("same canonical source roots")
+        );
+        source(workspace, "maestro-extensions-wasmtime", "build.rs", &host);
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+}
+
+fn tool_declaration_kinds() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    for name in [
+        "ToolDefinition",
+        "ToolRenderContext",
+        "ToolRenderResultOptions",
+    ] {
+        for shape in [
+            "pub enum NAME<T> { Entry(T) }",
+            "pub union NAME { value: u8 }",
+            "pub trait NAME<T> {}",
+            "pub type NAME<T> = Vec<T>;",
+            "pub mod NAME {}",
+            "pub trait Owner { type NAME; }",
+            "impl Owner for () { type NAME = (); }",
+            "unsafe extern \"C\" { type NAME; }",
+        ] {
+            let declaration = format!("#[example]\n{}", shape.replace("NAME", name));
+            source(&workspace, "maestro-tui", "src/lib.rs", &declaration);
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "{}:2: {name} declaration belongs to maestro-tools, not maestro-tui",
+                    workspace
+                        .root
+                        .join("crates/maestro-tui/src/lib.rs")
+                        .display()
+                ))
+            );
+            source(&workspace, "maestro-tui", "src/lib.rs", "");
+            source(&workspace, "maestro-tools", "src/lib.rs", &declaration);
+            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            source(&workspace, "maestro-tools", "src/lib.rs", "");
+        }
+    }
+}
+
+fn wit_ownership_without_both_sides() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasmtime"]);
+    std::fs::create_dir(
+        workspace
+            .root
+            .join("crates/maestro-extensions-wasmtime/interfaces"),
+    )
+    .unwrap();
+    source(
+        &workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "interfaces" });"#,
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("no guest-owned source member")
+    );
+    source(&workspace, "maestro-extensions-wasmtime", "build.rs", "");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    for declaration in [
+        r#"wit_bindgen::generate!({ inline: "package maestro:fixture; world fixture {}" });"#,
+        r#"nested! { wit_bindgen::generate!({ inline: "package maestro:fixture; world fixture {}" }); }"#,
+    ] {
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/lib.rs",
+            declaration,
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+    for input in [
+        "{}",
+        "{ path: [] }",
+        "{ world: \"fixture\" }",
+        "{ path: dynamic() }",
+        "{ inline: WIT_TEXT }",
+    ] {
+        source(
+            &workspace,
+            "maestro-extensions-wasm",
+            "src/lib.rs",
+            &format!("wit_bindgen::generate!({input});"),
+        );
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("requires review")
+        );
+        source(&workspace, "maestro-extensions-wasm", "src/lib.rs", "");
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
+}
+
+#[cfg(unix)]
+fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
+    let host = workspace.root.join("crates/maestro-extensions-wasmtime");
+    std::os::unix::fs::symlink(guest, host.join("linked")).unwrap();
+    source(
+        workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "linked" });"#,
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    std::os::unix::fs::symlink(host.join("copied"), guest.join("outside")).unwrap();
+    source(
+        workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/outside" });"#,
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("guest-owned canonical source")
+    );
+    source(
+        workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "linked" });"#,
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}

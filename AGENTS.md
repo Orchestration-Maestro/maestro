@@ -214,6 +214,18 @@ next release's history from conventional commits. PRs never edit CHANGELOG.md.
 
 ## Approved repository-tooling libraries
 
+The private conventions checker may use `syn =3.0.6` (defaults off;
+`full`, `parsing`, `printing`, `visit`), `proc-macro2 =1.0.107` (default
+`proc-macro` plus `span-locations`), `toml =1.1.6` (locked as
+`1.1.6+spec-1.1.0`; default `std`, `serde`, `parse`, `display`),
+`ra-ap-rustc_lexer =0.176.0` (no features) and `cargo_metadata =0.23.1`
+(defaults off; no features). All are MIT OR Apache-2.0 except
+`cargo_metadata`, which is MIT. Dependency feature unification also enables
+syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
+`unicode-ident` is held at 1.0.24 in the lockfile because the lexer asserts
+matching Unicode tables; the hold lifts when `unicode-properties` publishes
+the newer tables.
+
 The private contribution-policy executable may use `base64 =0.23.1` with only
 `std` for GitHub content, and `chrono =0.4.45` with only `std` for UTC metadata
 dates. Neither enables its defaults. Tests may use dev-only `yaml-rust2 =0.13.0`
