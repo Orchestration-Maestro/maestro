@@ -143,10 +143,10 @@ Delete a malformed comment before posting its single correction. Include
 `just check` is distinct from `just test`: read the full output, fix warnings,
 and run each changed test file plus focused cases. Use deterministic controlled
 provider fixtures, never live provider APIs, real keys or paid tokens by default.
-All local test, doc, conventions and hook commands must run in a credential-cleared
-child environment with disposable HOME, config, TMPDIR and XDG paths. Never read,
-move or delete actual authentication files to isolate a test. Name regression
-cases after behavior without leading issue numbers.
+As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test
+script removes the specified provider credentials and sets the agent's auth file
+aside, restoring it on exit. Name regression cases after behavior without leading
+issue numbers.
 
 Analyze remote PR metadata before checking it out. Commit only when authorized.
 Use a feature branch, signed `git commit -S`, protected PRs and the merge queue;

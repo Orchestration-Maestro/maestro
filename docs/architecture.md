@@ -82,8 +82,9 @@ Run `just check`, `just test` and `just ci` with pinned tools. `just check` incl
 formatting, Clippy with warnings denied, strict public rustdoc and conventions;
 `just ci` is the shared merge check. Workstation Cargo commands, including nested
 metadata and hook commands, use the capped launcher with `CARGO_BUILD_JOBS=3`.
-Tests must clear credentials and isolate HOME/config, TMPDIR and XDG locations;
-keep toolchains and non-secret caches usable without moving real authentication.
+As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test
+script removes the specified provider credentials and sets the agent's auth file
+aside, restoring it on exit.
 
 For example, a scratch workspace with listed settings and models members cannot
 add this settings manifest declaration:
