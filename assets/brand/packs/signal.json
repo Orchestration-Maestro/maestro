@@ -41,8 +41,23 @@
   "radii": {"none": 0, "control": 6, "panel": 12},
   "mark": {
     "template": "../mark.svg",
+    "variants": {
+      "flat": "../mark-flat.svg",
+      "mono": "../mark-mono.svg",
+      "small": "../mark-small.svg"
+    },
     "minimum-size": 32,
-    "clear-space": 0.0546875
+    "small-minimum-size": 16,
+    "clear-space": 0.0546875,
+    "app-icon-scale": 0.72
+  },
+  "glyphs": {
+    "mark": {"symbol": "✦", "color": "accent"},
+    "working": {"symbol": "✦", "color": "live"},
+    "idle": {"symbol": "✦", "color": "accent"},
+    "passed": {"symbol": "✓", "color": "success"},
+    "failed": {"symbol": "✗", "color": "error"},
+    "tool-step": {"symbol": "┃", "color": "muted"}
   },
   "modes": {
     "dark": {

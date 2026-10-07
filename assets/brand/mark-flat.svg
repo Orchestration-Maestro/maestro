@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>{{wordmark}} flat mark</title>
+  <circle cx="256" cy="256" r="232" fill="none" stroke="var(--mark-ring)" stroke-width="14"/>
+  <g stroke="var(--mark-ring)" stroke-width="14" stroke-linecap="round">
+    <path d="M256 30 L256 58"/>
+    <path d="M482 256 L454 256"/>
+    <path d="M256 482 L256 454"/>
+    <path d="M30 256 L58 256"/>
+  </g>
+  <g stroke="var(--mark-m)" stroke-width="22" stroke-linecap="round">
+    <line x1="150" y1="386" x2="150" y2="196"/>
+    <line x1="150" y1="196" x2="256" y2="326"/>
+    <line x1="256" y1="326" x2="362" y2="196"/>
+    <line x1="362" y1="196" x2="362" y2="386"/>
+  </g>
+  <g fill="var(--mark-node)">
+    <circle cx="150" cy="386" r="28"/>
+    <circle cx="150" cy="196" r="28"/>
+    <circle cx="256" cy="326" r="28"/>
+    <circle cx="362" cy="196" r="28"/>
+    <circle cx="362" cy="386" r="28"/>
+  </g>
+  <path d="M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z" fill="var(--mark-star)"/>
+</svg>

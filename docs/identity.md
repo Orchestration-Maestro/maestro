@@ -4,8 +4,9 @@ Conduct every model.
 
 Use [the default brand pack](../assets/brand/brand.json) for brand values.
 [Signal](../assets/brand/packs/signal.json) is an alternate pack with the same
-shape. This guide covers the assets and their use; it does not install a theme,
-change product messages or provide a runtime pack loader.
+shape. This is Maestro's approved brand system. The files define its assets and
+usage; they do not install a theme, change product messages or provide a runtime
+pack loader.
 
 ## Voice
 
@@ -19,6 +20,10 @@ in a documentation introduction or an empty state. Errors, rustdoc and code
 comments stay literal. Do not use emoji, hype or claims such as "revolutionary",
 "blazing-fast", "seamless" or "magic". Avoid "just" and "simply" when explaining
 work the reader has to do.
+
+Words we use: run, session, model, tool, turn, conduct, fix, check, land, green.
+Words we avoid: blazing, revolutionary, magic, seamless, supercharge, just,
+simply, leverage, utilize.
 
 Product messages inherited from established behavior keep their wording; only
 branding changes. These writing examples are not replacement product strings.
@@ -83,9 +88,10 @@ public item and crate root still needs the documentation required by
 ## The conductor's compass
 
 The mark is a ring with four compass ticks, a five-node M and a four-point North
-Star. The ring holds the composition; the ticks establish direction; the nodes
-connect the M; the star sits above its center. This is a visual idea, not a claim
-about execution phases or the number of tools in a session.
+Star. The ring is the stage for the work. The ticks suggest four beats and the
+four modes: chat, print, JSON and RPC. The node-M connects models and tools into
+one line of work. The North Star is the goal and the live signal above the M.
+These are visual meanings, not limits on the number of tools or execution phases.
 
 <img src="../assets/brand/dark/mark.svg" alt="Maestro mark on its dark canvas" width="128" height="128">
 
@@ -107,10 +113,11 @@ are 150, 256 and 362; its upper nodes are at y=196, center node at y=326 and low
 nodes at y=386. Bars have width 20; all five nodes have radius 26. The star is
 centered at (256, 160). Keep these coordinates when recoloring the master.
 
-Use at least `mark.minimum-size` (32 CSS pixels) for the full mark. Leave
-`mark.clear-space` times the rendered width outside the square canvas on each
-side: 28/512, or one tick length in master units. Keep the same space between the
-mark and the wordmark. Both measurements live in each pack.
+Use at least `mark.minimum-size` (32 CSS pixels) for a full mark. Below that,
+use the small template down to `mark.small-minimum-size` (16 CSS pixels).
+Leave `mark.clear-space` times the rendered width outside the square canvas on
+each side: 28/512, or one tick length in master units. Keep the same space between
+the mark and the wordmark. These measurements live in each pack.
 
 Keep the mark square and upright. Do not stretch, crop, add a shadow or change
 stroke widths. Use the rendered asset for images; unresolved template variables
@@ -118,32 +125,48 @@ are not a distributable image. Give a standalone image an accessible name; use
 empty alternative text when the adjacent wordmark already supplies the same
 name. Do not use the mark alone to report a status.
 
-### Proposed mark forms and status motifs
+### Five mark forms
 
-These are design proposals, not shipped variants or product behavior. Only the
-flat template and its default dark/light renders are supplied here. The other
-forms, motion and glyph usage need review with the theme and frontend work.
-
-| Proposed form | Intended use |
+| Form | Use |
 | --- | --- |
-| Metal | Brass-to-copper treatment and an Ember star on dark promotional surfaces; any gradient stops must be pack roles. |
-| Flat copper | The full geometry for docs and interface chrome, with mode-specific star and node roles. |
-| Mono | One foreground via `currentColor`, resolved from an accessible pack role, for print and single-color contexts. |
-| App icon | The mark centered in a background-colored rounded square; use pack radii. |
-| Small size | A separately reviewed simplification below 32 pixels, with fewer details and stronger strokes; do not shrink the full mark below its minimum. |
+| Metal | Brass-to-copper treatment with an Ember star and glow on dark hero, banner and splash surfaces. Gradient stops use pack roles. |
+| Flat copper | [`mark-flat.svg`](../assets/brand/mark-flat.svg) for docs and interface chrome: ring/ticks 14 units, bars 22, nodes 28, with a mode-colored star. |
+| Mono | [`mark-mono.svg`](../assets/brand/mark-mono.svg) for print and single-color contexts: ring/ticks 16 units, bars 26, nodes 30; all color comes from `currentColor`. |
+| App icon | The mark centered at `mark.app-icon-scale` (72%) of a background-colored rounded square; use pack radii and the small form when needed. |
+| Small size | [`mark-small.svg`](../assets/brand/mark-small.svg) below 32 pixels: no ticks or separate node circles; ring radius 220, ring stroke 40, M stroke 54 and a simplified star. |
 
-The proposed live motif pulses the star in Ember while working and settles it to
-Brass while idle. The ring can express measured progress; the nodes can indicate
-tool activity. These ideas must not add execution phases, fake progress, new
-messages or timing guarantees. No animation is installed by this pack. A future
-implementation must supply a static reduced-motion equivalent and a text label,
-with colors resolved through that pack's roles and checked in both modes.
+The three variant templates are transparent. Place the flat/small forms on the
+pack's `background`; resolve the mono foreground from `text`. Their geometry is
+fixed. The original role-colored template and its two default renders remain
+available. Metal and app-icon treatments are defined here for their owning
+surface implementations; this pack does not include a renderer for them.
 
-The proposed plain-text mark is `✦` (North Star). Proposed status signs are
-`✦ working`, `✦ idle`, `✓ passed`, `✗ failed` and `┃` beside a named tool step.
-They are functional signs, not decorative emoji. Font support and terminal cell
-widths need checking before use. Never substitute them for established product
-output under a branding change.
+### Live status and glyphs
+
+The star pulses while working and settles when idle: Ember and Brass in Forge
+dark mode. Resolve working through `live` and idle through `accent` in every
+pack and mode. The ring shows measured progress; the nodes indicate tool
+activity. Reduced motion gives a static mark with the same text status. Do not
+invent completion percentages, execution phases or timing guarantees.
+
+The plain-text mark is the North Star, `✦`. Symbols and their color-role aliases
+live in `glyphs`, so a pack swap can replace them too.
+
+| Glyph role | Sign and label | Color role |
+| --- | --- | --- |
+| mark | `✦` with the wordmark | accent |
+| working | `✦ working` | live |
+| idle | `✦ idle` or `✦ done` | accent |
+| passed | `✓ passed` | success |
+| failed | `✗ failed` | error |
+| tool-step | `┃` beside a named tool step | muted |
+
+These are functional signs, not decorative emoji. Keep a text label, check font
+support and terminal cell widths, and never convey status through motion or
+color alone. All glyph foreground/background ratios follow their aliases in
+the text-contrast table below. The theme and frontend implementations own motion
+and status rendering; no product behavior or animation ships in this change.
+Established product wording remains unchanged.
 
 ## Color roles
 
@@ -236,8 +259,10 @@ changes a palette color.
 
 These non-text roles meet the
 [3:1 graphics threshold](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)
-on their stated surfaces. Mark ratios use the built-in canvas only; marks are
-not text roles. A logo's exemption does not make its colors safe for text.
+on their stated surfaces. Mark ratios use the pack's `background`, built into
+the default renders. Flat and small use the same role ratios on that background;
+mono uses the `text` ratios above. Marks are not text roles. A logo's exemption
+does not make its colors safe for text.
 
 | Pack and mode | Mark roles | Canvas ratio |
 | --- | --- | ---: |
@@ -323,13 +348,15 @@ keys; swatch keys and values belong to each pack.
 | `fonts` | `display`, `body`, `mono`: each has `family`, `license`, `license-url`, `fallbacks` (ordered string array) |
 | `type` | Map of type roles to a `font` key, positive pixel `size`, unitless `line-height` and numeric `weight` |
 | `spacing`, `radii` | Maps of role names to nonnegative CSS pixel values |
-| `mark` | `template` path relative to the JSON file, `minimum-size` in CSS pixels, `clear-space` as a fraction of rendered width |
+| `mark` | `template` and `variants` paths relative to the JSON file; `minimum-size` and `small-minimum-size` in CSS pixels; `clear-space` and `app-icon-scale` as fractions of rendered width |
+| `glyphs` | Map of glyph roles to a `symbol` string and a `color` mode-role alias |
 | `terminal` | `ansi` and `truecolor` maps whose values are mode color role names |
 
 Resolve a color in two lookups: `modes[mode].colors[role]`, then `palette[key]`.
 For an ANSI or truecolor entry, first resolve its terminal alias to that role.
 Resolve a type entry's `font` through `fonts`, then use its family and fallbacks.
-Do not branch on pack names, swatch names or font families.
+Resolve each glyph's `color` through the same mode roles. Do not branch on pack
+names, swatch names or font families.
 
 ### Template substitution contract
 
@@ -342,10 +369,17 @@ Do not branch on pack names, swatch names or font families.
 | `var(--mark-node)` | Resolved `mark-node` color | Four outer nodes |
 | `var(--mark-live)` | Resolved `mark-live` color | Center node |
 | `var(--mark-star)` | Resolved `mark-star` color | North Star |
+| `currentColor` | Resolved `text` color | Every stroke and fill in the mono variant |
 
-Read the template named by the selected pack. Replace each reference with the
-selected mode's resolved value, preserving geometry. Export an SVG with no
-unresolved references. The default outputs are
+The default template uses all five mark roles. Flat uses `mark-ring`, `mark-m`,
+`mark-node` for all five nodes, and `mark-star`; small uses `mark-ring`, `mark-m`
+and `mark-star`. Mono uses only `currentColor`. For inline mono SVG, set `color`
+on its host; for a standalone render, substitute the resolved `text` color.
+External image elements do not inherit a page's `currentColor`.
+
+Read the template named by the selected pack, or a path in `mark.variants`.
+Replace each reference with the selected mode's resolved value, preserving
+geometry. Export an SVG with no unresolved references. The default outputs are
 [`dark/mark.svg`](../assets/brand/dark/mark.svg) and
 [`light/mark.svg`](../assets/brand/light/mark.svg). They are derived files, not
 independent color settings. The template contains no hex colors.
@@ -356,8 +390,9 @@ independent color settings. The template contains no hex colors.
    with the same keys. Keep the file beside its referenced template, or adjust
    `mark.template` to its new relative location.
 2. Resolve both modes and substitute the template references above. Save the
-   dark/light renders to the paths used by the README and docs. This is a data
-   substitution; neither template geometry nor consumer code changes.
+   dark/light renders to the paths used by the README and docs. Resolve variant
+   paths from the same JSON directory. This is a data substitution; neither
+   template geometry nor consumer code changes.
 3. Take the wordmark and tagline from the selected pack when updating static
    README or documentation text. Static files do not read JSON at page-view time.
 4. Recompute every allowed contrast pair with the method above, including ANSI
@@ -367,7 +402,7 @@ independent color settings. The template contains no hex colors.
 The repository currently ships these data files and static renders, not a
 pack-selection command or renderer. Runtime integration belongs to the theme,
 web and export implementations. Every runtime consumer must read the selected
-pack and never hard-code brand colors, fonts, sizes, wordmark, tagline or mark
-paths. The theme loader must prove a same-format pack swap reaches its consumers
-without a code change. A brand swap must not change behavior, message wording,
-custom themes or the user's terminal font.
+pack and never hard-code brand colors, fonts, sizes, wordmark, tagline, glyphs or
+mark paths. The theme loader must prove a same-format pack swap reaches its
+consumers without a code change. A brand swap must not change behavior, message
+wording, custom themes or the user's terminal font.
