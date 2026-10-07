@@ -57,15 +57,6 @@ fn execute(mut args: Vec<OsString>) -> Result<u8, String> {
         Some("copy-assets") => assets::run(args),
         Some("rustdoc") => rustdoc::run(&root, args),
         Some("cargo-target") => cargo_target::run(&root, args),
-        Some("cargo-case") => {
-            let executable = args
-                .first()
-                .ok_or("repository tools: expected test case executable")?;
-            let mut command = Command::new(executable);
-            command.args(&args[1..]);
-            cargo_target::runtime_environment(&mut command);
-            isolation::run(command)
-        }
         Some("format-staged") if args.is_empty() => format_staged::run(),
         Some("pre-commit") if args.is_empty() => pre_commit::run(),
         Some("source") => {

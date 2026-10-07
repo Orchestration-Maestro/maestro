@@ -29,8 +29,25 @@ fn input(path: &Path, root: &Path, target: &Path) -> bool {
 
 fn run() -> Result<(), String> {
     let root = std::env::current_dir().map_err(|error| error.to_string())?;
-    let cargo = std::env::args_os().nth(1).unwrap_or_else(|| "cargo".into());
-    let target = cargo_directory::resolve(&cargo, &root)?;
+    let mut args = std::env::args_os().skip(1);
+    let cargo = args.next().unwrap_or_else(|| "cargo".into());
+    let mut packages = Vec::new();
+    while let Some(option) = args.next() {
+        if option != "--package" {
+            return Err("expected --package <name>".into());
+        }
+        packages.push(args.next().ok_or("expected package name")?);
+    }
+    let mut selection = Vec::new();
+    if packages.is_empty() {
+        selection.push(std::ffi::OsString::from("--workspace"));
+    } else {
+        for package in packages {
+            selection.push("--package".into());
+            selection.push(package);
+        }
+    }
+    let target = cargo_directory::resolve(&cargo, &root, &std::env::vars_os().collect::<Vec<_>>())?;
     let (send, receive) = std::sync::mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |event: notify::Result<Event>| {
         let _ = send.send(event);
@@ -41,7 +58,8 @@ fn run() -> Result<(), String> {
         .map_err(|error| error.to_string())?;
     loop {
         let status = Command::new(&cargo)
-            .args(["build", "--workspace", "--locked"])
+            .args(["build", "--locked"])
+            .args(&selection)
             .status()
             .map_err(|error| error.to_string())?;
         if !status.success() {

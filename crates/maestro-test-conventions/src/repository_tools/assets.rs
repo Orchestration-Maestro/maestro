@@ -100,10 +100,11 @@ fn group(
         .map_err(|error| format!("repository tools: asset {}: {error}", directory.display()))?
     {
         let entry = entry.map_err(|error| error.to_string())?;
-        if entry
-            .path()
-            .extension()
-            .is_some_and(|value| value == extension)
+        if !entry.file_name().to_string_lossy().starts_with('.')
+            && entry
+                .path()
+                .extension()
+                .is_some_and(|value| value == extension)
         {
             copy(
                 &entry.path(),

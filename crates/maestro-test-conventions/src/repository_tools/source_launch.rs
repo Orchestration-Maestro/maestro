@@ -60,10 +60,22 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
     if no_env {
         println!("Running without API keys...");
     }
+    let environment = std::env::vars_os()
+        .filter(|(name, _)| {
+            !no_env
+                || (!REMOVED.iter().any(|removed| name == removed)
+                    && !(shell == "bash" && name == "HF_TOKEN"))
+        })
+        .collect::<Vec<_>>();
+    let configure = |command: &mut Command| {
+        command.env_clear().envs(environment.iter().cloned());
+    };
     let cargo = if let Some(cargo) = std::env::var_os("CARGO") {
         cargo
     } else {
-        let output = Command::new("rustup")
+        let mut resolution = Command::new("rustup");
+        configure(&mut resolution);
+        let output = resolution
             .args(["which", "cargo"])
             .current_dir(root)
             .output()
@@ -84,16 +96,6 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
         );
         return Ok(1);
     }
-    let configure = |command: &mut Command| {
-        if no_env {
-            for name in REMOVED {
-                command.env_remove(name);
-            }
-            if shell == "bash" {
-                command.env_remove("HF_TOKEN");
-            }
-        }
-    };
     let mut build = Command::new(&cargo);
     build
         .args(["build", "-p", "maestro", "--locked"])
@@ -105,7 +107,7 @@ pub(super) fn run(shell: &str, root: &Path, args: Vec<OsString>) -> Result<u8, S
     if !status.success() {
         return Ok(super::status_code(status));
     }
-    let target = super::cargo_directory::resolve(&cargo, root)?;
+    let target = super::cargo_directory::resolve(&cargo, root, &environment)?;
     let mut application = Command::new(
         target
             .join("debug")

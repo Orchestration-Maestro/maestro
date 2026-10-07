@@ -17,7 +17,7 @@
     "clean": "cargo clean -p maestro-tui",
     "build": "cargo build -p maestro-tui",
     "test": "cargo test -p maestro-tui",
-    "dev": "just dev",
+    "dev": "just dev-package maestro-tui",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "maestroActivation": {

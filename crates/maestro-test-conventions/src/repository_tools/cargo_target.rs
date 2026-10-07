@@ -62,7 +62,7 @@ pub(super) fn run(root: &Path, args: Vec<OsString>) -> Result<u8, String> {
         owner.as_str(),
         "maestro-models" | "maestro-agent" | "maestro-app"
     ) {
-        timed_cases(root, executable, &args[1..])
+        timed_cases(executable, &args[1..])
     } else {
         super::isolation::run(command)
     }
@@ -82,7 +82,7 @@ pub(super) fn runtime_environment(command: &mut Command) {
     }
 }
 
-fn timed_cases(root: &Path, executable: &OsString, args: &[OsString]) -> Result<u8, String> {
+fn timed_cases(executable: &OsString, args: &[OsString]) -> Result<u8, String> {
     if args.iter().any(|arg| arg == "--list") {
         let mut command = Command::new(executable);
         command.args(args);
@@ -180,11 +180,14 @@ fn timed_cases(root: &Path, executable: &OsString, args: &[OsString]) -> Result<
             let options = &options;
             scope.spawn(move || {
                 loop {
+                    if super::isolation::interrupted() {
+                        break;
+                    }
                     let name = queue.lock().unwrap().pop_front();
                     let Some(name) = name else {
                         break;
                     };
-                    let result = run_case(root, executable, &name, options);
+                    let result = run_case(executable, &name, options);
                     results.lock().unwrap().push((name, result));
                 }
             });
@@ -225,67 +228,31 @@ fn timed_cases(root: &Path, executable: &OsString, args: &[OsString]) -> Result<
         if failed == 0 { "ok" } else { "FAILED" },
         total.saturating_sub(selected_count)
     );
-    Ok(if failed == 0 { 0 } else { 1 })
+    Ok(if super::isolation::interrupted() {
+        143
+    } else if failed == 0 {
+        0
+    } else {
+        1
+    })
 }
 
 fn run_case(
-    root: &Path,
     executable: &OsString,
     name: &str,
     options: &[OsString],
 ) -> Result<(std::process::Output, bool, bool), String> {
     let scratch = super::isolation::Scratch::create()?;
     let outcome = scratch.0.join("outcome");
-    let mut command = Command::new(std::env::current_exe().map_err(|error| error.to_string())?);
+    let mut command = Command::new(executable);
     command
-        .arg("--root")
-        .arg(root)
-        .arg("cargo-case")
-        .arg(executable)
         .arg("--exact")
         .arg(name)
         .args(options)
         .arg("--logfile")
         .arg(&outcome);
-    command
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
-    let child = command
-        .spawn()
-        .map_err(|error| format!("repository tools: spawn test case: {error}"))?;
-    let pid = child.id();
-    let start = std::time::Instant::now();
-    let deadline = deadline();
-    let (send, receive) = std::sync::mpsc::channel();
-    let waiter = std::thread::spawn(move || {
-        let output = child.wait_with_output();
-        let elapsed = start.elapsed();
-        let _ = send.send((output, elapsed));
-    });
-    let (result, expired) = match receive.recv_timeout(deadline) {
-        Ok((output, elapsed)) => (output, elapsed >= deadline),
-        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-            #[cfg(unix)]
-            {
-                let _ = Command::new("kill")
-                    .args(["-TERM", &pid.to_string()])
-                    .status();
-            }
-            #[cfg(windows)]
-            {
-                let _ = Command::new("taskkill")
-                    .args(["/PID", &pid.to_string(), "/T", "/F"])
-                    .status();
-            }
-            let (output, _) = receive.recv().map_err(|error| error.to_string())?;
-            (output, true)
-        }
-        Err(error) => return Err(error.to_string()),
-    };
-    waiter
-        .join()
-        .map_err(|_| "repository tools: case waiter panicked")?;
-    let output = result.map_err(|error| format!("repository tools: wait test case: {error}"))?;
+    runtime_environment(&mut command);
+    let (output, expired) = super::isolation::case_output(command, deadline())?;
     let ignored = if output.status.success() && !expired {
         let outcome = std::fs::read_to_string(&outcome)
             .map_err(|error| format!("repository tools: read test outcome: {error}"))?;

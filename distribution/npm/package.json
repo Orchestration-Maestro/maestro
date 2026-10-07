@@ -13,6 +13,7 @@
     "dev": "just dev",
     "check": "just check",
     "test": "just test",
-    "prepublishOnly": "just prepublish"
+    "prepublishOnly": "just prepublish",
+    "dev:tsc": "just dev-tsc"
   }
 }

@@ -20,7 +20,7 @@
     "clean": "cargo clean -p maestro-app",
     "build": "cargo build -p maestro-app",
     "test": "cargo test -p maestro-app",
-    "dev": "just dev",
+    "dev": "just dev-package maestro-app",
     "prepublishOnly": "npm run clean && npm run build",
     "build:binary": "just binary",
     "copy-assets": "just assets",

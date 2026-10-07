@@ -74,3 +74,11 @@ crates/
   maestro-tui/    # Terminal UI components (terminal owner activation)
   maestro-app/    # CLI and interactive application (application owner activation)
 ```
+
+## Package watch selection
+
+`just dev` watches the delivered models and agent packages. `just dev-tsc`
+watches models only; browser compiler, stylesheet and example watching activate
+with the browser crate. `just dev-package <package>` scopes watching to one
+package while Cargo builds its dependencies. The source launcher's `--no-env`
+environment applies to Cargo metadata and builds as well as the application.

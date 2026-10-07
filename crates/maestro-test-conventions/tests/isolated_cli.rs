@@ -290,7 +290,7 @@ fn source_no_env_keeps_each_shells_exact_scope() {
     std::fs::create_dir_all(target.join("debug")).unwrap();
     let app = workspace.command("environment-source", "env");
     std::fs::copy(app, target.join("debug/maestro")).unwrap();
-    let cargo = workspace.command("build-source", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s\"}\\n' \"$CARGO_TARGET_DIR\"; else test \"$1\" = build; fi");
+    let cargo = workspace.command("build-source", &format!(r#"env > {:?}/$1-environment; if test "$1" = metadata; then printf '{{"target_directory":"%s"}}\n' "$CARGO_TARGET_DIR"; else test "$1" = build; fi"#, workspace.root));
     let removed = "ANTHROPIC_API_KEY ANTHROPIC_OAUTH_TOKEN OPENAI_API_KEY GEMINI_API_KEY GROQ_API_KEY CEREBRAS_API_KEY XAI_API_KEY OPENROUTER_API_KEY ZAI_API_KEY MISTRAL_API_KEY MINIMAX_API_KEY MINIMAX_CN_API_KEY AI_GATEWAY_API_KEY OPENCODE_API_KEY COPILOT_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN GOOGLE_APPLICATION_CREDENTIALS GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT GOOGLE_CLOUD_LOCATION AWS_PROFILE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_REGION AWS_DEFAULT_REGION AWS_BEARER_TOKEN_BEDROCK AWS_CONTAINER_CREDENTIALS_RELATIVE_URI AWS_CONTAINER_CREDENTIALS_FULL_URI AWS_WEB_IDENTITY_TOKEN_FILE AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL AZURE_OPENAI_RESOURCE_NAME";
     let retained = [
         "KIMI_API_KEY",
@@ -325,6 +325,31 @@ fn source_no_env_keeps_each_shells_exact_scope() {
                         .count(),
                     usize::from(no_env)
                 );
+                for stage in ["metadata", "build"] {
+                    let child = std::fs::read_to_string(
+                        workspace.root.join(format!("{stage}-environment")),
+                    )
+                    .unwrap();
+                    for name in removed.split_whitespace() {
+                        assert_eq!(
+                            child.lines().any(|line| line == format!("{name}={value}")),
+                            !no_env,
+                            "{shell}: {stage}: {name}"
+                        );
+                    }
+                    for name in retained {
+                        assert!(
+                            child.lines().any(|line| line == format!("{name}={value}")),
+                            "{shell}: {stage}: {name}"
+                        );
+                    }
+                    assert_eq!(
+                        child
+                            .lines()
+                            .any(|line| line == format!("HF_TOKEN={value}")),
+                        !(no_env && shell == "bash")
+                    );
+                }
                 for name in removed.split_whitespace() {
                     assert_eq!(
                         text.lines().any(|line| line == format!("{name}={value}")),

@@ -41,8 +41,10 @@ source launch and developer watch resolve Cargo's artifact directory through
 Isolated children receive an allowlisted environment, not a credential
 blacklist. Fresh, distinct directories provide HOME, temporary storage and all
 XDG roots. Unix scratch allocation uses fresh unique directories directly under
-`/tmp`, so nested entrypoints do not accumulate temporary path prefixes or
-exceed native Unix socket path capacity. TMP and TEMP equal TMPDIR. `MAESTRO_NO_LOCAL_LLM=1` disables local
+`/tmp`, so ordinary nested entrypoints do not accumulate temporary path prefixes
+or exceed native Unix socket path capacity. A timed case's nested entrypoints
+instead allocate beneath its owned scratch tree, so cancelling that case removes
+all of its temporary roots. TMP and TEMP equal TMPDIR. `MAESTRO_NO_LOCAL_LLM=1` disables local
 provider discovery. No original authentication file is read, renamed or restored.
 Only toolchain/cache locations and explicit build/test controls survive.
 Cargo's native test runner also preserves its runtime library search paths and
@@ -51,7 +53,9 @@ manifest directory metadata. Documentation execution preserves RUSTDOCFLAGS.
 The developer `--no-env` switch removes only its observed provider credential
 set. It does not replace HOME or disable local discovery. Bash removes HF_TOKEN;
 PowerShell retains it. Both retain KIMI_API_KEY, FIREWORKS_API_KEY and unknown
-API-key names. Neither adapter strips any other application argument.
+API-key names. Neither adapter strips any other application argument. The source
+launcher computes this environment once and applies it to every child, including
+Cargo resolution, metadata, build and the application.
 
 ## Native tests and documentation
 
@@ -63,7 +67,12 @@ libtest discovery, then run selected exact cases in isolated children with a
 30,000 ms deadline per case. Other owners retain the whole libtest harness with
 no new deadline. Concurrency comes from `--test-threads`, RUST_TEST_THREADS or
 available parallelism. Timeout failures do not prevent other cases reporting.
-Per-case execution uses a distinct private libtest outcome log for each child;
+One process-owner registry tracks active isolated children. Deadlines and runner
+interruption cancel every affected case's process group immediately, then reap
+children and remove owned scratch. Linux adopts orphaned case descendants to
+reap them too. An interrupted timed runner exits 143 for TERM, never success.
+Ordinary isolate owners still propagate TERM to nested owners so they can reap
+children and clean up. Per-case execution uses a distinct private libtest outcome log for each child;
 executed, failed and ignored counts do not depend on stdout or presentation
 mode. Caller-supplied `--logfile` is rejected rather than overwritten by several
 children.
@@ -116,7 +125,12 @@ guarantee cleanup.
 `just clean` removes Cargo's declared artifact directory; `just build` builds
 all existing members. `just prepublish` runs clean, build, then check without
 publishing. `just dev` stays running with an event-driven native watcher,
-performing an initial workspace build and rebuilding after Rust/config changes.
+performing an initial selected build and rebuilding after Rust/config changes.
+The root selects delivered models and agent packages; `just dev-tsc` selects
+models only. `just dev-package <package>` watches one package, with dependencies
+built by Cargo. The watcher accepts repeatable `--package <name>` selections;
+without one it builds the workspace. Browser watch/compiler/CSS/example
+selection activates with the browser crate, not a placeholder build here.
 Changes arriving during a build schedule another build; generated target and
 Git files do not trigger builds. Compiler failures are reported without stopping
 the watcher. Launch it through the recipe so interruption terminates its owned
@@ -126,8 +140,9 @@ binary, not to the std-only isolation bootstrap.
 Private npm author metadata records the models, agent, application and terminal
 package purposes without JavaScript exports or install-time compilation. The
 controlled asset copier preserves the library and standalone inventories,
-including the standalone omission of export CSS/JavaScript. Missing declared
-inputs fail. Actual product assets activate with the application owner, native
+including the standalone omission of export CSS/JavaScript. Extension globs
+exclude leading-dot and nested files; named copies are literal, and recursive
+docs/examples copies retain hidden and nested files. Missing declared inputs fail. Actual product assets activate with the application owner, native
 release staging with #111 and dependency/license qualification with #110.
 
 Inactive recipes fail as `repository tools: inactive hook: <hook>; owner: <owner>`:

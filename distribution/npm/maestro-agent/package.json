@@ -17,7 +17,7 @@
     "clean": "cargo clean -p maestro-agent",
     "build": "cargo build -p maestro-agent",
     "test": "cargo test -p maestro-agent",
-    "dev": "just dev",
+    "dev": "just dev-package maestro-agent",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "maestroActivation": {

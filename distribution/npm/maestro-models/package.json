@@ -17,8 +17,9 @@
     "clean": "cargo clean -p maestro-models",
     "build": "cargo build -p maestro-models",
     "test": "cargo test -p maestro-models",
-    "dev": "just dev",
-    "prepublishOnly": "npm run clean && npm run build"
+    "dev": "just dev-package maestro-models",
+    "prepublishOnly": "npm run clean && npm run build",
+    "dev:tsc": "just dev-package maestro-models"
   },
   "maestroActivation": {
     "state": "author-scaffolding",

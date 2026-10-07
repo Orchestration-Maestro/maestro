@@ -390,7 +390,7 @@ fn dev_watch_rebuilds_changed_sources_without_self_triggering() {
     let workspace = Workspace::new();
     std::fs::create_dir(workspace.root.join("src")).unwrap();
     std::fs::create_dir(workspace.root.join("target")).unwrap();
-    let cargo = workspace.command("builder", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s/target\"}\\n' \"$PWD\"; exit 0; fi; printf 'build\\n'; if test -f fail; then exit 29; fi; if test -f hold; then while test -f hold; do sleep 0.01; done; fi; printf 'generated' > target/output; printf 'done\\n'");
+    let cargo = workspace.command("builder", "if test \"$1\" = metadata; then printf '{\"target_directory\":\"%s/target\"}\\n' \"$PWD\"; exit 0; fi; if test -f fail; then printf 'build\\n'; exit 29; fi; printf 'build\\n'; if test -f hold; then while test -f hold; do sleep 0.01; done; fi; printf 'generated' > target/output; printf 'done\\n'");
     let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
     assert!(watcher.is_file(), "missing persistent watcher");
     let mut child = Command::new(tooling())
@@ -675,11 +675,27 @@ fn package_manifests_keep_scripts_and_asset_inventories() {
             .unwrap();
     assert_eq!(manifest["private"], true);
     assert_eq!(manifest["scripts"]["prepublishOnly"], "just prepublish");
+    assert_eq!(manifest["scripts"]["dev"], "just dev");
+    assert_eq!(manifest["scripts"]["dev:tsc"], "just dev-tsc");
+    let recipes = std::fs::read_to_string(root.join("justfile")).unwrap();
+    assert!(recipes.contains("dev:\n    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked -- cargo --package maestro-models --package maestro-agent"));
+    assert!(recipes.contains("dev-tsc:\n    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked -- cargo --package maestro-models\n"));
+    assert!(recipes.contains("dev-package package:\n    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked -- cargo --package \"$1\""));
     for owner in ["models", "agent", "app", "tui"] {
         let path = root.join(format!("distribution/npm/maestro-{owner}/package.json"));
         let package: serde_json::Value =
             serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         assert_eq!(package["private"], true);
+        assert_eq!(
+            package["scripts"]["dev"],
+            format!("just dev-package maestro-{owner}")
+        );
+        if owner == "models" {
+            assert_eq!(
+                package["scripts"]["dev:tsc"],
+                "just dev-package maestro-models"
+            );
+        }
         assert_eq!(
             package["name"],
             format!("@orchestration-maestro/maestro-{owner}")
@@ -1125,5 +1141,389 @@ fn selected_test_recipes_never_replay_unrequested_cases() {
             format!("test --workspace --locked {}|\n", args.join(" ")),
             "{args:?}"
         );
+    }
+}
+
+#[test]
+fn term_ignoring_case_times_out_and_removes_nested_scratch() {
+    cancelled_timed_case(false);
+}
+
+#[test]
+fn interrupted_timed_runner_reaps_case_and_exits_143() {
+    cancelled_timed_case(true);
+}
+
+fn cancelled_timed_case(interrupt: bool) {
+    let workspace = Workspace::new();
+    workspace.member("maestro-models", "maestro-models", "");
+    let record_paths =
+        ["case-a", "nested-a", "case-b", "nested-b"].map(|name| workspace.root.join(name));
+    let source = record_paths.as_chunks::<2>().0.iter().enumerate().map(|(index, paths)| {
+        let record = &paths[0];
+        let nested = &paths[1];
+        format!(
+        r#"
+#[test] fn ignores_term_{index}() {{
+    unsafe extern "C" {{ fn signal(n: i32, handler: usize) -> usize; }}
+    unsafe {{ signal(15, 1); }}
+    std::fs::write({record:?}, format!("{{}}\n{{}}\n", std::env::var("HOME").unwrap(), std::process::id())).unwrap();
+    let mut child = std::process::Command::new({tool:?}).args(["isolate", "/bin/sh", "-c", {script:?}]).spawn().unwrap();
+    child.wait().unwrap();
+}}
+"#,
+        tool = tooling(),
+        script = format!(
+            "trap '' TERM; printf '%s\\n%s\\n' \"$HOME\" \"$$\" > {nested:?}; exec sleep 60"
+        )
+    )}).collect::<String>();
+    std::fs::write(
+        workspace.root.join("crates/maestro-models/src/lib.rs"),
+        source,
+    )
+    .unwrap();
+    let output = fixture_cargo()
+        .args(["test", "--no-run", "--message-format=json"])
+        .current_dir(&workspace.root)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let executable = String::from_utf8(output.stdout)
+        .unwrap()
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .find_map(|value| value["executable"].as_str().map(str::to_owned))
+        .unwrap();
+    let variant = workspace.root.join("timed-tools");
+    let output = Command::new("rustc")
+        .args(["--edition=2024", "--cfg", "test"])
+        .arg(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/bin/repository_tools.rs"
+        ))
+        .arg("-o")
+        .arg(&variant)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let child = Command::new(&variant)
+        .arg("--root")
+        .arg(&workspace.root)
+        .arg("cargo-target")
+        .arg(&executable)
+        .args(["--nocapture", "--test-threads=2"])
+        .env(
+            "MAESTRO_FIXTURE_DEADLINE_MS",
+            if interrupt { "10000" } else { "500" },
+        )
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let runner_pid = child.id();
+    let (send, receive) = std::sync::mpsc::channel();
+    let waiter = std::thread::spawn(move || {
+        let _ = send.send(child.wait_with_output().unwrap());
+    });
+    let start = std::time::Instant::now();
+    while !record_paths
+        .iter()
+        .all(|path| std::fs::read_to_string(path).is_ok_and(|text| text.lines().count() == 2))
+    {
+        assert!(start.elapsed() < std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    if interrupt {
+        assert!(
+            Command::new("kill")
+                .args(["-TERM", &runner_pid.to_string()])
+                .status()
+                .unwrap()
+                .success()
+        );
+    }
+    let result = receive.recv_timeout(std::time::Duration::from_secs(3));
+    let records = record_paths.map(|path| std::fs::read_to_string(path).unwrap());
+    let alive = records
+        .iter()
+        .map(|record| {
+            Command::new("kill")
+                .args(["-0", record.lines().nth(1).unwrap()])
+                .stderr(std::process::Stdio::null())
+                .status()
+                .unwrap()
+                .success()
+        })
+        .collect::<Vec<_>>();
+    let remains = records
+        .iter()
+        .map(|record| std::path::Path::new(record.lines().next().unwrap()).exists())
+        .collect::<Vec<_>>();
+    // Bound failed-regression cleanup too, without letting it count as runner cleanup.
+    if result.is_err() {
+        for record in &records {
+            let _ = Command::new("kill")
+                .args(["-KILL", record.lines().nth(1).unwrap()])
+                .status();
+        }
+        let _ = Command::new("kill")
+            .args(["-KILL", &runner_pid.to_string()])
+            .status();
+    }
+    waiter.join().unwrap();
+    for record in &records {
+        let _ = std::fs::remove_dir_all(
+            std::path::Path::new(record.lines().next().unwrap())
+                .parent()
+                .unwrap(),
+        );
+    }
+    let output =
+        result.expect("runner did not reap a TERM-ignoring case within bounded cancellation");
+    assert_eq!(
+        output.status.code(),
+        Some(if interrupt { 143 } else { 1 }),
+        "{output:?}"
+    );
+    if !interrupt {
+        for index in 0..2 {
+            assert!(
+                String::from_utf8_lossy(&output.stderr)
+                    .contains(&format!("test timed out: ignores_term_{index}")),
+                "{output:?}"
+            );
+        }
+    }
+    assert!(
+        alive.iter().all(|alive| !alive),
+        "case descendants remain: {alive:?}"
+    );
+    assert!(
+        remains.iter().all(|remains| !remains),
+        "case scratch remains: {remains:?}"
+    );
+    for records in records.as_chunks::<2>().0 {
+        let outer = std::path::Path::new(records[0].lines().next().unwrap())
+            .parent()
+            .unwrap();
+        let inner = std::path::Path::new(records[1].lines().next().unwrap());
+        assert!(
+            inner.starts_with(outer),
+            "nested scratch must belong to the case owner: {inner:?}, {outer:?}"
+        );
+    }
+}
+
+#[test]
+fn asset_globs_exclude_dot_files_but_recursive_copies_keep_them() {
+    let sources: &[&str] = &[
+        "package.json",
+        "README.md",
+        "CHANGELOG.md",
+        "src/modes/interactive/theme/dark.json",
+        "src/modes/interactive/theme/.hidden.json",
+        "src/modes/interactive/theme/nested/child.json",
+        "src/modes/interactive/theme/no.txt",
+        "src/modes/interactive/assets/icon.png",
+        "src/modes/interactive/assets/.hidden.png",
+        "src/modes/interactive/assets/nested/child.png",
+        "src/modes/interactive/assets/no.txt",
+        "src/core/export-html/template.html",
+        "src/core/export-html/template.css",
+        "src/core/export-html/template.js",
+        "src/core/export-html/vendor/vendor.js",
+        "src/core/export-html/vendor/.hidden.js",
+        "src/core/export-html/vendor/nested/child.js",
+        "src/core/export-html/vendor/no.txt",
+        "docs/nested/help.md",
+        "docs/.hidden",
+        "docs/.nested/file.txt",
+        "examples/nested/example.rs",
+        "examples/.hidden",
+        "examples/.nested/file.txt",
+    ];
+    for (layout, expected) in [
+        (
+            "library",
+            &[
+                "core/export-html/template.css",
+                "core/export-html/template.html",
+                "core/export-html/template.js",
+                "core/export-html/vendor/vendor.js",
+                "modes/interactive/assets/icon.png",
+                "modes/interactive/theme/dark.json",
+            ] as &[&str],
+        ),
+        (
+            "standalone",
+            &[
+                "CHANGELOG.md",
+                "README.md",
+                "assets/icon.png",
+                "docs/.hidden",
+                "docs/.nested/file.txt",
+                "docs/nested/help.md",
+                "examples/.hidden",
+                "examples/.nested/file.txt",
+                "examples/nested/example.rs",
+                "export-html/template.html",
+                "export-html/vendor/vendor.js",
+                "package.json",
+                "theme/dark.json",
+            ] as &[&str],
+        ),
+    ] {
+        let workspace = Workspace::new();
+        for source in sources {
+            let path = workspace.root.join(source);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, source.as_bytes()).unwrap();
+        }
+        let destination = workspace.root.join("output");
+        let output = Command::new(tooling())
+            .args(["copy-assets", layout])
+            .arg(&workspace.root)
+            .arg(&destination)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        fn files(root: &std::path::Path, directory: &std::path::Path, result: &mut Vec<String>) {
+            for entry in std::fs::read_dir(directory).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    files(root, &path, result);
+                } else {
+                    result.push(
+                        path.strip_prefix(root)
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .to_owned(),
+                    );
+                }
+            }
+        }
+        let mut actual = Vec::new();
+        files(&destination, &destination, &mut actual);
+        actual.sort();
+        assert_eq!(actual, expected, "{layout}: copied file set");
+        for file in actual {
+            let input = if layout == "library" {
+                format!("src/{file}")
+            } else if file.starts_with("theme/") || file.starts_with("assets/") {
+                format!("src/modes/interactive/{file}")
+            } else if file.starts_with("export-html/") {
+                format!("src/core/{file}")
+            } else {
+                file.clone()
+            };
+            assert_eq!(
+                std::fs::read(destination.join(file)).unwrap(),
+                input.as_bytes()
+            );
+        }
+    }
+}
+
+#[test]
+fn watch_selection_rebuilds_only_selected_packages() {
+    use std::io::BufRead;
+    for selected in [
+        vec!["maestro-models"],
+        vec!["maestro-models", "maestro-agent"],
+        vec!["maestro-app"],
+        vec!["maestro-tui"],
+    ] {
+        let workspace = Workspace::new();
+        let owners = [
+            "maestro-models",
+            "maestro-agent",
+            "maestro-app",
+            "maestro-tui",
+            "maestro-settings",
+        ];
+        for owner in owners {
+            workspace.member(owner, owner, "");
+            std::fs::write(
+                workspace.root.join(format!("crates/{owner}/src/lib.rs")),
+                "pub const VALUE: u8 = 1;",
+            )
+            .unwrap();
+        }
+        let output = fixture_cargo()
+            .arg("generate-lockfile")
+            .current_dir(&workspace.root)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        let real = workspace.cargo();
+        let cargo = workspace.command("observed-builder", &format!("if test \"$1\" = metadata; then exec {real:?} \"$@\"; fi; {real:?} \"$@\" || exit $?; printf 'built\\n'"));
+        let watcher = std::path::Path::new(tooling()).with_file_name("dev_watch");
+        let mut command = Command::new(tooling());
+        command
+            .arg("isolate")
+            .arg(watcher)
+            .arg(cargo)
+            .current_dir(&workspace.root)
+            .stdout(std::process::Stdio::piped());
+        for owner in &selected {
+            command.args(["--package", owner]);
+        }
+        let mut child = command.spawn().unwrap();
+        let (send, receive) = std::sync::mpsc::channel();
+        let stdout = child.stdout.take().unwrap();
+        let reader = std::thread::spawn(move || {
+            for line in std::io::BufReader::new(stdout).lines() {
+                if send.send(line.unwrap()).is_err() {
+                    break;
+                }
+            }
+        });
+        assert_eq!(
+            receive
+                .recv_timeout(std::time::Duration::from_secs(20))
+                .unwrap(),
+            "built"
+        );
+        let artifact = |owner: &str| {
+            workspace
+                .root
+                .join(format!("target/debug/lib{}.rlib", owner.replace('-', "_")))
+        };
+        let before = owners.map(|owner| std::fs::read(artifact(owner)).ok());
+        for owner in owners {
+            std::fs::write(
+                workspace.root.join(format!("crates/{owner}/src/lib.rs")),
+                "pub const VALUE: u8 = 2;",
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            receive
+                .recv_timeout(std::time::Duration::from_secs(20))
+                .unwrap(),
+            "built"
+        );
+        let after = owners.map(|owner| std::fs::read(artifact(owner)).ok());
+        Command::new("kill")
+            .args(["-TERM", &child.id().to_string()])
+            .status()
+            .unwrap();
+        assert_eq!(child.wait().unwrap().code(), Some(143));
+        reader.join().unwrap();
+        for (index, owner) in owners.iter().enumerate() {
+            if selected.contains(owner) {
+                assert!(before[index].is_some(), "selected artifact absent: {owner}");
+                assert_ne!(
+                    before[index], after[index],
+                    "selected crate did not rebuild: {owner}"
+                );
+            } else {
+                assert!(
+                    before[index].is_none() && after[index].is_none(),
+                    "unselected crate built: {owner}; selected={selected:?}"
+                );
+            }
+        }
     }
 }

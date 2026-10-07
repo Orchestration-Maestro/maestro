@@ -2,8 +2,14 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub(super) fn resolve(cargo: &OsStr, root: &Path) -> Result<PathBuf, String> {
+pub(super) fn resolve(
+    cargo: &OsStr,
+    root: &Path,
+    environment: &[(std::ffi::OsString, std::ffi::OsString)],
+) -> Result<PathBuf, String> {
     let output = Command::new(cargo)
+        .env_clear()
+        .envs(environment.iter().cloned())
         .args(["metadata", "--format-version=1", "--no-deps", "--locked"])
         .current_dir(root)
         .output()

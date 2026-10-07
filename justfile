@@ -42,9 +42,17 @@ build:
 # Rehearse author preparation without publishing.
 prepublish: clean build check
 
-# Keep rebuilding after source/configuration changes and compiler failures.
+# Watch delivered package owners after source/configuration changes.
 dev:
-    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked
+    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked -- cargo --package maestro-models --package maestro-agent
+
+# Watch the compiler-only subset; the browser owner activates its own selection.
+dev-tsc:
+    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked -- cargo --package maestro-models
+
+# Watch one package while Cargo builds its actual dependencies.
+dev-package package:
+    {{tooling}} isolate cargo run -p maestro-test-conventions --bin dev_watch --locked -- cargo --package "$1"
 
 # Inactive until its owning product artifacts exist.
 browser-smoke:
