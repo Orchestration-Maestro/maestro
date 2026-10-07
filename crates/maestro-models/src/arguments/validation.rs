@@ -25,10 +25,10 @@ pub fn validate_tool_arguments(tool: &Tool, tool_call: &ToolCall) -> Result<Valu
     let schema = OwnedJson::new(schema);
     crate::scalar::drop_json(convert(&mut args, &schema, &kinds, &mut Vec::new()));
     let checker = tool.parameters.checker()?;
-    if !legacy && record(&schema) {
-        let (coerced, changed) = coerce(crate::scalar::clone_json(&args), &schema);
+    if !legacy && is_record(&schema) {
+        let (coerced, changed) = coerce_with_json_schema(crate::scalar::clone_json(&args), &schema);
         let coerced = OwnedJson::new(coerced);
-        if changed && !(record(&args) && record(&coerced)) {
+        if changed && !(is_record(&args) && is_record(&coerced)) {
             return Ok(if checker.is_valid(&coerced)? {
                 coerced.into_value()
             } else {
@@ -69,12 +69,27 @@ fn convert(
                 if let (Some(object), Some(properties)) =
                     (value.as_object_mut(), schema["properties"].as_object())
                 {
-                    for (key, nested) in properties {
-                        if let Some(v) = object.get_mut(key) {
-                            path.extend(["properties".into(), key.clone()]);
-                            let converted = convert(v, nested, kinds, path);
-                            crate::scalar::replace_json(v, converted);
-                            path.truncate(path.len() - 2);
+                    for key in crate::schema::keys(properties) {
+                        for (name, v) in object.iter_mut() {
+                            if crate::schema::pattern_matches(&format!("^{key}$"), name) {
+                                path.extend(["properties".into(), key.clone()]);
+                                let converted = convert(v, &properties[&key], kinds, path);
+                                crate::scalar::replace_json(v, converted);
+                                path.truncate(path.len() - 2);
+                            }
+                        }
+                    }
+                    if is_record(&schema["additionalProperties"]) {
+                        for key in crate::schema::keys(properties) {
+                            for (name, v) in object.iter_mut() {
+                                if !crate::schema::pattern_matches(&format!("^{key}$"), name) {
+                                    path.push("additionalProperties".into());
+                                    let converted =
+                                        convert(v, &schema["additionalProperties"], kinds, path);
+                                    crate::scalar::replace_json(v, converted);
+                                    path.pop();
+                                }
+                            }
                         }
                     }
                 }
@@ -125,7 +140,7 @@ fn convert(
                         path.extend(["allOf".into(), i.to_string()]);
                         let converted = OwnedJson::new(convert(value, branch, kinds, path));
                         path.truncate(path.len() - 2);
-                        if !record(value) {
+                        if !is_record(value) {
                             crate::scalar::replace_json(value, converted.into_value());
                         }
                     }
@@ -139,7 +154,7 @@ fn convert(
                 ) {
                     for pattern in crate::schema::keys(patterns) {
                         for (key, v) in object.iter_mut() {
-                            if crate::schema::pattern_matches(&pattern, key) {
+                            if crate::schema::pattern_matches(&format!("^{pattern}$"), key) {
                                 path.extend(["patternProperties".into(), pattern.clone()]);
                                 let converted = convert(v, &patterns[&pattern], kinds, path);
                                 crate::scalar::replace_json(v, converted);
@@ -147,17 +162,16 @@ fn convert(
                             }
                         }
                     }
-                    if record(&schema["additionalProperties"]) {
-                        for (key, v) in object {
-                            if !patterns
-                                .keys()
-                                .any(|p| crate::schema::pattern_matches(p, key))
-                            {
-                                path.push("additionalProperties".into());
-                                let converted =
-                                    convert(v, &schema["additionalProperties"], kinds, path);
-                                crate::scalar::replace_json(v, converted);
-                                path.pop();
+                    if is_record(&schema["additionalProperties"]) {
+                        for pattern in crate::schema::keys(patterns) {
+                            for (key, v) in object.iter_mut() {
+                                if !crate::schema::pattern_matches(&format!("^{pattern}$"), key) {
+                                    path.push("additionalProperties".into());
+                                    let converted =
+                                        convert(v, &schema["additionalProperties"], kinds, path);
+                                    crate::scalar::replace_json(v, converted);
+                                    path.pop();
+                                }
                             }
                         }
                     }
@@ -191,7 +205,8 @@ fn convert(
                 let candidate = OwnedJson::new(if value.is_null() {
                     Value::String("null".into())
                 } else {
-                    primitive(value, "string").unwrap_or_else(|| crate::scalar::clone_json(value))
+                    coerce_primitive_by_type(value, "string")
+                        .unwrap_or_else(|| crate::scalar::clone_json(value))
                 });
                 if schema["pattern"].as_str().is_some_and(|p| {
                     crate::schema::pattern_matches(p, candidate.as_str().unwrap_or(""))
@@ -225,15 +240,15 @@ fn convert(
             Some("Boolean") => match value {
                 Value::String(s) if s.to_lowercase() == "true" || s == "1" => Value::Bool(true),
                 Value::String(s) if s.to_lowercase() == "false" || s == "0" => Value::Bool(false),
-                _ => {
-                    primitive(value, "boolean").unwrap_or_else(|| crate::scalar::clone_json(value))
-                }
+                _ => coerce_primitive_by_type(value, "boolean")
+                    .unwrap_or_else(|| crate::scalar::clone_json(value)),
             },
             Some("String") => {
                 if value.is_null() {
                     Value::String("null".into())
                 } else {
-                    primitive(value, "string").unwrap_or_else(|| crate::scalar::clone_json(value))
+                    coerce_primitive_by_type(value, "string")
+                        .unwrap_or_else(|| crate::scalar::clone_json(value))
                 }
             }
             Some("Null") => match value {
@@ -242,24 +257,21 @@ fn convert(
                 {
                     Value::Null
                 }
-                _ => primitive(value, "null").unwrap_or_else(|| crate::scalar::clone_json(value)),
+                _ => coerce_primitive_by_type(value, "null")
+                    .unwrap_or_else(|| crate::scalar::clone_json(value)),
             },
             Some("Array") => {
-                let values = if let Value::Array(values) = value {
-                    values.iter().map(crate::scalar::clone_json).collect()
-                } else {
-                    vec![crate::scalar::clone_json(value)]
-                };
                 path.push("items".into());
-                let result = Value::Array(
-                    values
-                        .into_iter()
-                        .map(|v| {
-                            let mut v = OwnedJson::new(v);
-                            convert(&mut v, &schema["items"], kinds, path)
-                        })
-                        .collect(),
-                );
+                let result = if let Value::Array(values) = value {
+                    Value::Array(
+                        values
+                            .iter_mut()
+                            .map(|v| convert(v, &schema["items"], kinds, path))
+                            .collect(),
+                    )
+                } else {
+                    Value::Array(vec![convert(value, &schema["items"], kinds, path)])
+                };
                 path.pop();
                 result
             }
@@ -279,7 +291,7 @@ fn number(n: f64) -> Option<Value> {
     }
 }
 
-fn matches_type(value: &Value, kind: &str) -> bool {
+fn matches_json_type(value: &Value, kind: &str) -> bool {
     match kind {
         "number" => value.is_number(),
         "integer" => value.as_f64().is_some_and(|number| number.fract() == 0.0),
@@ -292,7 +304,7 @@ fn matches_type(value: &Value, kind: &str) -> bool {
     }
 }
 
-fn primitive(value: &Value, kind: &str) -> Option<Value> {
+fn coerce_primitive_by_type(value: &Value, kind: &str) -> Option<Value> {
     match kind {
         "number" | "integer" => {
             let number = match value {
@@ -342,7 +354,7 @@ fn parse_number(text: &str) -> Option<f64> {
         return None;
     }
     let prefix = text.get(..2);
-    let radix = match prefix {
+    let radix: Option<u32> = match prefix {
         Some("0x" | "0X") => Some(16),
         Some("0o" | "0O") => Some(8),
         Some("0b" | "0B") => Some(2),
@@ -353,28 +365,52 @@ fn parse_number(text: &str) -> Option<f64> {
         if digits.is_empty() {
             return None;
         }
-        digits.chars().try_fold(0.0, |value, digit| {
-            digit
-                .to_digit(radix)
-                .map(|digit| value * f64::from(radix) + f64::from(digit))
-        })?
+        let bits_per_digit = radix.trailing_zeros();
+        let mut significant = 0usize;
+        let mut leading = 0u64;
+        let mut sticky = false;
+        for digit in digits.chars() {
+            let digit = digit.to_digit(radix)?;
+            for bit in (0..bits_per_digit).rev() {
+                let set = (digit >> bit) & 1;
+                if significant == 0 && set == 0 {
+                    continue;
+                }
+                significant += 1;
+                if significant <= 54 {
+                    leading = (leading << 1) | u64::from(set);
+                } else {
+                    sticky |= set != 0;
+                }
+            }
+        }
+        if significant <= 53 {
+            leading as f64
+        } else {
+            let guard = leading & 1 != 0;
+            let mut rounded = leading >> 1;
+            if guard && (sticky || rounded & 1 != 0) {
+                rounded += 1;
+            }
+            (rounded as f64) * 2f64.powi(i32::try_from(significant - 53).ok()?)
+        }
     } else {
         text.parse::<f64>().ok()?
     };
     number.is_finite().then_some(number)
 }
 
-fn record(value: &Value) -> bool {
+fn is_record(value: &Value) -> bool {
     value.is_object() || value.is_array()
 }
-fn coerce(value: Value, schema: &Value) -> (Value, bool) {
+fn coerce_with_json_schema(value: Value, schema: &Value) -> (Value, bool) {
     crate::scalar::grow(|| {
         let mut value = OwnedJson::new(value);
-        let original_primitive = (!record(&value)).then(|| (*value).clone());
+        let original_primitive = (!is_record(&value)).then(|| (*value).clone());
         let mut changed = false;
         if let Some(branches) = schema["allOf"].as_array() {
             for branch in branches {
-                let (next, replaced) = coerce(value.into_value(), branch);
+                let (next, replaced) = coerce_with_json_schema(value.into_value(), branch);
                 value = OwnedJson::new(next);
                 changed |= replaced;
             }
@@ -382,14 +418,15 @@ fn coerce(value: Value, schema: &Value) -> (Value, bool) {
         for keyword in ["anyOf", "oneOf"] {
             if let Some(branches) = schema[keyword].as_array() {
                 for branch in branches {
-                    let (candidate, replaced) = coerce(crate::scalar::clone_json(&value), branch);
+                    let (candidate, replaced) =
+                        coerce_with_json_schema(crate::scalar::clone_json(&value), branch);
                     let candidate = OwnedJson::new(candidate);
-                    if record(branch)
+                    if is_record(branch)
                         && crate::schema::build(branch)
                             .and_then(|checker| checker.is_valid(&candidate))
                             .is_ok_and(|valid| valid)
                     {
-                        changed |= replaced || record(&candidate);
+                        changed |= replaced || is_record(&candidate);
                         value = candidate;
                         break;
                     }
@@ -401,9 +438,9 @@ fn coerce(value: Value, schema: &Value) -> (Value, bool) {
             Value::Array(ts) => ts.iter().filter_map(Value::as_str).collect(),
             _ => vec![],
         };
-        if !(types.len() > 1 && types.iter().any(|kind| matches_type(&value, kind))) {
+        if !(types.len() > 1 && types.iter().any(|kind| matches_json_type(&value, kind))) {
             for kind in &types {
-                if let Some(candidate) = primitive(&value, kind)
+                if let Some(candidate) = coerce_primitive_by_type(&value, kind)
                     && candidate != *value
                 {
                     value = OwnedJson::new(candidate);
@@ -418,15 +455,19 @@ fn coerce(value: Value, schema: &Value) -> (Value, bool) {
             if let Some(properties) = schema["properties"].as_object() {
                 for key in crate::schema::keys(properties) {
                     if let Some(v) = object.get_mut(&key) {
-                        let converted = coerce(crate::scalar::clone_json(v), &properties[&key]).0;
+                        let converted = coerce_with_json_schema(
+                            crate::scalar::clone_json(v),
+                            &properties[&key],
+                        )
+                        .0;
                         crate::scalar::replace_json(v, converted);
                     }
                 }
             }
-            if record(&schema["additionalProperties"]) {
+            if is_record(&schema["additionalProperties"]) {
                 for (key, v) in object {
                     if schema["properties"].get(key).is_none() {
-                        let converted = coerce(
+                        let converted = coerce_with_json_schema(
                             crate::scalar::clone_json(v),
                             &schema["additionalProperties"],
                         )
@@ -443,10 +484,10 @@ fn coerce(value: Value, schema: &Value) -> (Value, bool) {
                 let nested = if let Some(tuple) = schema["items"].as_array() {
                     tuple.get(i)
                 } else {
-                    record(&schema["items"]).then_some(&schema["items"])
+                    is_record(&schema["items"]).then_some(&schema["items"])
                 };
                 if let Some(nested) = nested {
-                    let converted = coerce(crate::scalar::clone_json(v), nested).0;
+                    let converted = coerce_with_json_schema(crate::scalar::clone_json(v), nested).0;
                     crate::scalar::replace_json(v, converted);
                 }
             }

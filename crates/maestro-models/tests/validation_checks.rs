@@ -732,7 +732,7 @@ fn metadata_patterns_keep_utf16_matching_and_literal_replacement() {
     for (pattern, key) in [
         (r"^\s$", "\u{feff}"),
         (r"^..$", "😀"),
-        (r"(?<=a)b", "ab"),
+        (r"a(?<=a)b", "ab"),
         (r"^(a)\1$", "aa"),
         (r"^(a)(b)$", "ab"),
         (r"^\$$", "$"),
@@ -945,4 +945,109 @@ fn array_object_unions_keep_interpreted_acceptance() {
         let input = json!(["42", "true"]);
         assert_eq!(validate(schema, input.clone()).unwrap(), input);
     }
+}
+
+#[test]
+fn parsed_large_integers_round_to_binary64_before_validation() {
+    assert!(
+        parse_json_with_repair("-0")
+            .unwrap()
+            .as_f64()
+            .unwrap()
+            .is_sign_negative()
+    );
+    for literal in ["9007199254740993", "-9007199254740993"] {
+        let value = parse_json_with_repair(literal).unwrap();
+        let rounded = if literal.starts_with('-') {
+            json!(-9007199254740992i64)
+        } else {
+            json!(9007199254740992u64)
+        };
+        assert_eq!(value, rounded);
+        for keyword in ["const", "enum"] {
+            let constraint = if keyword == "enum" {
+                json!([rounded])
+            } else {
+                rounded.clone()
+            };
+            assert_eq!(
+                validate(json!({keyword:constraint}), value.clone()).unwrap(),
+                rounded
+            );
+        }
+    }
+}
+
+#[test]
+fn radix_strings_round_once_after_exact_accumulation() {
+    for input in [
+        "0x2000000000000101".to_owned(),
+        format!("0b{:b}", 0x2000000000000101u64),
+        format!("0o{:o}", 0x2000000000000101u64),
+    ] {
+        assert_eq!(
+            validate(
+                json!({"type":"object","properties":{"n":{"type":"number"}}}),
+                json!({"n":input})
+            )
+            .unwrap(),
+            json!({"n":2305843009213694464u64})
+        );
+    }
+    assert_eq!(
+        validate(
+            json!({"type":"number"}),
+            json!(format!("0x{}", "f".repeat(200)))
+        )
+        .unwrap()
+        .as_f64(),
+        Some(6.668014432879854e240)
+    );
+}
+
+#[test]
+fn metadata_object_converts_additional_properties() {
+    let schema = metadata(
+        json!({"type":"object","properties":{"a":{"type":"number"}},"additionalProperties":{"type":"number"}}),
+        &[
+            (&[], "Object"),
+            (&["properties", "a"], "Number"),
+            (&["additionalProperties"], "Number"),
+        ],
+        true,
+    );
+    assert_eq!(
+        validate(schema, json!({"a":1,"b":""})).unwrap(),
+        json!({"a":1,"b":0})
+    );
+}
+
+#[test]
+fn metadata_record_patterns_anchor_each_entry() {
+    let schema = metadata(
+        json!({"type":"object","patternProperties":{"a":{"type":"number"}}}),
+        &[(&[], "Record"), (&["patternProperties", "a"], "Number")],
+        true,
+    );
+    assert_eq!(
+        text(validate(schema, json!({"a":"","ba":"42"})).unwrap_err()),
+        "Validation failed for tool \"echo\":\n  - ba: must be number\n\nReceived arguments:\n{\n  \"a\": \"\",\n  \"ba\": \"42\"\n}"
+    );
+}
+
+#[test]
+fn metadata_array_keeps_nested_object_mutations() {
+    let schema = metadata(
+        json!({"type":"array","items":{"type":"object","properties":{"n":{"type":"number"}}}}),
+        &[
+            (&[], "Array"),
+            (&["items"], "Object"),
+            (&["items", "properties", "n"], "Number"),
+        ],
+        true,
+    );
+    assert_eq!(
+        validate(schema, json!([{"n":""}])).unwrap(),
+        json!([{"n":0}])
+    );
 }

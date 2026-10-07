@@ -288,3 +288,62 @@ fn astral_raw_token_replaces_only_generated_lone_unit() {
         assert!(error.message.contains("'�'"));
     }
 }
+
+#[test]
+fn partial_object_separator_advances_one_utf16_unit() {
+    for (input, expected) in [
+        ("{\"x\"é2}", serde_json::json!({"x":2})),
+        ("{\"x\"界2}", serde_json::json!({"x":2})),
+        ("{\"x\"😀2}", serde_json::json!({})),
+    ] {
+        assert_eq!(maestro_models::parse_streaming_json(Some(input)), expected);
+    }
+}
+
+#[test]
+fn deserializer_temporaries_drop_iteratively_in_subprocess() {
+    const MODE: &str = "MAESTRO_JSON_TEMPORARY_CHILD";
+    let Ok(mode) = std::env::var(MODE) else {
+        for mode in ["duplicate", "error"] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "deserializer_temporaries_drop_iteratively_in_subprocess",
+                    "--nocapture",
+                ])
+                .env(MODE, mode)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{mode}: {}: {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    };
+    let deep = format!("{}0{}", "[".repeat(100_000), "]".repeat(100_000));
+    if mode == "duplicate" {
+        assert_eq!(
+            maestro_models::parse_json_with_repair(&format!("{{\"x\":{deep},\"x\":1}}")).unwrap(),
+            serde_json::json!({"x":1})
+        );
+    } else {
+        assert!(maestro_models::parse_json_with_repair(&format!("[{deep},?]")).is_err());
+    }
+}
+
+#[test]
+fn overflow_before_whitespace_stops_partial_array() {
+    for space in [" ", "\n", "\r", "\t"] {
+        assert_eq!(
+            maestro_models::parse_streaming_json(Some(&format!("[1,1e400{space},2"))),
+            serde_json::json!([1])
+        );
+    }
+    assert_eq!(
+        maestro_models::parse_streaming_json(Some("[1,1e ,2")),
+        serde_json::json!([1, 1, 2])
+    );
+}

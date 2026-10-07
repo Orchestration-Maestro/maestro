@@ -1,89 +1,106 @@
 //! Default partial JSON parser. The bundled MIT notice covers the local port.
 use serde_json::{Map, Value};
 
-pub(super) fn parse(text: &str) -> Result<Value, ()> {
+pub(super) fn parse_json(text: &str) -> Result<Value, ()> {
     let text = crate::scalar::trim(text);
-    Parser { text, at: 0 }.any()
+    Parser {
+        text: text.encode_utf16().collect(),
+        at: 0,
+    }
+    .parse_any()
 }
-struct Parser<'a> {
-    text: &'a str,
+struct Parser {
+    text: Vec<u16>,
     at: usize,
 }
-impl Parser<'_> {
-    fn peek(&self) -> Option<u8> {
-        self.text.as_bytes().get(self.at).copied()
+impl Parser {
+    fn peek(&self) -> Option<u16> {
+        self.text.get(self.at).copied()
     }
-    fn blank(&mut self) {
-        while matches!(self.peek(), Some(b' ' | b'\n' | b'\r' | b'\t')) {
+    fn skip_blank(&mut self) {
+        while matches!(self.peek(), Some(32 | 10 | 13 | 9)) {
             self.at += 1;
         }
     }
-    fn any(&mut self) -> Result<Value, ()> {
+    fn parse_any(&mut self) -> Result<Value, ()> {
         crate::scalar::grow(|| {
-            self.blank();
+            self.skip_blank();
             match self.peek() {
                 None => return Err(()),
-                Some(b'"') => return self.string(),
-                Some(b'{') => return Ok(self.object()),
-                Some(b'[') => return Ok(self.array()),
+                Some(34) => return self.parse_str(),
+                Some(123) => return Ok(self.parse_obj()),
+                Some(91) => return Ok(self.parse_arr()),
                 _ => {}
             }
-            let remaining = &self.text[self.at..];
+            let remaining = String::from_utf16_lossy(&self.text[self.at..]);
             for (word, value) in [
                 ("null", Value::Null),
                 ("true", Value::Bool(true)),
                 ("false", Value::Bool(false)),
             ] {
-                if remaining.starts_with(word) || word.starts_with(remaining) {
+                if remaining.starts_with(word) || word.starts_with(&remaining) {
                     self.at += word.len();
                     return Ok(value);
                 }
             }
             if ["Infinity", "-Infinity", "NaN"].iter().any(|word| {
-                remaining.starts_with(word) || (word.starts_with(remaining) && (remaining != "-"))
+                remaining.starts_with(word) || (word.starts_with(&remaining) && (remaining != "-"))
             }) {
                 return Err(());
             }
-            self.number()
+            self.parse_num()
         })
     }
-    fn string(&mut self) -> Result<Value, ()> {
+    fn parse_str(&mut self) -> Result<Value, ()> {
         let start = self.at;
         let mut escape = false;
         self.at += 1;
         while self.at < self.text.len()
-            && (self.peek() != Some(b'"') || (escape && self.text.as_bytes()[self.at - 1] == b'\\'))
+            && (self.peek() != Some(34) || (escape && self.text[self.at - 1] == 92))
         {
-            escape = if self.peek() == Some(b'\\') {
+            escape = if self.peek() == Some(92) {
                 !escape
             } else {
                 false
             };
             self.at += 1;
         }
-        if self.peek() == Some(b'"') {
+        if self.peek() == Some(34) {
             self.at += 1;
-            return super::json_parse::decode(&self.text[start..self.at - usize::from(escape)])
-                .map_err(|_| ());
+            return super::json_parse::decode(&String::from_utf16_lossy(
+                &self.text[start..self.at - usize::from(escape)],
+            ))
+            .map_err(|_| ());
         }
-        let candidate = format!("{}\"", &self.text[start..self.at - usize::from(escape)]);
+        let candidate = format!(
+            "{}\"",
+            String::from_utf16_lossy(&self.text[start..self.at - usize::from(escape)])
+        );
         super::json_parse::decode(&candidate)
             .or_else(|_| {
-                let end = self.text.rfind('\\').unwrap_or(0).max(start);
-                super::json_parse::decode(&format!("{}\"", &self.text[start..end]))
+                let end = self
+                    .text
+                    .iter()
+                    .rposition(|c| *c == 92)
+                    .unwrap_or(0)
+                    .max(start);
+                super::json_parse::decode(&format!(
+                    "{}\"",
+                    String::from_utf16_lossy(&self.text[start..end])
+                ))
             })
             .map_err(|_| ())
     }
-    fn object(&mut self) -> Value {
+    fn parse_obj(&mut self) -> Value {
         self.at += 1;
-        self.blank();
+        self.skip_blank();
         let mut object = Map::new();
-        while self.peek() != Some(b'}') {
-            self.blank();
+        while self.peek() != Some(125) {
+            self.skip_blank();
             if self.at >= self.text.len() {
                 return Value::Object(object);
             }
-            let key = match self.string() {
+            let key = match self.parse_str() {
                 Ok(Value::String(key)) => key,
                 Ok(value) => {
                     crate::scalar::drop_json(value);
@@ -91,9 +108,9 @@ impl Parser<'_> {
                 }
                 Err(()) => return Value::Object(object),
             };
-            self.blank();
+            self.skip_blank();
             self.at += 1;
-            let Ok(value) = self.any() else {
+            let Ok(value) = self.parse_any() else {
                 return Value::Object(object);
             };
             if key != "__proto__" {
@@ -103,59 +120,64 @@ impl Parser<'_> {
             } else {
                 crate::scalar::drop_json(value);
             }
-            self.blank();
-            if self.peek() == Some(b',') {
+            self.skip_blank();
+            if self.peek() == Some(44) {
                 self.at += 1;
             }
         }
         self.at += 1;
         Value::Object(object)
     }
-    fn array(&mut self) -> Value {
+    fn parse_arr(&mut self) -> Value {
         self.at += 1;
         let mut array = Vec::new();
-        while self.peek() != Some(b']') {
-            let Ok(value) = self.any() else {
+        while self.peek() != Some(93) {
+            let Ok(value) = self.parse_any() else {
                 return Value::Array(array);
             };
             array.push(value);
-            self.blank();
-            if self.peek() == Some(b',') {
+            self.skip_blank();
+            if self.peek() == Some(44) {
                 self.at += 1;
             }
         }
         self.at += 1;
         Value::Array(array)
     }
-    fn number(&mut self) -> Result<Value, ()> {
+    fn parse_num(&mut self) -> Result<Value, ()> {
         let start = self.at;
         if start == 0 {
             self.at = self.text.len();
-            if self.text.parse::<f64>().is_ok_and(|n| !n.is_finite()) {
+            let text = String::from_utf16_lossy(&self.text);
+            if text
+                .trim_end_matches([' ', '\n', '\r', '\t'])
+                .parse::<f64>()
+                .is_ok_and(|n| !n.is_finite())
+            {
                 return Err(());
             }
-            return super::json_parse::decode(self.text)
-                .or_else(|_| {
-                    super::json_parse::decode(&self.text[..self.text.rfind('e').unwrap_or(0)])
-                })
+            return super::json_parse::decode(&text)
+                .or_else(|_| super::json_parse::decode(&text[..text.rfind('e').unwrap_or(0)]))
                 .map_err(|_| ());
         }
-        if self.peek() == Some(b'-') {
+        if self.peek() == Some(45) {
             self.at += 1;
         }
-        while self.peek().is_some_and(|c| !b",]}".contains(&c)) {
+        while self.peek().is_some_and(|c| ![44, 93, 125].contains(&c)) {
             self.at += 1;
         }
-        if self.text[start..self.at]
+        let text = String::from_utf16_lossy(&self.text[start..self.at]);
+        if text
+            .trim_end_matches([' ', '\n', '\r', '\t'])
             .parse::<f64>()
             .is_ok_and(|n| !n.is_finite())
         {
             return Err(());
         }
-        super::json_parse::decode(&self.text[start..self.at])
+        super::json_parse::decode(&text)
             .or_else(|_| {
-                let end = self.text.rfind('e').unwrap_or(0).max(start);
-                super::json_parse::decode(&self.text[start..end])
+                let end = text.rfind('e').unwrap_or(0);
+                super::json_parse::decode(&text[..end])
             })
             .map_err(|_| ())
     }

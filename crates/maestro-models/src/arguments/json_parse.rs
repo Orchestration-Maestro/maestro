@@ -100,8 +100,10 @@ pub(super) fn decode(json: &str) -> Result<serde_json::Value, crate::ThrownValue
     let mut reader = serde_json::Deserializer::from_str(&normalized);
     reader.disable_recursion_limit();
     let value = crate::scalar::OwnedJson::new(
-        serde_json::Value::deserialize(serde_stacker::Deserializer::new(&mut reader))
-            .map_err(|_| super::json_errors::error(json))?,
+        ParsedJson::deserialize(serde_stacker::Deserializer::new(&mut reader))
+            .map_err(|_| super::json_errors::error(json))?
+            .0
+            .into_value(),
     );
     reader.end().map_err(|_| super::json_errors::error(json))?;
     Ok(value.into_value())
@@ -118,9 +120,90 @@ pub fn parse_streaming_json(partial_json: Option<&str>) -> serde_json::Value {
     if let Ok(value) = parse_json_with_repair(text) {
         return value;
     }
-    super::partial_json::parse(text)
-        .or_else(|_| super::partial_json::parse(&repair_json(text)))
+    super::partial_json::parse_json(text)
+        .or_else(|_| super::partial_json::parse_json(&repair_json(text)))
         .ok()
         .filter(|v| !v.is_null())
         .unwrap_or_else(|| serde_json::json!({}))
+}
+
+struct ParsedJson(crate::scalar::OwnedJson);
+impl<'de> serde::Deserialize<'de> for ParsedJson {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = ParsedJson;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a JSON value")
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> Result<ParsedJson, E> {
+                Ok(ParsedJson(crate::scalar::OwnedJson::new(
+                    serde_json::Value::Null,
+                )))
+            }
+            fn visit_bool<E: serde::de::Error>(self, value: bool) -> Result<ParsedJson, E> {
+                Ok(ParsedJson(crate::scalar::OwnedJson::new(value.into())))
+            }
+            fn visit_i64<E: serde::de::Error>(self, value: i64) -> Result<ParsedJson, E> {
+                self.visit_f64(value as f64)
+            }
+            fn visit_u64<E: serde::de::Error>(self, value: u64) -> Result<ParsedJson, E> {
+                self.visit_f64(value as f64)
+            }
+            fn visit_f64<E: serde::de::Error>(self, value: f64) -> Result<ParsedJson, E> {
+                if value.fract() == 0.0 && !(value == 0.0 && value.is_sign_negative()) {
+                    if value >= 0.0 && value < u64::MAX as f64 {
+                        return Ok(ParsedJson(crate::scalar::OwnedJson::new(
+                            (value as u64).into(),
+                        )));
+                    }
+                    if value >= i64::MIN as f64 && value < 0.0 {
+                        return Ok(ParsedJson(crate::scalar::OwnedJson::new(
+                            (value as i64).into(),
+                        )));
+                    }
+                }
+                serde_json::Number::from_f64(value)
+                    .map(|n| ParsedJson(crate::scalar::OwnedJson::new(n.into())))
+                    .ok_or_else(|| E::custom("number outside binary64 range"))
+            }
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<ParsedJson, E> {
+                self.visit_string(value.into())
+            }
+            fn visit_string<E: serde::de::Error>(self, value: String) -> Result<ParsedJson, E> {
+                Ok(ParsedJson(crate::scalar::OwnedJson::new(value.into())))
+            }
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut seq: A,
+            ) -> Result<ParsedJson, A::Error> {
+                let mut result =
+                    crate::scalar::OwnedJson::new(serde_json::Value::Array(Vec::new()));
+                while let Some(value) = seq.next_element::<ParsedJson>()? {
+                    result.as_array_mut().unwrap().push(value.0.into_value());
+                }
+                Ok(ParsedJson(result))
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<ParsedJson, A::Error> {
+                let mut result = crate::scalar::OwnedJson::new(serde_json::Value::Object(
+                    serde_json::Map::new(),
+                ));
+                while let Some(key) = map.next_key::<String>()? {
+                    let value = map.next_value::<ParsedJson>()?;
+                    if let Some(old) = result
+                        .as_object_mut()
+                        .unwrap()
+                        .insert(key, value.0.into_value())
+                    {
+                        crate::scalar::drop_json(old);
+                    }
+                }
+                Ok(ParsedJson(result))
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
 }
