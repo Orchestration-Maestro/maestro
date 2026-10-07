@@ -51,21 +51,31 @@ fn production_lines(contents: &str, syntax: &syn::File) -> usize {
         .last()
         .filter(|item| is_test(item_attributes(item)))
         .map_or(contents.lines().count(), |item| item.span().end().line);
-    (1..=end)
-        .filter(|line| !tests.spans.iter().any(|span| span.contains(line)))
+    contents
+        .lines()
+        .take(end)
+        .enumerate()
+        .filter(|(line, text)| {
+            text.chars().enumerate().any(|(column, character)| {
+                !character.is_whitespace()
+                    && !tests
+                        .spans
+                        .iter()
+                        .any(|span| span.contains(&(line + 1, column)))
+            })
+        })
         .count()
 }
 
 #[derive(Default)]
 struct TestLines {
-    spans: Vec<std::ops::RangeInclusive<usize>>,
+    spans: Vec<std::ops::Range<(usize, usize)>>,
 }
 
 impl<'ast> Visit<'ast> for TestLines {
     fn visit_item(&mut self, item: &'ast syn::Item) {
         if is_test(item_attributes(item)) {
-            self.spans
-                .push(item.span().start().line..=item.span().end().line);
+            self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_item(self, item);
         }
@@ -80,8 +90,7 @@ impl<'ast> Visit<'ast> for TestLines {
             _ => return,
         };
         if is_test(attributes) {
-            self.spans
-                .push(item.span().start().line..=item.span().end().line);
+            self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_impl_item(self, item);
         }
@@ -96,8 +105,7 @@ impl<'ast> Visit<'ast> for TestLines {
             _ => return,
         };
         if is_test(attributes) {
-            self.spans
-                .push(item.span().start().line..=item.span().end().line);
+            self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_trait_item(self, item);
         }
@@ -112,12 +120,17 @@ impl<'ast> Visit<'ast> for TestLines {
             _ => return,
         };
         if is_test(attributes) {
-            self.spans
-                .push(item.span().start().line..=item.span().end().line);
+            self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_foreign_item(self, item);
         }
     }
+}
+
+fn span_positions(span: proc_macro2::Span) -> std::ops::Range<(usize, usize)> {
+    let start = span.start();
+    let end = span.end();
+    (start.line, start.column)..(end.line, end.column)
 }
 
 fn is_test(attributes: &[syn::Attribute]) -> bool {

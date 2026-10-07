@@ -2,6 +2,8 @@
 
 mod support;
 
+use std::fmt::Write;
+
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
@@ -262,4 +264,41 @@ fn forbidden_lint_groups_cannot_be_downgraded() {
             .unwrap_err()
             .contains("forbidden_lint_groups must be forbid")
     );
+}
+
+#[test]
+fn production_sharing_lines_with_test_items_still_counts() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut items = String::new();
+    for index in 0..501 {
+        writeln!(
+            items,
+            "const P{index}: u8 = 0; #[cfg(test)] const T{index}: u8 = 0;"
+        )
+        .unwrap();
+    }
+    std::fs::write(
+        &path,
+        format!("#[rustfmt::skip]\nmod mixed {{\n{items}}}\n"),
+    )
+    .unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("504 production lines"), "{error}");
+}
+
+#[test]
+fn five_hundred_production_lines_with_separate_test_module_pass() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut items = String::new();
+    for index in 0..500 {
+        writeln!(items, "const P{index}: u8 = 0;").unwrap();
+    }
+    std::fs::write(&path, format!("{items}#[cfg(test)]\nmod tests {{}}\n")).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }

@@ -1316,30 +1316,9 @@ fn approval_notification_failures_are_reported() {
 
 #[test]
 fn repository_policy_binary_uses_same_entrypoint() {
-    use std::process::Command;
     let w = fixture();
     w.member("unused", "maestro-fixture", "");
-    let payload = w.root.join("event.json");
-    std::fs::write(&payload, "{}").unwrap();
-    for dir in ["home", "config", "tmp", "cache", "data", "state"] {
-        std::fs::create_dir(w.root.join(dir)).unwrap();
-    }
-    let mut command = Command::new(env!("CARGO_BIN_EXE_repository_policy"));
-    command
-        .arg("issue-gate")
-        .current_dir(&w.root)
-        .env_clear()
-        .env("GITHUB_EVENT_NAME", "unrelated")
-        .env("GITHUB_EVENT_PATH", &payload)
-        .env("HOME", w.root.join("home"))
-        .env("TMPDIR", w.root.join("tmp"))
-        .env("XDG_CONFIG_HOME", w.root.join("config"))
-        .env("XDG_CACHE_HOME", w.root.join("cache"))
-        .env("XDG_DATA_HOME", w.root.join("data"))
-        .env("XDG_STATE_HOME", w.root.join("state"));
-    if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
-        command.env("LLVM_PROFILE_FILE", profile);
-    }
+    let mut command = controlled_policy_binary(&w.root, "issue-gate", "unrelated", "{}");
     let output = command.output().unwrap();
     assert!(
         output.status.success(),
@@ -1358,16 +1337,64 @@ fn repository_policy_binary_uses_same_entrypoint() {
         .unwrap()
         .is_empty()
     );
-    let source = std::fs::read_to_string(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/bin/repository_policy.rs"),
+}
+
+#[test]
+fn repository_policy_binary_writes_active_route_outputs() {
+    let w = fixture();
+    let mut payload = event("created");
+    payload["comment"]["body"] = json!("No approval requested");
+    let outputs = w.root.join("outputs");
+    std::fs::write(&outputs, "existing=value\n").unwrap();
+    let output = controlled_policy_binary(
+        &w.root,
+        "approve-contributor",
+        "issue_comment",
+        &payload.to_string(),
     )
+    .env("GITHUB_OUTPUT", &outputs)
+    .output()
     .unwrap();
-    assert!(source.contains("contribution_policy::execute("));
-    let library = std::fs::read_to_string(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/contribution_policy/mod.rs"),
-    )
-    .unwrap();
-    assert!(library.contains("let outputs = run("));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        std::fs::read_to_string(outputs).unwrap(),
+        "existing=value\nstatus=skipped\n"
+    );
+}
+
+fn controlled_policy_binary(
+    root: &std::path::Path,
+    workflow: &str,
+    event_name: &str,
+    payload_text: &str,
+) -> std::process::Command {
+    use std::process::Command;
+    let payload = root.join("event.json");
+    std::fs::write(&payload, payload_text).unwrap();
+    for dir in ["home", "config", "tmp", "cache", "data", "state"] {
+        std::fs::create_dir(root.join(dir)).unwrap();
+    }
+    let mut command = Command::new(env!("CARGO_BIN_EXE_repository_policy"));
+    command
+        .arg(workflow)
+        .current_dir(root)
+        .env_clear()
+        .env("GITHUB_EVENT_NAME", event_name)
+        .env("GITHUB_EVENT_PATH", &payload)
+        .env("HOME", root.join("home"))
+        .env("TMPDIR", root.join("tmp"))
+        .env("XDG_CONFIG_HOME", root.join("config"))
+        .env("XDG_CACHE_HOME", root.join("cache"))
+        .env("XDG_DATA_HOME", root.join("data"))
+        .env("XDG_STATE_HOME", root.join("state"));
+    if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
+        command.env("LLVM_PROFILE_FILE", profile);
+    }
+    command
 }
 
 fn repository_root() -> std::path::PathBuf {
