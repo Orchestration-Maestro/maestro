@@ -598,6 +598,81 @@ fn trait_alias_declarations_keep_their_owners() {
 }
 
 #[test]
+fn declarations_after_shebang_keep_their_owners() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    let declaration = "#!/usr/bin/env rust-script\npub struct ToolDefinition;";
+    source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "{}:2: ToolDefinition declaration belongs to maestro-tools, not maestro-tui",
+            workspace
+                .root
+                .join("crates/maestro-tui/src/lib.rs")
+                .display()
+        ))
+    );
+    source(&workspace, "maestro-tui", "src/lib.rs", "");
+    source(&workspace, "maestro-tools", "src/lib.rs", declaration);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn metavariable_keywords_do_not_declare_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tui",
+        "src/lib.rs",
+        "macro_rules! define { ($type:ident) => { $type ToolDefinition; }; }",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn contextual_union_and_raw_keywords_are_not_declarations() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    for contents in [
+        "fn union() {} fn innocent() { x.union(ToolDefinition); }",
+        "wrapper! { r#type ToolDefinition; struct $ToolDefinition; }",
+        "paste! { struct [<Tool Definition>]; } concat_idents! { Tool, Definition }",
+    ] {
+        source(&workspace, "maestro-tui", "src/lib.rs", contents);
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{contents}");
+    }
+    for declaration in [
+        "pub union ToolDefinition<T> { value: T }",
+        "pub union ToolDefinition where u8: Copy { value: u8 }",
+    ] {
+        assert_tool_declaration_owner(declaration);
+    }
+}
+
+#[test]
+fn functions_constants_and_statics_do_not_declare_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui"]);
+    for declaration in [
+        "pub fn config_selector() {}",
+        "pub const ToolDefinition: () = ();",
+        "pub static ToolRenderContext: () = ();",
+    ] {
+        source(&workspace, "maestro-tui", "src/lib.rs", declaration);
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{declaration}");
+    }
+}
+
+#[test]
+fn associated_types_in_macro_templates_keep_their_owners() {
+    assert_tool_declaration_owner(
+        "macro_rules! associated { () => { type ToolDefinition; }; } pub trait Owner { associated!(); }",
+    );
+}
+
+#[test]
 fn fixed_macro_declarations_with_metavariable_types_keep_their_owners() {
     assert_tool_declaration_owner(
         "macro_rules! define { ($t:ty) => { struct ToolDefinition { value: $t } }; } define!(u8);",

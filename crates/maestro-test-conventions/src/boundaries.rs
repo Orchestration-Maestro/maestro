@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
 use crate::source::{Member, Source};
-use syn::{ext::IdentExt, parse::Parser, parse::discouraged::Speculative, visit::Visit};
+use proc_macro2::{TokenStream, TokenTree};
+use syn::ext::IdentExt;
 
 mod wit;
 use wit::{ScanContext, WitInputs};
@@ -22,10 +23,8 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
             let mut records = Records::default();
-            if let Some(syntax) = &source.syntax {
-                records.visit_file(syntax);
-            } else if let Ok(tokens) = source.contents.parse() {
-                records.fragment(tokens);
+            if let Ok(tokens) = source.contents.parse() {
+                records.scan(tokens);
             }
             check_declarations(member, source, &records, &mut declarations)?;
             let context = ScanContext {
@@ -42,9 +41,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     wit.finish()
 }
 
-const DECLARATION_KINDS: &[&str] = &[
-    "struct", "enum", "union", "trait", "type", "fn", "const", "static", "mod",
-];
+const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
 
 #[derive(Default)]
 struct Records {
@@ -53,114 +50,52 @@ struct Records {
 }
 
 impl Records {
-    fn declaration(&mut self, kind: &str, name: &syn::Ident, keyword: proc_macro2::Span) {
-        if !DECLARATION_KINDS.contains(&kind) {
+    fn scan(&mut self, tokens: TokenStream) {
+        let tokens: Vec<_> = tokens.into_iter().collect();
+        for (index, token) in tokens.iter().enumerate() {
+            let generated = matches!(tokens[..index].last(), Some(TokenTree::Punct(punctuation)) if punctuation.as_char() == '$');
+            match token {
+                TokenTree::Ident(keyword) if !generated => {
+                    self.declaration(keyword, &tokens[index + 1..]);
+                    self.wit_macro(&tokens[index..]);
+                }
+                TokenTree::Group(group) if !attribute_group(&tokens[..index]) => {
+                    self.scan(group.stream());
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn declaration(&mut self, keyword: &proc_macro2::Ident, following: &[TokenTree]) {
+        let kind = keyword.to_string();
+        if !DECLARATION_KINDS.contains(&kind.as_str()) {
+            return;
+        }
+        let Some(TokenTree::Ident(name)) = following.first() else {
+            return;
+        };
+        if kind == "union" && !union_body(following.get(1)) {
             return;
         }
         self.declarations
-            .push((name.unraw().to_string(), keyword.start().line));
+            .push((name.unraw().to_string(), keyword.span().start().line));
     }
 
-    fn fragment(&mut self, tokens: proc_macro2::TokenStream) {
-        let parser = |input: syn::parse::ParseStream<'_>| {
-            while !input.is_empty() {
-                self.fragment_item(input)?;
-            }
-            Ok(())
+    fn wit_macro(&mut self, tokens: &[TokenTree]) {
+        if !matches!(tokens.first(), Some(TokenTree::Ident(name)) if name == "wit_bindgen" || name == "wasmtime")
+        {
+            return;
+        }
+        let Some(end) = tokens
+            .iter()
+            .position(|token| matches!(token, TokenTree::Group(_)))
+        else {
+            return;
         };
-        let _ = parser.parse2(tokens);
-    }
-
-    fn fragment_header(&mut self, input: syn::parse::ParseStream<'_>) -> bool {
-        let fork = input.fork();
-        if fork.parse::<syn::Visibility>().is_err() {
-            return false;
-        }
-        let Ok(proc_macro2::TokenTree::Ident(keyword)) = fork.parse() else {
-            return false;
+        let Ok(mac) = syn::parse2::<syn::Macro>(tokens[..=end].iter().cloned().collect()) else {
+            return;
         };
-        let kind = keyword.to_string();
-        if !DECLARATION_KINDS.contains(&kind.as_str()) {
-            return false;
-        }
-        let Ok(name) = fork.parse::<syn::Ident>() else {
-            return false;
-        };
-        self.declaration(&kind, &name, keyword.span());
-        input.advance_to(&fork);
-        true
-    }
-
-    fn fragment_item(&mut self, input: syn::parse::ParseStream<'_>) -> syn::Result<()> {
-        let fork = input.fork();
-        if let Ok(item) = fork.parse::<syn::Item>() {
-            input.advance_to(&fork);
-            self.visit_item(&item);
-            return Ok(());
-        }
-        if input.fork().parse::<syn::Macro>().is_ok() {
-            self.visit_macro(&input.parse()?);
-            return Ok(());
-        }
-        if self.fragment_header(input) {
-            return Ok(());
-        }
-        match input.parse::<proc_macro2::TokenTree>()? {
-            proc_macro2::TokenTree::Punct(punctuation) if punctuation.as_char() == '#' => {
-                if input.peek(syn::Token![!]) {
-                    input.parse::<syn::Token![!]>()?;
-                }
-                if input.peek(syn::token::Bracket) {
-                    input.parse::<proc_macro2::Group>()?;
-                }
-            }
-            proc_macro2::TokenTree::Group(group) => self.fragment(group.stream()),
-            _ => {}
-        }
-        Ok(())
-    }
-}
-
-impl<'ast> Visit<'ast> for Records {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        match item {
-            syn::Item::Struct(item) => {
-                self.declaration("struct", &item.ident, item.struct_token.span);
-            }
-            syn::Item::Enum(item) => self.declaration("enum", &item.ident, item.enum_token.span),
-            syn::Item::Union(item) => self.declaration("union", &item.ident, item.union_token.span),
-            syn::Item::Trait(item) => self.declaration("trait", &item.ident, item.trait_token.span),
-            syn::Item::TraitAlias(item) => {
-                self.declaration("trait", &item.ident, item.trait_token.span);
-            }
-            syn::Item::Fn(item) => self.declaration("fn", &item.sig.ident, item.sig.fn_token.span),
-            syn::Item::Const(item) => self.declaration("const", &item.ident, item.const_token.span),
-            syn::Item::Static(item) => {
-                self.declaration("static", &item.ident, item.static_token.span);
-            }
-            syn::Item::Type(item) => self.declaration("type", &item.ident, item.type_token.span),
-            syn::Item::Mod(item) => self.declaration("mod", &item.ident, item.mod_token.span),
-            _ => {}
-        }
-        syn::visit::visit_item(self, item);
-    }
-
-    fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
-        self.declaration("type", &item.ident, item.type_token.span);
-        syn::visit::visit_impl_item_type(self, item);
-    }
-
-    fn visit_trait_item_type(&mut self, item: &'ast syn::TraitItemType) {
-        self.declaration("type", &item.ident, item.type_token.span);
-        syn::visit::visit_trait_item_type(self, item);
-    }
-
-    fn visit_foreign_item_type(&mut self, item: &'ast syn::ForeignItemType) {
-        self.declaration("type", &item.ident, item.type_token.span);
-        syn::visit::visit_foreign_item_type(self, item);
-    }
-
-    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         let path: Vec<_> = mac
             .path
             .segments
@@ -168,16 +103,28 @@ impl<'ast> Visit<'ast> for Records {
             .map(|segment| segment.ident.unraw().to_string())
             .collect();
         if path == ["wit_bindgen", "generate"] || path == ["wasmtime", "component", "bindgen"] {
-            self.inputs.push((
-                mac.path
-                    .segments
-                    .first()
-                    .map_or(1, |segment| segment.ident.span().start().line),
-                mac.tokens.clone(),
-            ));
-        } else {
-            self.fragment(mac.tokens.clone());
+            self.inputs
+                .push((tokens[0].span().start().line, mac.tokens));
         }
+    }
+}
+
+fn attribute_group(previous: &[TokenTree]) -> bool {
+    match previous {
+        [.., TokenTree::Punct(hash)] if hash.as_char() == '#' => true,
+        [.., TokenTree::Punct(hash), TokenTree::Punct(bang)] => {
+            hash.as_char() == '#' && bang.as_char() == '!'
+        }
+        _ => false,
+    }
+}
+
+fn union_body(token: Option<&TokenTree>) -> bool {
+    match token {
+        Some(TokenTree::Group(group)) => group.delimiter() == proc_macro2::Delimiter::Brace,
+        Some(TokenTree::Punct(punctuation)) => punctuation.as_char() == '<',
+        Some(TokenTree::Ident(keyword)) => keyword == "where",
+        _ => false,
     }
 }
 

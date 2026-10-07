@@ -48,9 +48,9 @@ library-name list is not a general library classifier.
 Rust member files, including files outside `src/`, are traversed while skipping
 `target/` and `.git/`. Each file is read once; a leading byte-order mark is removed
 and physical CRLF is converted to LF before native Rust parsing. Parsing, comment
-lexing, production line counts and WIT literals share that canonical text. Declaration
-checks use that syntax tree, with bounded native token groups for literal
-macro bodies and included fragments; no macro expansion is performed.
+lexing, production line counts and WIT literals share that canonical text.
+Declarations are recognised from native tokens, so macro templates and every item
+shape are covered without expansion; attribute payloads are excluded.
 Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/render-context/result-option types
 belong to tools; application selector types and selector modules belong to chat.
 Qualified uses and re-exports are not declarations. Duplicate tool declarations
