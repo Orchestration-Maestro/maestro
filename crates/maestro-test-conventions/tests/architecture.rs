@@ -610,6 +610,26 @@ fn internal_dev_edges_are_rejected_for_every_member() {
 
 #[cfg(unix)]
 #[test]
+fn metadata_fixtures_run_while_scenario_data_is_open() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-models"]);
+    std::fs::write(
+        workspace.root.join("resolved.json"),
+        serde_json::to_vec(&workspace.metadata()).unwrap(),
+    )
+    .unwrap();
+    let cargo = workspace.command("cargo", "cat resolved.json");
+    let rustc = workspace.command("rustc", "printf 'host: x86_64-unknown-linux-gnu\\n'");
+    let writer = std::fs::OpenOptions::new()
+        .write(true)
+        .open(&cargo)
+        .unwrap();
+    workspace.probe(&cargo, &rustc, "ok");
+    drop(writer);
+}
+
+#[cfg(unix)]
+#[test]
 fn metadata_graph_failures_cross_the_public_interface() {
     if let Some(root) = std::env::var_os("MAESTRO_CONVENTIONS_PROBE_ROOT") {
         let result = check_workspace(std::path::Path::new(&root));

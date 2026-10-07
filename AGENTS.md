@@ -222,6 +222,9 @@ The private conventions checker may use `syn =3.0.6` (defaults off;
 (defaults off; no features). All are MIT OR Apache-2.0 except
 `cargo_metadata`, which is MIT. Dependency feature unification also enables
 syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
+`unicode-ident` is held at 1.0.24 in the lockfile because the lexer asserts
+matching Unicode tables; the hold lifts when `unicode-properties` publishes
+the newer tables.
 
 The private contribution-policy executable may use `base64 =0.23.1` with only
 `std` for GitHub content, and `chrono =0.4.45` with only `std` for UTC metadata

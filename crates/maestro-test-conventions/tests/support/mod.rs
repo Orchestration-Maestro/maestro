@@ -142,10 +142,8 @@ impl Workspace {
 )]
 impl Workspace {
     pub fn command(&self, name: &str, body: &str) -> PathBuf {
-        use std::os::unix::fs::PermissionsExt;
         let path = self.root.join(name);
-        fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
+        fs::write(&path, format!("{body}\n")).unwrap();
         path
     }
 
@@ -189,6 +187,8 @@ impl Workspace {
     }
 
     pub fn probe(&self, cargo: &std::path::Path, rustc: &std::path::Path, expectation: &str) {
+        let launcher =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
@@ -197,8 +197,10 @@ impl Workspace {
             ])
             .env("MAESTRO_CONVENTIONS_PROBE_ROOT", &self.root)
             .env("MAESTRO_CONVENTIONS_EXPECT", expectation)
-            .env("CARGO", cargo)
-            .env("RUSTC", rustc)
+            .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
+            .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
+            .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
+            .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc)
             .output()
             .unwrap();
         assert!(
