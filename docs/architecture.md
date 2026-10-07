@@ -77,6 +77,17 @@ application coupling, no application policy in frontends, a wiring-only binary,
 and complete WIT code-generation evidence. Current absent owners are tested with
 scratch workspaces, not certified as delivered capabilities.
 
+## Quality checks
+
+Member manifests are parsed as TOML and must set the boolean `lints.workspace`
+to `true`. Rust files are parsed before checking attributes: protected lint
+allowances, Clippy group allowances and `warnings` allowances are forbidden,
+including `expect`, nested items and conditional `cfg_attr` attributes.
+Unparsable files fail with a diagnostic naming the file. Test files are exempt
+from the 500-line production limit, but not from allowance checks. Items carrying
+`cfg(test)` are excluded by their source spans, regardless of attribute order;
+a trailing test item's suffix is excluded only when no production item follows.
+
 ## Commands and failure evidence
 
 Run `just check`, `just test` and `just ci` with pinned tools. `just check` includes

@@ -7,6 +7,9 @@ repository.workspace = true
 
 [dependencies]
 serde_json.workspace = true
+toml = "=1.1.6"
+syn = { version = "=3.0.6", features = ["full", "visit"] }
+proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]

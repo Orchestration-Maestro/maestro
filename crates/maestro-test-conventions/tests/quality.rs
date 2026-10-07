@@ -112,7 +112,7 @@ fn quality_allowances_are_attributes_not_innocent_source_tokens() {
         "#[allow(clippy::doc_markdown)]",
         "#[expect(clippy::unwrap_used)]",
     ] {
-        std::fs::write(&path, format!("{attribute}\n")).unwrap();
+        std::fs::write(&path, format!("{attribute}\nfn fixture() {{}}\n")).unwrap();
         assert!(
             check_workspace(&workspace.root)
                 .unwrap_err()
@@ -137,4 +137,105 @@ fn multiple_trailing_test_modules_do_not_count() {
     )
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn lint_inheritance_uses_the_manifest_table() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.join("crates/tui/Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    let forged = text.replace("[lints]\nworkspace = true\n", "").replace(
+        "[package]\n",
+        "[package]\ndescription = '''\n[lints]\nworkspace = true\n'''\n",
+    );
+    std::fs::write(&manifest, forged).unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("must inherit workspace lints")
+    );
+    std::fs::write(
+        &manifest,
+        text.replace("workspace = true", "\"workspace\" = true"),
+    )
+    .unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn lint_groups_are_rejected_at_every_attribute_depth() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    for contents in [
+        "#![allow(clippy::restriction)]\n",
+        "fn outer() { #[expect(clippy::pedantic)] fn nested() {} }\n",
+        "#[cfg_attr(test, allow(clippy::all))] fn fixture() {}\n",
+    ] {
+        std::fs::write(&path, contents).unwrap();
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("quality lint allowance"),
+            "{contents}"
+        );
+    }
+}
+
+#[test]
+fn test_modules_with_extra_attributes_do_not_count_as_production() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let root = workspace.root.join("crates/tui/src");
+    std::fs::write(root.join("tests.rs"), "").unwrap();
+    for attributes in [
+        "#[cfg(test)]\n#[path = \"tests.rs\"]\n",
+        "#[path = \"tests.rs\"]\n#[cfg(test)]\n",
+    ] {
+        std::fs::write(
+            root.join("lib.rs"),
+            format!("{}{attributes}mod tests;\n", "// Technical.\n".repeat(500)),
+        )
+        .unwrap();
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        std::fs::write(
+            root.join("lib.rs"),
+            format!("{}{attributes}mod tests;\n", "// Technical.\n".repeat(501)),
+        )
+        .unwrap();
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("501 production lines")
+        );
+    }
+}
+
+#[test]
+fn nested_test_items_do_not_count_as_production() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    std::fs::write(&path, format!(
+        "struct Thing;\nimpl Thing {{\n#[cfg(test)]\nfn helper() {{\n{}}}\n}}\npub fn production() {{}}\n",
+        "// Technical.\n".repeat(501),
+    )).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn invalid_rust_source_reports_its_file() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    std::fs::write(&path, "fn broken( {").unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains(&path.display().to_string()), "{error}");
+    assert!(error.contains("cannot parse"), "{error}");
 }

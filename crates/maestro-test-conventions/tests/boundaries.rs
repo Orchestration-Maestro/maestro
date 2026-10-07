@@ -466,7 +466,7 @@ fn wit_static_paths_decode_rust_string_literals() {
             &workspace,
             "maestro-extensions-wasmtime",
             "build.rs",
-            &format!("wasmtime::component::bindgen!({{ path: r###\"{host_path}\"### }});"),
+            &format!("wasmtime::component::bindgen!({{ path: {host_path:?} }});"),
         );
         assert_eq!(
             check_workspace(&workspace.root),

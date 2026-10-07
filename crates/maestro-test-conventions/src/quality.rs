@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use serde_json::Value;
+use syn::{Meta, Token, punctuated::Punctuated, spanned::Spanned, visit::Visit};
 
 use crate::{array, source, string};
 
@@ -17,7 +18,9 @@ pub(crate) fn check(metadata: &Value) -> Result<(), String> {
         for path in source::files(root)? {
             let contents = std::fs::read_to_string(&path)
                 .map_err(|error| format!("{}: {error}", path.display()))?;
-            check_allowances(&path, &contents)?;
+            let syntax = syn::parse_file(&contents)
+                .map_err(|error| format!("{}: {error}", path.display()))?;
+            check_allowances(&path, &syntax)?;
             if path.file_name().is_some_and(|name| name == "tests.rs")
                 || path
                     .strip_prefix(root)
@@ -27,7 +30,7 @@ pub(crate) fn check(metadata: &Value) -> Result<(), String> {
             {
                 continue;
             }
-            let lines = production_lines(&contents);
+            let lines = production_lines(&contents, &syntax);
             if lines > 500 {
                 return Err(format!(
                     "{}: {lines} production lines exceeds 500",
@@ -39,138 +42,209 @@ pub(crate) fn check(metadata: &Value) -> Result<(), String> {
     Ok(())
 }
 
-fn production_lines(contents: &str) -> usize {
-    let tokens = source::tokens(contents);
-    let prefix = TEST_MODULE;
-    let mut depth = 0;
-    for (index, token) in tokens.iter().enumerate() {
-        if depth == 0
-            && tokens[index..].iter().zip(prefix).all(|(t, p)| t.text == p)
-            && tokens.len() >= index + prefix.len()
-            && trailing_module(&tokens[index + prefix.len()..])
-        {
-            return source::line(contents, token.start) - 1;
-        }
-        match token.text {
-            "{" => depth += 1,
-            "}" => depth -= 1,
-            _ => {}
-        }
-    }
-    contents.lines().count()
+fn production_lines(contents: &str, syntax: &syn::File) -> usize {
+    let mut tests = TestLines::default();
+    tests.visit_file(syntax);
+    let end = syntax
+        .items
+        .last()
+        .filter(|item| is_test(item_attributes(item)))
+        .map_or(contents.lines().count(), |item| item.span().end().line);
+    (1..=end)
+        .filter(|line| !tests.spans.iter().any(|span| span.contains(line)))
+        .count()
 }
 
-const TEST_MODULE: [&str; 8] = ["#", "[", "cfg", "(", "test", ")", "]", "mod"];
-
-fn trailing_module(tokens: &[source::Token<'_>]) -> bool {
-    let Some(end) = module_end(tokens) else {
-        return false;
-    };
-    let remaining = &tokens[end..];
-    remaining.is_empty()
-        || (remaining.len() >= TEST_MODULE.len()
-            && remaining
-                .iter()
-                .zip(TEST_MODULE)
-                .all(|(token, text)| token.text == text)
-            && trailing_module(&remaining[TEST_MODULE.len()..]))
+#[derive(Default)]
+struct TestLines {
+    spans: Vec<std::ops::RangeInclusive<usize>>,
 }
 
-fn module_end(tokens: &[source::Token<'_>]) -> Option<usize> {
-    if tokens.get(1).is_some_and(|token| token.text == ";") {
-        return Some(2);
-    }
-    if tokens.get(1).is_none_or(|token| token.text != "{") {
-        return None;
-    }
-    let mut depth = 0;
-    for (index, token) in tokens.iter().enumerate().skip(1) {
-        match token.text {
-            "{" => depth += 1,
-            "}" => depth -= 1,
-            _ => {}
-        }
-        if depth == 0 {
-            return Some(index + 1);
+impl<'ast> Visit<'ast> for TestLines {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        if is_test(item_attributes(item)) {
+            self.spans
+                .push(item.span().start().line..=item.span().end().line);
+        } else {
+            syn::visit::visit_item(self, item);
         }
     }
-    None
+
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        let attributes = match item {
+            syn::ImplItem::Const(item) => &item.attrs,
+            syn::ImplItem::Fn(item) => &item.attrs,
+            syn::ImplItem::Type(item) => &item.attrs,
+            syn::ImplItem::Macro(item) => &item.attrs,
+            _ => return,
+        };
+        if is_test(attributes) {
+            self.spans
+                .push(item.span().start().line..=item.span().end().line);
+        } else {
+            syn::visit::visit_impl_item(self, item);
+        }
+    }
+
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        let attributes = match item {
+            syn::TraitItem::Const(item) => &item.attrs,
+            syn::TraitItem::Fn(item) => &item.attrs,
+            syn::TraitItem::Type(item) => &item.attrs,
+            syn::TraitItem::Macro(item) => &item.attrs,
+            _ => return,
+        };
+        if is_test(attributes) {
+            self.spans
+                .push(item.span().start().line..=item.span().end().line);
+        } else {
+            syn::visit::visit_trait_item(self, item);
+        }
+    }
+
+    fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
+        let attributes = match item {
+            syn::ForeignItem::Fn(item) => &item.attrs,
+            syn::ForeignItem::Static(item) => &item.attrs,
+            syn::ForeignItem::Type(item) => &item.attrs,
+            syn::ForeignItem::Macro(item) => &item.attrs,
+            _ => return,
+        };
+        if is_test(attributes) {
+            self.spans
+                .push(item.span().start().line..=item.span().end().line);
+        } else {
+            syn::visit::visit_foreign_item(self, item);
+        }
+    }
+}
+
+fn is_test(attributes: &[syn::Attribute]) -> bool {
+    attributes.iter().any(|attribute| {
+        attribute.path().is_ident("cfg")
+            && attribute
+                .parse_args::<syn::Path>()
+                .is_ok_and(|path| path.is_ident("test"))
+    })
+}
+
+fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
+    match item {
+        syn::Item::Const(item) => &item.attrs,
+        syn::Item::Enum(item) => &item.attrs,
+        syn::Item::ExternCrate(item) => &item.attrs,
+        syn::Item::Fn(item) => &item.attrs,
+        syn::Item::ForeignMod(item) => &item.attrs,
+        syn::Item::Impl(item) => &item.attrs,
+        syn::Item::Macro(item) => &item.attrs,
+        syn::Item::Mod(item) => &item.attrs,
+        syn::Item::Static(item) => &item.attrs,
+        syn::Item::Struct(item) => &item.attrs,
+        syn::Item::Trait(item) => &item.attrs,
+        syn::Item::TraitAlias(item) => &item.attrs,
+        syn::Item::Type(item) => &item.attrs,
+        syn::Item::Union(item) => &item.attrs,
+        syn::Item::Use(item) => &item.attrs,
+        _ => &[],
+    }
 }
 
 fn check_inheritance(name: &str, manifest: &Path) -> Result<(), String> {
     let contents = std::fs::read_to_string(manifest)
         .map_err(|error| format!("{}: {error}", manifest.display()))?;
-    let mut in_lints = false;
-    for line in contents.lines() {
-        let line = line.split('#').next().unwrap_or("").trim();
-        if line.starts_with('[') {
-            in_lints = line == "[lints]";
-        } else if in_lints
-            && line
-                .split_once('=')
-                .is_some_and(|(key, value)| key.trim() == "workspace" && value.trim() == "true")
-        {
-            return Ok(());
-        }
+    let document: toml::Table = contents
+        .parse()
+        .map_err(|error| format!("{}: {error}", manifest.display()))?;
+    if document
+        .get("lints")
+        .and_then(toml::Value::as_table)
+        .and_then(|lints| lints.get("workspace"))
+        .and_then(toml::Value::as_bool)
+        == Some(true)
+    {
+        return Ok(());
     }
     Err(format!("{name}: must inherit workspace lints"))
 }
 
-fn check_allowances(path: &Path, contents: &str) -> Result<(), String> {
-    let tokens = source::tokens(contents);
-    for (index, token) in tokens.iter().enumerate() {
-        if token.text != "#" {
-            continue;
-        }
-        let mut start = index + 1;
-        if tokens.get(start).is_some_and(|token| token.text == "!") {
-            start += 1;
-        }
-        if tokens.get(start).is_none_or(|token| token.text != "[") {
-            continue;
-        }
-        let attribute = &tokens[start + 1..];
-        if forbidden_allowance(attribute) {
-            return Err(format!(
-                "{}:{}: quality lint allowance is forbidden",
-                path.display(),
-                source::line(contents, token.start)
-            ));
-        }
-    }
-    Ok(())
+fn check_allowances(path: &Path, syntax: &syn::File) -> Result<(), String> {
+    let mut visitor = Allowances { error: None };
+    visitor.visit_file(syntax);
+    visitor
+        .error
+        .map_or(Ok(()), |error| Err(format!("{}:{error}", path.display())))
 }
 
-fn forbidden_allowance(attribute: &[source::Token<'_>]) -> bool {
-    let mut allowing = false;
-    for token in attribute.iter().take_while(|token| token.text != "]") {
-        if matches!(token.text, "allow" | "expect") {
-            allowing = true;
-        } else if token.text == ")" {
-            allowing = false;
-        } else if allowing
-            && (PEDANTIC.contains(&token.text)
-                || matches!(
-                    token.text,
-                    "too_many_arguments"
-                        | "fn_params_excessive_bools"
-                        | "too_many_lines"
-                        | "cognitive_complexity"
-                        | "excessive_nesting"
-                        | "pedantic"
-                        | "unwrap_used"
-                        | "expect_used"
-                        | "panic"
-                        | "unsafe_code"
-                        | "warnings"
-                        | "all"
-                ))
-        {
-            return true;
-        }
-    }
-    false
+struct Allowances {
+    error: Option<String>,
 }
+
+impl<'ast> Visit<'ast> for Allowances {
+    fn visit_attribute(&mut self, attribute: &'ast syn::Attribute) {
+        match forbidden_allowance(&attribute.meta) {
+            Ok(true) => {
+                self.error = Some(format!(
+                    "{}: quality lint allowance is forbidden",
+                    attribute.span().start().line
+                ));
+            }
+            Err(error) => self.error = Some(error.to_string()),
+            Ok(false) => {}
+        }
+        syn::visit::visit_attribute(self, attribute);
+    }
+}
+
+fn forbidden_allowance(meta: &Meta) -> syn::Result<bool> {
+    let Meta::List(list) = meta else {
+        return Ok(false);
+    };
+    if list.path.is_ident("cfg_attr") {
+        let nested = list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+        for attribute in nested.iter().skip(1) {
+            if forbidden_allowance(attribute)? {
+                return Ok(true);
+            }
+        }
+    } else if list.path.is_ident("allow") || list.path.is_ident("expect") {
+        let lints = list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+        return Ok(lints.iter().any(|lint| {
+            lint.path().segments.last().is_some_and(|segment| {
+                let name = segment.ident.to_string();
+                PEDANTIC.contains(&name.as_str())
+                    || GROUPS.contains(&name.as_str())
+                    || PROTECTED.contains(&name.as_str())
+            })
+        }));
+    }
+    Ok(false)
+}
+
+const GROUPS: &[&str] = &[
+    "all",
+    "pedantic",
+    "restriction",
+    "nursery",
+    "cargo",
+    "complexity",
+    "correctness",
+    "perf",
+    "style",
+    "suspicious",
+    "warnings",
+];
+
+const PROTECTED: &[&str] = &[
+    "too_many_arguments",
+    "fn_params_excessive_bools",
+    "too_many_lines",
+    "cognitive_complexity",
+    "excessive_nesting",
+    "unwrap_used",
+    "expect_used",
+    "panic",
+    "unsafe_code",
+];
 
 // Members of the pedantic group in the pinned Rust toolchain.
 const PEDANTIC: &[&str] = &[
