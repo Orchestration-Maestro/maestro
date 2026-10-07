@@ -11,9 +11,18 @@ fn numbered_planning_comments_are_rejected_with_file_and_line() {
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
     let path = workspace.root.join("crates/models/src/lib.rs");
-    std::fs::write(&path, "\n// slice 6\n").unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
-    assert_location(&error, &path, 2);
+    for (contents, line) in [
+        ("\n// slice 6\n", 2),
+        ("\r\n// café 🦀 SLICE 6\r\n", 2),
+        ("/* issue 1\n Unicode 🦀 #23 */", 2),
+        ("\u{feff}#!/usr/bin/env rustx\n// café ticket 1\n", 2),
+    ] {
+        std::fs::write(&path, contents).unwrap();
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert_location(&error, &path, line);
+        std::fs::write(&path, "// Technical comment.\n").unwrap();
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+    }
 }
 
 fn assert_location(error: &str, expected: &std::path::Path, line: usize) {
@@ -42,15 +51,12 @@ fn rejects(comments: &[&str]) {
 
 #[test]
 fn all_numbered_nouns_are_rejected() {
-    rejects(&[
-        "// slice 6",
-        "/// spec 1 task 2",
-        "/// spec 1",
-        "//! task 2",
-        "/* ticket 5 */",
-        "// issue 18",
-        "// SLICE 6",
-    ]);
+    for noun in ["slice", "spec", "task", "ticket", "issue", "pr"] {
+        rejects(&[
+            &format!("// {noun} 6"),
+            &format!("/* {} 0 */", noun.to_uppercase()),
+        ]);
+    }
 }
 
 #[test]
@@ -92,6 +98,7 @@ const CHARACTER: char = '"';
 const ESCAPED: char = '\'';
 fn borrow<'a>(value: &'a str) -> &'a str { value }
 // Technical Unicode: café 🦀.
+// spec 1a; slice １２; user stories; sprinting; milestones; us01; AT04; D07x.
 "###,
     )
     .unwrap();
@@ -107,4 +114,11 @@ fn nested_block_comments_report_the_inner_line_in_non_src_files() {
     std::fs::write(&path, "/* technical\n /* ticket 5 */\n*/\n").unwrap();
     let error = check_workspace(&workspace.root).unwrap_err();
     assert_location(&error, &path, 2);
+    std::fs::write(&path, "/* Outer /* technical */ comment. */").unwrap();
+    for excluded in ["target", ".git"] {
+        let ignored = workspace.root.join("crates/models").join(excluded);
+        std::fs::create_dir(&ignored).unwrap();
+        std::fs::write(ignored.join("ignored.rs"), "// ticket 5").unwrap();
+    }
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }

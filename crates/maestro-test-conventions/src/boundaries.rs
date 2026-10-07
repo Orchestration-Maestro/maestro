@@ -1,54 +1,144 @@
 use std::collections::BTreeSet;
-use std::path::Path;
 
-use serde_json::Value;
-
-use crate::{array, source, string};
+use crate::source::{Member, Source};
+use syn::{ext::IdentExt, parse::Parser, parse::discouraged::Speculative, visit::Visit};
 
 mod wit;
 use wit::{ScanContext, WitInputs};
 
-pub(crate) fn check(metadata: &Value) -> Result<(), String> {
-    let members = array(metadata, "workspace_members")?;
-    let mut declarations = BTreeSet::new();
-    let guest = array(metadata, "packages")?
+pub(crate) fn check(members: &[Member]) -> Result<(), String> {
+    let guest = members
         .iter()
-        .find(|package| {
-            members.contains(&package["id"]) && package["name"] == "maestro-extensions-wasm"
-        })
-        .map(|package| {
-            Path::new(string(package, "manifest_path")?)
-                .parent()
-                .ok_or("manifest has no parent")?
+        .find(|member| member.name == "maestro-extensions-wasm")
+        .map(|member| {
+            member
+                .directory
                 .canonicalize()
                 .map_err(|error| format!("cannot resolve guest member: {error}"))
         })
         .transpose()?;
+    let mut declarations = BTreeSet::new();
     let mut wit = WitInputs::default();
-    for package in array(metadata, "packages")? {
-        if !members.contains(&package["id"]) {
-            continue;
-        }
-        let owner = string(package, "name")?;
-        let manifest = Path::new(string(package, "manifest_path")?);
-        for path in source::files(manifest.parent().ok_or("manifest has no parent")?)? {
-            let contents = std::fs::read_to_string(&path)
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            let tokens = source::tokens(&contents);
-            wit.scan(
-                &ScanContext {
-                    owner,
-                    directory: manifest.parent().ok_or("manifest has no parent")?,
-                    guest: guest.as_deref(),
-                    path: &path,
-                    contents: &contents,
-                },
-                &tokens,
-            )?;
-            check_declarations(owner, &path, &contents, &tokens, &mut declarations)?;
+    for member in members {
+        for source in &member.sources {
+            let mut records = Records::default();
+            if let Some(syntax) = &source.syntax {
+                records.visit_file(syntax);
+            } else if let Ok(tokens) = source.contents.parse() {
+                records.fragment(tokens);
+            }
+            check_declarations(member, source, &records, &mut declarations)?;
+            let context = ScanContext {
+                owner: &member.name,
+                directory: &member.directory,
+                guest: guest.as_deref(),
+                path: &source.path,
+            };
+            for (line, tokens) in records.inputs {
+                wit.scan(&context, line, tokens)?;
+            }
         }
     }
     wit.finish()
+}
+
+#[derive(Default)]
+struct Records {
+    declarations: Vec<(String, usize)>,
+    inputs: Vec<(usize, proc_macro2::TokenStream)>,
+}
+
+impl Records {
+    fn declaration(&mut self, name: &syn::Ident, keyword: proc_macro2::Span) {
+        self.declarations
+            .push((name.unraw().to_string(), keyword.start().line));
+    }
+
+    fn fragment(&mut self, tokens: proc_macro2::TokenStream) {
+        let parser = |input: syn::parse::ParseStream<'_>| {
+            while !input.is_empty() {
+                self.fragment_item(input)?;
+            }
+            Ok(())
+        };
+        let _ = parser.parse2(tokens);
+    }
+
+    fn fragment_item(&mut self, input: syn::parse::ParseStream<'_>) -> syn::Result<()> {
+        let fork = input.fork();
+        if let Ok(item) = fork.parse::<syn::Item>() {
+            input.advance_to(&fork);
+            self.visit_item(&item);
+            return Ok(());
+        }
+        if input.fork().parse::<syn::Macro>().is_ok() {
+            self.visit_macro(&input.parse()?);
+            return Ok(());
+        }
+        match input.parse::<proc_macro2::TokenTree>()? {
+            proc_macro2::TokenTree::Punct(punctuation) if punctuation.as_char() == '#' => {
+                if input.peek(syn::Token![!]) {
+                    input.parse::<syn::Token![!]>()?;
+                }
+                if input.peek(syn::token::Bracket) {
+                    input.parse::<proc_macro2::Group>()?;
+                }
+            }
+            proc_macro2::TokenTree::Group(group) => self.fragment(group.stream()),
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+impl<'ast> Visit<'ast> for Records {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        match item {
+            syn::Item::Struct(item) => self.declaration(&item.ident, item.struct_token.span),
+            syn::Item::Enum(item) => self.declaration(&item.ident, item.enum_token.span),
+            syn::Item::Union(item) => self.declaration(&item.ident, item.union_token.span),
+            syn::Item::Trait(item) => self.declaration(&item.ident, item.trait_token.span),
+            syn::Item::Type(item) => self.declaration(&item.ident, item.type_token.span),
+            syn::Item::Mod(item) => self.declaration(&item.ident, item.mod_token.span),
+            _ => {}
+        }
+        syn::visit::visit_item(self, item);
+    }
+
+    fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
+        self.declaration(&item.ident, item.type_token.span);
+        syn::visit::visit_impl_item_type(self, item);
+    }
+
+    fn visit_trait_item_type(&mut self, item: &'ast syn::TraitItemType) {
+        self.declaration(&item.ident, item.type_token.span);
+        syn::visit::visit_trait_item_type(self, item);
+    }
+
+    fn visit_foreign_item_type(&mut self, item: &'ast syn::ForeignItemType) {
+        self.declaration(&item.ident, item.type_token.span);
+        syn::visit::visit_foreign_item_type(self, item);
+    }
+
+    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
+        let path: Vec<_> = mac
+            .path
+            .segments
+            .iter()
+            .map(|segment| segment.ident.unraw().to_string())
+            .collect();
+        if path == ["wit_bindgen", "generate"] || path == ["wasmtime", "component", "bindgen"] {
+            self.inputs.push((
+                mac.path
+                    .segments
+                    .first()
+                    .map_or(1, |segment| segment.ident.span().start().line),
+                mac.tokens.clone(),
+            ));
+        } else {
+            self.fragment(mac.tokens.clone());
+        }
+    }
 }
 
 fn selector(name: &str) -> bool {
@@ -83,44 +173,34 @@ fn selector(name: &str) -> bool {
 }
 
 fn check_declarations(
-    owner: &str,
-    path: &Path,
-    contents: &str,
-    tokens: &[source::Token<'_>],
+    member: &Member,
+    source: &Source,
+    records: &Records,
     declarations: &mut BTreeSet<String>,
 ) -> Result<(), String> {
-    for pair in tokens.windows(2) {
-        if !matches!(
-            pair[0].text,
-            "struct" | "enum" | "union" | "trait" | "type" | "mod"
-        ) {
-            continue;
-        }
-        let name = pair[1].text;
-        if selector(name) && owner != "maestro-chat" {
-            let line = source::line(contents, pair[0].start);
-            return Err(format!(
-                "{}:{line}: {name} declaration belongs to maestro-chat, not {owner}",
-                path.display()
-            ));
-        }
-        if matches!(
-            name,
+    for (name, line) in &records.declarations {
+        let owner = if selector(name) {
+            "maestro-chat"
+        } else if matches!(
+            name.as_str(),
             "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
         ) {
-            let line = source::line(contents, pair[0].start);
-            if owner != "maestro-tools" {
-                return Err(format!(
-                    "{}:{line}: {name} declaration belongs to maestro-tools, not {owner}",
-                    path.display()
-                ));
-            }
-            if !declarations.insert(name.to_owned()) {
-                return Err(format!(
-                    "{}:{line}: duplicate declaration {name}",
-                    path.display()
-                ));
-            }
+            "maestro-tools"
+        } else {
+            continue;
+        };
+        if member.name != owner {
+            return Err(format!(
+                "{}:{line}: {name} declaration belongs to {owner}, not {}",
+                source.path.display(),
+                member.name
+            ));
+        }
+        if owner == "maestro-tools" && !declarations.insert(name.clone()) {
+            return Err(format!(
+                "{}:{line}: duplicate declaration {name}",
+                source.path.display()
+            ));
         }
     }
     Ok(())

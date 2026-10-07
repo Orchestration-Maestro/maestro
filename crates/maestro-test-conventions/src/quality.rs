@@ -1,45 +1,44 @@
 use std::path::Path;
 
-use serde_json::Value;
 use syn::{spanned::Spanned, visit::Visit};
 
-use crate::{array, source, string};
+use crate::source::{Member, Source};
 
-pub(crate) fn check(root: &Path, metadata: &Value) -> Result<(), String> {
+pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     check_protected_lints(root)?;
-    let members = array(metadata, "workspace_members")?;
-    for package in array(metadata, "packages")? {
-        if !members.contains(&package["id"]) {
-            continue;
+    for member in members {
+        check_inheritance(&member.name, &member.directory.join("Cargo.toml"))?;
+        for source in &member.sources {
+            check_file(member, source)?;
         }
-        let name = string(package, "name")?;
-        let manifest = Path::new(string(package, "manifest_path")?);
-        let root = manifest.parent().ok_or("manifest has no parent")?;
-        check_inheritance(name, manifest)?;
-        for path in source::files(root)? {
-            let contents = std::fs::read_to_string(&path)
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            if path.file_name().is_some_and(|name| name == "tests.rs")
-                || path
-                    .strip_prefix(root)
-                    .map_err(|error| error.to_string())?
-                    .components()
-                    .any(|part| part.as_os_str() == "tests")
-            {
-                continue;
-            }
-            let contents = contents.strip_prefix('\u{feff}').unwrap_or(&contents);
-            let lines = syn::parse_file(contents).map_or_else(
-                |_| contents.lines().count(),
-                |syntax| production_lines(contents, &syntax),
-            );
-            if lines > 500 {
-                return Err(format!(
-                    "{}: {lines} production lines exceeds 500",
-                    path.display()
-                ));
-            }
-        }
+    }
+    Ok(())
+}
+
+fn check_file(member: &Member, source: &Source) -> Result<(), String> {
+    let path = &source.path;
+    if path.file_name().is_some_and(|name| name == "tests.rs")
+        || path
+            .strip_prefix(&member.directory)
+            .map_err(|error| error.to_string())?
+            .components()
+            .any(|part| part.as_os_str() == "tests")
+    {
+        return Ok(());
+    }
+    let contents = source
+        .contents
+        .strip_prefix('\u{feff}')
+        .unwrap_or(&source.contents);
+    let lines = source.syntax.as_ref().map_or_else(
+        || contents.lines().count(),
+        |syntax| production_lines(contents, syntax),
+    );
+    if lines > 500 {
+        return Err(format!(
+            "{}: {lines} production lines exceeds 500",
+            path.display()
+        ));
     }
     Ok(())
 }

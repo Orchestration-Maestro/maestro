@@ -89,144 +89,19 @@ impl Drop for Workspace {
 
 #[allow(
     dead_code,
-    reason = "Fixture matrices are shared by separate test executables."
+    reason = "Policy fixtures are shared across test executables."
 )]
-pub mod policy {
-    pub const POLICY: &[(&str, &[&str])] = &[
-        ("maestro-extensions-wasm", &[]),
-        ("maestro-models", &[]),
-        ("maestro-resources", &[]),
-        ("maestro-settings", &[]),
-        ("maestro-storage", &[]),
-        ("maestro-test-conventions", &[]),
-        ("maestro-tooling", &[]),
-        ("maestro-tui", &[]),
-        ("maestro-agent", &["maestro-models"]),
-        ("maestro-credentials", &["maestro-models"]),
-        (
-            "maestro-packages",
-            &["maestro-settings", "maestro-resources"],
-        ),
-        ("maestro-test-terminal", &["maestro-tui"]),
-        ("maestro-theme", &["maestro-tui"]),
-        ("maestro-tui-crossterm", &["maestro-tui"]),
-        (
-            "maestro-catalog",
-            &["maestro-models", "maestro-credentials"],
-        ),
-        (
-            "maestro-session",
-            &["maestro-models", "maestro-agent", "maestro-storage"],
-        ),
-        (
-            "maestro-tools",
-            &[
-                "maestro-models",
-                "maestro-agent",
-                "maestro-tui",
-                "maestro-theme",
-            ],
-        ),
-        (
-            "maestro-export",
-            &[
-                "maestro-session",
-                "maestro-models",
-                "maestro-tools",
-                "maestro-theme",
-                "maestro-tui",
-            ],
-        ),
-        (
-            "maestro-extensions",
-            &[
-                "maestro-models",
-                "maestro-agent",
-                "maestro-session",
-                "maestro-catalog",
-                "maestro-tools",
-                "maestro-theme",
-                "maestro-tui",
-                "maestro-resources",
-            ],
-        ),
-        (
-            "maestro-app",
-            &[
-                "maestro-models",
-                "maestro-agent",
-                "maestro-credentials",
-                "maestro-settings",
-                "maestro-storage",
-                "maestro-catalog",
-                "maestro-session",
-                "maestro-tools",
-                "maestro-resources",
-                "maestro-packages",
-                "maestro-extensions",
-                "maestro-export",
-                "maestro-theme",
-                "maestro-tui",
-            ],
-        ),
-        ("maestro-extensions-wasmtime", &["maestro-extensions"]),
-        (
-            "maestro-chat",
-            &[
-                "maestro-app",
-                "maestro-tui",
-                "maestro-tui-crossterm",
-                "maestro-theme",
-            ],
-        ),
-        (
-            "maestro-cli",
-            &[
-                "maestro-app",
-                "maestro-tui",
-                "maestro-tui-crossterm",
-                "maestro-theme",
-            ],
-        ),
-        ("maestro-rpc", &["maestro-app", "maestro-theme"]),
-        ("maestro-web", &["maestro-app", "maestro-theme"]),
-        (
-            "maestro",
-            &[
-                "maestro-app",
-                "maestro-cli",
-                "maestro-rpc",
-                "maestro-chat",
-                "maestro-web",
-                "maestro-extensions-wasmtime",
-            ],
-        ),
-    ];
-}
+#[path = "../../src/graph/policy.rs"]
+pub mod policy;
 
 #[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 pub fn exact(name: &str) -> bool {
-    matches!(
-        name,
-        "maestro-cli"
-            | "maestro-chat"
-            | "maestro-rpc"
-            | "maestro-web"
-            | "maestro-tui-crossterm"
-            | "maestro-test-terminal"
-    )
+    policy::exact(name)
 }
 
 #[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 pub fn class(name: &str) -> &'static str {
-    if matches!(
-        name,
-        "maestro" | "maestro-test-conventions" | "maestro-test-terminal" | "maestro-tooling"
-    ) {
-        "dedicated"
-    } else {
-        "core"
-    }
+    policy::rule(name).unwrap().class
 }
 
 #[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
@@ -238,7 +113,7 @@ impl Workspace {
             if !entries.insert(name) {
                 continue;
             }
-            let targets = policy::POLICY.iter().find(|row| row.0 == name).unwrap().1;
+            let targets = policy::rule(name).unwrap().dependencies;
             let mut dependencies = String::new();
             if exact(name) {
                 dependencies.push_str("[dependencies]\n");
@@ -272,6 +147,21 @@ impl Workspace {
         fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
         fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
         path
+    }
+
+    pub fn metadata(&self) -> serde_json::Value {
+        let output =
+            std::process::Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
+                .args(["metadata", "--format-version", "1", "--offline"])
+                .current_dir(&self.root)
+                .output()
+                .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        serde_json::from_slice(&output.stdout).unwrap()
     }
 
     pub fn metadata_probe(

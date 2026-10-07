@@ -8,7 +8,10 @@ repository.workspace = true
 [dependencies]
 serde_json.workspace = true
 toml = "=1.1.6"
-syn = { version = "=3.0.6", features = ["full", "visit"] }
+syn = { version = "=3.0.6", default-features = false, features = ["full", "parsing", "printing", "visit"] }
+cargo_metadata = { version = "=0.23.1", default-features = false }
+ra-ap-rustc_lexer = "=0.176.0"
+serde = { version = "=1.0.229", features = ["derive"] }
 proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 
