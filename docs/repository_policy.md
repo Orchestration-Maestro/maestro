@@ -33,10 +33,10 @@ reply still waits for the protected merge.
 ## Capabilities and event order
 
 `.github/APPROVED_CONTRIBUTORS` uses `username capability`; recognized capabilities
-are `issue` and `pr`. Comparisons ignore Unicode case. Use Rust-native whitespace
-handling as-is; literal LF records, preserved comments/malformed lines and last-valid-duplicate
-lookup remain application behavior. List the visible whitespace difference once
-in the owning ticket. A changed write normalizes recognized entries only,
+are `issue` and `pr`. Comparisons ignore Unicode case. Whitespace handling,
+literal LF records, preserved comments/malformed lines and last-valid-duplicate
+lookup follow the observable-result requirements in the foundation's common
+semantic and boundary contract. A changed write normalizes recognized entries only,
 changes the last matching duplicate and retains other bytes/order. A no-op
 never normalizes the list. New entries preserve the author's spelling.
 
@@ -90,11 +90,11 @@ enqueue failures stop at that operation. There is no retry, rollback or polling.
 | `activity_gate.label` | Empty; an empty label or repository list disables activity effects |
 
 Dates use issue `created_at`, not wall time, through native date parsing and UTC
-conversion as-is. Invalid dates do not match a schedule. Runner timezone is
-explicitly UTC. Decode content with the native base64 library as-is, removing
-transport-required line wrapping only. Use native UTF-8 decoding errors rather
-than reconstructing foreign decoding behavior. List visible date/base64/text
-differences once in the owning ticket.
+conversion. Invalid dates do not match a schedule. Runner timezone is explicitly
+UTC. Decode content with the native base64 library, removing transport-required
+line wrapping only. Date, base64 and UTF-8 results obey the foundation's common
+semantic and boundary contract; native library choices do not authorize different
+observable results.
 
 The committed policy has no historical users, active schedule, maintenance event,
 help destination or external activity repository. Forms disable blank issues;
@@ -121,11 +121,11 @@ comment on or close live items.
 ## Dependency closure
 
 Runtime addition is base64 0.23.1 (`std` only, defaults off).
-ISO metadata timestamps use the selected native date library as-is, including
-its accepted grammar and range; native parsing failures receive no schedule
-guidance or labels. Do not reproduce foreign date arithmetic, engine limits or
-permissive base64 internals. Tests cover application routing on native parsed
-values and failures, not differential engine-internal equivalence.
+ISO metadata timestamps use the selected native date library under the
+foundation's common semantic and boundary contract; parsing failures receive no
+schedule guidance or labels. Do not reproduce foreign date arithmetic, engine
+limits or permissive base64 internals. Tests cover observable parsing results and
+application routing on parsed values and failures, not engine-internal equivalence.
 Test-only yaml-rust2 0.13.0 (defaults off) resolves arraydeque 0.5.1 and hashlink
 0.12.2; hashlink resolves hashbrown 0.17.1, which resolves foldhash 0.2.0.
 The direct additions and transitive dependencies are MIT OR Apache-2.0, except
