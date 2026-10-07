@@ -256,24 +256,39 @@ fn native_workspace(workspace: &Workspace) {
 fn maestro_clean_keeps_sources_and_sibling_outputs() {
     let workspace = Workspace::new();
     native_workspace(&workspace);
+    fs::create_dir_all(workspace.0.join(".cargo")).unwrap();
+    fs::write(
+        workspace.0.join(".cargo/config.toml"),
+        "[build]\ntarget-dir = 'compiler-output'\n",
+    )
+    .unwrap();
     assert!(workspace.run("build").status.success());
+    let development = prepare_configured_assets(&workspace);
     assert!(
         workspace
             .0
-            .join("target/debug/libmaestro_models.rlib")
+            .join("compiler-output/debug/libmaestro_models.rlib")
             .exists()
     );
-    assert!(workspace.run("models-clean").status.success());
+    assert!(
+        workspace
+            .command("models-clean")
+            .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
     assert!(
         !workspace
             .0
-            .join("target/debug/libmaestro_models.rlib")
+            .join("compiler-output/debug/libmaestro_models.rlib")
             .exists()
     );
     assert!(
         workspace
             .0
-            .join("target/debug/libmaestro_agent.rlib")
+            .join("compiler-output/debug/libmaestro_agent.rlib")
             .exists()
     );
     assert!(
@@ -282,13 +297,118 @@ fn maestro_clean_keeps_sources_and_sibling_outputs() {
             .join("crates/maestro-models/src/lib.rs")
             .exists()
     );
-    assert!(workspace.run("clean").status.success());
+    assert_asset_cleanup(&workspace, &development);
+}
+
+fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
+    for tree in ["maestro-app-assets", "maestro-binary-assets"] {
+        assert!(workspace.0.join("compiler-output").join(tree).is_dir());
+    }
+    let output = workspace
+        .command("app-clean")
+        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+        .env("MAESTRO_DEVELOPMENT", development)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        workspace
+            .0
+            .join("compiler-output/debug/libmaestro_agent.rlib")
+            .exists()
+    );
+    assert!(workspace.0.join("crates/maestro-app/src/lib.rs").exists());
+    for tree in ["maestro-app-assets", "maestro-binary-assets"] {
+        assert!(!workspace.0.join("compiler-output").join(tree).exists());
+        fs::create_dir_all(workspace.0.join("compiler-output").join(tree)).unwrap();
+    }
+    assert!(
+        workspace
+            .command("clean")
+            .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+    for tree in ["maestro-app-assets", "maestro-binary-assets"] {
+        assert!(!workspace.0.join("compiler-output").join(tree).exists());
+    }
     assert!(
         !workspace
             .0
-            .join("target/debug/libmaestro_agent.rlib")
+            .join("compiler-output/debug/libmaestro_agent.rlib")
             .exists()
     );
+}
+
+fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
+    fs::rename(
+        workspace.0.join("bin/cargo-proxy"),
+        workspace.0.join("bin/cargo"),
+    )
+    .unwrap();
+    create_prepared_assets(workspace);
+    let binary_root = workspace.0.join("crates/maestro");
+    fs::create_dir_all(binary_root.join("src")).unwrap();
+    fs::write(
+        binary_root.join("Cargo.toml"),
+        "[package]\nname = 'maestro'\nversion = '0.1.0'\nedition = '2024'\n",
+    )
+    .unwrap();
+    fs::write(binary_root.join("src/main.rs"), "fn main() {}\n").unwrap();
+    prepare_tooling_owner(workspace);
+    let development = workspace.0.join("compiler-output/debug/development");
+    for recipe in ["copy-assets", "copy-binary-assets"] {
+        let output = workspace
+            .command(recipe)
+            .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+            .env("MAESTRO_DEVELOPMENT", &development)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    for tree in ["maestro-app-assets", "maestro-binary-assets"] {
+        assert!(
+            workspace.0.join("compiler-output").join(tree).is_dir(),
+            "missing configured asset tree: {tree}"
+        );
+    }
+    development
+}
+
+fn create_prepared_assets(workspace: &Workspace) {
+    let root = workspace.0.join("crates/maestro-app");
+    for (name, value) in [
+        ("src/modes/interactive/theme/theme.json", "{}"),
+        ("src/modes/interactive/assets/logo.png", "image"),
+        ("src/core/export-html/template.html", "html"),
+        ("src/core/export-html/template.css", "css"),
+        ("src/core/export-html/template.js", "js"),
+        ("src/core/export-html/vendor/vendor.js", "vendor"),
+        ("README.md", "readme"),
+        ("CHANGELOG.md", "history"),
+        ("docs/guide.md", "guide"),
+        ("examples/example.txt", "example"),
+    ] {
+        let path = root.join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, value).unwrap();
+    }
+    fs::create_dir_all(workspace.0.join("target/maestro-viewer")).unwrap();
+    fs::write(
+        workspace.0.join("target/maestro-viewer/index.html"),
+        "viewer",
+    )
+    .unwrap();
 }
 
 #[cfg(unix)]
@@ -647,6 +767,7 @@ fn maestro_native_tests_keep_filters_and_ignored_cases() {
         .unwrap();
     assert!(output.status.success());
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+    assert_terminal_test_selection(&workspace);
     let output = workspace
         .command("test")
         .arg("selected_behavior")
@@ -663,6 +784,39 @@ fn maestro_native_tests_keep_filters_and_ignored_cases() {
             .count(),
         4
     );
+}
+
+fn assert_terminal_test_selection(workspace: &Workspace) {
+    fs::write(workspace.0.join("crates/maestro-tui/src/lib.rs"), "#[test] fn terminal_behavior() {}\n#[test] fn wrap_ansi_selected() {}\n#[test] #[ignore] fn wrap_ansi_ignored() {}\n#[test] fn selected_behavior() {}\n").unwrap();
+    let output = workspace
+        .command("tui-test")
+        .args(["--", "--nocapture"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("terminal_behavior ... ok"));
+    assert!(stdout.contains("wrap_ansi_selected ... ok"));
+    assert!(stdout.contains("3 passed; 0 failed; 1 ignored"));
+    let output = workspace
+        .command("tui-test-ansi")
+        .args(["--", "--nocapture"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(!stdout.contains("terminal_behavior ..."));
+    assert!(stdout.contains("wrap_ansi_selected ... ok"));
+    assert!(stdout.contains("1 passed; 0 failed; 1 ignored"));
+    let output = workspace
+        .command("tui-test-ansi")
+        .args(["--", "--ignored", "--exact", "wrap_ansi_ignored"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("wrap_ansi_ignored ... ok"));
+    assert!(stdout.contains("1 passed; 0 failed; 0 ignored"));
 }
 
 #[test]

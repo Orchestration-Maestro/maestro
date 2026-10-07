@@ -98,7 +98,7 @@ tui-prepublish: tui-clean tui-build
 # Remove app compilation outputs only.
 app-clean:
     cargo clean -p maestro-app
-    cargo clean --target-dir target/maestro-app-assets
+    cargo run --quiet --locked -p maestro-tooling --bin development -- clean-assets
 
 # Compile the app package.
 app-build:
@@ -141,12 +141,12 @@ build-binary:
     just copy-binary-assets
 
 # Copy prepared library assets.
-copy-assets source="crates/maestro-app" destination="target/maestro-app-assets":
-    cargo run --quiet --locked -p maestro-tooling --bin development -- copy-assets "$1" "$2"
+copy-assets source="crates/maestro-app" destination="":
+    cargo run --quiet --locked -p maestro-tooling --bin development -- copy-assets "$1" "${2:-$(cargo run --quiet --locked -p maestro-tooling --bin development -- asset-output app)}"
 
 # Copy prepared standalone assets and the supplied viewer bundle.
-copy-binary-assets source="crates/maestro-app" destination="target/maestro-binary-assets" viewer="target/maestro-viewer":
-    cargo run --quiet --locked -p maestro-tooling --bin development -- copy-binary-assets "$1" "$2" "$3"
+copy-binary-assets source="crates/maestro-app" destination="" viewer="target/maestro-viewer":
+    cargo run --quiet --locked -p maestro-tooling --bin development -- copy-binary-assets "$1" "${2:-$(cargo run --quiet --locked -p maestro-tooling --bin development -- asset-output binary)}" "$3"
 
 # Run the explicitly selected non-provider route in the invocation directory.
 [no-cd]

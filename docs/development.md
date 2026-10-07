@@ -67,6 +67,11 @@ configuration schema or asset lookup is provided by the development commands.
 Use the owner's central asset paths, not the location of the current source file.
 Installed and standalone application execution is not delivered yet.
 
+The copy recipes default to `maestro-app-assets` and `maestro-binary-assets`
+under Cargo's configured target directory. `app-clean` removes both asset trees;
+workspace `clean` removes the complete configured output. Explicit copy
+destinations remain available.
+
 `copy-assets SOURCE DESTINATION` copies prepared library themes, images, export
 templates and vendor assets. `copy-binary-assets SOURCE DESTINATION VIEWER` resolves
 the `maestro` manifest through Cargo metadata and copies metadata, README,
@@ -80,7 +85,8 @@ build is owned by #113; the export consumer is owned by
 
 ## Debugging
 
-Interactive debug output, when delivered, belongs under
+The hidden `/debug` command is unavailable until the interactive front end is
+delivered. Its output belongs under
 `~/.maestro/agent/maestro-debug.log`. It contains rendered terminal lines with ANSI
 sequences and the last model messages. The interactive owner supplies this
 behavior; development commands do not create a replacement logger.

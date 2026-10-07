@@ -64,6 +64,18 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .split_first()
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
+        Some("asset-output") => asset_output(args, cargo),
+        Some("clean-assets") => {
+            for owner in ["app", "binary"] {
+                let path = asset_directory(owner, cargo)?;
+                match std::fs::remove_dir_all(path) {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                    Err(error) => return Err(error),
+                }
+            }
+            Ok(ExitCode::SUCCESS)
+        }
         Some("watch") => watch::run(args),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {
@@ -107,6 +119,29 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         }
         _ => Err(io::Error::other("unknown development command")),
     }
+}
+
+fn asset_output(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
+    let owner = args.first().and_then(|name| name.to_str()).unwrap_or("");
+    println!("{}", asset_directory(owner, cargo)?.display());
+    Ok(ExitCode::SUCCESS)
+}
+
+fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> {
+    let directory = match owner {
+        "app" => "maestro-app-assets",
+        "binary" => "maestro-binary-assets",
+        _ => return Err(io::Error::other("missing app or binary asset owner")),
+    };
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .cargo_path(cargo)
+        .no_deps()
+        .exec()
+        .map_err(io::Error::other)?;
+    Ok(metadata
+        .target_directory
+        .join(directory)
+        .into_std_path_buf())
 }
 
 fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
