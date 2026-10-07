@@ -373,11 +373,13 @@ dependencies = [
 name = "maestro-settings"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "ryu-js",
  "serde",
  "serde_json",
  "serde_stacker",
  "stacker",
+ "windows-sys",
 ]
 
 [[package]]

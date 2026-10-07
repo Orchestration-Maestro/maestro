@@ -41,7 +41,7 @@ fn project_save_creates_directory() {
     let s = Arc::new(scratch.storage());
     let q = Scheduler::default();
     let m = SettingsManager::from_storage(s.clone(), q.spawn());
-    m.set_project_extension_paths(vec!["local".into()]);
+    m.set_project_extension_paths((vec!["local".to_owned()]).into());
     assert!(!scratch.root.join("cwd").exists());
     q.drive();
     assert!(scratch.root.join("cwd/.maestro/settings.json").is_file());
@@ -345,12 +345,12 @@ fn manager_and_storage_are_send_sync() {
     let (m, s, q) = support::empty();
     let shared = m.clone();
     shared.set_theme("one".into());
-    m.set_project_extension_paths(vec!["p".into()]);
+    m.set_project_extension_paths((vec!["p".to_owned()]).into());
     shared.set_theme("two".into());
     assert_eq!(q.len(), 3);
     q.drive();
     assert_eq!(m.get_theme().as_deref(), Some("two"));
-    assert_eq!(shared.get_extension_paths(), vec!["p"]);
+    assert_eq!(shared.get_extension_paths().paths(), vec!["p"]);
     assert_eq!(disk(s.as_ref(), SettingsScope::Global)["theme"], "two");
 }
 

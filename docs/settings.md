@@ -21,10 +21,27 @@ than relying on the value's recursive destructor. Two-space pretty output is
 retained at every depth. Very deep saves are bounded by available memory, since
 indentation grows quadratically for a single-child chain and storage receives
 one complete output string.
-Package object and warning records retain their original `property_order` through
-typed getter/setter round-trips; additional properties stay in `extra`. New records
-can use an empty property order to serialize their supplied fields in insertion
-order.
+Collection getters return `SettingsList` views: `strings()` is the optional
+command/model projection, `paths()` defaults malformed lists to empty, and
+`packages()` defaults a list containing any malformed package to empty.
+`WarningSettings::anthropic_extra_usage()` returns the optional typed warning.
+Those projections are unchanged by raw null, wrong-typed or unknown members.
+The views themselves retain the complete copied JSON, including malformed
+members/elements and original key order. Setters persist that JSON, not its typed
+projection. `SettingsList::push`, `package`/`set_package`,
+`PackageSource::set_filter` and `WarningSettings::set_anthropic_extra_usage`
+change only the selected element/member. An untouched get/set round-trip does
+not remove malformed entries or null filters.
+
+Build fresh views with `SettingsList::new`, `PackageSource::new` or
+`WarningSettings::new` over caller-supplied JSON; `SettingsList::absent` removes an
+optional property. String vectors also convert into fresh list views. Package
+and path getters copy arrays or iterate string code points, and use empty arrays
+for missing/null/noniterable roots. The npm getter uses an absent view for
+missing/falsy/noniterable roots. Enabled models retain any stored root exactly.
+Warning getters spread into an object (including string UTF-16 index keys and
+array index keys); primitive roots become empty objects. Typed accessors still
+treat wrong-typed roots as unset even when the copied view has array/object shape.
 
 Objects and arrays are accepted roots. Primitive roots, malformed JSON, numeric
 overflow and lone UTF-16 surrogate escapes produce scoped load errors. Missing or
@@ -135,6 +152,22 @@ ten attempts with nine 20ms gaps. The lease uses a 10000ms stale threshold and
 release acquired locks, with release failures taking precedence. Writes are
 in-place: partial bytes may remain after failure. There is no rename, fsync or
 rollback guarantee. UTF-8 file decoding replaces malformed byte sequences.
+On the first native lease acquisition, process-wide exit cleanup is installed.
+It removes every held directory on a normal return from main or
+`std::process::exit`, including exit from a locked callback or another thread.
+Removal errors are ignored; cleanup never waits for a lease registry mutex.
+Unix acquisition also takes over the supported termination signals only while
+their disposition is default, leaving ignored or already-handled signals alone.
+The handler records the first signal while any synchronous locked section is
+active. After the last section completes its write and release, the default
+signal action is restored and the signal is re-raised. With no active section,
+it is re-raised immediately. This is process-wide handling, not per-manager
+cancellation. Windows console INT/HUP events use the same section deferral and
+forced process termination (exit code 1). The console-close callback waits for
+release, subject to Windows' own close timeout. Windows runtime qualification is
+staged; native Linux subprocess checks cover exit and signal deferral.
+Uncatchable termination does not guarantee cleanup.
+
 No operation prints to the console.
 
 ## Deferred memory example

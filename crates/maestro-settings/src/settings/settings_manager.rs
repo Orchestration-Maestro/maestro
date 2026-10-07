@@ -831,17 +831,13 @@ impl SettingsManager {
             Some(Value::Bool(value)),
         );
     }
-    /// Returns a detached command argument vector when all members are strings.
-    pub fn get_npm_command(&self) -> Option<Vec<String>> {
-        self.read("npmCommand").as_deref().and_then(value::strings)
+    /// Returns an owned command view; its string projection is absent for malformed lists.
+    pub fn get_npm_command(&self) -> SettingsList {
+        self.list("npmCommand", false)
     }
-    /// Publishes a command argument vector or omits its raw property.
-    pub fn set_npm_command(&self, command: Option<Vec<String>>) {
-        self.set(
-            SettingsScope::Global,
-            "npmCommand",
-            command.map(|v| Value::Array(v.into_iter().map(Value::String).collect())),
-        );
+    /// Persists a command view or omits an absent value.
+    pub fn set_npm_command(&self, command: SettingsList) {
+        self.set(SettingsScope::Global, "npmCommand", command.raw());
     }
     /// Returns the configured code indentation or two spaces.
     pub fn get_code_block_indent(&self) -> String {
@@ -850,220 +846,267 @@ impl SettingsManager {
             .unwrap_or_else(|| "  ".into())
     }
 }
-/// A package source or a source with ordered resource filters.
-#[derive(Clone, Debug, PartialEq)]
-pub enum PackageSource {
-    /// A source with all resources enabled.
-    String(String),
-    /// A source with optional resource filters.
-    Object {
-        /// The source identifier.
-        source: String,
-        /// Extension filters.
-        extensions: Option<Vec<String>>,
-        /// Skill filters.
-        skills: Option<Vec<String>>,
-        /// Prompt filters.
-        prompts: Option<Vec<String>>,
-        /// Theme filters.
-        themes: Option<Vec<String>>,
-        /// Original property positions retained through typed round-trips.
-        property_order: Vec<String>,
-        /// Additional raw properties.
-        extra: Map<String, Value>,
-    },
+/// An owned collection view separating typed reads from lossless writes.
+///
+/// Malformed elements remain in the JSON even when the typed projection is unset.
+pub struct SettingsList {
+    raw: Option<value::Owned>,
+    typed: bool,
+}
+impl SettingsList {
+    /// Builds a view over new JSON, including malformed elements.
+    pub fn new(raw: Value) -> Self {
+        Self::from_optional(Some(raw))
+    }
+    /// Builds an absent view whose setter removes the property.
+    pub fn absent() -> Self {
+        Self::from_optional(None)
+    }
+    fn from_optional(raw: Option<Value>) -> Self {
+        Self {
+            raw: raw.map(value::Owned),
+            typed: true,
+        }
+    }
+    /// Returns strings only when every element has the declared type.
+    pub fn strings(&self) -> Option<Vec<String>> {
+        if self.typed {
+            self.raw.as_deref().and_then(value::strings)
+        } else {
+            None
+        }
+    }
+    /// Returns the path-list projection, defaulting malformed lists to empty.
+    pub fn paths(&self) -> Vec<String> {
+        self.strings().unwrap_or_default()
+    }
+    /// Returns the package projection, defaulting any malformed entry to empty.
+    pub fn packages(&self) -> Vec<PackageSource> {
+        if !self.typed {
+            return Vec::new();
+        }
+        self.raw
+            .as_deref()
+            .and_then(Value::as_array)
+            .and_then(|items| items.iter().map(PackageSource::read).collect())
+            .unwrap_or_default()
+    }
+    /// Appends a raw element without projecting or discarding its siblings.
+    /// Returns false when the stored value is not an array.
+    pub fn push(&mut self, item: Value) -> bool {
+        if let Some(array) = self.raw.as_deref_mut().and_then(Value::as_array_mut) {
+            array.push(item);
+            self.typed = true;
+            true
+        } else {
+            false
+        }
+    }
+    /// Replaces the list with an empty array.
+    pub fn clear(&mut self) {
+        self.raw = Some(value::Owned(Value::Array(Vec::new())));
+        self.typed = true;
+    }
+    /// Returns an owned package element, including one with malformed filters.
+    pub fn package(&self, index: usize) -> Option<PackageSource> {
+        self.raw
+            .as_deref()?
+            .as_array()?
+            .get(index)
+            .map(|v| PackageSource::new(value::clone(v)))
+    }
+    /// Replaces a package element without changing sibling elements.
+    /// Returns false when the index is absent or the stored value is not an array.
+    pub fn set_package(&mut self, index: usize, package: PackageSource) -> bool {
+        if let Some(slot) = self
+            .raw
+            .as_deref_mut()
+            .and_then(Value::as_array_mut)
+            .and_then(|a| a.get_mut(index))
+        {
+            value::replace(slot, package.raw());
+            self.typed = true;
+            true
+        } else {
+            false
+        }
+    }
+    fn raw(mut self) -> Option<Value> {
+        self.raw.as_mut().map(|raw| std::mem::take(&mut raw.0))
+    }
+}
+impl Clone for SettingsList {
+    fn clone(&self) -> Self {
+        Self {
+            raw: self.raw.as_deref().map(|v| value::Owned(value::clone(v))),
+            typed: self.typed,
+        }
+    }
+}
+impl From<Vec<String>> for SettingsList {
+    fn from(items: Vec<String>) -> Self {
+        Self::new(Value::Array(items.into_iter().map(Value::String).collect()))
+    }
+}
+impl From<Option<Vec<String>>> for SettingsList {
+    fn from(items: Option<Vec<String>>) -> Self {
+        items.map(Self::from).unwrap_or_else(Self::absent)
+    }
+}
+impl From<Vec<PackageSource>> for SettingsList {
+    fn from(items: Vec<PackageSource>) -> Self {
+        Self::new(Value::Array(
+            items.into_iter().map(PackageSource::raw).collect(),
+        ))
+    }
+}
+/// An owned package value retaining every stored property.
+pub struct PackageSource {
+    raw: value::Owned,
 }
 impl PackageSource {
-    fn read(v: &Value) -> Option<Self> {
-        if let Some(s) = v.as_str() {
-            return Some(Self::String(s.into()));
+    /// Builds a detached package view over new JSON.
+    pub fn new(raw: Value) -> Self {
+        Self {
+            raw: value::Owned(raw),
         }
-        let mut owned = value::Owned(Value::Object(value::clone_map(v.as_object()?)));
-        let extra = owned.as_object_mut().unwrap();
-        let property_order = extra.keys().cloned().collect();
-        let source = value::take(extra, "source")?.as_str()?.to_owned();
-        fn list(map: &mut Map<String, Value>, key: &str) -> Option<Option<Vec<String>>> {
-            match value::take(map, key) {
-                None => Some(None),
-                Some(v) if v.is_null() => Some(None),
-                Some(v) => value::strings(&v).map(Some),
-            }
-        }
-        Some(Self::Object {
-            source,
-            property_order,
-            extensions: list(extra, "extensions")?,
-            skills: list(extra, "skills")?,
-            prompts: list(extra, "prompts")?,
-            themes: list(extra, "themes")?,
-            extra: std::mem::take(extra),
-        })
     }
-    fn raw(self) -> Value {
-        match self {
-            Self::String(s) => Value::String(s),
-            Self::Object {
-                source,
-                extensions,
-                skills,
-                prompts,
-                themes,
-                property_order,
-                mut extra,
-            } => {
-                value::insert(&mut extra, "source".into(), Value::String(source));
-                for (key, list) in [
-                    ("extensions", extensions),
-                    ("skills", skills),
-                    ("prompts", prompts),
-                    ("themes", themes),
-                ] {
-                    if let Some(list) = list {
-                        value::insert(
-                            &mut extra,
-                            key.into(),
-                            Value::Array(list.into_iter().map(Value::String).collect()),
-                        );
-                    } else {
-                        value::remove(&mut extra, key);
-                    }
+    /// Returns the source identifier when it has the declared type.
+    pub fn source(&self) -> Option<String> {
+        self.raw
+            .as_str()
+            .or_else(|| self.raw.get("source").and_then(Value::as_str))
+            .map(str::to_owned)
+    }
+    /// Returns a typed resource filter; null and malformed members act as unset.
+    pub fn filter(&self, resource: &str) -> Option<Vec<String>> {
+        self.raw.get(resource).and_then(value::strings)
+    }
+    /// Assigns or removes a resource filter without changing sibling properties.
+    pub fn set_filter(&mut self, resource: &str, filter: Option<Vec<String>>) {
+        let mut map = value::spread(&self.raw);
+        if let Some(filter) = filter {
+            value::insert(
+                &mut map,
+                resource.into(),
+                Value::Array(filter.into_iter().map(Value::String).collect()),
+            );
+        } else {
+            value::remove(&mut map, resource);
+        }
+        value::replace(&mut self.raw, Value::Object(map));
+    }
+    fn read(v: &Value) -> Option<Self> {
+        if v.as_str().is_none() {
+            let map = v.as_object()?;
+            map.get("source")?.as_str()?;
+            for key in ["extensions", "skills", "prompts", "themes"] {
+                if let Some(v) = map.get(key)
+                    && !v.is_null()
+                {
+                    value::strings(v)?;
                 }
-                Value::Object(value::ordered(extra, &property_order))
             }
         }
+        Some(Self::new(value::clone(v)))
+    }
+    fn raw(mut self) -> Value {
+        std::mem::take(&mut self.raw.0)
+    }
+}
+impl Clone for PackageSource {
+    fn clone(&self) -> Self {
+        Self::new(value::clone(&self.raw))
+    }
+}
+impl std::fmt::Debug for PackageSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.raw.0.fmt(f)
+    }
+}
+impl PartialEq for PackageSource {
+    fn eq(&self, other: &Self) -> bool {
+        self.raw.0 == other.raw.0
     }
 }
 impl SettingsManager {
-    /// Returns detached package sources; malformed lists act as unset.
-    pub fn get_packages(&self) -> Vec<PackageSource> {
-        self.read("packages")
-            .and_then(|v| {
-                let mut packages = Vec::new();
-                for item in v.as_array()? {
-                    if let Some(package) = PackageSource::read(item) {
-                        packages.push(package);
-                    } else {
-                        for package in packages {
-                            value::teardown(package.raw());
-                        }
-                        return None;
-                    }
-                }
-                Some(packages)
-            })
-            .unwrap_or_default()
-    }
-    /// Replaces global package sources without installation or resolution.
-    pub fn set_packages(&self, packages: Vec<PackageSource>) {
-        self.set(
-            SettingsScope::Global,
-            "packages",
-            Some(Value::Array(
-                packages.into_iter().map(PackageSource::raw).collect(),
+    fn list(&self, key: &str, default: bool) -> SettingsList {
+        let stored = self.read(key);
+        let typed = stored.as_deref().is_some_and(Value::is_array);
+        let raw = match stored.as_deref() {
+            Some(Value::Array(items)) => {
+                Some(Value::Array(items.iter().map(value::clone).collect()))
+            }
+            Some(Value::String(text)) if default || !text.is_empty() => Some(Value::Array(
+                text.chars().map(|c| Value::String(c.to_string())).collect(),
             )),
-        );
+            _ if default => Some(Value::Array(Vec::new())),
+            _ => None,
+        };
+        SettingsList {
+            raw: raw.map(value::Owned),
+            typed,
+        }
     }
-    /// Replaces project package sources without installation or resolution.
-    pub fn set_project_packages(&self, packages: Vec<PackageSource>) {
-        self.set(
-            SettingsScope::Project,
-            "packages",
-            Some(Value::Array(
-                packages.into_iter().map(PackageSource::raw).collect(),
-            )),
-        );
+    /// Returns an owned package sources view retaining malformed stored elements.
+    pub fn get_packages(&self) -> SettingsList {
+        self.list("packages", true)
     }
-    /// Returns detached effective extension paths.
-    pub fn get_extension_paths(&self) -> Vec<String> {
-        self.read("extensions")
-            .as_deref()
-            .and_then(value::strings)
-            .unwrap_or_default()
+    /// Replaces global package sources with the view's JSON.
+    pub fn set_packages(&self, packages: SettingsList) {
+        self.set(SettingsScope::Global, "packages", packages.raw());
     }
-    /// Replaces global extension paths without resolving them.
-    pub fn set_extension_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Global,
-            "extensions",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Replaces project package sources with the view's JSON.
+    pub fn set_project_packages(&self, packages: SettingsList) {
+        self.set(SettingsScope::Project, "packages", packages.raw());
     }
-    /// Replaces project extension paths without resolving them.
-    pub fn set_project_extension_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Project,
-            "extensions",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Returns an owned extension paths view retaining malformed stored elements.
+    pub fn get_extension_paths(&self) -> SettingsList {
+        self.list("extensions", true)
     }
-    /// Returns detached effective skill paths.
-    pub fn get_skill_paths(&self) -> Vec<String> {
-        self.read("skills")
-            .as_deref()
-            .and_then(value::strings)
-            .unwrap_or_default()
+    /// Replaces global extension paths with the view's JSON.
+    pub fn set_extension_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Global, "extensions", paths.raw());
     }
-    /// Replaces global skill paths without resolving them.
-    pub fn set_skill_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Global,
-            "skills",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Replaces project extension paths with the view's JSON.
+    pub fn set_project_extension_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Project, "extensions", paths.raw());
     }
-    /// Replaces project skill paths without resolving them.
-    pub fn set_project_skill_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Project,
-            "skills",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Returns an owned skill paths view retaining malformed stored elements.
+    pub fn get_skill_paths(&self) -> SettingsList {
+        self.list("skills", true)
     }
-    /// Returns detached effective prompt template paths.
-    pub fn get_prompt_template_paths(&self) -> Vec<String> {
-        self.read("prompts")
-            .as_deref()
-            .and_then(value::strings)
-            .unwrap_or_default()
+    /// Replaces global skill paths with the view's JSON.
+    pub fn set_skill_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Global, "skills", paths.raw());
     }
-    /// Replaces global prompt template paths without resolving them.
-    pub fn set_prompt_template_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Global,
-            "prompts",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Replaces project skill paths with the view's JSON.
+    pub fn set_project_skill_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Project, "skills", paths.raw());
     }
-    /// Replaces project prompt template paths without resolving them.
-    pub fn set_project_prompt_template_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Project,
-            "prompts",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Returns an owned prompt paths view retaining malformed stored elements.
+    pub fn get_prompt_template_paths(&self) -> SettingsList {
+        self.list("prompts", true)
     }
-    /// Returns detached effective theme paths.
-    pub fn get_theme_paths(&self) -> Vec<String> {
-        self.read("themes")
-            .as_deref()
-            .and_then(value::strings)
-            .unwrap_or_default()
+    /// Replaces global prompt paths with the view's JSON.
+    pub fn set_prompt_template_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Global, "prompts", paths.raw());
     }
-    /// Replaces global theme paths without resolving them.
-    pub fn set_theme_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Global,
-            "themes",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Replaces project prompt paths with the view's JSON.
+    pub fn set_project_prompt_template_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Project, "prompts", paths.raw());
     }
-    /// Replaces project theme paths without resolving them.
-    pub fn set_project_theme_paths(&self, paths: Vec<String>) {
-        self.set(
-            SettingsScope::Project,
-            "themes",
-            Some(Value::Array(paths.into_iter().map(Value::String).collect())),
-        );
+    /// Returns an owned theme paths view retaining malformed stored elements.
+    pub fn get_theme_paths(&self) -> SettingsList {
+        self.list("themes", true)
+    }
+    /// Replaces global theme paths with the view's JSON.
+    pub fn set_theme_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Global, "themes", paths.raw());
+    }
+    /// Replaces project theme paths with the view's JSON.
+    pub fn set_project_theme_paths(&self, paths: SettingsList) {
+        self.set(SettingsScope::Project, "themes", paths.raw());
     }
     /// Returns whether skills become commands, defaulting to true.
     pub fn get_enable_skill_commands(&self) -> bool {
@@ -1306,30 +1349,88 @@ pub struct MarkdownSettings {
     /// Additional raw properties.
     pub extra: Map<String, Value>,
 }
-/// Typed WarningSettings accessor values; not a file admission schema.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// An owned warning value whose typed reads do not discard stored members.
 pub struct WarningSettings {
-    /// Original property positions retained through typed round-trips.
-    pub property_order: Vec<String>,
-    /// The anthropic extra usage preference.
-    pub anthropic_extra_usage: Option<bool>,
-    /// Additional raw properties.
-    pub extra: Map<String, Value>,
+    raw: value::Owned,
+    typed: bool,
+}
+impl WarningSettings {
+    /// Builds a detached view over new JSON.
+    pub fn new(raw: Value) -> Self {
+        Self {
+            raw: value::Owned(raw),
+            typed: true,
+        }
+    }
+    /// Returns the typed extra-usage preference; malformed values act as unset.
+    pub fn anthropic_extra_usage(&self) -> Option<bool> {
+        self.raw.get("anthropicExtraUsage").and_then(Value::as_bool)
+    }
+    /// Assigns or removes the extra-usage property without changing siblings.
+    pub fn set_anthropic_extra_usage(&mut self, enabled: Option<bool>) {
+        let mut map = value::spread(&self.raw);
+        if let Some(enabled) = enabled {
+            value::insert(&mut map, "anthropicExtraUsage".into(), Value::Bool(enabled));
+        } else {
+            value::remove(&mut map, "anthropicExtraUsage");
+        }
+        value::replace(&mut self.raw, Value::Object(map));
+        self.typed = true;
+    }
+    /// Returns detached unknown object members using the typed read rules.
+    pub fn extra(&self) -> Map<String, Value> {
+        if !self.typed {
+            return Map::new();
+        }
+        let mut extra = self
+            .raw
+            .as_object()
+            .map(value::clone_map)
+            .unwrap_or_default();
+        value::remove(&mut extra, "anthropicExtraUsage");
+        extra
+    }
+    /// Assigns an unknown property using object-spread semantics.
+    pub fn set_extra(&mut self, key: String, item: Value) {
+        let mut map = value::spread(&self.raw);
+        value::insert(&mut map, key, item);
+        value::replace(&mut self.raw, Value::Object(map));
+        self.typed = true;
+    }
+    /// Removes all unknown properties without altering the known preference.
+    pub fn clear_extra(&mut self) {
+        let mut map = value::spread(&self.raw);
+        let keys: Vec<_> = map
+            .keys()
+            .filter(|key| *key != "anthropicExtraUsage")
+            .cloned()
+            .collect();
+        for key in keys {
+            value::remove(&mut map, &key);
+        }
+        value::replace(&mut self.raw, Value::Object(map));
+        self.typed = true;
+    }
+}
+impl Clone for WarningSettings {
+    fn clone(&self) -> Self {
+        Self {
+            raw: value::Owned(value::clone(&self.raw)),
+            typed: self.typed,
+        }
+    }
 }
 impl SettingsManager {
-    /// Returns detached model patterns when all members have the declared type.
-    pub fn get_enabled_models(&self) -> Option<Vec<String>> {
-        self.read("enabledModels")
-            .as_deref()
-            .and_then(value::strings)
+    /// Returns an owned model-pattern view with an optional typed string projection.
+    pub fn get_enabled_models(&self) -> SettingsList {
+        SettingsList::from_optional(
+            self.read("enabledModels")
+                .map(|mut raw| std::mem::take(&mut raw.0)),
+        )
     }
-    /// Replaces or omits global model patterns.
-    pub fn set_enabled_models(&self, patterns: Option<Vec<String>>) {
-        self.set(
-            SettingsScope::Global,
-            "enabledModels",
-            patterns.map(|v| Value::Array(v.into_iter().map(Value::String).collect())),
-        );
+    /// Persists model patterns or omits an absent view.
+    pub fn set_enabled_models(&self, patterns: SettingsList) {
+        self.set(SettingsScope::Global, "enabledModels", patterns.raw());
     }
     /// Returns detached typed thinking budgets, leaving malformed raw members unchanged.
     pub fn get_thinking_budgets(&self) -> Option<ThinkingBudgetsSettings> {
@@ -1343,31 +1444,22 @@ impl SettingsManager {
             extra,
         })
     }
-    /// Returns an owned typed warning record with additional properties.
+    /// Returns an owned warning view with unchanged typed projections.
     pub fn get_warnings(&self) -> WarningSettings {
-        let mut extra = self
-            .read("warnings")
-            .and_then(|v| v.as_object().map(value::clone_map))
-            .unwrap_or_default();
+        let stored = self.read("warnings");
         WarningSettings {
-            property_order: extra.keys().cloned().collect(),
-            anthropic_extra_usage: value::take(&mut extra, "anthropicExtraUsage")
-                .and_then(|v| v.as_bool()),
-            extra,
+            raw: value::Owned(Value::Object(
+                stored.as_deref().map(value::spread).unwrap_or_default(),
+            )),
+            typed: stored.as_deref().is_some_and(Value::is_object),
         }
     }
-    /// Replaces global warning preferences, preserving additional properties.
+    /// Stores the view's object spread, retaining null and malformed members.
     pub fn set_warnings(&self, warnings: WarningSettings) {
-        let mut raw = warnings.extra;
-        if let Some(value) = warnings.anthropic_extra_usage {
-            value::insert(&mut raw, "anthropicExtraUsage".into(), Value::Bool(value));
-        } else {
-            value::remove(&mut raw, "anthropicExtraUsage");
-        }
         self.set(
             SettingsScope::Global,
             "warnings",
-            Some(Value::Object(value::ordered(raw, &warnings.property_order))),
+            Some(Value::Object(value::spread(&warnings.raw))),
         );
     }
 }

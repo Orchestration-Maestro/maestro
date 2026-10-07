@@ -1,3 +1,4 @@
+mod termination;
 use super::{Error, value};
 use std::{
     collections::BTreeMap,
@@ -190,10 +191,15 @@ pub(super) struct Lease {
     path: PathBuf,
     state: Arc<Mutex<Heartbeat>>,
     runtime: Arc<dyn Runtime>,
+    section: Option<termination::Section>,
 }
 impl Lease {
     pub(super) fn acquire(file: &Path) -> Result<Self, Error> {
-        Self::acquire_with(file, Arc::new(Native))
+        let mut section = termination::Section::enter();
+        let mut lease = Self::acquire_with(file, Arc::new(Native))?;
+        section.hold(&lease.path);
+        lease.section = Some(section);
+        Ok(lease)
     }
     fn acquire_with(file: &Path, runtime: Arc<dyn Runtime>) -> Result<Self, Error> {
         Self::acquire_attempts(file, runtime, 10)
@@ -232,6 +238,7 @@ impl Lease {
                         path,
                         state,
                         runtime,
+                        section: None,
                     });
                 }
                 Err(e) => {
@@ -275,7 +282,12 @@ impl Lease {
             state.released = true;
             state.next = None;
         }
-        remove(self.runtime.as_ref(), &self.path)
+        if let Some(section) = &self.section {
+            section.unhold();
+        }
+        let result = remove(self.runtime.as_ref(), &self.path);
+        self.section.take();
+        result
     }
     // Synchronous storage releases the lease in the same turn; timer work cannot
     // execute inside its callback. The state transition remains independently testable.

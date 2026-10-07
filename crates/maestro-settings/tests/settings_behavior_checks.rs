@@ -52,7 +52,7 @@ fn duplicate_key_discards_deep_subtree_without_crashing() {
 fn prototype_named_unknown_key_has_no_theme_fallback_and_round_trips() {
     let (m, s, q) = seeded(json!({}), json!({"__proto__":{"theme":"dark"}}));
     assert_eq!(m.get_theme(), None);
-    m.set_project_extension_paths(vec![]);
+    m.set_project_extension_paths(Vec::<String>::new().into());
     q.drive();
     block_on(m.flush());
     assert!(m.drain_errors().is_empty());
@@ -106,7 +106,7 @@ fn nested_unknown_objects_round_trip(depth: usize) {
     put(s.as_ref(), SettingsScope::Global, &text);
     block_on(m.reload());
     assert!(m.drain_errors().is_empty());
-    m.set_enabled_models(None);
+    m.set_enabled_models((None).into());
     q.drive();
     block_on(m.flush());
     assert!(m.drain_errors().is_empty());
@@ -142,7 +142,7 @@ fn decimal_getter_and_save_preserve_exact_binary64_spelling() {
     put(s.as_ref(), SettingsScope::Global, text);
     block_on(m.reload());
     assert_eq!(m.get_editor_padding_x(), 51.248178375505404);
-    m.set_enabled_models(None);
+    m.set_enabled_models((None).into());
     q.drive();
     assert!(m.drain_errors().is_empty());
     assert_eq!(raw(s.as_ref(), SettingsScope::Global).unwrap(), text);
@@ -221,7 +221,7 @@ fn global_reload_observes_external_values() {
     );
     block_on(m.reload());
     assert_eq!(m.get_theme().as_deref(), Some("light"));
-    assert_eq!(m.get_extension_paths(), vec!["/after.ts"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["/after.ts"]);
     assert_eq!(m.get_default_model().as_deref(), Some("claude-sonnet"));
 }
 
@@ -260,9 +260,9 @@ fn global_project_and_override_spreads_are_one_level() {
     assert_eq!(m.get_provider_retry_settings().max_retries, None);
     m.apply_overrides(json!({"extensions":["runtime"]}))
         .unwrap();
-    assert_eq!(m.get_extension_paths(), vec!["runtime"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["runtime"]);
     m.apply_overrides(json!({"extensions":null})).unwrap();
-    assert!(m.get_extension_paths().is_empty());
+    assert!(m.get_extension_paths().paths().is_empty());
     m.set_theme("stored".into());
     q.drive();
     assert_eq!(m.get_theme().as_deref(), Some("stored"));
@@ -415,7 +415,7 @@ fn command_and_presentation_accessors_keep_defaults() {
     let (m, q) = memory(json!({}));
     assert_eq!(m.get_shell_path(), None);
     assert_eq!(m.get_shell_command_prefix(), None);
-    assert_eq!(m.get_npm_command(), None);
+    assert_eq!(m.get_npm_command().strings(), None);
     assert!(!m.get_quiet_startup());
     assert!(!m.get_hide_thinking_block());
     assert!(!m.get_collapse_changelog());
@@ -425,7 +425,7 @@ fn command_and_presentation_accessors_keep_defaults() {
     assert_eq!(m.get_global_settings(), json!({}));
     m.set_shell_path(Some("".into()));
     m.set_shell_command_prefix(Some(" x ".into()));
-    m.set_npm_command(Some(vec!["mise".into(), "npm".into()]));
+    m.set_npm_command((Some(vec!["mise".into(), "npm".into()])).into());
     m.set_quiet_startup(true);
     m.set_hide_thinking_block(true);
     m.set_collapse_changelog(true);
@@ -433,7 +433,10 @@ fn command_and_presentation_accessors_keep_defaults() {
     m.set_double_escape_action("".into());
     assert_eq!(m.get_shell_path(), Some("".into()));
     assert_eq!(m.get_shell_command_prefix(), Some(" x ".into()));
-    assert_eq!(m.get_npm_command(), Some(vec!["mise".into(), "npm".into()]));
+    assert_eq!(
+        m.get_npm_command().strings(),
+        Some(vec!["mise".into(), "npm".into()])
+    );
     assert!(m.get_quiet_startup());
     assert!(m.get_hide_thinking_block());
     assert!(m.get_collapse_changelog());
@@ -445,32 +448,28 @@ fn command_and_presentation_accessors_keep_defaults() {
 #[test]
 fn resource_lists_replace_in_both_scopes() {
     let (m, s, q) = empty();
-    assert!(m.get_packages().is_empty());
-    assert!(m.get_extension_paths().is_empty());
-    assert!(m.get_skill_paths().is_empty());
-    assert!(m.get_prompt_template_paths().is_empty());
-    assert!(m.get_theme_paths().is_empty());
+    assert!(m.get_packages().packages().is_empty());
+    assert!(m.get_extension_paths().paths().is_empty());
+    assert!(m.get_skill_paths().paths().is_empty());
+    assert!(m.get_prompt_template_paths().paths().is_empty());
+    assert!(m.get_theme_paths().paths().is_empty());
     assert!(m.get_enable_skill_commands());
-    m.set_packages(vec![maestro_settings::PackageSource::String(
-        "npm:a".into(),
-    )]);
-    m.set_project_packages(vec![maestro_settings::PackageSource::String(
-        "git:b".into(),
-    )]);
-    m.set_extension_paths(vec!["g1".into(), "g2".into()]);
-    m.set_project_extension_paths(vec!["p2".into(), "p1".into()]);
-    m.set_skill_paths(vec!["gs".into()]);
-    m.set_project_skill_paths(vec!["ps".into()]);
-    m.set_prompt_template_paths(vec!["gp".into()]);
-    m.set_project_prompt_template_paths(vec!["pp".into()]);
-    m.set_theme_paths(vec!["gt".into()]);
-    m.set_project_theme_paths(vec!["pt".into()]);
+    m.set_packages((vec![maestro_settings::PackageSource::new(json!("npm:a"))]).into());
+    m.set_project_packages((vec![maestro_settings::PackageSource::new(json!("git:b"))]).into());
+    m.set_extension_paths((vec!["g1".to_owned(), "g2".to_owned()]).into());
+    m.set_project_extension_paths((vec!["p2".to_owned(), "p1".to_owned()]).into());
+    m.set_skill_paths((vec!["gs".to_owned()]).into());
+    m.set_project_skill_paths((vec!["ps".to_owned()]).into());
+    m.set_prompt_template_paths((vec!["gp".to_owned()]).into());
+    m.set_project_prompt_template_paths((vec!["pp".to_owned()]).into());
+    m.set_theme_paths((vec!["gt".to_owned()]).into());
+    m.set_project_theme_paths((vec!["pt".to_owned()]).into());
     m.set_enable_skill_commands(false);
     q.drive();
-    assert_eq!(m.get_extension_paths(), vec!["p2", "p1"]);
-    assert_eq!(m.get_skill_paths(), vec!["ps"]);
-    assert_eq!(m.get_prompt_template_paths(), vec!["pp"]);
-    assert_eq!(m.get_theme_paths(), vec!["pt"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["p2", "p1"]);
+    assert_eq!(m.get_skill_paths().paths(), vec!["ps"]);
+    assert_eq!(m.get_prompt_template_paths().paths(), vec!["pp"]);
+    assert_eq!(m.get_theme_paths().paths(), vec!["pt"]);
     assert!(!m.get_enable_skill_commands());
     assert_eq!(
         disk(s.as_ref(), SettingsScope::Global)["packages"],
@@ -480,9 +479,9 @@ fn resource_lists_replace_in_both_scopes() {
         disk(s.as_ref(), SettingsScope::Project)["packages"],
         json!(["git:b"])
     );
-    m.set_project_extension_paths(vec![]);
+    m.set_project_extension_paths(Vec::<String>::new().into());
     q.drive();
-    assert!(m.get_extension_paths().is_empty());
+    assert!(m.get_extension_paths().paths().is_empty());
 }
 
 #[test]
@@ -694,41 +693,41 @@ fn snapshots_and_owned_reads_are_detached() {
     let mut raw = m.get_global_settings();
     raw["custom"]["nested"][0] = json!(2);
     assert_eq!(m.get_global_settings()["custom"]["nested"], json!([1]));
-    let mut npm = m.get_npm_command().unwrap();
-    npm.push("extra".into());
-    assert_eq!(m.get_npm_command(), Some(vec!["npm".into()]));
-    let mut models = m.get_enabled_models().unwrap();
+    let mut npm = m.get_npm_command();
+    npm.push(json!("extra"));
+    assert_eq!(m.get_npm_command().strings(), Some(vec!["npm".into()]));
+    let mut models = m.get_enabled_models();
     models.clear();
-    assert_eq!(m.get_enabled_models(), Some(vec!["m".into()]));
-    m.set_enabled_models(Some(models));
-    assert_eq!(m.get_enabled_models(), Some(vec![]));
+    assert_eq!(m.get_enabled_models().strings(), Some(vec!["m".into()]));
+    m.set_enabled_models(models);
+    assert_eq!(m.get_enabled_models().strings(), Some(vec![]));
     let mut budget = m.get_thinking_budgets().unwrap();
     budget.low = Some(99.0);
     assert_eq!(m.get_thinking_budgets().unwrap().low, Some(3.0));
     assert_eq!(budget.extra["unknown"], json!({"a":1}));
     let mut warnings = m.get_warnings();
-    warnings.extra["custom"][0] = json!(9);
-    assert_eq!(m.get_warnings().extra["custom"], json!([1]));
+    warnings.set_extra("custom".into(), json!([9]));
+    assert_eq!(m.get_warnings().extra()["custom"], json!([1]));
     m.set_warnings(warnings.clone());
-    warnings.extra.clear();
-    assert_eq!(m.get_warnings().extra["custom"], json!([9]));
-    assert_eq!(m.get_warnings().anthropic_extra_usage, Some(false));
+    warnings.clear_extra();
+    assert_eq!(m.get_warnings().extra()["custom"], json!([9]));
+    assert_eq!(m.get_warnings().anthropic_extra_usage(), Some(false));
     q.drive();
 }
 
 #[test]
 fn local_extensions_remain_separate_from_packages() {
     let (m, _) = memory(json!({"extensions":["/local/ext.ts","./relative/ext.ts"]}));
-    assert!(m.get_packages().is_empty());
+    assert!(m.get_packages().packages().is_empty());
     assert_eq!(
-        m.get_extension_paths(),
+        m.get_extension_paths().paths(),
         vec!["/local/ext.ts", "./relative/ext.ts"]
     );
     let (m, _) = memory(json!({"extensions":["./local.ts"],"packages":["npm:a"]}));
-    assert_eq!(m.get_extension_paths(), vec!["./local.ts"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["./local.ts"]);
     assert_eq!(
-        m.get_packages(),
-        vec![maestro_settings::PackageSource::String("npm:a".into())]
+        m.get_packages().packages(),
+        vec![maestro_settings::PackageSource::new(json!("npm:a"))]
     );
 }
 
@@ -737,50 +736,27 @@ fn package_source_filters_keep_shape_and_order() {
     let input = json!({"packages":["npm:a",{"source":"git:b","extensions":[],"skills":["!x","y"],"prompts":["z"],"themes":["theme"],"custom":9}]});
     let (m, s, q) = seeded(input.clone(), json!({}));
     let sources = m.get_packages();
-    assert_eq!(sources.len(), 2);
+    assert_eq!(sources.packages().len(), 2);
     assert_eq!(
-        sources[0],
-        maestro_settings::PackageSource::String("npm:a".into())
+        sources.packages()[0],
+        maestro_settings::PackageSource::new(json!("npm:a"))
     );
     assert_eq!(
-        sources[1],
-        maestro_settings::PackageSource::Object {
-            source: "git:b".into(),
-            extensions: Some(vec![]),
-            skills: Some(vec!["!x".into(), "y".into()]),
-            prompts: Some(vec!["z".into()]),
-            themes: Some(vec!["theme".into()]),
-            extra: serde_json::from_value(json!({"custom":9})).unwrap(),
-            property_order: [
-                "source",
-                "extensions",
-                "skills",
-                "prompts",
-                "themes",
-                "custom"
-            ]
-            .map(str::to_owned)
-            .to_vec(),
-        }
+        sources.packages()[1],
+        maestro_settings::PackageSource::new(
+            json!({"source":"git:b","extensions":[],"skills":["!x","y"],"prompts":["z"],"themes":["theme"],"custom":9})
+        )
     );
     let (reference, _) = memory(
         json!({"packages":["npm:simple-pkg",{"source":"npm:shitty-extensions","extensions":["extensions/oracle.ts"],"skills":[]}]}),
     );
     assert_eq!(
-        reference.get_packages(),
+        reference.get_packages().packages(),
         vec![
-            maestro_settings::PackageSource::String("npm:simple-pkg".into()),
-            maestro_settings::PackageSource::Object {
-                source: "npm:shitty-extensions".into(),
-                extensions: Some(vec!["extensions/oracle.ts".into()]),
-                skills: Some(vec![]),
-                prompts: None,
-                themes: None,
-                extra: Default::default(),
-                property_order: ["source", "extensions", "skills"]
-                    .map(str::to_owned)
-                    .to_vec(),
-            }
+            maestro_settings::PackageSource::new(json!("npm:simple-pkg")),
+            maestro_settings::PackageSource::new(
+                json!({"source":"npm:shitty-extensions","extensions":["extensions/oracle.ts"],"skills":[]})
+            )
         ]
     );
     m.set_packages(sources);
@@ -857,10 +833,10 @@ fn external_package_removal_survives_theme_save() {
         json!({}),
     );
     assert_eq!(
-        m.get_packages(),
-        vec![maestro_settings::PackageSource::String(
-            "npm:example-adapter".into()
-        )]
+        m.get_packages().packages(),
+        vec![maestro_settings::PackageSource::new(json!(
+            "npm:example-adapter"
+        ))]
     );
     put(
         s.as_ref(),
@@ -905,7 +881,7 @@ fn project_save_preserves_fresh_other_resource() {
         SettingsScope::Project,
         r#"{"extensions":["fresh"],"skills":["old"]}"#,
     );
-    m.set_project_skill_paths(vec!["new".into()]);
+    m.set_project_skill_paths((vec!["new".to_owned()]).into());
     q.drive();
     assert_eq!(
         disk(s.as_ref(), SettingsScope::Project),
@@ -921,7 +897,7 @@ fn project_save_wins_same_resource_edit() {
         SettingsScope::Project,
         r#"{"extensions":["fresh"]}"#,
     );
-    m.set_project_extension_paths(vec!["accepted".into()]);
+    m.set_project_extension_paths((vec!["accepted".to_owned()]).into());
     q.drive();
     assert_eq!(
         disk(s.as_ref(), SettingsScope::Project)["extensions"],
@@ -1042,7 +1018,7 @@ fn partial_reload_updates_healthy_scope_and_clears_overrides() {
     put(s.as_ref(), SettingsScope::Project, "{");
     block_on(m.reload());
     assert_eq!(m.get_theme().as_deref(), Some("healthy"));
-    assert_eq!(m.get_extension_paths(), vec!["accepted"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["accepted"]);
     assert_eq!(m.drain_errors()[0].scope, SettingsScope::Project);
 }
 
@@ -1075,8 +1051,8 @@ fn unset_fields_omit_keys_without_null_replacement() {
     );
     m.set_shell_path(None);
     m.set_shell_command_prefix(None);
-    m.set_npm_command(None);
-    m.set_enabled_models(None);
+    m.set_npm_command((None).into());
+    m.set_enabled_models((None).into());
     q.drive();
     assert_eq!(
         disk(s.as_ref(), SettingsScope::Global),
@@ -1228,7 +1204,7 @@ fn write_snapshots_keep_cross_scope_enqueue_order() {
     let q = Scheduler::default();
     let m = SettingsManager::from_storage(s.clone(), q.spawn());
     m.set_theme("one".into());
-    m.set_project_extension_paths(vec!["p".into()]);
+    m.set_project_extension_paths((vec!["p".to_owned()]).into());
     m.set_theme("two".into());
     m.set_default_model_and_provider("provider".into(), "model".into());
     assert_eq!(q.len(), 4);
@@ -1263,10 +1239,10 @@ fn failed_writes_keep_memory_and_continue_queue() {
     let m = SettingsManager::from_storage(s.clone(), q.spawn());
     *s.failures.lock().unwrap() = vec![SettingsScope::Global, SettingsScope::Project];
     m.set_theme("accepted".into());
-    m.set_project_extension_paths(vec!["accepted".into()]);
+    m.set_project_extension_paths((vec!["accepted".to_owned()]).into());
     q.drive();
     assert_eq!(m.get_theme().as_deref(), Some("accepted"));
-    assert_eq!(m.get_extension_paths(), vec!["accepted"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["accepted"]);
     let e = m.drain_errors();
     assert_eq!(e.len(), 2);
     assert_eq!(e[0].scope, SettingsScope::Global);
@@ -1279,7 +1255,7 @@ fn failed_writes_keep_memory_and_continue_queue() {
         disk(s.as_ref(), SettingsScope::Global),
         json!({"theme":"accepted","defaultModel":"model"})
     );
-    m.set_project_skill_paths(vec!["skill".into()]);
+    m.set_project_skill_paths((vec!["skill".to_owned()]).into());
     q.drive();
     assert_eq!(
         disk(s.as_ref(), SettingsScope::Project),
@@ -1543,7 +1519,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "extensions",
-            |m| json!(m.get_extension_paths()),
+            |m| json!(m.get_extension_paths().paths()),
             json!([]),
             json!(["valid"]),
             json!([1]),
@@ -1551,7 +1527,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "skills",
-            |m| json!(m.get_skill_paths()),
+            |m| json!(m.get_skill_paths().paths()),
             json!([]),
             json!(["valid"]),
             json!([1]),
@@ -1559,7 +1535,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "prompts",
-            |m| json!(m.get_prompt_template_paths()),
+            |m| json!(m.get_prompt_template_paths().paths()),
             json!([]),
             json!(["valid"]),
             json!([1]),
@@ -1567,7 +1543,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "themes",
-            |m| json!(m.get_theme_paths()),
+            |m| json!(m.get_theme_paths().paths()),
             json!([]),
             json!(["valid"]),
             json!([1]),
@@ -1575,7 +1551,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "enabledModels",
-            |m| json!(m.get_enabled_models()),
+            |m| json!(m.get_enabled_models().strings()),
             json!(null),
             json!(["valid"]),
             json!([1]),
@@ -1583,7 +1559,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "npmCommand",
-            |m| json!(m.get_npm_command()),
+            |m| json!(m.get_npm_command().strings()),
             json!(null),
             json!(["valid"]),
             json!([1]),
@@ -1639,7 +1615,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "warnings/anthropicExtraUsage",
-            |m| json!(m.get_warnings().anthropic_extra_usage),
+            |m| json!(m.get_warnings().anthropic_extra_usage()),
             json!(null),
             json!(true),
             json!(0),
@@ -1647,7 +1623,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         ),
         (
             "packages",
-            |m| json!(m.get_packages().len()),
+            |m| json!(m.get_packages().packages().len()),
             json!(0),
             json!(["npm:valid"]),
             json!([{"source":false}]),
@@ -1693,7 +1669,7 @@ fn typed_reads_keep_wrong_typed_raw_values() {
         let (m, _) = memory(json!({key:"wrong"}));
         assert_eq!(m.get_global_settings()[key], "wrong");
         assert!(m.get_thinking_budgets().is_none());
-        assert!(m.get_warnings().extra.is_empty());
+        assert!(m.get_warnings().extra().is_empty());
     }
     for level in ["minimal", "low", "medium", "high"] {
         let (m, _) = memory(json!({"thinkingBudgets":{level:"wrong","other":1}}));
@@ -1865,7 +1841,7 @@ fn deep_wrong_typed_warning_is_unset_without_crashing() {
         );
         block_on(m.reload());
         assert!(m.drain_errors().is_empty());
-        assert_eq!(m.get_warnings().anthropic_extra_usage, None);
+        assert_eq!(m.get_warnings().anthropic_extra_usage(), None);
     });
 }
 
@@ -1911,7 +1887,7 @@ fn null_runtime_override_fails_without_changing_settings() {
     );
     assert_eq!(m.get_global_settings(), accepted);
     assert_eq!(m.get_theme().as_deref(), Some("effective"));
-    assert_eq!(m.get_extension_paths(), vec!["runtime"]);
+    assert_eq!(m.get_extension_paths().paths(), vec!["runtime"]);
     assert_eq!(raw(s.as_ref(), SettingsScope::Global), persisted);
     assert!(m.drain_errors().is_empty());
 }
@@ -2000,4 +1976,203 @@ fn deep_images_array_capture_does_not_crash() {
         drop(q);
         drop(m);
     });
+}
+
+#[test]
+fn warning_null_member_survives_unmodified_round_trip() {
+    let (m, s, q) = seeded(json!({"warnings":{"anthropicExtraUsage":null}}), json!({}));
+    assert_eq!(m.get_warnings().anthropic_extra_usage(), None);
+    m.set_warnings(m.get_warnings());
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(
+        raw(s.as_ref(), SettingsScope::Global).unwrap(),
+        "{\n  \"warnings\": {\n    \"anthropicExtraUsage\": null\n  }\n}"
+    );
+}
+
+#[test]
+fn package_null_filter_survives_unmodified_round_trip() {
+    let (m, s, q) = seeded(
+        json!({"packages":[{"source":"x","extensions":null}]}),
+        json!({}),
+    );
+    assert_eq!(m.get_packages().packages().len(), 1);
+    m.set_packages(m.get_packages());
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(
+        raw(s.as_ref(), SettingsScope::Global).unwrap(),
+        "{\n  \"packages\": [\n    {\n      \"source\": \"x\",\n      \"extensions\": null\n    }\n  ]\n}"
+    );
+}
+
+#[test]
+fn malformed_collection_round_trips_match_reference_file_text() {
+    let input = include_str!("fixtures/roundtrip.json");
+    let (m, s, q) = empty();
+    put(s.as_ref(), SettingsScope::Global, input);
+    block_on(m.reload());
+    assert!(m.get_packages().packages().is_empty());
+    assert!(m.get_extension_paths().paths().is_empty());
+    assert_eq!(m.get_npm_command().strings(), None);
+    m.set_packages(m.get_packages());
+    m.set_extension_paths(m.get_extension_paths());
+    m.set_skill_paths(m.get_skill_paths());
+    m.set_prompt_template_paths(m.get_prompt_template_paths());
+    m.set_theme_paths(m.get_theme_paths());
+    m.set_npm_command(m.get_npm_command());
+    m.set_enabled_models(m.get_enabled_models());
+    m.set_warnings(m.get_warnings());
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(raw(s.as_ref(), SettingsScope::Global).unwrap(), input);
+}
+
+#[test]
+fn composite_root_round_trips_match_reference_or_unset_after_type_error() {
+    let cases: Vec<Value> = serde_json::from_str(include_str!("fixtures/roots.json")).unwrap();
+    for case in cases {
+        let (m, s, q) = seeded(case["stored"].clone(), json!({}));
+        assert!(m.get_packages().packages().is_empty());
+        assert!(m.get_extension_paths().paths().is_empty());
+        assert!(m.get_skill_paths().paths().is_empty());
+        assert!(m.get_prompt_template_paths().paths().is_empty());
+        assert!(m.get_theme_paths().paths().is_empty());
+        assert_eq!(m.get_npm_command().strings(), None);
+        assert_eq!(m.get_enabled_models().strings(), None);
+        assert_eq!(m.get_warnings().anthropic_extra_usage(), None);
+        match case["key"].as_str().unwrap() {
+            "packages" => m.set_packages(m.get_packages()),
+            "extensions" => m.set_extension_paths(m.get_extension_paths()),
+            "skills" => m.set_skill_paths(m.get_skill_paths()),
+            "prompts" => m.set_prompt_template_paths(m.get_prompt_template_paths()),
+            "themes" => m.set_theme_paths(m.get_theme_paths()),
+            "npmCommand" => m.set_npm_command(m.get_npm_command()),
+            "enabledModels" => m.set_enabled_models(m.get_enabled_models()),
+            "warnings" => m.set_warnings(m.get_warnings()),
+            _ => unreachable!(),
+        }
+        q.drive();
+        block_on(m.flush());
+        assert_eq!(
+            raw(s.as_ref(), SettingsScope::Global).unwrap(),
+            case.get("expected")
+                .unwrap_or(&case["text"])
+                .as_str()
+                .unwrap(),
+            "{} {}",
+            case["key"],
+            case["name"]
+        );
+    }
+}
+
+#[test]
+fn composite_caller_edits_match_reference_file_text() {
+    let (m, s, q) = empty();
+    put(
+        s.as_ref(),
+        SettingsScope::Global,
+        include_str!("fixtures/roundtrip.json"),
+    );
+    block_on(m.reload());
+    let mut packages = m.get_packages();
+    assert!(packages.push(json!("npm:new")));
+    let mut package = packages.package(0).unwrap();
+    assert_eq!(package.source().as_deref(), Some("x"));
+    assert_eq!(package.filter("extensions"), None);
+    assert_eq!(package.filter("skills"), None);
+    package.set_filter("extensions", Some(vec!["changed".into()]));
+    assert!(packages.set_package(0, package));
+    m.set_packages(packages);
+    let mut warnings = m.get_warnings();
+    assert_eq!(warnings.anthropic_extra_usage(), None);
+    warnings.set_anthropic_extra_usage(Some(true));
+    m.set_warnings(warnings);
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(
+        raw(s.as_ref(), SettingsScope::Global).unwrap(),
+        include_str!("fixtures/edits.json")
+    );
+}
+
+#[test]
+fn project_composite_round_trips_keep_all_entries_and_members() {
+    let (m, s, q) = empty();
+    let input = include_str!("fixtures/roundtrip.json");
+    put(s.as_ref(), SettingsScope::Project, input);
+    block_on(m.reload());
+    m.set_project_packages(m.get_packages());
+    m.set_project_extension_paths(m.get_extension_paths());
+    m.set_project_skill_paths(m.get_skill_paths());
+    m.set_project_prompt_template_paths(m.get_prompt_template_paths());
+    m.set_project_theme_paths(m.get_theme_paths());
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(raw(s.as_ref(), SettingsScope::Project).unwrap(), input);
+}
+
+#[test]
+fn project_composite_roots_match_reference_file_text() {
+    let cases: Vec<Value> = serde_json::from_str(include_str!("fixtures/roots.json")).unwrap();
+    for case in cases {
+        let (m, s, q) = seeded(json!({}), case["stored"].clone());
+        match case["key"].as_str().unwrap() {
+            "packages" => m.set_project_packages(m.get_packages()),
+            "extensions" => m.set_project_extension_paths(m.get_extension_paths()),
+            "skills" => m.set_project_skill_paths(m.get_skill_paths()),
+            "prompts" => m.set_project_prompt_template_paths(m.get_prompt_template_paths()),
+            "themes" => m.set_project_theme_paths(m.get_theme_paths()),
+            _ => continue,
+        }
+        q.drive();
+        block_on(m.flush());
+        assert_eq!(
+            raw(s.as_ref(), SettingsScope::Project).unwrap(),
+            case["text"].as_str().unwrap(),
+            "{} {}",
+            case["key"],
+            case["name"]
+        );
+    }
+}
+
+#[test]
+fn project_package_edits_match_reference_file_text() {
+    let (m, s, q) = empty();
+    put(
+        s.as_ref(),
+        SettingsScope::Project,
+        include_str!("fixtures/roundtrip.json"),
+    );
+    block_on(m.reload());
+    let mut packages = m.get_packages();
+    assert!(packages.push(json!("npm:new")));
+    let mut package = packages.package(0).unwrap();
+    package.set_filter("extensions", Some(vec!["changed".into()]));
+    assert!(packages.set_package(0, package));
+    m.set_project_packages(packages);
+    q.drive();
+    block_on(m.flush());
+    assert_eq!(
+        raw(s.as_ref(), SettingsScope::Project).unwrap(),
+        include_str!("fixtures/project-edits.json")
+    );
+}
+
+#[test]
+fn owned_view_edits_refresh_typed_projection_without_mutating_manager() {
+    let (m, _) = memory(json!({"npmCommand":"npm", "warnings":"warning"}));
+    let mut command = m.get_npm_command();
+    assert_eq!(command.strings(), None);
+    command.clear();
+    assert_eq!(command.strings(), Some(vec![]));
+    assert_eq!(m.get_npm_command().strings(), None);
+    let mut warnings = m.get_warnings();
+    assert!(warnings.extra().is_empty());
+    warnings.set_extra("custom".into(), json!(true));
+    assert_eq!(warnings.extra()["custom"], true);
+    assert!(m.get_warnings().extra().is_empty());
 }

@@ -365,17 +365,6 @@ pub(super) fn parse(text: &str) -> Result<Value, super::Error> {
     Ok(std::mem::take(&mut value.0))
 }
 
-pub(super) fn ordered(mut map: Map<String, Value>, keys: &[String]) -> Map<String, Value> {
-    let mut result = Map::new();
-    for key in keys {
-        if let Some(value) = map.shift_remove(key) {
-            result.insert(key.clone(), value);
-        }
-    }
-    result.extend(map);
-    result
-}
-
 pub(super) fn primitive_text(value: &Value) -> String {
     match value {
         Value::String(text) => text.clone(),

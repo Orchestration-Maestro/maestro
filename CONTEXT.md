@@ -66,6 +66,7 @@ are later scope, not active foundation concepts.
 - **Storage:** The replaceable raw supplied-path byte I/O interface; the SessionManager owns history and persistence timing.
 - **Notification:** An observation of current activity; delivery does not imply persistence or replay.
 - **Settings:** Raw global/project preference values, including unknown and wrong-typed properties; typed reads return owned copies with individual fallbacks.
+- **Settings view:** An owned copy of a composite preference that preserves raw members for writes while providing typed reads and local edits.
 - **SettingsManager:** The owner of accepted preferences, one-level merging, runtime overrides, immediate publication and ordered queued persistence through replaceable raw-text storage. Reload independently retains failed scopes and clears overrides; errors drain separately.
 - **Configuration root:** The explicitly selected user configuration directory.
 - **Session directory:** The resolved location supplied to the session owner.
