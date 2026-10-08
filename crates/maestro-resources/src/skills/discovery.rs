@@ -8,8 +8,10 @@ use std::path::Path;
 struct Discovery<'a> {
     /// Containing scan root for authored rule prefixes.
     root: String,
-    /// Working directory for matcher coordinates.
-    cwd: Cwd<'a>,
+    /// Caller working directory, the first operand of every matcher coordinate.
+    base: &'a str,
+    /// Process directories completing what `base` leaves open.
+    ctx: Cwd<'a>,
     /// Source label for every discovery.
     source: &'a str,
     /// Replaceable filesystem adapter.
@@ -22,16 +24,18 @@ struct Discovery<'a> {
 /// Scan nested directories, preferring each directory's entry file.
 pub(super) fn scan(
     dir: &str,
-    cwd: &Cwd<'_>,
+    base: &str,
+    ctx: &Cwd<'_>,
     source: &str,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    let root = resolve(&[dir], cwd);
+    let root = resolve(&[base, dir], ctx);
     let mut builder = GitignoreBuilder::new(&root);
     let _ = builder.case_insensitive(true);
     let mut scan = Discovery {
         root,
-        cwd: *cwd,
+        base,
+        ctx: *ctx,
         source,
         operations,
         builder,
@@ -81,8 +85,8 @@ impl Discovery<'_> {
     }
     /// Check excluded ancestors before a candidate's own negations.
     fn ignored(&self, path: &str, is_dir: bool) -> bool {
-        let candidate = resolve(&[path], &self.cwd);
-        let candidate = relative(&self.root, &candidate, &self.cwd);
+        let candidate = resolve(&[self.base, path], &self.ctx);
+        let candidate = relative(&self.root, &candidate, &self.ctx);
         let mut parent = dirname(&candidate);
         while parent != "." {
             if self.matcher.matched(&parent, true).is_ignore() {
@@ -94,7 +98,8 @@ impl Discovery<'_> {
     }
     /// Append authored directory-prefixed rules in ignore-file order.
     fn add_rules(&mut self, dir: &str) {
-        let prefix = relative(&self.root, dir, &self.cwd).replace(SEP, "/");
+        let located = resolve(&[self.base, dir], &self.ctx);
+        let prefix = relative(&self.root, &located, &self.ctx).replace(SEP, "/");
         let prefix = if prefix.is_empty() {
             prefix
         } else {

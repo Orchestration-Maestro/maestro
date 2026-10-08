@@ -217,19 +217,6 @@ fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
     }
 }
 
-/// Resolve on another thread; `None` means the walk did not finish within the bound.
-#[cfg(unix)]
-fn canonicalize_within_bound(path: &std::path::Path) -> Option<String> {
-    let path = text(path).to_owned();
-    let (sender, receiver) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        let _ = sender.send(canonicalize_path(&path, &NativeResourceOperations));
-    });
-    receiver
-        .recv_timeout(std::time::Duration::from_secs(10))
-        .ok()
-}
-
 /// Keep the input when a link's target folds back to the link itself.
 #[cfg(unix)]
 #[test]
@@ -242,8 +229,8 @@ fn maestro_paths_preserve_spelling_of_a_link_that_folds_back_to_itself() {
     std::os::unix::fs::symlink("dir-link/../alias", dir.0.join("base/alias")).unwrap();
     let alias = dir.0.join("base/alias");
     assert_eq!(
-        canonicalize_within_bound(&alias).as_deref(),
-        Some(text(&alias))
+        canonicalize_path(text(&alias), &NativeResourceOperations),
+        text(&alias)
     );
 }
 
@@ -262,9 +249,42 @@ fn maestro_paths_preserve_spelling_of_links_that_fold_into_each_other() {
     for name in ["base/a", "base/b"] {
         let link = dir.0.join(name);
         assert_eq!(
-            canonicalize_within_bound(&link).as_deref(),
-            Some(text(&link)),
+            canonicalize_path(text(&link), &NativeResourceOperations),
+            text(&link),
             "{name}"
         );
     }
+}
+
+/// Keep the input when a link's target folds into a longer path each time it is expanded.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths() {
+    let dir = support::Directory::new();
+    std::fs::create_dir_all(dir.0.join("other/inner")).unwrap();
+    std::fs::create_dir_all(dir.0.join("other/alias/child")).unwrap();
+    std::fs::create_dir(dir.0.join("base")).unwrap();
+    std::os::unix::fs::symlink("../other/inner", dir.0.join("base/dir-link")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../alias/child", dir.0.join("base/alias")).unwrap();
+    let alias = dir.0.join("base/alias");
+    assert_eq!(
+        canonicalize_path(text(&alias), &NativeResourceOperations),
+        text(&alias)
+    );
+}
+
+/// Expand a link to its own directory each time the path passes through it.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
+    let dir = support::Directory::new();
+    let file = dir.file("d/x", "hello");
+    std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
+    assert_eq!(
+        canonicalize_path(
+            text(&dir.0.join("d/loop/loop/x")),
+            &NativeResourceOperations
+        ),
+        text(&file)
+    );
 }

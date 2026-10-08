@@ -67,6 +67,9 @@ impl ResourceOperations for Unresolvable {
     fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
         Err(io::Error::other("controlled canonical failure"))
     }
+    fn current_directory(&self) -> io::Result<String> {
+        NativeResourceOperations.current_directory()
+    }
     fn drive_directories(&self) -> Vec<(char, String)> {
         NativeResourceOperations.drive_directories()
     }
@@ -123,6 +126,9 @@ impl ResourceOperations for Controlled {
         self.check("canonicalize", path)?;
         NativeResourceOperations.canonicalize(path)
     }
+    fn current_directory(&self) -> io::Result<String> {
+        NativeResourceOperations.current_directory()
+    }
     fn drive_directories(&self) -> Vec<(char, String)> {
         NativeResourceOperations.drive_directories()
     }
@@ -145,6 +151,9 @@ impl ResourceOperations for Rooted {
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         NativeResourceOperations.canonicalize(&self.0.join(path))
+    }
+    fn current_directory(&self) -> io::Result<String> {
+        NativeResourceOperations.current_directory()
     }
     fn drive_directories(&self) -> Vec<(char, String)> {
         NativeResourceOperations.drive_directories()

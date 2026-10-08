@@ -50,45 +50,58 @@ pub trait ResourceOperations {
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType>;
     /// Resolve a real path.
     ///
-    /// Native operations fold `.` and `..` lexically, then replace each link
-    /// component by its target.
+    /// Native operations fold `.` and `..` lexically, replace each link
+    /// component by its target and fail once a walk needs more link expansions
+    /// than the platform allows.
     ///
     /// # Errors
     /// Returns the I/O cause of the failed resolution.
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
+    /// Observe the process working directory.
+    ///
+    /// Resolution continues from it when no operand anchors a path.
+    ///
+    /// # Errors
+    /// Returns the I/O cause when the directory cannot be read.
+    fn current_directory(&self) -> io::Result<String>;
     /// Observe the current directory of each Windows drive, keyed by uppercase letter.
     ///
     /// Path resolution hands these entries to `maestro_path::Cwd`. The Windows
     /// flavor continues a drive-relative path such as `D:item.md` from its
-    /// drive's entry; the POSIX flavor ignores them. Adapters without per-drive
-    /// directories return no entries.
+    /// drive's entry unless an earlier operand anchors that drive; the POSIX
+    /// flavor ignores them. Adapters without per-drive directories return no
+    /// entries.
     fn drive_directories(&self) -> Vec<(char, String)>;
 }
 
-/// Run `operation` with the working directory `current` and the adapter's drive directories.
+/// Run `operation` with the adapter's process directories as the resolution context.
 ///
-/// This is the only place a `Cwd` is built, so every path resolution sees the
-/// same context.
-pub(super) fn with_cwd<R>(
-    current: &str,
+/// This is the only place a `Cwd` is built. The context holds process state
+/// only: a caller's working directory is an operand of each resolution, and the
+/// context supplies what its operands leave open. A working directory that cannot
+/// be read is empty: a path then resolves to an absolute path only when its
+/// operands or a drive directory anchor it.
+pub(super) fn with_process_context<R>(
     operations: &dyn ResourceOperations,
     operation: impl FnOnce(&Cwd<'_>) -> R,
 ) -> R {
+    let current = operations.current_directory().unwrap_or_default();
     let entries = operations.drive_directories();
     let drives: Vec<(char, &str)> = entries
         .iter()
         .map(|(letter, directory)| (*letter, directory.as_str()))
         .collect();
     operation(&Cwd {
-        current,
+        current: &current,
         drive_directories: &drives,
     })
 }
 
 /// Standard native filesystem operations.
 ///
-/// On Windows the drive directories are the `=X:` environment variables of the
-/// drives that have one; elsewhere there are none.
+/// The process working directory is the operating system's. On Windows the
+/// drive directories are the `=X:` environment variables of the drives that have
+/// one; elsewhere there are none.
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativeResourceOperations;
 
@@ -116,6 +129,9 @@ impl ResourceOperations for NativeResourceOperations {
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         super::real_path::real_path(path, self)
+    }
+    fn current_directory(&self) -> io::Result<String> {
+        Ok(std::env::current_dir()?.to_string_lossy().into_owned())
     }
     fn drive_directories(&self) -> Vec<(char, String)> {
         if !cfg!(windows) {

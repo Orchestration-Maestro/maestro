@@ -1,62 +1,170 @@
-//! Drive-directory context shared by every path resolution.
+//! Process-directory context shared by every path resolution.
 
-use super::operations::with_cwd;
+use super::operations::with_process_context;
 #[cfg(windows)]
-use super::{LoadSkillsOptions, load_skills, real_path::real_path};
-use super::{ResourceEntry, ResourceFileType, ResourceOperations};
+use super::real_path::real_path;
+use super::{LoadSkillsOptions, ResourceEntry, ResourceFileType, ResourceOperations, load_skills};
 use maestro_path::win32;
 use std::{
+    cell::RefCell,
     io,
     path::{Path, PathBuf},
 };
 
-/// Adapter with fixed drive directories over an empty filesystem.
-struct Drives(Vec<(char, String)>);
+/// Adapter with fixed process directories over a filesystem holding at most one file.
+struct Process {
+    /// The process working directory.
+    current: String,
+    /// The current directory of each drive.
+    drives: Vec<(char, String)>,
+    /// The only file that exists, with its text.
+    file: Option<(String, String)>,
+    /// Every path `exists` was asked about, in order.
+    asked: RefCell<Vec<PathBuf>>,
+}
 
-impl ResourceOperations for Drives {
-    fn exists(&self, _: &Path) -> bool {
-        false
+impl Process {
+    /// Whether `path` is the one file.
+    fn holds(&self, path: &Path) -> bool {
+        self.file
+            .as_ref()
+            .is_some_and(|(file, _)| Path::new(file) == path)
+    }
+}
+
+impl ResourceOperations for Process {
+    fn exists(&self, path: &Path) -> bool {
+        self.asked.borrow_mut().push(path.to_owned());
+        self.holds(path)
     }
     fn read_dir(&self, _: &Path) -> io::Result<Vec<ResourceEntry>> {
         Err(io::ErrorKind::NotFound.into())
     }
     fn read_file(&self, _: &Path) -> io::Result<String> {
-        Err(io::ErrorKind::NotFound.into())
+        self.file
+            .as_ref()
+            .map(|(_, text)| text.clone())
+            .ok_or_else(|| io::ErrorKind::NotFound.into())
     }
-    fn metadata(&self, _: &Path) -> io::Result<ResourceFileType> {
-        Err(io::ErrorKind::NotFound.into())
+    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        if self.holds(path) {
+            Ok(ResourceFileType::File)
+        } else {
+            Err(io::ErrorKind::NotFound.into())
+        }
     }
     fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
         Err(io::ErrorKind::NotFound.into())
     }
+    fn current_directory(&self) -> io::Result<String> {
+        Ok(self.current.clone())
+    }
     fn drive_directories(&self) -> Vec<(char, String)> {
-        self.0.clone()
+        self.drives.clone()
     }
 }
 
-/// Report `entries` as the drive directories.
-fn drives(entries: &[(char, &str)]) -> Drives {
-    Drives(
-        entries
+/// Report `current` and `entries` as the process directories of an empty filesystem.
+fn process(current: &str, entries: &[(char, &str)]) -> Process {
+    Process {
+        current: current.to_owned(),
+        drives: entries
             .iter()
             .map(|(letter, directory)| (*letter, (*directory).to_owned()))
             .collect(),
+        file: None,
+        asked: RefCell::default(),
+    }
+}
+
+/// Load `skill_paths` for caller directory `cwd`, with `agent_dir` as the user configuration.
+fn load(
+    adapter: &Process,
+    (cwd, agent_dir): (&str, &str),
+    skill_paths: &[&str],
+    include_defaults: bool,
+) -> super::LoadSkillsResult {
+    load_skills(
+        LoadSkillsOptions {
+            cwd,
+            home: "/home",
+            agent_dir,
+            config_dir_name: ".maestro",
+            skill_paths: &skill_paths
+                .iter()
+                .map(|path| (*path).to_owned())
+                .collect::<Vec<_>>(),
+            include_defaults,
+        },
+        adapter,
     )
 }
 
-/// A drive-relative path continues from the directory the adapter reports for its drive.
+/// A relative caller directory is an operand: it continues from the process directory.
+#[cfg(not(windows))]
 #[test]
-fn resolution_context_carries_the_reported_drive_directories() {
-    let adapter = drives(&[('C', r"C:\Users\me"), ('D', r"D:\skills")]);
-    with_cwd(r"C:\work", &adapter, |cwd| {
-        assert_eq!(cwd.current, r"C:\work");
+fn explicit_path_beneath_a_relative_cwd_continues_from_the_process_directory() {
+    let result = load(
+        &process("/process", &[]),
+        ("work", "/agent"),
+        &["notes.md"],
+        false,
+    );
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some("/process/work/notes.md")
+    );
+}
+
+/// The project defaults directory is the caller directory joined with the configuration name.
+#[cfg(not(windows))]
+#[test]
+fn project_defaults_beneath_a_relative_cwd_continue_from_the_process_directory() {
+    let adapter = process("/process", &[]);
+    let _ = load(&adapter, ("work", "/agent"), &[], true);
+    assert_eq!(
+        *adapter.asked.borrow(),
+        [
+            PathBuf::from("/agent/skills"),
+            PathBuf::from("/process/work/.maestro/skills")
+        ]
+    );
+}
+
+/// A relative user root classifies explicit paths beneath the process directory, not the cwd.
+#[cfg(not(windows))]
+#[test]
+fn relative_user_root_continues_from_the_process_directory_not_the_cwd() {
+    let mut adapter = process("/process", &[]);
+    adapter.file = Some((
+        "/process/agent/skills/calendar.md".into(),
+        "---\ndescription: Calendar\n---".into(),
+    ));
+    let result = load(
+        &adapter,
+        ("/work", "agent"),
+        &["/process/agent/skills/calendar.md"],
+        false,
+    );
+    assert_eq!(result.skills[0].source_info.scope, crate::SourceScope::User);
+}
+
+/// The caller directory wins on its own drive; another drive continues from its own entry.
+#[test]
+fn resolution_context_continues_other_drives_from_their_reported_directories() {
+    let adapter = process(
+        r"C:\Users\me",
+        &[('C', r"C:\Users\me"), ('D', r"D:\skills")],
+    );
+    with_process_context(&adapter, |context| {
+        assert_eq!(context.current, r"C:\Users\me");
         assert_eq!(
-            win32::resolve(&[r"D:calendar\SKILL.md"], cwd),
-            r"D:\skills\calendar\SKILL.md"
+            win32::resolve(&[r"C:\work", r"C:notes.md"], context),
+            r"C:\work\notes.md"
         );
         assert_eq!(
-            win32::resolve(&[r"C:notes.md"], cwd),
-            r"C:\Users\me\notes.md"
+            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], context),
+            r"D:\skills\calendar\SKILL.md"
         );
     });
 }
@@ -64,10 +172,10 @@ fn resolution_context_carries_the_reported_drive_directories() {
 /// A drive without a reported directory continues from that drive's root.
 #[test]
 fn resolution_context_falls_back_to_the_drive_root_without_an_entry() {
-    let adapter = drives(&[('C', r"C:\Users\me")]);
-    with_cwd(r"C:\work", &adapter, |cwd| {
+    let adapter = process(r"C:\Users\me", &[('C', r"C:\Users\me")]);
+    with_process_context(&adapter, |context| {
         assert_eq!(
-            win32::resolve(&[r"D:calendar\SKILL.md"], cwd),
+            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], context),
             r"D:\calendar\SKILL.md"
         );
     });
@@ -95,31 +203,15 @@ fn native_drive_directories_come_from_equals_prefixed_variables() {
     );
 }
 
-/// Load one explicit skill path and return the path its warning names.
-#[cfg(windows)]
-fn explicit_path_warning(adapter: &Drives, skill_path: &str) -> Option<String> {
-    let result = load_skills(
-        LoadSkillsOptions {
-            cwd: r"C:\work",
-            home: r"C:\home",
-            agent_dir: r"C:\agent",
-            config_dir_name: ".maestro",
-            skill_paths: &[skill_path.to_owned()],
-            include_defaults: false,
-        },
-        adapter,
-    );
-    result.diagnostics.into_iter().next()?.path
-}
-
-/// An explicit drive-relative skill path continues from its drive's directory.
+/// An explicit drive-relative skill path on the cwd's drive continues from the cwd.
 #[cfg(windows)]
 #[test]
-fn explicit_skill_path_continues_from_the_drive_directory() {
-    let adapter = drives(&[('D', r"D:\skills")]);
+fn explicit_skill_path_on_the_cwd_drive_continues_from_the_cwd() {
+    let adapter = process(r"C:\Users\me", &[('C', r"C:\Users\me")]);
+    let result = load(&adapter, (r"C:\work", r"C:\agent"), &["C:notes.md"], false);
     assert_eq!(
-        explicit_path_warning(&adapter, r"D:calendar\SKILL.md").as_deref(),
-        Some(r"D:\skills\calendar\SKILL.md")
+        result.diagnostics[0].path.as_deref(),
+        Some(r"C:\work\notes.md")
     );
 }
 
@@ -127,10 +219,33 @@ fn explicit_skill_path_continues_from_the_drive_directory() {
 #[cfg(windows)]
 #[test]
 fn explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root() {
-    let adapter = drives(&[]);
+    let adapter = process(r"C:\Users\me", &[]);
+    let result = load(
+        &adapter,
+        (r"C:\work", r"C:\agent"),
+        &[r"D:calendar\SKILL.md"],
+        false,
+    );
     assert_eq!(
-        explicit_path_warning(&adapter, r"D:calendar\SKILL.md").as_deref(),
+        result.diagnostics[0].path.as_deref(),
         Some(r"D:\calendar\SKILL.md")
+    );
+}
+
+/// An explicit drive-relative skill path on another drive continues from that drive's directory.
+#[cfg(windows)]
+#[test]
+fn explicit_skill_path_on_another_drive_continues_from_the_drive_directory() {
+    let adapter = process(r"C:\Users\me", &[('D', r"D:\skills")]);
+    let result = load(
+        &adapter,
+        (r"C:\work", r"C:\agent"),
+        &[r"D:calendar\SKILL.md"],
+        false,
+    );
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some(r"D:\skills\calendar\SKILL.md")
     );
 }
 
@@ -143,7 +258,7 @@ fn real_path_continues_from_the_drive_directory() {
     std::fs::write(directory.join("item.md"), "item").unwrap();
     let text = directory.to_str().unwrap();
     let letter = text.chars().next().unwrap().to_ascii_uppercase();
-    let adapter = drives(&[(letter, text)]);
+    let adapter = process(r"C:\Users\me", &[(letter, text)]);
     let resolved = real_path(Path::new(&format!("{letter}:item.md")), &adapter);
     std::fs::remove_dir_all(&directory).unwrap();
     assert_eq!(resolved.unwrap(), directory.join("item.md"));

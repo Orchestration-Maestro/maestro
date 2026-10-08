@@ -43,11 +43,14 @@ only at its root and descends into directories for entry files. Hidden entries,
 `node_modules`, broken links and nonfiles are skipped; file and directory links
 follow their targets.
 
-Relative paths normalize against `cwd`; on Windows a drive-relative path such as
-`D:item.md` continues from the directory the adapter reports for that drive, or
-from the drive root when none is reported and `cwd` is on another drive. `~`,
-`~/suffix` and `~suffix` expand against supplied `home`, including repeated
-slashes after the tilde. Joined
+Relative explicit paths normalize with `cwd` as the first operand, so a relative
+`cwd` itself continues from the process working directory the adapter reports. On
+Windows a drive-relative path on the drive of an absolute `cwd`, such as
+`C:item.md`, continues from `cwd`; on another drive, such as `D:item.md`, it
+continues from the directory the adapter reports for that drive, or from the
+drive root when none is reported and the process working directory is on another
+drive. `~`, `~/suffix` and `~suffix` expand against supplied `home`, including
+repeated slashes after the tilde. Joined
 user configuration and scanned child paths concatenate their parts before lexical
 normalization; later rooted parts do not replace the earlier root. Project
 configuration paths instead resolve against `cwd`; an absolute configuration
@@ -63,9 +66,10 @@ lexically, resolving a relative path against the process working directory, so
 target, read relative to the link's directory; other components keep their
 authored spelling and case, and a Windows link target that names a drive or share
 loses its verbatim prefix. When a component cannot be inspected, a link target is
-missing, a link loops or the expanded links return to a path already expanded,
-exact authored strings are the identity keys, so distinct absolute spellings can
-produce name collisions.
+missing, a link loops or the walk needs more link expansions than the platform
+allows (40 on Linux, 32 on macOS and the BSDs, 63 on Windows), exact authored
+strings are the identity keys, so distinct absolute spellings can produce name
+collisions.
 Ordinary diagnostics precede all collisions.
 With defaults disabled, explicit paths equal to a resolved user or project skills
 root, or beginning with that root plus its separator, receive that scope, with user
@@ -102,16 +106,23 @@ Library/process warnings are not printed or returned as skill diagnostics.
 
 `ResourceOperations` supplies ordered `read_dir`, lossy UTF-8 `read_file`,
 link-following `metadata`, independent `exists` observations, fallible
-`canonicalize` and the current directory of each Windows drive
-(`drive_directories`; the native adapter reads each drive's `=X:` environment
-variable and reports none elsewhere). The same public loaders accept replacement
-adapters without caller algorithm changes. Native operations are available
-outside `wasm32`; browser callers supply their own adapter.
+`canonicalize`, the process working directory (`current_directory`) and the
+current directory of each Windows drive (`drive_directories`; the native adapter
+reads each drive's `=X:` environment variable and reports none elsewhere). The
+same public loaders accept replacement adapters without caller algorithm changes.
+Native operations are available outside `wasm32`; browser callers supply their
+own adapter.
 
-Both loaders take an explicit `cwd` for relative path coordinates and resolve
-every path against it together with the adapter's drive directories. Each scan
+Both loaders take an explicit `cwd`. It is the first operand of each lexical
+resolution against the caller: the project configuration directory, relative
+explicit paths and the coordinates a scan's ignore matcher compares. Filesystem
+access is separate: the adapter receives each scanned directory as authored and
+each project or explicit path as the loader computed it, so `cwd` never
+relocates an authored path it reads. The process directories the adapter reports
+complete only what those operands leave open, and alone resolve native real
+paths and the user and project roots that classify explicit paths. Each scan
 shares one case-insensitive ignore matcher. Its root and candidates are resolved
-against that working directory; rule prefixes use their lexical relative paths.
+from that working directory; rule prefixes use their lexical relative paths.
 Rules are appended in
 `.gitignore`, `.ignore`, `.fdignore` order with directory prefixes and compiled
 when rules change. Later rules may reopen files, but child negation cannot reopen

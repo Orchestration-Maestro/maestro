@@ -14,7 +14,7 @@ use crate::{
 use maestro_path::{Cwd, SEP, basename, dirname, is_absolute, join, resolve};
 #[cfg(not(target_arch = "wasm32"))]
 pub use operations::NativeResourceOperations;
-use operations::with_cwd;
+use operations::with_process_context;
 pub use operations::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::path::Path;
 pub use validation::SkillFrontmatter;
@@ -46,9 +46,10 @@ pub struct LoadSkillsResult {
 /// A supplied directory and its source label.
 #[derive(Clone, Copy)]
 pub struct LoadSkillsFromDirOptions<'a> {
-    /// The working directory relative paths resolve against.
+    /// The working directory the scan's relative paths are located under.
     ///
-    /// The adapter's drive directories complete the resolution context.
+    /// It is the first operand of every coordinate the ignore matcher compares;
+    /// the adapter reads the scanned paths as given.
     pub cwd: &'a str,
     /// Directory to scan.
     pub dir: &'a str,
@@ -61,8 +62,8 @@ pub fn load_skills_from_dir(
     options: LoadSkillsFromDirOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    with_cwd(options.cwd, operations, |cwd| {
-        discovery::scan(options.dir, cwd, options.source, operations)
+    with_process_context(operations, |ctx| {
+        discovery::scan(options.dir, options.cwd, ctx, options.source, operations)
     })
 }
 /// Load one file, retaining its native failure cause as a warning.
@@ -134,9 +135,10 @@ fn validated_skill(path: &str, source: &str, fields: SkillFrontmatter) -> LoadSk
 /// Supplied roots and explicitly requested skill paths.
 #[derive(Clone, Copy)]
 pub struct LoadSkillsOptions<'a> {
-    /// Working directory for relative paths and project defaults.
+    /// Working directory for relative explicit paths and project defaults.
     ///
-    /// The adapter's drive directories complete the resolution context.
+    /// It is the first operand of each of those resolutions; the process
+    /// directories the adapter reports complete what a relative `cwd` leaves open.
     pub cwd: &'a str,
     /// Caller-resolved home directory.
     pub home: &'a str,
@@ -155,21 +157,21 @@ pub fn load_skills(
     options: LoadSkillsOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    with_cwd(options.cwd, operations, |cwd| {
-        load_skills_in(options, cwd, operations)
-    })
+    with_process_context(operations, |ctx| load_skills_in(options, ctx, operations))
 }
-/// Load defaults and explicit paths, resolving relative paths against `cwd`.
+/// Load defaults and explicit paths.
+///
+/// The caller's working directory anchors the project and relative explicit paths.
 fn load_skills_in(
     options: LoadSkillsOptions<'_>,
-    cwd: &Cwd<'_>,
+    ctx: &Cwd<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
     let mut result = LoadSkillsResult::default();
     let mut collisions = Vec::new();
     let mut paths = std::collections::HashSet::new();
     let user_skills = join(&[options.agent_dir, "skills"]);
-    let project_skills = resolve(&[options.config_dir_name, "skills"], cwd);
+    let project_skills = resolve(&[options.cwd, options.config_dir_name, "skills"], ctx);
     if options.include_defaults {
         for (path, source) in [(&user_skills, "user"), (&project_skills, "project")] {
             add_skills(
@@ -177,7 +179,7 @@ fn load_skills_in(
                 &mut collisions,
                 &mut paths,
                 operations,
-                discovery::scan(path, cwd, source, operations),
+                discovery::scan(path, options.cwd, ctx, source, operations),
             );
         }
     }
@@ -188,24 +190,25 @@ fn load_skills_in(
         } else if is_absolute(path) {
             path.to_owned()
         } else {
-            resolve(&[path], cwd)
+            resolve(&[options.cwd, path], ctx)
         };
-        let source = if !options.include_defaults && is_under_path(&path, &user_skills, cwd) {
+        let source = if !options.include_defaults && is_under_path(&path, &user_skills, ctx) {
             "user"
-        } else if !options.include_defaults && is_under_path(&path, &project_skills, cwd) {
+        } else if !options.include_defaults && is_under_path(&path, &project_skills, ctx) {
             "project"
         } else {
             "path"
         };
-        let loaded = explicit_path(&path, cwd, source, operations);
+        let loaded = explicit_path(&path, (options.cwd, ctx), source, operations);
         add_skills(&mut result, &mut collisions, &mut paths, operations, loaded);
     }
     result.diagnostics.extend(collisions);
     result
 }
-/// Compare preserved target spelling against a resolved root and separator boundary.
-fn is_under_path(target: &str, root: &str, cwd: &Cwd<'_>) -> bool {
-    let root = resolve(&[root], cwd);
+/// Compare preserved target spelling against a root resolved from the process
+/// directories, on a separator boundary.
+fn is_under_path(target: &str, root: &str, ctx: &Cwd<'_>) -> bool {
+    let root = resolve(&[root], ctx);
     target == root || target.starts_with(&format!("{}{SEP}", root.trim_end_matches(SEP)))
 }
 /// Merge discoveries, retaining the first name and delaying collision messages.
@@ -249,14 +252,14 @@ fn add_skills(
 /// Dispatch a supplied path, keeping missing, wrong-kind and native errors distinct.
 fn explicit_path(
     path: &str,
-    cwd: &Cwd<'_>,
+    (cwd, ctx): (&str, &Cwd<'_>),
     source: &str,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
     let error = if operations.exists(Path::new(path)) {
         match operations.metadata(Path::new(path)) {
             Ok(ResourceFileType::Directory) => {
-                return discovery::scan(path, cwd, source, operations);
+                return discovery::scan(path, cwd, ctx, source, operations);
             }
             Ok(ResourceFileType::File)
                 if path

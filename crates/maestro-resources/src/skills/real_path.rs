@@ -1,62 +1,64 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
-use super::operations::{ResourceOperations, with_cwd};
-use maestro_path::{Cwd, SEP, dirname, is_absolute, resolve};
+use super::operations::{ResourceOperations, with_process_context};
+use maestro_path::{Cwd, SEP, dirname, resolve};
 use std::{
     borrow::Cow,
-    collections::HashSet,
     io,
     path::{Path, PathBuf},
 };
+
+/// Link expansions one resolution may need on Linux, its `MAXSYMLINKS` (see `path_resolution(7)`).
+#[cfg(target_os = "linux")]
+const MAX_LINK_EXPANSIONS: usize = 40;
+/// Reparse points one resolution may need on Windows.
+#[cfg(windows)]
+const MAX_LINK_EXPANSIONS: usize = 63;
+/// Link expansions one resolution may need on macOS and the BSDs: their
+/// `MAXSYMLINKS` in `sys/param.h`.
+#[cfg(not(any(target_os = "linux", windows)))]
+const MAX_LINK_EXPANSIONS: usize = 32;
 
 /// Resolve `path` against the process working directory, then follow its links.
 ///
 /// `.` and `..` fold lexically before any component is inspected, so `link/..`
 /// names the directory that holds `link`. The first link component is then
 /// replaced by its target, read relative to the link's directory, and the walk
-/// restarts from the root until no component is a link; a walk that returns to a
-/// path it already expanded is a loop. Components that are not links keep their
-/// authored spelling and case, and a Windows link target that names a drive or
-/// share loses its verbatim prefix. On Windows a drive-relative path continues
-/// from the drive directory `operations` reports. An unreadable working
-/// directory fails only a relative path.
+/// restarts from the root until no component is a link. Components that are not
+/// links keep their authored spelling and case, and a Windows link target that
+/// names a drive or share loses its verbatim prefix. On Windows a drive-relative
+/// path continues from the drive directory `operations` reports. The walk ends
+/// like the platform's own path resolution: it fails once it needs more link
+/// expansions than the platform allows, so links that fold back into each other
+/// do not loop forever. A relative path is inspected from `.`, so an unreadable
+/// working directory fails it.
 ///
 /// # Errors
 /// Returns the cause of the first failed observation: a path that is not UTF-8,
-/// a relative path with an unreadable working directory, a component that cannot
-/// be inspected, a link whose target is missing or loops, a walk that returns to
-/// an earlier path, or a link that cannot be read.
+/// a component that cannot be inspected, a link whose target is missing or loops,
+/// a walk that needs more link expansions than the platform allows, or a link
+/// that cannot be read.
 pub(super) fn real_path(path: &Path, operations: &dyn ResourceOperations) -> io::Result<PathBuf> {
     let path = path.to_str().ok_or(io::ErrorKind::InvalidInput)?;
-    let current = std::env::current_dir()
-        .map(|dir| dir.to_string_lossy().into_owned())
-        .or_else(|error| {
-            if is_absolute(path) {
-                Ok(String::new())
-            } else {
-                Err(error)
-            }
-        })?;
-    with_cwd(&current, operations, |cwd| follow_links(path, cwd))
+    with_process_context(operations, |ctx| follow_links(path, ctx))
 }
 
 /// Fold `path` lexically, then expand its links until none remains.
-fn follow_links(path: &str, cwd: &Cwd<'_>) -> io::Result<PathBuf> {
-    let mut resolved = resolve(&[path], cwd);
-    let mut visited = HashSet::new();
-    while let Some(expanded) = expand_first_link(&resolved, cwd)? {
-        if !visited.insert(resolved) {
-            return Err(io::Error::other("links resolve back to an earlier path"));
+fn follow_links(path: &str, ctx: &Cwd<'_>) -> io::Result<PathBuf> {
+    let mut resolved = resolve(&[path], ctx);
+    for _ in 0..=MAX_LINK_EXPANSIONS {
+        match expand_first_link(&resolved, ctx)? {
+            Some(expanded) => resolved = expanded,
+            None => return Ok(PathBuf::from(resolved)),
         }
-        resolved = expanded;
     }
-    Ok(PathBuf::from(resolved))
+    Err(io::Error::other("too many levels of symbolic links"))
 }
 
 /// Replace the first link component of a resolved path by its target.
 ///
 /// Returns `None` when no component is a link.
-fn expand_first_link(path: &str, cwd: &Cwd<'_>) -> io::Result<Option<String>> {
+fn expand_first_link(path: &str, ctx: &Cwd<'_>) -> io::Result<Option<String>> {
     let root = root_len(path);
     std::fs::symlink_metadata(&path[..root])?;
     let mut parent_end = root;
@@ -74,9 +76,9 @@ fn expand_first_link(path: &str, cwd: &Cwd<'_>) -> io::Result<Option<String>> {
             } else {
                 Cow::Borrowed(target.as_str())
             };
-            let linked = resolve(&[&path[..parent_end], &target], cwd);
+            let linked = resolve(&[&path[..parent_end], &target], ctx);
             let rest = path[end..].trim_start_matches(SEP);
-            return Ok(Some(resolve(&[&linked, rest], cwd)));
+            return Ok(Some(resolve(&[&linked, rest], ctx)));
         }
         parent_end = end;
     }
