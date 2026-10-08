@@ -1,6 +1,6 @@
 //! Controlled editors: one with every optional hook and one with only the required ones.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_tui::editor_component::EditorCallbacks;
@@ -13,9 +13,9 @@ pub type FlagProvider = dyn AutocompleteProvider<Signal = Cell<bool>>;
 /// An editor that supports every optional hook.
 pub struct Rich {
     /// Current text.
-    pub text: String,
+    pub text: RefCell<String>,
     /// Callbacks under test.
-    pub callbacks: EditorCallbacks,
+    pub callbacks: RefCell<EditorCallbacks>,
     /// Text added to history.
     pub history: Vec<String>,
     /// Horizontal padding.
@@ -30,8 +30,8 @@ impl Rich {
     /// Creates an empty editor.
     pub fn new() -> Self {
         Self {
-            text: String::new(),
-            callbacks: EditorCallbacks::default(),
+            text: RefCell::default(),
+            callbacks: RefCell::default(),
             history: Vec::new(),
             padding: 0,
             visible: 0,
@@ -41,31 +41,32 @@ impl Rich {
 }
 
 impl Component for Rich {
-    fn render(&mut self, _width: usize) -> Vec<String> {
+    fn render(&self, _width: usize) -> Vec<String> {
         let border = self
             .callbacks
+            .borrow()
             .border_color
             .as_ref()
             .map_or_else(|| "-".to_owned(), |paint| paint("-"));
-        vec![border, self.text.clone()]
+        vec![border, self.text.borrow().clone()]
     }
 
-    fn input_handler(&mut self) -> Option<&mut dyn InputHandler> {
+    fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
 }
 
 impl InputHandler for Rich {
-    fn handle_input(&mut self, data: &str) {
+    fn handle_input(&self, data: &str) {
         if data == "\r" {
-            if let Some(submit) = self.callbacks.on_submit.as_mut() {
-                submit(&self.text);
+            if let Some(submit) = self.callbacks.borrow_mut().on_submit.as_mut() {
+                submit(&self.text.borrow());
             }
             return;
         }
-        self.text.push_str(data);
-        if let Some(change) = self.callbacks.on_change.as_mut() {
-            change(&self.text);
+        self.text.borrow_mut().push_str(data);
+        if let Some(change) = self.callbacks.borrow_mut().on_change.as_mut() {
+            change(&self.text.borrow());
         }
     }
 }
@@ -74,15 +75,15 @@ impl EditorComponent for Rich {
     type Signal = Cell<bool>;
 
     fn get_text(&self) -> String {
-        self.text.clone()
+        self.text.borrow().clone()
     }
 
     fn set_text(&mut self, text: &str) {
-        text.clone_into(&mut self.text);
+        text.clone_into(self.text.get_mut());
     }
 
     fn callbacks(&mut self) -> &mut EditorCallbacks {
-        &mut self.callbacks
+        self.callbacks.get_mut()
     }
 
     fn add_to_history(&mut self, text: &str) -> Option<()> {
@@ -91,12 +92,12 @@ impl EditorComponent for Rich {
     }
 
     fn insert_text_at_cursor(&mut self, text: &str) -> Option<()> {
-        self.text.push_str(text);
+        self.text.get_mut().push_str(text);
         Some(())
     }
 
     fn get_expanded_text(&self) -> Option<String> {
-        Some(self.text.replace("[paste]", "pasted text"))
+        Some(self.text.borrow().replace("[paste]", "pasted text"))
     }
 
     fn set_autocomplete_provider(&mut self, provider: Rc<FlagProvider>) -> Option<()> {
@@ -118,36 +119,36 @@ impl EditorComponent for Rich {
 /// An editor that implements only the required members.
 pub struct Bare {
     /// Current text.
-    pub text: String,
+    pub text: RefCell<String>,
     /// Callbacks storage.
     pub callbacks: EditorCallbacks,
 }
 
 impl Component for Bare {
-    fn render(&mut self, _width: usize) -> Vec<String> {
-        vec![self.text.clone()]
+    fn render(&self, _width: usize) -> Vec<String> {
+        vec![self.text.borrow().clone()]
     }
 
-    fn input_handler(&mut self) -> Option<&mut dyn InputHandler> {
+    fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
 }
 
 impl InputHandler for Bare {
-    fn handle_input(&mut self, data: &str) {
-        self.text.push_str(data);
+    fn handle_input(&self, data: &str) {
+        self.text.borrow_mut().push_str(data);
     }
 }
 
 impl EditorComponent for Bare {
-    type Signal = std::cell::RefCell<String>;
+    type Signal = RefCell<String>;
 
     fn get_text(&self) -> String {
-        self.text.clone()
+        self.text.borrow().clone()
     }
 
     fn set_text(&mut self, text: &str) {
-        text.clone_into(&mut self.text);
+        text.clone_into(self.text.get_mut());
     }
 
     fn callbacks(&mut self) -> &mut EditorCallbacks {

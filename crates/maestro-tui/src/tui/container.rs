@@ -1,18 +1,18 @@
 //! A component made of other components.
 
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 use super::component::Component;
 
 /// A component shared between a container and whoever keeps editing it.
-pub type ComponentHandle = Rc<RefCell<dyn Component>>;
+pub type ComponentHandle = Rc<dyn Component>;
 
 /// Renders its children one after another.
 #[derive(Default)]
 pub struct Container {
     /// Children in render order; the same child may appear more than once.
-    pub children: Vec<ComponentHandle>,
+    children: RefCell<Vec<ComponentHandle>>,
 }
 
 impl Container {
@@ -22,44 +22,55 @@ impl Container {
         Self::default()
     }
 
+    /// The children in render order.
+    #[must_use]
+    pub fn children(&self) -> Ref<'_, [ComponentHandle]> {
+        Ref::map(self.children.borrow(), Vec::as_slice)
+    }
+
     /// Appends a child.
-    pub fn add_child(&mut self, component: ComponentHandle) {
-        self.children.push(component);
+    pub fn add_child(&self, component: ComponentHandle) {
+        self.children.borrow_mut().push(component);
     }
 
     /// Removes the first occurrence of `component`; a missing child is ignored.
-    pub fn remove_child(&mut self, component: &ComponentHandle) {
-        if let Some(index) = self
-            .children
-            .iter()
-            .position(|child| Rc::ptr_eq(child, component))
-        {
-            self.children.remove(index);
-        }
+    pub fn remove_child(&self, component: &ComponentHandle) {
+        let removed = {
+            let mut children = self.children.borrow_mut();
+            let index = children
+                .iter()
+                .position(|child| Rc::ptr_eq(child, component));
+            index.map(|index| children.remove(index))
+        };
+        drop(removed);
     }
 
     /// Removes every child.
-    pub fn clear(&mut self) {
-        self.children.clear();
+    pub fn clear(&self) {
+        let removed = std::mem::take(&mut *self.children.borrow_mut());
+        drop(removed);
+    }
+
+    /// The children by position, each fetched when the walk reaches it: a child added
+    /// during the walk is visited and one removed before its turn is not.
+    fn live_children(&self) -> impl Iterator<Item = ComponentHandle> + '_ {
+        (0..).map_while(|index| self.children.borrow().get(index).cloned())
     }
 }
 
 impl Component for Container {
-    fn render(&mut self, width: usize) -> Vec<String> {
-        self.children
-            .iter()
-            .flat_map(|child| child.borrow_mut().render(width))
+    /// Renders the children in order, walking the live list of children.
+    fn render(&self, width: usize) -> Vec<String> {
+        self.live_children()
+            .flat_map(|child| child.render(width))
             .collect()
     }
 
-    /// Invalidates every child in order, except one that is running a callback: it is
-    /// borrowed exclusively. When the frame writer started that callback, it invalidates the
-    /// component once the callback returns.
-    fn invalidate(&mut self) {
-        for child in &self.children {
-            if let Ok(mut idle) = child.try_borrow_mut() {
-                idle.invalidate();
-            }
+    /// Invalidates the children in order, walking the live list of children. Each call
+    /// reaches every child before it returns, also one that is rendering or handling input.
+    fn invalidate(&self) {
+        for child in self.live_children() {
+            child.invalidate();
         }
     }
 }

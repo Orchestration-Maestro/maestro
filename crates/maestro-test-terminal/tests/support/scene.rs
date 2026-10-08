@@ -1,6 +1,5 @@
 //! A writer over an emulated terminal, driven the way an application drives it.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::{TUI, TerminalImage};
@@ -20,7 +19,7 @@ pub struct Scene {
     /// The writer under test.
     pub tui: TUI,
     /// The only component.
-    pub probe: Rc<RefCell<Probe>>,
+    pub probe: Rc<Probe>,
 }
 
 impl Scene {
@@ -53,7 +52,7 @@ impl Scene {
     /// Replaces the content and draws it.
     pub fn show(&self, lines: &[&str]) {
         let lines: Vec<String> = lines.iter().map(|line| (*line).to_owned()).collect();
-        self.probe.borrow_mut().set_lines(&lines);
+        self.probe.set_lines(&lines);
         self.render();
     }
 

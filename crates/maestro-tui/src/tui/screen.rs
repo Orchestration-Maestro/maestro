@@ -2,9 +2,9 @@
 
 use std::io;
 
-use super::TUI;
 use super::diagnostics::RedrawReason;
 use super::drawing::{self, CursorPosition, Update};
+use super::{Component, TUI};
 
 /// A terminal extent the retained frame was drawn for.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -257,7 +257,7 @@ impl TUI {
             let terminal = self.shared.terminal.borrow();
             (terminal.columns(), terminal.rows())
         };
-        let mut lines = self.render_children(width);
+        let mut lines = self.render(width);
         let cursor = drawing::extract_cursor_position(&mut lines, height);
         drawing::apply_line_resets(&mut lines);
         let frame = Frame {

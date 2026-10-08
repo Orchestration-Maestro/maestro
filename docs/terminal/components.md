@@ -30,19 +30,26 @@ Everything else is an optional capability that defaults to absent:
 
 Absence is explicit: a component without input returns `None` from `input_handler`
 rather than a handler that ignores its input. `is_focusable` tests for the
-capability, not for the current focus. A focusable component holds a `FocusFlag`, which
-the frame writer shares and sets when focus moves; the component reads it when it renders,
-so a change made during that render counts. A focused component is expected to emit
+capability, not for the current focus. A focusable component owns a `FocusFlag`, which
+the frame writer sets when focus moves; the component reads it when it renders, so a
+change made during that render counts. A focused component is expected to emit
 `CURSOR_MARKER` where the hardware cursor belongs; the marker is an escape that
 occupies no cells.
 
+Every method takes `&self`: a component is a shared object that a callback running inside
+one of its methods, such as a render that moves focus or invalidates the writer, reaches
+at once. A component keeps the state it changes in `Cell`s and `RefCell`s, borrows it only
+for the statement that needs it and never across a call into the writer, a callback or
+another component.
+
 A `Container` renders its children in order and concatenates their lines. Children
-are shared handles (`Rc<RefCell<dyn Component>>`), so whoever keeps a handle can
-keep editing the child and the container shows the edit. The same child may appear
-twice. `remove_child` removes the first occurrence by identity and ignores a child
-that is not present; `invalidate` reaches every child in order, except a child that is
-running a callback: it is borrowed exclusively. When the frame writer started that
-callback, it invalidates the component as soon as the callback returns.
+are shared handles (`Rc<dyn Component>`), so whoever keeps a handle can keep editing the
+child through its own interior state and the container shows the edit. The same child may
+appear twice. `remove_child` removes the first occurrence by identity and ignores a child
+that is not present. `render` and `invalidate` walk the live list of children: a child
+added during the walk is visited and one removed before its turn is not. `invalidate`
+reaches every child before it returns, including one that is rendering or handling
+input, and each call invalidates it again.
 
 `TruncatedText` shows the first line of its text, truncated to the viewport, between
 `padding_y` blank rows. Horizontal padding is `padding_x` on each side but never
@@ -52,14 +59,13 @@ only spaces. A zero-width viewport renders empty lines. Every line, blank rows
 included, is padded with spaces to exactly the viewport width.
 
 ```rust
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Component, Container, TruncatedText};
 
-let title: ComponentHandle = Rc::new(RefCell::new(TruncatedText::new("Hello world\nignored".into(), 1, 0)));
-let mut container = Container::new();
+let title: ComponentHandle = Rc::new(TruncatedText::new("Hello world\nignored".into(), 1, 0));
+let container = Container::new();
 container.add_child(Rc::clone(&title));
 container.add_child(Rc::clone(&title));
 

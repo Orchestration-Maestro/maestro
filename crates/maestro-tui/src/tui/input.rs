@@ -1,13 +1,12 @@
 //! Routing of terminal input: live listeners, cell-size replies, the debug key and focus.
 
-use std::cell::RefCell;
 use std::io;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use crate::images::terminal_image::CellDimensions;
 use crate::keys::{is_key_release, matches_key};
 
-use super::{Component, ComponentHandle, FocusFlag, TUI};
+use super::{Component, ComponentHandle, FocusFlag, Focusable, TUI};
 
 /// What an input listener decided about one chunk of input.
 pub enum InputListenerResult {
@@ -38,19 +37,9 @@ pub(super) struct Input {
     /// How many dispatches are walking `listeners`.
     dispatching: usize,
     /// The component that receives input.
-    focused: Option<Focus>,
+    focused: Option<ComponentHandle>,
     /// Called when the debug key is pressed.
     on_debug: Option<Rc<dyn Fn()>>,
-    /// The focus flags read from components, so focus can move while a component runs.
-    flags: Vec<(Weak<RefCell<dyn Component>>, FocusFlag)>,
-}
-
-/// The component that receives input and the flag that shows it has focus.
-struct Focus {
-    /// The component.
-    component: ComponentHandle,
-    /// Its flag, when it can hold focus and the flag was reachable.
-    flag: Option<FocusFlag>,
 }
 
 /// One position of the listener list.
@@ -99,16 +88,6 @@ impl Input {
         removed
     }
 
-    /// The flag already read from `component`, forgetting the flags of dropped components.
-    fn known_flag(&mut self, component: &ComponentHandle) -> Option<FocusFlag> {
-        self.flags.retain(|(owner, _)| owner.strong_count() > 0);
-        let component = Rc::downgrade(component);
-        self.flags
-            .iter()
-            .find(|(owner, _)| Weak::ptr_eq(owner, &component))
-            .map(|(_, flag)| flag.clone())
-    }
-
     /// The position `index` of the listener list.
     fn slot(&self, index: usize) -> Slot {
         match self.listeners.get(index) {
@@ -125,6 +104,11 @@ impl Input {
             self.listeners.retain(Option::is_some);
         }
     }
+}
+
+/// The focus flag of `component`, when it can hold focus.
+fn focus_flag(component: &dyn Component) -> Option<&FocusFlag> {
+    component.focusable().map(Focusable::focus_flag)
 }
 
 /// Reads `data` as `ESC [ 6 ; height ; width t`, the whole chunk and ASCII digits only.
@@ -154,48 +138,18 @@ fn parse_cell_reply(data: &str) -> CellReply {
 }
 
 impl TUI {
-    /// The focus flag of `component`: the one read from it earlier, else the one it offers
-    /// now. `None` when the component cannot hold focus, or when it is running a callback and
-    /// no flag was read from it earlier.
-    pub(super) fn focus_flag_of(&self, component: &ComponentHandle) -> Option<FocusFlag> {
-        let known = self.shared.input.borrow_mut().known_flag(component);
-        if known.is_some() {
-            return known;
-        }
-        let flag = component
-            .try_borrow()
-            .ok()?
-            .focusable()?
-            .focus_flag()
-            .clone();
-        let owner = Rc::downgrade(component);
-        self.shared
-            .input
-            .borrow_mut()
-            .flags
-            .push((owner, flag.clone()));
-        Some(flag)
-    }
-
     /// Moves keyboard focus at once: the previous component loses its focus flag, the new
-    /// one gains it, and a frame is not requested.
-    ///
-    /// The writer reads a component's flag when it is added with [`TUI::add_child`] or given
-    /// focus, provided it is not running then. A running component whose flag was never
-    /// read cannot be flagged; it still receives input once it is the focus.
+    /// one gains it, and a frame is not requested. A component that cannot hold focus is
+    /// not flagged.
     pub fn set_focus(&self, component: Option<ComponentHandle>) {
-        let next = component.map(|component| Focus {
-            flag: self.focus_flag_of(&component),
-            component,
-        });
-        let next_flag = next.as_ref().and_then(|focus| focus.flag.clone());
-        let previous = std::mem::replace(&mut self.shared.input.borrow_mut().focused, next);
-        if let Some(flag) = previous.and_then(|focus| focus.flag) {
+        let previous = self.shared.input.borrow_mut().focused.take();
+        if let Some(flag) = previous.as_deref().and_then(focus_flag) {
             flag.set(false);
         }
-        if let Some(flag) = next_flag {
+        if let Some(flag) = component.as_deref().and_then(focus_flag) {
             flag.set(true);
         }
+        self.shared.input.borrow_mut().focused = component;
     }
 
     /// Sets the callback that runs when the debug key is pressed, replacing any earlier one.
@@ -320,30 +274,17 @@ impl TUI {
     /// Gives `data` to the focused component when it takes input, dropping key releases it
     /// did not ask for, then requests a frame.
     fn forward_to_focus(&self, data: &str) {
-        let focused = self
-            .shared
-            .input
-            .borrow()
-            .focused
-            .as_ref()
-            .map(|focus| Rc::clone(&focus.component));
+        let focused = self.shared.input.borrow().focused.clone();
         let Some(focused) = focused else {
             return;
         };
-        let delivered = self.run_component(&focused, |component| {
-            if component.input_handler().is_none() {
-                return false;
-            }
-            if is_key_release(data) && !component.wants_key_release() {
-                return false;
-            }
-            if let Some(handler) = component.input_handler() {
-                handler.handle_input(data);
-            }
-            true
-        });
-        if delivered {
-            self.request_render(false);
+        let Some(handler) = focused.input_handler() else {
+            return;
+        };
+        if is_key_release(data) && !focused.wants_key_release() {
+            return;
         }
+        handler.handle_input(data);
+        self.request_render(false);
     }
 }

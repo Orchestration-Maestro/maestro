@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
 use maestro_tui::tui::ComponentHandle;
-use maestro_tui::{CURSOR_MARKER, TUI, TerminalImage};
+use maestro_tui::{CURSOR_MARKER, Container, TUI, TerminalImage};
 
 #[allow(
     dead_code,
@@ -18,7 +18,7 @@ mod support {
     pub mod recording_terminal;
 }
 use support::checks::succeeds;
-use support::components::Probe;
+use support::components::{Cached, Probe};
 use support::manual_runtime::{ManualRuntime, ms};
 use support::recording_terminal::RecordingTerminal;
 
@@ -181,12 +181,12 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
     tui.add_child(probe.clone());
     let during_render = variant == "during_render";
     let (log, clock, writer) = (Rc::clone(&events), runtime.clone(), tui.clone());
-    probe.borrow_mut().on_render = Some(Box::new(move |count| {
+    probe.on_render(move |count| {
         log.borrow_mut().push(Event::Render(clock.millis()));
         if during_render && count == 1 {
             writer.request_render(false);
         }
-    }));
+    });
     runtime.advance_to(ms(100));
     succeeds(tui.start());
     runtime.run_due();
@@ -195,7 +195,7 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
     runtime.advance_to(ms(115));
     events
         .borrow_mut()
-        .push(Event::Observed(115, probe.borrow().renders));
+        .push(Event::Observed(115, probe.renders.get()));
     match variant {
         "force" => tui.request_render(true),
         "stop" => succeeds(tui.stop()),
@@ -214,9 +214,9 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
     runtime.advance_to(ms(116));
     events
         .borrow_mut()
-        .push(Event::Observed(116, probe.borrow().renders));
+        .push(Event::Observed(116, probe.renders.get()));
     runtime.advance_to(ms(132));
-    probe.borrow_mut().on_render = None;
+    probe.clear_callbacks();
     let seen = events.take();
     (seen, runtime.pending())
 }
@@ -254,6 +254,7 @@ fn render_requests_coalesce_cancel_and_survive_reentry() {
         assert_eq!(schedule_variant(variant), (events, 0), "{variant}");
     }
     assert_children_edited_during_a_walk_follow_the_live_list();
+    assert_invalidation_while_rendering_reaches_later_siblings_in_the_same_frame();
 }
 
 /// Which walk over the children a component edits the list during.
@@ -285,8 +286,8 @@ fn walk_with_edit(walk: Walk, add: bool) -> Vec<usize> {
         }
     };
     match walk {
-        Walk::Render => children[0].borrow_mut().on_render = Some(Box::new(move |_| edit())),
-        Walk::Invalidate => children[0].borrow_mut().on_invalidate = Some(Box::new(edit)),
+        Walk::Render => children[0].on_render(move |_| edit()),
+        Walk::Invalidate => children[0].on_invalidate(edit),
     }
     match walk {
         Walk::Render => {
@@ -298,8 +299,8 @@ fn walk_with_edit(walk: Walk, add: bool) -> Vec<usize> {
     children
         .iter()
         .map(|child| match walk {
-            Walk::Render => child.borrow().renders,
-            Walk::Invalidate => child.borrow().invalidated,
+            Walk::Render => child.renders.get(),
+            Walk::Invalidate => child.invalidated.get(),
         })
         .collect()
 }
@@ -310,4 +311,33 @@ fn assert_children_edited_during_a_walk_follow_the_live_list() {
         assert_eq!(walk_with_edit(walk, true), [1, 1, 1, 1], "{walk:?} add");
         assert_eq!(walk_with_edit(walk, false), [1, 0, 1, 0], "{walk:?} remove");
     }
+}
+
+/// A component that invalidates the writer while it renders clears the cached rendering of
+/// a later component of its container before that component renders, so the same frame
+/// draws the later component's new text.
+fn assert_invalidation_while_rendering_reaches_later_siblings_in_the_same_frame() {
+    let (tui, terminal, runtime) = writer(None);
+    let trigger = Probe::shared(&["trigger"]);
+    let sibling = Cached::shared("old");
+    let container = Rc::new(Container::new());
+    container.add_child(trigger.clone());
+    container.add_child(sibling.clone());
+    tui.add_child(container);
+    tui.request_render(false);
+    succeeds(runtime.settle());
+    assert_eq!(terminal.writes().concat().matches("old").count(), 1);
+
+    sibling.set_text("new");
+    terminal.clear_writes();
+    let writer = tui.clone();
+    trigger.on_render(move |_| writer.invalidate());
+    tui.request_render(false);
+    succeeds(runtime.settle());
+    let drawn = terminal.writes().concat();
+    assert!(
+        drawn.contains("new") && !drawn.contains("old"),
+        "the frame replaces the cached text: {drawn:?}"
+    );
+    trigger.clear_callbacks();
 }

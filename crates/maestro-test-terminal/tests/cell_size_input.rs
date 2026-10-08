@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::CellDimensions;
 use maestro_tui::tui::{InputListener, InputListenerResult};
-use maestro_tui::{Container, TUI, TerminalImage};
+use maestro_tui::{Component, Container, TUI, TerminalImage};
 use serde::Deserialize;
 
 #[allow(
@@ -54,7 +54,7 @@ fn maestro_frames_forwards_bare_escape_even_when_a_cell_size_query_was_sent_at_s
     let scene = focused_scene(ghostty());
     succeeds(scene.tui.start());
     scene.terminal.send_input("\x1b");
-    assert_eq!(scene.probe.borrow().inputs, ["\x1b"]);
+    assert_eq!(*scene.probe.inputs.borrow(), ["\x1b"]);
     scene.stop();
     scene.assert_recorded("bare_escape");
 }
@@ -65,7 +65,7 @@ fn maestro_frames_consumes_cell_size_responses_and_still_forwards_later_user_inp
     let scene = focused_scene(images.clone());
     succeeds(scene.tui.start());
     scene.terminal.send_input("\x1b[6;20;10t");
-    assert!(scene.probe.borrow().inputs.is_empty());
+    assert!(scene.probe.inputs.borrow().is_empty());
     assert_eq!(
         images.get_cell_dimensions(),
         CellDimensions {
@@ -74,7 +74,7 @@ fn maestro_frames_consumes_cell_size_responses_and_still_forwards_later_user_inp
         }
     );
     scene.terminal.send_input("q");
-    assert_eq!(scene.probe.borrow().inputs, ["q"]);
+    assert_eq!(*scene.probe.inputs.borrow(), ["q"]);
     scene.stop();
     scene.assert_recorded("cell_reply");
 }
@@ -132,7 +132,7 @@ struct Rig {
     /// The controlled host.
     runtime: ManualRuntime,
     /// The focused component.
-    probe: Rc<RefCell<Probe>>,
+    probe: Rc<Probe>,
     /// The shared image state.
     images: TerminalImage,
 }
@@ -163,7 +163,7 @@ fn cell_replies_consume_only_recognized_chunks() {
     for case in routing().cell_replies {
         let rig = Rig::new();
         rig.terminal.send_input(&case.data);
-        assert_eq!(rig.probe.borrow().inputs, case.inputs, "{:?}", case.data);
+        assert_eq!(*rig.probe.inputs.borrow(), case.inputs, "{:?}", case.data);
         assert_eq!(
             rig.images.get_cell_dimensions(),
             CellDimensions {
@@ -174,7 +174,7 @@ fn cell_replies_consume_only_recognized_chunks() {
             case.data
         );
         assert_eq!(
-            rig.probe.borrow().invalidated,
+            rig.probe.invalidated.get(),
             case.invalidated,
             "{:?}",
             case.data
@@ -186,7 +186,7 @@ fn cell_replies_consume_only_recognized_chunks() {
 fn debug_and_release_routing_preserve_order() {
     for case in routing().debug_release {
         let rig = Rig::new();
-        rig.probe.borrow_mut().wants_release = case.wants_release;
+        rig.probe.wants_release.set(case.wants_release);
         let calls = Rc::new(RefCell::new(0));
         if case.debug {
             let counter = Rc::clone(&calls);
@@ -194,7 +194,7 @@ fn debug_and_release_routing_preserve_order() {
                 .set_on_debug(Some(Rc::new(move || *counter.borrow_mut() += 1)));
         }
         rig.terminal.send_input(&case.data);
-        assert_eq!(rig.probe.borrow().inputs, case.inputs, "{:?}", case.data);
+        assert_eq!(*rig.probe.inputs.borrow(), case.inputs, "{:?}", case.data);
         assert_eq!(*calls.borrow(), case.debug_calls, "{:?}", case.data);
     }
 }
@@ -303,7 +303,7 @@ fn listeners_mutate_live_order_before_routing() {
             .map(|(name, data)| (*name, data.as_str()))
             .collect();
         assert_eq!(seen_now, case.seen, "{}", case.variant);
-        assert_eq!(rig.probe.borrow().inputs, case.inputs, "{}", case.variant);
+        assert_eq!(*rig.probe.inputs.borrow(), case.inputs, "{}", case.variant);
     }
     assert_listener_disposal_between_inputs();
 }
@@ -325,103 +325,109 @@ fn assert_listener_disposal_between_inputs() {
     rig.tui.remove_input_listener(&listener);
     rig.terminal.send_input("second");
     assert_eq!(*seen.borrow(), [("only", "first".to_owned())]);
-    assert_eq!(rig.probe.borrow().inputs, ["first", "second"]);
+    assert_eq!(*rig.probe.inputs.borrow(), ["first", "second"]);
 }
 
 #[test]
 fn focus_transitions_update_capability_flags() {
     let rig = Rig::new();
     let other = Probe::shared(&[]);
-    other.borrow_mut().capabilities = Capabilities::FocusOnly;
+    other.capabilities.set(Capabilities::FocusOnly);
     rig.tui.set_focus(Some(rig.probe.clone()));
-    assert!(rig.probe.borrow().focus.get());
+    assert!(rig.probe.focus.get());
     rig.tui.set_focus(Some(other.clone()));
-    assert_eq!(
-        (rig.probe.borrow().focus.get(), other.borrow().focus.get()),
-        (false, true)
-    );
+    assert_eq!((rig.probe.focus.get(), other.focus.get()), (false, true));
     rig.tui.set_focus(None);
-    assert!(!other.borrow().focus.get());
+    assert!(!other.focus.get());
     rig.terminal.send_input("x");
-    assert!(rig.probe.borrow().inputs.is_empty());
+    assert!(rig.probe.inputs.borrow().is_empty());
     assert_focus_positions_cursor();
     assert_focus_change_during_render_applies_to_that_frame();
+    assert_nested_component_focusing_itself_is_flagged_at_once();
     assert_component_changes_survive_its_own_callback();
+    assert_container_invalidation_reaches_the_running_child();
+    assert_invalidation_leaves_a_focused_component_outside_the_walk_alone();
 }
 
 /// A component that is handling input or rendering moves focus and invalidates through the
-/// writer: other components change inside its callback, and the running component is
-/// invalidated as its callback returns.
+/// writer: the other components change inside its callback, and so does the running one.
 fn assert_component_changes_survive_its_own_callback() {
     let rig = Rig::new();
     let (next, sibling) = (Probe::shared(&[]), Probe::shared(&[]));
     rig.tui.add_child(sibling.clone());
-    let inside = Rc::new(Cell::new((false, 0)));
-    let (tui, target, other, seen) = (
+    let inside = Rc::new(Cell::new((false, 0, 0)));
+    let (tui, target, other, own, seen) = (
         rig.tui.clone(),
         next.clone(),
         sibling.clone(),
+        Rc::downgrade(&rig.probe),
         Rc::clone(&inside),
     );
-    rig.probe.borrow_mut().on_input = Some(Box::new(move |_| {
+    rig.probe.on_input(move |_| {
         tui.set_focus(Some(target.clone()));
         tui.invalidate();
-        seen.set((target.borrow().focus.get(), other.borrow().invalidated));
-    }));
+        let running = own.upgrade().map_or(0, |own| own.invalidated.get());
+        seen.set((target.focus.get(), other.invalidated.get(), running));
+    });
     rig.terminal.send_input("x");
     assert_eq!(
         inside.get(),
-        (true, 1),
-        "the new focus and a sibling's invalidation happen inside the callback"
+        (true, 1, 1),
+        "the new focus and the invalidation of the sibling and of the running component happen \
+         inside the callback"
     );
-    assert!(!rig.probe.borrow().focus.get());
-    assert!(next.borrow().focus.get());
-    assert_eq!(rig.probe.borrow().invalidated, 1);
+    assert!(!rig.probe.focus.get());
+    assert!(next.focus.get());
+    assert_eq!(rig.probe.invalidated.get(), 1);
 
     let writer = rig.tui.clone();
-    rig.probe.borrow_mut().on_render = Some(Box::new(move |_| writer.invalidate()));
+    rig.probe.on_render(move |_| writer.invalidate());
     rig.tui.request_render(false);
     succeeds(rig.runtime.settle());
-    assert_eq!(rig.probe.borrow().invalidated, 2);
-    assert_eq!(sibling.borrow().invalidated, 2);
-    assert_nested_focused_component_invalidates_its_container();
+    assert_eq!(rig.probe.invalidated.get(), 2);
+    assert_eq!(sibling.invalidated.get(), 2);
 }
 
-/// A component inside a container that invalidates through the writer from its input or
-/// render callback neither panics nor is left out: the sibling it shares the container
-/// with is invalidated at once or after the container renders, and it once its callback
-/// returns.
-fn assert_nested_focused_component_invalidates_its_container() {
+/// A child that handles input inside a container is invalidated at once by each call to the
+/// container's `invalidate`, so two calls invalidate it twice.
+fn assert_container_invalidation_reaches_the_running_child() {
     let rig = Rig::new();
     rig.tui.clear();
-    let sibling = Probe::shared(&[]);
-    let container = Rc::new(RefCell::new(Container::new()));
-    container.borrow_mut().add_child(sibling.clone());
-    container.borrow_mut().add_child(rig.probe.clone());
-    rig.tui.add_child(container);
-    rig.tui.set_focus(Some(rig.probe.clone()));
-    let inside = Rc::new(Cell::new(0));
-    let (tui, other, seen) = (rig.tui.clone(), sibling.clone(), Rc::clone(&inside));
-    rig.probe.borrow_mut().on_input = Some(Box::new(move |_| {
-        tui.invalidate();
-        seen.set(other.borrow().invalidated);
-    }));
+    let child = Probe::shared(&[]);
+    let container = Rc::new(Container::new());
+    container.add_child(child.clone());
+    rig.tui.add_child(container.clone());
+    rig.tui.set_focus(Some(child.clone()));
+    let inside = Rc::new(Cell::new((0, 0)));
+    let (walk, own, seen) = (container, Rc::downgrade(&child), Rc::clone(&inside));
+    child.on_input(move |_| {
+        let count = || own.upgrade().map_or(0, |own| own.invalidated.get());
+        walk.invalidate();
+        let once = count();
+        walk.invalidate();
+        seen.set((once, count()));
+    });
     rig.terminal.send_input("x");
     assert_eq!(
         inside.get(),
-        1,
-        "the sibling is invalidated inside the callback"
+        (1, 2),
+        "each call invalidates the running child before it returns"
     );
-    assert_eq!(rig.probe.borrow().invalidated, 1);
+    assert_eq!(child.invalidated.get(), 2);
+}
 
+/// The writer invalidates the components it contains: a focused component that is not one
+/// of them is left alone when it asks the writer to invalidate.
+fn assert_invalidation_leaves_a_focused_component_outside_the_walk_alone() {
+    let rig = Rig::new();
+    let outside = Probe::shared(&[]);
+    rig.tui.set_focus(Some(outside.clone()));
     let writer = rig.tui.clone();
-    rig.probe.borrow_mut().on_render = Some(Box::new(move |_| writer.invalidate()));
-    rig.tui.request_render(false);
-    succeeds(rig.runtime.settle());
+    outside.on_input(move |_| writer.invalidate());
+    rig.terminal.send_input("x");
     assert_eq!(
-        (rig.probe.borrow().invalidated, sibling.borrow().invalidated),
-        (2, 2),
-        "rendering inside a container invalidates the container's children afterwards"
+        (outside.invalidated.get(), rig.probe.invalidated.get()),
+        (0, 1)
     );
 }
 
@@ -438,11 +444,11 @@ fn assert_focus_change_during_render_applies_to_that_frame() {
         Some(true),
     );
     let editor = Probe::shared(&["abc"]);
-    editor.borrow_mut().emits_marker = true;
+    editor.emits_marker.set(true);
     tui.add_child(editor.clone());
     tui.set_focus(Some(editor.clone()));
     let writer = tui.clone();
-    editor.borrow_mut().on_render = Some(Box::new(move |_| writer.set_focus(None)));
+    editor.on_render(move |_| writer.set_focus(None));
     tui.request_render(false);
     succeeds(runtime.settle());
     assert_eq!(
@@ -450,19 +456,15 @@ fn assert_focus_change_during_render_applies_to_that_frame() {
         ["\x1b[?2026habc\x1b[0m\x1b]8;;\x07\x1b[?2026l", "\x1b[?25l"],
         "clearing focus while rendering drops the marker from that frame"
     );
-    assert!(!editor.borrow().focus.get());
+    assert!(!editor.focus.get());
 
     terminal.clear_writes();
     tui.clear();
     let taker = Probe::shared(&["abc"]);
-    taker.borrow_mut().emits_marker = true;
+    taker.emits_marker.set(true);
     tui.add_child(taker.clone());
-    let (writer, own) = (tui.clone(), Rc::downgrade(&taker));
-    taker.borrow_mut().on_render = Some(Box::new(move |_| {
-        if let Some(own) = own.upgrade() {
-            writer.set_focus(Some(own));
-        }
-    }));
+    let focus = focus_itself(&tui, &taker, &Rc::default());
+    taker.on_render(move |_| focus());
     tui.request_render(false);
     succeeds(runtime.settle());
     assert_eq!(
@@ -470,31 +472,46 @@ fn assert_focus_change_during_render_applies_to_that_frame() {
         Some("\x1b[?25h"),
         "taking focus while rendering marks the cursor in that frame"
     );
-    assert!(taker.borrow().focus.get());
-    assert_running_component_without_a_known_flag_still_receives_input();
+    assert!(taker.focus.get());
 }
 
-/// A component inside a container was never added to the writer, so while it renders its
-/// flag cannot be read: focusing itself leaves it unflagged but sends it the input.
-fn assert_running_component_without_a_known_flag_still_receives_input() {
+/// A callback that gives `component` focus and records whether its flag was set by the
+/// time the writer returned.
+fn focus_itself(tui: &TUI, component: &Rc<Probe>, flagged: &Rc<Cell<bool>>) -> impl Fn() + 'static {
+    let (tui, own, flagged) = (tui.clone(), Rc::downgrade(component), Rc::clone(flagged));
+    move || {
+        if let Some(own) = own.upgrade() {
+            tui.set_focus(Some(own.clone()));
+            flagged.set(own.focus.get());
+        }
+    }
+}
+
+/// A component inside a container was never added to the writer. When it gives itself
+/// focus while it renders and again while it handles input, its flag is set before the
+/// writer returns, and it receives the input.
+fn assert_nested_component_focusing_itself_is_flagged_at_once() {
     let rig = Rig::new();
     rig.tui.clear();
     let hidden = Probe::shared(&["abc"]);
-    let container = Rc::new(RefCell::new(Container::new()));
-    container.borrow_mut().add_child(hidden.clone());
+    let container = Rc::new(Container::new());
+    container.add_child(hidden.clone());
     rig.tui.add_child(container);
-    let (writer, own) = (rig.tui.clone(), Rc::downgrade(&hidden));
-    hidden.borrow_mut().on_render = Some(Box::new(move |_| {
-        if let Some(own) = own.upgrade() {
-            writer.set_focus(Some(own));
-        }
-    }));
+    let flagged = Rc::new(Cell::new(false));
+    let focus = focus_itself(&rig.tui, &hidden, &flagged);
+    hidden.on_render(move |_| focus());
     rig.tui.request_render(false);
     succeeds(rig.runtime.settle());
-    assert!(!hidden.borrow().focus.get(), "its flag was unreachable");
-    assert!(!rig.probe.borrow().focus.get(), "the previous focus ended");
+    assert!(flagged.get(), "its flag was set inside its render");
+    assert!(hidden.focus.get() && !rig.probe.focus.get());
+
+    hidden.focus.set(false);
+    flagged.set(false);
+    let focus = focus_itself(&rig.tui, &hidden, &flagged);
+    hidden.on_input(move |_| focus());
     rig.terminal.send_input("x");
-    assert_eq!(hidden.borrow().inputs, ["x"]);
+    assert!(flagged.get(), "its flag was set inside its input handler");
+    assert_eq!(*hidden.inputs.borrow(), ["x"]);
 }
 
 /// Focusing a component that marks its cursor while focused moves the hardware cursor
@@ -510,10 +527,10 @@ fn assert_focus_positions_cursor() {
         Some(true),
     );
     let editor = Probe::shared(&["abc"]);
-    editor.borrow_mut().emits_marker = true;
+    editor.emits_marker.set(true);
     let passive = Probe::shared(&["def"]);
-    passive.borrow_mut().capabilities = Capabilities::Passive;
-    passive.borrow_mut().emits_marker = true;
+    passive.capabilities.set(Capabilities::Passive);
+    passive.emits_marker.set(true);
     tui.add_child(editor.clone());
     tui.request_render(false);
     succeeds(runtime.settle());
@@ -549,14 +566,14 @@ fn missing_input_capability_ignores_input() {
     succeeds(rig.runtime.settle());
     rig.tui.set_focus(None);
     rig.terminal.send_input("x");
-    assert!(rig.probe.borrow().inputs.is_empty());
+    assert!(rig.probe.inputs.borrow().is_empty());
     assert_eq!(rig.runtime.pending(), 0, "ignored input requests no frame");
 
     let passive = Probe::shared(&[]);
-    passive.borrow_mut().capabilities = Capabilities::Passive;
+    passive.capabilities.set(Capabilities::Passive);
     rig.tui.set_focus(Some(passive.clone()));
     rig.terminal.send_input("x");
-    assert!(passive.borrow().inputs.is_empty());
+    assert!(passive.inputs.borrow().is_empty());
     assert_eq!(
         rig.runtime.pending(),
         0,

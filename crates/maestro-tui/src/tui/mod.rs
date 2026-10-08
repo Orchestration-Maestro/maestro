@@ -49,7 +49,7 @@ struct Shared {
     /// Image capability and cell state the components share.
     images: TerminalImage,
     /// The ordered components that make up the frame.
-    container: RefCell<Container>,
+    container: Container,
     /// What the terminal currently shows.
     screen: RefCell<Screen>,
     /// Pending and stopped state of render requests.
@@ -60,8 +60,6 @@ struct Shared {
     show_hardware_cursor: Cell<bool>,
     /// Whether shrinking content clears the screen.
     clear_on_shrink: Cell<bool>,
-    /// Whether components were invalidated since the running component callback began.
-    invalidated: Cell<bool>,
 }
 
 impl TUI {
@@ -85,13 +83,12 @@ impl TUI {
                 terminal,
                 runtime,
                 images,
-                container: RefCell::new(Container::new()),
+                container: Container::new(),
                 screen: RefCell::new(Screen::default()),
                 schedule: RefCell::new(Schedule::default()),
                 input: RefCell::new(Input::default()),
                 show_hardware_cursor: Cell::new(show_hardware_cursor),
                 clear_on_shrink: Cell::new(clear_on_shrink),
-                invalidated: Cell::new(false),
             }),
         }
     }
@@ -105,28 +102,22 @@ impl TUI {
     /// The components in render order.
     #[must_use]
     pub fn children(&self) -> Ref<'_, [ComponentHandle]> {
-        Ref::map(self.shared.container.borrow(), |container| {
-            container.children.as_slice()
-        })
+        self.shared.container.children()
     }
 
     /// Appends a component.
-    ///
-    /// Unless the component is running, the writer also reads its focus flag, so the
-    /// component can be flagged while it runs a callback.
     pub fn add_child(&self, component: ComponentHandle) {
-        drop(self.focus_flag_of(&component));
-        self.shared.container.borrow_mut().add_child(component);
+        self.shared.container.add_child(component);
     }
 
     /// Removes the first occurrence of `component`; a missing component is ignored.
     pub fn remove_child(&self, component: &ComponentHandle) {
-        self.shared.container.borrow_mut().remove_child(component);
+        self.shared.container.remove_child(component);
     }
 
     /// Removes every component.
     pub fn clear(&self) {
-        self.shared.container.borrow_mut().clear();
+        self.shared.container.clear();
     }
 
     /// Full redraws begun so far.
@@ -172,17 +163,11 @@ impl TUI {
 
     /// Drops the cached rendering of every component, walking the live list of children.
     ///
-    /// A child that is running a callback is borrowed exclusively and cannot be invalidated
-    /// inside it. When the writer started that callback, as it does for rendering and
-    /// input, the component is invalidated as soon as the callback returns, before it
-    /// renders again.
+    /// Every child is invalidated in order before the call returns, also one that is
+    /// rendering or handling input at that moment; a child listed twice is invalidated
+    /// twice.
     pub fn invalidate(&self) {
-        for child in self.live_children() {
-            if let Ok(mut idle) = child.try_borrow_mut() {
-                idle.invalidate();
-            }
-        }
-        self.shared.invalidated.set(true);
+        self.shared.container.invalidate();
     }
 
     /// Starts the terminal, hides the cursor, asks image terminals for their cell size and
@@ -227,42 +212,14 @@ impl TUI {
             }
         })
     }
-
-    /// The children by position, each fetched when the walk reaches it: a child added
-    /// during the walk is visited and one removed before its turn is not.
-    fn live_children(&self) -> impl Iterator<Item = ComponentHandle> + '_ {
-        (0..).map_while(|index| self.shared.container.borrow().children.get(index).cloned())
-    }
-
-    /// Runs `callback` on `component`. When [`TUI::invalidate`] was called meanwhile it could
-    /// not reach `component`, so `component` is invalidated once the callback returns.
-    fn run_component<R>(
-        &self,
-        component: &ComponentHandle,
-        callback: impl FnOnce(&mut dyn Component) -> R,
-    ) -> R {
-        self.shared.invalidated.set(false);
-        let result = callback(&mut *component.borrow_mut());
-        if self.shared.invalidated.replace(false) {
-            component.borrow_mut().invalidate();
-        }
-        result
-    }
-
-    /// Renders every component for `width`, walking the live list of children.
-    fn render_children(&self, width: usize) -> Vec<String> {
-        self.live_children()
-            .flat_map(|child| self.run_component(&child, |child| child.render(width)))
-            .collect()
-    }
 }
 
 impl Component for TUI {
-    fn render(&mut self, width: usize) -> Vec<String> {
-        self.render_children(width)
+    fn render(&self, width: usize) -> Vec<String> {
+        self.shared.container.render(width)
     }
 
-    fn invalidate(&mut self) {
+    fn invalidate(&self) {
         TUI::invalidate(self);
     }
 }

@@ -95,7 +95,7 @@ fn draw(scenario: &Scenario) -> Vec<Frame> {
         runtime.set_environment("TERMUX_VERSION", "test");
     }
     let probe = Probe::shared(&[]);
-    probe.borrow_mut().set_lines(&scenario.initial);
+    probe.set_lines(&scenario.initial);
     let tui = TUI::new(
         terminal.handle(),
         runtime.handle(),
@@ -108,7 +108,7 @@ fn draw(scenario: &Scenario) -> Vec<Frame> {
     let mut frames = Vec::new();
     for step in std::iter::once(&Step::default()).chain(&scenario.steps) {
         if let Some(lines) = &step.lines {
-            probe.borrow_mut().set_lines(lines);
+            probe.set_lines(lines);
         }
         if step.columns.is_some() || step.rows.is_some() {
             let (columns, rows) = terminal.size();
@@ -375,15 +375,15 @@ fn maestro_frames_clears_stale_content_when_maxlinesrendered_was_inflated_by_a_t
         |count: usize| -> Vec<String> { (0..count).map(|row| format!("Chat {row}")).collect() };
     let selector: Vec<String> = (0..8).map(|row| format!("Selector {row}")).collect();
     let editor_lines: Vec<String> = (0..3).map(|row| format!("Editor {row}")).collect();
-    scene.probe.borrow_mut().set_lines(&chat(15));
+    scene.probe.set_lines(&chat(15));
     scene.tui.start().unwrap();
     scene.render();
-    editor.borrow_mut().set_lines(&selector);
+    editor.set_lines(&selector);
     scene.render();
-    editor.borrow_mut().set_lines(&editor_lines);
+    editor.set_lines(&editor_lines);
     scene.render();
     let before_switch = scene.tui.full_redraws();
-    scene.probe.borrow_mut().set_lines(&chat(12));
+    scene.probe.set_lines(&chat(12));
     scene.render();
     assert!(scene.tui.full_redraws() > before_switch);
     let viewport = scene.viewport();
@@ -405,13 +405,13 @@ fn maestro_frames_clears_stale_content_when_maxlinesrendered_was_inflated_by_a_t
     let editor: ComponentHandle = editor;
     scene.tui.remove_child(&editor);
     assert_eq!(scene.tui.children().len(), 1);
-    let mut nested = scene.tui.clone();
+    let nested = scene.tui.clone();
     assert_eq!(
         nested.render(40),
         (0..12).map(|row| format!("Chat {row}")).collect::<Vec<_>>()
     );
     nested.invalidate();
-    assert_eq!(scene.probe.borrow().invalidated, 1);
+    assert_eq!(scene.probe.invalidated.get(), 1);
     scene.tui.clear();
     assert!(scene.tui.children().is_empty());
     assert_eq!(scene.tui.terminal().borrow().columns(), 40);
@@ -536,10 +536,7 @@ fn maestro_frames_deletes_previously_rendered_image_ids_during_full_redraws() {
     let scene = Scene::new(40, 10);
     scene.start(&[&placement("AAAA", 2, 77)]);
     let mark = scene.terminal.writes().len();
-    scene
-        .probe
-        .borrow_mut()
-        .set_lines(&["plain text".to_owned()]);
+    scene.probe.set_lines(&["plain text".to_owned()]);
     scene.tui.request_render(true);
     scene.runtime.settle().unwrap();
     let writes = scene.terminal.writes()[mark..].concat();

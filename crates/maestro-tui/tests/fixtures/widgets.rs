@@ -1,6 +1,6 @@
 //! Controlled components and an overlay handle for the component contracts.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_tui::tui::InputHandler;
@@ -14,17 +14,17 @@ pub struct Block {
     /// Name written to the trace.
     pub name: &'static str,
     /// Lines returned by every render.
-    pub lines: Vec<String>,
+    pub lines: RefCell<Vec<String>>,
     /// Trace shared with the other components of a test.
     pub trace: InvalidationTrace,
 }
 
 impl Component for Block {
-    fn render(&mut self, _width: usize) -> Vec<String> {
-        self.lines.clone()
+    fn render(&self, _width: usize) -> Vec<String> {
+        self.lines.borrow().clone()
     }
 
-    fn invalidate(&mut self) {
+    fn invalidate(&self) {
         self.trace.borrow_mut().push(self.name);
     }
 }
@@ -33,7 +33,7 @@ impl Component for Block {
 pub struct Passive(pub &'static str);
 
 impl Component for Passive {
-    fn render(&mut self, width: usize) -> Vec<String> {
+    fn render(&self, width: usize) -> Vec<String> {
         vec![format!("{}:{width}", self.0)]
     }
 }
@@ -44,23 +44,23 @@ pub struct Field {
     /// Whether the field has focus.
     pub focus: FocusFlag,
     /// Input chunks received.
-    pub received: Vec<String>,
+    pub received: RefCell<Vec<String>>,
     /// Whether the field wants key-release events.
-    pub release: bool,
+    pub release: Cell<bool>,
 }
 
 impl Component for Field {
-    fn render(&mut self, _width: usize) -> Vec<String> {
+    fn render(&self, _width: usize) -> Vec<String> {
         let marker = if self.focus.get() { CURSOR_MARKER } else { "" };
         vec![format!("> {marker}")]
     }
 
-    fn input_handler(&mut self) -> Option<&mut dyn InputHandler> {
+    fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
 
     fn wants_key_release(&self) -> bool {
-        self.release
+        self.release.get()
     }
 
     fn focusable(&self) -> Option<&dyn Focusable> {
@@ -69,8 +69,8 @@ impl Component for Field {
 }
 
 impl InputHandler for Field {
-    fn handle_input(&mut self, data: &str) {
-        self.received.push(data.to_owned());
+    fn handle_input(&self, data: &str) {
+        self.received.borrow_mut().push(data.to_owned());
     }
 }
 

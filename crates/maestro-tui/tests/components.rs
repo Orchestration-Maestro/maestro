@@ -33,12 +33,12 @@ const RESET: &str = "\x1b[0m";
 
 #[test]
 fn component_capabilities_distinguish_missing_input_and_focus() {
-    let mut passive = Passive("p");
+    let passive = Passive("p");
     assert!(passive.input_handler().is_none() && passive.focusable().is_none());
     assert!(!passive.wants_key_release());
     assert!(!is_focusable(Some(&passive)) && !is_focusable(None));
 
-    let mut field = Field::default();
+    let field = Field::default();
     assert!(
         !field.focus.get() && is_focusable(Some(&field)),
         "an unfocused field is still focusable"
@@ -57,29 +57,29 @@ fn component_capabilities_distinguish_missing_input_and_focus() {
     if let Some(input) = field.input_handler() {
         input.handle_input("\x1b[A");
     }
-    assert_eq!(field.received, ["\x1b[A"]);
+    assert_eq!(*field.received.borrow(), ["\x1b[A"]);
     assert!(!field.wants_key_release());
-    field.release = true;
+    field.release.set(true);
     assert!(field.wants_key_release());
 }
 
 #[test]
 fn container_retains_shared_children_order_and_invalidation() {
     let trace = InvalidationTrace::default();
-    let first: ComponentHandle = Rc::new(RefCell::new(Block {
+    let first: ComponentHandle = Rc::new(Block {
         name: "first",
-        lines: vec!["one".into(), "two".into()],
+        lines: RefCell::new(vec!["one".into(), "two".into()]),
         trace: Rc::clone(&trace),
-    }));
-    let second = Rc::new(RefCell::new(Block {
+    });
+    let second = Rc::new(Block {
         name: "second",
-        lines: vec!["three".into()],
+        lines: RefCell::new(vec!["three".into()]),
         trace: Rc::clone(&trace),
-    }));
+    });
     let second_handle: ComponentHandle = second.clone();
-    let passive: ComponentHandle = Rc::new(RefCell::new(Passive("p")));
+    let passive: ComponentHandle = Rc::new(Passive("p"));
 
-    let mut container = Container::new();
+    let container = Container::new();
     for child in [&second_handle, &first, &passive, &first] {
         container.add_child(Rc::clone(child));
     }
@@ -88,7 +88,7 @@ fn container_retains_shared_children_order_and_invalidation() {
         ["three", "one", "two", "p:7", "one", "two"]
     );
 
-    second.borrow_mut().lines.push("edited".into());
+    second.lines.borrow_mut().push("edited".into());
     assert_eq!(container.render(7)[..2], ["three", "edited"]);
 
     container.invalidate();
@@ -99,20 +99,20 @@ fn container_retains_shared_children_order_and_invalidation() {
     );
 
     container.remove_child(&first);
-    assert_eq!(container.children.len(), 3);
-    assert!(Rc::ptr_eq(&container.children[0], &second_handle));
+    assert_eq!(container.children().len(), 3);
+    assert!(Rc::ptr_eq(&container.children()[0], &second_handle));
     assert!(
-        Rc::ptr_eq(&container.children[1], &passive),
+        Rc::ptr_eq(&container.children()[1], &passive),
         "only the first occurrence leaves"
     );
-    assert!(Rc::ptr_eq(&container.children[2], &first));
-    let stranger: ComponentHandle = Rc::new(RefCell::new(Passive("x")));
+    assert!(Rc::ptr_eq(&container.children()[2], &first));
+    let stranger: ComponentHandle = Rc::new(Passive("x"));
     container.remove_child(&stranger);
-    assert_eq!(container.children.len(), 3);
+    assert_eq!(container.children().len(), 3);
 
     container.clear();
-    assert!(container.children.is_empty() && container.render(7).is_empty());
-    assert!(Container::default().children.is_empty());
+    assert!(container.children().is_empty() && container.render(7).is_empty());
+    assert!(Container::default().children().is_empty());
 }
 
 #[test]
@@ -563,7 +563,7 @@ fn assert_rich_editor() {
 
 fn assert_bare_editor() {
     let mut bare = Bare {
-        text: String::new(),
+        text: RefCell::default(),
         callbacks: EditorCallbacks::default(),
     };
     bare.set_text("plain");

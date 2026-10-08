@@ -65,11 +65,11 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 # }
 # fn main() -> io::Result<()> {
 /// A line of text that can change after it is shown.
-struct Status(String);
+struct Status(RefCell<String>);
 
 impl Component for Status {
-    fn render(&mut self, _width: usize) -> Vec<String> {
-        vec![self.0.clone()]
+    fn render(&self, _width: usize) -> Vec<String> {
+        vec![self.0.borrow().clone()]
     }
 }
 
@@ -81,7 +81,7 @@ let tui = TUI::new(
     TerminalImage::new(|_| None, || 1),
     None,
 );
-let status = Rc::new(RefCell::new(Status("working".to_owned())));
+let status = Rc::new(Status(RefCell::new("working".to_owned())));
 tui.add_child(status.clone() as ComponentHandle);
 
 // Starting hides the cursor and asks for the first frame; the host runs it.
@@ -93,7 +93,7 @@ assert_eq!(sent.borrow().concat(), "\x1b[?25l\x1b[?2026hworking\x1b[0m\x1b]8;;\x
 
 // A change redraws only the rows that differ.
 sent.borrow_mut().clear();
-status.borrow_mut().0 = "done".to_owned();
+*status.0.borrow_mut() = "done".to_owned();
 tui.request_render(false);
 for callback in host.0.take() {
     callback()?;
@@ -143,7 +143,8 @@ terminal. Image lines are written untouched.
 
 Components render in order by walking the live list of children: one that an earlier
 component adds while the frame renders is rendered in the same frame, and one that is
-removed before its turn is skipped. `invalidate` walks the list the same way.
+removed before its turn is skipped. `invalidate` walks the list the same way, and a
+container does the same with its own children.
 
 `full_redraws` counts the full redraws begun. The logical end of the content and the
 row the terminal cursor is on are tracked separately, because placing the hardware
@@ -193,18 +194,19 @@ including the immediate one a forced request queued, and forgets any request, so
    each delivery.
 
 `set_focus` clears the focus flag of the previous component and sets it on the new
-one at once, without requesting a frame. The flag is shared with the component, so a
-component that calls `set_focus` from inside its own input or render callback sees the
-change in the rest of that callback. The writer reads a component's flag when the
-component is added with `add_child` or given focus, provided it is not running then; a
-running component whose flag was never read becomes the component that receives input
-but is not flagged.
+one at once, without requesting a frame. A component that cannot hold focus is not
+flagged. Because the flag changes before `set_focus` returns, a component that calls it
+from inside its own input or render callback, and one nested in a container that was
+never added to the writer, sees the change in the rest of that callback.
 
-A component may also call `invalidate` from inside its own input or render callback.
-Components that are not running are invalidated at once. The running component is
-borrowed exclusively, so it is invalidated as soon as its callback returns, before it
-renders again; when it is a container, so are the components inside it. The cell size is
-only requested at startup when the terminal supports images.
+A component may also call `invalidate`, on the writer or on a container, from inside its
+own input or render callback. Each call invalidates every child of the list it walks, in
+order, before it returns: the running component is invalidated, the components still to
+render in that frame lose their cached rendering before they render, and a child listed
+twice is invalidated twice. A focused component that is not among the children is not
+invalidated.
+
+The cell size is only requested at startup when the terminal supports images.
 
 ## Errors and diagnostics
 

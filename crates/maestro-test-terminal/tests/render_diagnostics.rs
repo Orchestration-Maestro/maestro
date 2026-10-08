@@ -1,6 +1,5 @@
 //! Diagnostic files and errors the frame writer produces.
 
-use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -35,7 +34,7 @@ struct Rig {
     /// The controlled host.
     runtime: ManualRuntime,
     /// The only component.
-    probe: Rc<RefCell<Probe>>,
+    probe: Rc<Probe>,
 }
 
 impl Rig {
@@ -65,7 +64,7 @@ impl Rig {
     /// Replaces the content and draws it.
     fn show(&self, lines: &[&str]) -> std::io::Result<()> {
         let lines: Vec<String> = lines.iter().map(|line| (*line).to_owned()).collect();
-        self.probe.borrow_mut().set_lines(&lines);
+        self.probe.set_lines(&lines);
         self.tui.request_render(false);
         self.runtime.settle()
     }
@@ -89,7 +88,7 @@ struct Reason {
 /// Replaces the content with `lines`.
 fn show_lines(rig: &Rig, lines: &[&str]) {
     let lines: Vec<String> = lines.iter().map(|line| (*line).to_owned()).collect();
-    rig.probe.borrow_mut().set_lines(&lines);
+    rig.probe.set_lines(&lines);
 }
 
 #[test]
@@ -235,9 +234,7 @@ fn first_frame_overflow_is_rejected() {
     let rig = Rig::new(&[], &["old"]);
     rig.show(&["old"]).unwrap();
     rig.terminal.clear_writes();
-    rig.probe
-        .borrow_mut()
-        .set_lines(&["01234567890".to_owned()]);
+    rig.probe.set_lines(&["01234567890".to_owned()]);
     rig.tui.request_render(true);
     let error = rig.runtime.settle().unwrap_err();
     assert_eq!(error.to_string(), overflow_message(0, 11));

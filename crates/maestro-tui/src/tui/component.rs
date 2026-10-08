@@ -1,7 +1,6 @@
 //! What a renderable terminal component can do.
 
 use std::cell::Cell;
-use std::rc::Rc;
 
 /// Marker a focused component emits where the hardware cursor belongs.
 ///
@@ -11,16 +10,13 @@ pub const CURSOR_MARKER: &str = "\x1b_maestro:c\x07";
 /// A component that accepts raw terminal input while it has focus.
 pub trait InputHandler {
     /// Handles one chunk of terminal input, which may hold escape sequences.
-    fn handle_input(&mut self, data: &str);
+    fn handle_input(&self, data: &str);
 }
 
-/// Whether a component has keyboard focus, shared between the component and the writer.
-///
-/// Clones observe the same value. A component running a callback is borrowed
-/// exclusively, so the writer moves focus through this flag instead of through the
-/// component: a change is visible to the component at once.
-#[derive(Clone, Default)]
-pub struct FocusFlag(Rc<Cell<bool>>);
+/// Whether a component has keyboard focus: the component owns the flag, the writer
+/// sets it when focus moves, and the component reads it when it renders.
+#[derive(Default)]
+pub struct FocusFlag(Cell<bool>);
 
 impl FocusFlag {
     /// Whether the component has focus.
@@ -44,15 +40,22 @@ pub trait Focusable {
 }
 
 /// A unit of terminal output laid out for a viewport width.
+///
+/// A component is a shared object: every method takes `&self`, so the writer, a listener
+/// or another component can reach it while one of its own methods is running, for example
+/// during a render that moves focus or invalidates the writer's components, and the call
+/// takes effect at once. A component keeps the state it changes in `Cell`s and `RefCell`s,
+/// borrows it only inside one method and never across a call into the writer, a callback
+/// or another component, so a call that re-enters the component never finds it borrowed.
 pub trait Component {
     /// Renders the component for the supplied viewport width.
-    fn render(&mut self, width: usize) -> Vec<String>;
+    fn render(&self, width: usize) -> Vec<String>;
 
     /// Drops any cached rendering state so the next render starts from scratch.
-    fn invalidate(&mut self) {}
+    fn invalidate(&self) {}
 
     /// The input capability, when the component accepts input.
-    fn input_handler(&mut self) -> Option<&mut dyn InputHandler> {
+    fn input_handler(&self) -> Option<&dyn InputHandler> {
         None
     }
 
