@@ -401,10 +401,10 @@ fn maestro_frames_clears_stale_content_when_maxlinesrendered_was_inflated_by_a_t
     );
     scene.stop();
     scene.assert_recorded("transient_component");
-    assert_eq!(scene.tui.children().len(), 2);
+    assert_eq!(scene.tui.children().borrow().len(), 2);
     let editor: ComponentHandle = editor;
     scene.tui.remove_child(&editor);
-    assert_eq!(scene.tui.children().len(), 1);
+    assert_eq!(scene.tui.children().borrow().len(), 1);
     let nested = scene.tui.clone();
     assert_eq!(
         nested.render(40),
@@ -413,7 +413,7 @@ fn maestro_frames_clears_stale_content_when_maxlinesrendered_was_inflated_by_a_t
     nested.invalidate();
     assert_eq!(scene.probe.invalidated.get(), 1);
     scene.tui.clear();
-    assert!(scene.tui.children().is_empty());
+    assert!(scene.tui.children().borrow().is_empty());
     assert_eq!(scene.tui.terminal().borrow().columns(), 40);
 }
 

@@ -23,7 +23,7 @@ use screen::Screen;
 
 pub use crate::text::utils::visible_width;
 pub use component::{CURSOR_MARKER, Component, FocusFlag, Focusable, InputHandler, is_focusable};
-pub use container::{ComponentHandle, Container};
+pub use container::{ChildArray, ComponentHandle, Container};
 pub use input::{InputListener, InputListenerResult};
 pub use overlay_types::{
     OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
@@ -99,10 +99,16 @@ impl TUI {
         &self.shared.terminal
     }
 
-    /// A copy of the components in render order.
+    /// The array of components in render order, shared with the writer.
     #[must_use]
-    pub fn children(&self) -> Vec<ComponentHandle> {
+    pub fn children(&self) -> ChildArray {
         self.shared.container.children()
+    }
+
+    /// Makes `children` the array of components the writer renders. The previous array is
+    /// left to its holders, and a walk already running keeps it.
+    pub fn set_children(&self, children: ChildArray) {
+        self.shared.container.set_children(children);
     }
 
     /// Appends a component.
@@ -115,7 +121,8 @@ impl TUI {
         self.shared.container.remove_child(component);
     }
 
-    /// Removes every component.
+    /// Replaces the components with a new empty array. A walk already running keeps the
+    /// array it started on, and a handle kept from `children` stays with the old array.
     pub fn clear(&self) {
         self.shared.container.clear();
     }
@@ -166,8 +173,9 @@ impl TUI {
     ///
     /// Each child the walk reaches is invalidated in order before the call returns, also
     /// one that is rendering or handling input at that moment, once per position the walk
-    /// reaches. A child added during the walk is reached, a removal can make the walk skip
-    /// the next child, and clearing the writer starts a new array the walk does not see.
+    /// visits. A child added to the array is reached only if the walk gets to its position,
+    /// a removal at or before the walk's position makes it skip the next child, and
+    /// clearing the writer or assigning another array starts one the walk does not see.
     pub fn invalidate(&self) {
         self.shared.container.invalidate();
     }

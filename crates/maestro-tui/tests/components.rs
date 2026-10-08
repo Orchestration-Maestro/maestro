@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
 use maestro_tui::editor_component::{BorderColor, EditorCallbacks};
-use maestro_tui::tui::{ComponentHandle, InputHandler};
+use maestro_tui::tui::{ChildArray, ComponentHandle, InputHandler};
 use maestro_tui::{
     AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayHandle,
     OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable,
@@ -99,20 +99,81 @@ fn container_retains_shared_children_order_and_invalidation() {
     );
 
     container.remove_child(&first);
-    assert_eq!(container.children().len(), 3);
-    assert!(Rc::ptr_eq(&container.children()[0], &second_handle));
+    let children = container.children();
+    assert_eq!(children.borrow().len(), 3);
+    assert!(Rc::ptr_eq(&children.borrow()[0], &second_handle));
     assert!(
-        Rc::ptr_eq(&container.children()[1], &passive),
+        Rc::ptr_eq(&children.borrow()[1], &passive),
         "only the first occurrence leaves"
     );
-    assert!(Rc::ptr_eq(&container.children()[2], &first));
+    assert!(Rc::ptr_eq(&children.borrow()[2], &first));
     let stranger: ComponentHandle = Rc::new(Passive("x"));
     container.remove_child(&stranger);
-    assert_eq!(container.children().len(), 3);
+    assert_eq!(children.borrow().len(), 3);
 
     container.clear();
-    assert!(container.children().is_empty() && container.render(7).is_empty());
-    assert!(Container::default().children().is_empty());
+    assert!(container.children().borrow().is_empty() && container.render(7).is_empty());
+    assert!(Container::default().children().borrow().is_empty());
+}
+
+#[test]
+fn container_children_is_the_rendered_array_that_assignment_replaces() {
+    let (a, b, c): (ComponentHandle, ComponentHandle, ComponentHandle) = (
+        Rc::new(Passive("a")),
+        Rc::new(Passive("b")),
+        Rc::new(Passive("c")),
+    );
+    let container = Container::new();
+    container.add_child(Rc::clone(&a));
+    let kept = container.children();
+    assert!(
+        Rc::ptr_eq(&kept, &container.children()),
+        "one array, not copies"
+    );
+
+    kept.borrow_mut().push(Rc::clone(&b));
+    assert_eq!(
+        container.render(7),
+        ["a:7", "b:7"],
+        "an addition through the handle is seen"
+    );
+    kept.borrow_mut().remove(0);
+    assert_eq!(
+        container.render(7),
+        ["b:7"],
+        "an edit through the handle shows in the next render"
+    );
+    container.add_child(Rc::clone(&c));
+    assert_eq!(
+        kept.borrow().len(),
+        2,
+        "an addition to the container shows in the handle"
+    );
+
+    let replacement: ChildArray = Rc::new(RefCell::new(vec![Rc::clone(&a)]));
+    container.set_children(Rc::clone(&replacement));
+    assert!(Rc::ptr_eq(&container.children(), &replacement));
+    kept.borrow_mut().clear();
+    assert_eq!(
+        container.render(7),
+        ["a:7"],
+        "the old handle no longer reaches rendering"
+    );
+    replacement.borrow_mut().push(Rc::clone(&c));
+    assert_eq!(
+        container.render(7),
+        ["a:7", "c:7"],
+        "the assigned array is the one rendered"
+    );
+
+    container.clear();
+    replacement.borrow_mut().push(b);
+    assert!(
+        container.render(7).is_empty(),
+        "clear leaves the old array to its holders"
+    );
+    assert_eq!(replacement.borrow().len(), 3);
+    assert!(!Rc::ptr_eq(&container.children(), &replacement));
 }
 
 #[test]

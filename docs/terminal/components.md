@@ -45,16 +45,23 @@ another component.
 A `Container` renders its children in order and concatenates their lines. Children
 are shared handles (`Rc<dyn Component>`), so whoever keeps a handle can keep editing the
 child through its own interior state and the container shows the edit. The same child may
-appear twice. `remove_child` removes the first occurrence by identity and ignores a child
-that is not present, and `clear` replaces the children with a new empty array.
-`children` returns a copy of the current children. `render` and `invalidate` walk the
-array held when they start, by position, up to the length it has when each position is
-reached. A child added during the walk is visited and one removed ahead of it is not. A
-removal at or before the position being visited shifts the later children back, so the
-next child is skipped. A cleared container is not seen by a walk already running, which
-continues over the array it started on. `invalidate` invalidates each child its walk
-reaches before it returns, including one that is rendering or handling input, once per
-position, so a child listed twice is invalidated twice.
+appear twice. `children` returns the array itself (`Rc<RefCell<Vec<_>>>`), so whoever
+keeps that handle edits the array the container renders, and `set_children` makes another
+array the one it renders. `remove_child` removes the first occurrence by identity and
+ignores a child that is not present. `clear` replaces the children with a new empty
+array, which a handle kept from before no longer reaches. Borrow the array only for the
+statement that edits or reads it, because the container borrows it itself to render,
+invalidate, add and remove.
+
+`render` and `invalidate` walk the array held when they start, by position, while the
+position is below that array's current length. A child added to that array is visited
+only if the walk reaches its position. After `clear`, or `set_children` with another
+array, the running walk keeps the array it started on and visits nothing added to the
+new one. A removal at or before the position being visited shifts the later children
+back, so the next child is skipped. `invalidate` invalidates each child its walk reaches
+before it returns, including one that is rendering or handling input, once per position
+the walk visits: a child listed twice is invalidated twice when no edit during the walk
+changes the array.
 
 `TruncatedText` shows the first line of its text, truncated to the viewport, between
 `padding_y` blank rows. Horizontal padding is `padding_x` on each side but never

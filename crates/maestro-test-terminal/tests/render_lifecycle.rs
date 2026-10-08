@@ -4,8 +4,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
-use maestro_tui::tui::ComponentHandle;
-use maestro_tui::{CURSOR_MARKER, Container, TUI, TerminalImage};
+use maestro_tui::tui::{ChildArray, ComponentHandle};
+use maestro_tui::{CURSOR_MARKER, Component, Container, TUI, TerminalImage};
 
 #[allow(
     dead_code,
@@ -164,6 +164,40 @@ fn cursor_visibility_setter_skips_unchanged_values() {
     }
 }
 
+#[test]
+fn writer_children_is_the_rendered_array_that_assignment_replaces() {
+    let (tui, _terminal, _runtime) = writer(None);
+    let (a, b) = (Probe::shared(&["a"]), Probe::shared(&["b"]));
+    let kept = tui.children();
+    kept.borrow_mut().push(a.clone());
+    assert_eq!(
+        tui.render(10),
+        ["a"],
+        "an edit through the handle shows in the next render"
+    );
+    tui.add_child(b.clone());
+    assert_eq!(
+        kept.borrow().len(),
+        2,
+        "an addition to the writer shows in the handle"
+    );
+
+    let replacement: ChildArray = Rc::new(RefCell::new(vec![b]));
+    tui.set_children(Rc::clone(&replacement));
+    kept.borrow_mut().clear();
+    assert_eq!(
+        tui.render(10),
+        ["b"],
+        "the old handle no longer reaches rendering"
+    );
+    replacement.borrow_mut().push(a);
+    assert_eq!(
+        tui.render(10),
+        ["b", "a"],
+        "the assigned array is the one rendered"
+    );
+}
+
 /// What happened, and when in milliseconds.
 #[derive(Debug, PartialEq, Eq)]
 enum Event {
@@ -277,12 +311,16 @@ enum Edit {
     RemoveSecond,
     /// Removes itself.
     RemoveSelf,
+    /// Removes itself, then appends the spare child.
+    RemoveSelfThenAdd,
     /// The second child removes the first, which the walk has already visited.
     RemoveEarlier,
     /// Empties the container.
     Clear,
     /// Empties the container, then appends the third child and the spare child.
     ClearThenAdd,
+    /// Assigns a new array holding the third child and the spare child.
+    Assign,
 }
 
 /// Runs `walk` over the children `order` picks from `[a, b, c, spare]` while one of them
@@ -304,11 +342,18 @@ fn walk_with_edit(walk: Walk, order: &[usize], edit: Edit) -> (Vec<usize>, usize
         Edit::Add => writer.add_child(spare.clone()),
         Edit::RemoveSecond => writer.remove_child(&second),
         Edit::RemoveSelf | Edit::RemoveEarlier => writer.remove_child(&first),
+        Edit::RemoveSelfThenAdd => {
+            writer.remove_child(&first);
+            writer.add_child(spare.clone());
+        }
         Edit::Clear => writer.clear(),
         Edit::ClearThenAdd => {
             writer.clear();
             writer.add_child(third.clone());
             writer.add_child(spare.clone());
+        }
+        Edit::Assign => {
+            writer.set_children(Rc::new(RefCell::new(vec![third.clone(), spare.clone()])));
         }
     };
     let trigger = &children[usize::from(matches!(edit, Edit::RemoveEarlier))];
@@ -333,21 +378,26 @@ fn walk_with_edit(walk: Walk, order: &[usize], edit: Edit) -> (Vec<usize>, usize
     for child in &children {
         child.clear_callbacks();
     }
-    (visits, tui.children().len())
+    (visits, tui.children().borrow().len())
 }
 
-/// A walk visits the children by position in the array it started with: later additions are
-/// visited, a removal can skip the next child, a duplicate is visited once per occurrence
-/// and clearing starts a new array the running walk does not see.
+/// A walk visits the children by position in the array it started with, while the position
+/// is below that array's length: an addition is visited only when its position is reached, a
+/// removal at or before the position skips the next child, a duplicate is visited once per
+/// position reached and clearing or assigning another array starts one the running walk
+/// does not see.
 fn assert_children_edited_during_a_walk_follow_the_array_it_started_with() {
-    let cases: [(&[usize], Edit, [usize; 4], usize); 7] = [
+    let cases: [(&[usize], Edit, [usize; 4], usize); 10] = [
         (&[0, 0, 1], Edit::Nothing, [2, 1, 0, 0], 3),
+        (&[0, 0, 1], Edit::RemoveSelf, [1, 1, 0, 0], 2),
         (&[0, 1, 2], Edit::Add, [1, 1, 1, 1], 4),
         (&[0, 1, 2], Edit::RemoveSecond, [1, 0, 1, 0], 2),
         (&[0, 1], Edit::RemoveSelf, [1, 0, 0, 0], 1),
+        (&[0], Edit::RemoveSelfThenAdd, [1, 0, 0, 0], 1),
         (&[0, 1, 2], Edit::RemoveEarlier, [1, 1, 0, 0], 2),
         (&[0, 1], Edit::Clear, [1, 1, 0, 0], 0),
         (&[0, 1], Edit::ClearThenAdd, [1, 1, 0, 0], 2),
+        (&[0, 1], Edit::Assign, [1, 1, 0, 0], 2),
     ];
     for walk in [Walk::Render, Walk::Invalidate] {
         for (order, edit, visits, remaining) in cases {
