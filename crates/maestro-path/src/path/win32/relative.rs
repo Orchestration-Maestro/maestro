@@ -1,38 +1,20 @@
 //! The path between two Windows locations.
 
-use super::{resolve, same_name};
+use super::resolve::{Location, locate};
+use super::same_name;
+use crate::path::Cwd;
 use crate::path::segments::climb_and_descend;
-use crate::path::{Cwd, Root};
 
-/// The non-empty components of a resolved path, root components included.
-fn components(resolved: &str) -> Vec<&str> {
-    resolved
-        .split('\\')
-        .filter(|part| !part.is_empty())
-        .collect()
-}
-
-/// Report whether two resolved paths start at the same root: the same drive,
-/// the same UNC share, or none.
+/// Report whether both paths start at the same root: the same drive, the same
+/// UNC share, the same namespace, or none.
 ///
 /// Component text cannot tell a drive from a UNC server, and a parent step
-/// cannot leave a drive or a share, so roots compare by kind before components.
-fn same_root(from: &str, to: &str) -> bool {
-    match (Root::parse(from), Root::parse(to)) {
-        (Root::Drive { prefix: a, .. }, Root::Drive { prefix: b, .. }) => same_name(a, b),
-        (
-            Root::Unc {
-                server: a_server,
-                share: a_share,
-                ..
-            },
-            Root::Unc {
-                server: b_server,
-                share: b_share,
-                ..
-            },
-        ) => same_name(a_server, b_server) && same_name(a_share, b_share),
-        (Root::Relative, Root::Relative) | (Root::Rooted, Root::Rooted) => true,
+/// cannot leave a drive, a share or a namespace, so roots compare before
+/// components.
+fn same_root(from: &Location<'_>, to: &Location<'_>) -> bool {
+    match (&from.device, &to.device) {
+        (Some(a), Some(b)) => same_name(a, b),
+        (None, None) => from.absolute == to.absolute,
         _ => false,
     }
 }
@@ -40,11 +22,13 @@ fn same_root(from: &str, to: &str) -> bool {
 /// Find the path that leads from `from` to `to`, both resolved against `cwd`,
 /// which should be absolute.
 ///
-/// Whole components are compared with Unicode lowercase equality and the
-/// destination keeps the spelling it was resolved with. Two drives, two UNC
-/// shares, a drive and a UNC share, or paths with no shared leading component
-/// have no relative path, so the resolved destination is returned. Equal
-/// locations give an empty string.
+/// Both ends are normalized first, so `.` and `..` that come from `cwd` are
+/// folded. Whole components are compared with Unicode lowercase equality and
+/// the destination keeps the spelling it was resolved with. Paths that start
+/// at different roots (another drive, UNC share or device namespace, or a root
+/// of another kind) have no relative path, and neither have two paths without
+/// a drive, share or namespace whose first components differ: the normalized
+/// destination is returned. Equal locations give an empty string.
 ///
 /// # Examples
 ///
@@ -56,23 +40,23 @@ fn same_root(from: &str, to: &str) -> bool {
 /// assert_eq!(win32::relative("C:\\a", "D:\\b", &cwd), "D:\\b");
 /// assert_eq!(win32::relative("\\\\one\\share", "\\\\two\\share", &cwd), "\\\\two\\share\\");
 /// assert_eq!(win32::relative("\\\\one\\a\\x", "\\\\one\\b\\x", &cwd), "\\\\one\\b\\x");
+/// assert_eq!(win32::relative("\\\\?\\a\\x", "\\\\?\\b\\y", &cwd), "..\\..\\b\\y");
 /// ```
 #[must_use]
 pub fn relative(from: &str, to: &str, cwd: &Cwd<'_>) -> String {
-    let from = resolve(&[from], cwd);
-    let to = resolve(&[to], cwd);
+    let (from, to) = (locate(&[from], cwd), locate(&[to], cwd));
     if !same_root(&from, &to) {
-        return to;
+        return to.spell();
     }
-    let from_parts = components(&from);
-    let to_parts = components(&to);
-    let shared = from_parts
+    let shared = from
+        .parts
         .iter()
-        .zip(&to_parts)
+        .zip(&to.parts)
         .take_while(|(a, b)| same_name(a, b))
         .count();
-    if shared == 0 && !from_parts.is_empty() && !to_parts.is_empty() {
-        return to;
+    let rootless = from.device.is_none();
+    if shared == 0 && rootless && !from.parts.is_empty() && !to.parts.is_empty() {
+        return to.spell();
     }
-    climb_and_descend(from_parts.len() - shared, &to_parts[shared..], "\\")
+    climb_and_descend(from.parts.len() - shared, &to.parts[shared..], "\\")
 }

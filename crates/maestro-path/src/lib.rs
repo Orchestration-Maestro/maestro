@@ -4,9 +4,8 @@
 //! join, normalize, resolve and split that text without touching the file
 //! system, the process working directory or the environment, and follow the
 //! JavaScript runtime's `path` module for both of its flavors, except where
-//! that module's result is a defect; the recorded cases of the crate's tests
-//! mark each one. Convert an authored path to [`std::path::PathBuf`] only at a
-//! file-system call.
+//! that module's result is a defect; the crate's tests mark each one. Convert
+//! an authored path to [`std::path::PathBuf`] only at a file-system call.
 //!
 //! The [`posix`] and [`win32`] modules behave the same on every platform. The
 //! crate root re-exports the flavor of the compile target; the POSIX-only

@@ -1,5 +1,7 @@
 //! Shared inputs of the two path flavors.
 
+use std::borrow::Cow;
+
 pub mod posix;
 mod segments;
 pub mod win32;
@@ -9,7 +11,9 @@ pub mod win32;
 /// `current` is spelled in the flavor it is passed to. The Windows flavor also
 /// consults `drive_directories`, one entry per uppercase drive letter, when a
 /// drive-relative path such as `C:notes` needs that drive's own directory; the
-/// POSIX flavor ignores them. An empty directory counts as absent.
+/// POSIX flavor ignores them. An empty directory counts as absent. `relative`
+/// folds the `.` and `..` segments of `current`; each `resolve` states when it
+/// returns `current` as written.
 #[derive(Clone, Copy, Debug)]
 pub struct Cwd<'a> {
     /// The current working directory.
@@ -18,16 +22,17 @@ pub struct Cwd<'a> {
     pub drive_directories: &'a [(char, &'a str)],
 }
 
-/// The raw root of a Windows path, borrowing the authored spelling.
+/// The root of a Windows path, borrowing the authored spelling.
 ///
-/// Normalization, resolution and directory splitting read the same root
-/// differently (device namespaces and unmatched UNC prefixes in particular),
-/// so the recognizer keeps the pieces and leaves their meaning to each caller.
+/// Normalization, resolution and relative paths all read a root through this
+/// type, so a drive, a UNC share and a device namespace mean the same to each.
+/// Only directory splitting follows the shape of the text: a namespace ends at
+/// the same offset as a share, and it reads that offset from `end`.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Root<'a> {
     /// No root: a relative path.
     Relative,
-    /// A leading separator that does not open a complete UNC root.
+    /// A leading separator that does not open a complete UNC or namespace root.
     Rooted,
     /// A drive letter and colon, followed by a separator when `absolute`.
     Drive {
@@ -36,14 +41,21 @@ pub(crate) enum Root<'a> {
         /// Whether a separator follows the colon.
         absolute: bool,
     },
-    /// Two separators, a server and a share, as in `\\server\share`; the
-    /// `\\.\device` and `\\?\device` namespaces have the same shape.
+    /// Two separators, a server and a share, as in `\\server\share`.
     Unc {
         /// The first component, as written.
         server: &'a str,
         /// The second component, as written.
         share: &'a str,
         /// Byte offset just after the share.
+        end: usize,
+    },
+    /// `\\.\` or `\\?\` followed by a component: the namespace is the root
+    /// and what follows are ordinary components, whatever they look like.
+    Namespace {
+        /// The namespace, `.` or `?`.
+        kind: &'a str,
+        /// Byte offset just after the first component that follows it.
         end: usize,
     },
 }
@@ -80,10 +92,43 @@ impl<'a> Root<'a> {
         let share_len = after_gap
             .find(win32::is_separator)
             .unwrap_or(after_gap.len());
-        Some(Self::Unc {
-            server,
-            share: &after_gap[..share_len],
-            end: 2 + server_len + share_start + share_len,
+        let end = 2 + server_len + share_start + share_len;
+        Some(match server {
+            "." | "?" => Self::Namespace { kind: server, end },
+            _ => Self::Unc {
+                server,
+                share: &after_gap[..share_len],
+                end,
+            },
         })
+    }
+
+    /// The drive, share or namespace as a result writes it, when the root has one.
+    pub(crate) fn device(self) -> Option<Cow<'a, str>> {
+        match self {
+            Self::Relative | Self::Rooted => None,
+            Self::Drive { prefix, .. } => Some(prefix.into()),
+            Self::Unc { server, share, .. } => Some(format!(r"\\{server}\{share}").into()),
+            Self::Namespace { kind, .. } => Some(format!(r"\\{kind}").into()),
+        }
+    }
+
+    /// Byte offset of the components that follow the root.
+    pub(crate) fn tail_start(self) -> usize {
+        match self {
+            Self::Relative | Self::Rooted => 0,
+            Self::Drive { prefix, absolute } => prefix.len() + usize::from(absolute),
+            Self::Unc { end, .. } => end,
+            Self::Namespace { .. } => 4,
+        }
+    }
+
+    /// Whether the path starts at a root, so `..` cannot climb above it.
+    pub(crate) fn is_absolute(self) -> bool {
+        match self {
+            Self::Relative => false,
+            Self::Drive { absolute, .. } => absolute,
+            Self::Rooted | Self::Unc { .. } | Self::Namespace { .. } => true,
+        }
     }
 }

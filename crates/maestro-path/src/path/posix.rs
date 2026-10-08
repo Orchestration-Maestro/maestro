@@ -264,8 +264,9 @@ pub fn resolve(paths: &[&str], cwd: &Cwd<'_>) -> String {
 /// Find the path that leads from `from` to `to`, both resolved against `cwd`,
 /// which should be absolute.
 ///
-/// Components are compared whole, so `/a/bc` is not below `/a/b`. Equal paths
-/// give an empty string.
+/// Both ends are normalized first, so `.` and `..` that come from `cwd` are
+/// folded. Components are compared whole, so `/a/bc` is not below `/a/b`. Equal
+/// locations give an empty string.
 ///
 /// # Examples
 ///
@@ -276,13 +277,16 @@ pub fn resolve(paths: &[&str], cwd: &Cwd<'_>) -> String {
 /// assert_eq!(posix::relative("/data/a/b", "/data/c", &cwd), "../../c");
 /// assert_eq!(posix::relative("/data/a", "/data/a/b/c", &cwd), "b/c");
 /// assert_eq!(posix::relative("/data/b", "/data/bc", &cwd), "../bc");
+///
+/// let dotted = Cwd { current: "/work/a/../b/.", drive_directories: &[] };
+/// assert_eq!(posix::relative("", "c", &dotted), "c");
 /// ```
 #[must_use]
 pub fn relative(from: &str, to: &str, cwd: &Cwd<'_>) -> String {
     let from = resolve(&[from], cwd);
     let to = resolve(&[to], cwd);
-    let from: Vec<&str> = from.split(SEP).filter(|part| !part.is_empty()).collect();
-    let to: Vec<&str> = to.split(SEP).filter(|part| !part.is_empty()).collect();
+    let from = reduce(from.split(SEP), !is_absolute(&from));
+    let to = reduce(to.split(SEP), !is_absolute(&to));
     let shared = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
     climb_and_descend(from.len() - shared, &to[shared..], "/")
 }

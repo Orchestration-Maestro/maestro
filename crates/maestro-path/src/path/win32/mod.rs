@@ -39,11 +39,6 @@ fn is_reserved(name: &str) -> bool {
         .any(|reserved| reserved.eq_ignore_ascii_case(name))
 }
 
-/// Report whether a UNC-shaped server component is really a device namespace.
-fn is_namespace(server: &str) -> bool {
-    matches!(server, "." | "?")
-}
-
 /// The byte offset of the first colon of `path` when the text before it is a
 /// reserved device name.
 fn device_colon(path: &str) -> Option<usize> {
@@ -62,58 +57,43 @@ struct Prefix<'a> {
 }
 
 impl<'a> Prefix<'a> {
-    /// Interpret `root` the way normalization does.
+    /// Interpret `root` the way normalization does: as it is, except that a
+    /// reserved device name and its colon stay together in front.
     fn of(path: &'a str, root: Root<'a>) -> Self {
-        match root {
-            Root::Rooted => Self {
-                device: None,
-                tail_start: 0,
-                absolute: true,
-            },
-            Root::Drive { prefix, absolute } => Self {
-                device: Some(prefix.into()),
-                tail_start: prefix.len() + usize::from(absolute),
-                absolute,
-            },
-            Root::Unc { server, .. } if is_namespace(server) => Self::namespace(path, server),
-            Root::Unc { server, share, end } => Self {
-                device: Some(format!(r"\\{server}\{share}").into()),
-                tail_start: end,
-                absolute: true,
-            },
+        let reserved = match root {
+            Root::Namespace { kind, .. } => Self::namespace(path, kind, root.tail_start()),
             Root::Relative => Self::reserved_device(path),
-        }
+            _ => None,
+        };
+        reserved.unwrap_or_else(|| Self {
+            device: root.device(),
+            tail_start: root.tail_start(),
+            absolute: root.is_absolute(),
+        })
     }
 
-    /// A `\\.\` or `\\?\` namespace, which keeps a reserved device name written
-    /// after it together with its colon.
-    fn namespace(path: &'a str, server: &str) -> Self {
-        let reserved = path
-            .find(':')
-            .and_then(|colon| Some((path.get(4..colon)?, colon)))
-            .filter(|(name, _)| is_reserved(name));
-        match reserved {
-            Some((name, colon)) => Self {
-                device: Some(format!(r"\\{server}\{name}:").into()),
-                tail_start: colon + 1,
-                absolute: true,
-            },
-            None => Self {
-                device: Some(format!(r"\\{server}").into()),
-                tail_start: 4,
-                absolute: true,
-            },
-        }
+    /// A `\\.\` or `\\?\` namespace followed by a reserved device name and its
+    /// colon, which stay together as the device.
+    fn namespace(path: &str, kind: &str, tail_start: usize) -> Option<Self> {
+        let colon = path.find(':')?;
+        let name = path
+            .get(tail_start..colon)
+            .filter(|name| is_reserved(name))?;
+        Some(Self {
+            device: Some(format!(r"\\{kind}\{name}:").into()),
+            tail_start: colon + 1,
+            absolute: true,
+        })
     }
 
     /// A relative path that starts with a reserved device name and a colon.
-    fn reserved_device(path: &'a str) -> Self {
-        let device = device_colon(path);
-        Self {
-            device: device.map(|colon| path[..=colon].into()),
-            tail_start: device.map_or(0, |colon| colon + 1),
+    fn reserved_device(path: &'a str) -> Option<Self> {
+        let colon = device_colon(path)?;
+        Some(Self {
+            device: Some(path[..=colon].into()),
+            tail_start: colon + 1,
             absolute: false,
-        }
+        })
     }
 }
 
@@ -163,7 +143,6 @@ pub fn normalize(path: &str) -> String {
     let root = Root::parse(path);
     if let Root::Unc { server, share, end } = root
         && end == path.len()
-        && !is_namespace(server)
     {
         return format!(r"\\{server}\{share}\");
     }
@@ -276,8 +255,10 @@ pub fn dirname(path: &str) -> String {
         Root::Relative => None,
         Root::Rooted => Some(1),
         Root::Drive { prefix, absolute } => Some(prefix.len() + usize::from(absolute)),
-        Root::Unc { end, .. } if end == path.len() => return path.to_owned(),
-        Root::Unc { end, .. } => Some(end + 1),
+        Root::Unc { end, .. } | Root::Namespace { end, .. } if end == path.len() => {
+            return path.to_owned();
+        }
+        Root::Unc { end, .. } | Root::Namespace { end, .. } => Some(end + 1),
     };
     let offset = root_end.unwrap_or_default();
     let parent_end = path[offset..]
@@ -329,8 +310,5 @@ pub fn basename(path: &str, suffix: Option<&str>) -> String {
 /// ```
 #[must_use]
 pub fn is_absolute(path: &str) -> bool {
-    matches!(
-        Root::parse(path),
-        Root::Rooted | Root::Unc { .. } | Root::Drive { absolute: true, .. }
-    )
+    Root::parse(path).is_absolute()
 }

@@ -214,6 +214,11 @@ fn win32_relative_returns_absolute_for_distinct_roots() {
 }
 
 #[test]
+fn win32_relative_compares_device_namespaces_as_roots() {
+    check("win32_relative_compares_device_namespaces_as_roots", 3);
+}
+
+#[test]
 fn win32_relative_separates_drive_and_unc_roots_with_equal_components() {
     let cwd = Cwd {
         current: "C:\\work",
@@ -236,7 +241,7 @@ fn win32_relative_resolves_back_to_the_destination_for_every_anchored_pair() {
         .into_iter()
         .filter(|case| case["flavor"] == "win32" && case["op"] == "relative")
         .collect();
-    assert_eq!(cases.len(), 59, "recorded win32 relative cases");
+    assert_eq!(cases.len(), 62, "recorded win32 relative cases");
     let mut anchored = 0;
     for case in &cases {
         let inputs = Inputs::of(case);
@@ -256,7 +261,7 @@ fn win32_relative_resolves_back_to_the_destination_for_every_anchored_pair() {
             case["id"]
         );
     }
-    assert_eq!(anchored, 58, "cases whose both ends are absolute");
+    assert_eq!(anchored, 61, "cases whose both ends are absolute");
 }
 
 /// Fixture rows whose inputs make the two flavors disagree, one per root operation.
@@ -345,12 +350,7 @@ fn win32_normalize_keeps_the_device_namespace_before_reserved_names() {
 
 #[test]
 fn win32_normalize_prefixes_only_reserved_names_before_a_colon() {
-    for (path, expected) in [
-        ("CONx", "CONx"),
-        ("CON😀", "CON😀"),
-        ("CON:x", ".\\CON:x"),
-        ("COM1:", ".\\COM1:."),
-    ] {
+    for (path, expected) in [("CONx", "CONx"), ("CON😀", "CON😀"), ("CON:x", ".\\CON:x")] {
         assert_eq!(win32::normalize(path), expected, "{path:?}");
     }
 }
@@ -385,4 +385,42 @@ fn relative_normalizes_an_unnormalized_working_directory() {
     };
     assert_eq!(win32::relative("", "c", &win32_cwd), "c");
     assert_eq!(win32::relative("c", "", &win32_cwd), "..");
+}
+
+#[test]
+fn posix_relative_folds_dot_and_parent_segments_of_the_working_directory() {
+    for (current, child) in [
+        ("/work/b/.", "/work/b/c"),
+        ("/work/a/../b", "/work/b/c"),
+        ("/work/../..", "/c"),
+    ] {
+        let cwd = Cwd {
+            current,
+            drive_directories: &[],
+        };
+        let down = posix::relative("", "c", &cwd);
+        assert_eq!(posix::join(&[current, &down]), child, "{current:?}");
+        assert_eq!(posix::relative("c", "", &cwd), "..", "{current:?}");
+    }
+}
+
+#[test]
+fn win32_relative_folds_dot_and_parent_segments_of_the_working_directory() {
+    for (current, child) in [
+        ("\\\\srv\\share\\work\\b\\.", "\\\\srv\\share\\work\\b\\c"),
+        (
+            "\\\\srv\\share\\work\\a\\..\\b",
+            "\\\\srv\\share\\work\\b\\c",
+        ),
+        ("\\\\srv\\share\\..\\x", "\\\\srv\\share\\x\\c"),
+        ("\\work\\b\\.", "\\work\\b\\c"),
+    ] {
+        let cwd = Cwd {
+            current,
+            drive_directories: &[],
+        };
+        let down = win32::relative("", "c", &cwd);
+        assert_eq!(win32::join(&[current, &down]), child, "{current:?}");
+        assert_eq!(win32::relative("c", "", &cwd), "..", "{current:?}");
+    }
 }

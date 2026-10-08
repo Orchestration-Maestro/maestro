@@ -2,14 +2,14 @@
 
 use std::borrow::Cow;
 
-use super::{is_namespace, is_separator, same_name};
+use super::{is_separator, same_name};
 use crate::path::segments::reduce;
 use crate::path::{Cwd, Root};
 
 /// The operands consumed so far, from the last one backwards.
 #[derive(Default)]
 struct Resolution<'a> {
-    /// The drive or UNC root every applicable operand shares, empty until one names it.
+    /// The drive, share or namespace every applicable operand shares, empty until one names it.
     device: Cow<'a, str>,
     /// The text after each operand's root, the last operand first.
     tails: Vec<&'a str>,
@@ -22,23 +22,12 @@ impl<'a> Resolution<'a> {
     ///
     /// An operand on another device than the one already chosen is skipped.
     fn consume(&mut self, path: &'a str) -> bool {
-        let (device, tail, absolute) = match Root::parse(path) {
-            Root::Relative => (None, path, false),
-            Root::Rooted => (None, path, true),
-            Root::Drive { prefix, absolute } => (
-                Some(Cow::Borrowed(prefix)),
-                &path[prefix.len() + usize::from(absolute)..],
-                absolute,
-            ),
-            Root::Unc { server, .. } if is_namespace(server) => {
-                (Some(format!(r"\\{server}").into()), &path[4..], true)
-            }
-            Root::Unc { server, share, end } => (
-                Some(format!(r"\\{server}\{share}").into()),
-                &path[end..],
-                true,
-            ),
-        };
+        let root = Root::parse(path);
+        let (device, tail, absolute) = (
+            root.device(),
+            &path[root.tail_start()..],
+            root.is_absolute(),
+        );
         if let Some(device) = device {
             if self.device.is_empty() {
                 self.device = device;
@@ -73,20 +62,43 @@ impl<'a> Resolution<'a> {
         }
     }
 
-    /// Write the resolved path with every separator as `\`.
-    fn finish(self) -> String {
-        let tail = reduce(
+    /// The location the consumed operands name.
+    fn location(self) -> Location<'a> {
+        let parts = reduce(
             self.tails
                 .iter()
                 .rev()
                 .flat_map(|tail| tail.split(is_separator)),
             !self.absolute,
-        )
-        .join("\\");
-        if self.absolute {
-            return format!("{}\\{tail}", self.device);
+        );
+        Location {
+            device: (!self.device.is_empty()).then_some(self.device),
+            absolute: self.absolute,
+            parts,
         }
-        let resolved = format!("{}{tail}", self.device);
+    }
+}
+
+/// A resolved path: its root and the normalized components after it.
+pub(super) struct Location<'a> {
+    /// The drive, share or namespace, when the path has one.
+    pub(super) device: Option<Cow<'a, str>>,
+    /// Whether the path starts at a root, so `..` cannot climb above it.
+    pub(super) absolute: bool,
+    /// The components after the root, without `.`, empty or cancelled ones.
+    pub(super) parts: Vec<&'a str>,
+}
+
+impl Location<'_> {
+    /// Write the path with every separator as `\`: `.` when nothing is left of
+    /// a relative path, and a separator after the root of an absolute one.
+    pub(super) fn spell(&self) -> String {
+        let device = self.device.as_deref().unwrap_or_default();
+        let tail = self.parts.join("\\");
+        if self.absolute {
+            return format!("{device}\\{tail}");
+        }
+        let resolved = format!("{device}{tail}");
         if resolved.is_empty() {
             ".".to_owned()
         } else {
@@ -95,18 +107,37 @@ impl<'a> Resolution<'a> {
     }
 }
 
+/// Resolve `paths` from right to left against `cwd` into the normalized
+/// location they name.
+pub(super) fn locate<'a>(paths: &[&'a str], cwd: &Cwd<'a>) -> Location<'a> {
+    let mut resolution = Resolution::default();
+    let complete = paths
+        .iter()
+        .rev()
+        .filter(|path| !path.is_empty())
+        .any(|path| resolution.consume(path));
+    if !complete {
+        if resolution.device.is_empty() {
+            resolution.consume(cwd.current);
+        } else {
+            resolution.consume_drive_directory(cwd);
+        }
+    }
+    resolution.location()
+}
+
 /// Resolve `paths` from right to left into one path, using `cwd` for the part
 /// no operand supplies.
 ///
-/// Operands on a different device than the one the rightmost drive or UNC root
-/// names are ignored. A drive-relative operand such as `C:notes` continues from
-/// the entry of `cwd.drive_directories` for that drive, or from `cwd.current`
-/// when the entry is missing or empty; a directory that starts with another
-/// drive and a backslash is replaced by the root of the drive. A rooted operand
-/// such as `\x` takes its drive or UNC share from `cwd.current`. With no
-/// operands, `cwd.current` is returned with `/` written as `\`; so it is for a
-/// single operand that is empty or `.` when `cwd.current` starts with a
-/// separator.
+/// Operands on a different device than the one the rightmost drive, UNC share
+/// or device namespace names are ignored. A drive-relative operand such as
+/// `C:notes` continues from the entry of `cwd.drive_directories` for that
+/// drive, or from `cwd.current` when the entry is missing or empty; a directory
+/// that starts with another drive and a backslash is replaced by the root of
+/// the drive. A rooted operand such as `\x` takes its drive, share or namespace
+/// from `cwd.current`. With no operands, `cwd.current` is returned with `/`
+/// written as `\`; so it is for a single operand that is empty or `.` when
+/// `cwd.current` starts with a separator.
 ///
 /// # Examples
 ///
@@ -122,22 +153,9 @@ impl<'a> Resolution<'a> {
 /// ```
 #[must_use]
 pub fn resolve(paths: &[&str], cwd: &Cwd<'_>) -> String {
-    let mut resolution = Resolution::default();
-    let complete = paths
-        .iter()
-        .rev()
-        .filter(|path| !path.is_empty())
-        .any(|path| resolution.consume(path));
-    if !complete {
-        if resolution.device.is_empty() {
-            let current_only = matches!(paths, ["" | "."]) && cwd.current.starts_with(is_separator);
-            if paths.is_empty() || current_only {
-                return cwd.current.replace('/', "\\");
-            }
-            resolution.consume(cwd.current);
-        } else {
-            resolution.consume_drive_directory(cwd);
-        }
+    let current_only = matches!(paths, ["" | "."]) && cwd.current.starts_with(is_separator);
+    if paths.is_empty() || current_only {
+        return cwd.current.replace('/', "\\");
     }
-    resolution.finish()
+    locate(paths, cwd).spell()
 }
