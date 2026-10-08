@@ -17,6 +17,9 @@ status and copied headers before the adapter consumes a response body.
 The [offline model catalog](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/catalog.md) provides owned embedded descriptors,
 exact lookup, thinking-level selection, identity comparison and flat-rate costs.
 
+The [model option helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
+copy common settings, adjust thinking budgets and classify context overflow.
+
 ## Controlled registered invocation
 
 ```rust

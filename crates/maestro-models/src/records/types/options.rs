@@ -2,7 +2,7 @@
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
 use serde::{Deserialize, Serialize};
 /// Represent the accepted reasoning levels, with Off only on model selection.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum ThinkingLevel {
     /// Minimal.
