@@ -22,12 +22,20 @@ last backslash and retries the preceding text.
 An incomplete string with a raw newline can leave an empty preview until closed.
 
 Truncated booleans and null complete inside containers. Unfinished decimal or
-exponent suffixes retain the numeric prefix. Invalid leading grammar, separators
-and unrepresentable numbers stop the current member, preserving earlier members.
-Root numbers require the whole input; other completed non-null values can precede
-trailing text. Inner whitespace follows JSON grammar; outer trimming also accepts
+exponent suffixes retain the numeric prefix. Invalid leading grammar and separators
+stop the current member, preserving earlier members.
+Numbers round to binary64 doubles: `9007199254740993` becomes `9007199254740992`,
+and valid overflow such as `1e400` becomes JSON null, including inside incomplete
+containers. Negative zero retains its sign in values; compact JSON writes it as `0`.
+Root numbers, including numeric overflow projected to null, require the whole input;
+other completed non-null values can precede trailing text. Inner whitespace follows JSON grammar; outer trimming also accepts
 Unicode spacing and the byte-order mark, but not U+0085. No prose extraction,
 comments, single quotes or unquoted keys are accepted.
+
+Full argument materialization accepts at most 127 nested arrays or objects.
+Deeper values fail strict parsing and yield `{}` during streaming, rather than a
+truncated container prefix. The bound counts consumed containers, not sibling
+width, quoted delimiters or unconsumed trailing text.
 
 `sanitize_surrogates(&[u16]) -> String` preserves BMP text and valid UTF-16 pairs,
 removing unmatched surrogate units. Ordinary Rust strings need no cleanup.

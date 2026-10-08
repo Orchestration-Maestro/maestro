@@ -1348,3 +1348,144 @@ fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
         &[],
     )
 }
+
+/// Check the sole tool call without changing its argument record type.
+fn assert_argument_call(message: &AssistantMessage, expected: &Value) -> TestResult {
+    let [AssistantContent::ToolCall(call)] = &message.content[..] else {
+        return Err("expected one tool call".into());
+    };
+    assert_eq!((call.id.as_str(), call.name.as_str()), ("call", "lookup"));
+    assert_eq!(
+        &call.arguments,
+        expected.as_object().ok_or("expected object")?
+    );
+    Ok(())
+}
+
+/// Observe a numeric preview before the producer may deliver the closing fragment.
+async fn projected_call(ending: &str) -> TestResult {
+    let head = tool_fragment(
+        "0",
+        "call",
+        "lookup",
+        r#"{"n":1e400,"rounded":9007199254740993"#,
+    );
+    let rest = [
+        tool_fragment("0", "", "", ending),
+        b"data: [DONE]\n\n".to_vec(),
+    ]
+    .concat();
+    let (attempt, Gate { reached, release }) = gated(vec![head], rest);
+    let (stream, _) = start(attempt, &Cancellation::new())?;
+    let expected = json!({"n": null, "rounded": 9_007_199_254_740_992_u64});
+    loop {
+        let event = stream.next().await.ok_or("missing first delta")?;
+        if let AssistantMessageEvent::ToolcallDelta { partial, .. } = event {
+            assert_argument_call(&*partial.read().map_err(|e| e.to_string())?, &expected)?;
+            break;
+        }
+    }
+    reached.await?;
+    release.send(()).map_err(|()| "body stopped waiting")?;
+    let mut ended = false;
+    let mut done = false;
+    while let Some(event) = stream.next().await {
+        match event {
+            AssistantMessageEvent::ToolcallEnd {
+                partial, tool_call, ..
+            } => {
+                assert_eq!(
+                    &tool_call.arguments,
+                    expected.as_object().ok_or("expected object")?
+                );
+                assert_argument_call(&*partial.read().map_err(|e| e.to_string())?, &expected)?;
+                ended = true;
+            }
+            AssistantMessageEvent::Done { message, .. } => {
+                assert_argument_call(&*message.read().map_err(|e| e.to_string())?, &expected)?;
+                done = true;
+            }
+            _ => {}
+        }
+    }
+    assert!(ended && done);
+    let result = stream.result().await;
+    assert_argument_call(&*result.read().map_err(|e| e.to_string())?, &expected)
+}
+
+#[test]
+fn maestro_chat_projects_streamed_argument_numbers() -> TestResult {
+    block_on(true, async {
+        for ending in ["}", ""] {
+            projected_call(ending).await?;
+        }
+        Ok(())
+    })
+}
+
+/// Check the accepted nested null leaf or the excessive-depth fallback.
+fn assert_bounded_call(value: &Value, depth: usize) -> TestResult {
+    if depth == 128 {
+        assert_eq!(value, &json!({}));
+    } else {
+        let mut leaf = &value["x"];
+        for _ in 1..depth {
+            leaf = &leaf.as_array().ok_or("missing array")?[0];
+        }
+        assert!(leaf.is_null());
+    }
+    Ok(())
+}
+
+/// Observe normal tool-call termination despite a bounded argument conversion.
+async fn bounded_call(depth: usize, complete: bool) -> TestResult {
+    let closes = if complete {
+        format!("{}}}", "]".repeat(depth - 1))
+    } else {
+        String::new()
+    };
+    let arguments = format!(r#"{{"x":{}1e400{closes}"#, "[".repeat(depth - 1));
+    let (stream, _) = start(
+        Attempt::body(
+            200,
+            &[],
+            [
+                tool_fragment("0", "call", "lookup", &arguments),
+                b"data: [DONE]\n\n".to_vec(),
+            ]
+            .concat(),
+        ),
+        &Cancellation::new(),
+    )?;
+    let mut ended = false;
+    let mut done = false;
+    while let Some(event) = stream.next().await {
+        match event {
+            AssistantMessageEvent::ToolcallEnd { tool_call, .. } => {
+                assert_bounded_call(&Value::Object(tool_call.arguments), depth)?;
+                ended = true;
+            }
+            AssistantMessageEvent::Done { .. } => done = true,
+            _ => {}
+        }
+    }
+    assert!(ended && done);
+    let result = stream.result().await;
+    assert!(matches!(
+        result.read().map_err(|e| e.to_string())?.stop_reason,
+        StopReason::Stop
+    ));
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
+    block_on(true, async {
+        for depth in [127, 128] {
+            for complete in [false, true] {
+                bounded_call(depth, complete).await?;
+            }
+        }
+        Ok(())
+    })
+}
