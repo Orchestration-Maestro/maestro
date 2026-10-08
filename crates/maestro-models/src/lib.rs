@@ -52,3 +52,11 @@ pub use records::types::*;
 
 pub mod providers;
 pub use providers::faux::*;
+
+pub mod oauth;
+pub use oauth::oauth_page::{oauth_error_html, oauth_success_html};
+pub use oauth::pkce::{Pkce, generate_pkce};
+pub use oauth::types::{
+    OAuthAuthInfo, OAuthCredentials, OAuthPrompt, OAuthProvider, OAuthProviderId,
+    OAuthSelectOption, OAuthSelectPrompt,
+};

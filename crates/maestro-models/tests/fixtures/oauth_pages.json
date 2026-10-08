@@ -1,0 +1,411 @@
+{
+  "success": [
+    {
+      "message": "",
+      "escapedMessage": ""
+    },
+    {
+      "message": "message",
+      "escapedMessage": "message"
+    },
+    {
+      "message": "&<>\"'",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "&amp; &#39;",
+      "escapedMessage": "&amp;amp; &amp;#39;"
+    },
+    {
+      "message": "世界 😀",
+      "escapedMessage": "世界 😀"
+    },
+    {
+      "message": "\n\t\r﻿",
+      "escapedMessage": "\n\t\r﻿"
+    },
+    {
+      "message": "\u0000",
+      "escapedMessage": "\u0000"
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;"
+    },
+    {
+      "message": "${message}\\\"",
+      "escapedMessage": "${message}\\&quot;"
+    }
+  ],
+  "error": [
+    {
+      "message": "",
+      "escapedMessage": "",
+      "escapedDetails": null
+    },
+    {
+      "message": "",
+      "details": "",
+      "escapedMessage": "",
+      "escapedDetails": null
+    },
+    {
+      "message": "",
+      "details": " ",
+      "escapedMessage": "",
+      "escapedDetails": " "
+    },
+    {
+      "message": "",
+      "details": "0",
+      "escapedMessage": "",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "",
+      "details": "&<>\"'",
+      "escapedMessage": "",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "",
+      "details": "\u0000",
+      "escapedMessage": "",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "message",
+      "escapedMessage": "message",
+      "escapedDetails": null
+    },
+    {
+      "message": "message",
+      "details": "",
+      "escapedMessage": "message",
+      "escapedDetails": null
+    },
+    {
+      "message": "message",
+      "details": " ",
+      "escapedMessage": "message",
+      "escapedDetails": " "
+    },
+    {
+      "message": "message",
+      "details": "0",
+      "escapedMessage": "message",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "message",
+      "details": "&<>\"'",
+      "escapedMessage": "message",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "message",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "message",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "message",
+      "details": "\u0000",
+      "escapedMessage": "message",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "&<>\"'",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": null
+    },
+    {
+      "message": "&<>\"'",
+      "details": "",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": null
+    },
+    {
+      "message": "&<>\"'",
+      "details": " ",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": " "
+    },
+    {
+      "message": "&<>\"'",
+      "details": "0",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "&<>\"'",
+      "details": "&<>\"'",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "&<>\"'",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "&<>\"'",
+      "details": "\u0000",
+      "escapedMessage": "&amp;&lt;&gt;&quot;&#39;",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "&amp; &#39;",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": null
+    },
+    {
+      "message": "&amp; &#39;",
+      "details": "",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": null
+    },
+    {
+      "message": "&amp; &#39;",
+      "details": " ",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": " "
+    },
+    {
+      "message": "&amp; &#39;",
+      "details": "0",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "&amp; &#39;",
+      "details": "&<>\"'",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "&amp; &#39;",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "&amp; &#39;",
+      "details": "\u0000",
+      "escapedMessage": "&amp;amp; &amp;#39;",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "世界 😀",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": null
+    },
+    {
+      "message": "世界 😀",
+      "details": "",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": null
+    },
+    {
+      "message": "世界 😀",
+      "details": " ",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": " "
+    },
+    {
+      "message": "世界 😀",
+      "details": "0",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "世界 😀",
+      "details": "&<>\"'",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "世界 😀",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "世界 😀",
+      "details": "\u0000",
+      "escapedMessage": "世界 😀",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "\n\t\r﻿",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": null
+    },
+    {
+      "message": "\n\t\r﻿",
+      "details": "",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": null
+    },
+    {
+      "message": "\n\t\r﻿",
+      "details": " ",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": " "
+    },
+    {
+      "message": "\n\t\r﻿",
+      "details": "0",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "\n\t\r﻿",
+      "details": "&<>\"'",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "\n\t\r﻿",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "\n\t\r﻿",
+      "details": "\u0000",
+      "escapedMessage": "\n\t\r﻿",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "\u0000",
+      "escapedMessage": "\u0000",
+      "escapedDetails": null
+    },
+    {
+      "message": "\u0000",
+      "details": "",
+      "escapedMessage": "\u0000",
+      "escapedDetails": null
+    },
+    {
+      "message": "\u0000",
+      "details": " ",
+      "escapedMessage": "\u0000",
+      "escapedDetails": " "
+    },
+    {
+      "message": "\u0000",
+      "details": "0",
+      "escapedMessage": "\u0000",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "\u0000",
+      "details": "&<>\"'",
+      "escapedMessage": "\u0000",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "\u0000",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "\u0000",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "\u0000",
+      "details": "\u0000",
+      "escapedMessage": "\u0000",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": null
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "details": "",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": null
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "details": " ",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": " "
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "details": "0",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "details": "&<>\"'",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "</p><script>alert('x')</script>",
+      "details": "\u0000",
+      "escapedMessage": "&lt;/p&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+      "escapedDetails": "\u0000"
+    },
+    {
+      "message": "${message}\\\"",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": null
+    },
+    {
+      "message": "${message}\\\"",
+      "details": "",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": null
+    },
+    {
+      "message": "${message}\\\"",
+      "details": " ",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": " "
+    },
+    {
+      "message": "${message}\\\"",
+      "details": "0",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": "0"
+    },
+    {
+      "message": "${message}\\\"",
+      "details": "&<>\"'",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": "&amp;&lt;&gt;&quot;&#39;"
+    },
+    {
+      "message": "${message}\\\"",
+      "details": "世界 😀\nnext",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": "世界 😀\nnext"
+    },
+    {
+      "message": "${message}\\\"",
+      "details": "\u0000",
+      "escapedMessage": "${message}\\&quot;",
+      "escapedDetails": "\u0000"
+    }
+  ]
+}
