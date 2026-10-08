@@ -256,12 +256,18 @@ mod tests {
         let first = register_faux_provider(RegisterFauxProviderOptions::default());
         let second = register_faux_provider(RegisterFauxProviderOptions::default());
         assert_ne!(first.api, second.api);
+        let message = faux_assistant_message("clock", FauxAssistantMessageOptions::default());
+        assert_eq!(
+            message.timestamp.fract().classify(),
+            std::num::FpCategory::Zero,
+            "clock uses integral milliseconds"
+        );
         let tool = faux_tool_call("t", JsonObject::new(), FauxToolCallOptions::default());
         for (id, prefix) in [(&first.api, "faux"), (&tool.id, "tool")] {
             let parts: Vec<_> = id.split(':').collect();
             assert_eq!(parts.len(), 3);
             assert_eq!(parts[0], prefix);
-            assert!(parts[1].parse::<f64>().unwrap() > 0.0);
+            assert!(parts[1].parse::<i64>().unwrap() > 0);
             assert!(!parts[2].is_empty());
         }
         let empty = register_faux_provider(RegisterFauxProviderOptions {
@@ -290,7 +296,14 @@ mod tests {
     #[test]
     /// Exercise responses keep invocation identity through the public invocation boundary.
     fn maestro_responses_keep_invocation_identity() {
-        let registration = register_faux_provider(RegisterFauxProviderOptions::default());
+        let registration = register_faux_provider(RegisterFauxProviderOptions {
+            provider: Some("custom-provider".into()),
+            models: Some(vec![FauxModelDefinition {
+                id: "custom-model".into(),
+                ..FauxModelDefinition::default()
+            }]),
+            ..RegisterFauxProviderOptions::default()
+        });
         let mut authored = faux_assistant_message(
             "ok",
             FauxAssistantMessageOptions {
@@ -523,13 +536,79 @@ mod tests {
         }
         observed
     }
+    /// Poll the consumer synchronously when the producer publishes an event.
+    struct InlineObserver(std::sync::Mutex<Option<BoxFuture<()>>>);
+
+    impl std::task::Wake for InlineObserver {
+        fn wake(self: std::sync::Arc<Self>) {
+            self.wake_by_ref();
+        }
+
+        fn wake_by_ref(self: &std::sync::Arc<Self>) {
+            let waker = std::task::Waker::from(self.clone());
+            let mut context = std::task::Context::from_waker(&waker);
+            let mut future = self.0.lock().unwrap();
+            if future
+                .as_mut()
+                .is_some_and(|future| future.as_mut().poll(&mut context).is_ready())
+            {
+                *future = None;
+            }
+        }
+    }
+
+    /// Suspend the actual response factory until the observer is ready.
+    fn gated_response(
+        message: AssistantMessage,
+    ) -> (
+        FauxResponseStep,
+        std::sync::mpsc::Receiver<()>,
+        tokio::sync::oneshot::Sender<()>,
+    ) {
+        let (entered_tx, entered_rx) = std::sync::mpsc::channel();
+        let (release_tx, release_rx) = tokio::sync::oneshot::channel();
+        let release = std::sync::Mutex::new(Some(release_rx));
+        let step = FauxResponseStep::Factory(std::sync::Arc::new(move |_, _, _, _| {
+            let release = release.lock().unwrap().take().unwrap();
+            let entered = entered_tx.clone();
+            let message = message.clone();
+            Box::pin(async move {
+                entered.send(()).unwrap();
+                release.await.unwrap();
+                Ok(message)
+            })
+        }));
+        (step, entered_rx, release_tx)
+    }
+
+    /// Cancel on the producer's publishing thread before it can schedule another chunk.
+    fn observe_cancel(
+        stream: AssistantMessageEventStream,
+        signal: Cancellation,
+        delta_name: String,
+        release: tokio::sync::oneshot::Sender<()>,
+    ) -> Vec<AssistantMessageEvent> {
+        let (sent, received) = std::sync::mpsc::channel();
+        let observer = std::sync::Arc::new(InlineObserver(std::sync::Mutex::new(Some(Box::pin(
+            async move {
+                sent.send(collect_cancel(&stream, &signal, &delta_name).await)
+                    .unwrap();
+            },
+        )))));
+        std::task::Wake::wake_by_ref(&observer);
+        release.send(()).unwrap();
+        received.recv().unwrap()
+    }
+
     /// Exercise check cancel through the public invocation boundary.
     fn check_cancel(block: AssistantContent, delta_name: &str) {
         let registration = fixed(Some(100.0));
         let signal = Cancellation::new();
-        registration.set_responses(vec![FauxResponseStep::Message(Box::new(
-            faux_assistant_message(block, FauxAssistantMessageOptions::default()),
-        ))]);
+        let (step, entered, release) = gated_response(faux_assistant_message(
+            block,
+            FauxAssistantMessageOptions::default(),
+        ));
+        registration.set_responses(vec![step]);
         let options = Some(ProviderStreamOptions {
             common: StreamOptions {
                 signal: Some(signal.clone()),
@@ -538,7 +617,8 @@ mod tests {
             ..ProviderStreamOptions::default()
         });
         let stream = stream(model(&registration), context("hi"), options).unwrap();
-        let observed = wait(collect_cancel(&stream, &signal, delta_name));
+        entered.recv().unwrap();
+        let observed = observe_cancel(stream.clone(), signal, delta_name.to_owned(), release);
         assert_eq!(
             observed
                 .iter()
@@ -554,6 +634,10 @@ mod tests {
         let result = wait(stream.result());
         let message = result.read().unwrap();
         assert_eq!(message.stop_reason, StopReason::Aborted);
+        assert_eq!(
+            message.timestamp.fract().classify(),
+            std::num::FpCategory::Zero
+        );
         assert_eq!(
             message.error_message.as_deref(),
             Some("Request was aborted")
@@ -1149,55 +1233,45 @@ mod tests {
         second.unregister();
     }
 
-    /// Publication after dropped observers is covered jointly by factory completion and a separate retained-stream cache observation.
+    /// Signal when the producer releases its response hook after publication.
+    struct ProducerFinished(std::sync::mpsc::Sender<()>);
+
+    impl Drop for ProducerFinished {
+        fn drop(&mut self) {
+            self.0.send(()).unwrap();
+        }
+    }
+
+    /// Dropped observers leave production and the detached session cache intact.
     #[test]
     fn maestro_production_survives_dropped_observers() {
         let registration = fixed(None);
-        let (entered_tx, entered_rx) = std::sync::mpsc::channel();
-        let (release_tx, release_rx) = tokio::sync::oneshot::channel();
-        let release = std::sync::Arc::new(std::sync::Mutex::new(Some(release_rx)));
+        let (step, entered, release) = gated_response(faux_assistant_message(
+            "done",
+            FauxAssistantMessageOptions::default(),
+        ));
+        registration.set_responses(vec![step]);
         let (finished_tx, finished_rx) = std::sync::mpsc::channel();
-        registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
-            move |_, _, _, _| {
-                let release = release.lock().unwrap().take().unwrap();
-                let entered = entered_tx.clone();
-                let finished = finished_tx.clone();
-                Box::pin(async move {
-                    entered.send(()).unwrap();
-                    release.await.unwrap();
-                    finished.send(()).unwrap();
-                    Ok(faux_assistant_message(
-                        "done",
-                        FauxAssistantMessageOptions::default(),
-                    ))
-                })
-            },
-        ))]);
-        let options = Some(session("detached", None));
-        let stream = stream(model(&registration), context("hi"), options).unwrap();
-        entered_rx.recv().unwrap();
+        let witness = ProducerFinished(finished_tx);
+        let mut options = session("detached", None);
+        options.common.on_response = Some(std::sync::Arc::new(move |_, _| {
+            let _ = &witness;
+            Box::pin(async { Ok(()) })
+        }));
+        let stream = stream(model(&registration), context("hi"), Some(options)).unwrap();
+        entered.recv().unwrap();
         drop(stream.result());
         drop(stream);
-        release_tx.send(()).unwrap();
+        release.send(()).unwrap();
         finished_rx.recv().unwrap();
         registration.append_responses(vec![scripted("cached")]);
-        let retained = invoke(
+        let cached = invoke(
             &registration,
-            context("cache-only"),
-            Some(session("retained", None)),
+            context("hi"),
+            Some(session("detached", None)),
         );
-        number(retained.usage.cache_write, 4.0);
-        registration.append_responses(vec![scripted("cached")]);
-        number(
-            invoke(
-                &registration,
-                context("cache-only"),
-                Some(session("retained", None)),
-            )
-            .usage
-            .cache_read,
-            4.0,
-        );
+        number(cached.usage.cache_read, 2.0);
+        number(cached.usage.cache_write, 0.0);
         registration.unregister();
     }
 

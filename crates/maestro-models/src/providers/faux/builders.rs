@@ -1,27 +1,16 @@
 use super::{FauxAssistantContent, FauxAssistantMessageOptions, FauxToolCallOptions};
 use crate::{
     AssistantContent, AssistantMessage, JsonObject, StopReason, TextContent, ThinkingContent,
-    ToolCall, Usage, UsageCost,
+    ToolCall, Usage, UsageCost, records::diagnostics::timestamp_now,
 };
 
-/// Read epoch milliseconds using the target clock.
-pub(super) fn now() -> f64 {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs_f64()
-            * 1000.0
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        js_sys::Date::now()
-    }
-}
 /// Generate an independent clock-prefixed opaque identity.
 pub(super) fn random_id(prefix: &str) -> String {
-    format!("{prefix}:{:.0}:{:x}", now(), rand::random::<u64>())
+    format!(
+        "{prefix}:{:.0}:{:x}",
+        timestamp_now(),
+        rand::random::<u64>()
+    )
 }
 /// Construct fresh zero token counts and costs.
 pub(super) fn zero_usage() -> Usage {
@@ -89,7 +78,7 @@ pub fn faux_assistant_message(
         usage: zero_usage(),
         stop_reason: options.stop_reason.unwrap_or(StopReason::Stop),
         error_message: options.error_message,
-        timestamp: options.timestamp.unwrap_or_else(now),
+        timestamp: options.timestamp.unwrap_or_else(timestamp_now),
     }
 }
 

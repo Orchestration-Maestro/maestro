@@ -4,6 +4,21 @@
 demos. It is opt-in, not part of the built-in provider set. All calls use the
 ordinary `complete`, `stream` and simple invocation interfaces.
 
+## Defaults
+
+Registration uses provider `faux` and an independently generated `faux` API
+identifier. Omitted or empty model lists create `faux-1`, named `Faux Model`,
+with text and image inputs, reasoning disabled and URL `http://localhost:0`.
+All input, output, cache-read and cache-write prices are zero. Its context window
+is 128,000 tokens and its maximum output is 16,384 tokens. Custom model names
+default to their model IDs; other omitted fields retain these defaults.
+
+`faux_assistant_message` defaults to API/provider `faux`, model `faux-1`, stop
+reason `Stop` and the current epoch timestamp in integer milliseconds. Response
+IDs and error messages are absent unless supplied; usage and costs start at zero.
+`faux_tool_call` generates a `tool` identifier unless one is supplied. Text,
+thinking and tool content omit signatures; thinking omits the redacted flag.
+
 ## Two-turn tool flow
 
 ```rust

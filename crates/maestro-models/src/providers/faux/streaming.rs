@@ -1,21 +1,20 @@
-use super::{FauxTokenSize, builders, usage};
+use super::{FauxTokenSize, usage};
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
     BoxFuture, Cancellation, DiagnosticErrorInfo, DoneReason, ErrorReason, JsonObject,
-    SharedAssistantMessage, StopReason, ToolCall,
+    SharedAssistantMessage, StopReason, ToolCall, records::diagnostics::timestamp_now,
 };
-use std::sync::{Arc, RwLock};
+use std::{
+    borrow::Cow,
+    sync::{Arc, RwLock},
+};
 
-/// Normalized chunk range and optional delivery rate.
 /// Normalized chunk range and optional delivery rate.
 pub(super) struct Pacing {
     /// Lower chunk bound in tokens.
-    /// Lower chunk bound in tokens.
     min: f64,
     /// Upper chunk bound in tokens.
-    /// Upper chunk bound in tokens.
     max: f64,
-    /// Positive estimated-token delivery rate.
     /// Positive estimated-token delivery rate.
     speed: Option<f64>,
 }
@@ -199,7 +198,7 @@ fn cancelled(
     let mut message = snapshot(partial);
     message.stop_reason = StopReason::Aborted;
     message.error_message = Some("Request was aborted".into());
-    message.timestamp = builders::now();
+    message.timestamp = timestamp_now();
     terminal(stream, message);
     true
 }
@@ -210,9 +209,7 @@ pub(super) async fn deliver(
     pacing: &Pacing,
     signal: Option<&Cancellation>,
 ) -> Result<(), DiagnosticErrorInfo> {
-    let mut empty = message.clone();
-    empty.content.clear();
-    let mut partial = shared(empty);
+    let mut partial = shared(metadata(&message));
     if cancelled(signal, &partial, stream) {
         return Ok(());
     }
@@ -228,9 +225,9 @@ pub(super) async fn deliver(
         partial = shared(next);
         stream.push(start(block, index, Arc::clone(&partial)));
         let text = match block {
-            AssistantContent::Text(value) => value.text.clone(),
-            AssistantContent::Thinking(value) => value.thinking.clone(),
-            AssistantContent::ToolCall(value) => usage::json(&value.arguments)?,
+            AssistantContent::Text(value) => Cow::Borrowed(value.text.as_str()),
+            AssistantContent::Thinking(value) => Cow::Borrowed(value.thinking.as_str()),
+            AssistantContent::ToolCall(value) => Cow::Owned(usage::json(&value.arguments)?),
         };
         for chunk in pacing.chunks(&text) {
             pacing.schedule(&chunk).await?;
@@ -253,6 +250,22 @@ pub(super) async fn deliver(
     }
     terminal(stream, message);
     Ok(())
+}
+/// Copy only the metadata retained by an empty partial message.
+fn metadata(message: &AssistantMessage) -> AssistantMessage {
+    AssistantMessage {
+        content: Vec::new(),
+        api: message.api.clone(),
+        provider: message.provider.clone(),
+        model: message.model.clone(),
+        response_model: message.response_model.clone(),
+        response_id: message.response_id.clone(),
+        diagnostics: message.diagnostics.clone(),
+        usage: message.usage.clone(),
+        stop_reason: message.stop_reason.clone(),
+        error_message: message.error_message.clone(),
+        timestamp: message.timestamp,
+    }
 }
 /// Construct an unsigned partial block without its completed payload.
 fn empty_block(block: &AssistantContent) -> AssistantContent {

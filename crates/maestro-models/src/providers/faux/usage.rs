@@ -3,7 +3,7 @@ use crate::{
     AssistantContent, AssistantMessage, CacheRetention, Context, DiagnosticErrorInfo, Message,
     StreamOptions, UserBlock, UserContent,
 };
-use std::sync::Mutex;
+use std::{borrow::Cow, sync::Mutex};
 
 /// Estimate tokens from Unicode scalar count in groups of four.
 pub(super) fn tokens(text: &str) -> f64 {
@@ -19,12 +19,14 @@ pub(super) fn json<T: serde::Serialize>(value: &T) -> Result<String, DiagnosticE
     })
 }
 /// Project a user text or image block into estimated prompt text.
-fn user_block(block: &UserBlock) -> String {
+fn user_block(block: &UserBlock) -> Cow<'_, str> {
     match block {
-        UserBlock::Text(value) => value.text.clone(),
-        UserBlock::Image(value) => {
-            format!("[image:{}:{}]", value.mime_type, value.data.chars().count())
-        }
+        UserBlock::Text(value) => Cow::Borrowed(&value.text),
+        UserBlock::Image(value) => Cow::Owned(format!(
+            "[image:{}:{}]",
+            value.mime_type,
+            value.data.chars().count()
+        )),
     }
 }
 /// Project assistant text, thinking and compact tool arguments in order.
@@ -32,11 +34,13 @@ pub(super) fn assistant_text(content: &[AssistantContent]) -> Result<String, Dia
     content
         .iter()
         .map(|block| match block {
-            AssistantContent::Text(value) => Ok(value.text.clone()),
-            AssistantContent::Thinking(value) => Ok(value.thinking.clone()),
-            AssistantContent::ToolCall(value) => {
-                Ok(format!("{}:{}", value.name, json(&value.arguments)?))
-            }
+            AssistantContent::Text(value) => Ok(Cow::Borrowed(value.text.as_str())),
+            AssistantContent::Thinking(value) => Ok(Cow::Borrowed(value.thinking.as_str())),
+            AssistantContent::ToolCall(value) => Ok(Cow::Owned(format!(
+                "{}:{}",
+                value.name,
+                json(&value.arguments)?
+            ))),
         })
         .collect::<Result<Vec<_>, _>>()
         .map(|parts| parts.join("\n"))
@@ -56,15 +60,15 @@ fn serialize_context(context: &Context) -> Result<String, DiagnosticErrorInfo> {
             Message::User(value) => format!(
                 "user:{}",
                 match &value.content {
-                    UserContent::Text(text) => text.clone(),
+                    UserContent::Text(text) => Cow::Borrowed(text.as_str()),
                     UserContent::Blocks(blocks) =>
-                        blocks.iter().map(user_block).collect::<Vec<_>>().join("\n"),
+                        Cow::Owned(blocks.iter().map(user_block).collect::<Vec<_>>().join("\n")),
                 }
             ),
             Message::Assistant(value) => format!("assistant:{}", assistant_text(&value.content)?),
             Message::ToolResult(value) => format!(
                 "toolResult:{}",
-                std::iter::once(value.tool_name.clone())
+                std::iter::once(Cow::Borrowed(value.tool_name.as_str()))
                     .chain(value.content.iter().map(user_block))
                     .collect::<Vec<_>>()
                     .join("\n")
@@ -95,14 +99,15 @@ pub(super) fn estimate(
         .and_then(|options| options.session_id.as_ref())
         .filter(|session| !session.is_empty())
     {
-        let previous = lock(pending).cache.insert(session.clone(), prompt.clone());
-        let prefix = previous.as_ref().map_or(0.0, |previous| {
+        let mut pending = lock(pending);
+        let prefix = pending.cache.get(session).map_or(0.0, |previous| {
             previous
                 .chars()
                 .zip(prompt.chars())
                 .take_while(|(left, right)| left == right)
                 .fold(0.0_f64, |count, _| count + 1.0)
         });
+        pending.cache.insert(session.clone(), prompt);
         usage.input = 0.0;
         usage.cache_read = (prefix / 4.0).ceil().min(prompt_tokens);
         usage.cache_write = prompt_tokens - usage.cache_read;
