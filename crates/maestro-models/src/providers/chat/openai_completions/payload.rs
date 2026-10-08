@@ -1,24 +1,10 @@
 //! The typed chat-completion request body.
 
-use serde::ser::Error as _;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 use serde_json::Value;
 
 use super::messages::{ChatCompletionMessageParam, OpenAICompatCacheControl};
 use crate::{OpenRouterRouting, Tool, ToolChoice, VercelGatewayRouting};
-
-/// A number written without a fraction when it is whole.
-#[derive(Clone, Copy)]
-pub(super) struct Number(pub(super) f64);
-
-impl Serialize for Number {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        format!("{}", self.0)
-            .parse::<serde_json::Number>()
-            .map_err(S::Error::custom)?
-            .serialize(serializer)
-    }
-}
 
 /// The request body.
 #[derive(Default, Serialize)]
@@ -43,13 +29,13 @@ pub(super) struct Payload {
     pub(super) store: Option<bool>,
     /// Output limit for endpoints that call it `max_tokens`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) max_tokens: Option<Number>,
+    pub(super) max_tokens: Option<f64>,
     /// Output limit for endpoints that call it `max_completion_tokens`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) max_completion_tokens: Option<Number>,
+    pub(super) max_completion_tokens: Option<f64>,
     /// Sampling temperature.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) temperature: Option<Number>,
+    pub(super) temperature: Option<f64>,
     /// Declared tools.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) tools: Option<Vec<ToolParam>>,

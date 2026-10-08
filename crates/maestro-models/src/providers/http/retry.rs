@@ -19,10 +19,15 @@ const BACKOFF_CAP_SECONDS: f64 = 8.0;
 /// Largest share of the backoff that jitter may remove.
 const JITTER_SHARE: f64 = 0.25;
 
+/// The failure for a setting that is not a usable whole number.
+fn not_an_integer(name: &str) -> RequestFailure {
+    RequestFailure::new(format!("{name} must be an integer"))
+}
+
 /// Accept a whole number of at least zero, naming the setting in the failure.
 fn whole_number(name: &str, value: f64) -> Result<f64, RequestFailure> {
     if value.fract() != 0.0 || !value.is_finite() {
-        Err(RequestFailure::new(format!("{name} must be an integer")))
+        Err(not_an_integer(name))
     } else if value < 0.0 {
         Err(RequestFailure::new(format!(
             "{name} must be a positive integer"
@@ -30,6 +35,16 @@ fn whole_number(name: &str, value: f64) -> Result<f64, RequestFailure> {
     } else {
         Ok(value)
     }
+}
+
+/// Count the retries a request may make as an exact integer.
+///
+/// A whole number converts exactly through the seconds of a duration, so no lossy cast is
+/// needed; counts beyond what an integer holds are rejected.
+fn retry_budget(count: f64) -> Result<u64, RequestFailure> {
+    Duration::try_from_secs_f64(whole_number("maxRetries", count)?)
+        .map(|seconds| seconds.as_secs())
+        .map_err(|_| not_an_integer("maxRetries"))
 }
 
 /// Report whether a status or an explicit header asks for another attempt.
@@ -86,8 +101,9 @@ fn hinted_delay(headers: &BTreeMap<String, String>) -> Option<Duration> {
 }
 
 /// Exponential backoff for the given number of retries already made, reduced by jitter.
-fn backoff(retries_made: f64) -> Duration {
-    let base = (BACKOFF_BASE_SECONDS * 2.0_f64.powf(retries_made)).min(BACKOFF_CAP_SECONDS);
+fn backoff(retries_made: u64) -> Duration {
+    let doublings = i32::try_from(retries_made).unwrap_or(i32::MAX);
+    let base = (BACKOFF_BASE_SECONDS * 2.0_f64.powi(doublings)).min(BACKOFF_CAP_SECONDS);
     Duration::from_secs_f64(base * (1.0 - unit_random() * JITTER_SHARE))
 }
 
@@ -145,10 +161,10 @@ pub(crate) async fn send(
     options: &StreamOptions,
 ) -> Result<HttpResponse, RequestFailure> {
     let timeout_ms = whole_number("timeout", options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
-    let max_retries = whole_number("maxRetries", options.max_retries.unwrap_or(DEFAULT_RETRIES))?;
+    let budget = retry_budget(options.max_retries.unwrap_or(DEFAULT_RETRIES))?;
     let timeout = Duration::try_from_secs_f64(timeout_ms / 1000.0).unwrap_or(Duration::MAX);
     let signal = request.signal.clone();
-    let mut remaining = max_retries;
+    let mut remaining = budget;
     loop {
         if signal.as_ref().is_some_and(Cancellation::is_aborted) {
             return Err(RequestFailure::aborted());
@@ -167,12 +183,14 @@ pub(crate) async fn send(
                 return Ok(response);
             }
             Raced::Done(Ok(response)) => {
-                if remaining > 0.0 && should_retry(&response) {
+                if should_retry(&response)
+                    && let Some(left) = remaining.checked_sub(1)
+                {
                     let delay = hinted_delay(&response.headers)
-                        .unwrap_or_else(|| backoff(max_retries - remaining));
+                        .unwrap_or_else(|| backoff(budget - remaining));
                     drop(response);
                     pause(delay, signal.as_ref()).await?;
-                    remaining -= 1.0;
+                    remaining = left;
                     continue;
                 }
                 let status = response.status;
@@ -180,10 +198,10 @@ pub(crate) async fn send(
                 return Err(status_failure(status, &text));
             }
         };
-        if remaining <= 0.0 {
+        let Some(left) = remaining.checked_sub(1) else {
             return Err(exhausted(&failure));
-        }
-        pause(backoff(max_retries - remaining), signal.as_ref()).await?;
-        remaining -= 1.0;
+        };
+        pause(backoff(budget - remaining), signal.as_ref()).await?;
+        remaining = left;
     }
 }

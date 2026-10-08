@@ -52,6 +52,17 @@ async fn run(
     finish(model, context, options).await
 }
 
+/// Abort the request after `after` of virtual time, so a regression ends instead of retrying forever.
+fn abort_after(options: &mut StreamOptions, after: Duration) {
+    let signal = Cancellation::new();
+    let trigger = signal.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(after).await;
+        trigger.abort();
+    });
+    options.signal = Some(signal);
+}
+
 /// Each recorded status and `x-should-retry` value retries exactly when the table says so.
 async fn statuses_follow_the_retry_table() -> TestResult {
     for row in rows(FIXTURE, "maestro_http_retries_transient_failures")? {
@@ -117,7 +128,13 @@ fn maestro_http_retries_transient_failures() -> TestResult {
     chat::block_on(true, async {
         statuses_follow_the_retry_table().await?;
         connection_failures_are_retried().await?;
-        for (retries, attempts) in [(Some(0.0), 1), (Some(1.0), 2), (Some(3.0), 4), (None, 3)] {
+        for (retries, attempts) in [
+            (Some(0.0), 1),
+            (Some(-0.0), 1),
+            (Some(1.0), 2),
+            (Some(3.0), 4),
+            (None, 3),
+        ] {
             let failing = transport(vec![Attempt::status(503, &[])]);
             run(&failing, |options| options.max_retries = retries).await?;
             assert_eq!(failing.attempts(), attempts, "{retries:?}");
@@ -209,22 +226,36 @@ fn maestro_http_honors_retry_headers() -> TestResult {
     })
 }
 
+/// Each gap lies in the jittered window of its exponential backoff, capped at eight seconds.
+fn assert_backoff_schedule(gaps: &[Duration]) -> TestResult {
+    for (retries_made, gap) in gaps.iter().enumerate() {
+        let base = (0.5 * 2.0_f64.powi(i32::try_from(retries_made)?)).min(8.0);
+        let seconds = gap.as_secs_f64();
+        assert!(
+            seconds > base * 0.75 - 1e-9 && seconds <= base + 1e-9,
+            "retry {retries_made} waited {seconds}s, base {base}s"
+        );
+    }
+    Ok(())
+}
+
 #[test]
 fn maestro_http_bounds_retry_backoff() -> TestResult {
     chat::block_on(true, async {
         let target = transport(vec![Attempt::status(503, &[])]);
         run(&target, |options| options.max_retries = Some(7.0)).await?;
-        let gaps = target.gaps();
-        assert_eq!(gaps.len(), 7);
-        for (retries_made, gap) in gaps.iter().enumerate() {
-            let base = (0.5 * 2.0_f64.powi(i32::try_from(retries_made)?)).min(8.0);
-            let seconds = gap.as_secs_f64();
-            assert!(
-                seconds > base * 0.75 - 1e-9 && seconds <= base + 1e-9,
-                "retry {retries_made} waited {seconds}s, base {base}s"
-            );
-        }
-        Ok(())
+        assert_eq!(target.gaps().len(), 7);
+        assert_backoff_schedule(&target.gaps())?;
+
+        // A floating-point countdown cannot step down from 2^54; the integer budget can.
+        let huge = transport(vec![Attempt::status(503, &[])]);
+        run(&huge, |options| {
+            options.max_retries = Some(2.0_f64.powi(54));
+            abort_after(options, Duration::from_secs(60));
+        })
+        .await?;
+        assert!(huge.gaps().len() > 5, "the backoff reaches its cap");
+        assert_backoff_schedule(&huge.gaps())
     })
 }
 
@@ -299,14 +330,11 @@ fn maestro_http_stops_retries_on_abort() -> TestResult {
         assert_eq!(target.attempts(), 0, "no request after an abort");
 
         let hanging = transport(vec![Attempt::Hang]);
-        let signal = Cancellation::new();
-        let trigger = signal.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(5)).await;
-            trigger.abort();
-        });
         let started = Instant::now();
-        let outcome = run(&hanging, |options| options.signal = Some(signal.clone())).await?;
+        let outcome = run(&hanging, |options| {
+            abort_after(options, Duration::from_secs(5));
+        })
+        .await?;
         assert!(matches!(outcome.stop_reason, StopReason::Aborted));
         assert_eq!(started.elapsed(), Duration::from_secs(5));
         assert_eq!(hanging.attempts(), 1);
@@ -314,14 +342,11 @@ fn maestro_http_stops_retries_on_abort() -> TestResult {
         let reading = transport(vec![Attempt::streaming_with_status(500, || {
             Box::pin(futures_util::stream::pending())
         })]);
-        let signal = Cancellation::new();
-        let trigger = signal.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(7)).await;
-            trigger.abort();
-        });
         let started = Instant::now();
-        let outcome = run(&reading, |options| options.signal = Some(signal.clone())).await?;
+        let outcome = run(&reading, |options| {
+            abort_after(options, Duration::from_secs(7));
+        })
+        .await?;
         assert!(matches!(outcome.stop_reason, StopReason::Aborted));
         assert_eq!(outcome.error.as_deref(), Some("Request was aborted."));
         assert_eq!(
@@ -334,14 +359,11 @@ fn maestro_http_stops_retries_on_abort() -> TestResult {
             Attempt::status(503, &[("retry-after", "3600")]),
             Attempt::success(),
         ]);
-        let signal = Cancellation::new();
-        let trigger = signal.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(30)).await;
-            trigger.abort();
-        });
         let started = Instant::now();
-        let outcome = run(&waiting, |options| options.signal = Some(signal.clone())).await?;
+        let outcome = run(&waiting, |options| {
+            abort_after(options, Duration::from_secs(30));
+        })
+        .await?;
         assert!(matches!(outcome.stop_reason, StopReason::Aborted));
         assert_eq!(
             started.elapsed(),
@@ -363,9 +385,15 @@ fn maestro_http_rejects_unbounded_retry_counts() -> TestResult {
             (f64::NAN, "maxRetries must be an integer"),
             (f64::INFINITY, "maxRetries must be an integer"),
             (f64::NEG_INFINITY, "maxRetries must be an integer"),
+            (2.0_f64.powi(64), "maxRetries must be an integer"),
+            (f64::MAX, "maxRetries must be an integer"),
         ] {
             let target = transport(vec![Attempt::status(503, &[])]);
-            let outcome = run(&target, |options| options.max_retries = Some(retries)).await?;
+            let outcome = run(&target, |options| {
+                options.max_retries = Some(retries);
+                abort_after(options, Duration::from_secs(3600));
+            })
+            .await?;
             assert_eq!(outcome.error.as_deref(), Some(message), "{retries}");
             assert_eq!(target.attempts(), 0, "{retries} sends nothing");
         }

@@ -37,8 +37,11 @@ The key is the explicit `api_key`, then `get_env_api_key(provider)`, then
 `OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass it as an argument.`
 
 Headers are layered, later layers replacing earlier ones case-insensitively, repeated
-names inside one layer included: the model's headers, the GitHub Copilot dynamic
-headers (`providers::chat::github_copilot_headers`), session affinity headers
+names inside one layer included: the account defaults `openai-organization` and
+`openai-project` from the `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` environment
+variables (surrounding whitespace removed; unset or blank variables send nothing),
+the model's headers, the GitHub Copilot dynamic headers
+(`providers::chat::github_copilot_headers`), session affinity headers
 (`session_id`, `x-client-request-id`, `x-session-affinity`) when the model's
 compatibility enables them and caching is on, then the caller's headers. Names are
 sent in lowercase. The generated `authorization: Bearer {key}` sits below all layers;
@@ -52,10 +55,11 @@ effort, usage in streams, tool-result names, assistant messages after tool
 results, reasoning replayed as text, `reasoning_content` on assistant messages, the
 token-limit field, the reasoning convention (`openai`, `openrouter`, `deepseek`,
 `zai`, `qwen`, `qwen-chat-template`), strict tool fields, tool streaming, cache
-markers, session affinity and the one-hour cache lifetime. A zero token limit is
-omitted; a zero temperature is sent. Requested reasoning is mapped through the
-model's `thinking_level_map`; an unrequested level is never invented. `OpenRouter`
-and gateway routing preferences are forwarded only for their own hosts.
+markers, session affinity and the one-hour cache lifetime. A zero or NaN token limit is
+omitted; a zero temperature is sent. A NaN or infinite temperature and an infinite token
+limit are sent as `null`, the way JSON text writes them. Requested reasoning is mapped
+through the model's `thinking_level_map`; an unrequested level is never invented.
+`OpenRouter` and gateway routing preferences are forwarded only for their own hosts.
 
 Cache retention is the explicit option, otherwise `long` when
 `MAESTRO_CACHE_RETENTION` is exactly `long`, otherwise `short`. `none` suppresses
@@ -64,8 +68,9 @@ instruction, the last tool and the last conversation text. `long` sends the `24h
 retention and the session key only where the compatibility supports long caching;
 direct `OpenAI` URLs send the session key for any retention but `none`.
 
-`on_payload` sees the payload as JSON before it is sent; a returned value replaces it
-(presence, not truthiness). `on_response` sees the status and headers of the
+`on_payload` sees the payload as JSON before it is sent (the temperature and token limit
+as floating-point numbers, or `null` when they are not finite); a returned value replaces
+it (presence, not truthiness). `on_response` sees the status and headers of the
 accepted response before the `start` update; it is not called for responses that are
 retried. A hook error ends the stream with that error.
 
@@ -96,7 +101,12 @@ Late encrypted reasoning details are attached to the matching tool call.
 
 Every update and the final message share the same handle. No lock is held while
 readers are woken. On failure the partial content is kept and the last update is an
-error (or an abort, when the signal was aborted).
+error (or an abort, when the signal was aborted). A body that reports its own abort
+while the signal is unset is a failure (`Request was aborted.`), not a normal end. After
+a normal end the shared message decides the result: stop reasons `stop`, `length` and
+`toolUse` complete, an aborted stop reason fails with `Request was aborted`, and an
+error stop reason fails with its own text, or `Provider returned an error stop reason`
+when that is empty.
 
 ## Transport
 
@@ -111,8 +121,11 @@ slow body is not cut short. A wait comes from `retry-after-ms` (when nonzero), t
 `min(0.5 * 2^n, 8)` seconds reduced by up to a quarter at random. Invalid hints are
 ignored. The timeout and retry count must be whole numbers of at least zero:
 `timeout must be an integer`, `timeout must be a positive integer` and the same two
-messages for `maxRetries` reject anything else before a request is sent. Aborting
-the signal interrupts a pending request or retry wait.
+messages for `maxRetries` reject anything else before a request is sent, including a
+retry count beyond what a 64-bit integer holds. The retry count is an exact integer
+budget, so even a very large count is used up one retry at a time. Aborting the signal
+interrupts a pending request or retry wait, and on browser targets the timers of
+requests that finish, fail or are aborted are cleared.
 
 Failures read `Connection error.`, `Request timed out.`, `Request was aborted.`,
 `{status} {message}`, `{status} status code (no body)` or `(no status code or body)`.

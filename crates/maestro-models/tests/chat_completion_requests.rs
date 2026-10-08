@@ -24,8 +24,9 @@ use chat::{TestResult, context, model, rows};
 use child_process::{child_case, rerun};
 use maestro_models::providers::chat::openai_completions::ResolvedOpenAICompletionsCompat;
 use maestro_models::providers::chat::openai_completions::messages::convert_messages;
-use maestro_models::{ModelCompat, OpenAICompletionsCompat};
+use maestro_models::{ModelCompat, OpenAICompletionsCompat, StopReason, get_model};
 use serde_json::{Value, json};
+use std::sync::{Arc, Mutex};
 
 const FIXTURE: &str = include_str!("fixtures/chat_completions/requests.json");
 
@@ -143,21 +144,27 @@ fn maestro_chat_serializes_replay_arguments() -> TestResult {
     Ok(())
 }
 
-/// Request body a stream case sent.
-async fn sent_body(case: &Value) -> TestResult<Value> {
-    let observed = run_case(case).await?;
-    Ok(observed.requests.into_iter().next().ok_or("no request")?["body"].clone())
-}
-
-/// Check one fixture row's request body against the payload it names.
+/// Check one fixture row's request body, and the headers it names, against what was sent.
+///
+/// A `headers` object lists header values the request must carry; `null` means absent.
 async fn payload_matches(row: &Value) -> TestResult {
     let case = json!({"model": row["model"], "context": row["context"], "options": row["options"]});
+    let observed = run_case(&case).await?;
+    let request = observed.requests.first().ok_or("no request")?;
     assert_eq!(
-        canonical(sent_body(&case).await?),
+        canonical(request["body"].clone()),
         canonical(row["expected"].clone()),
         "{}",
         row["id"]
     );
+    for (name, expected) in row["headers"].as_object().into_iter().flatten() {
+        assert_eq!(
+            request["headers"].get(name).unwrap_or(&Value::Null),
+            expected,
+            "{} header {name}",
+            row["id"]
+        );
+    }
     Ok(())
 }
 
@@ -190,10 +197,69 @@ async fn assert_payload_rows(test: &str) -> TestResult {
     Ok(())
 }
 
+/// Send one call with the given numeric options; return the payload the hook saw and the body
+/// that went out. A `replacement` makes the hook swap the payload.
+async fn send_numbers(
+    temperature: f64,
+    max_tokens: f64,
+    replacement: Option<Value>,
+) -> TestResult<(Value, Value)> {
+    let target = transport::transport(vec![transport::Attempt::success()]);
+    let (model, history, mut common) = transport::call_inputs(&target)?;
+    common.temperature = Some(temperature);
+    common.max_tokens = Some(max_tokens);
+    let seen: Arc<Mutex<Vec<Value>>> = Arc::default();
+    let kept = Arc::clone(&seen);
+    common.on_payload = Some(Arc::new(move |payload, _| {
+        kept.lock().map(|mut kept| kept.push(payload)).ok();
+        Box::pin(std::future::ready(Ok(replacement.clone())))
+    }));
+    let outcome = transport::finish(model, history, common).await?;
+    assert!(
+        matches!(outcome.stop_reason, StopReason::Stop),
+        "{temperature} {max_tokens}: {:?}",
+        outcome.error
+    );
+    let hooked = seen.lock().map_err(|e| e.to_string())?.remove(0);
+    let sent = serde_json::from_slice(&target.first_request()?.1)?;
+    Ok((hooked, sent))
+}
+
+/// Numbers no JSON number can hold are written as `null`, and are visible to, and replaceable
+/// by, the payload hook.
+async fn non_finite_numbers_become_null() -> TestResult {
+    for (temperature, max_tokens, limit_sent) in [
+        (f64::NAN, f64::INFINITY, true),
+        (f64::INFINITY, f64::NEG_INFINITY, true),
+        (f64::NEG_INFINITY, f64::NAN, false),
+    ] {
+        let (hooked, sent) = send_numbers(temperature, max_tokens, None).await?;
+        assert_eq!(
+            hooked, sent,
+            "{temperature} {max_tokens}: the hook sees the body"
+        );
+        assert_eq!(sent.get("temperature"), Some(&Value::Null), "{temperature}");
+        assert_eq!(
+            sent.get("max_completion_tokens"),
+            limit_sent.then_some(&Value::Null),
+            "{max_tokens}"
+        );
+
+        let replacement = json!({"model": "replaced", "temperature": 0.5});
+        let (_, sent) = send_numbers(temperature, max_tokens, Some(replacement.clone())).await?;
+        assert_eq!(sent, replacement, "{temperature} {max_tokens}");
+    }
+    Ok(())
+}
+
 #[test]
 fn maestro_chat_preserves_numeric_options() -> TestResult {
     chat::block_on(false, async {
-        assert_payload_rows("maestro_chat_preserves_numeric_options").await
+        assert_payload_rows("maestro_chat_preserves_numeric_options").await?;
+        if child_case().is_none() {
+            non_finite_numbers_become_null().await?;
+        }
+        Ok(())
     })
 }
 
@@ -236,6 +302,72 @@ fn maestro_chat_preserves_tool_choice() -> TestResult {
 fn maestro_chat_preserves_tool_declarations() -> TestResult {
     chat::block_on(false, async {
         assert_payload_rows("maestro_chat_preserves_tool_declarations").await
+    })
+}
+
+/// The tool-streaming mark a catalogued z.ai model carries.
+fn tool_stream_mark(model: &maestro_models::Model) -> Option<bool> {
+    match &model.compat {
+        Some(ModelCompat::OpenAICompletions(compat)) => compat.zai_tool_stream,
+        _ => None,
+    }
+}
+
+/// Whether a request for `model` with or without tools asks the provider to stream tool calls.
+async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -> TestResult<bool> {
+    let ping = json!({"name": "ping", "description": "Ping tool", "parameters": {
+        "type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}});
+    let case = json!({
+        "model": serde_json::to_value(model)?,
+        "context": {"messages": [{"role": "user", "content": "Call ping with ok=true"}],
+            "tools": if with_tools { json!([ping]) } else { Value::Null }},
+        "options": {}
+    });
+    let observed = run_case(&case).await?;
+    let body = &observed.requests.first().ok_or("no request")?["body"];
+    Ok(body.get("tool_stream") == Some(&json!(true)))
+}
+
+#[test]
+fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
+    chat::block_on(false, async {
+        for (id, marked) in [
+            ("glm-5.1", Some(true)),
+            ("glm-4.7", Some(true)),
+            ("glm-5-turbo", Some(true)),
+            ("glm-4.5-air", None),
+        ] {
+            let model = get_model("zai", id).ok_or(id)?;
+            assert_eq!(
+                tool_stream_mark(&model),
+                marked,
+                "{id} is marked in the catalog"
+            );
+        }
+
+        let supported = get_model("zai", "glm-5.1").ok_or("glm-5.1")?;
+        assert!(
+            requests_tool_stream(&supported, true).await?,
+            "a marked model streams tools"
+        );
+        assert!(
+            !requests_tool_stream(&supported, false).await?,
+            "no tools, no tool stream"
+        );
+
+        let mut model = get_model("zai", "glm-4.5-air").ok_or("glm-4.5-air")?;
+        assert!(
+            !requests_tool_stream(&model, true).await?,
+            "an unmarked model does not"
+        );
+        if let Some(ModelCompat::OpenAICompletions(compat)) = &mut model.compat {
+            compat.zai_tool_stream = Some(true);
+        }
+        assert!(
+            requests_tool_stream(&model, true).await?,
+            "an explicit mark overrides"
+        );
+        Ok(())
     })
 }
 

@@ -39,7 +39,8 @@ fn terminated(body: HttpBody) -> HttpBody {
 
 /// Read the response body as server-sent events, reducing each chunk until the stream ends.
 ///
-/// A cancelled signal ends reading quietly; the caller reports the cancellation.
+/// A cancelled signal ends reading quietly; the caller reports the cancellation. A body that
+/// reports an abort while the signal is unset is a failure.
 ///
 /// # Errors
 /// Fails on a transport or framing error, an undecodable event or an error payload.
@@ -57,7 +58,11 @@ pub(super) async fn consume(
         };
         let event = match item {
             Ok(event) => event,
-            Err(EventStreamError::Transport(FetchError::Aborted)) => return Ok(()),
+            Err(EventStreamError::Transport(FetchError::Aborted))
+                if signal.is_some_and(Cancellation::is_aborted) =>
+            {
+                return Ok(());
+            }
             Err(EventStreamError::Transport(error)) => {
                 return Err(RequestFailure::new(error.to_string()));
             }

@@ -10,8 +10,7 @@ use super::messages::{
     OpenAICompatCacheControl, convert_messages,
 };
 use super::payload::{
-    ChatTemplateKwargs, GatewayOptions, IncludeUsage, Number, Payload, Reasoning, Thinking,
-    ToolParam,
+    ChatTemplateKwargs, GatewayOptions, IncludeUsage, Payload, Reasoning, Thinking, ToolParam,
 };
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
@@ -25,6 +24,11 @@ use crate::{
 
 /// Environment variable that selects long cache retention when set to `long`.
 const CACHE_RETENTION_VARIABLE: &str = "MAESTRO_CACHE_RETENTION";
+/// Account scope headers and the environment variables that default them.
+const SCOPE_HEADERS: [(&str, &str); 2] = [
+    ("openai-organization", "OPENAI_ORG_ID"),
+    ("openai-project", "OPENAI_PROJECT_ID"),
+];
 /// Endpoint appended to the base URL.
 pub(super) const ENDPOINT_PATH: &str = "/chat/completions";
 
@@ -105,8 +109,9 @@ impl<'a> Invocation<'a> {
         }
     }
 
-    /// Layer headers from the model, the Copilot gateway, session affinity and the caller,
-    /// then add the generated authorization. Names are lowercase; later layers win.
+    /// Layer headers from the model, the Copilot gateway, session affinity and the caller over
+    /// the environment's organization and project, then add the generated authorization.
+    /// Names are lowercase; later layers win.
     pub(super) fn headers(&self, api_key: &str) -> IndexMap<String, String> {
         let mut layered: IndexMap<String, String> = IndexMap::new();
         let mut layer = |source: &IndexMap<String, String>| {
@@ -139,6 +144,7 @@ impl<'a> Invocation<'a> {
         let bearer = format!("Bearer {api_key}");
         let gateway = self.model.provider == "cloudflare-ai-gateway";
         let mut wire = IndexMap::from([("accept".to_owned(), "application/json".to_owned())]);
+        wire.extend(scope_headers());
         if !gateway {
             wire.insert("authorization".to_owned(), bearer.clone());
         }
@@ -251,13 +257,12 @@ impl<'a> Invocation<'a> {
         }
         let limit = common
             .max_tokens
-            .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
-            .map(Number);
+            .filter(|tokens| *tokens != 0.0 && !tokens.is_nan());
         match self.compat.max_tokens_field {
             MaxTokensField::MaxTokens => payload.max_tokens = limit,
             MaxTokensField::MaxCompletionTokens => payload.max_completion_tokens = limit,
         }
-        payload.temperature = common.temperature.map(Number);
+        payload.temperature = common.temperature;
     }
 
     /// Request or disable reasoning in the endpoint's convention.
@@ -337,6 +342,15 @@ impl<'a> Invocation<'a> {
             });
         }
     }
+}
+
+/// Organization and project headers set from the environment; blank variables send nothing.
+fn scope_headers() -> impl Iterator<Item = (String, String)> {
+    SCOPE_HEADERS.into_iter().filter_map(|(header, variable)| {
+        let value = std::env::var(variable).ok()?;
+        let value = value.trim();
+        (!value.is_empty()).then(|| (header.to_owned(), value.to_owned()))
+    })
 }
 
 /// Lowercase wire name of a reasoning level.

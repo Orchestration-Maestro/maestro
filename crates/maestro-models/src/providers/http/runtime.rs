@@ -69,21 +69,45 @@ pub(crate) async fn sleep(duration: Duration) {
     }
 }
 
+/// A scheduled browser timer, cleared when dropped so a wait that ends early or is abandoned
+/// leaves nothing scheduled.
+#[cfg(target_arch = "wasm32")]
+struct Timer(wasm_bindgen::JsValue);
+
+#[cfg(target_arch = "wasm32")]
+impl Drop for Timer {
+    fn drop(&mut self) {
+        if let Some(clear) = global_function("clearTimeout") {
+            clear.call1(&js_sys::global(), &self.0).ok();
+        }
+    }
+}
+
+/// Look up a function on the browser's global object.
+#[cfg(target_arch = "wasm32")]
+fn global_function(name: &str) -> Option<js_sys::Function> {
+    use wasm_bindgen::{JsCast, JsValue};
+
+    js_sys::Reflect::get(&js_sys::global(), &JsValue::from_str(name))
+        .ok()?
+        .dyn_into()
+        .ok()
+}
+
 /// Resolve after one browser timer of at most `i32::MAX` milliseconds.
 #[cfg(target_arch = "wasm32")]
 async fn wait(duration: Duration) {
-    use wasm_bindgen::{JsCast, JsValue};
+    use wasm_bindgen::JsValue;
 
-    let millis = f64::from(i32::try_from(duration.as_millis()).unwrap_or(i32::MAX));
+    let millis = JsValue::from_f64(f64::from(
+        i32::try_from(duration.as_millis()).unwrap_or(i32::MAX),
+    ));
+    let mut handle = None;
     let promise = js_sys::Promise::new(&mut |resolve, _| {
-        let global = js_sys::global();
-        let timer = js_sys::Reflect::get(&global, &JsValue::from_str("setTimeout")).ok();
-        if let Some(function) = timer.as_ref().and_then(|t| t.dyn_ref::<js_sys::Function>()) {
-            function
-                .call2(&global, &resolve, &JsValue::from_f64(millis))
-                .ok();
-        }
+        handle = global_function("setTimeout")
+            .and_then(|set| set.call2(&js_sys::global(), &resolve, &millis).ok());
     });
+    let _timer = handle.map(Timer);
     wasm_bindgen_futures::JsFuture::from(promise).await.ok();
 }
 

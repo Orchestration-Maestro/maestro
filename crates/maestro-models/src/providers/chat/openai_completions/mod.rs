@@ -26,6 +26,9 @@ use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
 use sse::consume;
 
+/// Text of the failure that ends an aborted invocation.
+const ABORTED_TEXT: &str = "Request was aborted";
+
 /// Options for a direct chat-completion invocation.
 #[derive(Clone, Default)]
 pub struct OpenAICompletionsOptions {
@@ -192,28 +195,34 @@ async fn invoke(
 }
 
 /// Report cancellation or a provider error, otherwise announce completion.
+///
+/// An aborted signal or a message whose stop reason is `Aborted` reports the authored
+/// cancellation text; an error stop reason keeps its text unless that is empty.
 fn conclude(
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
 ) -> Result<(), RequestFailure> {
     if signal.is_some_and(Cancellation::is_aborted) {
-        return Err(RequestFailure::new("Request was aborted"));
+        return Err(RequestFailure::new(ABORTED_TEXT));
     }
-    let (reason, error_message) = {
+    let reason = {
         let message = output.read().unwrap_or_else(PoisonError::into_inner);
-        let reason = match message.stop_reason {
-            StopReason::Stop => Some(DoneReason::Stop),
-            StopReason::Length => Some(DoneReason::Length),
-            StopReason::ToolUse => Some(DoneReason::ToolUse),
-            StopReason::Error | StopReason::Aborted => None,
-        };
-        (reason, message.error_message.clone())
-    };
-    let Some(reason) = reason else {
-        return Err(RequestFailure::new(error_message.unwrap_or_else(|| {
-            "Provider returned an error stop reason".to_owned()
-        })));
+        match message.stop_reason {
+            StopReason::Stop => DoneReason::Stop,
+            StopReason::Length => DoneReason::Length,
+            StopReason::ToolUse => DoneReason::ToolUse,
+            StopReason::Aborted => return Err(RequestFailure::new(ABORTED_TEXT)),
+            StopReason::Error => {
+                let supplied = message
+                    .error_message
+                    .as_deref()
+                    .filter(|text| !text.is_empty());
+                return Err(RequestFailure::new(
+                    supplied.unwrap_or("Provider returned an error stop reason"),
+                ));
+            }
+        }
     };
     stream.push(AssistantMessageEvent::Done {
         reason,

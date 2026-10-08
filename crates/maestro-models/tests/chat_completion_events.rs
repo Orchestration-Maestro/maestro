@@ -260,12 +260,39 @@ async fn body_aborts_by_itself() -> TestResult {
     });
     let (stream, _) = start(aborted, &Cancellation::new())?;
     let (labels, message) = drain(&stream).await?;
+    assert_eq!(labels, ["start", "text_start", "text_delta", "error"]);
+    assert!(matches!(message.stop_reason, StopReason::Error));
+    assert_eq!(
+        message.error_message.as_deref(),
+        Some("Request was aborted.")
+    );
+    assert_only_text(&message, "so far");
+    Ok(())
+}
+
+/// A body that aborts the caller's signal and reports its own abort in the same step.
+async fn body_aborts_with_the_signal() -> TestResult {
+    let signal = Cancellation::new();
+    let trigger = signal.clone();
+    let aborting = chunks_then(vec![text_chunk("whole")], move || {
+        let trigger = trigger.clone();
+        Box::pin(futures_util::stream::poll_fn(move |_| {
+            trigger.abort();
+            Poll::Ready(Some(Err(FetchError::Aborted)))
+        }))
+    });
+    let (stream, _) = start(aborting, &signal)?;
+    let (labels, message) = drain(&stream).await?;
     assert_eq!(
         labels,
-        ["start", "text_start", "text_delta", "text_end", "done"]
+        ["start", "text_start", "text_delta", "text_end", "error"]
     );
-    assert!(matches!(message.stop_reason, StopReason::Stop));
-    assert_only_text(&message, "so far");
+    assert!(matches!(message.stop_reason, StopReason::Aborted));
+    assert_eq!(
+        message.error_message.as_deref(),
+        Some("Request was aborted")
+    );
+    assert_only_text(&message, "whole");
     Ok(())
 }
 
@@ -276,6 +303,7 @@ fn maestro_chat_cancels_owned_request_work() -> TestResult {
         abort_while_the_body_is_pending().await?;
         abort_as_the_body_ends().await?;
         body_aborts_by_itself().await?;
+        body_aborts_with_the_signal().await?;
         dropped_reader_keeps_the_request_running().await
     })
 }
@@ -439,6 +467,54 @@ fn maestro_chat_shares_partial_observations() -> TestResult {
             Some("Provider returned an error stop reason"),
             "a stop reason the reader set is honored when the stream is finalized"
         );
+        Ok(())
+    })
+}
+
+/// Run a paced call whose reader sets the shared message's stop reason and error text when the
+/// first text arrives, returning the update labels and the final message.
+async fn finish_after_edit(
+    stop_reason: StopReason,
+    error_message: &str,
+) -> TestResult<(Vec<String>, AssistantMessage)> {
+    let (stream, _) = start(paced_attempt(), &Cancellation::new())?;
+    let mut labels = Vec::new();
+    while let Some(event) = stream.next().await {
+        let label = serde_json::to_value(&event)?["type"]
+            .as_str()
+            .map(str::to_owned);
+        labels.push(label.ok_or("update type")?);
+        if matches!(event, AssistantMessageEvent::TextDelta { .. }) {
+            let mut message = handle(&event).write().map_err(|error| error.to_string())?;
+            message.stop_reason = stop_reason.clone();
+            message.error_message = Some(error_message.to_owned());
+        }
+    }
+    let message = stream.result().await;
+    let message = message.read().map_err(|error| error.to_string())?.clone();
+    Ok((labels, message))
+}
+
+#[test]
+fn maestro_chat_reports_supplied_stop_reasons() -> TestResult {
+    block_on(true, async {
+        for (stop_reason, supplied, expected) in [
+            (StopReason::Aborted, "ignored", "Request was aborted"),
+            (
+                StopReason::Error,
+                "",
+                "Provider returned an error stop reason",
+            ),
+        ] {
+            let (labels, message) = finish_after_edit(stop_reason, supplied).await?;
+            assert_eq!(
+                labels,
+                ["start", "text_start", "text_delta", "text_end", "error"]
+            );
+            assert!(matches!(message.stop_reason, StopReason::Error));
+            assert_eq!(message.error_message.as_deref(), Some(expected));
+            assert_only_text(&message, "shared");
+        }
         Ok(())
     })
 }
