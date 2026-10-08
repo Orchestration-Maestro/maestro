@@ -73,7 +73,10 @@ that replacement. Queued unrelated successful builds cannot satisfy these checks
 They retain both output streams in one ordered transcript; a controlled-output
 test observes them through command completion. There are no exact build counts
 or negative observation windows. Their watch processes share a test-owned
-process group, stopped on completion or panic.
+process group, stopped on completion or panic. Before starting a watch-test
+process group, the harness directs its LLVM profiles into that fixture's target
+directory, outside the merged coverage profile set, because cleanup can forcibly
+stop its descendants.
 
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
