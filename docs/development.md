@@ -43,18 +43,16 @@ mise exec -- just models-dev-compile
 ```
 
 The pinned external watcher compiles initially and queues a rebuild when input
-changes during compilation. Earlier terminal output remains visible. It watches
-the workspace root, including sibling dependencies and Cargo configuration,
-excluding `.git` and the target subtree resolved when the watcher starts.
-The target ignore uses the watcher's gitignore dialect, escaping backslashes,
-brackets, wildcards, braces and leading markers so it excludes only the literal
-output subtree. On supported native backends, the watcher prunes ignored subtrees
-before registering them; backends without subtree pruning filter their events
-instead. Each remaining
-change is compared literally with Cargo's current target directory before
-compiling. A later target switch is handled by that dynamic filter; restart the
-watcher to prune the new output subtree and release the old target ignore. `dev` covers delivered owners;
-`dev-compile` and `models-dev-compile` select models only. Missing owners fail.
+changes during compilation. Earlier terminal output remains visible. At startup,
+it registers each existing top-level workspace entry as a literal watch path,
+including sibling dependencies and Cargo configuration, except `.git` and the
+current target directory when that directory is a top-level entry. A new
+top-level entry created after startup is watched only after a restart.
+Each change is compared literally with Cargo's current target directory before
+compiling, so nested target directories and later target switches are handled by
+that dynamic filter. Restart the watcher to update its registered roots after a
+target switch. `dev` covers delivered owners; `dev-compile` and
+`models-dev-compile` select models only. Missing owners fail.
 Decision tests use literal watcher events to prove that configured target writes
 are skipped, including bracketed paths; mixed source events and pathless events
 compile. The decision also compiles delayed events under an old target after a

@@ -14,16 +14,15 @@ pub(crate) fn run(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
         .map_err(io::Error::other)?
         .target_directory;
     let mut command = Command::new("watchexec");
-    if let Some(ignore) = target_ignore(target.as_std_path(), &std::env::current_dir()?)? {
-        command.args(["--ignore", &ignore]);
+    let entries = std::fs::read_dir(std::env::current_dir()?)?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<io::Result<Vec<_>>>()?;
+    for root in watch_roots(entries, target.as_std_path()) {
+        command.arg("--watch").arg(root);
     }
     let status = command
         .args([
-            "--watch",
-            ".",
             "--ignore-nothing",
-            "--ignore",
-            "/.git/",
             "--on-busy-update=queue",
             "--shell=none",
             "--emit-events-to=json-stdio",
@@ -36,31 +35,12 @@ pub(crate) fn run(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
     Ok(super::exit_code(status))
 }
 
-/// Anchor the literal output subtree using the watcher's gitignore dialect.
-/// Backslashes escape metacharacters so valid names cannot exclude other paths.
-fn target_ignore(target: &Path, checkout: &Path) -> io::Result<Option<String>> {
-    let Ok(relative) = target.strip_prefix(checkout) else {
-        return Ok(None);
-    };
-    let relative = relative
-        .to_str()
-        .ok_or_else(|| io::Error::other("non-Unicode target path"))?;
-    let relative = relative.replace(std::path::MAIN_SEPARATOR, "/");
-    Ok(Some(format!("/{}/", escape_gitignore_path(&relative))))
-}
-
-/// Encode a literal path for gitignore, where backslashes escape the next character.
-fn escape_gitignore_path(path: &str) -> String {
-    let mut pattern = String::new();
-    for (index, character) in path.chars().enumerate() {
-        if matches!(character, '\\' | '*' | '?' | '[' | ']' | '{' | '}')
-            || (index == 0 && matches!(character, '!' | '#'))
-        {
-            pattern.push('\\');
-        }
-        pattern.push(character);
-    }
-    pattern
+/// Select literal top-level paths, excluding Git metadata and the current output root.
+fn watch_roots(entries: impl IntoIterator<Item = PathBuf>, target: &Path) -> Vec<PathBuf> {
+    entries
+        .into_iter()
+        .filter(|entry| entry != target && entry.file_name() != Some(std::ffi::OsStr::new(".git")))
+        .collect()
 }
 
 /// Compile on source changes while ignoring events confined to Cargo outputs.
