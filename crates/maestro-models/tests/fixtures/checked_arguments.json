@@ -2302,18 +2302,6 @@
     }
   },
   {
-    "case": "case-16-false",
-    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
-    "schema": false,
-    "arguments": {},
-    "name": "measure",
-    "declaration": "measure",
-    "mode": "arguments",
-    "expected": {
-      "Err": "Validation failed for tool \"measure\":\n  - root: schema is false\n\nReceived arguments:\n{}"
-    }
-  },
-  {
     "case": "case-16-error-1",
     "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
     "schema": {

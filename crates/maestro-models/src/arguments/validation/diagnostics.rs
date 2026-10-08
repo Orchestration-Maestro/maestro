@@ -23,6 +23,24 @@ pub(super) fn entries(object: &Map<String, Value>) -> Vec<(&String, &Value)> {
     entries
 }
 
+pub(super) fn path(instance: &str, missing: Option<&str>) -> String {
+    let mut display = instance
+        .strip_prefix('/')
+        .unwrap_or(instance)
+        .replace('/', ".");
+    if let Some(name) = missing.filter(|name| !name.is_empty()) {
+        if !display.is_empty() {
+            display.push('.');
+        }
+        display.push_str(name);
+    }
+    if display.is_empty() {
+        "root".into()
+    } else {
+        display
+    }
+}
+
 fn index(key: &str) -> Option<u32> {
     let index = key.parse::<u32>().ok()?;
     (index < u32::MAX && index.to_string() == key).then_some(index)

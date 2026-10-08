@@ -258,3 +258,32 @@ fn maestro_asserts_registered_formats_and_ignores_unknown_formats() {
 fn maestro_reports_invocation_names_and_reference_keyword_errors() {
     run_cases("maestro_reports_invocation_names_and_reference_keyword_errors").unwrap();
 }
+
+#[test]
+fn maestro_stringifies_negative_zero_and_rounded_large_numbers() {
+    for (number, text) in [
+        (json!(-0.0), "0"),
+        (json!(9_007_199_254_740_993_u64), "9007199254740992"),
+    ] {
+        let tool = declaration(
+            json!({"type":"object","properties":{"value":{"type":"string","const":text}}}),
+        );
+        let call = invocation(json!({"value":number})).unwrap();
+        assert_eq!(
+            validate_tool_arguments(&tool, &call).unwrap()["value"],
+            text
+        );
+        let rejected = declaration(
+            json!({"type":"object","properties":{"value":{"type":"string","const":"different"}}}),
+        );
+        let original = if text == "0" { "0" } else { "9007199254740992" };
+        assert_eq!(
+            validate_tool_arguments(&rejected, &call)
+                .unwrap_err()
+                .message,
+            format!(
+                "Validation failed for tool \"count\":\n  - value: must be equal to constant\n\nReceived arguments:\n{{\n  \"value\": {original}\n}}"
+            )
+        );
+    }
+}

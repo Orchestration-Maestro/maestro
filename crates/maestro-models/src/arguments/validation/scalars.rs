@@ -59,20 +59,15 @@ pub(super) fn required_errors(
     let Some(first) = missing.first() else {
         return Vec::new();
     };
-    let display = path.strip_prefix('/').unwrap_or(path).replace('/', ".");
-    let separator = if display.is_empty() { "" } else { "." };
     vec![format!(
-        "  - {display}{separator}{first}: must have required properties {}",
+        "  - {}: must have required properties {}",
+        super::diagnostics::path(path, Some(first)),
         missing.join(", ")
     )]
 }
 
 pub(super) fn render(path: &str, message: &str) -> String {
-    let display = path.strip_prefix('/').unwrap_or(path).replace('/', ".");
-    format!(
-        "  - {}: {message}",
-        if display.is_empty() { "root" } else { &display }
-    )
+    format!("  - {}: {message}", super::diagnostics::path(path, None))
 }
 
 pub(super) fn number_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
