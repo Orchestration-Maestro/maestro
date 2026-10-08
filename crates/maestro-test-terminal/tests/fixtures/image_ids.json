@@ -1,0 +1,276 @@
+[
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=4294967295;AAAA\u001b\\",
+  "ids": [
+   4294967295
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=4294967296;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=-1;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1.5;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1.0;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1e2;AAAA\u001b\\",
+  "ids": [
+   100
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0x2a;AAAA\u001b\\",
+  "ids": [
+   42
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0b10;AAAA\u001b\\",
+  "ids": [
+   2
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0o10;AAAA\u001b\\",
+  "ids": [
+   8
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=+1;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i= 1 ;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=﻿1﻿;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=Infinity;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=NaN;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=01;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1=2;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0x;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0xg;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0b2;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0o8;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=-0x1;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=+0x10;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0x+1;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1e-1;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0.0;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1e400;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=4294967295.5;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0XFF;AAAA\u001b\\",
+  "ids": [
+   255
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0B11;AAAA\u001b\\",
+  "ids": [
+   3
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0O17;AAAA\u001b\\",
+  "ids": [
+   15
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=.5e1;AAAA\u001b\\",
+  "ids": [
+   5
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=5.;AAAA\u001b\\",
+  "ids": [
+   5
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1_0;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=1,5;AAAA\u001b\\",
+  "ids": [
+   1
+  ]
+ },
+ {
+  "test": "image_ids_obey_numeric_boundaries",
+  "line": "\u001b_Ga=T,i=0x1_0;AAAA\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "plain",
+  "ids": []
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "\u001b_Gi=4",
+  "ids": []
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "\u001b_Ga=T;abc\u001b\\",
+  "ids": []
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "prefix\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=7;AAAA\u001b\\",
+  "ids": [
+   7
+  ]
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=7;AAAA\u001b\\\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=8;AAAA\u001b\\",
+  "ids": [
+   7
+  ]
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "\u001b_Gi=0,i=5;abc\u001b\\",
+  "ids": [
+   5
+  ]
+ },
+ {
+  "test": "image_headers_preserve_first_sequence_selection",
+  "line": "\u001b_Gi=6,i=5;abc\u001b\\",
+  "ids": [
+   6
+  ]
+ }
+]

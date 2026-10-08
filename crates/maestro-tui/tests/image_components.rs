@@ -136,7 +136,7 @@ fn image_fallback_styling_runs_after_state_borrow_ends() {
     let shared = terminal.clone();
     let observations = Rc::new(RefCell::new(Vec::new()));
     let observed = observations.clone();
-    let mut image = Image::new(
+    let image = Image::new(
         "AAAA".to_owned(),
         "image/png".to_owned(),
         ImageTheme {
@@ -188,7 +188,7 @@ fn recognized_component(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             true_color: true,
             hyperlinks: true,
         });
-        let mut image = Image::new(
+        let image = Image::new(
             "AAAA".to_owned(),
             "image/png".to_owned(),
             ImageTheme {
@@ -238,7 +238,7 @@ fn maestro_images_restores_the_cursor_to_the_reserved_image_row_after_kitty_rend
         width_px: 10,
         height_px: 10,
     });
-    let mut image = Image::new(
+    let image = Image::new(
         "AAAA".to_owned(),
         "image/png".to_owned(),
         ImageTheme {
@@ -290,7 +290,7 @@ fn zero_geometry_falls_back_without_allocating() {
             height_px: 0,
         },
     ] {
-        let mut image = Image::new(
+        let image = Image::new(
             "AAAA".to_owned(),
             "image/png".to_owned(),
             ImageTheme {

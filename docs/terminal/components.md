@@ -1,11 +1,14 @@
 # Terminal components
 
 `maestro-tui` defines what a renderable component is and ships the pieces that need
-no terminal: a container, text and image components and the contracts for
-overlays, terminals, editors and completion. It performs no terminal I/O and starts no
-timers; whatever connects a real terminal supplies a `Terminal` implementation.
-See [inline images](images.md) for capability detection and retained image rendering,
-[key input](keys.md) for decoding and [keybindings](keybindings.md) for configurable actions.
+no terminal: a container, text and image components, the contracts for overlays,
+terminals, editors and completion, and the `TUI` frame writer that draws components
+to a terminal. It performs no terminal I/O and starts no timers; whatever connects a
+real terminal supplies a `Terminal` implementation, and the host of the frame writer
+supplies a `TuiRuntime` for time, deferral and log files.
+See [retained frames](rendering.md) for the frame writer, [inline images](images.md)
+for capability detection and retained image rendering, [key input](keys.md) for
+decoding and [keybindings](keybindings.md) for configurable actions.
 
 The crate root re-exports the component, container, overlay, terminal, editor and
 completion names used below, so `maestro_tui::Component` and
@@ -23,19 +26,42 @@ Everything else is an optional capability that defaults to absent:
 | Drop cached rendering | `invalidate` | does nothing |
 | Receive input while focused | `input_handler` | `None` |
 | Receive key-release events | `wants_key_release` | `false` |
-| Hold focus and show a cursor | `focusable`, `focusable_mut` | `None` |
+| Hold focus and show a cursor | `focusable` | `None` |
 
 Absence is explicit: a component without input returns `None` from `input_handler`
 rather than a handler that ignores its input. `is_focusable` tests for the
-capability, not for the current focus. A focused component is expected to emit
+capability, not for the current focus. A focusable component owns a `FocusFlag`, which
+the frame writer sets when focus moves; the component reads it when it renders, so a
+change made during that render counts. A focused component is expected to emit
 `CURSOR_MARKER` where the hardware cursor belongs; the marker is an escape that
 occupies no cells.
 
+Every method takes `&self`: a component is a shared object that a callback running inside
+one of its methods, such as a render that moves focus or invalidates the writer, reaches
+at once. A component keeps the state it changes in `Cell`s and `RefCell`s, borrows it only
+for the statement that needs it and never across a call into the writer, a callback or
+another component.
+
 A `Container` renders its children in order and concatenates their lines. Children
-are shared handles (`Rc<RefCell<dyn Component>>`), so whoever keeps a handle can
-keep editing the child and the container shows the edit. The same child may appear
-twice. `remove_child` removes the first occurrence by identity and ignores a child
-that is not present; `invalidate` reaches every child in order.
+are shared handles (`Rc<dyn Component>`), so whoever keeps a handle can keep editing the
+child through its own interior state and the container shows the edit. The same child may
+appear twice. `children` returns the array itself (`Rc<RefCell<Vec<_>>>`), so whoever
+keeps that handle edits the array the container renders, and `set_children` makes another
+array the one it renders. `remove_child` removes the first occurrence by identity and
+ignores a child that is not present. `clear` replaces the children with a new empty
+array, which a handle kept from before no longer reaches. Borrow the array only for the
+statement that edits or reads it, because the container borrows it itself to render,
+invalidate, add and remove.
+
+`render` and `invalidate` walk the array held when they start, by position, while the
+position is below that array's current length. A child added to that array is visited
+only if the walk reaches its position. After `clear`, or `set_children` with another
+array, the running walk keeps the array it started on and visits nothing added to the
+new one. A removal at or before the position being visited shifts the later children
+back, so the next child is skipped. `invalidate` invalidates each child its walk reaches
+before it returns, including one that is rendering or handling input, once per position
+the walk visits: a child listed twice is invalidated twice when no edit during the walk
+changes the array.
 
 `TruncatedText` shows the first line of its text, truncated to the viewport, between
 `padding_y` blank rows. Horizontal padding is `padding_x` on each side but never
@@ -45,14 +71,13 @@ only spaces. A zero-width viewport renders empty lines. Every line, blank rows
 included, is padded with spaces to exactly the viewport width.
 
 ```rust
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Component, Container, TruncatedText};
 
-let title: ComponentHandle = Rc::new(RefCell::new(TruncatedText::new("Hello world\nignored".into(), 1, 0)));
-let mut container = Container::new();
+let title: ComponentHandle = Rc::new(TruncatedText::new("Hello world\nignored".into(), 1, 0));
+let container = Container::new();
 container.add_child(Rc::clone(&title));
 container.add_child(Rc::clone(&title));
 
@@ -69,7 +94,7 @@ assert_eq!(container.render(14), [" Hello world  "]);
 shown; every member is optional and sizes keep a percentage's spelling. The
 `visible` callback takes the viewport width and height.
 `OverlayHandle` is the control surface of a shown overlay. Resolving positions and
-managing a stack of overlays belong to the renderer that uses these records.
+managing a stack of overlays belong to the frame writer that uses these records.
 
 ## Terminals
 

@@ -955,7 +955,7 @@ fn image_id_sources_cover_inclusive_bounds_and_swap() {
                     true_color: true,
                     hyperlinks: true,
                 });
-                let mut image = Image::new(
+                let image = Image::new(
                     "AAAA".to_owned(),
                     "image/png".to_owned(),
                     ImageTheme {

@@ -1,0 +1,850 @@
+[
+ {
+  "test": "first_frame_preserves_scrollback",
+  "initial": [
+   "one",
+   "two"
+  ],
+  "steps": [],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "unchanged_frame_only_repositions_cursor",
+  "initial": [
+   "one"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "middle_change_leaves_later_rows_untouched",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one",
+     "TWO",
+     "three"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[1A\r\u001b[2KTWO\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "first_change_retains_unchanged_suffix",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "ONE",
+     "two",
+     "three"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2A\r\u001b[2KONE\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "last_change_keeps_prefix",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one",
+     "two",
+     "THREE"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\u001b[2KTHREE\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "disjoint_changes_redraw_the_intervening_span",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "ONE",
+     "two",
+     "THREE"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2A\r\u001b[2KONE\u001b[0m\u001b]8;;\u0007\r\n\u001b[2Ktwo\u001b[0m\u001b]8;;\u0007\r\n\u001b[2KTHREE\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "append_at_bottom_scrolls_once",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one",
+     "two",
+     "three",
+     "four"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\n\u001b[2Kfour\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "append_blank_line_is_not_lost",
+  "initial": [
+   "one"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one",
+     ""
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\n\u001b[2K\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "deleted_tail_clears_without_redrawing_prefix",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one",
+     "two"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[1A\r\u001b[1B\r\u001b[2K\u001b[1A\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "default_empty_frame_clears_last_row",
+  "initial": [
+   "one"
+  ],
+  "steps": [
+   {
+    "lines": []
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\r\u001b[2K\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "empty_frame_can_grow_again",
+  "initial": [
+   "one"
+  ],
+  "steps": [
+   {
+    "lines": []
+   },
+   {
+    "lines": [
+     "two"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\r\u001b[2K\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026htwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "shrink_above_viewport_resets_then_appends",
+  "initial": [
+   "zero",
+   "one",
+   "two",
+   "three",
+   "four",
+   "five"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "zero"
+    ]
+   },
+   {
+    "lines": [
+     "zero",
+     "next"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hzero\u001b[0m\u001b]8;;\u0007\r\none\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\r\nfour\u001b[0m\u001b]8;;\u0007\r\nfive\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2J\u001b[H\u001b[3Jzero\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\n\u001b[2Knext\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "changed_scrollback_forces_full_redraw",
+  "initial": [
+   "zero",
+   "one",
+   "two",
+   "three",
+   "four"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "ZERO",
+     "one",
+     "two",
+     "three",
+     "four"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hzero\u001b[0m\u001b]8;;\u0007\r\none\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\r\nfour\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2J\u001b[H\u001b[3JZERO\u001b[0m\u001b]8;;\u0007\r\none\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\r\nfour\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "width_change_clears_purges_and_redraws",
+  "initial": [
+   "one",
+   "two"
+  ],
+  "steps": [
+   {
+    "columns": 8
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2J\u001b[H\u001b[3Jone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "height_change_clears_purges_and_redraws",
+  "initial": [
+   "one",
+   "two"
+  ],
+  "steps": [
+   {
+    "rows": 4
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2J\u001b[H\u001b[3Jone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "mobile_height_change_keeps_history",
+  "initial": [
+   "one",
+   "two"
+  ],
+  "steps": [
+   {
+    "rows": 4
+   }
+  ],
+  "options": {
+   "mobile": true
+  },
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "clear_on_shrink_resets_high_water",
+  "initial": [
+   "one",
+   "two",
+   "three"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "one"
+    ]
+   },
+   {
+    "lines": [
+     "one",
+     "four"
+    ]
+   }
+  ],
+  "options": {
+   "clear": true
+  },
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hone\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[2J\u001b[H\u001b[3Jone\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\r\n\u001b[2Kfour\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "changed_image_is_deleted_before_placement",
+  "initial": [
+   "top",
+   "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=42;AAAA\u001b\\"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=42;BBBB\u001b\\",
+     ""
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026htop\u001b[0m\u001b]8;;\u0007\r\n\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=42;AAAA\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=d,d=I,i=42,q=2\u001b\\\u001b[1A\r\u001b[2K\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=42;BBBB\u001b\\\r\n\u001b[2K\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "reserved_row_change_redraws_image",
+  "initial": [
+   "",
+   "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=88;AAAA\u001b\\"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "covered",
+     "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=88;AAAA\u001b\\"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026h\u001b[0m\u001b]8;;\u0007\r\n\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=88;AAAA\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=d,d=I,i=88,q=2\u001b\\\u001b[1A\r\u001b[2Kcovered\u001b[0m\u001b]8;;\u0007\r\n\u001b[2K\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=88;AAAA\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "forced_redraw_deletes_prior_images",
+  "initial": [
+   "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=77;AAAA\u001b\\"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "text"
+    ],
+    "force": true
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=77;AAAA\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=d,d=I,i=77,q=2\u001b\\\u001b[2J\u001b[H\u001b[3Jtext\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 2
+   }
+  ]
+ },
+ {
+  "test": "duplicate_image_ids_are_deleted_once",
+  "initial": [
+   "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=4;AAAA\u001b\\",
+   "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=4;AAAA\u001b\\",
+   "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=9;AAAA\u001b\\"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=4;AAAA\u001b\\\r\n\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=4;AAAA\u001b\\\r\n\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2,i=9;AAAA\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=d,d=I,i=4,q=2\u001b\\\u001b_Ga=d,d=I,i=9,q=2\u001b\\\u001b[2A\r\u001b[2Ka\u001b[0m\u001b]8;;\u0007\r\n\u001b[2Kb\u001b[0m\u001b]8;;\u0007\r\n\u001b[2Kc\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "cursor_only_move_skips_frame_drawing",
+  "initial": [
+   "a\u001b_maestro:c\u0007b"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "ab\u001b_maestro:c\u0007"
+    ]
+   }
+  ],
+  "options": {
+   "cursor": true
+  },
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026hab\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[2G",
+     "\u001b[?25h"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[3G",
+     "\u001b[?25h"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "cursor_row_motion_keeps_logical_end",
+  "initial": [
+   "\u001b_maestro:c\u0007a",
+   "b",
+   "c"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "a",
+     "b",
+     "c\u001b_maestro:c\u0007"
+    ]
+   },
+   {
+    "lines": [
+     "\u001b_maestro:c\u0007a",
+     "b",
+     "c"
+    ]
+   }
+  ],
+  "options": {
+   "cursor": true
+  },
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026ha\u001b[0m\u001b]8;;\u0007\r\nb\u001b[0m\u001b]8;;\u0007\r\nc\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+     "\u001b[2A\u001b[1G",
+     "\u001b[?25h"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[2B\u001b[2G",
+     "\u001b[?25h"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[2A\u001b[1G",
+     "\u001b[?25h"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "image_change_ranges_preserve_deletion_order",
+  "initial": [
+   "\u001b_Gi=9;a\u001b\\",
+   "\u001b_Gi=3;a\u001b\\"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "text",
+     "\u001b_Gi=3;a\u001b\\"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Gi=9;a\u001b\\\r\n\u001b_Gi=3;a\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=d,d=I,i=9,q=2\u001b\\\u001b_Ga=d,d=I,i=3,q=2\u001b\\\u001b[1A\r\u001b[2Ktext\u001b[0m\u001b]8;;\u0007\r\n\u001b[2K\u001b_Gi=3;a\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ },
+ {
+  "test": "image_change_ranges_preserve_deletion_order",
+  "initial": [
+   "text",
+   "\u001b_Gi=3;a\u001b\\"
+  ],
+  "steps": [
+   {
+    "lines": [
+     "TEXT",
+     "\u001b_Gi=3;a\u001b\\"
+    ]
+   }
+  ],
+  "options": {},
+  "frames": [
+   {
+    "writes": [
+     "\u001b[?2026htext\u001b[0m\u001b]8;;\u0007\r\n\u001b_Gi=3;a\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   },
+   {
+    "writes": [
+     "\u001b[?2026h\u001b_Ga=d,d=I,i=3,q=2\u001b\\\u001b[1A\r\u001b[2KTEXT\u001b[0m\u001b]8;;\u0007\r\n\u001b[2K\u001b_Gi=3;a\u001b\\\u001b[?2026l",
+     "\u001b[?25l"
+    ],
+    "full_redraws": 1
+   }
+  ]
+ }
+]

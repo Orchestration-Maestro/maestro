@@ -1,4 +1,6 @@
 //! Retained inline image component.
+use std::cell::{Cell, RefCell};
+
 use crate::{
     Component,
     images::terminal_image::{
@@ -39,9 +41,9 @@ pub struct Image {
     /// Shared terminal support and cell measurements.
     terminal: TerminalImage,
     /// Supplied or lazily allocated Kitty identifier.
-    id: Option<u32>,
+    id: Cell<Option<u32>>,
     /// Viewport width and owned lines from the last render.
-    cache: Option<(usize, Vec<String>)>,
+    cache: RefCell<Option<(usize, Vec<String>)>>,
 }
 impl Image {
     /// Retains an image, selecting explicit, header, or 800×600 geometry.
@@ -65,19 +67,19 @@ impl Image {
             mime_type,
             dimensions,
             theme,
-            id: options.image_id,
+            id: Cell::new(options.image_id),
             options,
             terminal: terminal_image,
-            cache: None,
+            cache: RefCell::new(None),
         }
     }
     /// Returns the supplied or first allocated Kitty ID, if any.
     #[must_use]
     pub fn get_image_id(&self) -> Option<u32> {
-        self.id
+        self.id.get()
     }
     /// Encodes usable geometry before reserving lines; invalid geometry never allocates an ID.
-    fn image_lines(&mut self, width: usize) -> Option<Vec<String>> {
+    fn image_lines(&self, width: usize) -> Option<Vec<String>> {
         let protocol = self.terminal.get_capabilities().images?;
         let available = width.checked_sub(2)?;
         let target = u32::try_from(available)
@@ -88,15 +90,15 @@ impl Image {
             target,
             Some(self.terminal.get_cell_dimensions()),
         )?;
-        if protocol == ImageProtocol::Kitty && self.id.is_none() {
-            self.id = Some(self.terminal.allocate_image_id());
+        if protocol == ImageProtocol::Kitty && self.id.get().is_none() {
+            self.id.set(Some(self.terminal.allocate_image_id()));
         }
         let result = self.terminal.render_image(
             &self.base64_data,
             self.dimensions,
             ImageRenderOptions {
                 max_width_cells: Some(target),
-                image_id: self.id,
+                image_id: self.id.get(),
                 move_cursor: false,
                 ..ImageRenderOptions::default()
             },
@@ -118,8 +120,8 @@ impl Image {
     }
 }
 impl Component for Image {
-    fn render(&mut self, width: usize) -> Vec<String> {
-        if let Some((cached_width, lines)) = &self.cache
+    fn render(&self, width: usize) -> Vec<String> {
+        if let Some((cached_width, lines)) = &*self.cache.borrow()
             && *cached_width == width
         {
             return lines.clone();
@@ -132,10 +134,10 @@ impl Component for Image {
             );
             vec![(self.theme.fallback_color)(&fallback)]
         });
-        self.cache = Some((width, lines.clone()));
+        *self.cache.borrow_mut() = Some((width, lines.clone()));
         lines
     }
-    fn invalidate(&mut self) {
-        self.cache = None;
+    fn invalidate(&self) {
+        self.cache.take();
     }
 }

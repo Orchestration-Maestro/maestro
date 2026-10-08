@@ -1,0 +1,71 @@
+[
+ {
+  "lines": [],
+  "writes": [
+   "\u001b[?2026h\u001b[?2026l",
+   "\u001b[?25l"
+  ]
+ },
+ {
+  "lines": [
+   "plain"
+  ],
+  "writes": [
+   "\u001b[?2026hplain\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+   "\u001b[?25l"
+  ]
+ },
+ {
+  "lines": [
+   "a\u001b_maestro:c\u0007b"
+  ],
+  "writes": [
+   "\u001b[?2026hab\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+   "\u001b[2G",
+   "\u001b[?25h"
+  ]
+ },
+ {
+  "lines": [
+   "\u001b[31m界\u001b_maestro:c\u0007"
+  ],
+  "writes": [
+   "\u001b[?2026h\u001b[31m界\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+   "\u001b[3G",
+   "\u001b[?25h"
+  ]
+ },
+ {
+  "lines": [
+   "\u001b_maestro:c\u0007a",
+   "\u001b_maestro:c\u0007b"
+  ],
+  "writes": [
+   "\u001b[?2026h\u001b_maestro:c\u0007a\u001b[0m\u001b]8;;\u0007\r\nb\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+   "\u001b[1G",
+   "\u001b[?25h"
+  ]
+ },
+ {
+  "lines": [
+   "\u001b_maestro:c\u0007a\u001b_maestro:c\u0007b"
+  ],
+  "writes": [
+   "\u001b[?2026ha\u001b_maestro:c\u0007b\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+   "\u001b[1G",
+   "\u001b[?25h"
+  ]
+ },
+ {
+  "lines": [
+   "\u001b_maestro:c\u0007",
+   "one",
+   "two",
+   "three"
+  ],
+  "writes": [
+   "\u001b[?2026h\u001b_maestro:c\u0007\u001b[0m\u001b]8;;\u0007\r\none\u001b[0m\u001b]8;;\u0007\r\ntwo\u001b[0m\u001b]8;;\u0007\r\nthree\u001b[0m\u001b]8;;\u0007\u001b[?2026l",
+   "\u001b[?25l"
+  ]
+ }
+]

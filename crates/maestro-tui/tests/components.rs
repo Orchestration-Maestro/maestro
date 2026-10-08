@@ -2,16 +2,16 @@
 
 use std::cell::{Cell, RefCell};
 use std::io;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::time::Duration;
 
 use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
-use maestro_tui::editor_component::EditorCallbacks;
-use maestro_tui::tui::{ComponentHandle, InputHandler};
+use maestro_tui::editor_component::{BorderColor, EditorCallbacks};
+use maestro_tui::tui::{ChildArray, ComponentHandle, InputHandler};
 use maestro_tui::{
-    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, Focusable,
-    OverlayHandle, OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText,
-    is_focusable, visible_width,
+    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayHandle,
+    OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable,
+    visible_width,
 };
 
 mod fixtures {
@@ -33,49 +33,53 @@ const RESET: &str = "\x1b[0m";
 
 #[test]
 fn component_capabilities_distinguish_missing_input_and_focus() {
-    let mut passive = Passive("p");
+    let passive = Passive("p");
     assert!(passive.input_handler().is_none() && passive.focusable().is_none());
-    assert!(passive.focusable_mut().is_none() && !passive.wants_key_release());
+    assert!(!passive.wants_key_release());
     assert!(!is_focusable(Some(&passive)) && !is_focusable(None));
 
-    let mut field = Field::default();
+    let field = Field::default();
     assert!(
-        !field.focused() && is_focusable(Some(&field)),
+        !field.focus.get() && is_focusable(Some(&field)),
         "an unfocused field is still focusable"
     );
-    if let Some(focus) = field.focusable_mut() {
-        focus.set_focused(true);
+    if let Some(focus) = field.focusable() {
+        focus.focus_flag().set(true);
     }
-    assert!(field.focusable().is_some_and(Focusable::focused));
+    assert!(
+        field
+            .focusable()
+            .is_some_and(|focus| focus.focus_flag().get())
+    );
     assert_eq!(field.render(10), [format!("> {CURSOR_MARKER}")]);
     assert_eq!(visible_width(CURSOR_MARKER), 0);
 
     if let Some(input) = field.input_handler() {
         input.handle_input("\x1b[A");
     }
-    assert_eq!(field.received, ["\x1b[A"]);
+    assert_eq!(*field.received.borrow(), ["\x1b[A"]);
     assert!(!field.wants_key_release());
-    field.release = true;
+    field.release.set(true);
     assert!(field.wants_key_release());
 }
 
 #[test]
 fn container_retains_shared_children_order_and_invalidation() {
     let trace = InvalidationTrace::default();
-    let first: ComponentHandle = Rc::new(RefCell::new(Block {
+    let first: ComponentHandle = Rc::new(Block {
         name: "first",
-        lines: vec!["one".into(), "two".into()],
+        lines: RefCell::new(vec!["one".into(), "two".into()]),
         trace: Rc::clone(&trace),
-    }));
-    let second = Rc::new(RefCell::new(Block {
+    });
+    let second = Rc::new(Block {
         name: "second",
-        lines: vec!["three".into()],
+        lines: RefCell::new(vec!["three".into()]),
         trace: Rc::clone(&trace),
-    }));
+    });
     let second_handle: ComponentHandle = second.clone();
-    let passive: ComponentHandle = Rc::new(RefCell::new(Passive("p")));
+    let passive: ComponentHandle = Rc::new(Passive("p"));
 
-    let mut container = Container::new();
+    let container = Container::new();
     for child in [&second_handle, &first, &passive, &first] {
         container.add_child(Rc::clone(child));
     }
@@ -84,7 +88,7 @@ fn container_retains_shared_children_order_and_invalidation() {
         ["three", "one", "two", "p:7", "one", "two"]
     );
 
-    second.borrow_mut().lines.push("edited".into());
+    second.lines.borrow_mut().push("edited".into());
     assert_eq!(container.render(7)[..2], ["three", "edited"]);
 
     container.invalidate();
@@ -95,20 +99,81 @@ fn container_retains_shared_children_order_and_invalidation() {
     );
 
     container.remove_child(&first);
-    assert_eq!(container.children.len(), 3);
-    assert!(Rc::ptr_eq(&container.children[0], &second_handle));
+    let children = container.children();
+    assert_eq!(children.borrow().len(), 3);
+    assert!(Rc::ptr_eq(&children.borrow()[0], &second_handle));
     assert!(
-        Rc::ptr_eq(&container.children[1], &passive),
+        Rc::ptr_eq(&children.borrow()[1], &passive),
         "only the first occurrence leaves"
     );
-    assert!(Rc::ptr_eq(&container.children[2], &first));
-    let stranger: ComponentHandle = Rc::new(RefCell::new(Passive("x")));
+    assert!(Rc::ptr_eq(&children.borrow()[2], &first));
+    let stranger: ComponentHandle = Rc::new(Passive("x"));
     container.remove_child(&stranger);
-    assert_eq!(container.children.len(), 3);
+    assert_eq!(children.borrow().len(), 3);
 
     container.clear();
-    assert!(container.children.is_empty() && container.render(7).is_empty());
-    assert!(Container::default().children.is_empty());
+    assert!(container.children().borrow().is_empty() && container.render(7).is_empty());
+    assert!(Container::default().children().borrow().is_empty());
+}
+
+#[test]
+fn container_children_is_the_rendered_array_that_assignment_replaces() {
+    let (a, b, c): (ComponentHandle, ComponentHandle, ComponentHandle) = (
+        Rc::new(Passive("a")),
+        Rc::new(Passive("b")),
+        Rc::new(Passive("c")),
+    );
+    let container = Container::new();
+    container.add_child(Rc::clone(&a));
+    let kept = container.children();
+    assert!(
+        Rc::ptr_eq(&kept, &container.children()),
+        "one array, not copies"
+    );
+
+    kept.borrow_mut().push(Rc::clone(&b));
+    assert_eq!(
+        container.render(7),
+        ["a:7", "b:7"],
+        "an addition through the handle is seen"
+    );
+    kept.borrow_mut().remove(0);
+    assert_eq!(
+        container.render(7),
+        ["b:7"],
+        "an edit through the handle shows in the next render"
+    );
+    container.add_child(Rc::clone(&c));
+    assert_eq!(
+        kept.borrow().len(),
+        2,
+        "an addition to the container shows in the handle"
+    );
+
+    let replacement: ChildArray = Rc::new(RefCell::new(vec![Rc::clone(&a)]));
+    container.set_children(Rc::clone(&replacement));
+    assert!(Rc::ptr_eq(&container.children(), &replacement));
+    kept.borrow_mut().clear();
+    assert_eq!(
+        container.render(7),
+        ["a:7"],
+        "the old handle no longer reaches rendering"
+    );
+    replacement.borrow_mut().push(Rc::clone(&c));
+    assert_eq!(
+        container.render(7),
+        ["a:7", "c:7"],
+        "the assigned array is the one rendered"
+    );
+
+    container.clear();
+    replacement.borrow_mut().push(b);
+    assert!(
+        container.render(7).is_empty(),
+        "clear leaves the old array to its holders"
+    );
+    assert_eq!(replacement.borrow().len(), 3);
+    assert!(!Rc::ptr_eq(&container.children(), &replacement));
 }
 
 #[test]
@@ -559,7 +624,7 @@ fn assert_rich_editor() {
 
 fn assert_bare_editor() {
     let mut bare = Bare {
-        text: String::new(),
+        text: RefCell::default(),
         callbacks: EditorCallbacks::default(),
     };
     bare.set_text("plain");
@@ -583,8 +648,70 @@ fn assert_bare_editor() {
     assert_eq!(bare.render(5), ["plain!"]);
 }
 
+/// What the callbacks of [`editor_reentered_by`] record: the lines `render` returned.
+type Rendered = Rc<RefCell<Vec<Vec<String>>>>;
+
+/// Types `typed` into the editor behind `weak` unless it is empty, then records what its
+/// `render` returns.
+fn reenter(weak: &Weak<Rich>, typed: &str, seen: &Rendered) {
+    let editor = weak.upgrade();
+    if let Some(editor) = editor {
+        if !typed.is_empty() {
+            editor.handle_input(typed);
+        }
+        seen.borrow_mut().push(editor.render(10));
+    }
+}
+
+/// A border painter that re-enters its editor with `x` the first time it paints.
+fn painter_reentering(weak: Weak<Rich>, seen: Rendered) -> BorderColor {
+    let entered = Cell::new(false);
+    Rc::new(move |text| {
+        if !entered.replace(true) {
+            reenter(&weak, "x", &seen);
+        }
+        format!("[{text}]")
+    })
+}
+
+/// An editor whose border painter (`trigger` is `"paint"`), submit callback (`"submit"`) or
+/// change callback (`"change"`) re-enters the editor itself.
+fn editor_reentered_by(trigger: &str, seen: &Rendered) -> Rc<Rich> {
+    Rc::new_cyclic(|weak: &Weak<Rich>| {
+        let mut rich = Rich::new();
+        let (weak, seen) = (weak.clone(), Rc::clone(seen));
+        let callbacks = rich.callbacks();
+        match trigger {
+            "paint" => callbacks.border_color = Some(painter_reentering(weak, seen)),
+            "submit" => callbacks.on_submit = Some(Box::new(move |_| reenter(&weak, "", &seen))),
+            _ => callbacks.on_change = Some(Box::new(move |_| reenter(&weak, "", &seen))),
+        }
+        rich
+    })
+}
+
+/// A callback that types into or renders its own editor sees the text and the border at that
+/// moment, whichever callback it is.
+fn assert_editor_callbacks_may_reenter_their_editor() {
+    let seen = Rendered::default();
+    let painted = editor_reentered_by("paint", &seen);
+    assert_eq!(painted.render(10), ["[-]", "x"]);
+    assert_eq!(seen.take(), [["[-]", "x"]], "painter");
+
+    let submitting = editor_reentered_by("submit", &seen);
+    submitting.handle_input("hi");
+    assert!(seen.borrow().is_empty());
+    submitting.handle_input("\r");
+    assert_eq!(seen.take(), [["-", "hi"]], "submit");
+
+    let changing = editor_reentered_by("change", &seen);
+    changing.handle_input("hi");
+    assert_eq!(seen.take(), [["-", "hi"]], "change");
+}
+
 #[test]
 fn editor_contracts_keep_required_input_and_optional_hooks() {
     assert_rich_editor();
     assert_bare_editor();
+    assert_editor_callbacks_may_reenter_their_editor();
 }

@@ -29,8 +29,8 @@ pub use text::utils::{
     wrap_text_with_ansi,
 };
 pub use tui::{
-    CURSOR_MARKER, Component, Container, Focusable, OverlayAnchor, OverlayHandle, OverlayMargin,
-    OverlayOptions, SizeValue, is_focusable,
+    CURSOR_MARKER, Component, Container, FocusFlag, Focusable, OverlayAnchor, OverlayHandle,
+    OverlayMargin, OverlayOptions, SizeValue, TUI, is_focusable,
 };
 
 pub use images::terminal_image::{

@@ -27,7 +27,7 @@ impl TruncatedText {
 }
 
 impl Component for TruncatedText {
-    fn render(&mut self, width: usize) -> Vec<String> {
+    fn render(&self, width: usize) -> Vec<String> {
         let blank = " ".repeat(width);
         let padding = self.padding_x.min(width / 2);
         let first_line = self.text.split('\n').next().unwrap_or_default();
