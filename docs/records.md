@@ -25,6 +25,10 @@ copy common settings, adjust thinking budgets and classify context overflow.
 
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
 
+The [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md)
+produces replay-safe request histories without editing stored messages. Providers
+supply ID normalization; projection owns content conversion and missing results.
+
 ## Controlled registered invocation
 
 ```rust
