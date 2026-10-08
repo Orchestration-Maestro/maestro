@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+/// Cached presence of the application-default credentials file.
 static VERTEX_ADC_EXISTS: OnceLock<bool> = OnceLock::new();
 
 /// Report nonempty environment key names in provider precedence order.
@@ -53,10 +54,12 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
     authenticated.then(|| "<authenticated>".to_owned())
 }
 
+/// Read a nonempty environment value, ignoring unavailable or empty variables.
 fn env_value(key: &str) -> Option<String> {
     std::env::var(key).ok().filter(|value| !value.is_empty())
 }
 
+/// Check the configured or default credentials file once per process.
 fn has_vertex_adc_credentials() -> bool {
     *VERTEX_ADC_EXISTS.get_or_init(|| {
         let path = std::env::var_os("GOOGLE_APPLICATION_CREDENTIALS")
@@ -73,6 +76,7 @@ fn has_vertex_adc_credentials() -> bool {
     })
 }
 
+/// List environment key candidates in each provider's precedence order.
 fn get_api_key_env_vars(provider: &str) -> &'static [&'static str] {
     match provider {
         "github-copilot" => &["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],

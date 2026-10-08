@@ -46,7 +46,8 @@ Every change has a clear conventional commit message (the squash commit)
 describing user-visible behavior. Pull requests never edit `CHANGELOG.md`.
 The changelog is generated from conventional commits at release time.
 
-Every crate root needs `//!` docs and every public item needs `///` docs.
+Every crate root needs `//!` docs and every item, private included, needs
+`///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
 
 All Rust comments describe the code, not planning material. Never include

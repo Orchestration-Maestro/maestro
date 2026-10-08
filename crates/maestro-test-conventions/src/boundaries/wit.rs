@@ -8,15 +8,22 @@ use syn::{
 };
 
 #[derive(Default)]
+/// Canonical interface roots collected from host and guest generators.
 pub(super) struct WitInputs {
+    /// Guest-owned canonical source directories.
     guest: BTreeSet<PathBuf>,
+    /// Canonical source directories used by host generators.
     host: BTreeSet<PathBuf>,
+    /// Whether any guest generator was encountered.
     guest_declared: bool,
+    /// Whether any host generator was encountered.
     host_declared: bool,
+    /// Host source location used for a mismatch diagnostic.
     host_location: Option<String>,
 }
 
 impl WitInputs {
+    /// Parse static generator inputs and record their canonical roots.
     pub(super) fn scan(
         &mut self,
         context: &ScanContext<'_>,
@@ -57,6 +64,7 @@ impl WitInputs {
         Ok(())
     }
 
+    /// Require host and guest generators to share their canonical roots.
     pub(super) fn finish(self) -> Result<(), String> {
         if self.guest_declared && self.host_declared && self.guest != self.host {
             return Err(format!(
@@ -69,8 +77,11 @@ impl WitInputs {
 }
 
 #[derive(Default)]
+/// Static path and inline-source options parsed from generator arguments.
 struct Inputs {
+    /// Literal paths declared by the generator.
     paths: Vec<String>,
+    /// Whether the generator supplies literal inline interface text.
     inline: bool,
 }
 
@@ -93,6 +104,7 @@ impl Parse for Inputs {
     }
 }
 
+/// Parse recognized path and inline fields while skipping unrelated options.
 fn fields(input: ParseStream<'_>) -> syn::Result<Inputs> {
     let mut result = Inputs::default();
     while !input.is_empty() {
@@ -113,6 +125,7 @@ fn fields(input: ParseStream<'_>) -> syn::Result<Inputs> {
     Ok(result)
 }
 
+/// Read a single literal path or a bracketed path list.
 fn paths(input: ParseStream<'_>) -> syn::Result<Vec<String>> {
     if input.peek(syn::LitStr) {
         return Ok(vec![input.parse::<syn::LitStr>()?.value()]);
@@ -123,6 +136,7 @@ fn paths(input: ParseStream<'_>) -> syn::Result<Vec<String>> {
         .map(|paths| paths.iter().map(syn::LitStr::value).collect())
 }
 
+/// Consume an unrelated option value up to the next comma.
 fn skip_value(input: ParseStream<'_>) -> syn::Result<()> {
     while !input.is_empty() && !input.peek(Token![,]) {
         input.parse::<proc_macro2::TokenTree>()?;
@@ -130,14 +144,20 @@ fn skip_value(input: ParseStream<'_>) -> syn::Result<()> {
     Ok(())
 }
 
+/// Crate and source location used to resolve generator inputs.
 pub(super) struct ScanContext<'a> {
+    /// Name of the crate containing the generator.
     pub(super) owner: &'a str,
+    /// Crate directory used as the base for relative paths.
     pub(super) directory: &'a Path,
+    /// Canonical guest crate directory, when present.
     pub(super) guest: Option<&'a Path>,
+    /// Source file containing the generator invocation.
     pub(super) path: &'a Path,
 }
 
 impl ScanContext<'_> {
+    /// Resolve an input to its canonical guest-owned source directory.
     fn canonical_input(&self, input: &str, location: &str) -> Result<PathBuf, String> {
         let input = self
             .directory

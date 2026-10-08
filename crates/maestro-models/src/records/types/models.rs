@@ -332,6 +332,7 @@ impl<'de> Deserialize<'de> for Model {
         Ok(model)
     }
 }
+/// Decode API-specific compatibility options into the matching typed variant.
 fn decode_compat(api: &str, wire: serde_json::Value) -> Result<ModelCompat, serde_json::Error> {
     match api {
         "openai-completions" => serde_json::from_value(wire).map(ModelCompat::OpenAICompletions),

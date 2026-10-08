@@ -18,15 +18,22 @@ pub struct ApiProvider {
     /// Checked simple invocation.
     pub stream_simple: ApiStreamSimpleFunction,
 }
+/// Registered provider with its optional extension ownership.
 struct Registration {
+    /// Provider callbacks exposed by this registration.
     provider: ApiProvider,
+    /// Identifier of the extension that owns this registration.
     source_id: Option<String>,
 }
 #[cfg(not(target_arch = "wasm32"))]
+/// Process-wide ordered API registrations protected for native callers.
 static REGISTRY: std::sync::LazyLock<std::sync::Mutex<IndexMap<String, Registration>>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new(IndexMap::new()));
 #[cfg(target_arch = "wasm32")]
-thread_local! { static REGISTRY: std::cell::RefCell<IndexMap<String, Registration>> = std::cell::RefCell::new(IndexMap::new()); }
+thread_local! {
+/// Browser-thread API registrations in insertion order.
+static REGISTRY: std::cell::RefCell<IndexMap<String, Registration>> = std::cell::RefCell::new(IndexMap::new()); }
+/// Access the native shared or browser-local registration map.
 fn with_registry<T>(operation: impl FnOnce(&mut IndexMap<String, Registration>) -> T) -> T {
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -41,6 +48,7 @@ fn with_registry<T>(operation: impl FnOnce(&mut IndexMap<String, Registration>) 
         REGISTRY.with_borrow_mut(operation)
     }
 }
+/// Wrap a stream callback with an API-identity check.
 fn checked<O: 'static>(api: String, callback: StreamFunction<O>) -> StreamFunction<O> {
     Arc::new(move |model, context, options| {
         if model.api != api {

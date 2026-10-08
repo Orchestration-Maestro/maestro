@@ -3,6 +3,7 @@ use crate::source::{Member, Source};
 /// Numbered planning nouns; technical uses without a number remain valid.
 const NUMBERED: &[&str] = &["slice", "spec", "task", "ticket", "issue", "pr"];
 
+/// Check every member's Rust comments for forbidden planning references.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
@@ -12,6 +13,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     Ok(())
 }
 
+/// Report the first forbidden comment with its source line.
 fn check_file(source: &Source) -> Result<(), String> {
     for (start, comment) in crate::source::comments(&source.contents) {
         if let Some(offset) = forbidden(comment) {
@@ -33,6 +35,7 @@ fn check_file(source: &Source) -> Result<(), String> {
 // - Uppercase US, D, F or T followed by digits; FR-S followed by digits,
 //   a hyphen and more digits. Identifiers must occupy a whole token.
 // Reword false positives to describe the code instead.
+/// Find the first forbidden word or identifier in a comment.
 fn forbidden(comment: &str) -> Option<usize> {
     let bytes = comment.as_bytes();
     if let Some(offset) = bytes
@@ -73,10 +76,12 @@ fn forbidden(comment: &str) -> Option<usize> {
     None
 }
 
+/// Recognize a nonempty sequence of ASCII decimal digits.
 fn digits(word: &str) -> bool {
     !word.is_empty() && word.bytes().all(|byte| byte.is_ascii_digit())
 }
 
+/// Recognize a whole-token planning identifier.
 fn planning_id(word: &str) -> bool {
     for prefix in ["US", "D", "F", "T"] {
         if word.strip_prefix(prefix).is_some_and(digits) {

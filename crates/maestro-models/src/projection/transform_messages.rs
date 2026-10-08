@@ -6,21 +6,34 @@ use crate::{
     ToolResultMessage, UserBlock, UserContent,
 };
 
+/// Optional caller normalization of tool-call identifiers across models.
 type Normalizer<'a> = Option<&'a dyn Fn(&str, &Model, &AssistantMessage) -> String>;
 
+/// One tool call with its destination identifier and result status.
 struct Occurrence<'a> {
+    /// Original tool call borrowed from the conversation.
     source: &'a ToolCall,
+    /// Identifier to use for the destination model.
     id: Cow<'a, str>,
+    /// Whether a result has already matched this occurrence.
     answered: bool,
 }
 
+/// Retention and association decisions for one conversation message.
 struct Projection<'a> {
+    /// Original message used to build the adapted copy.
     source: &'a Message,
+    /// Whether the message survives adaptation.
     retained: bool,
+    /// Whether the source and destination model identities match.
     same: bool,
+    /// Retention decisions aligned with the original content blocks.
     blocks: Vec<bool>,
+    /// Tool-call occurrences in their original order.
     calls: Vec<Occurrence<'a>>,
+    /// Assistant message and call indices matched by this result.
     association: Option<(usize, usize)>,
+    /// Indices of calls that still require synthetic results.
     missing: Vec<usize>,
 }
 
@@ -60,6 +73,7 @@ pub fn transform_messages(
     build_output(&projected, images)
 }
 
+/// Compute retention decisions for a message without copying its contents.
 fn prepare<'a>(
     source: &'a Message,
     model: &Model,
@@ -99,6 +113,7 @@ fn prepare<'a>(
     projection
 }
 
+/// Classify assistant blocks and normalize calls for the destination model.
 fn prepare_assistant<'a>(
     projection: &mut Projection<'a>,
     assistant: &'a AssistantMessage,
@@ -133,6 +148,7 @@ fn prepare_assistant<'a>(
     }
 }
 
+/// Keep useful thinking while restricting redacted or signed content to its model.
 fn keep_thinking(value: &crate::ThinkingContent, same: bool) -> bool {
     if value.redacted == Some(true) {
         return same;
@@ -148,6 +164,7 @@ fn keep_thinking(value: &crate::ThinkingContent, same: bool) -> bool {
     (same && signed) || !blank
 }
 
+/// Choose blocks while collapsing consecutive unsupported-image placeholders.
 fn retain_blocks(blocks: &[UserBlock], images: bool, placeholder: &str) -> Vec<bool> {
     let mut previous_placeholder = false;
     blocks
@@ -170,6 +187,7 @@ fn retain_blocks(blocks: &[UserBlock], images: bool, placeholder: &str) -> Vec<b
         .collect()
 }
 
+/// Match a result to the first unanswered occurrence in its assistant batch.
 fn associate_result(
     result: &ToolResultMessage,
     batch: usize,
@@ -184,6 +202,7 @@ fn associate_result(
     Some((batch, index))
 }
 
+/// Emit retained messages and insert missing results at conversation boundaries.
 fn build_output(projected: &[Projection<'_>], images: bool) -> Vec<Message> {
     let mut result = Vec::with_capacity(projected.len());
     let mut pending = None;
@@ -208,6 +227,7 @@ fn build_output(projected: &[Projection<'_>], images: bool) -> Vec<Message> {
     result
 }
 
+/// Build an adapted message using the recorded block and call associations.
 fn build_message(
     projection: &Projection<'_>,
     projected: &[Projection<'_>],
@@ -253,6 +273,7 @@ fn build_message(
     }
 }
 
+/// Copy assistant metadata with the adapted content.
 fn build_assistant(source: &AssistantMessage, projection: &Projection<'_>) -> AssistantMessage {
     let content = build_content(source, projection);
     AssistantMessage {
@@ -270,6 +291,7 @@ fn build_assistant(source: &AssistantMessage, projection: &Projection<'_>) -> As
     }
 }
 
+/// Copy retained assistant blocks with destination-appropriate signatures and identifiers.
 fn build_content(source: &AssistantMessage, projection: &Projection<'_>) -> Vec<AssistantContent> {
     let mut calls = projection.calls.iter();
     source
@@ -311,6 +333,7 @@ fn build_content(source: &AssistantMessage, projection: &Projection<'_>) -> Vec<
         .collect()
 }
 
+/// Create a text block without a model-specific signature.
 fn unsigned_text(text: &str) -> TextContent {
     TextContent {
         text: text.to_owned(),
@@ -318,6 +341,7 @@ fn unsigned_text(text: &str) -> TextContent {
     }
 }
 
+/// Copy retained user blocks, replacing unsupported images with explanatory text.
 fn build_blocks(
     blocks: &[UserBlock],
     retained: &[bool],
@@ -335,6 +359,7 @@ fn build_blocks(
         .collect()
 }
 
+/// Emit error results for unanswered calls in the assistant batch.
 fn flush_missing(result: &mut Vec<Message>, projection: &Projection<'_>) {
     for &index in &projection.missing {
         let call = &projection.calls[index];

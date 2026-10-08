@@ -8,6 +8,7 @@ use super::types::{
     SharedAssistantMessage, SimpleStreamOptions,
 };
 
+/// Resolve the registered provider or report the missing API.
 fn resolve(api: &str) -> Result<ApiProvider, DiagnosticErrorInfo> {
     get_api_provider(api).ok_or_else(|| DiagnosticErrorInfo {
         name: Some("Error".into()),

@@ -138,6 +138,7 @@ pub enum AssistantMessageEvent {
     },
 }
 
+/// Serialize the assistant message behind its shared handle.
 fn serialize_shared_message<S: serde::Serializer>(
     message: &SharedAssistantMessage,
     serializer: S,

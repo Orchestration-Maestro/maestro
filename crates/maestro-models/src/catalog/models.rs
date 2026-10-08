@@ -6,7 +6,9 @@ use ModelThinkingLevel::{High, Low, Medium, Minimal, Off, Xhigh};
 use indexmap::IndexMap;
 use std::sync::LazyLock;
 
+/// Ordered provider registries keyed by exact model identifiers.
 pub(super) type ModelRegistry = IndexMap<&'static str, IndexMap<&'static str, Model>>;
+/// Lazily initialized catalog shared by descriptor lookups.
 static MODEL_REGISTRY: LazyLock<ModelRegistry> = LazyLock::new(models_generated::models);
 
 /// Look up an exact provider/model key, returning an independently owned descriptor.
@@ -54,6 +56,7 @@ pub fn models_are_equal(a: Option<&Model>, b: Option<&Model>) -> bool {
     matches!((a, b), (Some(a), Some(b)) if a.id == b.id && a.provider == b.provider)
 }
 
+/// Full ordered set of reasoning levels for extended-thinking models.
 const EXTENDED_THINKING_LEVELS: [ModelThinkingLevel; 6] = [Off, Minimal, Low, Medium, High, Xhigh];
 
 /// Return supported levels in off/minimal/low/medium/high/xhigh order.

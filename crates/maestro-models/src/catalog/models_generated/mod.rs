@@ -1,41 +1,68 @@
-// Generated model descriptor data.
-// Files use the vendor segment, or the leading model family for unqualified IDs.
-// Strip account/router, workers-ai/@cf and regional inference-profile prefixes;
-// strip labs-/open- before taking an unqualified family. Normalize to Rust casing.
-// Group each family in recorded order; greedily split only above 500 formatted
-// lines, using _1, _2, ... suffixes. Assembly retains original registry order.
+//! Generated provider registries in recorded order.
 
+/// Recorded descriptors for amazon-bedrock.
 mod amazon_bedrock;
+/// Recorded descriptors for anthropic.
 mod anthropic;
+/// Recorded descriptors for azure-openai-responses.
 mod azure_openai_responses;
+/// Recorded descriptors for cerebras.
 mod cerebras;
+/// Recorded descriptors for cloudflare-ai-gateway.
 mod cloudflare_ai_gateway;
+/// Recorded descriptors for cloudflare-workers-ai.
 mod cloudflare_workers_ai;
+/// Recorded descriptors for deepseek.
 mod deepseek;
+/// Recorded descriptors for fireworks.
 mod fireworks;
+/// Recorded descriptors for github-copilot.
 mod github_copilot;
+/// Recorded descriptors for google.
 mod google;
+/// Recorded descriptors for google-vertex.
 mod google_vertex;
+/// Recorded descriptors for groq.
 mod groq;
+/// Recorded descriptors for huggingface.
 mod huggingface;
+/// Recorded descriptors for kimi-coding.
 mod kimi_coding;
+/// Recorded descriptors for minimax.
 mod minimax;
+/// Recorded descriptors for minimax-cn.
 mod minimax_cn;
+/// Recorded descriptors for mistral.
 mod mistral;
+/// Recorded descriptors for moonshotai.
 mod moonshotai;
+/// Recorded descriptors for moonshotai-cn.
 mod moonshotai_cn;
+/// Recorded descriptors for openai.
 mod openai;
+/// Recorded descriptors for openai-codex.
 mod openai_codex;
+/// Recorded descriptors for opencode.
 mod opencode;
+/// Recorded descriptors for opencode-go.
 mod opencode_go;
+/// Recorded descriptors for openrouter.
 mod openrouter;
+/// Recorded descriptors for vercel-ai-gateway.
 mod vercel_ai_gateway;
+/// Recorded descriptors for xai.
 mod xai;
+/// Recorded descriptors for xiaomi.
 mod xiaomi;
+/// Recorded descriptors for xiaomi-token-plan-ams.
 mod xiaomi_token_plan_ams;
+/// Recorded descriptors for xiaomi-token-plan-cn.
 mod xiaomi_token_plan_cn;
+/// Recorded descriptors for xiaomi-token-plan-sgp.
 mod xiaomi_token_plan_sgp;
+/// Recorded descriptors for zai.
 mod zai;
+/// Assemble all provider registries without changing their order.
 pub(super) fn models() -> super::models::ModelRegistry {
     [
         ("amazon-bedrock", amazon_bedrock::models()),

@@ -2,10 +2,15 @@
 
 use std::path::Path;
 
+/// Declaration ownership and extension interface checks.
 mod boundaries;
+/// Rust comment content checks.
 mod comments;
+/// Workspace membership and dependency graph checks.
 mod graph;
+/// Source-size and protected-lint checks.
 mod quality;
+/// Workspace Rust source loading and lexical helpers.
 mod source;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
