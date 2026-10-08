@@ -57,7 +57,6 @@ fn env_value(key: &str) -> Option<String> {
     std::env::var(key).ok().filter(|value| !value.is_empty())
 }
 
-#[allow(deprecated)]
 fn has_vertex_adc_credentials() -> bool {
     *VERTEX_ADC_EXISTS.get_or_init(|| {
         let path = std::env::var_os("GOOGLE_APPLICATION_CREDENTIALS")
