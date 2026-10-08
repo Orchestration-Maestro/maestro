@@ -1,0 +1,1140 @@
+[
+  {
+    "id": "empty:\"\"",
+    "input": "",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"a:b\"",
+    "input": "a:b",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"雪/🚦\"",
+    "input": "雪/🚦",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"﻿\"",
+    "input": "﻿",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"\"",
+    "input": "",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"__proto__\"",
+    "input": "__proto__",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"constructor\"",
+    "input": "constructor",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"error\"",
+    "input": "error",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"newListener\"",
+    "input": "newListener",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"removeListener\"",
+    "input": "removeListener",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "payload:\"\"",
+    "input": {
+      "channel": "",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"a:b\"",
+    "input": {
+      "channel": "a:b",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"雪/🚦\"",
+    "input": {
+      "channel": "雪/🚦",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"﻿\"",
+    "input": {
+      "channel": "﻿",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"\"",
+    "input": {
+      "channel": "",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"__proto__\"",
+    "input": {
+      "channel": "__proto__",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"constructor\"",
+    "input": {
+      "channel": "constructor",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"error\"",
+    "input": {
+      "channel": "error",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"newListener\"",
+    "input": {
+      "channel": "newListener",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"removeListener\"",
+    "input": {
+      "channel": "removeListener",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "duplicates",
+    "input": {},
+    "expected": [
+      1,
+      1,
+      2
+    ],
+    "test": "duplicate_registrations_unsubscribe_independently"
+  },
+  {
+    "id": "channels-clear",
+    "input": {},
+    "expected": [
+      [
+        "x",
+        1
+      ],
+      [
+        "y",
+        2
+      ],
+      [
+        "new",
+        4
+      ]
+    ],
+    "test": "clear_removes_all_channels_and_allows_reuse"
+  },
+  {
+    "id": "snapshot-add",
+    "input": "add",
+    "expected": [
+      "a1",
+      "b1",
+      "a2",
+      "b2",
+      "c2"
+    ],
+    "test": "delivery_snapshots_survive_subscription_edits"
+  },
+  {
+    "id": "snapshot-remove",
+    "input": "remove",
+    "expected": [
+      "a1",
+      "b1",
+      "a2"
+    ],
+    "test": "delivery_snapshots_survive_subscription_edits"
+  },
+  {
+    "id": "snapshot-clear",
+    "input": "clear",
+    "expected": [
+      "a1",
+      "b1"
+    ],
+    "test": "delivery_snapshots_survive_subscription_edits"
+  },
+  {
+    "id": "single-snapshot",
+    "input": {},
+    "expected": [
+      "a1",
+      "b2"
+    ],
+    "test": "single_listener_replacement_affects_the_next_emit"
+  },
+  {
+    "id": "nested-snapshot",
+    "input": {},
+    "expected": [
+      "a1",
+      "a2",
+      "c2",
+      "b1"
+    ],
+    "test": "nested_emission_uses_its_own_snapshot"
+  },
+  {
+    "id": "ready-tails",
+    "input": {},
+    "expected": [
+      "a:prefix",
+      "b:prefix",
+      "emit:return",
+      "a:tail",
+      "b:tail"
+    ],
+    "test": "ready_tails_start_after_the_emitting_segment"
+  },
+  {
+    "id": "pending-tail",
+    "input": {},
+    "expected": [
+      "prefix",
+      "emit:return",
+      "tail",
+      "emitter:resumed"
+    ],
+    "test": "pending_tail_can_resume_its_emitter"
+  },
+  {
+    "id": "retention-unsubscribe",
+    "input": "unsubscribe",
+    "expected": [
+      "prefix",
+      "unsubscribe",
+      [
+        "tail",
+        false
+      ]
+    ],
+    "test": "started_tails_survive_removal_and_keep_captured_signals"
+  },
+  {
+    "id": "retention-clear",
+    "input": "clear",
+    "expected": [
+      "prefix",
+      "clear",
+      [
+        "tail",
+        false
+      ]
+    ],
+    "test": "started_tails_survive_removal_and_keep_captured_signals"
+  },
+  {
+    "id": "retention-abort",
+    "input": "abort",
+    "expected": [
+      "prefix",
+      "abort",
+      [
+        "tail",
+        true
+      ]
+    ],
+    "test": "started_tails_survive_removal_and_keep_captured_signals"
+  },
+  {
+    "id": "prefix-error",
+    "input": {},
+    "expected": {
+      "trace": [
+        "bad",
+        "healthy",
+        "return"
+      ],
+      "errors": [
+        "Event handler error (x): prefix failure\n"
+      ]
+    },
+    "test": "listener_errors_are_attributed_without_stopping_delivery"
+  },
+  {
+    "id": "tail-error",
+    "input": {},
+    "expected": {
+      "trace": [
+        "bad:prefix",
+        "healthy",
+        "return"
+      ],
+      "errors": [
+        "Event handler error (x): tail failure\n"
+      ]
+    },
+    "test": "tail_errors_are_reported_after_the_original_emit"
+  },
+  {
+    "id": "tail-emit",
+    "input": {},
+    "expected": [
+      "outer:prefix",
+      "return",
+      "inner:prefix",
+      "outer:tail"
+    ],
+    "test": "tail_emission_runs_ordinary_listener_prefixes"
+  },
+  {
+    "id": "reentry",
+    "input": {},
+    "expected": [
+      "a:start",
+      "a:end",
+      "b:start",
+      "b:end",
+      "a:back",
+      "return"
+    ],
+    "test": "foreign_reentry_drains_at_each_callback_return"
+  },
+  {
+    "id": "magic-metadata",
+    "input": {},
+    "expected": [],
+    "test": "reserved_channel_names_have_no_implicit_events"
+  },
+  {
+    "id": "repeat-error",
+    "input": {},
+    "expected": {
+      "trace": [
+        "attempt",
+        "healthy",
+        "attempt",
+        "healthy"
+      ],
+      "errors": [
+        "Event handler error (x): instance a trapped\n",
+        "Event handler error (x): instance a trapped\n"
+      ]
+    },
+    "test": "failed_instance_listeners_stay_registered"
+  },
+  {
+    "id": "unbounded",
+    "input": 16,
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "callback:listener-body",
+    "input": "listener-body",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:listener-prefix",
+    "input": "listener-prefix",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:footer-factory",
+    "input": "footer-factory",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:widget-factory",
+    "input": "widget-factory",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:header-factory",
+    "input": "header-factory",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:editor-factory",
+    "input": "editor-factory",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:component-factory",
+    "input": "component-factory",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:render",
+    "input": "render",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:dispose",
+    "input": "dispose",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:input",
+    "input": "input",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:autocomplete-limit",
+    "input": "autocomplete-limit",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "callback:invalidate",
+    "input": "invalidate",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ],
+    "test": "synchronous_callback_categories_release_foreign_listeners"
+  },
+  {
+    "id": "deferred-snapshot",
+    "input": {},
+    "expected": [
+      "start",
+      "end",
+      "foreign:1",
+      "new:2"
+    ],
+    "test": "queued_foreign_delivery_keeps_the_original_snapshot"
+  },
+  {
+    "id": "each-return",
+    "input": {},
+    "expected": [
+      "dispose:start",
+      "dispose:end",
+      "foreign",
+      "release",
+      "factory:start",
+      "factory:end",
+      "foreign",
+      "installed"
+    ],
+    "test": "foreign_delivery_precedes_the_following_release_callback"
+  },
+  {
+    "id": "overlap",
+    "input": {
+      "abort": "b"
+    },
+    "expected": [
+      "a:prefix",
+      "b:prefix",
+      [
+        "a:tail",
+        false
+      ],
+      "a:done",
+      [
+        "b:tail",
+        true
+      ],
+      "b:done"
+    ],
+    "test": "overlapping_origins_finish_in_non_stack_order"
+  },
+  {
+    "id": "count:0",
+    "input": 0,
+    "expected": [],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "count:1",
+    "input": 1,
+    "expected": [
+      0
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "count:10",
+    "input": 10,
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "count:11",
+    "input": 11,
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "same-nested",
+    "input": {},
+    "expected": [
+      "start",
+      "same",
+      "end"
+    ],
+    "test": "same_extension_delivery_is_immediately_nested"
+  },
+  {
+    "id": "callback-error",
+    "input": {},
+    "expected": {
+      "trace": [
+        "foreign"
+      ],
+      "errors": [
+        "Event handler error (outer): prefix failure\n"
+      ]
+    },
+    "test": "callback_errors_do_not_discard_queued_delivery"
+  },
+  {
+    "id": "root:null",
+    "input": {
+      "channel": "payload",
+      "data": null
+    },
+    "expected": [
+      null
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:false",
+    "input": {
+      "channel": "payload",
+      "data": false
+    },
+    "expected": [
+      false
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:true",
+    "input": {
+      "channel": "payload",
+      "data": true
+    },
+    "expected": [
+      true
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:0",
+    "input": {
+      "channel": "payload",
+      "data": 0
+    },
+    "expected": [
+      0
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:-1",
+    "input": {
+      "channel": "payload",
+      "data": -1
+    },
+    "expected": [
+      -1
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:1.25",
+    "input": {
+      "channel": "payload",
+      "data": 1.25
+    },
+    "expected": [
+      1.25
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:\"\"",
+    "input": {
+      "channel": "payload",
+      "data": ""
+    },
+    "expected": [
+      ""
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:[null,false,\"雪\"]",
+    "input": {
+      "channel": "payload",
+      "data": [
+        null,
+        false,
+        "雪"
+      ]
+    },
+    "expected": [
+      [
+        null,
+        false,
+        "雪"
+      ]
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:{\"missing\":false,\"present\":null}",
+    "input": {
+      "channel": "payload",
+      "data": {
+        "missing": false,
+        "present": null
+      }
+    },
+    "expected": [
+      {
+        "missing": false,
+        "present": null
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "pending-before-ready",
+    "input": {},
+    "expected": [
+      "a:prefix",
+      "b:prefix",
+      "return",
+      "b:tail",
+      "a:tail"
+    ],
+    "test": "a_pending_tail_does_not_block_other_listeners"
+  },
+  {
+    "id": "nested-scopes",
+    "input": {},
+    "expected": [
+      "outer:start",
+      "inner:start",
+      "inner:end",
+      "foreign:inner",
+      "outer:end",
+      "foreign:outer",
+      "return"
+    ],
+    "test": "nested_callbacks_keep_their_own_foreign_queues"
+  },
+  {
+    "id": "ignored-unsubscribe",
+    "input": {},
+    "expected": [
+      "first",
+      "second",
+      "after-clear"
+    ],
+    "test": "dropping_a_subscription_handle_does_not_unsubscribe"
+  },
+  {
+    "id": "diagnostic:\"\"",
+    "input": {
+      "channel": "",
+      "cause": "empty"
+    },
+    "expected": {
+      "errors": [
+        "Event handler error (): empty\n"
+      ]
+    },
+    "test": "listener_errors_are_attributed_without_stopping_delivery"
+  },
+  {
+    "id": "diagnostic:\"雪/🚦\"",
+    "input": {
+      "channel": "雪/🚦",
+      "cause": "line one\nline two"
+    },
+    "expected": {
+      "errors": [
+        "Event handler error (雪/🚦): line one\nline two\n"
+      ]
+    },
+    "test": "listener_errors_are_attributed_without_stopping_delivery"
+  },
+  {
+    "id": "nested-tails:same-ready",
+    "input": "same-ready",
+    "expected": [
+      "a:start",
+      "b:start",
+      "a:back",
+      "b:end",
+      "a:end",
+      "return",
+      "a:back:tail",
+      "b:tail",
+      "a:tail"
+    ],
+    "test": "same_extension_delivery_is_immediately_nested"
+  },
+  {
+    "id": "nested-tails:foreign-ready",
+    "input": "foreign-ready",
+    "expected": [
+      "a:start",
+      "a:end",
+      "b:start",
+      "b:end",
+      "a:back",
+      "return",
+      "a:back:tail",
+      "b:tail",
+      "a:tail"
+    ],
+    "test": "foreign_reentry_drains_at_each_callback_return"
+  },
+  {
+    "id": "nested-tails:foreign-pending",
+    "input": "foreign-pending",
+    "expected": [
+      "a:start",
+      "a:end",
+      "b:start",
+      "b:end",
+      "a:back",
+      "return",
+      "a:tail",
+      "a:back:tail",
+      "b:tail"
+    ],
+    "test": "foreign_reentry_drains_at_each_callback_return"
+  }
+]

@@ -1,4 +1,5 @@
 {
+  "maestro-extensions": "core",
   "maestro-extensions-wasm": "core",
   "maestro-models": "core",
   "maestro-path": "core",
