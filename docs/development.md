@@ -46,7 +46,8 @@ The pinned external watcher compiles initially and queues a rebuild when input
 changes during compilation. Earlier terminal output remains visible. It watches
 the workspace root, including sibling dependencies and Cargo configuration,
 excluding `.git` and the target subtree resolved when the watcher starts.
-The target ignore is literal, including bracketed directory names. On supported
+The target ignore escapes glob syntax, including brackets, wildcards and braces
+in directory names, so it excludes only the literal output subtree. On supported
 native backends, the watcher prunes ignored subtrees before registering them;
 backends without subtree pruning filter their events instead. Each remaining
 change is compared literally with Cargo's current target directory before

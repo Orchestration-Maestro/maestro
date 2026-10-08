@@ -36,7 +36,7 @@ pub(crate) fn run(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
     Ok(super::exit_code(status))
 }
 
-/// Anchor the literal output subtree beneath the watched directory.
+/// Anchor the output subtree beneath the watched directory, escaping glob syntax.
 fn target_ignore(target: &Path, checkout: &Path) -> io::Result<Option<String>> {
     let Ok(relative) = target.strip_prefix(checkout) else {
         return Ok(None);
@@ -45,15 +45,7 @@ fn target_ignore(target: &Path, checkout: &Path) -> io::Result<Option<String>> {
         .to_str()
         .ok_or_else(|| io::Error::other("non-Unicode target path"))?;
     let relative = relative.replace(std::path::MAIN_SEPARATOR, "/");
-    let mut pattern = String::from("/");
-    for character in relative.chars() {
-        if matches!(character, '\\' | '[' | ']' | '*' | '?' | '!' | '#') {
-            pattern.push('\\');
-        }
-        pattern.push(character);
-    }
-    pattern.push('/');
-    Ok(Some(pattern))
+    Ok(Some(format!("/{}/", globset::escape(&relative))))
 }
 
 /// Compile on source changes while ignoring events confined to Cargo outputs.

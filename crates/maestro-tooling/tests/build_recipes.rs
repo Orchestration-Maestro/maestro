@@ -649,7 +649,7 @@ fn assert_watch_events(
     assert!(!transcript.contains("\u{1b}[2J"));
 }
 
-/// Captures complete lines from a stream opened inside its reader thread.
+/// Captures complete lines from the reader supplied to the thread.
 fn capture_lines<R: std::io::Read>(
     reader: impl FnOnce() -> R + Send + 'static,
     send: std::sync::mpsc::Sender<String>,

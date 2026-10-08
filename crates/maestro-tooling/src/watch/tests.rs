@@ -39,10 +39,47 @@ fn old_target_events_compile_after_configuration_switch() {
 fn startup_ignore_uses_literal_target_path() {
     assert_eq!(
         super::target_ignore(Path::new("/workspace/[out]"), Path::new("/workspace")).unwrap(),
-        Some("/\\[out\\]/".to_owned())
+        Some("/[[]out[]]/".to_owned())
     );
     assert_eq!(
         super::target_ignore(Path::new("/external/target"), Path::new("/workspace")).unwrap(),
         None
     );
+}
+
+#[test]
+fn braced_target_ignore_keeps_source_directories_watched() {
+    let pattern = super::target_ignore(
+        Path::new("/workspace/{crates,output}"),
+        Path::new("/workspace"),
+    )
+    .unwrap()
+    .unwrap();
+    let matcher = globset::Glob::new(&pattern).unwrap().compile_matcher();
+    assert!(!matcher.is_match("/crates/"));
+    assert!(!matcher.is_match("/output/"));
+    assert!(matcher.is_match("/{crates,output}/"));
+}
+
+#[test]
+fn unbalanced_brace_target_ignore_is_valid_and_literal() {
+    let pattern = super::target_ignore(Path::new("/workspace/out{put"), Path::new("/workspace"))
+        .unwrap()
+        .unwrap();
+    let matcher = globset::Glob::new(&pattern).unwrap().compile_matcher();
+    assert!(matcher.is_match("/out{put/"));
+    assert!(!matcher.is_match("/output/"));
+}
+
+#[test]
+fn bracket_and_wildcard_target_ignores_match_only_literal_names() {
+    for (target, unrelated) in [("[out]", "o"), ("out*put?", "outXputY")] {
+        let path = Path::new("/workspace").join(target);
+        let pattern = super::target_ignore(&path, Path::new("/workspace"))
+            .unwrap()
+            .unwrap();
+        let matcher = globset::Glob::new(&pattern).unwrap().compile_matcher();
+        assert!(matcher.is_match(format!("/{target}/")));
+        assert!(!matcher.is_match(format!("/{unrelated}/")));
+    }
 }
