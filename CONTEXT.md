@@ -74,9 +74,10 @@ are later scope, not active foundation concepts.
 - **Settings:** Raw global/project preference values, including unknown and wrong-typed properties; typed reads return owned copies with individual fallbacks.
 - **Settings view:** An owned copy of a composite preference that preserves raw members for writes while providing typed reads and local edits.
 - **SettingsManager:** The owner of accepted preferences, one-level merging, runtime overrides, immediate publication and ordered queued persistence through replaceable raw-text storage. Reload independently retains failed scopes and clears overrides; errors drain separately.
+- **Pending edit:** An unsaved preference edit captured with a revision; a successful save acknowledges only the revisions it wrote, so later or failed edits stay pending.
 - **Configuration root:** The explicitly selected user configuration directory.
 - **Session directory:** The resolved location supplied to the session owner.
-- **File-write lock:** Native OS file locking for mutual exclusion, preserving application-owned ordering and retries without leases, heartbeats or compromise handling.
+- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion, preserving application-owned ordering and a ten-attempt retry on contention without leases, heartbeats or compromise handling.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
