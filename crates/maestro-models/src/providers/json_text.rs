@@ -78,7 +78,7 @@ fn write_object(members: &Map<String, Value>, text: &mut String) -> Result<(), s
 }
 
 /// Parse a canonical array index: no sign, no leading zero, below 2^32 - 1.
-fn array_index(key: &str) -> Option<u32> {
+pub(crate) fn array_index(key: &str) -> Option<u32> {
     let canonical =
         key == "0" || (!key.starts_with('0') && key.bytes().all(|b| b.is_ascii_digit()));
     canonical
