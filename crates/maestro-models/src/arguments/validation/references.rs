@@ -68,12 +68,11 @@ fn target<'a>(
     } else {
         root
     };
-    let schema_uri = if std::ptr::eq(schema, base) {
-        base_uri.clone()
+    let target = if std::ptr::eq(schema, base) {
+        resolve(schema, reference, &base_uri, &base_uri)
     } else {
-        root_uri(root)?
-    };
-    let target = resolve(schema, reference, &base_uri, &schema_uri)?;
+        resolve(schema, reference, &base_uri, &root_uri(root)?)
+    }?;
     if keyword == "$dynamicRef"
         && !reference.split('#').nth(1).is_some_and(|fragment| {
             percent_decode_str(fragment)

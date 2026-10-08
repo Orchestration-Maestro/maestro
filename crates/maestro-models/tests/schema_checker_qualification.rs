@@ -746,7 +746,13 @@ fn maestro_validates_lookaround_backreferences_and_astral_patterns() {
             check(json!({"pattern":pattern}), json!(valid)).unwrap(),
             json!(valid)
         );
-        assert!(check(json!({"pattern":pattern}), json!(invalid)).is_err());
+        assert_eq!(
+            check(json!({"pattern":pattern}), json!(invalid)),
+            Err(format!(
+                "Validation failed for tool \"check\":\n  - value: must match pattern \"{pattern}\"\n\nReceived arguments:\n{}",
+                serde_json::to_string_pretty(&json!({"value":invalid})).unwrap()
+            ))
+        );
         let schema = json!({"patternProperties":{pattern:false}});
         assert!(check(schema.clone(), json!({valid:1})).is_err());
         assert_eq!(

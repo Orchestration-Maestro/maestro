@@ -1404,7 +1404,8 @@
       "properties": {
         "value": {
           "type": "number",
-          "minimum": 50
+          "minimum": 50,
+          "maximum": 40
         }
       }
     },
@@ -1419,7 +1420,7 @@
     "declaration": "measure",
     "mode": "arguments",
     "expected": {
-      "Err": "Validation failed for tool \"measure\":\n  - value: must be >= 50\n\nReceived arguments:\n{\n  \"2\": 0,\n  \"10\": 1,\n  \"01\": 1e+21,\n  \"value\": \"42\",\n  \"é\": \"a\\n\\\"\\\\\"\n}"
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be <= 40\n  - value: must be >= 50\n\nReceived arguments:\n{\n  \"2\": 0,\n  \"10\": 1,\n  \"01\": 1e+21,\n  \"value\": \"42\",\n  \"é\": \"a\\n\\\"\\\\\"\n}"
     }
   },
   {
@@ -3395,26 +3396,93 @@
           "items": [
             {
               "type": "number"
+            },
+            {
+              "const": {
+                "items": [
+                  {
+                    "type": "number"
+                  }
+                ],
+                "prefixItems": [
+                  {
+                    "const": "kept"
+                  }
+                ]
+              },
+              "enum": [
+                {
+                  "items": [
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "prefixItems": [
+                    {
+                      "const": "kept"
+                    }
+                  ]
+                }
+              ],
+              "default": {
+                "items": [
+                  {
+                    "type": "number"
+                  }
+                ],
+                "prefixItems": [
+                  {
+                    "const": "kept"
+                  }
+                ]
+              },
+              "examples": [
+                {
+                  "items": [
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "prefixItems": [
+                    {
+                      "const": "kept"
+                    }
+                  ]
+                }
+              ]
             }
           ],
           "prefixItems": [
             {
               "minimum": 2
-            }
+            },
+            true
           ]
         }
       }
     },
     "arguments": {
       "value": [
-        1
+        1,
+        {
+          "items": [
+            {
+              "type": "number"
+            }
+          ],
+          "prefixItems": [
+            {
+              "const": "kept"
+            }
+          ]
+        }
       ]
     },
     "name": "measure",
     "declaration": "measure",
     "mode": "arguments",
     "expected": {
-      "Err": "Validation failed for tool \"measure\":\n  - value.0: must be >= 2\n\nReceived arguments:\n{\n  \"value\": [\n    1\n  ]\n}"
+      "Err": "Validation failed for tool \"measure\":\n  - value.0: must be >= 2\n\nReceived arguments:\n{\n  \"value\": [\n    1,\n    {\n      \"items\": [\n        {\n          \"type\": \"number\"\n        }\n      ],\n      \"prefixItems\": [\n        {\n          \"const\": \"kept\"\n        }\n      ]\n    }\n  ]\n}"
     }
   },
   {
@@ -4308,6 +4376,260 @@
     "mode": "arguments",
     "expected": {
       "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n  - value: must be null\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "both-tuples-accepted-literal",
+    "group": "maestro_validates_both_tuple_forms_without_rewriting_literals",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "const": {
+                "items": [
+                  {
+                    "type": "number"
+                  }
+                ],
+                "prefixItems": [
+                  {
+                    "const": "kept"
+                  }
+                ]
+              },
+              "enum": [
+                {
+                  "items": [
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "prefixItems": [
+                    {
+                      "const": "kept"
+                    }
+                  ]
+                }
+              ],
+              "default": {
+                "items": [
+                  {
+                    "type": "number"
+                  }
+                ],
+                "prefixItems": [
+                  {
+                    "const": "kept"
+                  }
+                ]
+              },
+              "examples": [
+                {
+                  "items": [
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "prefixItems": [
+                    {
+                      "const": "kept"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "prefixItems": [
+            {
+              "minimum": 2
+            },
+            true
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        2,
+        {
+          "items": [
+            {
+              "type": "number"
+            }
+          ],
+          "prefixItems": [
+            {
+              "const": "kept"
+            }
+          ]
+        }
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          2,
+          {
+            "items": [
+              {
+                "type": "number"
+              }
+            ],
+            "prefixItems": [
+              {
+                "const": "kept"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "case": "both-tuples-rejected-literal",
+    "group": "maestro_validates_both_tuple_forms_without_rewriting_literals",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "const": {
+                "items": [
+                  {
+                    "type": "number"
+                  }
+                ],
+                "prefixItems": [
+                  {
+                    "const": "kept"
+                  }
+                ]
+              },
+              "enum": [
+                {
+                  "items": [
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "prefixItems": [
+                    {
+                      "const": "kept"
+                    }
+                  ]
+                }
+              ],
+              "default": {
+                "items": [
+                  {
+                    "type": "number"
+                  }
+                ],
+                "prefixItems": [
+                  {
+                    "const": "kept"
+                  }
+                ]
+              },
+              "examples": [
+                {
+                  "items": [
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "prefixItems": [
+                    {
+                      "const": "kept"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "prefixItems": [
+            {
+              "minimum": 2
+            },
+            true
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        2,
+        {
+          "items": [
+            {
+              "type": "string"
+            }
+          ],
+          "prefixItems": [
+            {
+              "const": "kept"
+            }
+          ]
+        }
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.1: must be equal to constant\n  - value.1: must be equal to one of the allowed values\n\nReceived arguments:\n{\n  \"value\": [\n    2,\n    {\n      \"items\": [\n        {\n          \"type\": \"string\"\n        }\n      ],\n      \"prefixItems\": [\n        {\n          \"const\": \"kept\"\n        }\n      ]\n    }\n  ]\n}"
+    }
+  },
+  {
+    "case": "combined-combinator-conversion-order",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "number"
+            }
+          ],
+          "anyOf": [
+            {
+              "type": "boolean"
+            }
+          ],
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "boolean"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"1\"\n}"
     }
   }
 ]
