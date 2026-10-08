@@ -177,8 +177,8 @@ including the immediate one a forced request queued, and forgets any request, so
 1. The input listeners, in the order they were added. The list is walked live: a
    listener added by an earlier one runs in the same dispatch and a removed one is
    skipped. A listener passes the input on, consumes it or replaces it. A replacement,
-   even an empty one, is what the later listeners see, and one of them may replace it
-   again; input that is still empty after the last listener is delivered to nothing.
+   even an empty one, is what the later listeners see; input that is still empty after
+   the last listener is delivered to nothing.
    `add_input_listener` returns a function that removes the listener and may be called
    again harmlessly; dropping it does not remove the listener.
 2. The cell-size reply check. A chunk that is exactly `ESC [ 6 ; height ; width t`
@@ -197,8 +197,8 @@ one at once, without requesting a frame. The flag is shared with the component, 
 component that calls `set_focus` from inside its own input or render callback sees the
 change in the rest of that callback. The writer reads a component's flag when the
 component is added with `add_child` or given focus, provided it is not running then; a
-running component whose flag was never read cannot be given focus, though a focused
-component still receives input.
+running component whose flag was never read becomes the component that receives input
+but is not flagged.
 
 A component may also call `invalidate` from inside its own input or render callback.
 Components that are not running are invalidated at once. The running component is

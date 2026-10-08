@@ -112,8 +112,8 @@ impl TUI {
 
     /// Appends a component.
     ///
-    /// The writer also reads the component's focus flag, so the component can be given
-    /// focus while it runs a callback.
+    /// Unless the component is running, the writer also reads its focus flag, so the
+    /// component can be flagged while it runs a callback.
     pub fn add_child(&self, component: ComponentHandle) {
         drop(self.focus_flag_of(&component));
         self.shared.container.borrow_mut().add_child(component);

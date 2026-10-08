@@ -387,8 +387,9 @@ fn assert_component_changes_survive_its_own_callback() {
     assert_nested_focused_component_invalidates_its_container();
 }
 
-/// A focused component inside a container that invalidates through the writer neither
-/// panics nor is left out: its sibling is invalidated at once and it as its callback
+/// A component inside a container that invalidates through the writer from its input or
+/// render callback neither panics nor is left out: the sibling it shares the container
+/// with is invalidated at once or after the container renders, and it once its callback
 /// returns.
 fn assert_nested_focused_component_invalidates_its_container() {
     let rig = Rig::new();
@@ -400,10 +401,10 @@ fn assert_nested_focused_component_invalidates_its_container() {
     rig.tui.add_child(container);
     rig.tui.set_focus(Some(rig.probe.clone()));
     let inside = Rc::new(Cell::new(0));
-    let (tui, seen) = (rig.tui.clone(), Rc::clone(&inside));
+    let (tui, other, seen) = (rig.tui.clone(), sibling.clone(), Rc::clone(&inside));
     rig.probe.borrow_mut().on_input = Some(Box::new(move |_| {
         tui.invalidate();
-        seen.set(sibling.borrow().invalidated);
+        seen.set(other.borrow().invalidated);
     }));
     rig.terminal.send_input("x");
     assert_eq!(
@@ -412,6 +413,16 @@ fn assert_nested_focused_component_invalidates_its_container() {
         "the sibling is invalidated inside the callback"
     );
     assert_eq!(rig.probe.borrow().invalidated, 1);
+
+    let writer = rig.tui.clone();
+    rig.probe.borrow_mut().on_render = Some(Box::new(move |_| writer.invalidate()));
+    rig.tui.request_render(false);
+    succeeds(rig.runtime.settle());
+    assert_eq!(
+        (rig.probe.borrow().invalidated, sibling.borrow().invalidated),
+        (2, 2),
+        "rendering inside a container invalidates the container's children afterwards"
+    );
 }
 
 /// A focused component that clears focus while it renders no longer marks its cursor in
