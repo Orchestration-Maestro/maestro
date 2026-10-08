@@ -189,6 +189,12 @@ fn check_declarations(
         } else {
             continue;
         };
+        if member.name == crate::generated::GUEST
+            && name == "ToolDefinition"
+            && source.path.ends_with("src/types/tools.rs")
+        {
+            continue;
+        }
         if member.name != owner {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",

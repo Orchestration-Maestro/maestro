@@ -4,6 +4,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+/// The guest crate's own lint table: the fixture workspace table with the three lints its
+/// generated bindings need at `deny`.
+pub const GUEST_LINTS: &str = "[lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[lints.clippy]\npedantic = { level = \"deny\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\ntoo_many_arguments = \"deny\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"deny\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n";
+
 pub struct Workspace {
     pub root: PathBuf,
 }
@@ -38,10 +42,15 @@ impl Workspace {
         let root = self.root.join("crates").join(directory);
         fs::create_dir_all(root.join("src")).unwrap();
         fs::write(root.join("src/lib.rs"), "").unwrap();
+        let lints = if name == "maestro-extensions-wasm" {
+            GUEST_LINTS
+        } else {
+            "[lints]\nworkspace = true\n"
+        };
         fs::write(
             root.join("Cargo.toml"),
             format!(
-                "[package]\nname = {name:?}\nversion = \"0.1.0\"\nedition = \"2024\"\n[lints]\nworkspace = true\n{dependencies}\n"
+                "[package]\nname = {name:?}\nversion = \"0.1.0\"\nedition = \"2024\"\n{lints}{dependencies}\n"
             ),
         )
         .unwrap();

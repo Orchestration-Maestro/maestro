@@ -158,7 +158,7 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
                 .transpose()?;
             let member = path.as_ref().and_then(|path| names.get(path)).copied();
             let name = dependency.name.as_str();
-            check_library_dependency(package.name.as_str(), name)?;
+            check_library_dependency(package.name.as_str(), name, &kind)?;
             if names.values().any(|member| *member == name) && member != Some(name) {
                 return Err(format!(
                     "dependency {} -> {name} must use a path to that workspace member",
@@ -289,10 +289,14 @@ fn check_cycles<'a>(
 }
 
 /// Reject runtime or toolkit libraries outside their owning adapter.
-fn check_library_dependency(owner: &str, dependency_name: &str) -> Result<(), String> {
+fn check_library_dependency(owner: &str, dependency_name: &str, kind: &Kind) -> Result<(), String> {
+    let test_host = owner == crate::generated::GUEST
+        && *kind == Kind::Development
+        && matches!(dependency_name, "wasmtime" | "wasmtime-wasi");
     if dependency_name == "wasmtime-wasi-http"
         || (dependency_name == "wasmtime" || dependency_name.starts_with("wasmtime-"))
             && owner != "maestro-extensions-wasmtime"
+            && !test_host
     {
         return Err(format!(
             "{owner}: forbidden runtime library dependency {dependency_name}"

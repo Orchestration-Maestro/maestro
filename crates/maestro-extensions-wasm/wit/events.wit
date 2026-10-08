@@ -1,0 +1,409 @@
+package maestro:extension@0.1.0;
+
+/// Typed event payloads, results and the built-in tool shapes.
+interface events {
+    use models.{
+        agent-message, assistant-message-event, content-block, custom-message-input, image-content,
+        model, thinking-level, tool-result-message,
+    };
+    use session.{
+        bash-result, branch-summary-entry, build-system-prompt-options, compaction-entry,
+        compaction-preparation, compaction-result, fork-position, session-entry,
+    };
+
+    /// Why resources are discovered.
+    enum resources-discover-reason { startup, reload }
+
+    /// Resource paths requested after startup or reload.
+    record resources-discover-event { cwd: string, reason: resources-discover-reason }
+
+    /// Resource paths an extension adds.
+    record resources-discover-result {
+        skill-paths: option<list<string>>,
+        prompt-paths: option<list<string>>,
+        theme-paths: option<list<string>>,
+    }
+
+    /// Why a session started.
+    enum session-start-reason { startup, reload, new, resume, fork }
+
+    /// A session started, was loaded or was reloaded.
+    record session-start-event {
+        reason: session-start-reason,
+        previous-session-file: option<string>,
+    }
+
+    /// Why a session is about to be replaced.
+    enum switch-reason { new, resume }
+
+    /// A switch to another session is about to happen.
+    record session-before-switch-event {
+        reason: switch-reason,
+        target-session-file: option<string>,
+    }
+
+    /// A fork is about to happen.
+    record session-before-fork-event { entry-id: string, position: fork-position }
+
+    /// A compaction is about to happen; its cancellation signal travels separately.
+    record session-before-compact-event-data {
+        preparation: compaction-preparation,
+        branch-entries: list<session-entry>,
+        custom-instructions: option<string>,
+    }
+
+    /// A compaction finished.
+    record session-compact-event { compaction-entry: compaction-entry, from-extension: bool }
+
+    /// Why an extension runtime is torn down.
+    enum shutdown-reason { quit, reload, new, resume, fork }
+
+    /// The extension runtime is about to be torn down.
+    record session-shutdown-event { reason: shutdown-reason, target-session-file: option<string> }
+
+    /// Preparation data for tree navigation.
+    record tree-preparation {
+        target-id: string,
+        old-leaf-id: option<string>,
+        common-ancestor-id: option<string>,
+        entries-to-summarize: list<session-entry>,
+        user-wants-summary: bool,
+        custom-instructions: option<string>,
+        replace-instructions: option<bool>,
+        label: option<string>,
+    }
+
+    /// A tree navigation is about to happen; its cancellation signal travels separately.
+    record session-before-tree-event-data { preparation: tree-preparation }
+
+    /// A tree navigation finished.
+    record session-tree-event {
+        new-leaf-id: option<string>,
+        old-leaf-id: option<string>,
+        summary-entry: option<branch-summary-entry>,
+        from-extension: option<bool>,
+    }
+
+    /// Messages about to be sent to the model.
+    record context-event { messages: list<agent-message> }
+
+    /// A provider request about to be sent; `payload` is JSON text.
+    record before-provider-request-event { payload: string }
+
+    /// A provider response was received.
+    record after-provider-response-event { status: u16, headers: list<tuple<string, string>> }
+
+    /// A prompt was submitted before the agent loop starts.
+    record before-agent-start-event {
+        prompt: string,
+        images: option<list<image-content>>,
+        system-prompt: string,
+        system-prompt-options: build-system-prompt-options,
+    }
+
+    /// An agent loop ended.
+    record agent-end-event { messages: list<agent-message> }
+
+    /// A turn started.
+    record turn-start-event { turn-index: u32, timestamp: f64 }
+
+    /// A turn ended.
+    record turn-end-event {
+        turn-index: u32,
+        message: agent-message,
+        tool-results: list<tool-result-message>,
+    }
+
+    /// A message started.
+    record message-start-event { message: agent-message }
+
+    /// A streamed assistant message changed.
+    record message-update-event {
+        message: agent-message,
+        assistant-message-event: assistant-message-event,
+    }
+
+    /// A message ended.
+    record message-end-event { message: agent-message }
+
+    /// A tool started; `args` is JSON text.
+    record tool-execution-start-event { tool-call-id: string, tool-name: string, args: string }
+
+    /// A tool reported progress; `args` and `partial-result` are JSON text.
+    record tool-execution-update-event {
+        tool-call-id: string,
+        tool-name: string,
+        args: string,
+        partial-result: string,
+    }
+
+    /// A tool finished; `result` is JSON text.
+    record tool-execution-end-event {
+        tool-call-id: string,
+        tool-name: string,
+        %result: string,
+        is-error: bool,
+    }
+
+    /// How a model was selected.
+    enum model-select-source { set, cycle, restore }
+
+    /// A model was selected.
+    record model-select-event {
+        model: model,
+        previous-model: option<model>,
+        source: model-select-source,
+    }
+
+    /// A thinking level was selected.
+    record thinking-level-select-event { level: thinking-level, previous-level: thinking-level }
+
+    /// The user ran a bash command.
+    record user-bash-event { command: string, exclude-from-context: bool, cwd: string }
+
+    /// Where an input came from.
+    enum input-source { interactive, rpc, extension }
+
+    /// A user input before agent processing.
+    record input-event { text: string, images: option<list<image-content>>, source: input-source }
+
+    /// Replacement text and images of an input.
+    record input-transform { text: string, images: option<list<image-content>> }
+
+    /// What an input handler decided.
+    variant input-event-result { %continue, transform(input-transform), handled }
+
+    /// Part of a truncation that was applied.
+    enum truncated-by { lines, bytes }
+
+    /// Outcome of truncating tool output.
+    record truncation-result {
+        content: string,
+        truncated: bool,
+        truncated-by: option<truncated-by>,
+        total-lines: u64,
+        total-bytes: u64,
+        output-lines: u64,
+        output-bytes: u64,
+        last-line-partial: bool,
+        first-line-exceeds-limit: bool,
+        max-lines: u64,
+        max-bytes: u64,
+    }
+
+    /// Input of the read tool.
+    record read-tool-input { path: string, offset: option<f64>, limit: option<f64> }
+
+    /// Details of a read tool result.
+    record read-tool-details { truncation: option<truncation-result> }
+
+    /// Input of the bash tool.
+    record bash-tool-input { command: string, timeout: option<f64> }
+
+    /// Details of a bash tool result.
+    record bash-tool-details {
+        truncation: option<truncation-result>,
+        full-output-path: option<string>,
+    }
+
+    /// One targeted replacement of the edit tool.
+    record replace-edit { old-text: string, new-text: string }
+
+    /// Input of the edit tool.
+    record edit-tool-input { path: string, edits: list<replace-edit> }
+
+    /// Details of an edit tool result.
+    record edit-tool-details { diff: string, first-changed-line: option<u32> }
+
+    /// Input of the write tool.
+    record write-tool-input { path: string, content: string }
+
+    /// Input of the grep tool.
+    record grep-tool-input {
+        pattern: string,
+        path: option<string>,
+        glob: option<string>,
+        ignore-case: option<bool>,
+        literal: option<bool>,
+        context: option<f64>,
+        limit: option<f64>,
+    }
+
+    /// Details of a grep tool result.
+    record grep-tool-details {
+        truncation: option<truncation-result>,
+        match-limit-reached: option<f64>,
+        lines-truncated: option<bool>,
+    }
+
+    /// Input of the find tool.
+    record find-tool-input { pattern: string, path: option<string>, limit: option<f64> }
+
+    /// Details of a find tool result.
+    record find-tool-details {
+        truncation: option<truncation-result>,
+        result-limit-reached: option<f64>,
+    }
+
+    /// Input of the ls tool.
+    record ls-tool-input { path: option<string>, limit: option<f64> }
+
+    /// Details of an ls tool result.
+    record ls-tool-details {
+        truncation: option<truncation-result>,
+        entry-limit-reached: option<f64>,
+    }
+
+    /// A bash tool call.
+    record bash-tool-call-event { tool-call-id: string, input: bash-tool-input }
+
+    /// A read tool call.
+    record read-tool-call-event { tool-call-id: string, input: read-tool-input }
+
+    /// An edit tool call.
+    record edit-tool-call-event { tool-call-id: string, input: edit-tool-input }
+
+    /// A write tool call.
+    record write-tool-call-event { tool-call-id: string, input: write-tool-input }
+
+    /// A grep tool call.
+    record grep-tool-call-event { tool-call-id: string, input: grep-tool-input }
+
+    /// A find tool call.
+    record find-tool-call-event { tool-call-id: string, input: find-tool-input }
+
+    /// An ls tool call.
+    record ls-tool-call-event { tool-call-id: string, input: ls-tool-input }
+
+    /// A call of a custom tool; `input` is JSON text of an object.
+    record custom-tool-call-event { tool-call-id: string, tool-name: string, input: string }
+
+    /// A tool is about to execute.
+    variant tool-call-event {
+        bash(bash-tool-call-event),
+        read(read-tool-call-event),
+        edit(edit-tool-call-event),
+        write(write-tool-call-event),
+        grep(grep-tool-call-event),
+        find(find-tool-call-event),
+        ls(ls-tool-call-event),
+        custom(custom-tool-call-event),
+    }
+
+    /// Fields every tool result shares; `input` is JSON text of an object.
+    record tool-result-base {
+        tool-call-id: string,
+        input: string,
+        content: list<content-block>,
+        is-error: bool,
+    }
+
+    /// A bash tool result.
+    record bash-tool-result-event { base: tool-result-base, details: option<bash-tool-details> }
+
+    /// A read tool result.
+    record read-tool-result-event { base: tool-result-base, details: option<read-tool-details> }
+
+    /// An edit tool result.
+    record edit-tool-result-event { base: tool-result-base, details: option<edit-tool-details> }
+
+    /// A grep tool result.
+    record grep-tool-result-event { base: tool-result-base, details: option<grep-tool-details> }
+
+    /// A find tool result.
+    record find-tool-result-event { base: tool-result-base, details: option<find-tool-details> }
+
+    /// An ls tool result.
+    record ls-tool-result-event { base: tool-result-base, details: option<ls-tool-details> }
+
+    /// A custom tool result; `details` is JSON text.
+    record custom-tool-result-event {
+        base: tool-result-base,
+        tool-name: string,
+        details: option<string>,
+    }
+
+    /// A tool finished executing.
+    variant tool-result-event {
+        bash(bash-tool-result-event),
+        read(read-tool-result-event),
+        edit(edit-tool-result-event),
+        write(tool-result-base),
+        grep(grep-tool-result-event),
+        find(find-tool-result-event),
+        ls(ls-tool-result-event),
+        custom(custom-tool-result-event),
+    }
+
+    /// An event under a name the host does not define; `payload` is JSON text.
+    record custom-event { name: string, payload: option<string> }
+
+    /// Replacement messages of the context event.
+    record context-event-result { messages: option<list<agent-message>> }
+
+    /// Verdict of a tool call handler.
+    record tool-call-event-result { block: option<bool>, reason: option<string> }
+
+    /// Full replacement result of a user bash command.
+    record user-bash-event-result-data { %result: option<bash-result> }
+
+    /// Replacement fields of a tool result; `details` is JSON text.
+    record tool-result-event-result {
+        content: option<list<content-block>>,
+        details: option<string>,
+        is-error: option<bool>,
+    }
+
+    /// Replacement of a finalized message.
+    record message-end-event-result { message: option<agent-message> }
+
+    /// Message and system prompt a handler adds before the agent starts.
+    record before-agent-start-event-result {
+        message: option<custom-message-input>,
+        system-prompt: option<string>,
+    }
+
+    /// Verdict of a session switch handler.
+    record session-before-switch-result { cancel: option<bool> }
+
+    /// Verdict of a fork handler.
+    record session-before-fork-result {
+        cancel: option<bool>,
+        skip-conversation-restore: option<bool>,
+    }
+
+    /// Verdict or replacement of a compaction handler.
+    record session-before-compact-result {
+        cancel: option<bool>,
+        compaction: option<compaction-result>,
+    }
+
+    /// Summary a tree handler supplies; `details` is JSON text.
+    record tree-summary { summary: string, details: option<string> }
+
+    /// Verdict or replacement of a tree navigation handler.
+    record session-before-tree-result {
+        cancel: option<bool>,
+        summary: option<tree-summary>,
+        custom-instructions: option<string>,
+        replace-instructions: option<bool>,
+        label: option<string>,
+    }
+
+    /// Result a handler returns, matching the event it handled.
+    variant extension-event-result {
+        resources-discover(resources-discover-result),
+        context(context-event-result),
+        before-provider-request(string),
+        tool-call(tool-call-event-result),
+        user-bash(user-bash-event-result-data),
+        tool-result(tool-result-event-result),
+        message-end(message-end-event-result),
+        before-agent-start(before-agent-start-event-result),
+        session-before-switch(session-before-switch-result),
+        session-before-fork(session-before-fork-result),
+        session-before-compact(session-before-compact-result),
+        session-before-tree(session-before-tree-result),
+        input(input-event-result),
+    }
+}

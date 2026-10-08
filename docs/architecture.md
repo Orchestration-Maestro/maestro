@@ -39,7 +39,9 @@ Malformed metadata and command failures return diagnostics, not acceptance.
 ## Bounded ownership checks
 
 Direct `wasmtime`/`wasmtime-*` library declarations belong only to the runtime
-adapter; `wasmtime-wasi-http` is excluded everywhere. The terminal toolkit cannot
+adapter, except that the guest-authoring crate may declare `wasmtime` and
+`wasmtime-wasi` as development dependencies for its test-only host probe;
+`wasmtime-wasi-http` is excluded everywhere. The terminal toolkit cannot
 declare `ratatui`, `syntect` or `two-face`, including aliased, optional, build,
 dev and foreign-target forms. A root may transitively use its runtime adapter.
 Review also checks equivalent new framework/highlighting libraries; the finite
@@ -100,6 +102,15 @@ remains outside those exclusions: code sharing a documentation or test line stil
 counts. Ordinary comments and string contents count. Blank lines are excluded.
 A trailing test item's comment-only suffix is excluded only when no production
 item follows. Rust validity belongs to the compiler.
+
+The guest-authoring crate alone declares its own lint table: the workspace table
+with `pedantic`, `too_many_arguments` and `excessive_nesting` lowered from
+`forbid` to `deny`, because generated bindings cannot compile under `forbid`.
+Only that crate's generated `bindings.rs` may name those groups at `deny`, with
+the single allowance `clippy::same_length_and_capacity`. Every handwritten
+top-level module, integration test and example restores the groups with
+`forbid`, nested files inherit it from their parent module, and the crate root
+stays wiring-only.
 
 ## Commands and failure evidence
 

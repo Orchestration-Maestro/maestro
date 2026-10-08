@@ -1,0 +1,222 @@
+package maestro:extension@0.1.0;
+
+/// Session, compaction and source records.
+interface session {
+    use models.{agent-message, user-content};
+
+    /// Where a branch is taken relative to an entry.
+    enum fork-position { before, at }
+
+    /// First line of a session file.
+    record session-header {
+        version: option<u32>,
+        id: string,
+        timestamp: string,
+        cwd: string,
+        parent-session: option<string>,
+    }
+
+    /// Options of a new session.
+    record new-session-options { id: option<string>, parent-session: option<string> }
+
+    /// Fields every entry shares.
+    record session-entry-base { id: string, parent-id: option<string>, timestamp: string }
+
+    /// A message of the conversation.
+    record session-message-entry { base: session-entry-base, message: agent-message }
+
+    /// A change of thinking level.
+    record thinking-level-change-entry { base: session-entry-base, thinking-level: string }
+
+    /// A change of model.
+    record model-change-entry { base: session-entry-base, provider: string, model-id: string }
+
+    /// A compaction; `details` is JSON text.
+    record compaction-entry {
+        base: session-entry-base,
+        summary: string,
+        first-kept-entry-id: string,
+        tokens-before: f64,
+        details: option<string>,
+        from-hook: option<bool>,
+    }
+
+    /// A summary of an abandoned branch; `details` is JSON text.
+    record branch-summary-entry {
+        base: session-entry-base,
+        from-id: string,
+        summary: string,
+        details: option<string>,
+        from-hook: option<bool>,
+    }
+
+    /// Extension state stored in the session; `data` is JSON text.
+    record custom-entry { base: session-entry-base, custom-type: string, data: option<string> }
+
+    /// A label on another entry.
+    record label-entry { base: session-entry-base, target-id: string, label: option<string> }
+
+    /// Session metadata such as its display name.
+    record session-info-entry { base: session-entry-base, name: option<string> }
+
+    /// A message injected into the model context; `details` is JSON text.
+    record custom-message-entry {
+        base: session-entry-base,
+        custom-type: string,
+        content: user-content,
+        details: option<string>,
+        display: bool,
+    }
+
+    /// One entry of the session tree.
+    variant session-entry {
+        message(session-message-entry),
+        thinking-level-change(thinking-level-change-entry),
+        model-change(model-change-entry),
+        compaction(compaction-entry),
+        branch-summary(branch-summary-entry),
+        custom(custom-entry),
+        custom-message(custom-message-entry),
+        label(label-entry),
+        session-info(session-info-entry),
+    }
+
+    /// A line of a session file.
+    variant file-entry { header(session-header), entry(session-entry) }
+
+    /// Provider and model of a session.
+    record model-reference { provider: string, model-id: string }
+
+    /// The conversation a session builds for the model.
+    record session-context {
+        messages: list<agent-message>,
+        thinking-level: string,
+        model: option<model-reference>,
+    }
+
+    /// Result of a compaction; `details` is JSON text.
+    record compaction-result {
+        summary: string,
+        first-kept-entry-id: string,
+        tokens-before: f64,
+        details: option<string>,
+    }
+
+    /// Compaction settings.
+    record compaction-settings { enabled: bool, reserve-tokens: f64, keep-recent-tokens: f64 }
+
+    /// Files touched while a conversation ran.
+    record file-operations { read: list<string>, written: list<string>, edited: list<string> }
+
+    /// What a compaction is about to summarize.
+    record compaction-preparation {
+        first-kept-entry-id: string,
+        messages-to-summarize: list<agent-message>,
+        turn-prefix-messages: list<agent-message>,
+        is-split-turn: bool,
+        tokens-before: f64,
+        previous-summary: option<string>,
+        file-ops: file-operations,
+        settings: compaction-settings,
+    }
+
+    /// Result of a bash command.
+    record bash-result {
+        output: string,
+        exit-code: option<s32>,
+        cancelled: bool,
+        truncated: bool,
+        full-output-path: option<string>,
+    }
+
+    /// Where a resource was found.
+    enum source-scope { user, project, temporary }
+
+    /// How a resource was loaded.
+    enum source-origin { %package, top-level }
+
+    /// Provenance of a resource.
+    record source-info {
+        path: string,
+        source: string,
+        scope: source-scope,
+        origin: source-origin,
+        base-dir: option<string>,
+    }
+
+    /// A loaded skill.
+    record skill {
+        name: string,
+        description: string,
+        file-path: string,
+        base-dir: string,
+        source-info: source-info,
+        disable-model-invocation: bool,
+    }
+
+    /// A context file given to the system prompt.
+    record context-file { path: string, content: string }
+
+    /// Structured options the system prompt was built from.
+    record build-system-prompt-options {
+        custom-prompt: option<string>,
+        selected-tools: option<list<string>>,
+        tool-snippets: option<list<tuple<string, string>>>,
+        prompt-guidelines: option<list<string>>,
+        append-system-prompt: option<string>,
+        cwd: string,
+        context-files: option<list<context-file>>,
+        skills: option<list<skill>>,
+    }
+
+    /// Where a slash command comes from.
+    enum slash-command-source { extension, prompt, skill }
+
+    /// One slash command.
+    record slash-command-info {
+        name: string,
+        description: option<string>,
+        source: slash-command-source,
+        source-info: source-info,
+    }
+
+    /// One completion suggestion.
+    record autocomplete-item { value: string, label: string, description: option<string> }
+
+    /// Request credentials of a model.
+    record request-credentials {
+        api-key: option<string>,
+        headers: option<list<tuple<string, string>>>,
+    }
+
+    /// Outcome of resolving the credentials of a model.
+    variant resolved-request-auth { ok(request-credentials), error(string) }
+
+    /// A tool as listed to extensions; `parameters` is a JSON schema text.
+    record tool-info {
+        name: string,
+        description: string,
+        parameters: string,
+        source-info: source-info,
+    }
+
+    /// Context usage of the active model.
+    record context-usage { tokens: option<f64>, context-window: f64, percent: option<f64> }
+
+    /// Plain data of a new session started from a command.
+    record new-session-command-data { parent-session: option<string> }
+
+    /// Plain data of a fork.
+    record fork-data { position: option<fork-position> }
+
+    /// Options of a tree navigation.
+    record navigate-tree-options {
+        summarize: option<bool>,
+        custom-instructions: option<string>,
+        replace-instructions: option<bool>,
+        label: option<string>,
+    }
+
+    /// Result of a session operation.
+    record session-change-result { cancelled: bool }
+}

@@ -108,7 +108,7 @@ are later scope, not active foundation concepts.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
 - **Byte cursor:** A cursor position counted in UTF-8 bytes within a line, never in cells or characters.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
-- **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
+- **Guest authoring:** The `maestro-extensions-wasm` library, without internal dependencies, owning the canonical WIT source inputs and the facade extension authors write against.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.

@@ -1,0 +1,341 @@
+package maestro:extension@0.1.0;
+
+/// Model, message and diagnostic records shared by events and session data.
+interface models {
+    /// Open API protocol identifier.
+    type api = string;
+    /// Open provider identifier.
+    type provider = string;
+
+    /// Reasoning effort requested from a model.
+    enum thinking-level { off, minimal, low, medium, high, xhigh }
+
+    /// Provider value of one thinking level.
+    variant level-value {
+        /// The model does not support the level.
+        unsupported,
+        /// Provider-specific value of the level.
+        mapped(string),
+    }
+
+    /// Per-level provider values; an omitted level uses the provider default.
+    record thinking-level-map {
+        off: option<level-value>,
+        minimal: option<level-value>,
+        low: option<level-value>,
+        medium: option<level-value>,
+        high: option<level-value>,
+        xhigh: option<level-value>,
+    }
+
+    /// Input kinds a model accepts.
+    enum input-kind { text, image }
+
+    /// Cost per million tokens.
+    record model-cost { input: f64, output: f64, cache-read: f64, cache-write: f64 }
+
+    /// Field a completions API takes its token limit from.
+    enum max-tokens-field { max-completion-tokens, max-tokens }
+
+    /// Wire format of the reasoning parameter.
+    enum thinking-format { openai, openrouter, deepseek, zai, qwen, qwen-chat-template }
+
+    /// Prompt-caching convention.
+    enum cache-control-format { anthropic }
+
+    /// Compatibility overrides for OpenAI-compatible completions APIs.
+    record openai-completions-compat {
+        supports-store: option<bool>,
+        supports-developer-role: option<bool>,
+        supports-reasoning-effort: option<bool>,
+        supports-usage-in-streaming: option<bool>,
+        max-tokens-field: option<max-tokens-field>,
+        requires-tool-result-name: option<bool>,
+        requires-assistant-after-tool-result: option<bool>,
+        requires-thinking-as-text: option<bool>,
+        requires-reasoning-content-on-assistant-messages: option<bool>,
+        thinking-format: option<thinking-format>,
+        open-router-routing: option<open-router-routing>,
+        vercel-gateway-routing: option<vercel-gateway-routing>,
+        zai-tool-stream: option<bool>,
+        supports-strict-mode: option<bool>,
+        cache-control-format: option<cache-control-format>,
+        send-session-affinity-headers: option<bool>,
+        supports-long-cache-retention: option<bool>,
+    }
+
+    /// Compatibility overrides for OpenAI Responses APIs.
+    record openai-responses-compat {
+        send-session-id-header: option<bool>,
+        supports-long-cache-retention: option<bool>,
+    }
+
+    /// Compatibility overrides for Anthropic Messages APIs.
+    record anthropic-messages-compat {
+        supports-eager-tool-input-streaming: option<bool>,
+        supports-long-cache-retention: option<bool>,
+    }
+
+    /// Whether routing may use providers that collect data.
+    enum data-collection { deny, allow }
+
+    /// A string that may be explicitly null.
+    variant nullable-string { null, text(string) }
+
+    /// Sorting strategy with explicit parts.
+    record sort-detail { by: option<string>, partition: option<nullable-string> }
+
+    /// Sorting strategy of provider routing.
+    variant sort-preference { name(string), detail(sort-detail) }
+
+    /// A price given as a number or as text.
+    variant price { amount(f64), text(string) }
+
+    /// Maximum price per unit.
+    record max-price {
+        prompt: option<price>,
+        completion: option<price>,
+        image: option<price>,
+        audio: option<price>,
+        request: option<price>,
+    }
+
+    /// Cutoffs at percentiles.
+    record percentiles { p50: option<f64>, p75: option<f64>, p90: option<f64>, p99: option<f64> }
+
+    /// A limit given as one number or as percentile cutoffs.
+    variant percentile-preference { value(f64), by-percentile(percentiles) }
+
+    /// OpenRouter provider routing preferences.
+    record open-router-routing {
+        allow-fallbacks: option<bool>,
+        require-parameters: option<bool>,
+        data-collection: option<data-collection>,
+        zdr: option<bool>,
+        enforce-distillable-text: option<bool>,
+        order: option<list<string>>,
+        only: option<list<string>>,
+        ignore: option<list<string>>,
+        quantizations: option<list<string>>,
+        sort: option<sort-preference>,
+        max-price: option<max-price>,
+        preferred-min-throughput: option<percentile-preference>,
+        preferred-max-latency: option<percentile-preference>,
+    }
+
+    /// Vercel AI Gateway routing preferences.
+    record vercel-gateway-routing { only: option<list<string>>, order: option<list<string>> }
+
+    /// Compatibility overrides, selected by the model's API.
+    variant model-compat {
+        openai-completions(openai-completions-compat),
+        openai-responses(openai-responses-compat),
+        anthropic-messages(anthropic-messages-compat),
+    }
+
+    /// One model of the catalog.
+    record model {
+        id: string,
+        name: string,
+        api: api,
+        provider: provider,
+        base-url: string,
+        reasoning: bool,
+        thinking-level-map: option<thinking-level-map>,
+        input: list<input-kind>,
+        cost: model-cost,
+        context-window: f64,
+        max-tokens: f64,
+        headers: option<list<tuple<string, string>>>,
+        compat: option<model-compat>,
+    }
+
+    /// Text with an optional provider signature.
+    record text-content { text: string, text-signature: option<string> }
+
+    /// Reasoning text with an optional provider signature.
+    record thinking-content {
+        thinking: string,
+        thinking-signature: option<string>,
+        redacted: option<bool>,
+    }
+
+    /// Base64 image data.
+    record image-content { data: string, mime-type: string }
+
+    /// A tool call; `arguments` is JSON text of an object.
+    record tool-call {
+        id: string,
+        name: string,
+        arguments: string,
+        thought-signature: option<string>,
+    }
+
+    /// Text or image content.
+    variant content-block { text(text-content), image(image-content) }
+
+    /// A plain string or a list of content blocks.
+    variant user-content { text(string), blocks(list<content-block>) }
+
+    /// Content of an assistant message.
+    variant assistant-block { text(text-content), thinking(thinking-content), tool-call(tool-call) }
+
+    /// Cost of one response in currency units.
+    record cost { input: f64, output: f64, cache-read: f64, cache-write: f64, total: f64 }
+
+    /// Token usage and cost of one response.
+    record usage {
+        input: f64,
+        output: f64,
+        cache-read: f64,
+        cache-write: f64,
+        total-tokens: f64,
+        cost: cost,
+    }
+
+    /// Why a response ended.
+    enum stop-reason { stop, length, tool-use, error, aborted }
+
+    /// Error details of a diagnostic.
+    record diagnostic-error-info {
+        name: option<string>,
+        message: string,
+        stack: option<string>,
+        code: option<diagnostic-code>,
+    }
+
+    /// Error code given as text or as a number.
+    variant diagnostic-code { text(string), number(f64) }
+
+    /// Redacted provider or runtime diagnostic; `details` is JSON text.
+    record assistant-message-diagnostic {
+        %type: string,
+        timestamp: f64,
+        error: option<diagnostic-error-info>,
+        details: option<string>,
+    }
+
+    /// A user message.
+    record user-message { content: user-content, timestamp: f64 }
+
+    /// An assistant message.
+    record assistant-message {
+        content: list<assistant-block>,
+        api: api,
+        provider: provider,
+        model: string,
+        response-model: option<string>,
+        response-id: option<string>,
+        diagnostics: option<list<assistant-message-diagnostic>>,
+        usage: usage,
+        stop-reason: stop-reason,
+        error-message: option<string>,
+        timestamp: f64,
+    }
+
+    /// A tool result message; `details` is JSON text.
+    record tool-result-message {
+        tool-call-id: string,
+        tool-name: string,
+        content: list<content-block>,
+        details: option<string>,
+        is-error: bool,
+        timestamp: f64,
+    }
+
+    /// Message of a bash command run by the user.
+    record bash-execution-message {
+        command: string,
+        output: string,
+        exit-code: option<s32>,
+        cancelled: bool,
+        truncated: bool,
+        full-output-path: option<string>,
+        timestamp: f64,
+        exclude-from-context: option<bool>,
+    }
+
+    /// Message injected by an extension; `details` is JSON text.
+    record custom-message {
+        custom-type: string,
+        content: user-content,
+        display: bool,
+        details: option<string>,
+        timestamp: f64,
+    }
+
+    /// The fields of a custom message an extension supplies.
+    record custom-message-input {
+        custom-type: string,
+        content: user-content,
+        display: bool,
+        details: option<string>,
+    }
+
+    /// Summary of an abandoned branch.
+    record branch-summary-message { summary: string, from-id: string, timestamp: f64 }
+
+    /// Summary that replaced compacted history.
+    record compaction-summary-message { summary: string, tokens-before: f64, timestamp: f64 }
+
+    /// Any message of a conversation.
+    variant agent-message {
+        user(user-message),
+        assistant(assistant-message),
+        tool-result(tool-result-message),
+        bash-execution(bash-execution-message),
+        custom(custom-message),
+        branch-summary(branch-summary-message),
+        compaction-summary(compaction-summary-message),
+    }
+
+    /// Content start of a streamed block.
+    record content-start { content-index: u32, partial: assistant-message }
+
+    /// Content delta of a streamed block.
+    record content-delta { content-index: u32, delta: string, partial: assistant-message }
+
+    /// Content end of a streamed text or reasoning block.
+    record content-end { content-index: u32, content: string, partial: assistant-message }
+
+    /// End of a streamed tool call.
+    record tool-call-end { content-index: u32, tool-call: tool-call, partial: assistant-message }
+
+    /// Why a response completed.
+    enum done-reason { stop, length, tool-use }
+
+    /// Why a response failed.
+    enum error-reason { aborted, error }
+
+    /// Successful end of a response.
+    record done-event { reason: done-reason, message: assistant-message }
+
+    /// Failed end of a response.
+    record error-event { reason: error-reason, error: assistant-message }
+
+    /// Event of a streamed assistant message.
+    variant assistant-message-event {
+        start(assistant-message),
+        text-start(content-start),
+        text-delta(content-delta),
+        text-end(content-end),
+        thinking-start(content-start),
+        thinking-delta(content-delta),
+        thinking-end(content-end),
+        toolcall-start(content-start),
+        toolcall-delta(content-delta),
+        toolcall-end(tool-call-end),
+        done(done-event),
+        error(error-event),
+    }
+
+    /// Whether a tool may run alongside others.
+    enum tool-execution-mode { sequential, parallel }
+
+    /// Result of a tool; `details` is JSON text.
+    record agent-tool-result {
+        content: list<content-block>,
+        details: option<string>,
+        terminate: option<bool>,
+    }
+}

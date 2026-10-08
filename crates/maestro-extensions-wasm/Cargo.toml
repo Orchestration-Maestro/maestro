@@ -1,0 +1,48 @@
+[package]
+name = "maestro-extensions-wasm"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Author-side contract for native-async extension components."
+autotests = false
+
+[[example]]
+name = "author_component"
+crate-type = ["cdylib"]
+
+[[test]]
+name = "author_callbacks"
+
+[[test]]
+name = "author_events"
+
+[[test]]
+name = "author_context"
+
+[dependencies]
+wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "std"] }
+serde_json.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+wasmtime = { version = "=49.0.2", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async"] }
+wasmtime-wasi = { version = "=49.0.2", default-features = false, features = ["p2"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync"] }
+
+# The workspace table, except that the generated bindings need three groups at
+# `deny`; every handwritten module restores them as `forbid`.
+[lints.rust]
+unsafe_code = "forbid"
+forbidden_lint_groups = "forbid"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+missing_docs_in_private_items = "forbid"
+too_many_arguments = "deny"
+fn_params_excessive_bools = "forbid"
+too_many_lines = "forbid"
+cognitive_complexity = "forbid"
+excessive_nesting = "deny"
+unwrap_used = "forbid"
+expect_used = "forbid"
+panic = "forbid"

@@ -19,6 +19,15 @@ formats, runs Clippy, builds strict public documentation and verifies workspace
 conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`, `build`
 and `check`; it never publishes. `clean` removes Cargo outputs, not source files.
 
+## Extension components
+
+```sh
+mise exec -- just extension-author-component
+```
+
+Builds the example extension as a `wasm32-wasip2` component and adds that target
+with `rustup` when it is missing. See [writing an extension](extensions/guest.md).
+
 ## Source invocation
 
 ```sh

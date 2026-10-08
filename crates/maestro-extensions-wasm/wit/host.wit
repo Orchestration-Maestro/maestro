@@ -1,0 +1,287 @@
+package maestro:extension@0.1.0;
+
+/// Capabilities and resources the host provides to an extension.
+interface host {
+    use models.{
+        agent-message, agent-tool-result, custom-message-input, model, thinking-level,
+        tool-execution-mode, user-content,
+    };
+    use session.{
+        compaction-result, context-usage, fork-data, navigate-tree-options,
+        new-session-command-data, new-session-options, resolved-request-auth,
+        session-change-result, session-context, session-entry, session-header,
+        slash-command-info, tool-info,
+    };
+
+    /// Host-owned identity of one guest closure.
+    resource callback {
+        constructor();
+        /// Stable key of this identity, equal for the owner handle and every borrow.
+        id: func() -> u32;
+    }
+
+    /// Host-owned cancellation flag.
+    resource abort-signal {
+        aborted: func() -> bool;
+    }
+
+    /// Host-owned channel for the partial results of one tool call.
+    resource tool-update {
+        send: func(partial: agent-tool-result) -> result<_, string>;
+    }
+
+    /// Host-owned emitter borrowed by a synchronous callback; the host delivers what is
+    /// emitted once the callback returns.
+    resource callback-emitter {
+        emit: func(channel: string, data: string) -> result<_, string>;
+    }
+
+    /// Host-owned subscription to a bus channel.
+    resource subscription {
+        unsubscribe: func() -> result<_, string>;
+    }
+
+    /// Host-owned event bus shared by extensions.
+    resource event-bus {
+        emit: async func(channel: string, data: string) -> result<_, string>;
+        on: func(channel: string, listener: borrow<callback>) -> result<subscription, string>;
+    }
+
+    /// Host-owned interface to the user, opaque until its operations are delivered.
+    resource ui-context;
+
+    /// Host-owned theme, opaque until its operations are delivered.
+    resource theme;
+
+    /// Host-owned model catalog.
+    resource model-registry {
+        get-all: func() -> result<list<model>, string>;
+        get-available: func() -> result<list<model>, string>;
+        find: func(provider: string, model-id: string) -> result<option<model>, string>;
+        get-api-key-and-headers: async func(model: model) -> result<resolved-request-auth, string>;
+    }
+
+    /// Host-owned node of the session tree.
+    resource session-tree-node {
+        entry: func() -> result<session-entry, string>;
+        children: func() -> result<list<session-tree-node>, string>;
+        label: func() -> result<option<string>, string>;
+        label-timestamp: func() -> result<option<string>, string>;
+    }
+
+    /// Host-owned read access to a session.
+    resource readonly-session-manager {
+        get-cwd: func() -> result<string, string>;
+        get-session-dir: func() -> result<string, string>;
+        get-session-id: func() -> result<string, string>;
+        get-session-file: func() -> result<option<string>, string>;
+        get-leaf-id: func() -> result<option<string>, string>;
+        get-leaf-entry: func() -> result<option<session-entry>, string>;
+        get-entry: func(id: string) -> result<option<session-entry>, string>;
+        get-label: func(id: string) -> result<option<string>, string>;
+        get-branch: func(from-id: option<string>) -> result<list<session-entry>, string>;
+        get-header: func() -> result<option<session-header>, string>;
+        get-entries: func() -> result<list<session-entry>, string>;
+        get-tree: func() -> result<list<session-tree-node>, string>;
+        get-session-name: func() -> result<option<string>, string>;
+    }
+
+    /// Host-owned write access to a session being set up.
+    resource session-manager {
+        reader: func() -> readonly-session-manager;
+        set-session-file: func(path: string) -> result<_, string>;
+        new-session: func(options: option<new-session-options>) -> result<option<string>, string>;
+        is-persisted: func() -> result<bool, string>;
+        get-children: func(parent-id: string) -> result<list<session-entry>, string>;
+        build-session-context: func() -> result<session-context, string>;
+        append-message: func(message: agent-message) -> result<string, string>;
+        append-thinking-level-change: func(level: string) -> result<string, string>;
+        append-model-change: func(provider: string, model-id: string) -> result<string, string>;
+        append-compaction: func(
+            compaction: compaction-result, from-hook: option<bool>,
+        ) -> result<string, string>;
+        append-custom-entry: func(custom-type: string, data: option<string>) -> result<string, string>;
+        append-session-info: func(name: string) -> result<string, string>;
+        append-custom-message-entry: func(message: custom-message-input) -> result<string, string>;
+        append-label-change: func(target-id: string, label: option<string>) -> result<string, string>;
+        branch: func(from-id: string) -> result<_, string>;
+        reset-leaf: func() -> result<_, string>;
+        branch-with-summary: func(
+            from-id: option<string>,
+            summary: string,
+            details: option<string>,
+            from-hook: option<bool>,
+        ) -> result<string, string>;
+        create-branched-session: func(leaf-id: string) -> result<option<string>, string>;
+    }
+
+    /// How a tool draws its call and result: inside the standard shell, or in a frame of its
+    /// own. The frame case is the reference's `self`, which Rust cannot name as a variant.
+    enum render-shell { default, own-frame }
+
+    /// Registration data of a tool; `parameters` is a JSON schema text.
+    record tool-metadata {
+        name: string,
+        label: string,
+        description: string,
+        prompt-snippet: option<string>,
+        prompt-guidelines: option<list<string>>,
+        parameters: string,
+        render-shell: option<render-shell>,
+        execution-mode: option<tool-execution-mode>,
+    }
+
+    /// Kind of value a flag takes.
+    enum flag-type { boolean, %string }
+
+    /// Value of a flag.
+    variant flag-value { boolean(bool), text(string) }
+
+    /// Registration data of a command-line flag.
+    record flag-options { description: option<string>, %type: flag-type, default: option<flag-value> }
+
+    /// Where a custom message is queued while the agent is busy.
+    enum message-delivery { steer, follow-up, next-turn }
+
+    /// Where a user message is queued while the agent is busy.
+    enum user-message-delivery { steer, follow-up }
+
+    /// Options of a custom message.
+    record send-message-options { trigger-turn: option<bool>, deliver-as: option<message-delivery> }
+
+    /// Options of a user message.
+    record send-user-message-options { deliver-as: option<user-message-delivery> }
+
+    /// Live capabilities available to every callback.
+    resource context {
+        ui: func() -> result<ui-context, string>;
+        has-ui: func() -> result<bool, string>;
+        cwd: func() -> result<string, string>;
+        session-manager: func() -> result<readonly-session-manager, string>;
+        model-registry: func() -> result<model-registry, string>;
+        model: func() -> result<option<model>, string>;
+        is-idle: func() -> result<bool, string>;
+        signal: func() -> result<option<abort-signal>, string>;
+        abort: func() -> result<_, string>;
+        has-pending-messages: func() -> result<bool, string>;
+        shutdown: func() -> result<_, string>;
+        get-context-usage: func() -> result<option<context-usage>, string>;
+        compact: func(
+            custom-instructions: option<string>,
+            on-complete: option<borrow<callback>>,
+            on-error: option<borrow<callback>>,
+        ) -> result<_, string>;
+        get-system-prompt: func() -> result<string, string>;
+    }
+
+    /// Context with the session-replacing operations; only commands receive it.
+    resource command-context {
+        ui: func() -> result<ui-context, string>;
+        has-ui: func() -> result<bool, string>;
+        cwd: func() -> result<string, string>;
+        session-manager: func() -> result<readonly-session-manager, string>;
+        model-registry: func() -> result<model-registry, string>;
+        model: func() -> result<option<model>, string>;
+        is-idle: func() -> result<bool, string>;
+        signal: func() -> result<option<abort-signal>, string>;
+        abort: func() -> result<_, string>;
+        has-pending-messages: func() -> result<bool, string>;
+        shutdown: func() -> result<_, string>;
+        get-context-usage: func() -> result<option<context-usage>, string>;
+        compact: func(
+            custom-instructions: option<string>,
+            on-complete: option<borrow<callback>>,
+            on-error: option<borrow<callback>>,
+        ) -> result<_, string>;
+        get-system-prompt: func() -> result<string, string>;
+        wait-for-idle: async func() -> result<_, string>;
+        new-session: async func(
+            data: new-session-command-data,
+            setup: option<borrow<callback>>,
+            with-session: option<borrow<callback>>,
+        ) -> result<session-change-result, string>;
+        fork: async func(
+            entry-id: string, data: fork-data, with-session: option<borrow<callback>>,
+        ) -> result<session-change-result, string>;
+        navigate-tree: async func(
+            target-id: string, options: navigate-tree-options,
+        ) -> result<session-change-result, string>;
+        switch-session: async func(
+            path: string, with-session: option<borrow<callback>>,
+        ) -> result<session-change-result, string>;
+        reload: async func() -> result<_, string>;
+    }
+
+    /// Context bound to the session an operation created.
+    resource replaced-session-context {
+        command: func() -> command-context;
+        send-message: async func(
+            message: custom-message-input, options: option<send-message-options>,
+        ) -> result<_, string>;
+        send-user-message: async func(
+            content: user-content, options: option<send-user-message-options>,
+        ) -> result<_, string>;
+    }
+
+    /// Registers a tool with its argument preparation and execution callbacks.
+    register-tool: func(
+        metadata: tool-metadata,
+        prepare-arguments: option<borrow<callback>>,
+        execute: borrow<callback>,
+    ) -> result<_, string>;
+    /// Registers one handler for an event name.
+    on: func(event: string, handler: borrow<callback>) -> result<_, string>;
+    /// Registers a command.
+    register-command: func(
+        name: string,
+        description: option<string>,
+        completions: option<borrow<callback>>,
+        handler: borrow<callback>,
+    ) -> result<_, string>;
+    /// Registers a keyboard shortcut.
+    register-shortcut: func(
+        shortcut: string, description: option<string>, handler: borrow<callback>,
+    ) -> result<_, string>;
+    /// Registers a command-line flag.
+    register-flag: func(name: string, options: flag-options) -> result<_, string>;
+    /// Reads the value of a registered flag.
+    get-flag: func(name: string) -> result<option<flag-value>, string>;
+    /// Registers a renderer for a custom message type.
+    register-message-renderer: func(
+        custom-type: string, renderer: borrow<callback>,
+    ) -> result<_, string>;
+    /// Sends a custom message to the session.
+    send-message: func(
+        message: custom-message-input, options: option<send-message-options>,
+    ) -> result<_, string>;
+    /// Sends a user message to the agent.
+    send-user-message: func(
+        content: user-content, options: option<send-user-message-options>,
+    ) -> result<_, string>;
+    /// Appends a custom entry to the session.
+    append-entry: func(custom-type: string, data: option<string>) -> result<_, string>;
+    /// Sets the session display name.
+    set-session-name: func(name: string) -> result<_, string>;
+    /// Reads the session display name.
+    get-session-name: func() -> result<option<string>, string>;
+    /// Sets or clears the label of an entry.
+    set-label: func(entry-id: string, label: option<string>) -> result<_, string>;
+    /// Lists the names of the active tools.
+    get-active-tools: func() -> result<list<string>, string>;
+    /// Lists every configured tool.
+    get-all-tools: func() -> result<list<tool-info>, string>;
+    /// Sets the active tools by name.
+    set-active-tools: func(names: list<string>) -> result<_, string>;
+    /// Lists the available slash commands.
+    get-commands: func() -> result<list<slash-command-info>, string>;
+    /// Selects a model; false when no credentials are available.
+    set-model: async func(model: model) -> result<bool, string>;
+    /// Reads the thinking level.
+    get-thinking-level: func() -> result<thinking-level, string>;
+    /// Sets the thinking level.
+    set-thinking-level: func(level: thinking-level) -> result<_, string>;
+    /// The event bus shared by extensions.
+    events: func() -> event-bus;
+    /// Tells the host a listener's synchronous prefix left an asynchronous tail to run.
+    announce-listener-tail: func(listener: borrow<callback>, tail: borrow<callback>);
+}

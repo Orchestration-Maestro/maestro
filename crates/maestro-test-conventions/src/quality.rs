@@ -3,15 +3,24 @@ use std::path::Path;
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
+use crate::generated;
 use crate::source::{Member, Source};
 
 /// Verify protected lint settings and production source size for every member.
 pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     check_protected_lints(root)?;
     for member in members {
-        check_inheritance(&member.name, &member.directory.join("Cargo.toml"))?;
+        let manifest = member.directory.join("Cargo.toml");
+        if member.name == generated::GUEST {
+            generated::check_manifest(&manifest, root)?;
+        } else {
+            check_inheritance(&member.name, &manifest)?;
+        }
         for source in &member.sources {
             check_file(member, source)?;
+            if member.name == generated::GUEST {
+                generated::check_source(member, source)?;
+            }
         }
     }
     Ok(())

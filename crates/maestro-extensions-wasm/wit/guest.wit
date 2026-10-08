@@ -1,0 +1,193 @@
+package maestro:extension@0.1.0;
+
+/// Callbacks the host invokes on the extension.
+interface guest {
+    use models.{agent-tool-result, custom-message};
+    use session.{autocomplete-item, compaction-result};
+    use host.{
+        abort-signal, callback, callback-emitter, command-context, context,
+        replaced-session-context, session-manager, theme, tool-update,
+    };
+    use events.{
+        after-provider-response-event, agent-end-event, before-agent-start-event,
+        before-provider-request-event, context-event, custom-event, extension-event-result,
+        input-event, message-end-event, message-start-event, message-update-event,
+        model-select-event, resources-discover-event, session-before-compact-event-data,
+        session-before-fork-event, session-before-switch-event, session-before-tree-event-data,
+        session-compact-event, session-shutdown-event, session-start-event, session-tree-event,
+        thinking-level-select-event, tool-call-event, tool-execution-end-event,
+        tool-execution-start-event, tool-execution-update-event, tool-result-event,
+        turn-end-event, turn-start-event, user-bash-event,
+    };
+
+    /// Opaque operations a user bash replacement executes commands with; its methods belong
+    /// to a later delivery.
+    resource bash-operations;
+
+    /// Rendering options of a custom message.
+    record message-render-options { expanded: bool }
+
+    /// A component the host asks to draw itself; the emitter is borrowed for the call.
+    resource component {
+        render: func(width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
+        handle-input: func(data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+        wants-key-release: func() -> bool;
+        invalidate: func(emitter: borrow<callback-emitter>) -> result<_, string>;
+    }
+
+    /// What an event handler decided: a result, no result, or the message it failed with.
+    type decision = result<option<extension-event-result>, string>;
+
+    /// A tool call handler's decision with the call as the handler left it; `event` is absent
+    /// when the handler replaced the call with another kind of event.
+    record tool-call-outcome { event: option<tool-call-event>, decision: decision }
+
+    /// Runs the extension factory; returns when it has completed.
+    start: async func() -> result<_, string>;
+    /// Drops the closure behind a registered callback and its identity.
+    release: func(handler: borrow<callback>);
+    /// Rewrites the raw arguments of a tool call before validation; both are JSON text.
+    prepare-arguments: func(
+        handler: borrow<callback>, raw: string, emitter: borrow<callback-emitter>,
+    ) -> result<string, string>;
+    /// Runs a tool; `params` is JSON text.
+    invoke-tool: async func(
+        handler: borrow<callback>,
+        tool-call-id: string,
+        params: string,
+        signal: option<abort-signal>,
+        update: option<tool-update>,
+        ctx: context,
+    ) -> result<agent-tool-result, string>;
+    /// Completes the argument prefix of a command; absent when there are no suggestions.
+    invoke-completions: async func(
+        handler: borrow<callback>, prefix: string,
+    ) -> result<option<list<autocomplete-item>>, string>;
+    /// Runs a keyboard shortcut.
+    invoke-shortcut: async func(handler: borrow<callback>, ctx: context) -> result<_, string>;
+    /// Runs the setup of a new session against its session manager.
+    invoke-setup: async func(
+        handler: borrow<callback>, session: session-manager,
+    ) -> result<_, string>;
+    /// Runs the synchronous part of a bus listener.
+    invoke-listener: func(
+        handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>,
+    ) -> result<_, string>;
+    /// Runs the asynchronous tail a listener announced.
+    invoke-listener-tail: async func(tail: borrow<callback>) -> result<_, string>;
+    /// Renders a custom message; absent keeps the default rendering.
+    invoke-renderer: func(
+        handler: borrow<callback>,
+        message: custom-message,
+        options: message-render-options,
+        theme: theme,
+        emitter: borrow<callback-emitter>,
+    ) -> result<option<component>, string>;
+    /// Reports a finished compaction.
+    invoke-compaction-complete: func(
+        handler: borrow<callback>, compaction: compaction-result, emitter: borrow<callback-emitter>,
+    ) -> result<_, string>;
+    /// Reports a failed compaction.
+    invoke-compaction-error: func(
+        handler: borrow<callback>, message: string, emitter: borrow<callback-emitter>,
+    ) -> result<_, string>;
+    /// Runs a command handler.
+    invoke-command: async func(
+        handler: borrow<callback>, args: string, ctx: command-context,
+    ) -> result<_, string>;
+    /// Runs the continuation of a session operation.
+    invoke-with-session: async func(
+        handler: borrow<callback>, ctx: replaced-session-context,
+    ) -> result<_, string>;
+
+    // One export per event: the lift of a whole event union in one function is too large to
+    // compile, so each event type crosses the boundary in its own function.
+    invoke-resources-discover: async func(
+        handler: borrow<callback>, event: resources-discover-event, ctx: context,
+    ) -> decision;
+    invoke-session-start: async func(
+        handler: borrow<callback>, event: session-start-event, ctx: context,
+    ) -> decision;
+    invoke-session-before-switch: async func(
+        handler: borrow<callback>, event: session-before-switch-event, ctx: context,
+    ) -> decision;
+    invoke-session-before-fork: async func(
+        handler: borrow<callback>, event: session-before-fork-event, ctx: context,
+    ) -> decision;
+    invoke-session-before-compact: async func(
+        handler: borrow<callback>, event: session-before-compact-event-data, signal: abort-signal, ctx: context,
+    ) -> decision;
+    invoke-session-compact: async func(
+        handler: borrow<callback>, event: session-compact-event, ctx: context,
+    ) -> decision;
+    invoke-session-shutdown: async func(
+        handler: borrow<callback>, event: session-shutdown-event, ctx: context,
+    ) -> decision;
+    invoke-session-before-tree: async func(
+        handler: borrow<callback>, event: session-before-tree-event-data, signal: abort-signal, ctx: context,
+    ) -> decision;
+    invoke-session-tree: async func(
+        handler: borrow<callback>, event: session-tree-event, ctx: context,
+    ) -> decision;
+    invoke-context: async func(
+        handler: borrow<callback>, event: context-event, ctx: context,
+    ) -> decision;
+    invoke-before-provider-request: async func(
+        handler: borrow<callback>, event: before-provider-request-event, ctx: context,
+    ) -> decision;
+    invoke-after-provider-response: async func(
+        handler: borrow<callback>, event: after-provider-response-event, ctx: context,
+    ) -> decision;
+    invoke-before-agent-start: async func(
+        handler: borrow<callback>, event: before-agent-start-event, ctx: context,
+    ) -> decision;
+    invoke-agent-start: async func(handler: borrow<callback>, ctx: context) -> decision;
+    invoke-agent-end: async func(
+        handler: borrow<callback>, event: agent-end-event, ctx: context,
+    ) -> decision;
+    invoke-turn-start: async func(
+        handler: borrow<callback>, event: turn-start-event, ctx: context,
+    ) -> decision;
+    invoke-turn-end: async func(
+        handler: borrow<callback>, event: turn-end-event, ctx: context,
+    ) -> decision;
+    invoke-message-start: async func(
+        handler: borrow<callback>, event: message-start-event, ctx: context,
+    ) -> decision;
+    invoke-message-update: async func(
+        handler: borrow<callback>, event: message-update-event, ctx: context,
+    ) -> decision;
+    invoke-message-end: async func(
+        handler: borrow<callback>, event: message-end-event, ctx: context,
+    ) -> decision;
+    invoke-tool-execution-start: async func(
+        handler: borrow<callback>, event: tool-execution-start-event, ctx: context,
+    ) -> decision;
+    invoke-tool-execution-update: async func(
+        handler: borrow<callback>, event: tool-execution-update-event, ctx: context,
+    ) -> decision;
+    invoke-tool-execution-end: async func(
+        handler: borrow<callback>, event: tool-execution-end-event, ctx: context,
+    ) -> decision;
+    invoke-model-select: async func(
+        handler: borrow<callback>, event: model-select-event, ctx: context,
+    ) -> decision;
+    invoke-thinking-level-select: async func(
+        handler: borrow<callback>, event: thinking-level-select-event, ctx: context,
+    ) -> decision;
+    invoke-user-bash: async func(
+        handler: borrow<callback>, event: user-bash-event, ctx: context,
+    ) -> tuple<decision, option<bash-operations>>;
+    invoke-input: async func(
+        handler: borrow<callback>, event: input-event, ctx: context,
+    ) -> decision;
+    invoke-tool-call: async func(
+        handler: borrow<callback>, event: tool-call-event, ctx: context,
+    ) -> tool-call-outcome;
+    invoke-tool-result: async func(
+        handler: borrow<callback>, event: tool-result-event, ctx: context,
+    ) -> decision;
+    invoke-custom: async func(
+        handler: borrow<callback>, event: custom-event, ctx: context,
+    ) -> decision;
+}

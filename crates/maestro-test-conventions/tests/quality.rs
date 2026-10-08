@@ -521,3 +521,145 @@ fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
             .contains("production lines exceeds 500")
     );
 }
+
+#[test]
+fn generated_extension_bindings_keep_the_only_lint_exception() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm"]);
+    let root = workspace.root.join("crates/maestro-extensions-wasm");
+    let manifest = root.join("Cargo.toml");
+    let baseline = std::fs::read_to_string(&manifest).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    let inherited = baseline.replace(support::GUEST_LINTS, "[lints]\nworkspace = true\n");
+    std::fs::write(&manifest, inherited).unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("must declare its own lint table"), "{error}");
+    for (from, to, expected) in [
+        (
+            "unwrap_used = \"forbid\"",
+            "unwrap_used = \"deny\"",
+            "lints.clippy must equal",
+        ),
+        (
+            "pedantic = { level = \"deny\"",
+            "pedantic = { level = \"warn\"",
+            "lints.clippy must equal",
+        ),
+        (
+            "excessive_nesting = \"deny\"",
+            "excessive_nesting = \"forbid\"",
+            "lints.clippy must equal",
+        ),
+        (
+            "too_many_arguments = \"deny\"",
+            "",
+            "lints.clippy must equal",
+        ),
+        (
+            "unsafe_code = \"forbid\"",
+            "unsafe_code = \"deny\"",
+            "lints.rust must equal",
+        ),
+        (
+            "unsafe_code = \"forbid\"",
+            "unsafe_code = \"forbid\"\ndead_code = \"allow\"",
+            "lints.rust must equal",
+        ),
+    ] {
+        std::fs::write(&manifest, baseline.replacen(from, to, 1)).unwrap();
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(error.contains(expected), "{from} -> {to}: {error}");
+    }
+    std::fs::write(&manifest, &baseline).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    reject_widened_sources(&workspace, &root);
+}
+
+/// The restoring attribute every handwritten guest file starts with.
+const FORBID: &str =
+    "#![forbid(clippy::pedantic, clippy::too_many_arguments, clippy::excessive_nesting)]\n";
+/// The one attribute the generated bindings file may carry.
+const ALLOW: &str = "#![allow(clippy::same_length_and_capacity)]\n";
+
+/// Source edits that widen the exception, with the diagnostic each must produce.
+fn widened_sources() -> Vec<(&'static str, String, &'static str)> {
+    let only_bindings = "generated bindings file only";
+    let only_modules = "only declare modules";
+    vec![
+        (
+            "src/bindings.rs",
+            "#![allow(clippy::pedantic)]\n".into(),
+            "may only allow",
+        ),
+        (
+            "src/bindings.rs",
+            "#![warn(clippy::same_length_and_capacity)]\n".into(),
+            "may only allow",
+        ),
+        (
+            "src/bindings.rs",
+            "#![allow(clippy::same_length_and_capacity, clippy::too_many_lines)]\n".into(),
+            "may only allow",
+        ),
+        ("src/types.rs", format!("{FORBID}{ALLOW}"), only_bindings),
+        (
+            "src/types.rs",
+            format!("{FORBID}#[allow(clippy::excessive_nesting)]\nfn nested() {{}}\n"),
+            only_bindings,
+        ),
+        ("src/types.rs", String::new(), "must forbid"),
+        (
+            "src/types.rs",
+            "#![forbid(clippy::pedantic)]\n".into(),
+            "must forbid",
+        ),
+        ("src/lib.rs", "pub fn exposed() {}\n".into(), only_modules),
+        (
+            "src/lib.rs",
+            "mod inline { pub fn hidden() {} }\n".into(),
+            only_modules,
+        ),
+        (
+            "src/lib.rs",
+            "#![forbid(clippy::pedantic)]\nmod types;\n".into(),
+            only_modules,
+        ),
+    ]
+}
+
+fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
+    let write = |relative: &str, contents: &str| {
+        std::fs::write(root.join(relative), contents).unwrap();
+    };
+    write(
+        "src/bindings.rs",
+        &format!("{ALLOW}pub struct Generated;\n"),
+    );
+    write("src/types.rs", FORBID);
+    std::fs::create_dir(root.join("src/types")).unwrap();
+    write("src/types/inner.rs", "");
+    write(
+        "src/lib.rs",
+        "#[doc(hidden)]\npub mod bindings;\nmod types;\npub use types::*;\n",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for (relative, contents, expected) in widened_sources() {
+        let original = std::fs::read_to_string(root.join(relative)).unwrap();
+        write(relative, &contents);
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains(expected) && error.contains(relative),
+            "{relative}: {error}"
+        );
+        write(relative, &original);
+    }
+    std::fs::create_dir(root.join("tests")).unwrap();
+    write("tests/helper.rs", "");
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains("tests/helper.rs") && error.contains("must forbid"),
+        "{error}"
+    );
+    write("tests/helper.rs", FORBID);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
