@@ -55,6 +55,7 @@ pub fn validate_tool_arguments(
     )))
 }
 
+/// Wrap a corrective message in the existing error record.
 fn diagnostic(message: String) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {
         name: Some("Error".to_owned()),

@@ -1,5 +1,8 @@
+//! Address and hostname acceptance with internationalized label context.
+
 use super::matches;
 
+/// Check unquoted ASCII mailbox and domain grammar.
 pub(super) fn email(value: &str) -> bool {
     matches(
         r"^(?!.*\.\.)[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$",
@@ -8,6 +11,7 @@ pub(super) fn email(value: &str) -> bool {
     )
 }
 
+/// Check unquoted mailbox grammar with Unicode letters and numbers.
 pub(super) fn idn_email(value: &str) -> bool {
     matches(
         r"^(?!.*\.\.)[\p{L}\p{N}!#$%&'*+/=?^_`{|}~-]+(?:\.[\p{L}\p{N}!#$%&'*+/=?^_`{|}~-]+)*@[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?(?:\.[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?)*$",
@@ -16,6 +20,7 @@ pub(super) fn idn_email(value: &str) -> bool {
     )
 }
 
+/// Check ASCII labels and whole-name limits, including contextual punycode.
 pub(super) fn hostname(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 253
@@ -33,6 +38,7 @@ pub(super) fn hostname(value: &str) -> bool {
         })
 }
 
+/// Normalize internationalized names before checking label context and lengths.
 pub(super) fn idn_hostname(value: &str) -> bool {
     let normalized = icu_normalizer::ComposingNormalizer::new_nfc().normalize(value);
     let canonical = normalized.replace(['\u{3002}', '\u{ff0e}', '\u{ff61}'], ".");
@@ -41,6 +47,7 @@ pub(super) fn idn_hostname(value: &str) -> bool {
         && canonical.split('.').all(international_label)
 }
 
+/// Combine strict native IDNA acceptance with decoded-label context.
 fn international_label(value: &str) -> bool {
     if value.is_empty()
         || value.encode_utf16().count() > 63
@@ -58,6 +65,7 @@ fn international_label(value: &str) -> bool {
     }
 }
 
+/// Check label-wide script, mark, hyphen and mixed-digit constraints.
 fn context(label: &str) -> bool {
     let characters: Vec<_> = label.chars().collect();
     let Some(first) = characters.first() else {
@@ -94,6 +102,7 @@ fn context(label: &str) -> bool {
     })
 }
 
+/// Check neighboring characters for contextual punctuation and joiners.
 fn character_context(character: char, previous: Option<char>, next: Option<char>) -> bool {
     match character {
         '\u{b7}' => previous == Some('l') && next == Some('l'),
@@ -108,6 +117,7 @@ fn character_context(character: char, previous: Option<char>, next: Option<char>
     }
 }
 
+/// Recognize permitted preceding marks for a zero-width joiner.
 fn virama(character: char) -> bool {
     matches!(
         character,

@@ -1,8 +1,11 @@
+//! Scalar assertions with the established keyword diagnostics.
+
 use super::coercion::Kind;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use unicode_segmentation::UnicodeSegmentation;
 
+/// Reject false schemas and mismatched admitted type declarations.
 pub(super) fn type_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
     if schema == &Value::Bool(false) {
         return vec![render(path, "schema is false")];
@@ -31,6 +34,7 @@ pub(super) fn type_errors(schema: &Value, value: &Value, path: &str) -> Vec<Stri
     vec![render(path, &message)]
 }
 
+/// Keep unknown types non-asserting while rejecting known non-JSON kinds.
 fn type_matches(value: &Value, kind: Kind<'_>) -> bool {
     match kind {
         Kind::Unknown(_) => true,
@@ -39,6 +43,7 @@ fn type_matches(value: &Value, kind: Kind<'_>) -> bool {
     }
 }
 
+/// Aggregate absent required names using the shared path policy.
 pub(super) fn required_errors(
     schema: &Value,
     object: &serde_json::Map<String, Value>,
@@ -66,10 +71,12 @@ pub(super) fn required_errors(
     )]
 }
 
+/// Combine the ordinary display path with a keyword message.
 pub(super) fn render(path: &str, message: &str) -> String {
     format!("  - {}: {message}", super::diagnostics::path(path, None))
 }
 
+/// Check numeric bounds and multiples in diagnostic order.
 pub(super) fn number_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
     let Some(number) = value.as_f64() else {
         return Vec::new();
@@ -105,6 +112,7 @@ pub(super) fn number_errors(schema: &Value, value: &Value, path: &str) -> Vec<St
     errors
 }
 
+/// Check numeric divisibility with the established fractional tolerance.
 fn multiple_of(dividend: f64, divisor: f64) -> bool {
     if dividend.fract() == 0.0 && (1.0 / divisor).fract() == 0.0 {
         return true;
@@ -113,6 +121,7 @@ fn multiple_of(dividend: f64, divisor: f64) -> bool {
     remainder.abs().min((remainder.abs() - divisor.abs()).abs()) < 1e-10
 }
 
+/// Check structural const and enum equality with their keyword messages.
 pub(super) fn literal_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
     let mut errors = Vec::new();
     if let Some(constant) = schema.get("const")
@@ -128,6 +137,7 @@ pub(super) fn literal_errors(schema: &Value, value: &Value, path: &str) -> Vec<S
     errors
 }
 
+/// Compare nested JSON values independently of object order and numeric representation.
 pub(super) fn equal(left: &Value, right: &Value) -> bool {
     let mut pairs = vec![(left, right)];
     while let Some((left, right)) = pairs.pop() {
@@ -149,6 +159,7 @@ pub(super) fn equal(left: &Value, right: &Value) -> bool {
     true
 }
 
+/// Pair equally named object members or reject a missing key.
 fn object_pairs<'a>(
     left: &'a serde_json::Map<String, Value>,
     right: &'a serde_json::Map<String, Value>,
@@ -158,6 +169,7 @@ fn object_pairs<'a>(
         .collect()
 }
 
+/// Check grapheme bounds, registered formats and Unicode patterns.
 pub(super) fn string_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
     let Some(text) = value.as_str() else {
         return Vec::new();

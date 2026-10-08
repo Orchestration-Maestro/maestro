@@ -1,14 +1,18 @@
+//! Offline schema resource resolution with recursive and dynamic scopes.
+
 use percent_encoding::percent_decode_str;
 use serde_json::Value;
 use url::Url;
 
 use super::check::{Batch, Instruction, Job, Mode};
 
+/// Schedule all reference keywords through the shared offline resolver.
 pub(super) fn instructions<'a>(
     root: &'a Value,
     job: &Job<'a>,
     scopes: &[&'a Value],
 ) -> Vec<Instruction<'a>> {
+    /// Rejecting target schema used when offline resolution fails.
     const FALSE: Value = Value::Bool(false);
     let mut instructions = Vec::new();
     for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
@@ -32,6 +36,7 @@ pub(super) fn instructions<'a>(
     instructions
 }
 
+/// Resolve a reference in its active resource and anchor scopes.
 fn target<'a>(
     root: &'a Value,
     reference: &str,
@@ -86,6 +91,7 @@ fn target<'a>(
     Some(target)
 }
 
+/// Find a dynamic anchor without crossing another resource boundary.
 fn resource_anchor<'a>(root: &'a Value, name: &str) -> Option<&'a Value> {
     let mut pending = vec![root];
     while let Some(schema) = pending.pop() {
@@ -107,6 +113,7 @@ fn resource_anchor<'a>(root: &'a Value, name: &str) -> Option<&'a Value> {
     None
 }
 
+/// Search resolved resource identities, fragment aliases and anchors.
 fn resolve<'a>(
     root: &'a Value,
     reference: &str,
@@ -173,6 +180,7 @@ fn resolve<'a>(
     result
 }
 
+/// Traverse decoded pointer segments while rejecting unsafe property keys.
 fn pointer<'a>(root: &'a Value, fragment: &str) -> Option<&'a Value> {
     let mut value = root;
     for segment in fragment.strip_prefix('/')?.split('/') {
@@ -195,12 +203,17 @@ fn pointer<'a>(root: &'a Value, fragment: &str) -> Option<&'a Value> {
 }
 
 #[derive(PartialEq, Eq)]
+/// Active resource and anchor bindings used to distinguish reference cycles.
 pub(super) struct ScopeIdentity<'a> {
+    /// Identity of the innermost active resource schema.
     resource: usize,
+    /// Identity of the outermost active recursive anchor, if any.
     recursive: Option<usize>,
+    /// Outermost active schema identity for each dynamic anchor name.
     dynamic: std::collections::BTreeMap<&'a str, usize>,
 }
 
+/// Capture resource and anchor bindings for non-progress cycle detection.
 pub(super) fn scope_identity<'a>(root: &'a Value, scopes: &[&'a Value]) -> ScopeIdentity<'a> {
     let resource = scopes
         .iter()
@@ -227,6 +240,7 @@ pub(super) fn scope_identity<'a>(root: &'a Value, scopes: &[&'a Value]) -> Scope
     }
 }
 
+/// Find a schema location's resolved URI through inherited resources.
 fn resource_uri(root: &Value, resource: &Value) -> Option<Url> {
     let mut pending = vec![(root, root_uri(root)?)];
     while let Some((schema, inherited)) = pending.pop() {
@@ -249,6 +263,7 @@ fn resource_uri(root: &Value, resource: &Value) -> Option<Url> {
     None
 }
 
+/// Resolve the root identifier against the offline default base.
 fn root_uri(root: &Value) -> Option<Url> {
     let default = Url::parse("http://unknown/").ok()?;
     root.get("$id")
@@ -256,6 +271,7 @@ fn root_uri(root: &Value) -> Option<Url> {
         .map_or_else(|| Some(default.clone()), |id| default.join(id).ok())
 }
 
+/// Carry the enclosing URI unless a child declares its own identifier.
 fn inherited_uri(schema: &Value, root: &Value, inherited: Url) -> Option<Url> {
     if std::ptr::eq(schema, root) {
         Some(inherited)
@@ -267,6 +283,7 @@ fn inherited_uri(schema: &Value, root: &Value, inherited: Url) -> Option<Url> {
     }
 }
 
+/// Distinguish a resource boundary from a fragment-only alias.
 fn is_resource(schema: &Value) -> bool {
     schema
         .get("$id")

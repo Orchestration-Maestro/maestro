@@ -1,3 +1,5 @@
+//! Ordered schema evaluation with isolated branch results and location marks.
+
 use std::{
     borrow::Cow,
     collections::{BTreeSet, VecDeque},
@@ -9,13 +11,18 @@ use serde_json::Value;
 use super::{collections, references, scalars};
 
 #[derive(Default)]
+/// Failures and evaluated locations for one instance and schema branch.
 pub(super) struct Evaluation {
+    /// Ordered corrective messages accumulated by this evaluation.
     pub errors: Vec<String>,
+    /// Successfully evaluated properties at this instance only.
     pub keys: BTreeSet<String>,
+    /// Successfully evaluated array positions at this instance only.
     pub indices: BTreeSet<usize>,
 }
 
 impl Evaluation {
+    /// Append child errors and union its evaluated locations.
     fn merge(&mut self, mut other: Self) {
         self.errors.append(&mut other.errors);
         self.keys.append(&mut other.keys);
@@ -23,50 +30,81 @@ impl Evaluation {
     }
 }
 
+/// Deferred work preserving keyword order within an evaluation frame.
 pub(super) enum Instruction<'a> {
+    /// Append already computed scalar or cardinality failures.
     Errors(Vec<String>),
+    /// Evaluate child schemas before merging their outcomes.
     Children(Batch<'a>),
+    /// Defer remaining-member checks until earlier marks are available.
     Unevaluated(Job<'a>),
 }
 
+/// Policy for combining child validity, diagnostics and evaluated locations.
 pub(super) enum Mode<'a> {
+    /// Require every child to succeed before exporting branch marks.
     All,
+    /// Accept at least one child and union all successful branch marks.
     Any,
+    /// Accept exactly one child and export only its marks.
     One,
+    /// Associate each successful child with its containing member location.
     Members(Vec<Mark>),
+    /// Report failed member checks with one containing-instance message.
     Aggregate {
+        /// Containing locations corresponding to the child evaluations.
         marks: Vec<Mark>,
+        /// Keyword failure text rendered at the containing instance.
         message: String,
     },
+    /// Compare the number of successful children with contains bounds.
     Count {
+        /// Active lower bound on the number of matching items.
         minimum: Option<f64>,
+        /// Active upper bound on the number of matching items.
         maximum: Option<f64>,
+        /// Keyword failure text rendered at the containing instance.
         message: String,
     },
+    /// Aggregate invalid property-name evaluations by their original names.
     Names(Vec<String>),
+    /// Invert child validity without exporting its errors or marks.
     Not,
+    /// Evaluate a condition before choosing one of two branch jobs.
     If {
+        /// Branch job selected when the condition succeeds.
         then: Job<'a>,
+        /// Branch job selected when the condition fails.
         otherwise: Job<'a>,
     },
+    /// Merge the selected conditional branch with eligible condition marks.
     Selected {
+        /// Whether the selected branch came from a successful condition.
         then: bool,
+        /// Condition outcome retained until the selected branch finishes.
         condition: Evaluation,
     },
 }
 
+/// Containing member location that a successful child can evaluate.
 pub(super) enum Mark {
+    /// Property name at the containing object location.
     Key(String),
+    /// Position at the containing array location.
     Index(usize),
 }
 
 #[derive(Clone, Copy)]
+/// Borrowed JSON location or property name being checked as a string.
 pub(super) enum Instance<'a> {
+    /// Existing argument value whose location can be compared by identity.
     Json(&'a Value),
+    /// Object key exposed as a string for propertyNames assertions.
     Name(&'a str),
 }
 
 impl<'a> Instance<'a> {
+    /// Compare instance locations for non-progress cycle detection.
     fn same(self, other: Self) -> bool {
         match (self, other) {
             (Self::Json(left), Self::Json(right)) => std::ptr::eq(left, right),
@@ -75,6 +113,7 @@ impl<'a> Instance<'a> {
         }
     }
 
+    /// Expose a JSON instance, materializing property names as strings.
     fn value(self) -> Cow<'a, Value> {
         match self {
             Self::Json(value) => Cow::Borrowed(value),
@@ -84,29 +123,46 @@ impl<'a> Instance<'a> {
 }
 
 #[derive(Clone)]
+/// One schema application retaining its instance and diagnostic path.
 pub(super) struct Job<'a> {
+    /// Original, unmodified schema location to apply.
     pub schema: &'a Value,
+    /// Instance location whose validity is being determined.
     pub value: Instance<'a>,
+    /// Slash-separated instance path used for corrective diagnostics.
     pub path: String,
 }
 
+/// Child applications and their outcomes awaiting policy-specific aggregation.
 pub(super) struct Batch<'a> {
+    /// Policy controlling validity, messages and exported locations.
     pub mode: Mode<'a>,
+    /// Pending child applications in evaluation order.
     pub jobs: VecDeque<Job<'a>>,
+    /// Completed child outcomes in the same order as their applications.
     pub results: Vec<Evaluation>,
 }
 
+/// Explicit evaluator continuation for one active schema and instance.
 struct Frame<'a> {
+    /// Active original schema location used for cycle detection.
     schema: &'a Value,
+    /// Active instance location used for cycle detection.
     instance: Instance<'a>,
+    /// Resource and anchor bindings that distinguish active evaluations.
     scope: references::ScopeIdentity<'a>,
+    /// Remaining keyword work in diagnostic order.
     instructions: VecDeque<Instruction<'a>>,
+    /// Child applications currently being evaluated or aggregated.
     pending: Option<Batch<'a>>,
+    /// Accumulated failures and successful location marks for this frame.
     result: Evaluation,
+    /// Diagnostic instance path retained across child evaluations.
     path: String,
 }
 
 impl<'a> Frame<'a> {
+    /// Prepare an evaluation frame using the current resource scopes.
     fn new(job: Job<'a>, root: &'a Value, scopes: &[&'a Value]) -> Self {
         Self {
             schema: job.schema,
@@ -119,10 +175,12 @@ impl<'a> Frame<'a> {
         }
     }
 
+    /// Take the next pending child without retaining its result yet.
     fn next_child(&mut self) -> Option<Job<'a>> {
         self.pending.as_mut()?.jobs.pop_front()
     }
 
+    /// Merge completed children or schedule the selected conditional branch.
     fn finish_batch(&mut self) {
         if let Some(batch) = self.pending.take() {
             self.pending = apply(batch, &self.path, &mut self.result);
@@ -130,6 +188,7 @@ impl<'a> Frame<'a> {
     }
 }
 
+/// Return ordered failures while evaluating schemas without recursive frames.
 pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
     let mut frames = vec![Frame::new(
         Job {
@@ -183,6 +242,7 @@ pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
     Vec::new()
 }
 
+/// Schedule keyword assertions in their diagnostic order.
 fn instructions<'a>(job: &Job<'a>, root: &'a Value, scopes: &[&'a Value]) -> Vec<Instruction<'a>> {
     let value = job.value.value();
     let mut instructions = vec![Instruction::Errors(scalars::type_errors(
@@ -237,6 +297,7 @@ fn instructions<'a>(job: &Job<'a>, root: &'a Value, scopes: &[&'a Value]) -> Vec
     instructions
 }
 
+/// Merge branch outcomes according to their composition or membership policy.
 fn apply<'a>(batch: Batch<'a>, path: &str, result: &mut Evaluation) -> Option<Batch<'a>> {
     if matches!(
         batch.mode,
@@ -285,6 +346,7 @@ fn apply<'a>(batch: Batch<'a>, path: &str, result: &mut Evaluation) -> Option<Ba
     None
 }
 
+/// Aggregate member, count or property-name failures at the containing instance.
 fn apply_collection(batch: &Batch<'_>, path: &str, result: &mut Evaluation) -> bool {
     let passing = batch
         .results
@@ -333,6 +395,7 @@ fn apply_collection(batch: &Batch<'_>, path: &str, result: &mut Evaluation) -> b
     true
 }
 
+/// Record a successfully evaluated property or array index.
 fn add_mark(mark: &Mark, result: &mut Evaluation) {
     match mark {
         Mark::Key(key) => {
@@ -344,7 +407,9 @@ fn add_mark(mark: &Mark, result: &mut Evaluation) {
     }
 }
 
+/// Schedule the condition with permissive defaults for absent branches.
 fn conditional<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>) {
+    /// Permissive branch schema used when then or else is absent.
     const TRUE: Value = Value::Bool(true);
     if let Some(schema) = job.schema.get("if").filter(|schema| is_schema(schema)) {
         let then = Job {
@@ -376,6 +441,7 @@ fn conditional<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>) {
     }
 }
 
+/// Select a conditional branch or invert validity without leaking failed marks.
 fn apply_conditional<'a>(
     batch: Batch<'a>,
     path: &str,
@@ -428,6 +494,7 @@ fn apply_conditional<'a>(
     None
 }
 
+/// Record a false-schema failure for a non-progressing child.
 fn reject_cycle(frames: &mut [Frame<'_>], path: &str) {
     if let Some(batch) = frames.last_mut().and_then(|frame| frame.pending.as_mut()) {
         batch.results.push(Evaluation {
@@ -437,10 +504,12 @@ fn reject_cycle(frames: &mut [Frame<'_>], path: &str) {
     }
 }
 
+/// Recognize the admitted object and boolean schema forms.
 pub(super) fn is_schema(value: &Value) -> bool {
     value.is_object() || value.is_boolean()
 }
 
+/// Borrow a list only when every member is an admitted schema.
 pub(super) fn schema_array(value: &Value) -> Option<&[Value]> {
     value
         .as_array()

@@ -1,8 +1,11 @@
+//! Default string-format assertions and shared regular-expression matching.
+
 mod links;
 mod names;
 mod pointers;
 mod temporal;
 
+/// Apply registered string assertions while leaving unknown formats non-asserting.
 pub(super) fn check(format: &str, value: &str) -> bool {
     match format {
         "date" => temporal::date(value),
@@ -30,6 +33,7 @@ pub(super) fn check(format: &str, value: &str) -> bool {
     }
 }
 
+/// Match a format grammar using its explicit regular-expression flags.
 fn matches(pattern: &str, value: &str, flags: &str) -> bool {
     regress::Regex::with_flags(pattern, flags).is_ok_and(|regex| regex.find(value).is_some())
 }

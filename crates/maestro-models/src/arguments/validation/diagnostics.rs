@@ -1,3 +1,5 @@
+//! Canonical argument serialization and shared diagnostic path display.
+
 use std::io::{self, Write};
 
 use serde::{
@@ -9,6 +11,7 @@ use serde_json::{
     ser::{Formatter, PrettyFormatter},
 };
 
+/// Serialize original arguments with canonical keys and binary64 number spelling.
 pub(super) fn pretty(value: &Value) -> Result<String, serde_json::Error> {
     let mut serializer =
         serde_json::Serializer::with_formatter(Vec::new(), NumberFormatter(PrettyFormatter::new()));
@@ -17,12 +20,14 @@ pub(super) fn pretty(value: &Value) -> Result<String, serde_json::Error> {
         .map_err(|error| serde_json::Error::io(io::Error::new(io::ErrorKind::InvalidData, error)))
 }
 
+/// Enumerate numeric-index keys first while preserving other insertion order.
 pub(super) fn entries(object: &Map<String, Value>) -> Vec<(&String, &Value)> {
     let mut entries: Vec<_> = object.iter().collect();
     entries.sort_by_key(|(key, _)| index(key).map_or((1, 0), |index| (0, index)));
     entries
 }
 
+/// Display instance separators and append a literal nonempty missing name.
 pub(super) fn path(instance: &str, missing: Option<&str>) -> String {
     let mut display = instance
         .strip_prefix('/')
@@ -41,14 +46,17 @@ pub(super) fn path(instance: &str, missing: Option<&str>) -> String {
     }
 }
 
+/// Recognize canonical numeric-index keys below the reserved upper bound.
 fn index(key: &str) -> Option<u32> {
     let index = key.parse::<u32>().ok()?;
     (index < u32::MAX && index.to_string() == key).then_some(index)
 }
 
+/// Serialization view applying canonical policies recursively.
 struct Canonical<'a>(&'a Value);
 
 impl Serialize for Canonical<'_> {
+    /// Serialize nested values through the canonical key and number policies.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self.0 {
             Value::Object(object) => {
@@ -74,8 +82,10 @@ impl Serialize for Canonical<'_> {
     }
 }
 
+/// Pretty JSON formatter overriding only binary64 number spelling.
 struct NumberFormatter<'a>(PrettyFormatter<'a>);
 
+/// Delegate unchanged structural formatting to the existing pretty formatter.
 macro_rules! forward {
     ($($method:ident),* $(,)?) => { $(
         fn $method<W: Write + ?Sized>(&mut self, writer: &mut W) -> io::Result<()> {
@@ -95,6 +105,7 @@ impl Formatter for NumberFormatter<'_> {
         end_object_value
     );
 
+    /// Preserve the pretty formatter's array indentation and delimiters.
     fn begin_array_value<W: Write + ?Sized>(
         &mut self,
         writer: &mut W,
@@ -103,6 +114,7 @@ impl Formatter for NumberFormatter<'_> {
         self.0.begin_array_value(writer, first)
     }
 
+    /// Preserve the pretty formatter's object indentation and delimiters.
     fn begin_object_key<W: Write + ?Sized>(
         &mut self,
         writer: &mut W,
@@ -111,6 +123,7 @@ impl Formatter for NumberFormatter<'_> {
         self.0.begin_object_key(writer, first)
     }
 
+    /// Write shortest binary64 spelling with the established exponent thresholds.
     fn write_f64<W: Write + ?Sized>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
         writer.write_all(ryu_js::Buffer::new().format(value).as_bytes())
     }

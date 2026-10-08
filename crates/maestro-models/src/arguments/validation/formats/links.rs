@@ -1,5 +1,8 @@
+//! Link and identifier grammars distinct from URL normalization.
+
 use super::matches;
 
+/// Check the ASCII reference grammar, including relative references.
 pub(super) fn uri_reference(value: &str) -> bool {
     matches(
         r"^(?!.*[^\x00-\x7F])(?!.*\\)(?:(?:[a-z][a-z0-9+\-.]*:)?(?:\/\/[^\s[\]{}<>^`|]*)?|[^\s[\]{}<>^`|]*)(?:\?[^\s[\]{}<>^`|]*)?(?:#[^\s[\]{}<>^`|]*)?$",
@@ -8,6 +11,7 @@ pub(super) fn uri_reference(value: &str) -> bool {
     )
 }
 
+/// Check literal text and template-expression syntax without expansion.
 pub(super) fn uri_template(value: &str) -> bool {
     matches(
         r#"^(?:(?:[^\x00-\x20"'<>%\\^`{|}]|%[0-9a-f]{2})|\{[+#./;?&=,!@|]?(?:[a-z0-9_]|%[0-9a-f]{2})+(?::[1-9][0-9]{0,3}|\*)?(?:,(?:[a-z0-9_]|%[0-9a-f]{2})+(?::[1-9][0-9]{0,3}|\*)?)*\})*$"#,
@@ -16,6 +20,7 @@ pub(super) fn uri_template(value: &str) -> bool {
     )
 }
 
+/// Check supported network schemes, public addresses and domain/port grammar.
 pub(super) fn url(value: &str) -> bool {
     matches(
         r"^(?:https?|ftp):\/\/(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u{00a1}-\u{ffff}]+-)*[a-z0-9\u{00a1}-\u{ffff}]+)(?:\.(?:[a-z0-9\u{00a1}-\u{ffff}]+-)*[a-z0-9\u{00a1}-\u{ffff}]+)*(?:\.(?:[a-z\u{00a1}-\u{ffff}]{2,})))(?::\d{2,5})?(?:\/[^\s]*)?$",
@@ -24,6 +29,7 @@ pub(super) fn url(value: &str) -> bool {
     )
 }
 
+/// Accept hyphenated identifiers with an optional case-insensitive URN prefix.
 pub(super) fn uuid(value: &str) -> bool {
     matches(
         r"^(?:urn:uuid:)?[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$",
@@ -32,6 +38,7 @@ pub(super) fn uuid(value: &str) -> bool {
     )
 }
 
+/// Validate internationalized relative references without accepting malformed escapes.
 pub(super) fn iri_reference(value: &str) -> bool {
     if value
         .chars()
@@ -46,6 +53,7 @@ pub(super) fn iri_reference(value: &str) -> bool {
     url::Url::parse("http://example.com").is_ok_and(|base| base.join(value).is_ok())
 }
 
+/// Validate absolute syntax without imposing URL normalization or network port limits.
 pub(super) fn uri(value: &str) -> bool {
     let Some((scheme, rest)) = value.split_once(':') else {
         return false;
@@ -77,6 +85,7 @@ pub(super) fn uri(value: &str) -> bool {
     )
 }
 
+/// Validate user information, host literals and optional numeric ports.
 fn authority_valid(authority: &str) -> bool {
     let host_port = if let Some((userinfo, host)) = authority.split_once('@') {
         if !matches(

@@ -1,21 +1,34 @@
+//! Owned primitive conversion and explicitly declared collection traversal.
+
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+/// Declared type category controlling conversion and type diagnostics.
 pub(super) enum Kind<'a> {
+    /// Any JSON number, including a fractional value.
     Number,
+    /// A JSON number with no fractional component.
     Integer,
+    /// A JSON truth value with the admitted scalar conversions.
     Boolean,
+    /// Text accepting admitted number, boolean and null conversions.
     String,
+    /// The JSON null value with its admitted empty scalar conversions.
     Null,
+    /// A JSON sequence eligible for declared item traversal.
     Array,
+    /// A JSON map eligible for declared property traversal.
     Object,
+    /// Known runtime type name that no admitted JSON value can satisfy.
     NonJson(&'a str),
+    /// Unrecognized type spelling retained as a non-asserting declaration.
     Unknown(&'a str),
 }
 
 impl<'a> Kind<'a> {
+    /// Classify a declared type while retaining unrecognized names.
     fn parse(name: &'a str) -> Self {
         match name {
             "number" => Self::Number,
@@ -31,6 +44,7 @@ impl<'a> Kind<'a> {
         }
     }
 
+    /// Return the declared spelling used in type diagnostics.
     pub(super) fn name(self) -> &'a str {
         match self {
             Self::Number => "number",
@@ -45,6 +59,7 @@ impl<'a> Kind<'a> {
     }
 }
 
+/// Apply ordered alternatives and declared conversions to an owned candidate.
 pub(super) fn coerce(value: &mut Value, schema: &Value) {
     if let Some(schemas) = schema.get("allOf").and_then(Value::as_array) {
         for child in schemas {
@@ -73,6 +88,7 @@ pub(super) fn coerce(value: &mut Value, schema: &Value) {
     }
 }
 
+/// Read the declared type alternatives without inventing a default.
 pub(super) fn types(schema: &Value) -> Vec<Kind<'_>> {
     match schema.get("type") {
         Some(Value::String(kind)) => vec![Kind::parse(kind)],
@@ -85,6 +101,7 @@ pub(super) fn types(schema: &Value) -> Vec<Kind<'_>> {
     }
 }
 
+/// Detect already-matching JSON types before attempting union conversion.
 pub(super) fn matches(value: &Value, kind: Kind<'_>) -> bool {
     match kind {
         Kind::Number => value.is_number(),
@@ -98,6 +115,7 @@ pub(super) fn matches(value: &Value, kind: Kind<'_>) -> bool {
     }
 }
 
+/// Produce an admitted scalar conversion, leaving other kinds untouched.
 fn primitive(value: &Value, kind: Kind<'_>) -> Option<Value> {
     match (kind, value) {
         (Kind::Number | Kind::Integer, value) => numeric(value, kind),
@@ -122,6 +140,7 @@ fn primitive(value: &Value, kind: Kind<'_>) -> Option<Value> {
     }
 }
 
+/// Convert scalar input to a finite number, enforcing integral targets.
 fn numeric(value: &Value, kind: Kind<'_>) -> Option<Value> {
     let number = match value {
         Value::Null => 0.0,
@@ -135,6 +154,7 @@ fn numeric(value: &Value, kind: Kind<'_>) -> Option<Value> {
     serde_json::Number::from_f64(number).map(Value::Number)
 }
 
+/// Convert present declared members and schema-valued additional members.
 fn object(value: &mut Value, schema: &Value) {
     let Some(object) = value.as_object_mut() else {
         return;
@@ -159,6 +179,7 @@ fn object(value: &mut Value, schema: &Value) {
     }
 }
 
+/// Convert homogeneous or legacy tuple items without extending the array.
 fn array(value: &mut Value, schema: &Value) {
     let (Some(items), Some(values)) = (schema.get("items"), value.as_array_mut()) else {
         return;
@@ -178,6 +199,7 @@ fn array(value: &mut Value, schema: &Value) {
     }
 }
 
+/// Parse nonblank decimal or unsigned radix text through native numeric primitives.
 fn parse_number(text: &str) -> Option<f64> {
     let text = text.trim_matches(super::super::json_parse::whitespace);
     if text.is_empty() {
@@ -201,6 +223,7 @@ fn parse_number(text: &str) -> Option<f64> {
     number.is_finite().then_some(number)
 }
 
+/// Keep the first independently converted alternative that validates.
 fn union(value: &mut Value, schemas: &[Value]) {
     for child in schemas {
         let mut candidate = value.clone();
