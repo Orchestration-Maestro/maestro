@@ -214,7 +214,8 @@ fn brand_style(brand: &Brand<'_>, svg: &str) -> Result<String, serde_json::Error
     Ok(style)
 }
 
-/// Quote the primary family and retain generic fallback names in their supplied order.
+/// Quote the primary family and non-generic fallbacks, preserving order and case.
+/// CSS generic fallback keywords are recognized case-insensitively and remain unquoted.
 fn font_stack(font: &Font<'_>) -> String {
     let quote = |name: &str| {
         format!(
@@ -225,10 +226,29 @@ fn font_stack(font: &Font<'_>) -> String {
         )
     };
     std::iter::once(quote(&font.family))
-        .chain(font.fallbacks.iter().map(|name| match name.as_ref() {
-            "serif" | "sans-serif" | "monospace" | "system-ui" | "ui-monospace" | "ui-serif"
-            | "ui-sans-serif" | "ui-rounded" | "cursive" | "fantasy" => name.to_string(),
-            other => quote(other),
+        .chain(font.fallbacks.iter().map(|name| {
+            if [
+                "serif",
+                "sans-serif",
+                "monospace",
+                "cursive",
+                "fantasy",
+                "system-ui",
+                "ui-serif",
+                "ui-sans-serif",
+                "ui-monospace",
+                "ui-rounded",
+                "emoji",
+                "math",
+                "fangsong",
+            ]
+            .iter()
+            .any(|generic| name.eq_ignore_ascii_case(generic))
+            {
+                name.to_string()
+            } else {
+                quote(name)
+            }
         }))
         .collect::<Vec<_>>()
         .join(", ")
@@ -314,6 +334,54 @@ mod tests {
             assert!(page.contains("<h1>Authentication successful</h1>"));
         }
         check_alternate_brand(signal);
+        check_generic_font_fallbacks();
+    }
+
+    /// Check generic keywords and literal lookalikes through the complete renderer.
+    fn check_generic_font_fallbacks() {
+        let mut pack: serde_json::Value = serde_json::from_str(BRAND).unwrap();
+        let fallbacks = serde_json::json!([
+            "SERIF",
+            "SANS-SERIF",
+            "MONOSPACE",
+            "CURSIVE",
+            "FANTASY",
+            "SYSTEM-UI",
+            "UI-SERIF",
+            "UI-SANS-SERIF",
+            "UI-MONOSPACE",
+            "UI-ROUNDED",
+            "EMOJI",
+            "MATH",
+            "FANGSONG",
+            "emoji",
+            "math",
+            "fangsong",
+            "monospace extra"
+        ]);
+        for role in ["display", "body", "mono"] {
+            pack["fonts"][role]["fallbacks"] = fallbacks.clone();
+        }
+        let page = render_page(
+            "Authentication successful",
+            "font witness",
+            None,
+            &pack.to_string(),
+            MARK,
+        )
+        .unwrap();
+        for (role, family) in [
+            ("display", "Barlow Condensed"),
+            ("body", "Barlow"),
+            ("mono", "JetBrains Mono"),
+        ] {
+            let expected = format!(
+                "--font-{role}: \"{family}\", SERIF, SANS-SERIF, MONOSPACE, CURSIVE, \
+                 FANTASY, SYSTEM-UI, UI-SERIF, UI-SANS-SERIF, UI-MONOSPACE, UI-ROUNDED, \
+                 EMOJI, MATH, FANGSONG, emoji, math, fangsong, \"monospace extra\";"
+            );
+            assert!(page.contains(&expected), "missing font stack: {expected}");
+        }
     }
 
     /// Check changed mark, wordmark and font stacks through the same renderer.
