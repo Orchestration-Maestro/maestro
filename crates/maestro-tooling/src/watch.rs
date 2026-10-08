@@ -6,14 +6,23 @@ use std::process::{Command, ExitCode};
 use serde::Deserialize;
 
 /// Launch a source watcher that queues compilation after file changes.
-pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
-    let status = Command::new("watchexec")
+pub(crate) fn run(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
+    let target = cargo_metadata::MetadataCommand::new()
+        .cargo_path(cargo)
+        .no_deps()
+        .exec()
+        .map_err(io::Error::other)?
+        .target_directory;
+    let mut command = Command::new("watchexec");
+    let entries = std::fs::read_dir(std::env::current_dir()?)?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<io::Result<Vec<_>>>()?;
+    for root in watch_roots(entries, target.as_std_path()) {
+        command.arg("--watch").arg(root);
+    }
+    let status = command
         .args([
-            "--watch",
-            ".",
             "--ignore-nothing",
-            "--ignore",
-            "/.git/",
             "--on-busy-update=queue",
             "--shell=none",
             "--emit-events-to=json-stdio",
@@ -26,6 +35,14 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     Ok(super::exit_code(status))
 }
 
+/// Select literal top-level paths, excluding Git metadata and the current output root.
+fn watch_roots(entries: impl IntoIterator<Item = PathBuf>, target: &Path) -> Vec<PathBuf> {
+    entries
+        .into_iter()
+        .filter(|entry| entry != target && entry.file_name() != Some(std::ffi::OsStr::new(".git")))
+        .collect()
+}
+
 /// Compile on source changes while ignoring events confined to Cargo outputs.
 pub(crate) fn step(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
     let metadata = cargo_metadata::MetadataCommand::new()
@@ -34,19 +51,24 @@ pub(crate) fn step(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
         .exec()
         .map_err(io::Error::other)?;
     let target = metadata.target_directory.as_std_path();
+    if !should_build(io::stdin().lock(), target)? {
+        return Ok(ExitCode::SUCCESS);
+    }
+    let args = args.strip_prefix(&[OsString::from("--")]).unwrap_or(args);
+    Ok(super::exit_code(Command::new(cargo).args(args).status()?))
+}
+
+/// Decide whether a batch contains source changes; pathless events compile too.
+fn should_build(events: impl BufRead, target: &Path) -> io::Result<bool> {
     let mut paths = Vec::new();
-    for line in io::stdin().lock().lines() {
+    for line in events.lines() {
         let event: Event = serde_json::from_str(&line?).map_err(io::Error::other)?;
         paths.extend(event.tags.into_iter().filter_map(|tag| match tag {
             Tag::Path { absolute } => Some(absolute),
             Tag::Other => None,
         }));
     }
-    if !paths.is_empty() && paths.iter().all(|path| path.starts_with(target)) {
-        return Ok(ExitCode::SUCCESS);
-    }
-    let args = args.strip_prefix(&[OsString::from("--")]).unwrap_or(args);
-    Ok(super::exit_code(Command::new(cargo).args(args).status()?))
+    Ok(paths.is_empty() || paths.iter().any(|path| !path.starts_with(target)))
 }
 
 #[derive(Deserialize)]
@@ -69,3 +91,6 @@ enum Tag {
     /// Annotation unrelated to a filesystem path.
     Other,
 }
+
+#[cfg(test)]
+mod tests;
