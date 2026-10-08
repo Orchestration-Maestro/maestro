@@ -1,0 +1,63 @@
+//! The scenario both adapters run, and the transcript it must produce.
+//!
+//! Lines come from three sources in time order: host-side observations (`register`,
+//! `new-session`, `wait-for-idle`), the extension's own `entry` calls, and what the driving
+//! test received back from each callback.
+
+/// One adapter driven through the scenario.
+pub trait Driver {
+    /// Runs the factory and records the registrations the host observed.
+    async fn start(&mut self) -> Result<(), String>;
+    /// Delivers an input event.
+    async fn input(&mut self, text: &str);
+    /// Delivers a before-compact event whose signal is `aborted` or live.
+    async fn compact(&mut self, aborted: bool);
+    /// Runs the command that starts a new session, held until the driver saw it pending.
+    async fn command(&mut self, args: &str);
+    /// Releases every registered callback in registration order.
+    async fn release_all(&mut self);
+    /// The lines observed so far.
+    fn transcript(&self) -> Vec<String>;
+}
+
+/// Runs the scenario and returns the transcript.
+///
+/// # Errors
+/// Returns the message the factory failed with.
+pub async fn run(driver: &mut impl Driver) -> Result<Vec<String>, String> {
+    driver.start().await?;
+    driver.input("hello").await;
+    driver.compact(false).await;
+    driver.compact(true).await;
+    driver.command("go").await;
+    driver.release_all().await;
+    Ok(driver.transcript())
+}
+
+/// Expected transcript of the full scenario.
+pub const EXPECTED: &[&str] = &[
+    "register event input",
+    "register event session_before_compact",
+    "register command replace",
+    "reject event rejected",
+    r#"entry released "rejected-handler""#,
+    r#"entry rejection "registration rejected: rejected""#,
+    "register event reentrant",
+    r#"entry input {"text":"hello","cwd":"/work"}"#,
+    "input hello -> transform:HELLO",
+    "compact aborted=false -> cancel=false summary=previous_aborted:None",
+    "compact aborted=true -> cancel=true summary=previous_aborted:Some(true)",
+    r#"entry command {"args":"go","cwd":"/work"}"#,
+    "new-session start parent=parent",
+    r#"entry continuation {"cwd":"/replacement"}"#,
+    "wait-for-idle /replacement",
+    r#"entry released "continuation""#,
+    "new-session done cancelled=false",
+    r#"entry stale "This context is stale after session replacement.""#,
+    r#"entry after {"before":"/work","cancelled":false}"#,
+    r#"entry released "input-handler""#,
+    r#"entry released "compaction-handler""#,
+    r#"entry released "command-handler""#,
+    r#"entry released "reentrant-guard""#,
+    "register event late",
+];

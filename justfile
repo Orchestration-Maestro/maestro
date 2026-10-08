@@ -163,6 +163,11 @@ run-source *args:
 run-source-windows *args:
     cargo run --quiet --locked --manifest-path {{quote(justfile_directory() / "Cargo.toml")}} -p maestro-tooling --bin development -- run-source-windows "$@"
 
+# Build the author example as a native-async extension component.
+extension-author-component:
+    rustup target add wasm32-wasip2
+    cargo build -p maestro-extensions-wasm --example author_component --target wasm32-wasip2 --release --locked
+
 # Compile the real browser entry when its owner has supplied it.
 check-browser-smoke:
     cargo run --quiet --locked -p maestro-tooling --bin development -- check-browser-smoke

@@ -6,6 +6,8 @@ use std::path::Path;
 mod boundaries;
 /// Rust comment content checks.
 mod comments;
+/// The lint exception of the generated extension bindings.
+mod generated;
 /// Workspace membership and dependency graph checks.
 mod graph;
 /// Source-size and protected-lint checks.

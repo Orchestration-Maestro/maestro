@@ -1,0 +1,26 @@
+package maestro:extension@0.1.0;
+
+/// Session, compaction and operation data.
+interface session {
+    /// What a compaction is about to summarize.
+    record compaction-preparation {
+        first-kept-entry-id: string,
+        is-split-turn: bool,
+        tokens-before: f64,
+        previous-summary: option<string>,
+    }
+
+    /// A compaction an extension supplies; `details` is JSON text.
+    record compaction-result {
+        summary: string,
+        first-kept-entry-id: string,
+        tokens-before: f64,
+        details: option<string>,
+    }
+
+    /// Plain data of a new session.
+    record new-session-command-data { parent-session: option<string> }
+
+    /// How a session-replacing operation ended.
+    record session-change-result { cancelled: bool }
+}

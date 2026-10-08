@@ -1,0 +1,35 @@
+package maestro:extension@0.1.0;
+
+/// Callbacks the host invokes on the extension.
+interface guest {
+    use host.{callback, abort-signal, context, command-context, replaced-session-context};
+    use events.{extension-event-result, input-event, session-before-compact-event-data};
+
+    /// What an event handler decided: a result, no result, or the message it failed with.
+    type decision = result<option<extension-event-result>, string>;
+
+    /// Runs the extension factory; returns when it has completed.
+    start: async func() -> result<_, string>;
+    /// Drops the closure behind a registered callback and its identity.
+    release: func(handler: borrow<callback>);
+    /// Runs a command handler.
+    invoke-command: async func(
+        handler: borrow<callback>, args: string, ctx: command-context,
+    ) -> result<_, string>;
+    /// Runs the continuation of a session operation.
+    invoke-with-session: async func(
+        handler: borrow<callback>, ctx: replaced-session-context,
+    ) -> result<_, string>;
+
+    // One export per event: the lift of a whole event union in one function is too large to
+    // compile, so each event type crosses the boundary in its own function.
+    invoke-session-before-compact: async func(
+        handler: borrow<callback>,
+        event: session-before-compact-event-data,
+        signal: abort-signal,
+        ctx: context,
+    ) -> decision;
+    invoke-input: async func(
+        handler: borrow<callback>, event: input-event, ctx: context,
+    ) -> decision;
+}

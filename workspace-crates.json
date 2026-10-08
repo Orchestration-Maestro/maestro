@@ -1,4 +1,5 @@
 {
+  "maestro-extensions-wasm": "core",
   "maestro-models": "core",
   "maestro-path": "core",
   "maestro-test-conventions": "dedicated",
