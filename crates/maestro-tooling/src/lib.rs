@@ -78,7 +78,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             }
             Ok(ExitCode::SUCCESS)
         }
-        Some("watch") => watch::run(args),
+        Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {
             let home =

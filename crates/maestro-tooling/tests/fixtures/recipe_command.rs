@@ -2,16 +2,13 @@
 
 use std::{
     env, fs,
-    io::{Read, Write},
+    io::Write,
     path::Path,
     process::Command,
 };
 /// Routes fixture calls to their controlled or native command.
 fn main() {
-    let mut args: Vec<_> = env::args().skip(1).collect();
-    if args.first().map(String::as_str) == Some("watch-step") {
-        watch_step(&args);
-    }
+    let args: Vec<_> = env::args().skip(1).collect();
     if args.first().map(String::as_str) == Some("run")
         && env::var_os("MAESTRO_REAL_CARGO").is_some()
     {
@@ -22,8 +19,6 @@ fn main() {
     }
     if Path::new(&env::args().next().unwrap()).file_stem().unwrap() == "watchexec" {
         if let Some(watcher) = env::var_os("MAESTRO_REAL_WATCHEXEC") {
-            let command = args.iter().position(|arg| arg == "--").unwrap() + 1;
-            args[command] = env::current_exe().unwrap().to_str().unwrap().to_owned();
             exit_command(
                 Command::new(watcher)
                     .args(["--wrap-process=none"])
@@ -44,48 +39,6 @@ fn main() {
     if env::var("MAESTRO_FAIL").ok().as_deref() == args.first().map(String::as_str) {
         std::process::exit(17);
     }
-}
-
-/// Forwards unchanged events and acknowledges the completed native step over a FIFO.
-fn watch_step(args: &[String]) {
-    let mut events = String::new();
-    std::io::stdin().read_to_string(&mut events).unwrap();
-    let mut child = Command::new(env::var_os("MAESTRO_DEVELOPMENT").unwrap())
-        .args(args)
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(events.as_bytes())
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
-    std::io::stdout().write_all(&output.stdout).unwrap();
-    for line in output.stderr.split_inclusive(|byte| *byte == b'\n') {
-        std::io::stderr().write_all(line).unwrap();
-    }
-    let status = output.status.code().unwrap();
-    let readiness = (1..=10)
-        .map(|attempt| format!("initial-output-drained-{attempt}"))
-        .filter(|marker| events.contains(&format!("{marker}\"")))
-        .map(|marker| format!("[{marker}]"))
-        .collect::<Vec<_>>()
-        .join(",");
-    let acknowledgment = format!(
-        "[Watch step complete] status={status} initial-output-drained={readiness} ignored-output-processed={}\n",
-        events.contains("ignored-output-processed")
-    );
-    fs::OpenOptions::new()
-        .append(true)
-        .open(env::var_os("MAESTRO_ACK_FIFO").unwrap())
-        .unwrap()
-        .write_all(acknowledgment.as_bytes())
-        .unwrap();
-    std::process::exit(status);
 }
 
 /// Records fake command arguments and the requested environment observations.

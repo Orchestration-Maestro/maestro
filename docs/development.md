@@ -45,16 +45,22 @@ mise exec -- just models-dev-compile
 The pinned external watcher compiles initially and queues a rebuild when input
 changes during compilation. Earlier terminal output remains visible. It watches
 the workspace root, including sibling dependencies and Cargo configuration,
-excluding only `.git`; each change is compared literally with Cargo's current
-target directory before compiling. `dev` covers delivered owners;
+excluding `.git` and the target subtree resolved when the watcher starts.
+The target ignore is literal, including bracketed directory names. On supported
+native backends, the watcher prunes ignored subtrees before registering them;
+backends without subtree pruning filter their events instead. Each remaining
+change is compared literally with Cargo's current target directory before
+compiling. A later target switch is handled by that dynamic filter; restart the
+watcher to prune the new output subtree and release the old target ignore. `dev` covers delivered owners;
 `dev-compile` and `models-dev-compile` select models only. Missing owners fail.
-Cargo stages a brand-new target directory under a temporary sibling name, so the
-first switch to a not-yet-existing target can cause one extra build.
-Recipe tests confirm watch registration with up to ten uniquely named, filtered
-output markers before changing inputs. Subsequent ignored writes wait for their
-named completion acknowledgment, not a quiet-time window. Their watch processes
-share a test-owned process group, which is stopped when the test finishes,
-including on panic.
+Decision tests use literal watcher events to prove that configured target writes
+are skipped, including bracketed paths; mixed source events and pathless events
+compile. The decision also compiles delayed events under an old target after a
+configuration switch, if those events reach it. Real-watcher recipe tests prove positive rebuilds for source, sibling
+and Cargo configuration changes, including rebuilding the development binary.
+They retain both output streams in one ordered transcript through command
+completion, without exact build counts or negative observation windows. Their
+watch processes share a test-owned process group, stopped on completion or panic.
 
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
