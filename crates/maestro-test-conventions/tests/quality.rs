@@ -127,7 +127,7 @@ fn multiple_trailing_test_modules_do_not_count() {
     std::fs::write(
         &path,
         format!(
-            "{}#[cfg(test)]\nmod first {{\n{}}}\n#[cfg(test)]\nmod second {{}}\n",
+            "{}#[cfg(test)]\n#[cfg(unix)]\nmod tests {{\n{}}}\n#[cfg(test)]\n#[cfg(not(unix))]\nmod tests {{}}\n",
             "// Technical.\n".repeat(500),
             "// Technical.\n".repeat(501)
         ),
@@ -169,8 +169,8 @@ fn test_modules_with_extra_attributes_do_not_count_as_production() {
     let root = workspace.root.join("crates/tui/src");
     std::fs::write(root.join("tests.rs"), "").unwrap();
     for attributes in [
-        "#[cfg(test)]\n#[path = \"tests.rs\"]\n",
-        "#[path = \"tests.rs\"]\n#[cfg(test)]\n",
+        "#[cfg(test)]\n#[cfg(unix)]\n",
+        "#[cfg(unix)]\n#[cfg(test)]\n",
     ] {
         std::fs::write(
             root.join("lib.rs"),

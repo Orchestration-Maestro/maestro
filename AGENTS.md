@@ -40,13 +40,19 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Quality-lint allowances are forbidden.
 The protected `redundant_clone` lint rejects unnecessary copies.
-Conventions reject consecutive repeated paragraph lines within one documentation
-owner/style, ignoring Markdown code blocks even inside lists or block quotes.
-They reject adjacent identical assertion statements (including attributes) only
-in test-attributed functions or functions inside `#[cfg(test)]` modules, when
-expression arguments and pattern guards contain no calls, method calls, macros,
-assignments or compound assignments; matching arguments are parsed as patterns.
-Opaque arguments and repetition across functions or files remain review judgement.
+Conventions reject consecutive repeated nonempty physical documentation lines
+within one owner/style, ignoring Markdown code blocks even inside lists or block
+quotes. Whitespace is trimmed but list/quote markers remain; blank lines do not
+reset comparison, while code blocks, items and owner/style changes do.
+They reject adjacent identical assertion statements (including attributes) in
+test-attributed functions, inline `#[cfg(test)] mod tests` bodies, and whole files
+carrying `#![cfg(test)]`, named `tests.rs`, or beneath a `tests` directory below
+`src`. Under `crates/*/src`, modules named `tests` require `#[cfg(test)]`, every
+`#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
+Expression arguments and pattern guards must contain no calls, method calls,
+macros, assignments or compound assignments; matching arguments are parsed as
+patterns. Constant/static initializers remain excluded. Opaque arguments and
+repetition across functions or files remain review judgement.
 
 ## Documentation
 

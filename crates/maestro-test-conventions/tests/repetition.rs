@@ -306,3 +306,122 @@ fn helpers_inside_test_modules_are_selected() {
         );
     }
 }
+
+#[test]
+fn physical_documentation_lines_cover_tight_lists_and_separators() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut failures = Vec::new();
+    for prose in [
+        "- Intro.\n  Repeat.\n  Repeat.",
+        "- Repeat.\n- Repeat.",
+        "> - Intro.\n>   Repeat.\n>   Repeat.",
+        "1. Intro.\n   Repeat.\n   Repeat.",
+    ] {
+        for block in [false, true] {
+            let lines: Vec<_> = prose.lines().collect();
+            let source = if block {
+                format!("/**\n * {}\n */\nfn sample() {{}}\n", lines.join("\n * "))
+            } else {
+                format!("/// {}\nfn sample() {{}}\n", lines.join("\n/// "))
+            };
+            std::fs::write(&path, source).unwrap();
+            let Err(error) = check_workspace(&workspace.root) else {
+                failures.push(format!("missed repetition: block={block}, {prose:?}"));
+                continue;
+            };
+            let last = lines.len() + usize::from(block);
+            assert!(
+                error.contains(&format!("{}:{last}:", path.display())),
+                "{error}"
+            );
+            assert!(
+                error.contains(&format!(
+                    "repeated documentation; first at line {}",
+                    last - 1
+                )),
+                "{error}"
+            );
+        }
+    }
+    for separator in ["# Different", "---", "<div>Different</div>"] {
+        std::fs::write(
+            &path,
+            format!("/// Same.\n/// {separator}\n/// Same.\nfn sample() {{}}\n"),
+        )
+        .unwrap();
+        if let Err(error) = check_workspace(&workspace.root) {
+            failures.push(format!("false rejection across {separator}: {error}"));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn test_only_files_select_unannotated_helpers() {
+    let mut failures = Vec::new();
+    for (file, declaration, prefix) in [
+        ("tests.rs", "#[cfg(test)] mod tests;", ""),
+        ("tests/support.rs", "#[cfg(test)] mod tests;", ""),
+        ("helpers.rs", "mod helpers;", "#![cfg(test)]\n"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.member("tui", "maestro-tui", "");
+        workspace.list(&[("maestro-tui", "core")]);
+        let root = workspace.root.join("crates/tui/src");
+        std::fs::write(root.join("lib.rs"), declaration).unwrap();
+        if file == "tests/support.rs" {
+            std::fs::create_dir(root.join("tests")).unwrap();
+            std::fs::write(root.join("tests.rs"), "mod support;").unwrap();
+        }
+        let path = root.join(file);
+        std::fs::write(
+            &path,
+            format!("{prefix}fn helper() {{\n assert!(ready);\n assert!(ready);\n}}\n"),
+        )
+        .unwrap();
+        match check_workspace(&workspace.root) {
+            Ok(()) => failures.push(format!("missed test context: {file}, {prefix:?}")),
+            Err(error) => {
+                let first = 2 + usize::from(!prefix.is_empty());
+                assert!(
+                    error.contains(&format!("{}:{}:", path.display(), first + 1)),
+                    "{error}"
+                );
+                assert!(
+                    error.contains(&format!("repeated assertion; first at line {first}")),
+                    "{error}"
+                );
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn source_test_module_declarations_require_local_convention() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut failures = Vec::new();
+    for declaration in [
+        "#[cfg(test)] mod helpers;",
+        "mod tests;",
+        "#[cfg(test)] #[path = \"helpers.rs\"] mod tests;",
+        "mod tests {}",
+        "#[cfg(test)] mod helpers {}",
+    ] {
+        std::fs::write(&path, declaration).unwrap();
+        match check_workspace(&workspace.root) {
+            Ok(()) => failures.push(format!("accepted invalid declaration: {declaration}")),
+            Err(error) => {
+                assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
+                assert!(error.contains("test module convention"), "{error}");
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

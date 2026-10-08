@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use pulldown_cmark::{Event, Parser, Tag};
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
@@ -9,7 +11,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
             documentation(source)?;
-            assertions(source)?;
+            assertions(source, &member.directory.join("src"))?;
         }
     }
     Ok(())
@@ -77,60 +79,67 @@ impl Documentation {
         }
     }
 
-    /// Compare physical paragraph lines while the parser excludes all code blocks.
+    /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
+        let code: Vec<_> = Parser::new(&self.markdown)
+            .into_offset_iter()
+            .filter_map(|(event, range)| {
+                matches!(event, Event::Start(Tag::CodeBlock(_))).then_some(range)
+            })
+            .collect();
         let mut previous = None;
-        for (event, range) in Parser::new(&self.markdown).into_offset_iter() {
-            match event {
-                Event::Start(Tag::CodeBlock(_)) => previous = None,
-                Event::Start(Tag::Paragraph) => self.paragraph(range, &mut previous, source)?,
-                _ => {}
+        let mut offset = 0;
+        for (index, text) in self.markdown.lines().enumerate() {
+            let end = offset + text.len();
+            let inside_code = code
+                .iter()
+                .any(|range| range.start < end && offset < range.end);
+            offset = end + 1;
+            if inside_code {
+                previous = None;
+                continue;
             }
-        }
-        Ok(())
-    }
-
-    /// Compare the original trimmed lines within a parser-selected paragraph.
-    fn paragraph<'a>(
-        &'a self,
-        range: std::ops::Range<usize>,
-        previous: &mut Option<(&'a str, usize)>,
-        source: &Source,
-    ) -> Result<(), String> {
-        let start = self.markdown[..range.start]
-            .bytes()
-            .filter(|b| *b == b'\n')
-            .count();
-        let end = self.markdown[..range.end.saturating_sub(1)]
-            .bytes()
-            .filter(|b| *b == b'\n')
-            .count();
-        for (index, text) in self.markdown.lines().enumerate().take(end + 1).skip(start) {
             let text = text.trim();
             if text.is_empty() {
                 continue;
             }
             let line = self.lines[index];
             if let Some((prior, first)) = previous
-                && *prior == text
+                && prior == text
             {
                 return Err(format!(
                     "{}:{line}: repeated documentation; first at line {first}",
                     source.path.display()
                 ));
             }
-            *previous = Some((text, line));
+            previous = Some((text, line));
         }
         Ok(())
     }
 }
 
-/// Check parsed test functions; fragments retain the lexical documentation check.
-fn assertions(source: &Source) -> Result<(), String> {
+/// Check local module declarations and assertions selected by file or inline context.
+fn assertions(source: &Source, src: &Path) -> Result<(), String> {
+    let relative = source.path.strip_prefix(src).ok();
     let mut visitor = Assertions {
         source,
+        in_src: relative.is_some(),
         error: None,
-        test_module: false,
+        test_module: source
+            .path
+            .file_name()
+            .is_some_and(|name| name == "tests.rs")
+            || relative.is_some_and(|path| {
+                path.parent().is_some_and(|parent| {
+                    parent
+                        .components()
+                        .any(|component| component.as_os_str() == "tests")
+                })
+            })
+            || source
+                .syntax
+                .as_ref()
+                .is_some_and(|file| cfg_test(&file.attrs)),
         test_function: false,
     };
     if let Some(syntax) = &source.syntax {
@@ -139,11 +148,23 @@ fn assertions(source: &Source) -> Result<(), String> {
     visitor.error.map_or(Ok(()), Err)
 }
 
+/// Recognize the direct test-only configuration shared by files and modules.
+fn cfg_test(attrs: &[syn::Attribute]) -> bool {
+    attrs.iter().any(|attr| {
+        attr.path().is_ident("cfg")
+            && attr
+                .parse_args::<syn::Path>()
+                .is_ok_and(|path| path.is_ident("test"))
+    })
+}
+
 /// Assertion visitor scoped to blocks inside test functions.
 struct Assertions<'a> {
     /// File used to attach both locations to diagnostics.
     source: &'a Source,
-    /// First repeated assertion, if any.
+    /// Whether source-local test module declarations must follow the convention.
+    in_src: bool,
+    /// First convention or repetition violation, if any.
     error: Option<String>,
     /// Whether the containing module is selected for tests.
     test_module: bool,
@@ -169,12 +190,21 @@ impl<'ast> Visit<'ast> for Assertions<'_> {
 
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
         let prior = self.test_module;
-        self.test_module |= item.attrs.iter().any(|attr| {
-            attr.path().is_ident("cfg")
-                && attr
-                    .parse_args::<syn::Path>()
-                    .is_ok_and(|path| path.is_ident("test"))
-        });
+        let configured = cfg_test(&item.attrs);
+        let named = item.ident == "tests";
+        if self.in_src
+            && (configured != named
+                || ((configured || named)
+                    && item.attrs.iter().any(|attr| attr.path().is_ident("path"))))
+            && self.error.is_none()
+        {
+            self.error = Some(format!(
+                "{}:{}: test module convention: use #[cfg(test)] mod tests without #[path]",
+                self.source.path.display(),
+                item.ident.span().start().line,
+            ));
+        }
+        self.test_module |= configured;
         syn::visit::visit_item_mod(self, item);
         self.test_module = prior;
     }
