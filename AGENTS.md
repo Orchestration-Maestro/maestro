@@ -41,17 +41,20 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `[lints] workspace = true`. Quality-lint allowances are forbidden.
 The protected `redundant_clone` lint rejects unnecessary copies.
 Conventions reject consecutive repeated nonempty physical documentation lines
-within one owner/style, ignoring Markdown code blocks even inside lists or block
-quotes. Whitespace is trimmed but list/quote markers remain; blank lines do not
-reset comparison, while code blocks, items and owner/style changes do.
+within one contiguous run of same-style documentation comments. An attribute,
+an ordinary comment or code ends the run. Markdown code blocks, even inside lists
+or block quotes, are ignored. Whitespace is trimmed but list/quote markers remain;
+blank documentation lines are retained and do not reset comparison, while code
+blocks and owner/style changes do.
 They reject adjacent identical assertion statements (including attributes) in
 test-attributed functions, inline `#[cfg(test)] mod tests` bodies, and whole files
-carrying `#![cfg(test)]`, named `tests.rs`, or beneath a `tests` directory below
-`src`. Under `crates/*/src`, modules named `tests` require `#[cfg(test)]`, every
+carrying `#![cfg(test)]`, named `tests.rs`, or beneath a `tests` directory anywhere
+under the crate. Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs`
+or be below a `tests` directory. Modules named `tests` require `#[cfg(test)]`, every
 `#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
 Expression arguments and pattern guards must contain no calls, method calls,
-macros, assignments or compound assignments; matching arguments are parsed as
-patterns. Constant/static initializers remain excluded. Opaque arguments and
+awaiting, macros, assignments or compound assignments; matching arguments are
+parsed as patterns. Constant/static initializers remain excluded. Opaque arguments and
 repetition across functions or files remain review judgement.
 
 ## Documentation

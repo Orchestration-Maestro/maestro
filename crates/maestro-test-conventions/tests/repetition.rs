@@ -425,3 +425,71 @@ fn source_test_module_declarations_require_local_convention() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+#[test]
+fn empty_documentation_lines_open_indented_code_for_both_owners() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    for marker in ["///", "//!"] {
+        std::fs::write(
+            &path,
+            format!("{marker} Example:\n{marker}\n{marker}     repeat\n{marker}     repeat\nfn sample() {{}}\n"),
+        )
+        .unwrap();
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{marker}");
+    }
+}
+
+#[test]
+fn integration_test_support_helpers_are_test_context() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/tests/support/mod.rs");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(
+        &path,
+        "fn helper() {\n assert!(ready);\n assert!(ready);\n}\n",
+    )
+    .unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
+    assert!(
+        error.contains("repeated assertion; first at line 2"),
+        "{error}"
+    );
+}
+
+#[test]
+fn source_test_only_files_require_recognized_layout() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/helpers.rs");
+    std::fs::write(&path, "#![cfg(test)]\nmod nested;\n").unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
+    assert!(error.contains("test file convention"), "{error}");
+}
+
+#[test]
+fn awaited_assertion_arguments_and_match_guards_are_opaque() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    for call in [
+        "assert!((&mut event).await)",
+        "assert_matches!((&mut event).await, Some(_))",
+        "assert_matches!(value, Some(_) if (&mut event).await)",
+    ] {
+        std::fs::write(
+            &path,
+            format!("#[test]\nasync fn sample() {{ {call}; {call}; }}\n"),
+        )
+        .unwrap();
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{call}");
+    }
+}

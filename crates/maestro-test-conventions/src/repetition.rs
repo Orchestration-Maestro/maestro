@@ -11,7 +11,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
             documentation(source)?;
-            assertions(source, &member.directory.join("src"))?;
+            assertions(source, &member.directory)?;
         }
     }
     Ok(())
@@ -64,9 +64,9 @@ struct Documentation {
 }
 
 impl Documentation {
-    /// Collect comments, removing only comment decoration and one separator space.
+    /// Retain every physical line, removing decoration and one separator space.
     fn comment(&mut self, body: &str, start: usize, decorated: bool) {
-        for (index, text) in body.lines().enumerate() {
+        for (index, text) in body.split('\n').enumerate() {
             let text = if decorated && index > 0 {
                 text.trim_start().strip_prefix('*').unwrap_or(text)
             } else {
@@ -119,33 +119,41 @@ impl Documentation {
 }
 
 /// Check local module declarations and assertions selected by file or inline context.
-fn assertions(source: &Source, src: &Path) -> Result<(), String> {
-    let relative = source.path.strip_prefix(src).ok();
+fn assertions(source: &Source, directory: &Path) -> Result<(), String> {
+    let relative = source.path.strip_prefix(directory).ok();
+    let test_layout = source
+        .path
+        .file_name()
+        .is_some_and(|name| name == "tests.rs")
+        || relative.is_some_and(|path| {
+            path.parent().is_some_and(|parent| {
+                parent
+                    .components()
+                    .any(|component| component.as_os_str() == "tests")
+            })
+        });
+    let configured = source
+        .syntax
+        .as_ref()
+        .is_some_and(|file| cfg_test(&file.attrs));
     let mut visitor = Assertions {
         source,
-        in_src: relative.is_some(),
+        in_src: source.path.starts_with(directory.join("src")),
         error: None,
-        test_module: source
-            .path
-            .file_name()
-            .is_some_and(|name| name == "tests.rs")
-            || relative.is_some_and(|path| {
-                path.parent().is_some_and(|parent| {
-                    parent
-                        .components()
-                        .any(|component| component.as_os_str() == "tests")
-                })
-            })
-            || source
-                .syntax
-                .as_ref()
-                .is_some_and(|file| cfg_test(&file.attrs)),
+        test_module: test_layout || configured,
         test_function: false,
     };
     if let Some(syntax) = &source.syntax {
         visitor.visit_file(syntax);
     }
-    visitor.error.map_or(Ok(()), Err)
+    visitor.error.map_or(Ok(()), Err)?;
+    if visitor.in_src && configured && !test_layout {
+        return Err(format!(
+            "{}:1: test file convention: use tests.rs or a tests directory for #![cfg(test)]",
+            source.path.display()
+        ));
+    }
+    Ok(())
 }
 
 /// Recognize the direct test-only configuration shared by files and modules.
@@ -277,7 +285,7 @@ impl Assertions<'_> {
 
 /// Extract direct assertion statements with transparent expression arguments.
 ///
-/// Calls, method calls, macros, assignments and compound assignments are opaque:
+/// Calls, method calls, awaiting, macros and all assignments are opaque:
 /// repeated tokens may observe changing state, so those remain review judgement.
 fn assertion(statement: &syn::Stmt) -> Option<(&syn::Macro, &[syn::Attribute])> {
     let (call, attrs) = match statement {
@@ -351,6 +359,7 @@ impl<'ast> Visit<'ast> for Effects {
         self.opaque |= matches!(
             expression,
             syn::Expr::Call(_)
+                | syn::Expr::Await(_)
                 | syn::Expr::MethodCall(_)
                 | syn::Expr::Macro(_)
                 | syn::Expr::Assign(_)
