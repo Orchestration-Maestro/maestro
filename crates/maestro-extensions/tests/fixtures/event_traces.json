@@ -411,17 +411,14 @@
   },
   {
     "id": "duplicates",
-    "input": {},
     "expected": [
       1,
       1,
       2
-    ],
-    "test": "duplicate_registrations_unsubscribe_independently"
+    ]
   },
   {
     "id": "channels-clear",
-    "input": {},
     "expected": [
       [
         "x",
@@ -435,86 +432,70 @@
         "new",
         4
       ]
-    ],
-    "test": "clear_removes_all_channels_and_allows_reuse"
+    ]
   },
   {
     "id": "snapshot-add",
-    "input": "add",
     "expected": [
       "a1",
       "b1",
       "a2",
       "b2",
       "c2"
-    ],
-    "test": "delivery_snapshots_survive_subscription_edits"
+    ]
   },
   {
     "id": "snapshot-remove",
-    "input": "remove",
     "expected": [
       "a1",
       "b1",
       "a2"
-    ],
-    "test": "delivery_snapshots_survive_subscription_edits"
+    ]
   },
   {
     "id": "snapshot-clear",
-    "input": "clear",
     "expected": [
       "a1",
       "b1"
-    ],
-    "test": "delivery_snapshots_survive_subscription_edits"
+    ]
   },
   {
     "id": "single-snapshot",
-    "input": {},
     "expected": [
       "a1",
       "b2"
-    ],
-    "test": "single_listener_replacement_affects_the_next_emit"
+    ]
   },
   {
     "id": "nested-snapshot",
-    "input": {},
     "expected": [
       "a1",
       "a2",
       "c2",
       "b1"
-    ],
-    "test": "nested_emission_uses_its_own_snapshot"
+    ]
   },
   {
     "id": "ready-tails",
-    "input": {},
     "expected": [
       "a:prefix",
       "b:prefix",
       "emit:return",
       "a:tail",
       "b:tail"
-    ],
-    "test": "ready_tails_start_after_the_emitting_segment"
+    ]
   },
   {
     "id": "pending-tail",
-    "input": {},
     "expected": [
       "prefix",
       "emit:return",
       "tail",
       "emitter:resumed"
-    ],
-    "test": "pending_tail_can_resume_its_emitter"
+    ]
   },
   {
     "id": "retention-unsubscribe",
-    "input": "unsubscribe",
     "expected": [
       "prefix",
       "unsubscribe",
@@ -522,12 +503,10 @@
         "tail",
         false
       ]
-    ],
-    "test": "started_tails_survive_removal_and_keep_captured_signals"
+    ]
   },
   {
     "id": "retention-clear",
-    "input": "clear",
     "expected": [
       "prefix",
       "clear",
@@ -535,12 +514,10 @@
         "tail",
         false
       ]
-    ],
-    "test": "started_tails_survive_removal_and_keep_captured_signals"
+    ]
   },
   {
     "id": "retention-abort",
-    "input": "abort",
     "expected": [
       "prefix",
       "abort",
@@ -548,12 +525,10 @@
         "tail",
         true
       ]
-    ],
-    "test": "started_tails_survive_removal_and_keep_captured_signals"
+    ]
   },
   {
     "id": "prefix-error",
-    "input": {},
     "expected": {
       "trace": [
         "bad",
@@ -568,7 +543,6 @@
   },
   {
     "id": "tail-error",
-    "input": {},
     "expected": {
       "trace": [
         "bad:prefix",
@@ -578,23 +552,19 @@
       "errors": [
         "Event handler error (x): tail failure\n"
       ]
-    },
-    "test": "tail_errors_are_reported_after_the_original_emit"
+    }
   },
   {
     "id": "tail-emit",
-    "input": {},
     "expected": [
       "outer:prefix",
       "return",
       "inner:prefix",
       "outer:tail"
-    ],
-    "test": "tail_emission_runs_ordinary_listener_prefixes"
+    ]
   },
   {
     "id": "reentry",
-    "input": {},
     "expected": [
       "a:start",
       "a:end",
@@ -602,18 +572,14 @@
       "b:end",
       "a:back",
       "return"
-    ],
-    "test": "foreign_reentry_drains_at_each_callback_return"
+    ]
   },
   {
     "id": "magic-metadata",
-    "input": {},
-    "expected": [],
-    "test": "reserved_channel_names_have_no_implicit_events"
+    "expected": []
   },
   {
     "id": "repeat-error",
-    "input": {},
     "expected": {
       "trace": [
         "attempt",
@@ -625,8 +591,7 @@
         "Event handler error (x): instance a trapped\n",
         "Event handler error (x): instance a trapped\n"
       ]
-    },
-    "test": "failed_instance_listeners_stay_registered"
+    }
   },
   {
     "id": "unbounded",
@@ -652,163 +617,26 @@
     "test": "all_subscribers_are_delivered_without_a_warning_threshold"
   },
   {
-    "id": "callback:listener-body",
-    "input": "listener-body",
+    "id": "callback-return",
     "expected": [
       "body:start",
       "same",
       "body:end",
       "foreign",
       "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:listener-prefix",
-    "input": "listener-prefix",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:footer-factory",
-    "input": "footer-factory",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:widget-factory",
-    "input": "widget-factory",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:header-factory",
-    "input": "header-factory",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:editor-factory",
-    "input": "editor-factory",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:component-factory",
-    "input": "component-factory",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:render",
-    "input": "render",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:dispose",
-    "input": "dispose",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:input",
-    "input": "input",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:autocomplete-limit",
-    "input": "autocomplete-limit",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
-  },
-  {
-    "id": "callback:invalidate",
-    "input": "invalidate",
-    "expected": [
-      "body:start",
-      "same",
-      "body:end",
-      "foreign",
-      "release"
-    ],
-    "test": "synchronous_callback_categories_release_foreign_listeners"
+    ]
   },
   {
     "id": "deferred-snapshot",
-    "input": {},
     "expected": [
       "start",
       "end",
       "foreign:1",
       "new:2"
-    ],
-    "test": "queued_foreign_delivery_keeps_the_original_snapshot"
+    ]
   },
   {
     "id": "each-return",
-    "input": {},
     "expected": [
       "dispose:start",
       "dispose:end",
@@ -818,14 +646,10 @@
       "factory:end",
       "foreign",
       "installed"
-    ],
-    "test": "foreign_delivery_precedes_the_following_release_callback"
+    ]
   },
   {
     "id": "overlap",
-    "input": {
-      "abort": "b"
-    },
     "expected": [
       "a:prefix",
       "b:prefix",
@@ -839,8 +663,7 @@
         true
       ],
       "b:done"
-    ],
-    "test": "overlapping_origins_finish_in_non_stack_order"
+    ]
   },
   {
     "id": "count:0",
@@ -893,17 +716,14 @@
   },
   {
     "id": "same-nested",
-    "input": {},
     "expected": [
       "start",
       "same",
       "end"
-    ],
-    "test": "same_extension_delivery_is_immediately_nested"
+    ]
   },
   {
     "id": "callback-error",
-    "input": {},
     "expected": {
       "trace": [
         "foreign"
@@ -911,8 +731,7 @@
       "errors": [
         "Event handler error (outer): prefix failure\n"
       ]
-    },
-    "test": "callback_errors_do_not_discard_queued_delivery"
+    }
   },
   {
     "id": "root:null",
@@ -1029,19 +848,16 @@
   },
   {
     "id": "pending-before-ready",
-    "input": {},
     "expected": [
       "a:prefix",
       "b:prefix",
       "return",
       "b:tail",
       "a:tail"
-    ],
-    "test": "a_pending_tail_does_not_block_other_listeners"
+    ]
   },
   {
     "id": "nested-scopes",
-    "input": {},
     "expected": [
       "outer:start",
       "inner:start",
@@ -1050,18 +866,15 @@
       "outer:end",
       "foreign:outer",
       "return"
-    ],
-    "test": "nested_callbacks_keep_their_own_foreign_queues"
+    ]
   },
   {
     "id": "ignored-unsubscribe",
-    "input": {},
     "expected": [
       "first",
       "second",
       "after-clear"
-    ],
-    "test": "dropping_a_subscription_handle_does_not_unsubscribe"
+    ]
   },
   {
     "id": "diagnostic:\"\"",
@@ -1091,7 +904,6 @@
   },
   {
     "id": "nested-tails:same-ready",
-    "input": "same-ready",
     "expected": [
       "a:start",
       "b:start",
@@ -1102,12 +914,10 @@
       "a:back:tail",
       "b:tail",
       "a:tail"
-    ],
-    "test": "same_extension_delivery_is_immediately_nested"
+    ]
   },
   {
     "id": "nested-tails:foreign-ready",
-    "input": "foreign-ready",
     "expected": [
       "a:start",
       "a:end",
@@ -1118,12 +928,10 @@
       "a:back:tail",
       "b:tail",
       "a:tail"
-    ],
-    "test": "foreign_reentry_drains_at_each_callback_return"
+    ]
   },
   {
     "id": "nested-tails:foreign-pending",
-    "input": "foreign-pending",
     "expected": [
       "a:start",
       "a:end",
@@ -1134,7 +942,6 @@
       "a:tail",
       "a:back:tail",
       "b:tail"
-    ],
-    "test": "foreign_reentry_drains_at_each_callback_return"
+    ]
   }
 ]

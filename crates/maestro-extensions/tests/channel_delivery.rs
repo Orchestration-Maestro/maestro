@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
 use std::sync::Arc;
-use support::{cases, mark, run};
+use support::{mark, run};
 #[test]
 fn empty_channels_are_inert() {
     run(|env| async move {
@@ -569,4 +569,15 @@ fn data_listener(trace: support::Trace, prefix: &'static str) -> maestro_extensi
         mark(&trace, format!("{prefix}{data}"));
         Ok(None)
     })
+}
+
+fn cases(test: &str) -> Vec<serde_json::Value> {
+    let all: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("fixtures/event_traces.json")).unwrap();
+    let selected: Vec<_> = all
+        .into_iter()
+        .filter(|case| case["test"] == test)
+        .collect();
+    assert!(!selected.is_empty(), "no corpus cases for {test}");
+    selected
 }

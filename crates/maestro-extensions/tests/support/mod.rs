@@ -109,16 +109,6 @@ impl Env {
 pub fn mark(trace: &Trace, value: impl Into<Value>) {
     trace.lock().unwrap().push(value.into());
 }
-pub fn cases(test: &str) -> Vec<Value> {
-    let all: Vec<Value> =
-        serde_json::from_str(include_str!("../fixtures/event_traces.json")).unwrap();
-    let selected: Vec<_> = all
-        .into_iter()
-        .filter(|case| case["test"] == test)
-        .collect();
-    assert!(!selected.is_empty(), "no corpus cases for {test}");
-    selected
-}
 pub fn case(id: &str) -> Value {
     let all: Vec<Value> =
         serde_json::from_str(include_str!("../fixtures/event_traces.json")).unwrap();

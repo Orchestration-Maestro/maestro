@@ -3,26 +3,22 @@
 mod support;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
-use support::{cases, mark, run};
+use support::{mark, run};
 
 #[test]
-fn synchronous_callback_categories_release_foreign_listeners() {
+fn synchronous_callback_return_releases_foreign_listeners() {
     run(|env| async move {
-        for row in cases("synchronous_callback_categories_release_foreign_listeners") {
-            env.bus.clear();
-            env.trace.lock().unwrap().clear();
-            let owner = env.bus.for_extension();
-            let foreign = env.bus.for_extension();
-            foreign.on("x", env.listener("foreign"));
-            owner.clone().on("x", env.listener("same"));
-            owner.invoke_callback(|emitter| {
-                env.mark("body:start");
-                emitter.emit("x", Value::Null);
-                env.mark("body:end");
-            });
-            env.mark("release");
-            env.verify(row["id"].as_str().unwrap());
-        }
+        let owner = env.bus.for_extension();
+        let foreign = env.bus.for_extension();
+        foreign.on("x", env.listener("foreign"));
+        owner.on("x", env.listener("same"));
+        owner.invoke_callback(|emitter| {
+            env.mark("body:start");
+            emitter.emit("x", Value::Null);
+            env.mark("body:end");
+        });
+        env.mark("release");
+        env.verify("callback-return");
     });
 }
 
