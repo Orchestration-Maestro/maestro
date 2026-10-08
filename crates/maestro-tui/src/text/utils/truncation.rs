@@ -133,7 +133,12 @@ fn shorten(text: &str, max_width: usize, ellipsis: &str) -> String {
     fit_prefix(&parsed, scan.kept, &render_all(&ellipsis), max_width)
 }
 
-/// Shortens `text` to at most `max_width` columns, appending the ellipsis when it cuts.
+/// Returns `text` without the ellipsis when it measures at most `max_width`, and otherwise a
+/// prefix of whole graphemes followed by the ellipsis, each followed by a full reset.
+///
+/// The result measures at most `max_width`. An ellipsis as wide as `max_width` or wider is
+/// returned alone, cut to the whole graphemes that fit. A `max_width` of zero gives an empty
+/// string.
 #[must_use]
 pub fn truncate_to_width(text: &str, max_width: usize, options: TruncateOptions<'_>) -> String {
     if max_width == 0 {

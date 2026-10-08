@@ -25,15 +25,18 @@ struct Fill {
     cells: usize,
 }
 
-/// Wraps `text` into lines of at most `width` columns, keeping escapes live across breaks.
+/// Breaks `text` into unpadded lines at ASCII spaces, and between whole graphemes inside a
+/// word wider than `width`.
 ///
-/// A single grapheme wider than `width` is kept alone on its line instead of being clipped.
+/// Escapes are read within a literal line, never across a line feed. A line that has text
+/// begins with the style in effect at its first grapheme and closes the hyperlink still open
+/// at its end. A non-whitespace grapheme wider than `width` is kept whole.
 #[must_use]
 pub fn wrap_text_with_ansi(text: &str, width: usize) -> Vec<String> {
     if text.is_empty() {
         return vec![String::new()];
     }
-    let parsed = Parsed::parse(text);
+    let parsed = Parsed::parse_lines(text);
     parsed
         .lines()
         .into_iter()

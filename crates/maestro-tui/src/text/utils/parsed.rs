@@ -127,30 +127,53 @@ impl Endings {
 impl<'a> Parsed<'a> {
     /// Splits `text` into visible content and escape events.
     pub(super) fn parse(text: &'a str) -> Self {
-        let mut parsed = Self {
-            visible: String::with_capacity(text.len()),
+        let mut parsed = Self::empty(text.len());
+        parsed.scan(text);
+        parsed
+    }
+
+    /// Splits `text` like [`Parsed::parse`], except that no escape reaches across a literal
+    /// newline: every line is scanned on its own and the style carries over from line to line.
+    pub(super) fn parse_lines(text: &'a str) -> Self {
+        let mut parsed = Self::empty(text.len());
+        for (index, line) in text.split('\n').enumerate() {
+            if index > 0 {
+                parsed.visible.push('\n');
+            }
+            parsed.scan(line);
+        }
+        parsed
+    }
+
+    /// A parse with no text yet, in the default style.
+    fn empty(capacity: usize) -> Self {
+        Self {
+            visible: String::with_capacity(capacity),
             events: Vec::new(),
             states: vec![StyleState::default()],
-        };
+        }
+    }
+
+    /// Appends the visible text and the escapes of `text`.
+    fn scan(&mut self, text: &'a str) {
         let endings = Endings::of(text);
         let mut index = 0;
         while let Some(found) = text[index..].find('\x1b') {
             let position = index + found;
-            parsed.visible.push_str(&text[index..position]);
+            self.visible.push_str(&text[index..position]);
             let code = endings
                 .can_end(text, position)
                 .then(|| recognize(text, position))
                 .flatten();
             if let Some(code) = code {
-                parsed.push_event(code);
+                self.push_event(code);
                 index = position + code.len();
             } else {
-                parsed.visible.push('\x1b');
+                self.visible.push('\x1b');
                 index = position + 1;
             }
         }
-        parsed.visible.push_str(&text[index..]);
-        parsed
+        self.visible.push_str(&text[index..]);
     }
 
     /// Records one escape and the style state it leads to.

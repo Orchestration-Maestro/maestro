@@ -41,14 +41,16 @@ fn matches(expression: &LazyLock<Option<Regex>>, text: &str) -> bool {
         .is_some_and(|expression| expression.find(text).is_some())
 }
 
-/// Cells of one scalar: wide and fullwidth forms take two, everything else one.
+/// Cells of one scalar: wide, fullwidth and regional indicator forms take two, everything
+/// else one.
 ///
 /// The width library lists U+17A4 and U+17D8 as two and three cells; both take one.
 fn scalar_cells(scalar: char) -> usize {
-    if matches!(scalar, '\u{17a4}' | '\u{17d8}') {
-        return 1;
+    match scalar {
+        '\u{17a4}' | '\u{17d8}' => 1,
+        '\u{1f1e6}'..='\u{1f1ff}' => 2,
+        _ => scalar.width().unwrap_or(0).clamp(1, 2),
     }
-    scalar.width().unwrap_or(0).clamp(1, 2)
 }
 
 /// Cells a trailing scalar adds to the cluster it belongs to.
@@ -79,13 +81,11 @@ pub(super) fn grapheme_cells(segment: &str) -> usize {
         .and_then(|expression| expression.find(segment))
         .map_or(0, |found| found.range.end);
     let mut scalars = segment[skipped..].chars();
-    match scalars.next() {
-        None => 0,
-        Some('\u{1f1e6}'..='\u{1f1ff}') => 2,
-        Some(base) => scalars.fold(scalar_cells(base), |cells, next| {
+    scalars.next().map_or(0, |base| {
+        scalars.fold(scalar_cells(base), |cells, next| {
             cells + trailing_cells(next)
-        }),
-    }
+        })
+    })
 }
 
 /// Whether every scalar is printable ASCII.

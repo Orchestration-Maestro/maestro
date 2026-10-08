@@ -1,26 +1,31 @@
 //! Controlled components and an overlay handle for the component contracts.
 
-use std::cell::Cell;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{CURSOR_MARKER, Component, Focusable, OverlayHandle};
 
-/// Renders a fixed set of lines and counts invalidations.
-pub struct Lines {
+/// Names of the components invalidated so far, in invalidation order.
+pub type InvalidationTrace = Rc<RefCell<Vec<&'static str>>>;
+
+/// Renders a fixed set of lines and adds its name to a shared trace when invalidated.
+pub struct Block {
+    /// Name written to the trace.
+    pub name: &'static str,
     /// Lines returned by every render.
     pub lines: Vec<String>,
-    /// Shared count of invalidations.
-    pub invalidations: Rc<Cell<usize>>,
+    /// Trace shared with the other components of a test.
+    pub trace: InvalidationTrace,
 }
 
-impl Component for Lines {
+impl Component for Block {
     fn render(&mut self, _width: usize) -> Vec<String> {
         self.lines.clone()
     }
 
     fn invalidate(&mut self) {
-        self.invalidations.set(self.invalidations.get() + 1);
+        self.trace.borrow_mut().push(self.name);
     }
 }
 

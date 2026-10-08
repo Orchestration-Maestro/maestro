@@ -68,6 +68,13 @@ fn column_slices_keep_whole_graphemes_and_direct_tab_metric() {
     assert_eq!(slice_by_column("abc", 1, usize::MAX, false), "bc");
 }
 
+#[test]
+fn column_slice_starts_with_the_escapes_written_before_its_first_grapheme() {
+    let line = "\x1b[31ma\x1b[1mbc";
+    assert_eq!(slice_by_column(line, 1, 1, false), "\x1b[31m\x1b[1mb");
+    assert_eq!(slice_by_column(line, 2, 1, false), "\x1b[31m\x1b[1mc");
+}
+
 /// Scalars of the four cluster families in the tables, and their cells when followed by `X`.
 const FAMILIES: [(&[char], usize); 4] = [
     (&['\u{1f1e8}', '\u{1f1e6}'], 3),

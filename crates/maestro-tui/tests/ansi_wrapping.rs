@@ -213,6 +213,21 @@ fn wrapping_retains_logical_lines_and_fitting_spaces() {
     }
 }
 
+/// An escape cannot span a literal newline: the lines are split first, so an escape whose
+/// terminator sits on a later line stays text on its own line.
+#[test]
+fn escapes_do_not_cross_literal_newlines() {
+    let cases: &[(&str, &[&str])] = &[
+        ("\x1b[\nm", &["\x1b[", "m"]),
+        ("\x1b]8;;u\ntext\x07", &["\x1b]8;;u", "text\x07"]),
+        ("\x1b_x\ny\x07", &["\x1b_x", "y\x07"]),
+        ("\x1b[31m\x1b[\nm", &["\x1b[31m\x1b[", "\x1b[31mm"]),
+    ];
+    for (text, expected) in cases {
+        assert_eq!(wrap_text_with_ansi(text, 80), *expected, "{text:?}");
+    }
+}
+
 #[test]
 fn maestro_wrap_discards_style_only_overflow() {
     let cases: &[(&str, usize, &[&str])] = &[
@@ -290,6 +305,13 @@ const CONTROLS: &[(&str, &str)] = &[
         "\u{1b}[1;2;3;4;5;7;8;9;31;44m",
         "\u{1b}[1;2;3;4;5;7;8;9;31;44m",
     ),
+    ("\u{1b}[38;5;005m", "\u{1b}[1;2;3;4;5;7;8;9;38;5;005;44m"),
+    (
+        "\u{1b}[48;2;001;002;003m",
+        "\u{1b}[1;2;3;4;5;7;8;9;31;48;2;001;002;003m",
+    ),
+    ("\u{1b}[1;0;31m", "\u{1b}[31m"),
+    ("\u{1b}[4;00;1m", "\u{1b}[1m"),
     ("\u{1b}[0m", ""),
     ("\u{1b}[m", ""),
     ("\u{1b}[1;;4m", "\u{1b}[1;2;3;4;5;7;8;9;31;44m"),
@@ -312,6 +334,24 @@ fn sgr_continuations_keep_canonical_attributes_and_color_spelling() {
             "{control:?} is written out as spelled"
         );
         assert!(lines[0].starts_with(&format!("{base}a")), "{control:?}");
+    }
+}
+
+/// A malformed CSI that ends in `m` takes the style of the leftmost complete SGR inside it.
+#[test]
+fn style_follows_the_sgr_nested_in_a_malformed_csi() {
+    let cases: &[(&str, &[&str])] = &[
+        (
+            "\x1b[31ma\x1b[bad\x1b[39mbc",
+            &["\x1b[31ma", "\x1b[31m\x1b[bad\x1b[39mb", "c"],
+        ),
+        (
+            "\x1b[1;2ma\x1b[1x\x1b[22mbc",
+            &["\x1b[1;2ma", "\x1b[1;2m\x1b[1x\x1b[22mb", "c"],
+        ),
+    ];
+    for (text, expected) in cases {
+        assert_eq!(wrap_text_with_ansi(text, 1), *expected, "{text:?}");
     }
 }
 

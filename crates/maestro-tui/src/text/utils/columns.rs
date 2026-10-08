@@ -8,7 +8,8 @@ use super::render::Emission;
 /// Text selected by columns and the cells it actually occupies.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ColumnSlice {
-    /// The selected text with the escapes that govern it.
+    /// The selected graphemes. A non-empty selection starts with the escapes written before
+    /// its first grapheme and closes a hyperlink still open at its end.
     pub text: String,
     /// Terminal cells the selected graphemes occupy.
     pub width: usize,
@@ -17,11 +18,11 @@ pub struct ColumnSlice {
 /// The text before an overlay and the text after it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExtractedSegments {
-    /// Text that starts left of the overlay.
+    /// The graphemes that start before the overlay.
     pub before: String,
     /// Cells of [`before`](Self::before).
     pub before_width: usize,
-    /// Text that starts inside the requested range after the overlay.
+    /// The graphemes that start in the requested range after the overlay.
     pub after: String,
     /// Cells of [`after`](Self::after).
     pub after_width: usize,
@@ -104,7 +105,10 @@ fn render_run(parsed: &Parsed<'_>, run: &Run) -> String {
     emission.finish(false)
 }
 
-/// The text occupying `length` columns from `start_col`, with its width in cells.
+/// The graphemes that start in the `length` columns from `start_col`, with the cells they
+/// occupy.
+///
+/// A grapheme that crosses the right edge is kept, or left out when `strict` is set.
 #[must_use]
 pub fn slice_with_width(line: &str, start_col: usize, length: usize, strict: bool) -> ColumnSlice {
     if length == 0 {
@@ -121,19 +125,22 @@ pub fn slice_with_width(line: &str, start_col: usize, length: usize, strict: boo
     }
 }
 
-/// The text occupying `length` columns from `start_col`.
+/// The text of [`slice_with_width`] for the same arguments.
 #[must_use]
 pub fn slice_by_column(line: &str, start_col: usize, length: usize, strict: bool) -> String {
     slice_with_width(line, start_col, length, strict).text
 }
 
-/// Splits a line into the text before `before_end` and the text in `after_start..+after_len`.
+/// The graphemes that start before `before_end` and those that start in
+/// `after_start..after_start + after_len`, each part with its cells.
 ///
-/// The text after the overlay starts from the style in effect at its first grapheme.
+/// Where the ranges overlap, the part before keeps the graphemes. The part after starts with
+/// the style in effect at its first grapheme, and `strict_after` leaves out a grapheme that
+/// crosses its right edge.
 ///
-/// Metadata escapes stay in place in either part: between its graphemes, in front of the
-/// first grapheme after, and at the end of either part when the line ends inside it. The
-/// part before wins where the two overlap; metadata under the overlay is dropped.
+/// Metadata escapes stay in place in either part: between its graphemes, in front of its
+/// first grapheme and at its end when the line ends inside it. Those under the overlay are
+/// dropped.
 #[must_use]
 pub fn extract_segments(
     line: &str,

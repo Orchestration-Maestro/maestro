@@ -27,7 +27,7 @@ use fixtures::futures::{YieldOnce, block_on};
 use fixtures::providers::{CommandProvider, CountingProvider, item};
 use fixtures::terminals::{Probe, Recording, Screen};
 use fixtures::truncated_cases::TRUNCATED_CASES;
-use fixtures::widgets::{Field, Handle, Lines, Passive};
+use fixtures::widgets::{Block, Field, Handle, InvalidationTrace, Passive};
 
 const RESET: &str = "\x1b[0m";
 
@@ -61,41 +61,44 @@ fn component_capabilities_distinguish_missing_input_and_focus() {
 
 #[test]
 fn container_retains_shared_children_order_and_invalidation() {
-    let counts = [Rc::new(Cell::new(0)), Rc::new(Cell::new(0))];
-    let first: ComponentHandle = Rc::new(RefCell::new(Lines {
+    let trace = InvalidationTrace::default();
+    let first: ComponentHandle = Rc::new(RefCell::new(Block {
+        name: "first",
         lines: vec!["one".into(), "two".into()],
-        invalidations: Rc::clone(&counts[0]),
+        trace: Rc::clone(&trace),
     }));
-    let second = Rc::new(RefCell::new(Lines {
+    let second = Rc::new(RefCell::new(Block {
+        name: "second",
         lines: vec!["three".into()],
-        invalidations: Rc::clone(&counts[1]),
+        trace: Rc::clone(&trace),
     }));
     let second_handle: ComponentHandle = second.clone();
     let passive: ComponentHandle = Rc::new(RefCell::new(Passive("p")));
 
     let mut container = Container::new();
-    for child in [&first, &second_handle, &passive, &first] {
+    for child in [&second_handle, &first, &passive, &first] {
         container.add_child(Rc::clone(child));
     }
     assert_eq!(
         container.render(7),
-        ["one", "two", "three", "p:7", "one", "two"]
+        ["three", "one", "two", "p:7", "one", "two"]
     );
 
     second.borrow_mut().lines.push("edited".into());
-    assert_eq!(container.render(7)[2..4], ["three", "edited"]);
+    assert_eq!(container.render(7)[..2], ["three", "edited"]);
 
     container.invalidate();
     assert_eq!(
-        (counts[0].get(), counts[1].get()),
-        (2, 1),
-        "a shared child is invalidated per position"
+        *trace.borrow(),
+        ["second", "first", "first"],
+        "children are invalidated in order, a shared child once per position"
     );
 
     container.remove_child(&first);
     assert_eq!(container.children.len(), 3);
+    assert!(Rc::ptr_eq(&container.children[0], &second_handle));
     assert!(
-        Rc::ptr_eq(&container.children[0], &second_handle),
+        Rc::ptr_eq(&container.children[1], &passive),
         "only the first occurrence leaves"
     );
     assert!(Rc::ptr_eq(&container.children[2], &first));

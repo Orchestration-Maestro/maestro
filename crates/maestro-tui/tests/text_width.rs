@@ -205,6 +205,28 @@ fn paired_flags_keep_two_cells() {
     }
 }
 
+/// A regional indicator or a flag is two cells wide as a base; a Thai or Lao AM vowel that
+/// attaches to it adds one more, before and after normalization, in measuring and wrapping.
+#[test]
+fn regional_indicator_bases_keep_trailing_am_vowel_cells() {
+    for base in ["\u{1f1e8}", "\u{1f1e8}\u{1f1e6}"] {
+        for vowel in ["\u{e33}", "\u{eb3}"] {
+            let text = format!("{base}{vowel}");
+            let normalized = normalize_terminal_output(&text);
+            assert_eq!(visible_width(&text), 3, "{text:?}");
+            assert_eq!(visible_width(&normalized), 3, "{normalized:?}");
+
+            let tail = format!("{text}b");
+            assert_eq!(wrap_text_with_ansi(&tail, 3), [text.as_str(), "b"]);
+            let normalized_tail = format!("{normalized}b");
+            assert_eq!(
+                wrap_text_with_ansi(&normalized_tail, 3),
+                [normalized.as_ref(), "b"]
+            );
+        }
+    }
+}
+
 #[test]
 fn streaming_emoji_keep_stable_cells() {
     for sample in [
