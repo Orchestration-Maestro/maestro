@@ -2,6 +2,9 @@
 
 pub mod arguments;
 pub use arguments::*;
+mod builtins;
+pub use builtins::{find_env_keys, get_env_api_key};
+
 pub mod cancellation;
 mod catalog;
 mod options;
