@@ -391,3 +391,85 @@ fn unicode_before_same_line_test_items_preserves_production_count() {
         )
     });
 }
+
+#[test]
+fn four_slash_comments_count_as_production() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    std::fs::write(&path, "//// Technical.\n".repeat(501)).unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("501 production lines"), "{error}");
+}
+
+#[test]
+fn documentation_markers_in_literals_and_ordinary_comments_count() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    for (start, end) in [
+        ("const TEXT: &str = \"\n", "\";\n"),
+        ("const TEXT: &str = r#\"\n", "\"#;\n"),
+        ("/*\n", "*/\n"),
+    ] {
+        std::fs::write(
+            &path,
+            format!(
+                "{start}{}{end}",
+                "/// Technical.\n//! Technical.\n".repeat(250)
+            ),
+        )
+        .unwrap();
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(error.contains("502 production lines"), "{start}: {error}");
+    }
+}
+
+#[test]
+fn block_documentation_excludes_only_documentation_characters() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut source = "/*!\n Module documentation.\n */\n".to_owned();
+    for index in 0..500 {
+        writeln!(
+            source,
+            "/**\n Item documentation.\n */ const P{index}: u8 = 0;"
+        )
+        .unwrap();
+    }
+    std::fs::write(&path, &source).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source.push_str("/** Extra documentation. */ const EXTRA: u8 = 0;\n");
+    std::fs::write(&path, source).unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("501 production lines"), "{error}");
+}
+
+#[test]
+fn included_expressions_exclude_documentation_at_the_line_limit() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let root = workspace.root.join("crates/tui/src");
+    std::fs::write(
+        root.join("lib.rs"),
+        "pub fn value() -> u8 { include!(\"value.rs\") }\n",
+    )
+    .unwrap();
+    let fragment = root.join("value.rs");
+    let mut source = "{\n".to_owned();
+    for index in 0..497 {
+        writeln!(source, "/// Item documentation.\nconst P{index}: u8 = 0;").unwrap();
+    }
+    source.push_str("/** Return documentation. */\n1_u8\n}\n");
+    std::fs::write(&fragment, &source).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source.push_str("// Technical.\n");
+    std::fs::write(&fragment, source).unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("value.rs: 501 production lines"), "{error}");
+}
