@@ -23,7 +23,7 @@ pub trait Focusable {
 
 /// A unit of terminal output laid out for a viewport width.
 pub trait Component {
-    /// Renders the component as lines no wider than `width`.
+    /// Renders the component for the supplied viewport width.
     fn render(&mut self, width: usize) -> Vec<String>;
 
     /// Drops any cached rendering state so the next render starts from scratch.

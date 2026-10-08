@@ -1,9 +1,11 @@
 # Terminal components
 
 `maestro-tui` defines what a renderable component is and ships the pieces that need
-no terminal: a container, a single-line text component and the contracts for
-overlays, terminals, editors and completion. It performs no I/O and starts no
+no terminal: a container, text and image components and the contracts for
+overlays, terminals, editors and completion. It performs no terminal I/O and starts no
 timers; whatever connects a real terminal supplies a `Terminal` implementation.
+See [inline images](images.md) for capability detection and retained image rendering.
+
 The crate root re-exports the component, container, overlay, terminal, editor and
 completion names used below, so `maestro_tui::Component` and
 `maestro_tui::tui::Component` are the same trait; supporting types such as
@@ -11,7 +13,8 @@ completion names used below, so `maestro_tui::Component` and
 
 ## Components
 
-A `Component` renders itself for a viewport width as lines no wider than the width.
+A `Component` renders itself for a supplied viewport width. Image escapes and
+untruncated image fallback text do not guarantee lines within that width.
 Everything else is an optional capability that defaults to absent:
 
 | Capability | Method | Default |

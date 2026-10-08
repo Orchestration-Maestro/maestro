@@ -106,6 +106,9 @@ are later scope, not active foundation concepts.
 - **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit.
 - **Grapheme:** A user-perceived character cluster, indivisible when text is wrapped, truncated or sliced; escapes inside it never split it.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
+- **Image protocol:** The terminal's Kitty or iTerm2 inline image transport, distinct from image file format.
+- **Terminal capabilities:** Cached support for inline images, true color and hyperlinks for one terminal.
+- **Cell dimensions:** Positive pixel width and height of a terminal cell, used to reserve image rows.
 - **Byte cursor:** A cursor position counted in UTF-8 bytes within a line, never in cells or characters.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
