@@ -11,7 +11,7 @@ mod runtime;
 mod schedule;
 mod screen;
 
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::{Cell, RefCell};
 use std::io;
 use std::rc::Rc;
 
@@ -99,9 +99,9 @@ impl TUI {
         &self.shared.terminal
     }
 
-    /// The components in render order.
+    /// A copy of the components in render order.
     #[must_use]
-    pub fn children(&self) -> Ref<'_, [ComponentHandle]> {
+    pub fn children(&self) -> Vec<ComponentHandle> {
         self.shared.container.children()
     }
 
@@ -161,11 +161,13 @@ impl TUI {
         self.shared.clear_on_shrink.set(enabled);
     }
 
-    /// Drops the cached rendering of every component, walking the live list of children.
+    /// Drops the cached rendering of the components, walking the array of children held
+    /// when the call starts.
     ///
-    /// Every child is invalidated in order before the call returns, also one that is
-    /// rendering or handling input at that moment; a child listed twice is invalidated
-    /// twice.
+    /// Each child the walk reaches is invalidated in order before the call returns, also
+    /// one that is rendering or handling input at that moment, once per position the walk
+    /// reaches. A child added during the walk is reached, a removal can make the walk skip
+    /// the next child, and clearing the writer starts a new array the walk does not see.
     pub fn invalidate(&self) {
         self.shared.container.invalidate();
     }

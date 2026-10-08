@@ -2,11 +2,11 @@
 
 use std::cell::{Cell, RefCell};
 use std::io;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::time::Duration;
 
 use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
-use maestro_tui::editor_component::EditorCallbacks;
+use maestro_tui::editor_component::{BorderColor, EditorCallbacks};
 use maestro_tui::tui::{ComponentHandle, InputHandler};
 use maestro_tui::{
     AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayHandle,
@@ -587,8 +587,70 @@ fn assert_bare_editor() {
     assert_eq!(bare.render(5), ["plain!"]);
 }
 
+/// What the callbacks of [`editor_reentered_by`] record: the lines `render` returned.
+type Rendered = Rc<RefCell<Vec<Vec<String>>>>;
+
+/// Types `typed` into the editor behind `weak` unless it is empty, then records what its
+/// `render` returns.
+fn reenter(weak: &Weak<Rich>, typed: &str, seen: &Rendered) {
+    let editor = weak.upgrade();
+    if let Some(editor) = editor {
+        if !typed.is_empty() {
+            editor.handle_input(typed);
+        }
+        seen.borrow_mut().push(editor.render(10));
+    }
+}
+
+/// A border painter that re-enters its editor with `x` the first time it paints.
+fn painter_reentering(weak: Weak<Rich>, seen: Rendered) -> BorderColor {
+    let entered = Cell::new(false);
+    Rc::new(move |text| {
+        if !entered.replace(true) {
+            reenter(&weak, "x", &seen);
+        }
+        format!("[{text}]")
+    })
+}
+
+/// An editor whose border painter (`trigger` is `"paint"`), submit callback (`"submit"`) or
+/// change callback (`"change"`) re-enters the editor itself.
+fn editor_reentered_by(trigger: &str, seen: &Rendered) -> Rc<Rich> {
+    Rc::new_cyclic(|weak: &Weak<Rich>| {
+        let mut rich = Rich::new();
+        let (weak, seen) = (weak.clone(), Rc::clone(seen));
+        let callbacks = rich.callbacks();
+        match trigger {
+            "paint" => callbacks.border_color = Some(painter_reentering(weak, seen)),
+            "submit" => callbacks.on_submit = Some(Box::new(move |_| reenter(&weak, "", &seen))),
+            _ => callbacks.on_change = Some(Box::new(move |_| reenter(&weak, "", &seen))),
+        }
+        rich
+    })
+}
+
+/// A callback that types into or renders its own editor sees the text and the border at that
+/// moment, whichever callback it is.
+fn assert_editor_callbacks_may_reenter_their_editor() {
+    let seen = Rendered::default();
+    let painted = editor_reentered_by("paint", &seen);
+    assert_eq!(painted.render(10), ["[-]", "x"]);
+    assert_eq!(seen.take(), [["[-]", "x"]], "painter");
+
+    let submitting = editor_reentered_by("submit", &seen);
+    submitting.handle_input("hi");
+    assert!(seen.borrow().is_empty());
+    submitting.handle_input("\r");
+    assert_eq!(seen.take(), [["-", "hi"]], "submit");
+
+    let changing = editor_reentered_by("change", &seen);
+    changing.handle_input("hi");
+    assert_eq!(seen.take(), [["-", "hi"]], "change");
+}
+
 #[test]
 fn editor_contracts_keep_required_input_and_optional_hooks() {
     assert_rich_editor();
     assert_bare_editor();
+    assert_editor_callbacks_may_reenter_their_editor();
 }

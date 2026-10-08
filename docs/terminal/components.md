@@ -46,10 +46,15 @@ A `Container` renders its children in order and concatenates their lines. Childr
 are shared handles (`Rc<dyn Component>`), so whoever keeps a handle can keep editing the
 child through its own interior state and the container shows the edit. The same child may
 appear twice. `remove_child` removes the first occurrence by identity and ignores a child
-that is not present. `render` and `invalidate` walk the live list of children: a child
-added during the walk is visited and one removed before its turn is not. `invalidate`
-reaches every child before it returns, including one that is rendering or handling
-input, and each call invalidates it again.
+that is not present, and `clear` replaces the children with a new empty array.
+`children` returns a copy of the current children. `render` and `invalidate` walk the
+array held when they start, by position, up to the length it has when each position is
+reached. A child added during the walk is visited and one removed ahead of it is not. A
+removal at or before the position being visited shifts the later children back, so the
+next child is skipped. A cleared container is not seen by a walk already running, which
+continues over the array it started on. `invalidate` invalidates each child its walk
+reaches before it returns, including one that is rendering or handling input, once per
+position, so a child listed twice is invalidated twice.
 
 `TruncatedText` shows the first line of its text, truncated to the viewport, between
 `padding_y` blank rows. Horizontal padding is `padding_x` on each side but never

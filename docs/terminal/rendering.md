@@ -141,10 +141,13 @@ terminal. Image lines are written untouched.
    viewport up, when a changed row has scrolled out of the viewport and when a redraw
    is forced.
 
-Components render in order by walking the live list of children: one that an earlier
-component adds while the frame renders is rendered in the same frame, and one that is
-removed before its turn is skipped. `invalidate` walks the list the same way, and a
-container does the same with its own children.
+Components render in order by walking the array of children held when the frame starts:
+one that an earlier component adds while the frame renders is rendered in the same frame,
+and one that is removed ahead of the walk is skipped. A removal at or before the position
+being rendered shifts the later children back, so the next one is skipped. Clearing the
+writer during the frame starts a new array; the frame keeps rendering the old one to its
+end. `invalidate` walks the array the same way, and a container does the same with its
+own children.
 
 `full_redraws` counts the full redraws begun. The logical end of the content and the
 row the terminal cursor is on are tracked separately, because placing the hardware
@@ -200,11 +203,11 @@ from inside its own input or render callback, and one nested in a container that
 never added to the writer, sees the change in the rest of that callback.
 
 A component may also call `invalidate`, on the writer or on a container, from inside its
-own input or render callback. Each call invalidates every child of the list it walks, in
-order, before it returns: the running component is invalidated, the components still to
-render in that frame lose their cached rendering before they render, and a child listed
-twice is invalidated twice. A focused component that is not among the children is not
-invalidated.
+own input or render callback. Each call invalidates the children its walk reaches, in
+order, before it returns. A running component that is one of them is invalidated, and so
+are those still to render in that frame, which lose their cached rendering before they
+render. A child listed twice is invalidated at each of its positions the walk reaches. A
+focused component that is not among the children is not invalidated.
 
 The cell size is only requested at startup when the terminal supports images.
 

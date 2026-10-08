@@ -3,7 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use maestro_tui::editor_component::EditorCallbacks;
+use maestro_tui::editor_component::{EditorCallbacks, TextCallback};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{AutocompleteProvider, Component, EditorComponent};
 
@@ -38,16 +38,23 @@ impl Rich {
             provider: None,
         }
     }
+
+    /// Runs the callback `slot` picks with the current text, holding no cell guard meanwhile;
+    /// the callback is absent while it runs and returns unless a new one was installed.
+    fn notify(&self, slot: fn(&mut EditorCallbacks) -> &mut Option<TextCallback>) {
+        let callback = slot(&mut self.callbacks.borrow_mut()).take();
+        if let Some(mut callback) = callback {
+            let text = self.text.borrow().clone();
+            callback(&text);
+            slot(&mut self.callbacks.borrow_mut()).get_or_insert(callback);
+        }
+    }
 }
 
 impl Component for Rich {
     fn render(&self, _width: usize) -> Vec<String> {
-        let border = self
-            .callbacks
-            .borrow()
-            .border_color
-            .as_ref()
-            .map_or_else(|| "-".to_owned(), |paint| paint("-"));
+        let paint = self.callbacks.borrow().border_color.clone();
+        let border = paint.map_or_else(|| "-".to_owned(), |paint| paint("-"));
         vec![border, self.text.borrow().clone()]
     }
 
@@ -59,15 +66,11 @@ impl Component for Rich {
 impl InputHandler for Rich {
     fn handle_input(&self, data: &str) {
         if data == "\r" {
-            if let Some(submit) = self.callbacks.borrow_mut().on_submit.as_mut() {
-                submit(&self.text.borrow());
-            }
+            self.notify(|callbacks| &mut callbacks.on_submit);
             return;
         }
         self.text.borrow_mut().push_str(data);
-        if let Some(change) = self.callbacks.borrow_mut().on_change.as_mut() {
-            change(&self.text.borrow());
-        }
+        self.notify(|callbacks| &mut callbacks.on_change);
     }
 }
 

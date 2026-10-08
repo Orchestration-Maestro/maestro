@@ -253,7 +253,7 @@ fn render_requests_coalesce_cancel_and_survive_reentry() {
     for (variant, events) in cases {
         assert_eq!(schedule_variant(variant), (events, 0), "{variant}");
     }
-    assert_children_edited_during_a_walk_follow_the_live_list();
+    assert_children_edited_during_a_walk_follow_the_array_it_started_with();
     assert_invalidation_while_rendering_reaches_later_siblings_in_the_same_frame();
 }
 
@@ -266,28 +266,55 @@ enum Walk {
     Invalidate,
 }
 
-/// Runs `walk` over three children where the first adds a fourth (`add`) or removes the
-/// second (`!add`) while it is visited; returns how often each child was visited.
-fn walk_with_edit(walk: Walk, add: bool) -> Vec<usize> {
+/// How a child edits the list while a walk visits it.
+#[derive(Clone, Copy, Debug)]
+enum Edit {
+    /// Leaves the list alone.
+    Nothing,
+    /// Appends the spare child.
+    Add,
+    /// Removes the second child.
+    RemoveSecond,
+    /// Removes itself.
+    RemoveSelf,
+    /// The second child removes the first, which the walk has already visited.
+    RemoveEarlier,
+    /// Empties the container.
+    Clear,
+    /// Empties the container, then appends the third child and the spare child.
+    ClearThenAdd,
+}
+
+/// Runs `walk` over the children `order` picks from `[a, b, c, spare]` while one of them
+/// applies `edit` as it is visited (the second for `RemoveEarlier`, else the first); returns
+/// how often each of the four was visited and how many children the writer holds afterwards.
+fn walk_with_edit(walk: Walk, order: &[usize], edit: Edit) -> (Vec<usize>, usize) {
     let (tui, _terminal, runtime) = writer(None);
-    let children: Vec<_> = ["a", "b", "c", "d"]
+    let children: Vec<_> = ["a", "b", "c", "spare"]
         .map(|line| Probe::shared(&[line]))
         .into();
-    for child in &children[..3] {
-        tui.add_child(child.clone());
+    for &index in order {
+        tui.add_child(children[index].clone());
     }
-    let (writer, added, removed): (_, ComponentHandle, ComponentHandle) =
-        (tui.clone(), children[3].clone(), children[1].clone());
-    let edit = move || {
-        if add {
-            writer.add_child(added.clone());
-        } else {
-            writer.remove_child(&removed);
+    let writer = tui.clone();
+    let handle = |index: usize| -> ComponentHandle { children[index].clone() };
+    let (first, second, third, spare) = (handle(0), handle(1), handle(2), handle(3));
+    let apply = move || match edit {
+        Edit::Nothing => {}
+        Edit::Add => writer.add_child(spare.clone()),
+        Edit::RemoveSecond => writer.remove_child(&second),
+        Edit::RemoveSelf | Edit::RemoveEarlier => writer.remove_child(&first),
+        Edit::Clear => writer.clear(),
+        Edit::ClearThenAdd => {
+            writer.clear();
+            writer.add_child(third.clone());
+            writer.add_child(spare.clone());
         }
     };
+    let trigger = &children[usize::from(matches!(edit, Edit::RemoveEarlier))];
     match walk {
-        Walk::Render => children[0].on_render(move |_| edit()),
-        Walk::Invalidate => children[0].on_invalidate(edit),
+        Walk::Render => trigger.on_render(move |_| apply()),
+        Walk::Invalidate => trigger.on_invalidate(apply),
     }
     match walk {
         Walk::Render => {
@@ -296,20 +323,40 @@ fn walk_with_edit(walk: Walk, add: bool) -> Vec<usize> {
         }
         Walk::Invalidate => tui.invalidate(),
     }
-    children
+    let visits = children
         .iter()
         .map(|child| match walk {
             Walk::Render => child.renders.get(),
             Walk::Invalidate => child.invalidated.get(),
         })
-        .collect()
+        .collect();
+    for child in &children {
+        child.clear_callbacks();
+    }
+    (visits, tui.children().len())
 }
 
-/// A child added during a walk is visited in it and one removed before its turn is not.
-fn assert_children_edited_during_a_walk_follow_the_live_list() {
+/// A walk visits the children by position in the array it started with: later additions are
+/// visited, a removal can skip the next child, a duplicate is visited once per occurrence
+/// and clearing starts a new array the running walk does not see.
+fn assert_children_edited_during_a_walk_follow_the_array_it_started_with() {
+    let cases: [(&[usize], Edit, [usize; 4], usize); 7] = [
+        (&[0, 0, 1], Edit::Nothing, [2, 1, 0, 0], 3),
+        (&[0, 1, 2], Edit::Add, [1, 1, 1, 1], 4),
+        (&[0, 1, 2], Edit::RemoveSecond, [1, 0, 1, 0], 2),
+        (&[0, 1], Edit::RemoveSelf, [1, 0, 0, 0], 1),
+        (&[0, 1, 2], Edit::RemoveEarlier, [1, 1, 0, 0], 2),
+        (&[0, 1], Edit::Clear, [1, 1, 0, 0], 0),
+        (&[0, 1], Edit::ClearThenAdd, [1, 1, 0, 0], 2),
+    ];
     for walk in [Walk::Render, Walk::Invalidate] {
-        assert_eq!(walk_with_edit(walk, true), [1, 1, 1, 1], "{walk:?} add");
-        assert_eq!(walk_with_edit(walk, false), [1, 0, 1, 0], "{walk:?} remove");
+        for (order, edit, visits, remaining) in cases {
+            assert_eq!(
+                walk_with_edit(walk, order, edit),
+                (visits.to_vec(), remaining),
+                "{walk:?} {edit:?} over {order:?}"
+            );
+        }
     }
 }
 
