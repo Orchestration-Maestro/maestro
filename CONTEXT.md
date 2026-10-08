@@ -24,6 +24,7 @@ From `docs/specs/maestro-port.md`.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
+- **PKCE:** Proof Key for Code Exchange: a random verifier paired with a SHA-256 challenge of its encoded text.
 - **Token exchange:** An optional provider primitive invoked by the credential owner, not coordination of credential persistence, precedence or refresh.
 - **Reported usage:** Provider-supplied, non-overlapping token categories for one attempt.
 - **Flat rate:** A supplied USD-per-million price for one token category.

@@ -1,6 +1,6 @@
 wasm_crates = ["maestro-extensions", "maestro-models", "maestro-settings", "maestro-tui"]
 test_tools = true
-spelling_words = ["ratatui", "relace"]
+spelling_words = ["ratatui", "relace", "Ba"]
 check_targets = [
     "aarch64-unknown-linux-gnu",
     "x86_64-apple-darwin",

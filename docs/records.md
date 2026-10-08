@@ -28,6 +28,9 @@ The [chat-completion guide](https://github.com/Orchestration-Maestro/maestro/blo
 covers direct streamed requests, header and cache policy, retries and the shared
 Cloudflare and Copilot helpers.
 
+The [shared OAuth primitives](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
+provide data records, secure proof keys and escaped callback pages.
+
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
 
 The [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md)
