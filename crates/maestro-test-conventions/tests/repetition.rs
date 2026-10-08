@@ -283,7 +283,6 @@ trait Sample {
 }
 const VALUE: () = { assert!(ready); assert!(ready); };
 static OTHER: () = { assert!(ready); assert!(ready); };
-#[test]
 fn initializers() {
     const LOCAL: () = { assert!(ready); assert!(ready); };
     static LOCAL_STATIC: () = { assert!(ready); assert!(ready); };
@@ -296,6 +295,30 @@ fn initializers() {
     )
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn assertions_in_test_initializers_and_their_helpers_are_checked() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut failures = Vec::new();
+    for body in [
+        "const CHECK: fn(u8) = { fn helper(v: u8) { assert_eq!(v, 3); assert_eq!(v, 3); } helper }; CHECK(3);",
+        "let value = const { assert!(ready); assert!(ready); };",
+        "const LOCAL: () = { assert!(ready); assert!(ready); };",
+        "static LOCAL: () = { assert!(ready); assert!(ready); };",
+        "struct Local; impl Local { const VALUE: () = { assert!(ready); assert!(ready); }; }",
+        "trait Local { const VALUE: () = { assert!(ready); assert!(ready); }; }",
+    ] {
+        std::fs::write(&path, format!("#[test] fn sample() {{ {body} }}")).unwrap();
+        match check_workspace(&workspace.root) {
+            Err(error) if error.contains("repeated assertion") => {}
+            result => failures.push(format!("missed test initializer: {body}: {result:?}")),
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
 #[test]

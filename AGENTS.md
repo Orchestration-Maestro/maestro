@@ -57,8 +57,9 @@ Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs` or be below
 `#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
 Expression arguments and pattern guards must contain no calls, method calls,
 awaiting, macros, assignments or compound assignments; matching arguments are
-parsed as patterns. Assertion checks exclude constant/static initializers,
-including inline const blocks. Opaque arguments and
+parsed as patterns. Assertions are checked in every executable or constant body
+inside test context, including constant/static initializers and inline const
+blocks, and nowhere outside test context. Opaque arguments and
 repetition across functions or files remain review judgement.
 
 ## Documentation

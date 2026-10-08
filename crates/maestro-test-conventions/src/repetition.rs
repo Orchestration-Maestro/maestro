@@ -130,7 +130,6 @@ fn assertions(source: &Source, directory: &Path) -> Result<(), String> {
         in_src: source.path.starts_with(directory.join("src")),
         error: None,
         in_test: test_layout || configured,
-        in_initializer: false,
     };
     if let Some(syntax) = &source.syntax {
         visitor.visit_file(syntax);
@@ -155,25 +154,9 @@ struct Assertions<'a> {
     error: Option<String>,
     /// Whether the containing subtree is selected for tests.
     in_test: bool,
-    /// Whether traversal is inside an excluded initializer context.
-    in_initializer: bool,
 }
 
 impl<'ast> Visit<'ast> for Assertions<'_> {
-    fn visit_expr_const(&mut self, expression: &'ast syn::ExprConst) {
-        let prior = self.in_initializer;
-        self.in_initializer = true;
-        syn::visit::visit_expr_const(self, expression);
-        self.in_initializer = prior;
-    }
-
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        let prior = self.in_initializer;
-        self.in_initializer |= matches!(item, syn::Item::Const(_) | syn::Item::Static(_));
-        syn::visit::visit_item(self, item);
-        self.in_initializer = prior;
-    }
-
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
         let prior = self.in_test;
         let configured = cfg_test(&item.attrs);
@@ -201,24 +184,10 @@ impl<'ast> Visit<'ast> for Assertions<'_> {
         self.in_test = prior;
     }
 
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        let prior = self.in_initializer;
-        self.in_initializer |= matches!(item, syn::ImplItem::Const(_));
-        syn::visit::visit_impl_item(self, item);
-        self.in_initializer = prior;
-    }
-
     fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
         let prior = self.select_function(&item.attrs);
         syn::visit::visit_impl_item_fn(self, item);
         self.in_test = prior;
-    }
-
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        let prior = self.in_initializer;
-        self.in_initializer |= matches!(item, syn::TraitItem::Const(_));
-        syn::visit::visit_trait_item(self, item);
-        self.in_initializer = prior;
     }
 
     fn visit_trait_item_fn(&mut self, item: &'ast syn::TraitItemFn) {
@@ -228,7 +197,7 @@ impl<'ast> Visit<'ast> for Assertions<'_> {
     }
 
     fn visit_block(&mut self, block: &'ast syn::Block) {
-        if self.in_test && !self.in_initializer {
+        if self.in_test {
             self.check_block(block);
         }
         syn::visit::visit_block(self, block);
