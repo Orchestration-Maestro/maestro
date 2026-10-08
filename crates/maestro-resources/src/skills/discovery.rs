@@ -22,20 +22,16 @@ struct Discovery<'a> {
 /// Scan nested directories, preferring each directory's entry file.
 pub(super) fn scan(
     dir: &str,
-    cwd: &str,
+    cwd: &Cwd<'_>,
     source: &str,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    let cwd = Cwd {
-        current: cwd,
-        drive_directories: &[],
-    };
-    let root = resolve(&[dir], &cwd);
+    let root = resolve(&[dir], cwd);
     let mut builder = GitignoreBuilder::new(&root);
     let _ = builder.case_insensitive(true);
     let mut scan = Discovery {
         root,
-        cwd,
+        cwd: *cwd,
         source,
         operations,
         builder,

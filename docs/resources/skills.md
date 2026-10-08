@@ -43,8 +43,11 @@ only at its root and descends into directories for entry files. Hidden entries,
 `node_modules`, broken links and nonfiles are skipped; file and directory links
 follow their targets.
 
-Relative paths normalize against `cwd`. `~`, `~/suffix` and `~suffix` expand
-against supplied `home`, including repeated slashes after the tilde. Joined
+Relative paths normalize against `cwd`; on Windows a drive-relative path such as
+`D:item.md` continues from the directory the adapter reports for that drive, or
+from the drive root when none is reported and `cwd` is on another drive. `~`,
+`~/suffix` and `~suffix` expand against supplied `home`, including repeated
+slashes after the tilde. Joined
 user configuration and scanned child paths concatenate their parts before lexical
 normalization; later rooted parts do not replace the earlier root. Project
 configuration paths instead resolve against `cwd`; an absolute configuration
@@ -60,8 +63,9 @@ lexically, resolving a relative path against the process working directory, so
 target, read relative to the link's directory; other components keep their
 authored spelling and case, and a Windows link target that names a drive or share
 loses its verbatim prefix. When a component cannot be inspected, a link target is
-missing or a link loops, exact authored strings are the identity keys, so
-distinct absolute spellings can produce name collisions.
+missing, a link loops or the expanded links return to a path already expanded,
+exact authored strings are the identity keys, so distinct absolute spellings can
+produce name collisions.
 Ordinary diagnostics precede all collisions.
 With defaults disabled, explicit paths equal to a resolved user or project skills
 root, or beginning with that root plus its separator, receive that scope, with user
@@ -97,12 +101,15 @@ Library/process warnings are not printed or returned as skill diagnostics.
 ## Filesystem adapters
 
 `ResourceOperations` supplies ordered `read_dir`, lossy UTF-8 `read_file`,
-link-following `metadata`, independent `exists` observations and fallible
-`canonicalize`. The same public loaders accept replacement adapters without
-caller algorithm changes. Native operations are available outside `wasm32`;
-browser callers supply their own adapter.
+link-following `metadata`, independent `exists` observations, fallible
+`canonicalize` and the current directory of each Windows drive
+(`drive_directories`; the native adapter reads each drive's `=X:` environment
+variable and reports none elsewhere). The same public loaders accept replacement
+adapters without caller algorithm changes. Native operations are available
+outside `wasm32`; browser callers supply their own adapter.
 
-Both loaders take an explicit `cwd` for relative path coordinates. Each scan
+Both loaders take an explicit `cwd` for relative path coordinates and resolve
+every path against it together with the adapter's drive directories. Each scan
 shares one case-insensitive ignore matcher. Its root and candidates are resolved
 against that working directory; rule prefixes use their lexical relative paths.
 Rules are appended in

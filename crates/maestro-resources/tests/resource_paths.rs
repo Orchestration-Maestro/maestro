@@ -216,3 +216,55 @@ fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
         );
     }
 }
+
+/// Resolve on another thread; `None` means the walk did not finish within the bound.
+#[cfg(unix)]
+fn canonicalize_within_bound(path: &std::path::Path) -> Option<String> {
+    let path = text(path).to_owned();
+    let (sender, receiver) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = sender.send(canonicalize_path(&path, &NativeResourceOperations));
+    });
+    receiver
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .ok()
+}
+
+/// Keep the input when a link's target folds back to the link itself.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_preserve_spelling_of_a_link_that_folds_back_to_itself() {
+    let dir = support::Directory::new();
+    let _ = dir.file("other/alias", "target");
+    std::fs::create_dir_all(dir.0.join("other/inner")).unwrap();
+    std::fs::create_dir(dir.0.join("base")).unwrap();
+    std::os::unix::fs::symlink("../other/inner", dir.0.join("base/dir-link")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../alias", dir.0.join("base/alias")).unwrap();
+    let alias = dir.0.join("base/alias");
+    assert_eq!(
+        canonicalize_within_bound(&alias).as_deref(),
+        Some(text(&alias))
+    );
+}
+
+/// Keep the input when links fold into each other through several states.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_preserve_spelling_of_links_that_fold_into_each_other() {
+    let dir = support::Directory::new();
+    let _ = dir.file("other/a", "first");
+    let _ = dir.file("other/b", "second");
+    std::fs::create_dir_all(dir.0.join("other/inner")).unwrap();
+    std::fs::create_dir(dir.0.join("base")).unwrap();
+    std::os::unix::fs::symlink("../other/inner", dir.0.join("base/dir-link")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../b", dir.0.join("base/a")).unwrap();
+    std::os::unix::fs::symlink("dir-link/../a", dir.0.join("base/b")).unwrap();
+    for name in ["base/a", "base/b"] {
+        let link = dir.0.join(name);
+        assert_eq!(
+            canonicalize_within_bound(&link).as_deref(),
+            Some(text(&link)),
+            "{name}"
+        );
+    }
+}

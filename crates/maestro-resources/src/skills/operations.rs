@@ -1,5 +1,6 @@
 //! Replaceable supplied-path filesystem observations.
 
+use maestro_path::Cwd;
 use std::{
     ffi::OsString,
     io,
@@ -55,9 +56,39 @@ pub trait ResourceOperations {
     /// # Errors
     /// Returns the I/O cause of the failed resolution.
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
+    /// Observe the current directory of each Windows drive, keyed by uppercase letter.
+    ///
+    /// Path resolution hands these entries to `maestro_path::Cwd`. The Windows
+    /// flavor continues a drive-relative path such as `D:item.md` from its
+    /// drive's entry; the POSIX flavor ignores them. Adapters without per-drive
+    /// directories return no entries.
+    fn drive_directories(&self) -> Vec<(char, String)>;
+}
+
+/// Run `operation` with the working directory `current` and the adapter's drive directories.
+///
+/// This is the only place a `Cwd` is built, so every path resolution sees the
+/// same context.
+pub(super) fn with_cwd<R>(
+    current: &str,
+    operations: &dyn ResourceOperations,
+    operation: impl FnOnce(&Cwd<'_>) -> R,
+) -> R {
+    let entries = operations.drive_directories();
+    let drives: Vec<(char, &str)> = entries
+        .iter()
+        .map(|(letter, directory)| (*letter, directory.as_str()))
+        .collect();
+    operation(&Cwd {
+        current,
+        drive_directories: &drives,
+    })
 }
 
 /// Standard native filesystem operations.
+///
+/// On Windows the drive directories are the `=X:` environment variables of the
+/// drives that have one; elsewhere there are none.
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativeResourceOperations;
 
@@ -84,8 +115,24 @@ impl ResourceOperations for NativeResourceOperations {
         Ok(file_type(std::fs::metadata(path)?.file_type()))
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        super::real_path::real_path(path)
+        super::real_path::real_path(path, self)
     }
+    fn drive_directories(&self) -> Vec<(char, String)> {
+        if !cfg!(windows) {
+            return Vec::new();
+        }
+        env_drive_directories(|name| std::env::var_os(name))
+    }
+}
+
+/// Read each drive's `=X:` variable through `var`, in letter order.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn env_drive_directories(var: impl Fn(&str) -> Option<OsString>) -> Vec<(char, String)> {
+    ('A'..='Z')
+        .filter_map(|letter| {
+            var(&format!("={letter}:")).map(|dir| (letter, dir.to_string_lossy().into_owned()))
+        })
+        .collect()
 }
 
 /// Classify native directory-entry or metadata observations.

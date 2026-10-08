@@ -14,6 +14,7 @@ use crate::{
 use maestro_path::{Cwd, SEP, basename, dirname, is_absolute, join, resolve};
 #[cfg(not(target_arch = "wasm32"))]
 pub use operations::NativeResourceOperations;
+use operations::with_cwd;
 pub use operations::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::path::Path;
 pub use validation::SkillFrontmatter;
@@ -46,6 +47,8 @@ pub struct LoadSkillsResult {
 #[derive(Clone, Copy)]
 pub struct LoadSkillsFromDirOptions<'a> {
     /// The working directory relative paths resolve against.
+    ///
+    /// The adapter's drive directories complete the resolution context.
     pub cwd: &'a str,
     /// Directory to scan.
     pub dir: &'a str,
@@ -58,7 +61,9 @@ pub fn load_skills_from_dir(
     options: LoadSkillsFromDirOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    discovery::scan(options.dir, options.cwd, options.source, operations)
+    with_cwd(options.cwd, operations, |cwd| {
+        discovery::scan(options.dir, cwd, options.source, operations)
+    })
 }
 /// Load one file, retaining its native failure cause as a warning.
 fn load_file(path: &str, source: &str, operations: &dyn ResourceOperations) -> LoadSkillsResult {
@@ -130,6 +135,8 @@ fn validated_skill(path: &str, source: &str, fields: SkillFrontmatter) -> LoadSk
 #[derive(Clone, Copy)]
 pub struct LoadSkillsOptions<'a> {
     /// Working directory for relative paths and project defaults.
+    ///
+    /// The adapter's drive directories complete the resolution context.
     pub cwd: &'a str,
     /// Caller-resolved home directory.
     pub home: &'a str,
@@ -148,15 +155,21 @@ pub fn load_skills(
     options: LoadSkillsOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
+    with_cwd(options.cwd, operations, |cwd| {
+        load_skills_in(options, cwd, operations)
+    })
+}
+/// Load defaults and explicit paths, resolving relative paths against `cwd`.
+fn load_skills_in(
+    options: LoadSkillsOptions<'_>,
+    cwd: &Cwd<'_>,
+    operations: &dyn ResourceOperations,
+) -> LoadSkillsResult {
     let mut result = LoadSkillsResult::default();
     let mut collisions = Vec::new();
     let mut paths = std::collections::HashSet::new();
     let user_skills = join(&[options.agent_dir, "skills"]);
-    let cwd = Cwd {
-        current: options.cwd,
-        drive_directories: &[],
-    };
-    let project_skills = resolve(&[options.config_dir_name, "skills"], &cwd);
+    let project_skills = resolve(&[options.config_dir_name, "skills"], cwd);
     if options.include_defaults {
         for (path, source) in [(&user_skills, "user"), (&project_skills, "project")] {
             add_skills(
@@ -164,7 +177,7 @@ pub fn load_skills(
                 &mut collisions,
                 &mut paths,
                 operations,
-                discovery::scan(path, options.cwd, source, operations),
+                discovery::scan(path, cwd, source, operations),
             );
         }
     }
@@ -175,16 +188,16 @@ pub fn load_skills(
         } else if is_absolute(path) {
             path.to_owned()
         } else {
-            resolve(&[path], &cwd)
+            resolve(&[path], cwd)
         };
-        let source = if !options.include_defaults && is_under_path(&path, &user_skills, &cwd) {
+        let source = if !options.include_defaults && is_under_path(&path, &user_skills, cwd) {
             "user"
-        } else if !options.include_defaults && is_under_path(&path, &project_skills, &cwd) {
+        } else if !options.include_defaults && is_under_path(&path, &project_skills, cwd) {
             "project"
         } else {
             "path"
         };
-        let loaded = explicit_path(&path, options.cwd, source, operations);
+        let loaded = explicit_path(&path, cwd, source, operations);
         add_skills(&mut result, &mut collisions, &mut paths, operations, loaded);
     }
     result.diagnostics.extend(collisions);
@@ -236,7 +249,7 @@ fn add_skills(
 /// Dispatch a supplied path, keeping missing, wrong-kind and native errors distinct.
 fn explicit_path(
     path: &str,
-    cwd: &str,
+    cwd: &Cwd<'_>,
     source: &str,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
@@ -263,3 +276,5 @@ fn explicit_path(
         diagnostics: vec![ResourceDiagnostic::warning(path, error)],
     }
 }
+#[cfg(test)]
+mod tests;

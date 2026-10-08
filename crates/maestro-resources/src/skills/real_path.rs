@@ -1,8 +1,10 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
+use super::operations::{ResourceOperations, with_cwd};
 use maestro_path::{Cwd, SEP, dirname, is_absolute, resolve};
 use std::{
     borrow::Cow,
+    collections::HashSet,
     io,
     path::{Path, PathBuf},
 };
@@ -12,17 +14,19 @@ use std::{
 /// `.` and `..` fold lexically before any component is inspected, so `link/..`
 /// names the directory that holds `link`. The first link component is then
 /// replaced by its target, read relative to the link's directory, and the walk
-/// restarts from the root until no component is a link. Components that are not
-/// links keep their authored spelling and case, and a Windows link target that
-/// names a drive or share loses its verbatim prefix. An unreadable working
+/// restarts from the root until no component is a link; a walk that returns to a
+/// path it already expanded is a loop. Components that are not links keep their
+/// authored spelling and case, and a Windows link target that names a drive or
+/// share loses its verbatim prefix. On Windows a drive-relative path continues
+/// from the drive directory `operations` reports. An unreadable working
 /// directory fails only a relative path.
 ///
 /// # Errors
 /// Returns the cause of the first failed observation: a path that is not UTF-8,
 /// a relative path with an unreadable working directory, a component that cannot
-/// be inspected, a link whose target is missing or loops, or a link that cannot
-/// be read.
-pub(super) fn real_path(path: &Path) -> io::Result<PathBuf> {
+/// be inspected, a link whose target is missing or loops, a walk that returns to
+/// an earlier path, or a link that cannot be read.
+pub(super) fn real_path(path: &Path, operations: &dyn ResourceOperations) -> io::Result<PathBuf> {
     let path = path.to_str().ok_or(io::ErrorKind::InvalidInput)?;
     let current = std::env::current_dir()
         .map(|dir| dir.to_string_lossy().into_owned())
@@ -33,12 +37,17 @@ pub(super) fn real_path(path: &Path) -> io::Result<PathBuf> {
                 Err(error)
             }
         })?;
-    let cwd = Cwd {
-        current: &current,
-        drive_directories: &[],
-    };
-    let mut resolved = resolve(&[path], &cwd);
-    while let Some(expanded) = expand_first_link(&resolved, &cwd)? {
+    with_cwd(&current, operations, |cwd| follow_links(path, cwd))
+}
+
+/// Fold `path` lexically, then expand its links until none remains.
+fn follow_links(path: &str, cwd: &Cwd<'_>) -> io::Result<PathBuf> {
+    let mut resolved = resolve(&[path], cwd);
+    let mut visited = HashSet::new();
+    while let Some(expanded) = expand_first_link(&resolved, cwd)? {
+        if !visited.insert(resolved) {
+            return Err(io::Error::other("links resolve back to an earlier path"));
+        }
         resolved = expanded;
     }
     Ok(PathBuf::from(resolved))
