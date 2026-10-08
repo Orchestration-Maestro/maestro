@@ -86,6 +86,45 @@ fn array_index(key: &str) -> Option<u32> {
         .filter(|index| *index != u32::MAX)
 }
 
+/// Containers a JSON text may nest: the most that the parser's recursion limit of 128 accepts.
+const MAX_NESTING: usize = 127;
+
+/// Read external JSON text as a raw value. Projecting a raw value into the JSON data model, and
+/// writing or dropping that projection, recurse once per level of nesting, so text nested
+/// deeper than [`MAX_NESTING`] fails here as malformed text does.
+///
+/// # Errors
+/// Returns the parser failure for malformed text, or a recursion-limit failure for text
+/// nested too deeply.
+pub(crate) fn raw_json(text: &str) -> Result<&RawValue, serde_json::Error> {
+    let raw: &RawValue = serde_json::from_str(text)?;
+    if exceeds_nesting(text) {
+        return Err(serde::de::Error::custom("recursion limit exceeded"));
+    }
+    Ok(raw)
+}
+
+/// Report whether well-formed JSON text nests containers deeper than [`MAX_NESTING`].
+fn exceeds_nesting(text: &str) -> bool {
+    let (mut depth, mut in_string, mut escaped) = (0_usize, false, false);
+    for byte in text.bytes() {
+        match byte {
+            _ if escaped => escaped = false,
+            b'\\' if in_string => escaped = true,
+            b'"' => in_string = !in_string,
+            b'[' | b'{' if !in_string => {
+                depth += 1;
+                if depth > MAX_NESTING {
+                    return true;
+                }
+            }
+            b']' | b'}' if !in_string => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    false
+}
+
 /// The members of a JSON object in order; a repeated name keeps its first position and last value.
 type Members<'a> = IndexMap<String, &'a RawValue>;
 
@@ -152,3 +191,6 @@ pub(crate) fn json_value(raw: &RawValue) -> Result<Value, serde_json::Error> {
 pub(crate) fn compact_raw(raw: &RawValue) -> Result<String, serde_json::Error> {
     compact_json(&json_value(raw)?)
 }
+
+#[cfg(test)]
+mod tests;

@@ -24,25 +24,49 @@ fn octets(name: &str, value: &str) -> Result<Vec<u8>, String> {
         .collect()
 }
 
-/// Trim every value at its HTTP edges, in place, and convert the headers for sending.
+/// The header name `name`, which must be a valid token.
+fn header_name(name: &str) -> Result<HeaderName, String> {
+    HeaderName::from_bytes(name.as_bytes()).map_err(|error| format!("Header {name}: {error}"))
+}
+
+/// Trim every value at its HTTP edges, in place, and check the headers against the Fetch
+/// Standard's header rules.
 ///
-/// Values are text whose characters each name one byte. Empty values are kept.
+/// Values are text whose characters each name one byte. Empty values are kept. Whether a
+/// client can carry a value is that client's rule; see [`client_pairs`].
 ///
 /// # Errors
-/// Fails with the text of the first header that has a character above U+00FF, an invalid
-/// name, or a value that cannot be sent.
-pub(super) fn request_pairs(
+/// Fails with the text of the first header that has an invalid name, a character above
+/// U+00FF, or a value holding NUL, a carriage return or a line feed.
+pub(super) fn normalize_request(headers: &mut IndexMap<String, String>) -> Result<(), String> {
+    for (name, value) in headers {
+        *value = value.trim_matches(edge_whitespace).to_owned();
+        header_name(name)?;
+        octets(name, value)?;
+        if value.contains(['\0', '\r', '\n']) {
+            return Err(format!("Header {name} holds NUL or a line break."));
+        }
+    }
+    Ok(())
+}
+
+/// Normalize the headers and convert them for the default client, whose header type accepts a
+/// value only if every byte is a tab, a printable character or at least 0x80: any other control
+/// character, and DEL, is not carried.
+///
+/// # Errors
+/// Fails with the text of the first header that [`normalize_request`] rejects or whose value
+/// the default client cannot carry.
+pub(super) fn client_pairs(
     headers: &mut IndexMap<String, String>,
 ) -> Result<Vec<(HeaderName, HeaderValue)>, String> {
+    normalize_request(headers)?;
     headers
-        .iter_mut()
+        .iter()
         .map(|(name, value)| {
-            *value = value.trim_matches(edge_whitespace).to_owned();
-            let header = HeaderName::from_bytes(name.as_bytes())
-                .map_err(|error| format!("Header {name}: {error}"))?;
             let content = HeaderValue::from_bytes(&octets(name, value)?)
                 .map_err(|error| format!("Header {name}: {error}"))?;
-            Ok((header, content))
+            Ok((header_name(name)?, content))
         })
         .collect()
 }

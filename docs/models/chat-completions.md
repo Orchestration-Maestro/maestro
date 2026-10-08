@@ -52,11 +52,15 @@ sent in lowercase.
 
 A header value is text whose characters each name one byte. Tab, line feed, carriage
 return and space are removed from both ends of every value of the final request, and a
-value that becomes empty is sent empty; no other character counts as whitespace there. A header that cannot be sent ends the stream with an error update before any
+value that becomes empty is sent empty; no other character counts as whitespace there. A header
+that breaks the Fetch Standard's header rules ends the stream with an error update before any
 attempt, retry or call to a replacement client: an invalid name, a character above U+00FF
-(U+FEFF included, since it is not HTTP whitespace) or a value that cannot be a header
-value, such as one with an interior line break or NUL. The default client sends each
-character as the single byte it names, so `é` goes out as the byte E9. The browser bridge
+(U+FEFF included, since it is not HTTP whitespace) or a value with an interior line break or
+NUL. Every other value, control characters such as U+0001 included, reaches a replacement
+client unchanged. The default client sends each character as the single byte it names, so
+`é` goes out as the byte E9; a value it cannot carry (a control character other than tab, or
+DEL) fails that attempt as a connection failure, which is retried like any other and ends as
+`Connection error.`. The browser bridge
 of the default client reads header values as ASCII, so a value with a non-ASCII character
 fails there; that is a known limitation of the browser client. The generated `authorization: Bearer {key}` sits below all layers, so
 any layer replaces it; `cloudflare-ai-gateway` sends the key as `cf-aig-authorization`
@@ -209,7 +213,10 @@ and its message is described the way the client library describes it, numbers be
 range of a double written as `null`. When a provider reports a nonempty
 `error.metadata.raw`, it is appended on a new line. An error body
 is decoded as one text: a leading byte-order mark is dropped, so it does not hide a JSON
-error object, and invalid bytes appear as U+FFFD.
+error object, and invalid bytes appear as U+FFFD. JSON text nested more than 127 arrays or
+objects deep is malformed: an event holding it fails the call with `recursion limit
+exceeded`, an error body holding it is described as plain text, and a replayed thought
+signature holding it is dropped.
 
 ## Example
 

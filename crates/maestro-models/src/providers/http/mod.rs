@@ -32,8 +32,11 @@ pub struct HttpRequest {
     /// Final request URL.
     pub url: String,
     /// Header names (lowercase) and values in insertion order. A value is text whose characters
-    /// each name one byte, so none exceeds U+00FF; the sender trims tab, line feed, carriage
-    /// return and space from both ends of each value and keeps a value that becomes empty.
+    /// each name one byte. The sender trims tab, line feed, carriage return and space from both
+    /// ends of each value, keeps a value that becomes empty, and rejects an invalid name, a
+    /// character above U+00FF or a value holding NUL, a carriage return or a line feed before
+    /// any attempt. Every other character reaches the client, whose own rules decide whether it
+    /// can carry the value.
     pub headers: IndexMap<String, String>,
     /// Request body.
     pub body: Vec<u8>,
@@ -96,9 +99,10 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 /// The default `reqwest`-backed client that requests use when `StreamOptions::fetch` is unset.
 ///
 /// It sends one attempt without timeout, retry or cancellation policy; callers that need those
-/// wrap it, or pass it as `StreamOptions::fetch` to share the process-wide client. A header
-/// that cannot be sent (see [`HttpRequest::headers`]) is reported as a connection failure. On
-/// native targets it needs a Tokio runtime with the I/O driver enabled.
+/// wrap it, or pass it as `StreamOptions::fetch` to share the process-wide client. A header it
+/// cannot send (see [`HttpRequest::headers`]; the client also refuses a control character other
+/// than tab, and DEL) is reported as a connection failure of that attempt, which a sender
+/// retries. On native targets it needs a Tokio runtime with the I/O driver enabled.
 #[must_use]
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)

@@ -681,7 +681,7 @@ fn maestro_chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
             r#"{"unread":1e400,"id":"first","id":"r","model":"first","model":"served","#,
             r#""choices":[{"nested":[-1e400,{"deep":2e400}],"finish_reason":"stop","#,
             r#""delta":{"content":"lost","content":"usable","#,
-            r#""tool_calls":[{"index":1,"index":0e0,"id":"a","function":{"name":"f"}}]}}],"#,
+            r#""tool_calls":[{"index":1,"\u0069ndex":0e0,"id":"a","function":{"name":"f"}}]}}],"#,
             r#""usage":{"prompt_tokens":3,"completion_tokens":4,"extra":2e400}}"#,
         ));
         let continued = raw_event(
@@ -1237,4 +1237,64 @@ fn maestro_chat_transport_is_replaceable() -> TestResult {
         assert_eq!(received.body, target.first_request()?.1);
         Ok(())
     })
+}
+
+/// An error payload whose deepest path crosses `containers` containers; its spaces tell the
+/// written form from the compact one.
+fn deep_error(containers: usize) -> String {
+    format!(
+        r#"{{"error": {{"x": {}}}}}"#,
+        cases::nested_json(containers - 2)
+    )
+}
+
+/// The compact text of the `error` member of [`deep_error`].
+fn compact_error(containers: usize) -> String {
+    format!(r#"{{"x":{}}}"#, cases::nested_json(containers - 2))
+}
+
+/// An error body nested as deep as JSON text may be is described from its error member; a deeper
+/// one is not JSON, so it is described as the text it is.
+async fn error_bodies_nest_to_the_json_limit() -> TestResult {
+    let deepest = cases::DEEPEST_NESTING;
+    let failure = failure_of_error_body(vec![deep_error(deepest).into_bytes()]).await?;
+    assert_eq!(failure, format!("400 {}", compact_error(deepest)));
+    for containers in [100_000, deepest + 1] {
+        let body = deep_error(containers);
+        let failure = failure_of_error_body(vec![body.clone().into_bytes()]).await?;
+        assert_eq!(failure, format!("400 {body}"), "{containers} containers");
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_bounds_error_body_nesting() -> TestResult {
+    if child_process::child_case().is_some() {
+        return block_on(true, error_bodies_nest_to_the_json_limit());
+    }
+    child_process::rerun("maestro_chat_bounds_error_body_nesting", "nesting", &[])
+}
+
+/// A streamed error as deep as JSON text may be is reported from its payload; a deeper chunk is
+/// malformed data that fails the call and keeps the text before it.
+async fn streamed_chunks_nest_to_the_json_limit() -> TestResult {
+    let deepest = cases::DEEPEST_NESTING;
+    let failure = failure_after_text(&deep_error(deepest)).await?;
+    assert_eq!(failure, compact_error(deepest));
+    for containers in [100_000, deepest + 1] {
+        let failure = failure_after_text(&deep_error(containers)).await?;
+        assert_eq!(
+            failure, "recursion limit exceeded",
+            "{containers} containers"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_bounds_streamed_chunk_nesting() -> TestResult {
+    if child_process::child_case().is_some() {
+        return block_on(true, streamed_chunks_nest_to_the_json_limit());
+    }
+    child_process::rerun("maestro_chat_bounds_streamed_chunk_nesting", "nesting", &[])
 }

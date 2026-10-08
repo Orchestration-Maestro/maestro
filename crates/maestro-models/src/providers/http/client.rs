@@ -4,7 +4,7 @@ use std::error::Error;
 
 use futures_util::StreamExt;
 
-use super::headers::{request_pairs, response_record};
+use super::headers::{client_pairs, response_record};
 use super::{FetchError, HttpBody, HttpRequest, HttpResponse};
 use crate::{BoxFuture, DiagnosticErrorInfo};
 
@@ -14,7 +14,7 @@ pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, Fetc
         let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
         let mut headers = request.headers;
         let mut builder = build()?.request(method, &request.url);
-        for (name, value) in request_pairs(&mut headers).map_err(connection)? {
+        for (name, value) in client_pairs(&mut headers).map_err(connection)? {
             builder = builder.header(name, value);
         }
         let response = builder.body(request.body).send().await.map_err(failed)?;

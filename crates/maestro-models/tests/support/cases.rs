@@ -347,3 +347,12 @@ pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     }
     Ok(())
 }
+
+/// Containers the deepest path of accepted JSON text may cross; the parser's recursion limit of
+/// 128 rejects the 128th.
+pub const DEEPEST_NESTING: usize = 127;
+
+/// `containers` arrays nested around `null`.
+pub fn nested_json(containers: usize) -> String {
+    format!("{}null{}", "[".repeat(containers), "]".repeat(containers))
+}

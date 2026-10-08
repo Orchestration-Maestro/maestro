@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use super::failure::status_failure;
-use super::headers::request_pairs;
+use super::headers::normalize_request;
 use super::runtime::{Raced, race, sleep, unit_random};
 use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, client, decode_utf8};
 use crate::{Cancellation, StreamOptions};
@@ -158,13 +158,14 @@ async fn read_text(
 /// read; the body is left unread.
 ///
 /// # Errors
-/// Fails on a header that cannot be sent, invalid timeout or retry settings, cancellation,
-/// exhausted retries and non-success responses.
+/// Fails on a header that breaks the Fetch Standard's header rules (see
+/// [`HttpRequest::headers`]), invalid timeout or retry settings, cancellation, exhausted
+/// retries and non-success responses.
 pub(crate) async fn send(
     mut request: HttpRequest,
     options: &StreamOptions,
 ) -> Result<HttpResponse, RequestFailure> {
-    request_pairs(&mut request.headers).map_err(RequestFailure::new)?;
+    normalize_request(&mut request.headers).map_err(RequestFailure::new)?;
     let timeout_ms = whole_number("timeout", options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
     let budget = retry_budget(options.max_retries.unwrap_or(DEFAULT_RETRIES))?;
     let timeout = Duration::try_from_secs_f64(timeout_ms / 1000.0).unwrap_or(Duration::MAX);

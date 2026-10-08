@@ -5,7 +5,7 @@ use url::Url;
 
 use super::FetchError;
 use crate::DiagnosticErrorInfo;
-use crate::providers::json_text::{compact_raw, is_truthy, member};
+use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json};
 
 /// Why a request ended without a usable response, with upstream detail when reported.
 #[derive(Clone, Debug, PartialEq)]
@@ -89,9 +89,7 @@ fn failure(status: Option<u16>, error: Option<&RawValue>, body: Option<&str>) ->
 
 /// Describe a non-success HTTP response from its status and body text.
 pub(super) fn status_failure(status: u16, body: &str) -> RequestFailure {
-    let parsed = serde_json::from_str::<&RawValue>(body)
-        .ok()
-        .filter(|parsed| is_truthy(parsed));
+    let parsed = raw_json(body).ok().filter(|parsed| is_truthy(parsed));
     match parsed {
         Some(parsed) => failure(Some(status), member(parsed, "error"), None),
         None => failure(Some(status), None, Some(body)),

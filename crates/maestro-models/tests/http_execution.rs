@@ -17,13 +17,15 @@ mod loopback;
 #[path = "support/transport.rs"]
 mod transport;
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, SystemTime};
 
 use chat::{TestResult, rows};
 use futures_util::StreamExt;
 use indexmap::IndexMap;
 use maestro_models::{
-    Cancellation, DiagnosticErrorInfo, FetchError, HttpRequest, StopReason, StreamOptions,
+    Cancellation, DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, StopReason, StreamOptions,
     default_fetch,
 };
 use serde_json::{Value, json};
@@ -633,4 +635,65 @@ fn maestro_http_joins_endpoint_urls() -> TestResult {
         }
         Ok(())
     })
+}
+
+/// Characters the native client cannot carry in a header value fail the attempt as a connection
+/// failure, so the sender retries it and reports it like any other, and nothing is sent.
+async fn native_header_rejections_are_connection_failures() -> TestResult {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    listener.set_nonblocking(true)?;
+    let url = format!("http://{}", listener.local_addr()?);
+    for value in ["a\u{1}b", "\u{b}", "a\u{c}", "\u{7f}"] {
+        let request = request_with(url.clone(), &[("x-control", value)]);
+        let Err(FetchError::Connection(cause)) = default_fetch()(request).await else {
+            return Err(format!("{value:?} was not a connection failure").into());
+        };
+        assert!(cause.message.contains("x-control"), "{}", cause.message);
+    }
+
+    let attempts = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&attempts);
+    let native = default_fetch();
+    let counting: Fetch = Arc::new(move |request| {
+        counter.fetch_add(1, Ordering::SeqCst);
+        native(request)
+    });
+    let mut model = chat::model(&json!({}))?;
+    model.base_url = format!("{url}/v1");
+    let history = chat::context(&json!({"messages": [{"role": "user", "content": "hello"}]}))?;
+    let common = StreamOptions {
+        api_key: Some("fixture-key".into()),
+        headers: Some(IndexMap::from([(
+            "x-control".to_owned(),
+            "a\u{1}b".to_owned(),
+        )])),
+        fetch: Some(counting),
+        max_retries: Some(1.0),
+        ..StreamOptions::default()
+    };
+    let outcome = finish(model, history, common).await?;
+    assert_eq!(outcome.error.as_deref(), Some("Connection error."));
+    assert_eq!(
+        attempts.load(Ordering::SeqCst),
+        2,
+        "one attempt and one retry"
+    );
+    assert_eq!(
+        listener.accept().err().map(|error| error.kind()),
+        Some(std::io::ErrorKind::WouldBlock),
+        "nothing connected"
+    );
+    Ok(())
+}
+
+#[test]
+fn maestro_http_retries_native_header_rejections() -> TestResult {
+    if child_process::child_case().is_some() {
+        return chat::block_on(true, native_header_rejections_are_connection_failures());
+    }
+    child_process::rerun(
+        "maestro_http_retries_native_header_rejections",
+        "native",
+        &[],
+    )
 }

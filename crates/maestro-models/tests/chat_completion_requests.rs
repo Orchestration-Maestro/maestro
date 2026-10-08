@@ -739,3 +739,55 @@ fn maestro_chat_preserves_auth_boundaries() -> TestResult {
         assert_rows(FIXTURE, "maestro_chat_preserves_auth_boundaries").await
     })
 }
+
+/// The replayed assistant message for a tool call whose thought signature is `signature`.
+fn replayed_with_signature(signature: &str) -> TestResult<Value> {
+    let call = json!({"type": "toolCall", "id": "call", "name": "lookup", "arguments": {},
+        "thoughtSignature": signature});
+    let row =
+        json!({"model": {}, "context": {"messages": [{"role": "assistant", "content": [call]}]}});
+    Ok(converted(&row)?[0].clone())
+}
+
+#[test]
+fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
+    if child_case().is_some() {
+        let deepest = cases::DEEPEST_NESTING;
+        let accepted = cases::nested_json(deepest);
+        assert_eq!(
+            replayed_with_signature(&accepted)?["reasoning_details"],
+            json!([serde_json::from_str::<Value>(&accepted)?]),
+            "the deepest accepted signature is replayed whole"
+        );
+        for containers in [100_000, deepest + 1] {
+            let message = replayed_with_signature(&cases::nested_json(containers))?;
+            assert!(
+                message.get("reasoning_details").is_none(),
+                "{containers} containers are not a signature"
+            );
+        }
+        return Ok(());
+    }
+    rerun(
+        "maestro_chat_bounds_signature_replay_nesting",
+        "nesting",
+        &[],
+    )
+}
+
+#[test]
+fn maestro_chat_forwards_control_characters_to_the_transport() -> TestResult {
+    chat::block_on(true, async {
+        let value = "\u{b}a\u{1}b\u{7f}c\u{c}";
+        let (target, outcome) = send_with_headers(&[("x-control", value)]).await?;
+        assert!(
+            matches!(outcome.stop_reason, StopReason::Stop),
+            "{:?}",
+            outcome.error
+        );
+        let sent = target.requests.lock().map_err(|error| error.to_string())?;
+        let header = sent.first().ok_or("no request")?.headers.get("x-control");
+        assert_eq!(header.map(String::as_str), Some(value));
+        Ok(())
+    })
+}
