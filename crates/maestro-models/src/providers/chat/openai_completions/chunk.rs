@@ -4,34 +4,11 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
 use serde_json::value::RawValue;
 
-use crate::providers::json_text::{object_record, raw_number};
-
-/// Read a value of the wrong type as absent.
-fn lenient<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: DeserializeOwned,
-{
-    Ok(T::deserialize(<&RawValue>::deserialize(deserializer)?).ok())
-}
-
-/// Read a number as the double it rounds to; anything else as absent.
-fn number<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<f64>, D::Error> {
-    Ok(raw_number(<&RawValue>::deserialize(deserializer)?))
-}
+use crate::providers::json_text::{lenient, number, object_record, record};
 
 /// Read a number as a tool-call position; anything else as absent.
 fn index<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<StreamIndex>, D::Error> {
     Ok(number(deserializer)?.map(StreamIndex::of))
-}
-
-/// Read an object as a record; anything else, arrays included, as absent.
-fn record<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: DeserializeOwned,
-{
-    Ok(object_record(<&RawValue>::deserialize(deserializer)?))
 }
 
 /// Read an array element by element, keeping each position; non-objects become `None`, and a

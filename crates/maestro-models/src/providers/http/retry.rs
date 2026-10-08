@@ -155,15 +155,29 @@ async fn read_text(
 /// Send the request, retrying connection failures and transient statuses.
 ///
 /// Only a success status returns a response, and it is accepted before any retry header is
-/// read; the body is left unread.
+/// read; the body is left unread. A non-success response ends as the failure the chat
+/// protocol describes.
 ///
 /// # Errors
 /// Fails on a header that breaks the Fetch Standard's header rules (see
 /// [`HttpRequest::headers`]), invalid timeout or retry settings, cancellation, exhausted
 /// retries and non-success responses.
 pub(crate) async fn send(
+    request: HttpRequest,
+    options: &StreamOptions,
+) -> Result<HttpResponse, RequestFailure> {
+    send_with_status_error(request, options, status_failure).await
+}
+
+/// Send the request as [`send`] does, describing the final non-success response with
+/// `format_error`, which receives the status and the body text.
+///
+/// # Errors
+/// Fails as [`send`] does.
+pub(crate) async fn send_with_status_error(
     mut request: HttpRequest,
     options: &StreamOptions,
+    format_error: fn(u16, &str) -> RequestFailure,
 ) -> Result<HttpResponse, RequestFailure> {
     normalize_request(&mut request.headers).map_err(RequestFailure::new)?;
     let timeout_ms = whole_number("timeout", options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
@@ -201,7 +215,7 @@ pub(crate) async fn send(
                 }
                 let status = response.status;
                 let text = read_text(response, signal.as_ref()).await?;
-                return Err(status_failure(status, &text));
+                return Err(format_error(status, &text));
             }
         };
         let Some(left) = remaining.checked_sub(1) else {

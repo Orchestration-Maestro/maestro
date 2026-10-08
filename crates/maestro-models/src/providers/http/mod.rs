@@ -18,8 +18,9 @@ use indexmap::IndexMap;
 
 use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 
-pub(crate) use failure::{RequestFailure, endpoint_url, stream_failure};
-pub(crate) use retry::send;
+pub(crate) use failure::{RequestFailure, endpoint_url, envelope_failure, stream_failure};
+pub(crate) use headers::edge_whitespace;
+pub(crate) use retry::{send, send_with_status_error};
 pub(crate) use runtime::{Raced, race, spawn_detached};
 pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
 pub(crate) use text::decode_utf8;

@@ -6,6 +6,8 @@ mod cases;
 mod chat;
 #[path = "support/child_process.rs"]
 mod child_process;
+#[path = "support/json.rs"]
+mod json;
 #[allow(
     dead_code,
     reason = "Each test binary uses part of the loopback server."
@@ -70,7 +72,7 @@ async fn wrong_typed_fields_read_as_absent() -> TestResult {
     assert_eq!(observed.result["responseId"], "r");
     assert_eq!(observed.result["stopReason"], "stop");
     assert_eq!(
-        cases::canonical(observed.result["usage"].clone())["totalTokens"],
+        json::canonical(observed.result["usage"].clone())["totalTokens"],
         0
     );
     Ok(())
@@ -793,6 +795,14 @@ fn maestro_chat_formats_numeric_failures() -> TestResult {
             ("1e400", "400 status code (no body)"),
             ("[1e400]", "400 status code (no body)"),
             ("-0", "400 -0"),
+            (
+                r#"{"message":"outer","error":{"message":"inner"}}"#,
+                "400 inner",
+            ),
+            (
+                r#"{"type":"error","error":{"type":"bad_request","message":"bad","metadata":{"raw":"detail"}}}"#,
+                "400 bad\ndetail",
+            ),
         ];
         for (body, expected) in responses {
             let failure = failure_of_error_body(vec![body.as_bytes().to_vec()]).await?;

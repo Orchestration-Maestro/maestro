@@ -3,8 +3,9 @@
 
 use indexmap::IndexMap;
 use num_traits::ToPrimitive;
-use serde::de::DeserializeOwned;
 use serde::de::value::MapDeserializer;
+use serde::de::{DeserializeOwned, Error as _};
+use serde::{Deserialize, Deserializer};
 use serde_json::value::RawValue;
 use serde_json::{Map, Number, Value};
 
@@ -109,17 +110,59 @@ pub(crate) fn raw_number(raw: &RawValue) -> Option<f64> {
     raw.get().parse().ok()
 }
 
-/// Read an object as a record whose repeated member names keep their last value. A value that
-/// is not an object, arrays included, and a record the type rejects are `None`.
+/// Read an object as a record whose repeated member names keep their last value.
 /// Member names that are not valid UTF-8 are ignored before typed decoding.
-pub(crate) fn object_record<T: DeserializeOwned>(raw: &RawValue) -> Option<T> {
-    let members: Members<'_> = serde_json::from_str(raw.get()).ok()?;
+///
+/// # Errors
+/// Returns the reader's failure for a value that is not an object, arrays included, and for
+/// a record the type rejects.
+pub(crate) fn try_object_record<T: DeserializeOwned>(
+    raw: &RawValue,
+) -> Result<T, serde_json::Error> {
+    let members: Members<'_> = serde_json::from_str(raw.get())?;
     T::deserialize(MapDeserializer::<_, serde_json::Error>::new(
         members
             .into_iter()
             .filter_map(|(key, value)| String::from_utf8(key.0).ok().map(|key| (key, value))),
     ))
-    .ok()
+}
+
+/// Read an object as a record whose repeated member names keep their last value. A value that
+/// is not an object, arrays included, and a record the type rejects are `None`.
+pub(crate) fn object_record<T: DeserializeOwned>(raw: &RawValue) -> Option<T> {
+    try_object_record(raw).ok()
+}
+
+/// Read a field of the wrong type as absent.
+pub(crate) fn lenient<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    Ok(T::deserialize(<&RawValue>::deserialize(deserializer)?).ok())
+}
+
+/// Read a number field as the double it rounds to; anything else as absent.
+pub(crate) fn number<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<f64>, D::Error> {
+    Ok(raw_number(<&RawValue>::deserialize(deserializer)?))
+}
+
+/// Read an object field as a record; anything else, arrays included, as absent.
+pub(crate) fn record<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    Ok(object_record(<&RawValue>::deserialize(deserializer)?))
+}
+
+/// Read an object field as a record, failing for anything else.
+pub(crate) fn required<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    try_object_record(<&RawValue>::deserialize(deserializer)?).map_err(D::Error::custom)
 }
 
 /// The value of an object member, the last one when the name repeats; `None` when `raw` is not

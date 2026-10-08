@@ -96,6 +96,16 @@ pub(super) fn status_failure(status: u16, body: &str) -> RequestFailure {
     }
 }
 
+/// Describe a non-success HTTP response by its whole parsed body: the body's own `message`
+/// when it holds one, otherwise the body as compact JSON, otherwise the body text.
+pub(crate) fn envelope_failure(status: u16, body: &str) -> RequestFailure {
+    let parsed = raw_json(body).ok().filter(|parsed| is_truthy(parsed));
+    match parsed {
+        Some(parsed) => RequestFailure::new(describe(Some(status), Some(parsed), None)),
+        None => RequestFailure::new(describe(Some(status), None, Some(body))),
+    }
+}
+
 /// Describe an error payload carried inside a successful event stream.
 pub(crate) fn stream_failure(error: &RawValue) -> RequestFailure {
     failure(None, Some(error), None)

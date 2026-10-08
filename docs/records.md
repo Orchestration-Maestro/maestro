@@ -31,6 +31,10 @@ Cloudflare and Copilot helpers.
 The [shared OAuth primitives](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
 provide data records, secure proof keys and escaped callback pages.
 
+The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/messages.md)
+covers direct streamed message requests with key authentication, their payload, cache and
+header policy, the event framing and repair, and replaceable clients.
+
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
 
 The [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md)
