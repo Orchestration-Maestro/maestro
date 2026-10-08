@@ -271,6 +271,15 @@ semver, serde, serde_core, serde_derive, serde_json, itoa, proc-macro2, quote,
 syn, thiserror and thiserror-impl), Unlicense OR MIT (memchr),
 MIT (zmij), and (MIT OR Apache-2.0) AND Unicode-3.0 (unicode-ident).
 
+## Approved resource parsing libraries
+
+The resources crate uses `yaml-rust2 =0.13.0` with defaults off for native
+YAML parsing events and `ryu-js =1.0.3` with defaults for numeric scalar-key
+spelling. Their selected license branches are MIT OR Apache-2.0 and
+Apache-2.0, respectively. Discovery uses `ignore =0.4.23` with defaults off for
+compiled ignore rules, and `pathdiff =0.2.3` with defaults for authored rule
+prefixes. Resources remain a leaf with no internal dependencies.
+
 ## Approved scripted-model libraries
 
 The models crate uses rand `=0.10.3` with defaults. Native scheduling uses

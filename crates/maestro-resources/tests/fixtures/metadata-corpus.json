@@ -1,0 +1,999 @@
+[
+  {
+    "behavior": "parse_quoted_keys",
+    "input": "---\nname: \"skill-name\"\ndescription: 'A desc'\nfoo-bar: value\n---\n\nBody text",
+    "output": {
+      "frontmatter": {
+        "name": "skill-name",
+        "description": "A desc",
+        "foo-bar": "value"
+      },
+      "body": "Body text"
+    }
+  },
+  {
+    "behavior": "strip_quoted_keys",
+    "input": "---\nname: \"skill-name\"\ndescription: 'A desc'\nfoo-bar: value\n---\n\nBody text",
+    "output": "Body text"
+  },
+  {
+    "behavior": "parse_crlf",
+    "input": "---\r\nname: test\r\n---\r\nLine one\r\nLine two",
+    "output": {
+      "frontmatter": {
+        "name": "test"
+      },
+      "body": "Line one\nLine two"
+    }
+  },
+  {
+    "behavior": "strip_crlf",
+    "input": "---\r\nname: test\r\n---\r\nLine one\r\nLine two",
+    "output": "Line one\nLine two"
+  },
+  {
+    "behavior": "parse_cr_only",
+    "input": "---\rname: test\r---\r body\r",
+    "output": {
+      "frontmatter": {
+        "name": "test"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_cr_only",
+    "input": "---\rname: test\r---\r body\r",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_invalid",
+    "input": "---\nfoo: [bar\n---\nBody",
+    "error": {
+      "name": "YAMLParseError",
+      "message": "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 10:\n\nfoo: [bar\n         ^\n"
+    }
+  },
+  {
+    "behavior": "strip_invalid",
+    "input": "---\nfoo: [bar\n---\nBody",
+    "error": {
+      "name": "YAMLParseError",
+      "message": "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 10:\n\nfoo: [bar\n         ^\n"
+    }
+  },
+  {
+    "behavior": "parse_literal",
+    "input": "---\ndescription: |\n  Line one\n  Line two\n---\n\nBody",
+    "output": {
+      "frontmatter": {
+        "description": "Line one\nLine two\n"
+      },
+      "body": "Body"
+    }
+  },
+  {
+    "behavior": "strip_literal",
+    "input": "---\ndescription: |\n  Line one\n  Line two\n---\n\nBody",
+    "output": "Body"
+  },
+  {
+    "behavior": "parse_absent",
+    "input": "Just text\nsecond line",
+    "output": {
+      "frontmatter": {},
+      "body": "Just text\nsecond line"
+    }
+  },
+  {
+    "behavior": "strip_absent",
+    "input": "Just text\nsecond line",
+    "output": "Just text\nsecond line"
+  },
+  {
+    "behavior": "parse_unterminated",
+    "input": "---\nname: test\nBody without terminator",
+    "output": {
+      "frontmatter": {},
+      "body": "---\nname: test\nBody without terminator"
+    }
+  },
+  {
+    "behavior": "strip_unterminated",
+    "input": "---\nname: test\nBody without terminator",
+    "output": "---\nname: test\nBody without terminator"
+  },
+  {
+    "behavior": "parse_comment",
+    "input": "---\n# just a comment\n---\nBody",
+    "output": {
+      "frontmatter": {},
+      "body": "Body"
+    }
+  },
+  {
+    "behavior": "strip_comment",
+    "input": "---\n# just a comment\n---\nBody",
+    "output": "Body"
+  },
+  {
+    "behavior": "parse_empty",
+    "input": "---\n---\n Body ",
+    "output": {
+      "frontmatter": {},
+      "body": "Body"
+    }
+  },
+  {
+    "behavior": "strip_empty",
+    "input": "---\n---\n Body ",
+    "output": "Body"
+  },
+  {
+    "behavior": "parse_strip",
+    "input": "---\nkey: value\n---\n\nBody\n",
+    "output": {
+      "frontmatter": {
+        "key": "value"
+      },
+      "body": "Body"
+    }
+  },
+  {
+    "behavior": "strip_strip",
+    "input": "---\nkey: value\n---\n\nBody\n",
+    "output": "Body"
+  },
+  {
+    "behavior": "parse_plain_whitespace",
+    "input": "\n  No frontmatter body  \n",
+    "output": {
+      "frontmatter": {},
+      "body": "\n  No frontmatter body  \n"
+    }
+  },
+  {
+    "behavior": "strip_plain_whitespace",
+    "input": "\n  No frontmatter body  \n",
+    "output": "\n  No frontmatter body  \n"
+  },
+  {
+    "behavior": "parse_null",
+    "input": "---\nnull\n---\nbody",
+    "output": {
+      "frontmatter": {},
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_null",
+    "input": "---\nnull\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_number",
+    "input": "---\n42\n---\nbody",
+    "output": {
+      "frontmatter": 42,
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_number",
+    "input": "---\n42\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_false",
+    "input": "---\nfalse\n---\nbody",
+    "output": {
+      "frontmatter": false,
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_false",
+    "input": "---\nfalse\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_sequence",
+    "input": "---\n[a, b]\n---\nbody",
+    "output": {
+      "frontmatter": [
+        "a",
+        "b"
+      ],
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_sequence",
+    "input": "---\n[a, b]\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_unicode_body",
+    "input": "---\nname: ok\n---\n 😀 ",
+    "output": {
+      "frontmatter": {
+        "name": "ok"
+      },
+      "body": "😀"
+    }
+  },
+  {
+    "behavior": "strip_unicode_body",
+    "input": "---\nname: ok\n---\n 😀 ",
+    "output": "😀"
+  },
+  {
+    "behavior": "parse_opening_suffix",
+    "input": "---Xname: ok\n---suffix\n body ",
+    "output": {
+      "frontmatter": {
+        "name": "ok"
+      },
+      "body": "suffix\n body"
+    }
+  },
+  {
+    "behavior": "strip_opening_suffix",
+    "input": "---Xname: ok\n---suffix\n body ",
+    "output": "suffix\n body"
+  },
+  {
+    "behavior": "parse_astral_opening",
+    "input": "---😀name: ok\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "name": "ok"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_astral_opening",
+    "input": "---😀name: ok\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_first_closer",
+    "input": "---\nname: ok\n---suffix\n---\nnext",
+    "output": {
+      "frontmatter": {
+        "name": "ok"
+      },
+      "body": "suffix\n---\nnext"
+    }
+  },
+  {
+    "behavior": "strip_first_closer",
+    "input": "---\nname: ok\n---suffix\n---\nnext",
+    "output": "suffix\n---\nnext"
+  },
+  {
+    "behavior": "parse_leading_space",
+    "input": " ---\nname: no\n---\nbody",
+    "output": {
+      "frontmatter": {},
+      "body": " ---\nname: no\n---\nbody"
+    }
+  },
+  {
+    "behavior": "strip_leading_space",
+    "input": " ---\nname: no\n---\nbody",
+    "output": " ---\nname: no\n---\nbody"
+  },
+  {
+    "behavior": "parse_trim_bom",
+    "input": "---\nx: y\n---\n﻿ body ﻿",
+    "output": {
+      "frontmatter": {
+        "x": "y"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_trim_bom",
+    "input": "---\nx: y\n---\n﻿ body ﻿",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_trim_nel",
+    "input": "---\nx: y\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "x": "y"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_trim_nel",
+    "input": "---\nx: y\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_alias",
+    "input": "---\na: &a hello\ndescription: *a\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "a": "hello",
+        "description": "hello"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_alias",
+    "input": "---\na: &a hello\ndescription: *a\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_unknown_tag",
+    "input": "---\ndescription: !custom hello\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "description": "hello"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_unknown_tag",
+    "input": "---\ndescription: !custom hello\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_duplicate",
+    "input": "---\ndescription: first\ndescription: second\n---\nbody",
+    "error": {
+      "name": "YAMLParseError",
+      "message": "Map keys must be unique at line 2, column 1:\n\ndescription: first\ndescription: second\n^\n"
+    }
+  },
+  {
+    "behavior": "strip_duplicate",
+    "input": "---\ndescription: first\ndescription: second\n---\nbody",
+    "error": {
+      "name": "YAMLParseError",
+      "message": "Map keys must be unique at line 2, column 1:\n\ndescription: first\ndescription: second\n^\n"
+    }
+  },
+  {
+    "behavior": "parse_typed_scalar",
+    "input": "---\na: TRUE\nb: 0x10\nc: .inf\nd: .nan\ne: 1e3\nf: 2026-01-01\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "a": true,
+        "b": 16,
+        "c": {
+          "number": "Infinity"
+        },
+        "d": {
+          "number": "NaN"
+        },
+        "e": 1000,
+        "f": "2026-01-01"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_typed_scalar",
+    "input": "---\na: TRUE\nb: 0x10\nc: .inf\nd: .nan\ne: 1e3\nf: 2026-01-01\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_tagged_values",
+    "input": "---\na: !!str 42\nb: !!int 0x10\nc: !!float 1\nd: !!bool true\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "a": "42",
+        "b": 16,
+        "c": "1",
+        "d": true
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_tagged_values",
+    "input": "---\na: !!str 42\nb: !!int 0x10\nc: !!float 1\nd: !!bool true\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_tagged_quoted",
+    "input": "---\na: !!int \"42\"\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "a": 42
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_tagged_quoted",
+    "input": "---\na: !!int \"42\"\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_complex_keys",
+    "input": "---\n? [a, b]\n: value\n---\nbody",
+    "output": {
+      "frontmatter": {},
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_complex_keys",
+    "input": "---\n? [a, b]\n: value\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_merge_key",
+    "input": "---\nbase: &base {description: shared}\n<<: *base\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "base": {
+          "description": "shared"
+        },
+        "<<": {
+          "description": "shared"
+        }
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "strip_merge_key",
+    "input": "---\nbase: &base {description: shared}\n<<: *base\n---\nbody",
+    "output": "body"
+  },
+  {
+    "behavior": "parse_multiple_documents",
+    "input": "---\na: b\n...\nc: d\n---\nbody",
+    "error": {
+      "name": "YAMLParseError",
+      "message": "Source contains multiple documents; please use YAML.parseAllDocuments() at line 3, column 1:\n\n...\nc: d\n^^^^\n"
+    }
+  },
+  {
+    "behavior": "strip_multiple_documents",
+    "input": "---\na: b\n...\nc: d\n---\nbody",
+    "error": {
+      "name": "YAMLParseError",
+      "message": "Source contains multiple documents; please use YAML.parseAllDocuments() at line 3, column 1:\n\n...\nc: d\n^^^^\n"
+    }
+  },
+  {
+    "behavior": "local_path",
+    "input": "plain",
+    "output": true
+  },
+  {
+    "behavior": "local_path",
+    "input": "path/file",
+    "output": true
+  },
+  {
+    "behavior": "local_path",
+    "input": "../relative",
+    "output": true
+  },
+  {
+    "behavior": "local_path",
+    "input": "npm:pkg",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "git:repo",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "github:a/b",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "http:x",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "https:x",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "ssh:x",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "NPM:pkg",
+    "output": true
+  },
+  {
+    "behavior": "local_path",
+    "input": "gitx:x",
+    "output": true
+  },
+  {
+    "behavior": "local_path",
+    "input": "﻿npm:a﻿",
+    "output": false
+  },
+  {
+    "behavior": "local_path",
+    "input": "npm:a",
+    "output": true
+  },
+  {
+    "behavior": "local_path",
+    "input": "",
+    "output": true
+  },
+  {
+    "behavior": "synthetic_source",
+    "input": {
+      "path": "/file",
+      "options": {
+        "source": "local"
+      }
+    },
+    "output": {
+      "path": "/file",
+      "source": "local",
+      "scope": "temporary",
+      "origin": "top-level"
+    }
+  },
+  {
+    "behavior": "synthetic_source",
+    "input": {
+      "path": "/file",
+      "options": {
+        "source": "custom",
+        "scope": "user",
+        "origin": "package",
+        "baseDir": "/base"
+      }
+    },
+    "output": {
+      "path": "/file",
+      "source": "custom",
+      "scope": "user",
+      "origin": "package",
+      "baseDir": "/base"
+    }
+  },
+  {
+    "behavior": "source_copy",
+    "input": {
+      "path": "/file",
+      "metadata": {
+        "source": "custom",
+        "scope": "user",
+        "origin": "package",
+        "baseDir": "/base"
+      }
+    },
+    "output": {
+      "path": "/file",
+      "source": "custom",
+      "scope": "user",
+      "origin": "package",
+      "baseDir": "/base"
+    }
+  },
+  {
+    "behavior": "synthetic_source",
+    "input": {
+      "path": "/file",
+      "options": {
+        "source": "local",
+        "scope": "project"
+      }
+    },
+    "output": {
+      "path": "/file",
+      "source": "local",
+      "scope": "project",
+      "origin": "top-level"
+    }
+  },
+  {
+    "behavior": "synthetic_source",
+    "input": {
+      "path": "/file",
+      "options": {
+        "source": "local",
+        "scope": "temporary",
+        "origin": "top-level",
+        "baseDir": ""
+      }
+    },
+    "output": {
+      "path": "/file",
+      "source": "local",
+      "scope": "temporary",
+      "origin": "top-level",
+      "baseDir": ""
+    }
+  },
+  {
+    "behavior": "source_copy",
+    "input": {
+      "path": "/file",
+      "metadata": {
+        "source": "local",
+        "scope": "temporary",
+        "origin": "top-level",
+        "baseDir": ""
+      }
+    },
+    "output": {
+      "path": "/file",
+      "source": "local",
+      "scope": "temporary",
+      "origin": "top-level",
+      "baseDir": ""
+    }
+  },
+  {
+    "behavior": "prompt",
+    "input": [],
+    "output": ""
+  },
+  {
+    "behavior": "prompt",
+    "input": [
+      {
+        "name": "test-skill",
+        "description": "A test skill.",
+        "filePath": "/path/to/skill/SKILL.md",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/path/to/skill/SKILL.md",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": false
+      }
+    ],
+    "output": "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>test-skill</name>\n    <description>A test skill.</description>\n    <location>/path/to/skill/SKILL.md</location>\n  </skill>\n</available_skills>"
+  },
+  {
+    "behavior": "prompt",
+    "input": [
+      {
+        "name": "a&<>\"'",
+        "description": "d&<>\"'",
+        "filePath": "/p&<>\"'",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/p&<>\"'",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": false
+      }
+    ],
+    "output": "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>a&amp;&lt;&gt;&quot;&apos;</name>\n    <description>d&amp;&lt;&gt;&quot;&apos;</description>\n    <location>/p&amp;&lt;&gt;&quot;&apos;</location>\n  </skill>\n</available_skills>"
+  },
+  {
+    "behavior": "prompt",
+    "input": [
+      {
+        "name": "first",
+        "description": "First.",
+        "filePath": "/one",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/one",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": false
+      },
+      {
+        "name": "second",
+        "description": "Second.",
+        "filePath": "/two",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/two",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": false
+      }
+    ],
+    "output": "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>first</name>\n    <description>First.</description>\n    <location>/one</location>\n  </skill>\n  <skill>\n    <name>second</name>\n    <description>Second.</description>\n    <location>/two</location>\n  </skill>\n</available_skills>"
+  },
+  {
+    "behavior": "prompt",
+    "input": [
+      {
+        "name": "test-skill",
+        "description": "A test skill.",
+        "filePath": "/path/to/skill/SKILL.md",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/path/to/skill/SKILL.md",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": false
+      },
+      {
+        "name": "hidden",
+        "description": "Hidden.",
+        "filePath": "/hidden",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/hidden",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": true
+      }
+    ],
+    "output": "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>test-skill</name>\n    <description>A test skill.</description>\n    <location>/path/to/skill/SKILL.md</location>\n  </skill>\n</available_skills>"
+  },
+  {
+    "behavior": "prompt",
+    "input": [
+      {
+        "name": "hidden",
+        "description": "Hidden.",
+        "filePath": "/hidden",
+        "baseDir": "/unused",
+        "sourceInfo": {
+          "path": "/hidden",
+          "source": "test",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        "disableModelInvocation": true
+      }
+    ],
+    "output": ""
+  },
+  {
+    "behavior": "parse_empty_sequence_key",
+    "input": "---\n? []\n: value\n---\nbody",
+    "output": {
+      "frontmatter": {},
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_null_key",
+    "input": "---\n? null\n: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_quoted_collection_key",
+    "input": "---\n? [\"a, b\", \"true\"]\n: value\n---\nbody",
+    "output": {
+      "frontmatter": {},
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_typed_key_collision",
+    "input": "---\n1: first\n\"1\": second\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "1": "second"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_binary_tag",
+    "input": "---\nblob: !!binary SGVsbG8=\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "blob": "SGVsbG8="
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_set_tag",
+    "input": "---\nmembers: !!set { a: null, b: null }\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "members": {
+          "a": null,
+          "b": null
+        }
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_pairs_tag",
+    "input": "---\npairs: !!pairs [a: 1, b: 2]\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "pairs": [
+          {
+            "a": 1
+          },
+          {
+            "b": 2
+          }
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_timestamp_tag",
+    "input": "---\ndate: !!timestamp 2026-01-01\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "date": "2026-01-01"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_large_integer",
+    "input": "---\nn: 18446744073709551616\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "n": 18446744073709552000
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_infinite_exponent",
+    "input": "---\nn: 1e400\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "n": {
+          "number": "Infinity"
+        }
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_leading_exponent",
+    "input": "---\nn: .5e2\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "n": 50
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_unknown_tag_boolean",
+    "input": "---\ndescription: !custom true\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "description": "true"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_omap_tag",
+    "input": "---\norder: !!omap [a: 1, b: 2]\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "order": [
+          {
+            "a": 1
+          },
+          {
+            "b": 2
+          }
+        ]
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_1e21",
+    "input": "---\n1e21: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "1e+21": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_1e20",
+    "input": "---\n1e20: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "100000000000000000000": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_1e-6",
+    "input": "---\n1e-6: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "0.000001": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_1e-7",
+    "input": "---\n1e-7: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "1e-7": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_-0",
+    "input": "---\n-0: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "0": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_.inf",
+    "input": "---\n.inf: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "Infinity": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_-.inf",
+    "input": "---\n-.inf: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "-Infinity": "value"
+      },
+      "body": "body"
+    }
+  },
+  {
+    "behavior": "parse_numeric_key_.nan",
+    "input": "---\n.nan: value\n---\nbody",
+    "output": {
+      "frontmatter": {
+        "NaN": "value"
+      },
+      "body": "body"
+    }
+  }
+]
