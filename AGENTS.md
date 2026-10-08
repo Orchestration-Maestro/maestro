@@ -67,7 +67,8 @@ Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
 Hand-written documentation uses only `///` and `//!`; generated guest bindings in
-`maestro-extensions-wasm/src/bindings.rs` are exempt from this convention.
+`maestro-extensions-wasm/src/bindings.rs` may use block doc comments. Their line
+documentation is still checked for repetition; block comments end the comparison run.
 
 All Rust comments describe the code, not planning material. Never include
 numbered slices, specs, tasks or tickets, issue/pull-request references,

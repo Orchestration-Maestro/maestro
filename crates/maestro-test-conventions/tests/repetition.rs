@@ -6,6 +6,30 @@ use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
 #[test]
+fn generated_bindings_reject_repeated_line_documentation() {
+    let workspace = Workspace::new();
+    workspace.member("guest", "maestro-extensions-wasm", "");
+    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    let path = workspace.root.join("crates/guest/src/bindings.rs");
+    for marker in ["///", "//!"] {
+        std::fs::write(
+            &path,
+            format!("{marker} Repeat.\n{marker} Repeat.\npub struct Item;\n"),
+        )
+        .unwrap();
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert_eq!(
+            error,
+            format!(
+                "{}:2: repeated documentation; first at line 1",
+                path.display()
+            ),
+            "{marker}"
+        );
+    }
+}
+
+#[test]
 fn repeated_documentation_reports_both_lines() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");

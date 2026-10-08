@@ -22,13 +22,17 @@ fn block_documentation_is_rejected_with_file_and_line() {
 }
 
 #[test]
-fn only_generated_guest_bindings_are_exempt_from_line_documentation() {
+fn only_generated_guest_bindings_allow_block_documentation() {
     let workspace = Workspace::new();
     workspace.member("guest", "maestro-extensions-wasm", "");
     workspace.list(&[("maestro-extensions-wasm", "core")]);
     let root = workspace.root.join("crates/guest/src");
     let bindings = root.join("bindings.rs");
-    std::fs::write(&bindings, "/*! Crate. */\n/** Item. */\npub struct Item;").unwrap();
+    std::fs::write(
+        &bindings,
+        "//! Crate.\n/*! Crate. */\n//! Crate.\n/// Item.\n/** Item. */\n/// Item.\npub struct Item;",
+    )
+    .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
     let manual = root.join("manual.rs");
     std::fs::write(&manual, "/** Item. */\npub struct Item;").unwrap();

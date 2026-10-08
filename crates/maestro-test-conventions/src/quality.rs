@@ -3,7 +3,7 @@ use std::path::Path;
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
-use crate::source::{Member, Source};
+use crate::source::{Member, Source, cfg_test, test_layout};
 
 /// Verify protected lint settings and production source size for every member.
 pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
@@ -22,12 +22,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     let path = &source.path;
     if member.name == "maestro-models"
         && path.starts_with(member.directory.join("src/catalog/models_generated"))
-        || path.file_name().is_some_and(|name| name == "tests.rs")
-        || path
-            .strip_prefix(&member.directory)
-            .map_err(|error| error.to_string())?
-            .components()
-            .any(|part| part.as_os_str() == "tests")
+        || test_layout(path, &member.directory)
     {
         return Ok(());
     }
@@ -51,7 +46,7 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
     exclusions.spans.extend(documentation_spans(contents));
     let end = syntax
         .and_then(|syntax| syntax.items.last())
-        .filter(|item| is_test(item_attributes(item)))
+        .filter(|item| cfg_test(item_attributes(item)))
         .map_or(contents.lines().count(), |item| item.span().end().line);
     contents
         .lines()
@@ -111,7 +106,7 @@ struct TestLines {
 
 impl<'ast> Visit<'ast> for TestLines {
     fn visit_item(&mut self, item: &'ast syn::Item) {
-        if is_test(item_attributes(item)) {
+        if cfg_test(item_attributes(item)) {
             self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_item(self, item);
@@ -126,7 +121,7 @@ impl<'ast> Visit<'ast> for TestLines {
             syn::ImplItem::Macro(item) => &item.attrs,
             _ => return,
         };
-        if is_test(attributes) {
+        if cfg_test(attributes) {
             self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_impl_item(self, item);
@@ -141,7 +136,7 @@ impl<'ast> Visit<'ast> for TestLines {
             syn::TraitItem::Macro(item) => &item.attrs,
             _ => return,
         };
-        if is_test(attributes) {
+        if cfg_test(attributes) {
             self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_trait_item(self, item);
@@ -156,7 +151,7 @@ impl<'ast> Visit<'ast> for TestLines {
             syn::ForeignItem::Macro(item) => &item.attrs,
             _ => return,
         };
-        if is_test(attributes) {
+        if cfg_test(attributes) {
             self.spans.push(span_positions(item.span()));
         } else {
             syn::visit::visit_foreign_item(self, item);
@@ -169,16 +164,6 @@ fn span_positions(span: proc_macro2::Span) -> std::ops::Range<(usize, usize)> {
     let start = span.start();
     let end = span.end();
     (start.line, start.column)..(end.line, end.column)
-}
-
-/// Recognize an item explicitly gated by the test configuration.
-fn is_test(attributes: &[syn::Attribute]) -> bool {
-    attributes.iter().any(|attribute| {
-        attribute.path().is_ident("cfg")
-            && attribute
-                .parse_args::<syn::Path>()
-                .is_ok_and(|path| path.is_ident("test"))
-    })
 }
 
 /// Access attributes on supported Rust item variants.

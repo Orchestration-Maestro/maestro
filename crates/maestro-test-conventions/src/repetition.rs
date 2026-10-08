@@ -4,7 +4,7 @@ use pulldown_cmark::{Event, Parser, Tag};
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
-use crate::source::{Member, Source};
+use crate::source::{Member, Source, cfg_test, test_layout};
 
 /// Reject repeated documentation and adjacent assertion statements.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -12,9 +12,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
         for source in &member.sources {
             let generated_bindings = member.name == "maestro-extensions-wasm"
                 && source.path == member.directory.join("src/bindings.rs");
-            if !generated_bindings {
-                documentation(source)?;
-            }
+            documentation(source, generated_bindings)?;
             assertions(source, &member.directory)?;
         }
     }
@@ -22,7 +20,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 }
 
 /// Check documentation tokens without interpreting comment-like text in literals.
-fn documentation(source: &Source) -> Result<(), String> {
+fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String> {
     let mut offset = ra_ap_rustc_lexer::strip_shebang(&source.contents).unwrap_or(0);
     let mut block = Documentation::default();
     let mut style = None;
@@ -34,7 +32,7 @@ fn documentation(source: &Source) -> Result<(), String> {
             } => Some((&source.contents[offset + 3..end], owner)),
             TokenKind::BlockComment {
                 doc_style: Some(_), ..
-            } => {
+            } if !generated_bindings => {
                 let line = crate::source::line(&source.contents, offset);
                 return Err(format!(
                     "{}:{line}: block documentation: use /// or //!",
@@ -122,18 +120,7 @@ impl Documentation {
 
 /// Check local module declarations and assertions selected by file or inline context.
 fn assertions(source: &Source, directory: &Path) -> Result<(), String> {
-    let relative = source.path.strip_prefix(directory).ok();
-    let test_layout = source
-        .path
-        .file_name()
-        .is_some_and(|name| name == "tests.rs")
-        || relative.is_some_and(|path| {
-            path.parent().is_some_and(|parent| {
-                parent
-                    .components()
-                    .any(|component| component.as_os_str() == "tests")
-            })
-        });
+    let test_layout = test_layout(&source.path, directory);
     let configured = source
         .syntax
         .as_ref()
@@ -156,16 +143,6 @@ fn assertions(source: &Source, directory: &Path) -> Result<(), String> {
         ));
     }
     Ok(())
-}
-
-/// Recognize the direct test-only configuration shared by files and modules.
-fn cfg_test(attrs: &[syn::Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.path().is_ident("cfg")
-            && attr
-                .parse_args::<syn::Path>()
-                .is_ok_and(|path| path.is_ident("test"))
-    })
 }
 
 /// Assertion visitor scoped to blocks inside test functions.
