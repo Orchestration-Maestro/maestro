@@ -4,8 +4,10 @@ Renders images inline for terminals that support the Kitty graphics protocol
 (Kitty, Ghostty, `WezTerm`) or iTerm2 inline images. Falls back to a text placeholder
 on unsupported terminals.
 
-Supported formats: PNG, JPEG, GIF, WebP. Dimensions are parsed from the image
-headers automatically.
+Dimensions are read automatically from PNG, JPEG, GIF and WebP headers.
+Kitty payloads are sent unchanged with `f=100`, so they must already be PNG.
+Converting other formats is the caller's responsibility; the later
+`chat-tool-execution` delivery owns conversion for tool output.
 
 ```rust
 use maestro_tui::{Component, Image, ImageOptions, ImageTheme, TerminalImage};

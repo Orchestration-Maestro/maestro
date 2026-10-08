@@ -1,6 +1,6 @@
 [
   {
-    "test": "capability_environment_precedence_and_color_values",
+    "test": "maestro_images_defaults_to_hyperlinks_false_for_unknown_terminals",
     "rule": "{}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -133,7 +133,7 @@
     }
   },
   {
-    "test": "capability_environment_precedence_and_color_values",
+    "test": "maestro_images_enables_hyperlinks_for_the_ghostty_terminal_identifier",
     "rule": "{\"TERM_PROGRAM\":\"ghostty\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -163,7 +163,7 @@
     }
   },
   {
-    "test": "capability_environment_precedence_and_color_values",
+    "test": "maestro_images_enables_hyperlinks_for_iterm2",
     "rule": "{\"TERM_PROGRAM\":\"iterm.app\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -178,7 +178,7 @@
     }
   },
   {
-    "test": "capability_environment_precedence_and_color_values",
+    "test": "maestro_images_enables_hyperlinks_for_the_vscode_terminal_identifier",
     "rule": "{\"TERM_PROGRAM\":\"vscode\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -298,7 +298,7 @@
     }
   },
   {
-    "test": "capability_environment_precedence_and_color_values",
+    "test": "maestro_images_enables_hyperlinks_for_the_wezterm_terminal_identifier",
     "rule": "{\"WEZTERM_PANE\":\"0\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -376,7 +376,7 @@
     }
   },
   {
-    "test": "capability_environment_precedence_and_color_values",
+    "test": "maestro_images_does_not_disable_the_ghostty_terminal_identifier_images_solely_because_cmux_is_present",
     "rule": "{\"TERM_PROGRAM\":\"ghostty\",\"CMUX_WORKSPACE_ID\":\"workspace\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -3564,29 +3564,6 @@
   },
   {
     "test": "render_protocol_defaults_and_ignored_options",
-    "rule": "null {\"maxWidthCells\":2,\"maxHeightCells\":1}",
-    "symbol": "renderImage",
-    "args": [
-      "AAAA",
-      {
-        "widthPx": 20,
-        "heightPx": 20
-      },
-      {
-        "maxWidthCells": 2,
-        "maxHeightCells": 1
-      }
-    ],
-    "capabilities": null,
-    "cells": {
-      "widthPx": 9,
-      "heightPx": 18
-    },
-    "case": "edge-250",
-    "expected": null
-  },
-  {
-    "test": "render_protocol_defaults_and_ignored_options",
     "rule": "kitty {}",
     "symbol": "renderImage",
     "args": [
@@ -3698,35 +3675,6 @@
   },
   {
     "test": "render_protocol_defaults_and_ignored_options",
-    "rule": "kitty {\"maxWidthCells\":2,\"maxHeightCells\":1}",
-    "symbol": "renderImage",
-    "args": [
-      "AAAA",
-      {
-        "widthPx": 20,
-        "heightPx": 20
-      },
-      {
-        "maxWidthCells": 2,
-        "maxHeightCells": 1
-      }
-    ],
-    "capabilities": "kitty",
-    "cells": {
-      "widthPx": 9,
-      "heightPx": 18
-    },
-    "case": "edge-255",
-    "expected": {
-      "sequence": "\u001b_Ga=T,f=100,q=2,c=2,r=1;AAAA\u001b\\",
-      "rows": 1,
-      "imageId": {
-        "undefined": true
-      }
-    }
-  },
-  {
-    "test": "render_protocol_defaults_and_ignored_options",
     "rule": "iterm2 {}",
     "symbol": "renderImage",
     "args": [
@@ -3823,32 +3771,6 @@
     "case": "edge-259",
     "expected": {
       "sequence": "\u001b]1337;File=inline=1;width=2;height=auto;preserveAspectRatio=0:AAAA\u0007",
-      "rows": 1
-    }
-  },
-  {
-    "test": "render_protocol_defaults_and_ignored_options",
-    "rule": "iterm2 {\"maxWidthCells\":2,\"maxHeightCells\":1}",
-    "symbol": "renderImage",
-    "args": [
-      "AAAA",
-      {
-        "widthPx": 20,
-        "heightPx": 20
-      },
-      {
-        "maxWidthCells": 2,
-        "maxHeightCells": 1
-      }
-    ],
-    "capabilities": "iterm2",
-    "cells": {
-      "widthPx": 9,
-      "heightPx": 18
-    },
-    "case": "edge-260",
-    "expected": {
-      "sequence": "\u001b]1337;File=inline=1;width=2;height=auto:AAAA\u0007",
       "rows": 1
     }
   },
@@ -6352,28 +6274,6 @@
     "expected": false
   },
   {
-    "test": "maestro_images_defaults_to_hyperlinks_false_for_unknown_terminals",
-    "symbol": "detectCapabilities",
-    "environment": {
-      "TERM": null,
-      "TERM_PROGRAM": null,
-      "COLORTERM": null,
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [],
-    "case": "baseline-047",
-    "expected": {
-      "images": null,
-      "trueColor": false,
-      "hyperlinks": false
-    }
-  },
-  {
     "test": "maestro_images_forces_hyperlinks_false_under_tmux_even_if_outer_terminal_supports_osc_8",
     "symbol": "detectCapabilities",
     "environment": {
@@ -6440,50 +6340,6 @@
     }
   },
   {
-    "test": "maestro_images_enables_hyperlinks_for_the_ghostty_terminal_identifier",
-    "symbol": "detectCapabilities",
-    "environment": {
-      "TERM": null,
-      "TERM_PROGRAM": "ghostty",
-      "COLORTERM": null,
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [],
-    "case": "baseline-051",
-    "expected": {
-      "images": "kitty",
-      "trueColor": true,
-      "hyperlinks": true
-    }
-  },
-  {
-    "test": "maestro_images_does_not_disable_the_ghostty_terminal_identifier_images_solely_because_cmux_is_present",
-    "symbol": "detectCapabilities",
-    "environment": {
-      "TERM": null,
-      "TERM_PROGRAM": "ghostty",
-      "COLORTERM": null,
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": "workspace"
-    },
-    "args": [],
-    "case": "baseline-052",
-    "expected": {
-      "images": "kitty",
-      "trueColor": true,
-      "hyperlinks": true
-    }
-  },
-  {
     "test": "maestro_images_enables_hyperlinks_for_kitty",
     "symbol": "detectCapabilities",
     "environment": {
@@ -6501,72 +6357,6 @@
     "case": "baseline-053",
     "expected": {
       "images": "kitty",
-      "trueColor": true,
-      "hyperlinks": true
-    }
-  },
-  {
-    "test": "maestro_images_enables_hyperlinks_for_the_wezterm_terminal_identifier",
-    "symbol": "detectCapabilities",
-    "environment": {
-      "TERM": null,
-      "TERM_PROGRAM": null,
-      "COLORTERM": null,
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": "0",
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [],
-    "case": "baseline-054",
-    "expected": {
-      "images": "kitty",
-      "trueColor": true,
-      "hyperlinks": true
-    }
-  },
-  {
-    "test": "maestro_images_enables_hyperlinks_for_iterm2",
-    "symbol": "detectCapabilities",
-    "environment": {
-      "TERM": null,
-      "TERM_PROGRAM": "iterm.app",
-      "COLORTERM": null,
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [],
-    "case": "baseline-055",
-    "expected": {
-      "images": "iterm2",
-      "trueColor": true,
-      "hyperlinks": true
-    }
-  },
-  {
-    "test": "maestro_images_enables_hyperlinks_for_the_vscode_terminal_identifier",
-    "symbol": "detectCapabilities",
-    "environment": {
-      "TERM": null,
-      "TERM_PROGRAM": "vscode",
-      "COLORTERM": null,
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [],
-    "case": "baseline-056",
-    "expected": {
-      "images": null,
       "trueColor": true,
       "hyperlinks": true
     }
@@ -6595,44 +6385,6 @@
     ],
     "case": "baseline-057",
     "expected": "\u001b_Ga=T,f=100,q=2,C=1,c=2,r=2;AAAA\u001b\\"
-  },
-  {
-    "test": "maestro_images_suppresses_kitty_replies_for_delete_commands",
-    "symbol": "deleteKittyImage",
-    "environment": {
-      "TERM": "xterm-256color",
-      "TERM_PROGRAM": null,
-      "COLORTERM": "truecolor",
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [
-      42
-    ],
-    "case": "baseline-058",
-    "expected": "\u001b_Ga=d,d=I,i=42,q=2\u001b\\"
-  },
-  {
-    "test": "maestro_images_suppresses_kitty_replies_for_delete_commands",
-    "symbol": "deleteAllKittyImages",
-    "environment": {
-      "TERM": "xterm-256color",
-      "TERM_PROGRAM": null,
-      "COLORTERM": "truecolor",
-      "TMUX": null,
-      "KITTY_WINDOW_ID": null,
-      "GHOSTTY_RESOURCES_DIR": null,
-      "WEZTERM_PANE": null,
-      "ITERM_SESSION_ID": null,
-      "CMUX_WORKSPACE_ID": null
-    },
-    "args": [],
-    "case": "baseline-059",
-    "expected": "\u001b_Ga=d,d=A,q=2\u001b\\"
   },
   {
     "test": "maestro_images_preserves_renderimage_s_default_terminal_side_cursor_movement",
