@@ -1,16 +1,27 @@
+use std::borrow::Cow;
+
 use crate::records::diagnostics::timestamp_now;
 use crate::{
-    AssistantContent, AssistantMessage, Message, Model, StopReason, TextContent, ToolResultMessage,
-    UserBlock,
+    AssistantContent, AssistantMessage, Message, Model, StopReason, TextContent, ToolCall,
+    ToolResultMessage, UserBlock, UserContent,
 };
 
 type Normalizer<'a> = Option<&'a dyn Fn(&str, &Model, &AssistantMessage) -> String>;
 
 struct Occurrence<'a> {
-    original_id: &'a str,
-    id: String,
-    name: String,
+    source: &'a ToolCall,
+    id: Cow<'a, str>,
     answered: bool,
+}
+
+struct Projection<'a> {
+    source: &'a Message,
+    retained: bool,
+    same: bool,
+    blocks: Vec<bool>,
+    calls: Vec<Occurrence<'a>>,
+    association: Option<(usize, usize)>,
+    missing: Vec<usize>,
 }
 
 #[doc = include_str!("../../../../docs/conversation-projection.md")]
@@ -20,87 +31,232 @@ pub fn transform_messages(
     model: &Model,
     normalize_tool_call_id: Normalizer<'_>,
 ) -> Vec<Message> {
-    let mut projected: Vec<(Message, Vec<Occurrence<'_>>)> = Vec::with_capacity(messages.len());
+    let mut projected: Vec<Projection<'_>> = Vec::with_capacity(messages.len());
     let mut batch = None;
+    let images = model.input.contains(&crate::ModelInput::Image);
     for message in messages {
-        let (mut output, calls) = match message {
-            Message::Assistant(source) => {
-                let mut output = copy_assistant_metadata(source);
-                let calls = project_assistant(&mut output, source, model, normalize_tool_call_id);
-                batch = Some(projected.len());
-                (Message::Assistant(output), calls)
-            }
-            Message::User(source) => {
-                batch = None;
-                (Message::User(source.clone()), Vec::new())
-            }
+        let mut projection = prepare(message, model, normalize_tool_call_id, images);
+        match message {
+            Message::Assistant(_) => batch = Some(projected.len()),
+            Message::User(_) => batch = None,
             Message::ToolResult(source) => {
-                let mut output = source.clone();
                 if let Some(index) = batch {
-                    associate_result(&mut output, &mut projected[index].1);
+                    projection.association = associate_result(source, index, &mut projected[index]);
                 }
-                (Message::ToolResult(output), Vec::new())
             }
-        };
-        if !model.input.contains(&crate::ModelInput::Image) {
-            downgrade_images(&mut output);
         }
-        projected.push((output, calls));
+        projected.push(projection);
     }
-    repair_results(projected)
+    for projection in &mut projected {
+        if projection.retained {
+            projection.missing = projection
+                .calls
+                .iter()
+                .enumerate()
+                .filter_map(|(index, call)| (!call.answered).then_some(index))
+                .collect();
+        }
+    }
+    build_output(&projected, images)
 }
 
-fn project_assistant<'a>(
-    output: &mut AssistantMessage,
-    source: &'a AssistantMessage,
+fn prepare<'a>(
+    source: &'a Message,
     model: &Model,
     normalize: Normalizer<'_>,
-) -> Vec<Occurrence<'a>> {
-    let same =
-        source.provider == model.provider && source.api == model.api && source.model == model.id;
-    let mut calls = Vec::new();
-    output.content = source
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            AssistantContent::Thinking(value) => project_thinking(value.clone(), same),
-            AssistantContent::Text(value) => {
-                let mut value = value.clone();
-                if !same {
-                    value.text_signature = None;
-                }
-                Some(AssistantContent::Text(value))
+    images: bool,
+) -> Projection<'a> {
+    let mut projection = Projection {
+        source,
+        retained: true,
+        same: false,
+        blocks: Vec::new(),
+        calls: Vec::new(),
+        association: None,
+        missing: Vec::new(),
+    };
+    match source {
+        Message::Assistant(assistant) => {
+            prepare_assistant(&mut projection, assistant, model, normalize);
+        }
+        Message::User(user) => {
+            if let UserContent::Blocks(blocks) = &user.content {
+                projection.blocks = retain_blocks(
+                    blocks,
+                    images,
+                    "(image omitted: model does not support images)",
+                );
             }
-            AssistantContent::ToolCall(original) => {
-                let mut value = original.clone();
-                if !same {
-                    if value
-                        .thought_signature
-                        .as_ref()
-                        .is_some_and(|signature| !signature.is_empty())
-                    {
-                        value.thought_signature = None;
-                    }
-                    if let Some(normalize) = normalize {
-                        value.id = normalize(&original.id, model, source);
-                    }
-                }
-                calls.push(Occurrence {
-                    original_id: &original.id,
-                    id: value.id.clone(),
-                    name: value.name.clone(),
-                    answered: false,
-                });
-                Some(AssistantContent::ToolCall(value))
-            }
-        })
-        .collect();
-    calls
+        }
+        Message::ToolResult(result) => {
+            projection.blocks = retain_blocks(
+                &result.content,
+                images,
+                "(tool image omitted: model does not support images)",
+            );
+        }
+    }
+    projection
 }
 
-fn copy_assistant_metadata(source: &AssistantMessage) -> AssistantMessage {
+fn prepare_assistant<'a>(
+    projection: &mut Projection<'a>,
+    assistant: &'a AssistantMessage,
+    model: &Model,
+    normalize: Normalizer<'_>,
+) {
+    projection.same = assistant.provider == model.provider
+        && assistant.api == model.api
+        && assistant.model == model.id;
+    projection.retained = !matches!(
+        assistant.stop_reason,
+        StopReason::Error | StopReason::Aborted
+    );
+    for block in &assistant.content {
+        projection.blocks.push(match block {
+            AssistantContent::Thinking(value) => keep_thinking(value, projection.same),
+            _ => true,
+        });
+        if let AssistantContent::ToolCall(call) = block {
+            let id = if projection.same {
+                None
+            } else {
+                normalize.map(|normalize| Cow::Owned(normalize(&call.id, model, assistant)))
+            }
+            .unwrap_or(Cow::Borrowed(call.id.as_str()));
+            projection.calls.push(Occurrence {
+                source: call,
+                id,
+                answered: false,
+            });
+        }
+    }
+}
+
+fn keep_thinking(value: &crate::ThinkingContent, same: bool) -> bool {
+    if value.redacted == Some(true) {
+        return same;
+    }
+    let signed = value
+        .thinking_signature
+        .as_ref()
+        .is_some_and(|signature| !signature.is_empty());
+    let blank = value
+        .thinking
+        .chars()
+        .all(|c| (c.is_whitespace() && c != '\u{0085}') || c == '\u{feff}');
+    (same && signed) || !blank
+}
+
+fn retain_blocks(blocks: &[UserBlock], images: bool, placeholder: &str) -> Vec<bool> {
+    let mut previous_placeholder = false;
+    blocks
+        .iter()
+        .map(|block| match block {
+            UserBlock::Image(_) if !images => {
+                let retained = !previous_placeholder;
+                previous_placeholder = true;
+                retained
+            }
+            UserBlock::Text(text) => {
+                previous_placeholder = text.text == placeholder;
+                true
+            }
+            UserBlock::Image(_) => {
+                previous_placeholder = false;
+                true
+            }
+        })
+        .collect()
+}
+
+fn associate_result(
+    result: &ToolResultMessage,
+    batch: usize,
+    projection: &mut Projection<'_>,
+) -> Option<(usize, usize)> {
+    let (index, call) = projection
+        .calls
+        .iter_mut()
+        .enumerate()
+        .find(|(_, call)| !call.answered && call.source.id == result.tool_call_id)?;
+    call.answered = true;
+    Some((batch, index))
+}
+
+fn build_output(projected: &[Projection<'_>], images: bool) -> Vec<Message> {
+    let mut result = Vec::with_capacity(projected.len());
+    let mut pending = None;
+    for projection in projected {
+        if matches!(projection.source, Message::Assistant(_) | Message::User(_))
+            && let Some(pending) = pending.take()
+        {
+            flush_missing(&mut result, pending);
+        }
+        if !projection.retained {
+            continue;
+        }
+        if matches!(projection.source, Message::Assistant(_)) {
+            pending = Some(projection);
+        }
+        let message = build_message(projection, projected, images);
+        result.push(message);
+    }
+    if let Some(pending) = pending {
+        flush_missing(&mut result, pending);
+    }
+    result
+}
+
+fn build_message(
+    projection: &Projection<'_>,
+    projected: &[Projection<'_>],
+    images: bool,
+) -> Message {
+    match projection.source {
+        Message::Assistant(source) => Message::Assistant(build_assistant(source, projection)),
+        Message::User(source) => {
+            let content = match &source.content {
+                UserContent::Text(text) => UserContent::Text(text.clone()),
+                UserContent::Blocks(blocks) => UserContent::Blocks(build_blocks(
+                    blocks,
+                    &projection.blocks,
+                    images,
+                    "(image omitted: model does not support images)",
+                )),
+            };
+            Message::User(crate::UserMessage {
+                content,
+                timestamp: source.timestamp,
+            })
+        }
+        Message::ToolResult(source) => {
+            let id = projection
+                .association
+                .map_or(source.tool_call_id.as_str(), |(batch, index)| {
+                    projected[batch].calls[index].id.as_ref()
+                });
+            Message::ToolResult(ToolResultMessage {
+                tool_call_id: id.to_owned(),
+                tool_name: source.tool_name.clone(),
+                content: build_blocks(
+                    &source.content,
+                    &projection.blocks,
+                    images,
+                    "(tool image omitted: model does not support images)",
+                ),
+                details: source.details.clone(),
+                is_error: source.is_error,
+                timestamp: source.timestamp,
+            })
+        }
+    }
+}
+
+fn build_assistant(source: &AssistantMessage, projection: &Projection<'_>) -> AssistantMessage {
+    let content = build_content(source, projection);
     AssistantMessage {
-        content: Vec::new(),
+        content,
         api: source.api.clone(),
         provider: source.provider.clone(),
         model: source.model.clone(),
@@ -114,30 +270,45 @@ fn copy_assistant_metadata(source: &AssistantMessage) -> AssistantMessage {
     }
 }
 
-fn project_thinking(value: crate::ThinkingContent, same: bool) -> Option<AssistantContent> {
-    if value.redacted == Some(true) {
-        return same.then_some(AssistantContent::Thinking(value));
-    }
-    let signed = value
-        .thinking_signature
-        .as_ref()
-        .is_some_and(|signature| !signature.is_empty());
-    let blank = value
-        .thinking
-        .chars()
-        .all(|c| (c.is_whitespace() && c != '\u{0085}') || c == '\u{feff}');
-    if same && signed {
-        Some(AssistantContent::Thinking(value))
-    } else if blank {
-        None
-    } else if same {
-        Some(AssistantContent::Thinking(value))
-    } else {
-        Some(AssistantContent::Text(TextContent {
-            text: value.thinking,
-            text_signature: None,
-        }))
-    }
+fn build_content(source: &AssistantMessage, projection: &Projection<'_>) -> Vec<AssistantContent> {
+    let mut calls = projection.calls.iter();
+    source
+        .content
+        .iter()
+        .zip(&projection.blocks)
+        .filter_map(|(block, retained)| {
+            if !retained {
+                return None;
+            }
+            Some(match block {
+                AssistantContent::Thinking(value) if !projection.same => {
+                    AssistantContent::Text(unsigned_text(&value.thinking))
+                }
+                AssistantContent::Thinking(value) => AssistantContent::Thinking(value.clone()),
+                AssistantContent::Text(value) => AssistantContent::Text(TextContent {
+                    text: value.text.clone(),
+                    text_signature: if projection.same {
+                        value.text_signature.clone()
+                    } else {
+                        None
+                    },
+                }),
+                AssistantContent::ToolCall(value) => AssistantContent::ToolCall(ToolCall {
+                    id: calls
+                        .next()
+                        .map_or(value.id.as_str(), |call| call.id.as_ref())
+                        .to_owned(),
+                    name: value.name.clone(),
+                    arguments: value.arguments.clone(),
+                    thought_signature: value
+                        .thought_signature
+                        .as_ref()
+                        .filter(|signature| projection.same || signature.is_empty())
+                        .cloned(),
+                }),
+            })
+        })
+        .collect()
 }
 
 fn unsigned_text(text: &str) -> TextContent {
@@ -147,81 +318,35 @@ fn unsigned_text(text: &str) -> TextContent {
     }
 }
 
-fn downgrade_images(message: &mut Message) {
-    let (blocks, placeholder) = match message {
-        Message::User(crate::UserMessage {
-            content: crate::UserContent::Blocks(blocks),
-            ..
-        }) => (blocks, "(image omitted: model does not support images)"),
-        Message::ToolResult(result) => (
-            &mut result.content,
-            "(tool image omitted: model does not support images)",
-        ),
-        _ => return,
-    };
-    let mut output = Vec::with_capacity(blocks.len());
-    for block in std::mem::take(blocks) {
-        match block {
-            UserBlock::Image(_) => {
-                if !matches!(output.last(), Some(UserBlock::Text(text)) if text.text == placeholder)
-                {
-                    output.push(UserBlock::Text(unsigned_text(placeholder)));
-                }
-            }
-            UserBlock::Text(_) => output.push(block),
-        }
-    }
-    *blocks = output;
+fn build_blocks(
+    blocks: &[UserBlock],
+    retained: &[bool],
+    images: bool,
+    placeholder: &str,
+) -> Vec<UserBlock> {
+    blocks
+        .iter()
+        .zip(retained)
+        .filter(|(_, retained)| **retained)
+        .map(|(block, _)| match block {
+            UserBlock::Image(_) if !images => UserBlock::Text(unsigned_text(placeholder)),
+            _ => block.clone(),
+        })
+        .collect()
 }
 
-fn associate_result(result: &mut ToolResultMessage, calls: &mut [Occurrence<'_>]) {
-    if let Some(call) = calls
-        .iter_mut()
-        .find(|call| !call.answered && call.original_id == result.tool_call_id)
-    {
-        result.tool_call_id.clone_from(&call.id);
-        call.answered = true;
+fn flush_missing(result: &mut Vec<Message>, projection: &Projection<'_>) {
+    for &index in &projection.missing {
+        let call = &projection.calls[index];
+        let tool_call_id = call.id.to_string();
+        let tool_name = call.source.name.clone();
+        result.push(Message::ToolResult(ToolResultMessage {
+            tool_call_id,
+            tool_name,
+            content: vec![UserBlock::Text(unsigned_text("No result provided"))],
+            details: None,
+            is_error: true,
+            timestamp: timestamp_now(),
+        }));
     }
-}
-
-fn repair_results(projected: Vec<(Message, Vec<Occurrence<'_>>)>) -> Vec<Message> {
-    let mut result = Vec::with_capacity(projected.len());
-    let mut pending = Vec::new();
-    for (message, calls) in projected {
-        match &message {
-            Message::Assistant(assistant) => {
-                flush_missing(&mut result, std::mem::take(&mut pending));
-                if matches!(
-                    assistant.stop_reason,
-                    StopReason::Error | StopReason::Aborted
-                ) {
-                    continue;
-                }
-                pending = calls;
-            }
-            Message::User(_) => flush_missing(&mut result, std::mem::take(&mut pending)),
-            Message::ToolResult(_) => {}
-        }
-        result.push(message);
-    }
-    flush_missing(&mut result, pending);
-    result
-}
-
-fn flush_missing(result: &mut Vec<Message>, pending: Vec<Occurrence<'_>>) {
-    result.extend(
-        pending
-            .into_iter()
-            .filter(|call| !call.answered)
-            .map(|call| {
-                Message::ToolResult(ToolResultMessage {
-                    tool_call_id: call.id,
-                    tool_name: call.name,
-                    content: vec![UserBlock::Text(unsigned_text("No result provided"))],
-                    details: None,
-                    is_error: true,
-                    timestamp: timestamp_now(),
-                })
-            }),
-    );
 }
