@@ -104,6 +104,9 @@ are later scope, not active foundation concepts.
 - **Export:** Session document serialization shared with application operations.
 - **Terminal toolkit:** Dependency-free terminal components in `maestro-tui`, without application selectors or framework/highlighting engines.
 - **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit.
+- **Grapheme:** A user-perceived character cluster, indivisible when text is wrapped, truncated or sliced; escapes inside it never split it.
+- **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
+- **Byte cursor:** A cursor position counted in UTF-8 bytes within a line, never in cells or characters.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.

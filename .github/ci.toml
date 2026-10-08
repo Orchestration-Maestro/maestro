@@ -1,4 +1,4 @@
-wasm_crates = ["maestro-models"]
+wasm_crates = ["maestro-models", "maestro-tui"]
 test_tools = true
 spelling_words = ["ratatui", "relace"]
 check_targets = [

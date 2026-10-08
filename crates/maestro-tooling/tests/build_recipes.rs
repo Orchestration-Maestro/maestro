@@ -870,7 +870,27 @@ fn maestro_native_tests_keep_filters_and_ignored_cases() {
 }
 
 fn assert_terminal_test_selection(workspace: &Workspace) {
-    fs::write(workspace.0.join("crates/maestro-tui/src/lib.rs"), "#[test] fn terminal_behavior() {}\n#[test] fn wrap_ansi_selected() {}\n#[test] #[ignore] fn wrap_ansi_ignored() {}\n#[test] fn selected_behavior() {}\n").unwrap();
+    let real_tests = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-tui/tests");
+    let tests = workspace.0.join("crates/maestro-tui/tests");
+    fs::create_dir_all(&tests).unwrap();
+    fs::write(
+        workspace.0.join("crates/maestro-tui/src/lib.rs"),
+        "#[test] fn terminal_behavior() {}\n#[test] fn selected_behavior() {}\n",
+    )
+    .unwrap();
+    for (target, source) in [
+        (
+            "ansi_wrapping",
+            "#[test] fn wrapped_lines() {}\n#[test] #[ignore] fn wrapped_ignored() {}\n",
+        ),
+        ("ansi_columns", "#[test] fn column_slices() {}\n"),
+    ] {
+        assert!(
+            real_tests.join(format!("{target}.rs")).is_file(),
+            "{target} is a delivered test target"
+        );
+        fs::write(tests.join(format!("{target}.rs")), source).unwrap();
+    }
     let output = workspace
         .command("tui-test")
         .args(["--", "--nocapture"])
@@ -878,9 +898,9 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
         .unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("terminal_behavior ... ok"));
-    assert!(stdout.contains("wrap_ansi_selected ... ok"));
-    assert!(stdout.contains("3 passed; 0 failed; 1 ignored"));
+    for ran in ["terminal_behavior", "wrapped_lines", "column_slices"] {
+        assert!(stdout.contains(&format!("{ran} ... ok")), "{ran}");
+    }
     let output = workspace
         .command("tui-test-ansi")
         .args(["--", "--nocapture"])
@@ -889,16 +909,17 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(!stdout.contains("terminal_behavior ..."));
-    assert!(stdout.contains("wrap_ansi_selected ... ok"));
+    assert!(!stdout.contains("column_slices ..."));
+    assert!(stdout.contains("wrapped_lines ... ok"));
     assert!(stdout.contains("1 passed; 0 failed; 1 ignored"));
     let output = workspace
         .command("tui-test-ansi")
-        .args(["--", "--ignored", "--exact", "wrap_ansi_ignored"])
+        .args(["--", "--ignored", "--exact", "wrapped_ignored"])
         .output()
         .unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("wrap_ansi_ignored ... ok"));
+    assert!(stdout.contains("wrapped_ignored ... ok"));
     assert!(stdout.contains("1 passed; 0 failed; 0 ignored"));
 }
 
