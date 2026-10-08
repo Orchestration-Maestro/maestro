@@ -13,7 +13,7 @@ use maestro_extensions_wasm::{
 };
 use serde_json::json;
 
-/// Reports its label to the host when the closure that captured it is dropped.
+/// Reports its label to the host when this guard is dropped.
 struct Released {
     /// Extension handle used to report the release.
     api: ExtensionAPI,
