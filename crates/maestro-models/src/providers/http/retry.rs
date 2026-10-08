@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use super::failure::status_failure;
 use super::runtime::{Raced, race, sleep, unit_random};
-use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, TextDecoder, client};
+use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, client, decode_utf8};
 use crate::{Cancellation, StreamOptions};
 
 /// Milliseconds a response may take to start before the attempt times out.
@@ -47,7 +47,8 @@ fn retry_budget(count: f64) -> Result<u64, RequestFailure> {
         .map_err(|_| not_an_integer("maxRetries"))
 }
 
-/// Report whether a status or an explicit header asks for another attempt.
+/// Report whether a non-success response asks for another attempt: `x-should-retry` decides
+/// when it is `true` or `false`, otherwise the status 408, 409, 429 or at least 500 does.
 fn should_retry(response: &HttpResponse) -> bool {
     match header(&response.headers, "x-should-retry") {
         Some("true") => true,
@@ -89,7 +90,8 @@ fn until_date(text: &str) -> Option<Duration> {
     Some(target.saturating_sub(now))
 }
 
-/// Use the server's retry hint: `retry-after-ms` when nonzero, else `retry-after`.
+/// Use the retry hint of a response about to be retried: `retry-after-ms` when nonzero, else
+/// `retry-after`.
 fn hinted_delay(headers: &BTreeMap<String, String>) -> Option<Duration> {
     let millis = header(headers, "retry-after-ms").and_then(milliseconds);
     if let Some(delay) = millis.filter(|delay| !delay.is_zero()) {
@@ -132,28 +134,27 @@ async fn read_text(
     use futures_util::StreamExt;
 
     let mut body = response.body;
-    let mut decoder = TextDecoder::default();
-    let mut text = String::new();
+    let mut bytes = Vec::new();
     let reading = async {
         while let Some(chunk) = body.next().await {
             match chunk {
-                Ok(chunk) => text.push_str(&decoder.decode(&chunk)),
+                Ok(chunk) => bytes.extend_from_slice(&chunk),
                 Err(error) => return Some(error.to_string()),
             }
         }
-        text.extend(decoder.finish());
         None
     };
     match race(reading, None, signal).await {
         Raced::Cancelled => Err(RequestFailure::aborted()),
         Raced::Done(Some(failure)) => Ok(failure),
-        Raced::Done(None) | Raced::TimedOut => Ok(text),
+        Raced::Done(None) | Raced::TimedOut => Ok(decode_utf8(&bytes).into_owned()),
     }
 }
 
 /// Send the request, retrying connection failures and transient statuses.
 ///
-/// Only a success status returns a response; the body is left unread.
+/// Only a success status returns a response, and it is accepted before any retry header is
+/// read; the body is left unread.
 ///
 /// # Errors
 /// Fails on invalid timeout or retry settings, cancellation, exhausted retries and

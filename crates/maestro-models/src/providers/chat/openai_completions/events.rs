@@ -5,7 +5,7 @@ use std::sync::{Arc, PoisonError};
 
 use serde_json::Value;
 
-use super::chunk::{Chunk, Delta, RawUsage, ToolCallDelta};
+use super::chunk::{Chunk, Delta, RawUsage, StreamIndex, ToolCallDelta};
 use super::usage::parse_usage;
 use crate::providers::json_text::{compact_json, is_truthy};
 use crate::{
@@ -29,7 +29,7 @@ struct ToolScratch {
     /// Argument text received so far.
     partial_args: String,
     /// Provider-assigned position of the call within the response.
-    stream_index: Option<i64>,
+    stream_index: Option<StreamIndex>,
 }
 
 /// Reduces response chunks into the shared message, announcing each change.
@@ -47,7 +47,7 @@ pub(super) struct Reducer {
     /// Content position of the one reasoning block.
     thinking: Option<usize>,
     /// Tool calls by provider-assigned position.
-    tools_by_index: HashMap<i64, usize>,
+    tools_by_index: HashMap<StreamIndex, usize>,
     /// Tool calls by identifier.
     tools_by_id: HashMap<String, usize>,
 }
@@ -135,7 +135,8 @@ impl Reducer {
         self.update(|message| message.usage = usage);
     }
 
-    /// Record the outcome a finish reason names.
+    /// Record the outcome a finish reason names, replacing the outcome and error text that an
+    /// earlier finish reason set.
     fn finish_reason(&self, reason: &str) {
         let (stop_reason, error_message) = match reason {
             "stop" | "end" => (StopReason::Stop, None),
@@ -209,7 +210,12 @@ impl Reducer {
     }
 
     /// Open a tool call for a delta that matches none.
-    fn open_tool(&mut self, index: Option<i64>, id: Option<&str>, name: Option<&str>) -> usize {
+    fn open_tool(
+        &mut self,
+        index: Option<StreamIndex>,
+        id: Option<&str>,
+        name: Option<&str>,
+    ) -> usize {
         let content = AssistantContent::ToolCall(ToolCall {
             id: id.unwrap_or_default().to_owned(),
             name: name.unwrap_or_default().to_owned(),
@@ -259,8 +265,14 @@ impl Reducer {
         });
     }
 
-    /// Find the call a delta belongs to by position, then by identifier, or open a new one.
-    fn tool_block(&mut self, index: Option<i64>, id: Option<&str>, name: Option<&str>) -> usize {
+    /// Find the call a delta belongs to by position (compared as numbers), then by identifier,
+    /// or open a new one.
+    fn tool_block(
+        &mut self,
+        index: Option<StreamIndex>,
+        id: Option<&str>,
+        name: Option<&str>,
+    ) -> usize {
         let known = index
             .and_then(|index| self.tools_by_index.get(&index))
             .or_else(|| id.and_then(|id| self.tools_by_id.get(id)))

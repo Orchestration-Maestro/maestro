@@ -139,11 +139,14 @@ fn maestro_chat_finalizes_partial_arguments() -> TestResult {
     rows_of("maestro_chat_finalizes_partial_arguments")
 }
 
+/// The JSON of a response chunk carrying text.
+fn chunk_json(text: &str) -> Value {
+    json!({"id": "r", "model": "model", "choices": [{"index": 0, "delta": {"content": text}}]})
+}
+
 /// An event stream chunk carrying text.
 fn text_chunk(text: &str) -> Vec<u8> {
-    let chunk = json!({"id": "r", "model": "model",
-        "choices": [{"index": 0, "delta": {"content": text}}]});
-    format!("data: {chunk}\n\n").into_bytes()
+    format!("data: {}\n\n", chunk_json(text)).into_bytes()
 }
 
 /// An attempt that answers with `chunks` and then the given tail of the body.
@@ -368,21 +371,50 @@ fn maestro_chat_retains_failure_context() -> TestResult {
     })
 }
 
-/// The text a call keeps when its body arrives as `chunks`; the call must complete.
-async fn text_of_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
+/// Longest a call may take to settle before the test calls it stuck; time is paused, so the
+/// limit passes only when every task is waiting.
+const SETTLE: Duration = Duration::from_secs(60);
+
+/// The update labels and final message of a call whose body arrives as `chunks`; the call
+/// must settle.
+async fn outcome_of_body(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, AssistantMessage)> {
     let body = chunks_then(chunks, || Box::pin(futures_util::stream::empty()));
     let (stream, _) = start(body, &Cancellation::new())?;
-    let (labels, message) = drain(&stream).await?;
+    tokio::time::timeout(SETTLE, drain(&stream))
+        .await
+        .map_err(|_| "the call never settled")?
+}
+
+/// The message a call keeps when its body arrives as `chunks`; the call must complete.
+async fn message_of_body(chunks: Vec<Vec<u8>>) -> TestResult<AssistantMessage> {
+    let (labels, message) = outcome_of_body(chunks).await?;
     assert_eq!(
         labels.last().map(String::as_str),
         Some("done"),
         "{:?}",
         message.error_message
     );
-    match &message.content[..] {
+    Ok(message)
+}
+
+/// The text a call keeps when its body arrives as `chunks`; the call must complete.
+async fn text_of_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
+    match &message_of_body(chunks).await?.content[..] {
         [AssistantContent::Text(text)] => Ok(text.text.clone()),
         other => Err(format!("{other:?}").into()),
     }
+}
+
+/// Check that `body` keeps `expected` as text when it arrives whole and when it is cut in two at
+/// every offset.
+async fn assert_text_at_every_cut(body: &[u8], expected: &str) -> TestResult {
+    assert_eq!(text_of_body(vec![body.to_vec()]).await?, expected, "whole");
+    for cut in 0..=body.len() {
+        let (head, tail) = body.split_at(cut);
+        let chunks = vec![head.to_vec(), tail.to_vec()];
+        assert_eq!(text_of_body(chunks).await?, expected, "cut at {cut}");
+    }
+    Ok(())
 }
 
 /// One event carrying `content` bytes inside the text delta, after a byte-order mark.
@@ -403,15 +435,7 @@ async fn text_is_decoded_whatever_the_chunk_boundaries() -> TestResult {
     content.extend(b"b");
     content.extend([0xE3, 0x81]);
     content.extend(b"A");
-    let body = marked_event(&content);
-    let expected = "雪a\u{FFFD}b\u{FFFD}A";
-    assert_eq!(text_of_body(vec![body.clone()]).await?, expected);
-    for cut in 0..=body.len() {
-        let (head, tail) = body.split_at(cut);
-        let chunks = vec![head.to_vec(), tail.to_vec()];
-        assert_eq!(text_of_body(chunks).await?, expected, "cut at {cut}");
-    }
-    Ok(())
+    assert_text_at_every_cut(&marked_event(&content), "雪a\u{FFFD}b\u{FFFD}A").await
 }
 
 /// Bytes that are not text and form a blank line are an unknown field, not a failure.
@@ -433,8 +457,8 @@ async fn failure_of_error_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
     message.error_message.ok_or_else(|| "no error text".into())
 }
 
-/// An error body is decoded like an event body: the byte-order mark is dropped, so the JSON
-/// error object is read, and bytes that are not text become replacement characters.
+/// An error body is decoded as one text: the byte-order mark is dropped, so the JSON error
+/// object is read, and bytes that are not text become replacement characters.
 async fn error_body_is_decoded_as_text() -> TestResult {
     let mut json = vec![0xEF, 0xBB, 0xBF];
     json.extend(br#"{"error":{"message":"rejected"}}"#);
@@ -456,10 +480,194 @@ async fn error_body_is_decoded_as_text() -> TestResult {
 
 #[test]
 fn maestro_chat_decodes_body_text_leniently() -> TestResult {
-    block_on(false, async {
+    block_on(true, async {
         text_is_decoded_whatever_the_chunk_boundaries().await?;
         undecodable_trailer_is_an_ignored_field().await?;
         error_body_is_decoded_as_text().await
+    })
+}
+
+/// The bytes of a byte-order mark.
+const MARK: [u8; 3] = [0xEF, 0xBB, 0xBF];
+
+/// A line that starts with several marks loses one of them and the rest make it an unknown
+/// field; the call still reads the event after it, with the line ending at once or followed by
+/// a blank line.
+async fn repeated_marks_open_an_ignored_field() -> TestResult {
+    for marks in [2, 3] {
+        for tail in [&b"\n"[..], b"\n\n"] {
+            let body = [&MARK.repeat(marks)[..], tail, &text_chunk("after")].concat();
+            assert_text_at_every_cut(&body, "after").await?;
+        }
+    }
+    Ok(())
+}
+
+/// Each line is decoded on its own, so one mark opening a later line is dropped from it.
+async fn a_mark_opens_a_later_line() -> TestResult {
+    let body = [text_chunk("one"), MARK.to_vec(), text_chunk("two")].concat();
+    assert_text_at_every_cut(&body, "onetwo").await
+}
+
+#[test]
+fn maestro_chat_drops_one_byte_order_mark_per_line() -> TestResult {
+    block_on(true, async {
+        repeated_marks_open_an_ignored_field().await?;
+        a_mark_opens_a_later_line().await
+    })
+}
+
+/// Events ended by each kind of line ending, and by all of them in one body.
+async fn every_line_ending_ends_a_line() -> TestResult {
+    let event = |text: &str, ending: &str| format!("data: {}{ending}{ending}", chunk_json(text));
+    for ending in ["\n", "\r\n", "\r"] {
+        let body = format!("{}{}", event("one", ending), event("two", ending));
+        assert_text_at_every_cut(body.as_bytes(), "onetwo").await?;
+    }
+    let mixed = [
+        event("one", "\r"),
+        event("two", "\r\n"),
+        event("three", "\n"),
+    ]
+    .concat();
+    assert_text_at_every_cut(mixed.as_bytes(), "onetwothree").await
+}
+
+#[test]
+fn maestro_chat_ends_lines_at_every_line_ending() -> TestResult {
+    block_on(true, every_line_ending_ends_a_line())
+}
+
+/// Fields other than `data` and `event` do not change the event they appear in.
+async fn unknown_fields_are_ignored() -> TestResult {
+    let body = [
+        &b"retry: 3000\nid: 7\nbare\nfoo:bar\n: comment\nevent: update\n"[..],
+        &text_chunk("kept"),
+    ]
+    .concat();
+    assert_text_at_every_cut(&body, "kept").await
+}
+
+/// One space after the colon belongs to the field syntax; any further space is part of the data.
+async fn one_space_after_the_colon_is_dropped() -> TestResult {
+    for field in ["data:", "data: ", "data:  "] {
+        let body = format!("{field}{}\n\n", chunk_json("x"));
+        assert_text_at_every_cut(body.as_bytes(), "x").await?;
+    }
+    Ok(())
+}
+
+/// A last event the body ends before a blank line completes is not delivered, even when its
+/// final line is whole.
+async fn an_open_event_is_not_delivered() -> TestResult {
+    for ending in ["", "\n"] {
+        let body = [
+            &text_chunk("one")[..],
+            format!("data: {}{ending}", chunk_json("two")).as_bytes(),
+        ]
+        .concat();
+        assert_text_at_every_cut(&body, "one").await?;
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_reads_event_fields() -> TestResult {
+    block_on(true, async {
+        unknown_fields_are_ignored().await?;
+        one_space_after_the_colon_is_dropped().await?;
+        an_open_event_is_not_delivered().await
+    })
+}
+
+/// One tool-call fragment as event bytes; `index` is spliced in as written.
+fn tool_fragment(index: &str, id: &str, name: &str, arguments: &str) -> Vec<u8> {
+    let (id, name, arguments) = (json!(id), json!(name), json!(arguments));
+    format!(
+        r#"data: {{"choices":[{{"delta":{{"tool_calls":[{{"index":{index},"id":{id},"function":{{"name":{name},"arguments":{arguments}}}}}]}}}}]}}{}"#,
+        "\n\n"
+    )
+    .into_bytes()
+}
+
+/// Fragments whose indices are spelled differently continue one call exactly when the spellings
+/// name the same number, even though each carries another identifier.
+async fn equal_numbers_are_one_position() -> TestResult {
+    let fragments = [
+        ("0", "a", "lookup", r#"{"a":"#),
+        ("0.0", "b", "", "1"),
+        ("0e0", "c", "", r#","b":"#),
+        ("-0", "d", "", "2}"),
+        ("1", "e", "other", r#"{"k":"#),
+        ("1E0", "f", "", "3}"),
+        ("9007199254740992", "g", "far", r#"{"n":"#),
+        ("9007199254740993", "h", "", "4}"),
+    ];
+    let chunks = fragments
+        .iter()
+        .map(|(index, id, name, arguments)| tool_fragment(index, id, name, arguments))
+        .collect();
+    let message = message_of_body(chunks).await?;
+    let calls: Vec<(&str, &str, Value)> = message
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            AssistantContent::ToolCall(call) => {
+                let arguments = serde_json::to_value(&call.arguments).ok()?;
+                Some((call.id.as_str(), call.name.as_str(), arguments))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        calls,
+        [
+            ("a", "lookup", json!({"a": 1, "b": 2})),
+            ("e", "other", json!({"k": 3})),
+            ("g", "far", json!({"n": 4})),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_matches_tool_indices_by_number() -> TestResult {
+    block_on(true, equal_numbers_are_one_position())
+}
+
+/// A chunk that carries only a finish reason.
+fn finish_chunk(reason: &str) -> Vec<u8> {
+    let chunk = json!({"choices": [{"index": 0, "delta": {}, "finish_reason": reason}]});
+    format!("data: {chunk}\n\n").into_bytes()
+}
+
+/// The last label, stop reason and error text of a call that receives `reasons` in order.
+async fn ending_after(reasons: &[&str]) -> TestResult<(String, StopReason, Option<String>)> {
+    let chunks = reasons.iter().map(|reason| finish_chunk(reason)).collect();
+    let (labels, message) = outcome_of_body(chunks).await?;
+    let last = labels.last().cloned().ok_or("no updates")?;
+    Ok((last, message.stop_reason, message.error_message))
+}
+
+#[test]
+fn maestro_chat_replaces_earlier_finish_reasons() -> TestResult {
+    block_on(true, async {
+        let (last, stop, error) = ending_after(&["network_error", "stop"]).await?;
+        assert_eq!((last.as_str(), error), ("done", None));
+        assert!(matches!(stop, StopReason::Stop));
+
+        let (last, stop, error) = ending_after(&["stop", "network_error"]).await?;
+        assert_eq!(last, "error");
+        assert!(matches!(stop, StopReason::Error));
+        assert_eq!(
+            error.as_deref(),
+            Some("Provider finish_reason: network_error")
+        );
+
+        let (last, stop, error) = ending_after(&["length", ""]).await?;
+        assert_eq!((last.as_str(), error), ("done", None));
+        assert!(matches!(stop, StopReason::Length));
+        Ok(())
     })
 }
 

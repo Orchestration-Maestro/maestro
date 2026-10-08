@@ -2,8 +2,10 @@
 
 mod client;
 mod failure;
+mod line_decoder;
 mod retry;
 mod runtime;
+mod server_sent_events;
 mod text;
 
 use std::collections::BTreeMap;
@@ -18,7 +20,8 @@ use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 pub(crate) use failure::{RequestFailure, endpoint_url, stream_failure};
 pub(crate) use retry::send;
 pub(crate) use runtime::{Raced, race, spawn_detached};
-pub(crate) use text::TextDecoder;
+pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
+pub(crate) use text::decode_utf8;
 
 /// One HTTP attempt: method, final URL, ordered lowercase headers and body bytes.
 #[derive(Clone)]
@@ -87,7 +90,8 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 /// The default `reqwest`-backed client that requests use when `StreamOptions::fetch` is unset.
 ///
 /// It sends one attempt without timeout, retry or cancellation policy; callers that need those
-/// wrap it, or pass it as `StreamOptions::fetch` to share the process-wide client.
+/// wrap it, or pass it as `StreamOptions::fetch` to share the process-wide client. On native
+/// targets it needs a Tokio runtime with the I/O driver enabled.
 #[must_use]
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)

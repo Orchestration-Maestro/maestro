@@ -48,8 +48,11 @@ pub struct OpenAICompletionsOptions {
 /// Start a streamed completion and return its updates at once; the work continues if the
 /// returned stream is dropped.
 ///
-/// Every failure, including a missing key, ends the stream with an error update. The call
-/// must run inside a Tokio runtime on native targets.
+/// Every failure the call detects, including a missing key, ends the stream with an error
+/// update. On native targets the call must run inside a Tokio runtime with the time driver
+/// enabled, and with the I/O driver when the default HTTP client is used. A runtime without a
+/// driver the request needs is not detected: Tokio panics inside the request work and the
+/// stream never ends.
 #[must_use]
 pub fn stream_openai_completions(
     model: Model,

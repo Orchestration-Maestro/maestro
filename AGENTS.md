@@ -120,12 +120,13 @@ toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
 Ask before adding any unapproved crate; never add one silently.
 
 `maestro-models` pins `reqwest =0.13.5` (default features plus `stream`),
-`eventsource-stream =0.2.3`, `url =2.5.8`, `futures-core =0.3.34` and
-`futures-util =0.3.34` (`std` only), `httpdate =1.0.3` and `ryu-js =1.0.3`. Native
-targets add `tokio =1.53.2` (`rt`, `time`; `test-util` for tests); browser targets
-add `wasm-bindgen =0.2.129`, `wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`.
-All are MIT OR Apache-2.0 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0,
-used under Apache-2.0).
+`url =2.5.8`, `futures-core =0.3.34` and `futures-util =0.3.34` (`std` only),
+`httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.2`
+(`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
+`wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
+except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).
+The models crate reads server-sent events with its own reader, so no event-stream
+library is a dependency.
 
 Keep one current format for everything. No compatibility code.
 

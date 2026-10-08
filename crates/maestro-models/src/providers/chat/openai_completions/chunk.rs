@@ -119,12 +119,24 @@ impl Delta {
     }
 }
 
+/// Position of a tool call within the response, compared as the number it spells: `0`, `0.0`,
+/// `0e0` and `-0` are one position.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(super) struct StreamIndex(u64);
+
+impl<'de> Deserialize<'de> for StreamIndex {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let number = f64::deserialize(deserializer)?;
+        Ok(Self(if number == 0.0 { 0 } else { number.to_bits() }))
+    }
+}
+
 /// A fragment of a tool call.
 #[derive(Default, Deserialize)]
 pub(super) struct ToolCallDelta {
     /// Position of the call within the response.
     #[serde(default, deserialize_with = "lenient")]
-    pub(super) index: Option<i64>,
+    pub(super) index: Option<StreamIndex>,
     /// Call identifier.
     #[serde(default, deserialize_with = "lenient")]
     id: Option<String>,
