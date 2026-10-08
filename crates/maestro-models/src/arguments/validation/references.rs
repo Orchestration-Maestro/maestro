@@ -38,7 +38,7 @@ impl<'a> Location<'a> {
     /// Start at the document root, which is an implicit resource.
     pub fn root(schema: &'a Value) -> Self {
         let base = Url::parse(DEFAULT_BASE).ok();
-        let uri = match schema.get("$id").and_then(Value::as_str) {
+        let uri = match identifier(schema) {
             Some(id) => base.and_then(|base| base.join(id).ok()),
             None => base,
         };
@@ -54,7 +54,7 @@ impl<'a> Location<'a> {
 
     /// Descend to a nested node, entering a new resource when it declares an identifier.
     pub fn child(&self, schema: &'a Value) -> Self {
-        let Some(id) = schema.get("$id").and_then(Value::as_str) else {
+        let Some(id) = identifier(schema) else {
             return Self {
                 schema,
                 ..self.clone()
@@ -78,6 +78,11 @@ impl<'a> Location<'a> {
     /// Compare node identities; the lexical chain follows from the node.
     fn same(&self, other: &Self) -> bool {
         std::ptr::eq(self.schema, other.schema)
+    }
+
+    /// Whether the node is the root of the resource containing it.
+    fn is_resource_root(&self) -> bool {
+        std::ptr::eq(self.schema, self.resource.schema)
     }
 
     /// Enclosing resources and the current one, outermost first.
@@ -113,32 +118,49 @@ struct Scope<'a> {
 }
 
 impl<'a> Scope<'a> {
-    /// Bind a resource's recursive anchor and its dynamic anchors, not crossing nested identifiers.
-    fn activate(&mut self, resource: &Location<'a>) {
-        if resource.schema.get("$recursiveAnchor") == Some(&Value::Bool(true))
+    /// Bind the entered schema's own `$recursiveAnchor: true` and `$dynamicAnchor`, keeping outer bindings.
+    fn bind_entry(&mut self, entered: &Location<'a>) {
+        if entered.schema.get("$recursiveAnchor") == Some(&Value::Bool(true))
             && self.recursive.is_none()
         {
-            self.recursive = Some(resource.clone());
+            self.recursive = Some(entered.clone());
         }
-        let mut pending: Vec<_> = children(resource.schema).into_iter().rev().collect();
-        while let Some(schema) = pending.pop() {
-            if schema.get("$id").and_then(Value::as_str).is_some() {
-                continue;
-            }
-            self.bind(schema, resource);
-            pending.extend(children(schema).into_iter().rev());
+        if let Some(name) = entered.schema.get("$dynamicAnchor").and_then(Value::as_str) {
+            self.dynamic.entry(name).or_insert_with(|| entered.clone());
         }
-        self.bind(resource.schema, resource);
     }
 
-    /// Keep the first binding of the schema's dynamic anchor name.
-    fn bind(&mut self, schema: &'a Value, resource: &Location<'a>) {
-        if let Some(name) = schema.get("$dynamicAnchor").and_then(Value::as_str) {
-            self.dynamic.entry(name).or_insert_with(|| Location {
-                schema,
-                ..resource.clone()
-            });
+    /// Bind the dynamic anchors below a resource root without crossing nested identifiers.
+    fn bind_resource(&mut self, resource: &Location<'a>) {
+        let mut pending: Vec<_> = children(resource.schema).into_iter().rev().collect();
+        while let Some(schema) = pending.pop() {
+            if identifier(schema).is_some() {
+                continue;
+            }
+            if let Some(name) = schema.get("$dynamicAnchor").and_then(Value::as_str) {
+                self.dynamic.entry(name).or_insert_with(|| Location {
+                    schema,
+                    ..resource.clone()
+                });
+            }
+            pending.extend(children(schema).into_iter().rev());
         }
+    }
+
+    /// Whether entering the location can bind anything.
+    fn binds(entered: &Location<'a>) -> bool {
+        identifier(entered.schema).is_some()
+            || ["$recursiveAnchor", "$dynamicAnchor"]
+                .iter()
+                .any(|keyword| entered.schema.get(keyword).is_some())
+    }
+
+    /// Enter the location: a schema with an identifier binds the dynamic anchors below it first.
+    fn enter(&mut self, entered: &Location<'a>) {
+        if identifier(entered.schema).is_some() {
+            self.bind_resource(entered);
+        }
+        self.bind_entry(entered);
     }
 
     /// Compare effective bindings by node identity.
@@ -171,24 +193,25 @@ impl<'a> Context<'a> {
     /// Begin at the document root with its own anchors live.
     pub fn root(location: Location<'a>) -> Self {
         let mut scope = Scope::default();
-        scope.activate(&location);
+        scope.enter(&location);
         Self {
             location,
             scope: Rc::new(scope),
         }
     }
 
-    /// Descend lexically, binding the anchors of a newly entered resource.
+    /// Descend lexically, entering the child so its own anchors become live.
     pub fn child(&self, schema: &'a Value) -> Self {
         let location = self.location.child(schema);
         let mut scope = Rc::clone(&self.scope);
-        if std::ptr::eq(location.resource.schema, schema) {
-            Rc::make_mut(&mut scope).activate(&location);
+        if Scope::binds(&location) {
+            Rc::make_mut(&mut scope).enter(&location);
         }
         Self { location, scope }
     }
 
-    /// Follow a reference, keeping live bindings and binding the target's resources not yet entered.
+    /// Follow a reference, keeping live bindings, entering the target's resources not yet
+    /// entered and then the target itself.
     pub fn follow(&self, target: Location<'a>) -> Self {
         let mut scope = Rc::clone(&self.scope);
         for resource in target.resources() {
@@ -197,8 +220,11 @@ impl<'a> Context<'a> {
                 .chain()
                 .any(|entered| std::ptr::eq(entered.schema, resource.schema));
             if !entered {
-                Rc::make_mut(&mut scope).activate(&resource);
+                Rc::make_mut(&mut scope).enter(&resource);
             }
+        }
+        if !target.is_resource_root() && Scope::binds(&target) {
+            Rc::make_mut(&mut scope).enter(&target);
         }
         Self {
             location: target,
@@ -251,20 +277,19 @@ fn target<'a>(
     reference: &str,
 ) -> Option<Location<'a>> {
     let resource = &context.location.resource;
-    let search = match kind {
+    let joined = |base: &Resource<'a>| base.uri.as_ref()?.join(reference).ok();
+    let target = match kind {
         ReferenceKind::Recursive
             if resource.schema.get("$recursiveAnchor") == Some(&Value::Bool(true)) =>
         {
-            context.scope.recursive.clone()?
+            let search = context.scope.recursive.as_ref()?;
+            resolve(search, &joined(&search.resource)?)
         }
-        ReferenceKind::Ref | ReferenceKind::Dynamic if !reference.starts_with('#') => root.clone(),
-        _ => context.location.resource_root(),
-    };
-    let base = match kind {
-        ReferenceKind::Recursive => &search.resource.uri,
-        _ => &resource.uri,
-    };
-    let target = resolve(&search, &base.as_ref()?.join(reference).ok()?)?;
+        ReferenceKind::Ref | ReferenceKind::Dynamic if !reference.starts_with('#') => {
+            resolve(root, &joined(resource)?)
+        }
+        _ => resolve(&context.location.resource_root(), &joined(resource)?),
+    }?;
     Some(match kind {
         ReferenceKind::Dynamic => overridden(&context.scope, target, reference),
         _ => target,
@@ -285,6 +310,11 @@ fn overridden<'a>(scope: &Scope<'a>, target: Location<'a>, reference: &str) -> L
         .filter(|_| !pointer)
         .and_then(|name| scope.dynamic.get(name))
         .map_or(target, Clone::clone)
+}
+
+/// Identifier string declared by a schema, which starts a resource.
+fn identifier(schema: &Value) -> Option<&str> {
+    schema.get("$id").and_then(Value::as_str)
 }
 
 /// Child nodes of an object or array in canonical traversal order.
@@ -308,7 +338,7 @@ fn resolve<'a>(search: &Location<'a>, target: &Url) -> Option<Location<'a>> {
     let mut pending = vec![search.clone()];
     let mut result = None;
     while let Some(node) = pending.pop() {
-        if let Some(found) = matched(&node, target, identity, &fragment) {
+        if let Some(found) = matched(search, &node, target, identity, &fragment) {
             result = Some(found);
         } else {
             pending.extend(
@@ -323,7 +353,11 @@ fn resolve<'a>(search: &Location<'a>, target: &Url) -> Option<Location<'a>> {
 }
 
 /// Match a node in the target's resource by identifier alias, pointer or anchor name.
+///
+/// The search start counts as a root even when it is not a resource root, so a recursive binding on
+/// a schema without an identifier is its own target for the empty fragment and the base of pointers.
 fn matched<'a>(
+    search: &Location<'a>,
     node: &Location<'a>,
     target: &Url,
     identity: &str,
@@ -334,17 +368,13 @@ fn matched<'a>(
         .uri
         .as_ref()
         .filter(|uri| uri.as_str().split('#').next() == Some(identity))?;
-    let is_resource = std::ptr::eq(node.schema, node.resource.schema);
-    let alias = node
-        .schema
-        .get("$id")
-        .and_then(Value::as_str)
-        .is_some_and(|id| id.starts_with('#'));
-    if (alias && uri.as_ref() == target) || (fragment.is_empty() && is_resource) {
+    let is_root = node.is_resource_root() || node.same(search);
+    let alias = identifier(node.schema).is_some_and(|id| id.starts_with('#'));
+    if (alias && uri.as_ref() == target) || (fragment.is_empty() && is_root) {
         return Some(node.clone());
     }
     if fragment.starts_with('/')
-        && is_resource
+        && is_root
         && let Some(found) = pointer(node, fragment)
     {
         return Some(found);

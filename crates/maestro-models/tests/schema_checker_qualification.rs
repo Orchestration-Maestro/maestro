@@ -1804,3 +1804,116 @@ fn maestro_carries_only_successful_reference_marks_for_every_keyword() {
         }
     }
 }
+
+/// Enter `child` from property `p` of `parent` through one route; reference routes store it
+/// under `$defs` beside the reference.
+fn enter(parent: &mut Value, route: &str, name: &str, reference: &str, child: Value) {
+    parent["properties"]["p"] = match route {
+        "properties" => child,
+        "items" => json!({"items":child}),
+        "allOf" => json!({"allOf":[child]}),
+        _ => json!({route:reference,"$defs":{name:child}}),
+    };
+}
+
+/// An unidentified outer schema with a recursive anchor, entered by `route`, that enters an inner
+/// resource with its own anchor whose recursive reference sits one property below it.
+fn recursive_chain(route: &str) -> Value {
+    let mut outer = json!({"$recursiveAnchor":true,"properties":{"t":{"const":"outer"}}});
+    let inner = json!({
+        "$id":"https://e.example/inner", "$recursiveAnchor":true,
+        "properties":{"t":{"const":"inner"},"q":{"$recursiveRef":"#"}}
+    });
+    enter(&mut outer, route, "inner", "https://e.example/inner", inner);
+    let mut root = json!({"$id":"https://e.example/root"});
+    let pointer = "https://e.example/root#/properties/p/$defs/outer";
+    enter(&mut root, route, "outer", pointer, outer);
+    json!({"properties":{"n":root}})
+}
+
+/// The recursive reference reaches the outer schema, not the inner resource that contains it.
+fn expect_outer_recursive_binding(route: &str) -> Checked {
+    let schema = recursive_chain(route);
+    let hop = |inner: Value| json!({"p":if route == "items" { json!([inner]) } else { inner }});
+    let arguments = |tag: &str| json!({"n":hop(hop(json!({"q":{"t":tag}})))});
+    expect(&schema, arguments("outer"), &[])?;
+    let path = if route == "items" {
+        "n.p.0.p.0"
+    } else {
+        "n.p.p"
+    };
+    let line = format!("  - {path}.q.t: must be equal to constant");
+    expect(&schema, arguments("inner"), &[&line])
+}
+
+#[test]
+fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_properties() {
+    expect_outer_recursive_binding("properties").unwrap();
+}
+
+#[test]
+fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_items() {
+    expect_outer_recursive_binding("items").unwrap();
+}
+
+#[test]
+fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_all_of() {
+    expect_outer_recursive_binding("allOf").unwrap();
+}
+
+#[test]
+fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_ref() {
+    expect_outer_recursive_binding("$ref").unwrap();
+}
+
+#[test]
+fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_dynamic_ref() {
+    expect_outer_recursive_binding("$dynamicRef").unwrap();
+}
+
+#[test]
+fn maestro_selects_an_entered_child_anchor_over_a_nested_resource_anchor() {
+    let schema = json!({
+        "$id":"https://e.example/root",
+        "$defs":{"inner":{
+            "$id":"https://e.example/inner", "$recursiveAnchor":true,
+            "properties":{"next":{"$recursiveRef":"#"}}
+        }},
+        "properties":{"n":{
+            "$recursiveAnchor":true,
+            "properties":{"tag":{"const":"outer"},"next":{"$ref":"https://e.example/inner"}}
+        }}
+    });
+    let arguments = |tag: &str| json!({"n":{"tag":"outer","next":{"next":{"tag":tag}}}});
+    expect(&schema, arguments("outer"), &[]).unwrap();
+    expect(
+        &schema,
+        arguments("wrong"),
+        &["  - n.next.next.tag: must be equal to constant"],
+    )
+    .unwrap();
+}
+
+#[test]
+fn maestro_prebinds_dynamic_anchors_only_for_schemas_with_an_identifier() {
+    let target = |id: Option<&str>| {
+        let mut schema = json!({
+            "$dynamicRef":"#A",
+            "$defs":{
+                "first":{"$dynamicAnchor":"A","const":"a"},
+                "second":{"$dynamicAnchor":"A","const":"b"}
+            }
+        });
+        if let Some(id) = id {
+            schema["$id"] = json!(id);
+        }
+        json!({"properties":{"n":schema}})
+    };
+    let rejected = ["  - n: must be equal to constant"];
+    let plain = target(None);
+    expect(&plain, json!({"n":"b"}), &[]).unwrap();
+    expect(&plain, json!({"n":"a"}), &rejected).unwrap();
+    let identified = target(Some("https://e.example/identified"));
+    expect(&identified, json!({"n":"a"}), &[]).unwrap();
+    expect(&identified, json!({"n":"b"}), &rejected).unwrap();
+}

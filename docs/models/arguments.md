@@ -61,17 +61,21 @@ offline schema resources, anchors, recursive and dynamic references, and evaluat
 property/item tracking. Both tuple forms can occur in one schema. References are
 never fetched; unknown resources and non-progressing cycles reject normally.
 Every string `$id`, including a fragment-only identifier, starts a resource that
-is resolved once against its enclosing resource. Relative `$ref`, `$recursiveRef`
-and `$dynamicRef` targets resolve against the resource that contains the
-reference, not the document root, however that resource was reached: by
-identifier, pointer, anchor or dynamic binding. Following a reference keeps the
-caller's live anchors and makes the anchors of every resource enclosing the target
-live as well; the outermost binding of a name wins and a sibling property never
-sees bindings added for another. A recursive reference searches only its own
-resource, or the outermost live resource with `$recursiveAnchor: true` when its
-own resource has one, and a pointer fragment never takes a dynamic binding. Array
-pointer segments use exact unsigned index names: `0` and `1` resolve, while `+0`,
-`+1` and `01` do not.
+is resolved once against its enclosing resource. Relative `$ref` and
+`$dynamicRef` targets resolve against the resource that contains the reference,
+not the document root, however that resource was reached: by identifier,
+pointer, anchor or dynamic binding. A `$recursiveRef` searches only its own
+resource; when that resource declares `$recursiveAnchor: true` it searches only
+the outermost live schema declaring one and resolves against the resource
+containing that schema. Entering any schema, with or without `$id`, binds its
+own `$recursiveAnchor: true` and `$dynamicAnchor`; entering a schema with `$id`
+also binds the dynamic anchors declared below it, arrays of schemas included,
+without crossing a nested `$id`. Following a reference keeps the caller's live
+anchors, enters the target's enclosing resources that are not yet entered, then
+enters the target. The outermost binding of a name wins, a sibling property
+never sees bindings added for another, and a pointer fragment never takes a
+dynamic binding. Array pointer segments use exact unsigned index names: `0` and
+`1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 
