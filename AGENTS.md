@@ -32,10 +32,11 @@ conventional header and every line must be at most 80 columns.
 ## Code quality limits
 
 `just check` enforces at most 5 parameters (at most 1 boolean), 60 lines per
-function, cognitive complexity 15, nesting depth 4 and 500 production lines per
-Rust file. Test directories, `tests.rs` and trailing test modules do not count
-against file length. Pedantic Clippy lints are errors; production code may not
-use `unwrap`, `expect` or `panic!`. Unsafe code is forbidden. Thresholds live in
+function, cognitive complexity 15, nesting depth 4 and
+500 code lines per file; doc comments are not counted. Test directories,
+`tests.rs` and trailing test modules do not count against file length. Pedantic
+Clippy lints are errors; production code may not use `unwrap`, `expect` or
+`panic!`. Unsafe code is forbidden. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Quality-lint allowances are forbidden.
 

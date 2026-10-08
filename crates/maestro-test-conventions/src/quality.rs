@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
 use crate::source::{Member, Source};
@@ -27,10 +28,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
         return Ok(());
     }
     let contents = &source.contents;
-    let lines = source.syntax.as_ref().map_or_else(
-        || contents.lines().count(),
-        |syntax| production_lines(contents, syntax),
-    );
+    let lines = production_lines(contents, source.syntax.as_ref());
     if lines > 500 {
         return Err(format!(
             "{}: {lines} production lines exceeds 500",
@@ -40,12 +38,14 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     Ok(())
 }
 
-fn production_lines(contents: &str, syntax: &syn::File) -> usize {
-    let mut tests = TestLines::default();
-    tests.visit_file(syntax);
+fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
+    let mut exclusions = TestLines::default();
+    if let Some(syntax) = syntax {
+        exclusions.visit_file(syntax);
+    }
+    exclusions.spans.extend(documentation_spans(contents));
     let end = syntax
-        .items
-        .last()
+        .and_then(|syntax| syntax.items.last())
         .filter(|item| is_test(item_attributes(item)))
         .map_or(contents.lines().count(), |item| item.span().end().line);
     contents
@@ -56,13 +56,45 @@ fn production_lines(contents: &str, syntax: &syn::File) -> usize {
             // Span columns and text columns both count Unicode characters.
             text.chars().enumerate().any(|(column, character)| {
                 !character.is_whitespace()
-                    && !tests
+                    && !exclusions
                         .spans
                         .iter()
                         .any(|span| span.contains(&(line + 1, column)))
             })
         })
         .count()
+}
+
+/// Locates documentation tokens in the Unicode coordinates used by syntax spans.
+fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
+    let mut spans = Vec::new();
+    let mut offset = ra_ap_rustc_lexer::strip_shebang(contents).unwrap_or(0);
+    let mut position = (1, contents[..offset].chars().count());
+    for token in ra_ap_rustc_lexer::tokenize(&contents[offset..], FrontmatterAllowed::No) {
+        let end = offset + token.len as usize;
+        let next = contents[offset..end]
+            .chars()
+            .fold(position, |(line, column), character| {
+                if character == '\n' {
+                    (line + 1, 0)
+                } else {
+                    (line, column + 1)
+                }
+            });
+        if matches!(
+            token.kind,
+            TokenKind::LineComment { doc_style: Some(_) }
+                | TokenKind::BlockComment {
+                    doc_style: Some(_),
+                    ..
+                }
+        ) {
+            spans.push(position..next);
+        }
+        offset = end;
+        position = next;
+    }
+    spans
 }
 
 #[derive(Default)]
