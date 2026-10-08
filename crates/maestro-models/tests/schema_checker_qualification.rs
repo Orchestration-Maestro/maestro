@@ -617,3 +617,187 @@ fn format_edges() -> Vec<(&'static str, Value, bool)> {
         ("unregistered", json!("anything"), true),
     ]
 }
+
+#[test]
+fn maestro_checks_fractional_multiples_independently_of_sign() {
+    for divisor in [0.1, -0.1] {
+        for valid in [0.3, -0.3, 0.300_000_000_05, -0.300_000_000_05] {
+            assert_eq!(
+                check(json!({"multipleOf":divisor}), json!(valid)).unwrap(),
+                json!(valid)
+            );
+        }
+        for invalid in [0.300_000_000_2, -0.300_000_000_2] {
+            assert!(check(json!({"multipleOf":divisor}), json!(invalid)).is_err());
+        }
+    }
+}
+
+#[test]
+fn maestro_discards_failed_condition_property_and_item_marks() {
+    let schema = json!({"if":{"required":["missing"],"properties":{"a":true}},"else":true,"unevaluatedProperties":false});
+    let error = check_object(
+        schema,
+        maestro_models::JsonObject::from_iter([("a".into(), json!(1))]),
+    )
+    .unwrap_err();
+    assert_eq!(
+        error,
+        "Validation failed for tool \"check\":\n  - root: must not have unevaluated properties\n\nReceived arguments:\n{\n  \"a\": 1\n}"
+    );
+    let schema =
+        json!({"if":{"prefixItems":[true],"minItems":2},"else":true,"unevaluatedItems":false});
+    assert!(
+        check(schema, json!([1]))
+            .unwrap_err()
+            .contains("must not have unevaluated items")
+    );
+}
+
+#[test]
+fn maestro_resolves_nonfragment_recursive_refs_from_active_resource() {
+    let schema = json!({
+        "$id":"https://schemas.example/root/",
+        "$defs":{"node":{"$id":"https://schemas.example/node/", "$recursiveRef":"leaf", "$defs":{"leaf":{"$id":"leaf", "type":"number"}}}},
+        "$ref":"https://schemas.example/node/"
+    });
+    assert_eq!(check(schema.clone(), json!(3)).unwrap(), json!(3));
+    assert!(
+        check(schema, json!("wrong"))
+            .unwrap_err()
+            .contains("must be number")
+    );
+}
+
+#[test]
+fn maestro_never_dynamically_overrides_encoded_pointer_fragments() {
+    let schema = json!({
+        "$id":"https://schemas.example/root", "$dynamicAnchor":"kind", "type":"number",
+        "$defs":{"nested":{"$id":"https://schemas.example/nested", "$dynamicRef":"#%2F$defs%2Fstring", "$defs":{"string":{"$dynamicAnchor":"kind", "type":"string"}}}},
+        "$ref":"https://schemas.example/nested"
+    });
+    let error = check(schema, json!(3)).unwrap_err();
+    assert!(error.contains("must be string"), "{error}");
+    let schema = json!({"$id":"https://schemas.example/plain", "$defs":{"string":{"type":"string"}}, "$dynamicRef":"#%2F$defs%2Fstring"});
+    assert_eq!(check(schema.clone(), json!("text")).unwrap(), json!("text"));
+    assert!(check(schema, json!(3)).is_err());
+}
+
+#[test]
+fn maestro_reports_all_declared_dependency_names() {
+    for keyword in ["dependencies", "dependentRequired"] {
+        let schema = json!({keyword:{"a":["b","c"]}});
+        let input =
+            maestro_models::JsonObject::from_iter([("a".into(), json!(1)), ("b".into(), json!(2))]);
+        assert_eq!(
+            check_object(schema, input).unwrap_err(),
+            "Validation failed for tool \"check\":\n  - root: must have properties b, c when property a is present\n\nReceived arguments:\n{\n  \"a\": 1,\n  \"b\": 2\n}"
+        );
+    }
+}
+
+#[test]
+fn maestro_preserves_literal_missing_property_names() {
+    for (schema, input, path) in [
+        (json!({"required":["a/b"]}), json!({}), "a/b"),
+        (
+            json!({"properties":{"nested":{"required":["a/b"]}}}),
+            json!({"nested":{}}),
+            "nested.a/b",
+        ),
+    ] {
+        assert_eq!(
+            check_object(schema, input.as_object().unwrap().clone()).unwrap_err(),
+            format!(
+                "Validation failed for tool \"check\":\n  - {path}: must have required properties a/b\n\nReceived arguments:\n{}",
+                serde_json::to_string_pretty(&input).unwrap()
+            )
+        );
+    }
+}
+
+#[test]
+fn maestro_reports_native_errors_for_invalid_constraint_patterns() {
+    let native = regress::Regex::with_flags("[", "u")
+        .unwrap_err()
+        .to_string();
+    for schema in [
+        json!({"pattern":"["}),
+        json!({"patternProperties":{"[":false}}),
+    ] {
+        let input = if schema.get("pattern").is_some() {
+            json!("text")
+        } else {
+            json!({"a":1})
+        };
+        let error = check(schema, input).unwrap_err();
+        assert!(error.contains(&native), "{error}");
+        assert!(!error.contains("must match pattern"), "{error}");
+    }
+}
+
+#[test]
+fn maestro_preserves_inherited_uris_for_relative_schema_resources() {
+    let schema = json!({
+        "$id":"https://schemas.example/root/",
+        "$defs":{"nested":{"$id":"nested", "$ref":"#/$defs/string", "$defs":{"string":{"type":"string"}}}},
+        "$ref":"nested"
+    });
+    assert_eq!(check(schema.clone(), json!("text")).unwrap(), json!("text"));
+    assert!(
+        check(schema, json!(3))
+            .unwrap_err()
+            .contains("must be string")
+    );
+}
+
+#[test]
+fn maestro_validates_lookaround_backreferences_and_astral_patterns() {
+    for (pattern, valid, invalid) in [
+        (r"^a(?=b)b$", "ab", "ac"),
+        (r"(?<=a)b$", "ab", "cb"),
+        (r"^(a)\1$", "aa", "ab"),
+        (r"^.$", "😀", "😀😀"),
+        (r"^\u{1F600}$", "😀", "😁"),
+    ] {
+        assert_eq!(
+            check(json!({"pattern":pattern}), json!(valid)).unwrap(),
+            json!(valid)
+        );
+        assert!(check(json!({"pattern":pattern}), json!(invalid)).is_err());
+        let schema = json!({"patternProperties":{pattern:false}});
+        assert!(check(schema.clone(), json!({valid:1})).is_err());
+        assert_eq!(
+            check(schema, json!({invalid:1})).unwrap(),
+            json!({invalid:1})
+        );
+    }
+}
+
+#[test]
+fn maestro_checks_whole_hostname_lengths_and_valid_joiner_context() {
+    for format in ["hostname", "idn-hostname"] {
+        let valid = [
+            "a".repeat(63),
+            "b".repeat(63),
+            "c".repeat(63),
+            "d".repeat(61),
+        ]
+        .join(".");
+        let invalid = format!("{valid}d");
+        assert_eq!(
+            check(json!({"format":format}), json!(valid)).unwrap(),
+            json!(valid)
+        );
+        assert!(check(json!({"format":format}), json!(invalid)).is_err());
+    }
+    for valid in ["क्‍ष.example", "क्‌ष.example"] {
+        assert_eq!(
+            check(json!({"format":"idn-hostname"}), json!(valid)).unwrap(),
+            json!(valid)
+        );
+    }
+    for invalid in ["क‍ष.example", "क‌ष.example"] {
+        assert!(check(json!({"format":"idn-hostname"}), json!(invalid)).is_err());
+    }
+}

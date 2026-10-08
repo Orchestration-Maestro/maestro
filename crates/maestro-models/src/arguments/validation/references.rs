@@ -44,24 +44,32 @@ fn target<'a>(
         .find(|schema| schema.get("$id").and_then(Value::as_str).is_some())
         .copied()
         .unwrap_or(root);
+    let base_uri = resource_uri(root, base)?;
     if keyword == "$recursiveRef" && base.get("$recursiveAnchor") == Some(&Value::Bool(true)) {
         let anchor = scopes
             .iter()
             .find(|schema| schema.get("$recursiveAnchor") == Some(&Value::Bool(true)))
             .copied()?;
-        return resolve(anchor, reference);
+        let uri = resource_uri(root, anchor)?;
+        return resolve(anchor, reference, &uri, uri.clone());
     }
-    let schema = if reference.starts_with('#') {
+    let schema = if reference.starts_with('#') || keyword == "$recursiveRef" {
         base
     } else {
         root
     };
-    let target = resolve(schema, reference)?;
+    let schema_uri = if std::ptr::eq(schema, base) {
+        base_uri.clone()
+    } else {
+        root_uri(root)?
+    };
+    let target = resolve(schema, reference, &base_uri, schema_uri)?;
     if keyword == "$dynamicRef"
-        && !reference
-            .split('#')
-            .nth(1)
-            .is_some_and(|fragment| fragment.starts_with('/'))
+        && !reference.split('#').nth(1).is_some_and(|fragment| {
+            percent_decode_str(fragment)
+                .decode_utf8_lossy()
+                .starts_with('/')
+        })
         && let Some(name) = target.get("$dynamicAnchor").and_then(Value::as_str)
     {
         for scope in scopes {
@@ -99,9 +107,13 @@ fn resource_anchor<'a>(root: &'a Value, name: &str) -> Option<&'a Value> {
     None
 }
 
-fn resolve<'a>(root: &'a Value, reference: &str) -> Option<&'a Value> {
-    let root_uri = root_uri(root)?;
-    let target = root_uri.join(reference).ok()?;
+fn resolve<'a>(
+    root: &'a Value,
+    reference: &str,
+    base_uri: &Url,
+    root_uri: Url,
+) -> Option<&'a Value> {
+    let target = base_uri.join(reference).ok()?;
     let mut identity = target.clone();
     identity.set_fragment(None);
     let fragment = percent_decode_str(target.fragment().unwrap_or(""))
@@ -208,6 +220,28 @@ pub(super) fn scope_identity<'a>(root: &'a Value, scopes: &[&'a Value]) -> Scope
         recursive,
         dynamic,
     }
+}
+
+fn resource_uri(root: &Value, resource: &Value) -> Option<Url> {
+    let mut pending = vec![(root, root_uri(root)?)];
+    while let Some((schema, inherited)) = pending.pop() {
+        let uri = inherited_uri(schema, root, inherited)?;
+        if std::ptr::eq(schema, resource) {
+            return Some(uri);
+        }
+        match schema {
+            Value::Object(object) => pending.extend(
+                super::diagnostics::entries(object)
+                    .into_iter()
+                    .map(|(_, schema)| (schema, uri.clone())),
+            ),
+            Value::Array(array) => {
+                pending.extend(array.iter().map(|schema| (schema, uri.clone())));
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 fn root_uri(root: &Value) -> Option<Url> {

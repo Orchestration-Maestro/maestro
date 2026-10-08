@@ -92,10 +92,10 @@ let checked = validate_tool_arguments(&tool, &call)?;
 assert_eq!(checked["count"].as_f64(), Some(42.0));
 assert_eq!(call.arguments["count"], "42");
 
-call.arguments.insert("count".into(), json!("0"));
+call.arguments.remove("count");
 let error = validate_tool_arguments(&tool, &call).unwrap_err();
 assert_eq!(error.message,
-    "Validation failed for tool \"count\":\n  - count: must be >= 1\n\nReceived arguments:\n{\n  \"count\": \"0\"\n}");
+    "Validation failed for tool \"count\":\n  - count: must have required properties count\n\nReceived arguments:\n{}");
 # Ok(())
 # }
 ```

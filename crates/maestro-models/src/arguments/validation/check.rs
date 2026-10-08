@@ -407,8 +407,10 @@ fn apply_conditional<'a>(
             mut condition,
         } => {
             if child.errors.is_empty() {
-                condition.errors.clear();
-                result.merge(condition);
+                if then {
+                    condition.errors.clear();
+                    result.merge(condition);
+                }
                 result.merge(child);
             } else {
                 if !then {

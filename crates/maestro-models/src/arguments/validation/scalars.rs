@@ -59,9 +59,11 @@ pub(super) fn required_errors(
     let Some(first) = missing.first() else {
         return Vec::new();
     };
-    vec![render(
-        &format!("{path}/{first}"),
-        &format!("must have required properties {}", missing.join(", ")),
+    let display = path.strip_prefix('/').unwrap_or(path).replace('/', ".");
+    let separator = if display.is_empty() { "" } else { "." };
+    vec![format!(
+        "  - {display}{separator}{first}: must have required properties {}",
+        missing.join(", ")
     )]
 }
 
@@ -113,7 +115,7 @@ fn multiple_of(dividend: f64, divisor: f64) -> bool {
         return true;
     }
     let remainder = dividend % divisor;
-    remainder.abs().min((remainder - divisor).abs()) < 1e-10
+    remainder.abs().min((remainder.abs() - divisor.abs()).abs()) < 1e-10
 }
 
 pub(super) fn literal_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
@@ -193,10 +195,14 @@ pub(super) fn string_errors(schema: &Value, value: &Value, path: &str) -> Vec<St
     {
         errors.push(render(path, &format!("must match format \"{format}\"")));
     }
-    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str)
-        && !regress::Regex::with_flags(pattern, "u").is_ok_and(|regex| regex.find(text).is_some())
-    {
-        errors.push(render(path, &format!("must match pattern \"{pattern}\"")));
+    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str) {
+        match regress::Regex::with_flags(pattern, "u") {
+            Err(error) => errors.push(render(path, &error.to_string())),
+            Ok(regex) if regex.find(text).is_none() => {
+                errors.push(render(path, &format!("must match pattern \"{pattern}\"")));
+            }
+            Ok(_) => {}
+        }
     }
     errors
 }

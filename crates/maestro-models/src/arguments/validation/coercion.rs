@@ -179,7 +179,7 @@ fn array(value: &mut Value, schema: &Value) {
 }
 
 fn parse_number(text: &str) -> Option<f64> {
-    let text = text.trim_matches(numeric_whitespace);
+    let text = text.trim_matches(super::super::json_parse::whitespace);
     if text.is_empty() {
         return None;
     }
@@ -199,14 +199,6 @@ fn parse_number(text: &str) -> Option<f64> {
         text.parse::<f64>().ok()?
     };
     number.is_finite().then_some(number)
-}
-
-fn numeric_whitespace(character: char) -> bool {
-    matches!(character,
-        '\u{0009}'..='\u{000d}' | ' ' | '\u{00a0}' | '\u{1680}' |
-        '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' |
-        '\u{205f}' | '\u{3000}' | '\u{feff}'
-    )
 }
 
 fn union(value: &mut Value, schemas: &[Value]) {

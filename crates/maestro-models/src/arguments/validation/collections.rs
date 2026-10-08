@@ -7,21 +7,33 @@ use super::{
     diagnostics, scalars,
 };
 
-type Patterns<'a> = Vec<(Option<regress::Regex>, &'a Value)>;
+type Patterns<'a> = Vec<(regress::Regex, &'a Value)>;
 
 pub(super) fn object<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>) {
     let Instance::Json(Value::Object(value)) = job.value else {
         return;
     };
-    let patterns: Patterns<'a> = job
+    let patterns: Result<Patterns<'a>, _> = job
         .schema
         .get("patternProperties")
         .and_then(Value::as_object)
         .filter(|properties| properties.values().all(is_schema))
         .into_iter()
         .flat_map(|patterns| diagnostics::entries(patterns).into_iter())
-        .map(|(pattern, schema)| (regress::Regex::with_flags(pattern, "u").ok(), schema))
+        .map(|(pattern, schema)| {
+            regress::Regex::with_flags(pattern, "u").map(|regex| (regex, schema))
+        })
         .collect();
+    let patterns = match patterns {
+        Ok(patterns) => patterns,
+        Err(error) => {
+            instructions.push(Instruction::Errors(vec![scalars::render(
+                &job.path,
+                &error.to_string(),
+            )]));
+            return;
+        }
+    };
     instructions.push(Instruction::Errors(scalars::required_errors(
         job.schema, value, &job.path,
     )));
@@ -57,11 +69,7 @@ fn additional_properties<'a>(
         .into_iter()
         .filter(|(key, _)| {
             !declared.is_some_and(|declared| declared.contains_key(*key))
-                && !patterns.iter().any(|(regex, _)| {
-                    regex
-                        .as_ref()
-                        .is_some_and(|regex| regex.find(key).is_some())
-                })
+                && !patterns.iter().any(|(regex, _)| regex.find(key).is_some())
         })
         .map(|(key, value)| {
             (
@@ -91,11 +99,7 @@ fn pattern_properties<'a>(
     for (regex, schema) in patterns {
         let members = diagnostics::entries(value)
             .into_iter()
-            .filter(|(key, _)| {
-                regex
-                    .as_ref()
-                    .is_some_and(|regex| regex.find(key).is_some())
-            })
+            .filter(|(key, _)| regex.find(key).is_some())
             .map(|(key, value)| {
                 (
                     Mark::Key(key.clone()),
@@ -154,17 +158,15 @@ fn dependencies<'a>(
             continue;
         }
         if let Some(names) = schema.as_array() {
-            let missing: Vec<_> = names
-                .iter()
-                .filter_map(Value::as_str)
-                .filter(|name| !value.contains_key(*name))
-                .collect();
-            if !missing.is_empty() && keyword != "dependentSchemas" {
+            let declared: Vec<_> = names.iter().filter_map(Value::as_str).collect();
+            if declared.iter().any(|name| !value.contains_key(*name))
+                && keyword != "dependentSchemas"
+            {
                 instructions.push(Instruction::Errors(vec![scalars::render(
                     &job.path,
                     &format!(
                         "must have properties {} when property {key} is present",
-                        missing.join(", ")
+                        declared.join(", ")
                     ),
                 )]));
             }
