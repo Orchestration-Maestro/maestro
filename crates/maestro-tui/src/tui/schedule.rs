@@ -18,6 +18,8 @@ pub(super) struct Schedule {
     render_requested: bool,
     /// The pending delayed frame.
     render_timer: Option<Box<dyn RenderTimer>>,
+    /// The pending immediate frame a forced request queued.
+    forced_timer: Option<Box<dyn RenderTimer>>,
     /// When the latest frame started.
     last_render_at: Duration,
 }
@@ -38,11 +40,11 @@ impl Schedule {
         self.stopped = false;
     }
 
-    /// Forbids frames, forgets the request and hands back the pending timer to cancel.
-    pub(super) fn halt(&mut self) -> Option<Box<dyn RenderTimer>> {
+    /// Forbids frames, forgets the request and hands back the pending timers to cancel.
+    pub(super) fn halt(&mut self) -> [Option<Box<dyn RenderTimer>>; 2] {
         self.stopped = true;
         self.render_requested = false;
-        self.render_timer.take()
+        [self.render_timer.take(), self.forced_timer.take()]
     }
 }
 
@@ -57,25 +59,30 @@ impl TUI {
         }
     }
 
-    /// Forgets the retained frame and queues an immediate frame.
+    /// Forgets the retained frame and queues an immediate frame in place of any pending
+    /// frame.
     fn request_forced_render(&self) {
         self.shared.screen.borrow_mut().forget_frame();
         let (stale, queued) = {
             let mut schedule = self.shared.schedule.borrow_mut();
-            (schedule.render_timer.take(), schedule.request(true))
+            (
+                [schedule.render_timer.take(), schedule.forced_timer.take()],
+                schedule.request(true),
+            )
         };
-        if let Some(mut timer) = stale {
+        for mut timer in stale.into_iter().flatten() {
             timer.cancel();
         }
         if queued {
             let weak = Rc::downgrade(&self.shared);
-            drop(self.shared.runtime.schedule(
+            let timer = self.shared.runtime.schedule(
                 Duration::ZERO,
                 Box::new(move || match weak.upgrade() {
                     Some(shared) => TUI { shared }.run_forced_render(),
                     None => Ok(()),
                 }),
-            ));
+            );
+            self.shared.schedule.borrow_mut().forced_timer = Some(timer);
         }
     }
 
@@ -129,6 +136,8 @@ impl TUI {
 
     /// Runs the immediate frame a forced request queued.
     fn run_forced_render(&self) -> io::Result<()> {
+        let expired = self.shared.schedule.borrow_mut().forced_timer.take();
+        drop(expired);
         if self.claim_frame() {
             self.do_render()
         } else {

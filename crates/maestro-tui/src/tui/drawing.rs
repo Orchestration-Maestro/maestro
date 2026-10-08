@@ -74,9 +74,9 @@ pub(super) fn row_delta(current: usize, target: usize) -> isize {
     }
 }
 
-/// The synchronized output that draws every line from the top of the screen. When
+/// The synchronized output that draws every line from the cursor's current position. When
 /// `cleared_images` is present the images it names are deleted, then the screen and
-/// scrollback are cleared.
+/// scrollback are cleared, so the lines start at the top of the screen.
 pub(super) fn full_frame(lines: &[String], cleared_images: Option<&[u32]>) -> String {
     let erase = cleared_images.map_or_else(String::new, |images| {
         format!("{}\x1b[2J\x1b[H\x1b[3J", image_deletions(images))
@@ -161,8 +161,9 @@ pub(super) struct Update {
 /// The synchronized output that redraws rows `changes.first..=changes.last` in place and
 /// erases rows the new frame no longer has. The cursor starts on row `hardware_row`.
 ///
-/// The first changed row is always on screen: a retained frame ends on or above the last
-/// screen row, so no scrolling is needed to reach it.
+/// The first changed row is never above the viewport, because a change there is drawn as a
+/// full redraw instead. Rows below it, appended ones included, are reached with line
+/// breaks, which scroll the terminal as needed.
 pub(super) fn differential(
     previous: &[String],
     lines: &[String],

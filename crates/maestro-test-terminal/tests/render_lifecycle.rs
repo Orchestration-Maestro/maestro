@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
+use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{CURSOR_MARKER, TUI, TerminalImage};
 
 #[allow(
@@ -198,15 +199,12 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
     match variant {
         "force" => tui.request_render(true),
         "stop" => succeeds(tui.stop()),
-        "stop_after_force" => {
-            tui.request_render(true);
-            succeeds(tui.stop());
-        }
-        "dropped" => {
-            probe.borrow_mut().on_render = None;
-            drop(tui);
-        }
         "restart" => {
+            succeeds(tui.stop());
+            succeeds(tui.start());
+        }
+        "force_then_restart" => {
+            tui.request_render(true);
             succeeds(tui.stop());
             succeeds(tui.start());
         }
@@ -244,11 +242,72 @@ fn render_requests_coalesce_cancel_and_survive_reentry() {
             vec![Render(100), Observed(115, 1), Render(116), Observed(116, 2)],
         ),
         (
+            "force_then_restart",
+            vec![Render(100), Observed(115, 1), Render(116), Observed(116, 2)],
+        ),
+        (
             "during_render",
             vec![Render(100), Observed(115, 1), Render(116), Observed(116, 2)],
         ),
     ];
     for (variant, events) in cases {
         assert_eq!(schedule_variant(variant), (events, 0), "{variant}");
+    }
+    assert_children_edited_during_a_walk_follow_the_live_list();
+}
+
+/// Which walk over the children a component edits the list during.
+#[derive(Clone, Copy, Debug)]
+enum Walk {
+    /// A frame renders every child.
+    Render,
+    /// The writer invalidates every child.
+    Invalidate,
+}
+
+/// Runs `walk` over three children where the first adds a fourth (`add`) or removes the
+/// second (`!add`) while it is visited; returns how often each child was visited.
+fn walk_with_edit(walk: Walk, add: bool) -> Vec<usize> {
+    let (tui, _terminal, runtime) = writer(None);
+    let children: Vec<_> = ["a", "b", "c", "d"]
+        .map(|line| Probe::shared(&[line]))
+        .into();
+    for child in &children[..3] {
+        tui.add_child(child.clone());
+    }
+    let (writer, added, removed): (_, ComponentHandle, ComponentHandle) =
+        (tui.clone(), children[3].clone(), children[1].clone());
+    let edit = move || {
+        if add {
+            writer.add_child(added.clone());
+        } else {
+            writer.remove_child(&removed);
+        }
+    };
+    match walk {
+        Walk::Render => children[0].borrow_mut().on_render = Some(Box::new(move |_| edit())),
+        Walk::Invalidate => children[0].borrow_mut().on_invalidate = Some(Box::new(edit)),
+    }
+    match walk {
+        Walk::Render => {
+            tui.request_render(false);
+            succeeds(runtime.settle());
+        }
+        Walk::Invalidate => tui.invalidate(),
+    }
+    children
+        .iter()
+        .map(|child| match walk {
+            Walk::Render => child.borrow().renders,
+            Walk::Invalidate => child.borrow().invalidated,
+        })
+        .collect()
+}
+
+/// A child added during a walk is visited in it and one removed before its turn is not.
+fn assert_children_edited_during_a_walk_follow_the_live_list() {
+    for walk in [Walk::Render, Walk::Invalidate] {
+        assert_eq!(walk_with_edit(walk, true), [1, 1, 1, 1], "{walk:?} add");
+        assert_eq!(walk_with_edit(walk, false), [1, 0, 1, 0], "{walk:?} remove");
     }
 }

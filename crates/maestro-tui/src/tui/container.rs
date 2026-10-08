@@ -52,9 +52,14 @@ impl Component for Container {
             .collect()
     }
 
+    /// Invalidates every child in order, except one that is running a callback: it is
+    /// borrowed exclusively. When the frame writer started that callback, it invalidates the
+    /// component once the callback returns.
     fn invalidate(&mut self) {
         for child in &self.children {
-            child.borrow_mut().invalidate();
+            if let Ok(mut idle) = child.try_borrow_mut() {
+                idle.invalidate();
+            }
         }
     }
 }

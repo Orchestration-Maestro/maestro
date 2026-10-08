@@ -22,7 +22,7 @@ use schedule::Schedule;
 use screen::Screen;
 
 pub use crate::text::utils::visible_width;
-pub use component::{CURSOR_MARKER, Component, Focusable, InputHandler, is_focusable};
+pub use component::{CURSOR_MARKER, Component, FocusFlag, Focusable, InputHandler, is_focusable};
 pub use container::{ComponentHandle, Container};
 pub use input::{InputListener, InputListenerResult};
 pub use overlay_types::{
@@ -60,6 +60,8 @@ struct Shared {
     show_hardware_cursor: Cell<bool>,
     /// Whether shrinking content clears the screen.
     clear_on_shrink: Cell<bool>,
+    /// Whether components were invalidated since the running component callback began.
+    invalidated: Cell<bool>,
 }
 
 impl TUI {
@@ -89,6 +91,7 @@ impl TUI {
                 input: RefCell::new(Input::default()),
                 show_hardware_cursor: Cell::new(show_hardware_cursor),
                 clear_on_shrink: Cell::new(clear_on_shrink),
+                invalidated: Cell::new(false),
             }),
         }
     }
@@ -108,7 +111,11 @@ impl TUI {
     }
 
     /// Appends a component.
+    ///
+    /// The writer also reads the component's focus flag, so the component can be given
+    /// focus while it runs a callback.
     pub fn add_child(&self, component: ComponentHandle) {
+        drop(self.focus_flag_of(&component));
         self.shared.container.borrow_mut().add_child(component);
     }
 
@@ -163,12 +170,19 @@ impl TUI {
         self.shared.clear_on_shrink.set(enabled);
     }
 
-    /// Drops the cached rendering of every component.
+    /// Drops the cached rendering of every component, walking the live list of children.
+    ///
+    /// A child that is running a callback is borrowed exclusively and cannot be invalidated
+    /// inside it. When the writer started that callback, as it does for rendering and
+    /// input, the component is invalidated as soon as the callback returns, before it
+    /// renders again.
     pub fn invalidate(&self) {
-        let children = self.shared.container.borrow().children.clone();
-        for child in &children {
-            self.apply(child, Box::new(|child| child.invalidate()));
+        for child in self.live_children() {
+            if let Ok(mut idle) = child.try_borrow_mut() {
+                idle.invalidate();
+            }
         }
+        self.shared.invalidated.set(true);
     }
 
     /// Starts the terminal, hides the cursor, asks image terminals for their cell size and
@@ -196,7 +210,7 @@ impl TUI {
     /// Returns the terminal's error unchanged.
     pub fn stop(&self) -> io::Result<()> {
         let pending = self.shared.schedule.borrow_mut().halt();
-        if let Some(mut timer) = pending {
+        for mut timer in pending.into_iter().flatten() {
             timer.cancel();
         }
         self.move_below_content()?;
@@ -214,15 +228,32 @@ impl TUI {
         })
     }
 
-    /// Renders every component for `width` without holding a borrow across a render.
+    /// The children by position, each fetched when the walk reaches it: a child added
+    /// during the walk is visited and one removed before its turn is not.
+    fn live_children(&self) -> impl Iterator<Item = ComponentHandle> + '_ {
+        (0..).map_while(|index| self.shared.container.borrow().children.get(index).cloned())
+    }
+
+    /// Runs `callback` on `component`. When [`TUI::invalidate`] was called meanwhile it could
+    /// not reach `component`, so `component` is invalidated once the callback returns.
+    fn run_component<R>(
+        &self,
+        component: &ComponentHandle,
+        callback: impl FnOnce(&mut dyn Component) -> R,
+    ) -> R {
+        self.shared.invalidated.set(false);
+        let result = callback(&mut *component.borrow_mut());
+        if self.shared.invalidated.replace(false) {
+            component.borrow_mut().invalidate();
+        }
+        result
+    }
+
+    /// Renders every component for `width`, walking the live list of children.
     fn render_children(&self, width: usize) -> Vec<String> {
-        let children = self.shared.container.borrow().children.clone();
-        let lines = children
-            .iter()
-            .flat_map(|child| child.borrow_mut().render(width))
-            .collect();
-        self.apply_deferred();
-        lines
+        self.live_children()
+            .flat_map(|child| self.run_component(&child, |child| child.render(width)))
+            .collect()
     }
 }
 

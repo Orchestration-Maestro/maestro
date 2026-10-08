@@ -114,9 +114,11 @@ assert_eq!(sent.borrow().concat(), "\x1b[?2026h\r\x1b[2Kdone\x1b[0m\x1b]8;;\x07\
 | Differential record | off | `MAESTRO_TUI_DEBUG=1` |
 
 A boolean variable is on only when it is exactly `1`; the constructor argument wins
-over the variable. The hardware cursor is shown only where a focused component
-emitted `CURSOR_MARKER`, and only when this setting is on; otherwise it stays hidden.
-Turning it off hides the cursor at once, and any change asks for a frame.
+over the variable. The writer places the terminal cursor at the first `CURSOR_MARKER`
+on the last visible row that holds one and shows it only when this setting is on; with
+no marker, or with the setting off, the cursor stays hidden. A focused component is the
+one that emits the marker, but the writer does not check focus. Turning the setting off
+hides the cursor at once, and any change asks for a frame.
 
 ## How a frame is drawn
 
@@ -139,6 +141,10 @@ terminal. Image lines are written untouched.
    viewport up, when a changed row has scrolled out of the viewport and when a redraw
    is forced.
 
+Components render in order by walking the live list of children: one that an earlier
+component adds while the frame renders is rendered in the same frame, and one that is
+removed before its turn is skipped. `invalidate` walks the list the same way.
+
 `full_redraws` counts the full redraws begun. The logical end of the content and the
 row the terminal cursor is on are tracked separately, because placing the hardware
 cursor moves it away from the end of the content.
@@ -160,9 +166,9 @@ and merges any further request until then. `request_render(true)` forgets the
 retained frame and queues an immediate redraw of everything. The host always defers
 the callback, even for a zero delay, and the callback's `io::Result` is returned to
 whoever drives the host. A component may request another frame while it renders; the
-request is kept and queued after the current frame. `stop` cancels the pending frame
-and forgets any request, so `start` after a `stop` draws again, and requests made
-while stopped are dropped.
+request is kept and queued after the current frame. `stop` cancels the pending frame,
+including the immediate one a forced request queued, and forgets any request, so
+`start` after a `stop` draws again, and requests made while stopped are dropped.
 
 ## Input
 
@@ -170,10 +176,11 @@ while stopped are dropped.
 
 1. The input listeners, in the order they were added. The list is walked live: a
    listener added by an earlier one runs in the same dispatch and a removed one is
-   skipped. A listener passes the input on, consumes it or replaces it; replacing
-   with an empty string ends the dispatch. `add_input_listener` returns a function
-   that removes the listener and may be called again harmlessly; dropping it does not
-   remove the listener.
+   skipped. A listener passes the input on, consumes it or replaces it. A replacement,
+   even an empty one, is what the later listeners see, and one of them may replace it
+   again; input that is still empty after the last listener is delivered to nothing.
+   `add_input_listener` returns a function that removes the listener and may be called
+   again harmlessly; dropping it does not remove the listener.
 2. The cell-size reply check. A chunk that is exactly `ESC [ 6 ; height ; width t`
    with ASCII digits is a reply and is never forwarded. A zero value or one beyond
    32 bits is dropped and leaves the measured size alone; any other reply updates the
@@ -186,10 +193,18 @@ while stopped are dropped.
    each delivery.
 
 `set_focus` clears the focus flag of the previous component and sets it on the new
-one without requesting a frame. A component may call `set_focus` or `invalidate` from
-inside its own input or render callback: while it is running it is borrowed, so the
-change is applied as soon as its callback returns. The cell size is only requested at
-startup when the terminal supports images.
+one at once, without requesting a frame. The flag is shared with the component, so a
+component that calls `set_focus` from inside its own input or render callback sees the
+change in the rest of that callback. The writer reads a component's flag when the
+component is added with `add_child` or given focus, provided it is not running then; a
+running component whose flag was never read cannot be given focus, though a focused
+component still receives input.
+
+A component may also call `invalidate` from inside its own input or render callback.
+Components that are not running are invalidated at once. The running component is
+borrowed exclusively, so it is invalidated as soon as its callback returns, before it
+renders again; when it is a container, so are the components inside it. The cell size is
+only requested at startup when the terminal supports images.
 
 ## Errors and diagnostics
 

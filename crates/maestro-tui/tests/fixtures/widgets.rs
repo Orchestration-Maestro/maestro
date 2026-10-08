@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::tui::InputHandler;
-use maestro_tui::{CURSOR_MARKER, Component, Focusable, OverlayHandle};
+use maestro_tui::{CURSOR_MARKER, Component, FocusFlag, Focusable, OverlayHandle};
 
 /// Names of the components invalidated so far, in invalidation order.
 pub type InvalidationTrace = Rc<RefCell<Vec<&'static str>>>;
@@ -42,7 +42,7 @@ impl Component for Passive {
 #[derive(Default)]
 pub struct Field {
     /// Whether the field has focus.
-    pub focused: bool,
+    pub focus: FocusFlag,
     /// Input chunks received.
     pub received: Vec<String>,
     /// Whether the field wants key-release events.
@@ -51,7 +51,7 @@ pub struct Field {
 
 impl Component for Field {
     fn render(&mut self, _width: usize) -> Vec<String> {
-        let marker = if self.focused { CURSOR_MARKER } else { "" };
+        let marker = if self.focus.get() { CURSOR_MARKER } else { "" };
         vec![format!("> {marker}")]
     }
 
@@ -66,10 +66,6 @@ impl Component for Field {
     fn focusable(&self) -> Option<&dyn Focusable> {
         Some(self)
     }
-
-    fn focusable_mut(&mut self) -> Option<&mut dyn Focusable> {
-        Some(self)
-    }
 }
 
 impl InputHandler for Field {
@@ -79,12 +75,8 @@ impl InputHandler for Field {
 }
 
 impl Focusable for Field {
-    fn focused(&self) -> bool {
-        self.focused
-    }
-
-    fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
+    fn focus_flag(&self) -> &FocusFlag {
+        &self.focus
     }
 }
 

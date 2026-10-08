@@ -69,7 +69,8 @@ pub(super) struct Changes {
 
 /// How the terminal is brought up to date with a frame.
 pub(super) enum Plan {
-    /// Draw every line from the top of the screen.
+    /// Draw every line, after clearing the screen and scrollback unless this is the first
+    /// frame.
     Full(RedrawReason),
     /// Erase rows the new frame no longer has.
     DeleteTail {
@@ -234,7 +235,8 @@ impl Screen {
         self.previous_height = Extent::Known(frame.height);
     }
 
-    /// Updates the row bookkeeping after a frame drawn from the top of the screen.
+    /// Updates the row bookkeeping after a full draw, which takes the content to end on the
+    /// frame's last row; `clear` restarts the count of most rows drawn instead of raising it.
     fn after_full(&mut self, frame: &Frame, clear: bool) {
         let rows = frame.lines.len();
         self.cursor_row = rows.saturating_sub(1);
@@ -294,7 +296,8 @@ impl TUI {
         }
     }
 
-    /// Draws every line from the top of the screen.
+    /// Draws every line in one pass, after clearing the screen and scrollback unless the
+    /// reason is the first frame.
     fn full_render(&self, frame: Frame, reason: &RedrawReason) -> io::Result<()> {
         self.log_redraw(reason, &frame)?;
         let clear = reason.clears();

@@ -1,5 +1,8 @@
 //! What a renderable terminal component can do.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 /// Marker a focused component emits where the hardware cursor belongs.
 ///
 /// It is an application-command escape that terminals ignore, so it occupies no cells.
@@ -11,14 +14,33 @@ pub trait InputHandler {
     fn handle_input(&mut self, data: &str);
 }
 
+/// Whether a component has keyboard focus, shared between the component and the writer.
+///
+/// Clones observe the same value. A component running a callback is borrowed
+/// exclusively, so the writer moves focus through this flag instead of through the
+/// component: a change is visible to the component at once.
+#[derive(Clone, Default)]
+pub struct FocusFlag(Rc<Cell<bool>>);
+
+impl FocusFlag {
+    /// Whether the component has focus.
+    #[must_use]
+    pub fn get(&self) -> bool {
+        self.0.get()
+    }
+
+    /// Records a focus change.
+    pub fn set(&self, focused: bool) {
+        self.0.set(focused);
+    }
+}
+
 /// A component that can hold keyboard focus and show a text cursor.
 pub trait Focusable {
-    /// Whether the component currently has focus.
-    fn focused(&self) -> bool;
-
-    /// Records a focus change; a focused component is expected to emit [`CURSOR_MARKER`]
-    /// when it renders.
-    fn set_focused(&mut self, focused: bool);
+    /// The component's flag, which the writer sets when focus moves to or from the
+    /// component. A focused component is expected to emit [`CURSOR_MARKER`] when it
+    /// renders.
+    fn focus_flag(&self) -> &FocusFlag;
 }
 
 /// A unit of terminal output laid out for a viewport width.
@@ -41,11 +63,6 @@ pub trait Component {
 
     /// The focus capability, when the component can be focused.
     fn focusable(&self) -> Option<&dyn Focusable> {
-        None
-    }
-
-    /// The mutable focus capability, when the component can be focused.
-    fn focusable_mut(&mut self) -> Option<&mut dyn Focusable> {
         None
     }
 }

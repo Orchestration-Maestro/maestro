@@ -1,11 +1,11 @@
 //! Input reaches the focused component only after listeners and cell-size replies.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::CellDimensions;
 use maestro_tui::tui::{InputListener, InputListenerResult};
-use maestro_tui::{TUI, TerminalImage};
+use maestro_tui::{Container, TUI, TerminalImage};
 use serde::Deserialize;
 
 #[allow(
@@ -334,33 +334,48 @@ fn focus_transitions_update_capability_flags() {
     let other = Probe::shared(&[]);
     other.borrow_mut().capabilities = Capabilities::FocusOnly;
     rig.tui.set_focus(Some(rig.probe.clone()));
-    assert!(rig.probe.borrow().focused);
+    assert!(rig.probe.borrow().focus.get());
     rig.tui.set_focus(Some(other.clone()));
     assert_eq!(
-        (rig.probe.borrow().focused, other.borrow().focused),
+        (rig.probe.borrow().focus.get(), other.borrow().focus.get()),
         (false, true)
     );
     rig.tui.set_focus(None);
-    assert!(!other.borrow().focused);
+    assert!(!other.borrow().focus.get());
     rig.terminal.send_input("x");
     assert!(rig.probe.borrow().inputs.is_empty());
     assert_focus_positions_cursor();
+    assert_focus_change_during_render_applies_to_that_frame();
     assert_component_changes_survive_its_own_callback();
 }
 
-/// A component that is handling input or rendering can move focus and invalidate through
-/// the writer; both take effect once its callback returns.
+/// A component that is handling input or rendering moves focus and invalidates through the
+/// writer: other components change inside its callback, and the running component is
+/// invalidated as its callback returns.
 fn assert_component_changes_survive_its_own_callback() {
     let rig = Rig::new();
-    let next = Probe::shared(&[]);
-    let (tui, target) = (rig.tui.clone(), next.clone());
+    let (next, sibling) = (Probe::shared(&[]), Probe::shared(&[]));
+    rig.tui.add_child(sibling.clone());
+    let inside = Rc::new(Cell::new((false, 0)));
+    let (tui, target, other, seen) = (
+        rig.tui.clone(),
+        next.clone(),
+        sibling.clone(),
+        Rc::clone(&inside),
+    );
     rig.probe.borrow_mut().on_input = Some(Box::new(move |_| {
         tui.set_focus(Some(target.clone()));
         tui.invalidate();
+        seen.set((target.borrow().focus.get(), other.borrow().invalidated));
     }));
     rig.terminal.send_input("x");
-    assert!(!rig.probe.borrow().focused);
-    assert!(next.borrow().focused);
+    assert_eq!(
+        inside.get(),
+        (true, 1),
+        "the new focus and a sibling's invalidation happen inside the callback"
+    );
+    assert!(!rig.probe.borrow().focus.get());
+    assert!(next.borrow().focus.get());
     assert_eq!(rig.probe.borrow().invalidated, 1);
 
     let writer = rig.tui.clone();
@@ -368,10 +383,112 @@ fn assert_component_changes_survive_its_own_callback() {
     rig.tui.request_render(false);
     succeeds(rig.runtime.settle());
     assert_eq!(rig.probe.borrow().invalidated, 2);
+    assert_eq!(sibling.borrow().invalidated, 2);
+    assert_nested_focused_component_invalidates_its_container();
 }
 
-/// Focusing a component that marks its cursor moves the hardware cursor without redrawing
-/// any line, and a component that cannot hold focus never shows it.
+/// A focused component inside a container that invalidates through the writer neither
+/// panics nor is left out: its sibling is invalidated at once and it as its callback
+/// returns.
+fn assert_nested_focused_component_invalidates_its_container() {
+    let rig = Rig::new();
+    rig.tui.clear();
+    let sibling = Probe::shared(&[]);
+    let container = Rc::new(RefCell::new(Container::new()));
+    container.borrow_mut().add_child(sibling.clone());
+    container.borrow_mut().add_child(rig.probe.clone());
+    rig.tui.add_child(container);
+    rig.tui.set_focus(Some(rig.probe.clone()));
+    let inside = Rc::new(Cell::new(0));
+    let (tui, seen) = (rig.tui.clone(), Rc::clone(&inside));
+    rig.probe.borrow_mut().on_input = Some(Box::new(move |_| {
+        tui.invalidate();
+        seen.set(sibling.borrow().invalidated);
+    }));
+    rig.terminal.send_input("x");
+    assert_eq!(
+        inside.get(),
+        1,
+        "the sibling is invalidated inside the callback"
+    );
+    assert_eq!(rig.probe.borrow().invalidated, 1);
+}
+
+/// A focused component that clears focus while it renders no longer marks its cursor in
+/// that frame, and a registered component that takes focus while it renders marks it in
+/// that frame.
+fn assert_focus_change_during_render_applies_to_that_frame() {
+    let terminal = RecordingTerminal::new(10, 3);
+    let runtime = ManualRuntime::new();
+    let tui = TUI::new(
+        terminal.handle(),
+        runtime.handle(),
+        TerminalImage::new(|_| None, || 1),
+        Some(true),
+    );
+    let editor = Probe::shared(&["abc"]);
+    editor.borrow_mut().emits_marker = true;
+    tui.add_child(editor.clone());
+    tui.set_focus(Some(editor.clone()));
+    let writer = tui.clone();
+    editor.borrow_mut().on_render = Some(Box::new(move |_| writer.set_focus(None)));
+    tui.request_render(false);
+    succeeds(runtime.settle());
+    assert_eq!(
+        terminal.writes(),
+        ["\x1b[?2026habc\x1b[0m\x1b]8;;\x07\x1b[?2026l", "\x1b[?25l"],
+        "clearing focus while rendering drops the marker from that frame"
+    );
+    assert!(!editor.borrow().focus.get());
+
+    terminal.clear_writes();
+    tui.clear();
+    let taker = Probe::shared(&["abc"]);
+    taker.borrow_mut().emits_marker = true;
+    tui.add_child(taker.clone());
+    let (writer, own) = (tui.clone(), Rc::downgrade(&taker));
+    taker.borrow_mut().on_render = Some(Box::new(move |_| {
+        if let Some(own) = own.upgrade() {
+            writer.set_focus(Some(own));
+        }
+    }));
+    tui.request_render(false);
+    succeeds(runtime.settle());
+    assert_eq!(
+        terminal.writes().last().map(String::as_str),
+        Some("\x1b[?25h"),
+        "taking focus while rendering marks the cursor in that frame"
+    );
+    assert!(taker.borrow().focus.get());
+    assert_running_component_without_a_known_flag_still_receives_input();
+}
+
+/// A component inside a container was never added to the writer, so while it renders its
+/// flag cannot be read: focusing itself leaves it unflagged but sends it the input.
+fn assert_running_component_without_a_known_flag_still_receives_input() {
+    let rig = Rig::new();
+    rig.tui.clear();
+    let hidden = Probe::shared(&["abc"]);
+    let container = Rc::new(RefCell::new(Container::new()));
+    container.borrow_mut().add_child(hidden.clone());
+    rig.tui.add_child(container);
+    let (writer, own) = (rig.tui.clone(), Rc::downgrade(&hidden));
+    hidden.borrow_mut().on_render = Some(Box::new(move |_| {
+        if let Some(own) = own.upgrade() {
+            writer.set_focus(Some(own));
+        }
+    }));
+    rig.tui.request_render(false);
+    succeeds(rig.runtime.settle());
+    assert!(!hidden.borrow().focus.get(), "its flag was unreachable");
+    assert!(!rig.probe.borrow().focus.get(), "the previous focus ended");
+    rig.terminal.send_input("x");
+    assert_eq!(hidden.borrow().inputs, ["x"]);
+}
+
+/// Focusing a component that marks its cursor while focused moves the hardware cursor
+/// without redrawing any line; a component that cannot hold focus is never flagged, so its
+/// marker never appears and the cursor stays hidden.
 fn assert_focus_positions_cursor() {
     let terminal = RecordingTerminal::new(10, 3);
     let runtime = ManualRuntime::new();
@@ -411,7 +528,7 @@ fn assert_focus_positions_cursor() {
     assert_eq!(
         terminal.writes().last().map(String::as_str),
         Some("\x1b[?25l"),
-        "a component that cannot hold focus never shows the cursor"
+        "a component that cannot hold focus is never flagged, so its marker stays out"
     );
 }
 

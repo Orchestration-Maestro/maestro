@@ -133,7 +133,8 @@ impl ManualRuntime {
     ///
     /// # Errors
     ///
-    /// Returns the first callback error and leaves later callbacks pending.
+    /// Returns the first error among the callbacks due at one moment; all of them run
+    /// first, and callbacks due later stay pending.
     pub fn settle(&self) -> io::Result<()> {
         loop {
             let next = self

@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::tui::InputHandler;
-use maestro_tui::{CURSOR_MARKER, Component, Focusable};
+use maestro_tui::{CURSOR_MARKER, Component, FocusFlag, Focusable};
 
 /// Receives each chunk of input a [`Probe`] gets.
 pub type InputObserver = Box<dyn FnMut(&str)>;
@@ -27,7 +27,7 @@ pub struct Probe {
     /// Chunks of input received, in order.
     pub inputs: Vec<String>,
     /// Whether the component currently has focus.
-    pub focused: bool,
+    pub focus: FocusFlag,
     /// Which optional capabilities the component offers.
     pub capabilities: Capabilities,
     /// Whether the component asks for key-release events.
@@ -42,6 +42,8 @@ pub struct Probe {
     pub on_render: Option<Box<dyn FnMut(usize)>>,
     /// Called with each chunk of input the component receives.
     pub on_input: Option<InputObserver>,
+    /// Called each time the component is invalidated.
+    pub on_invalidate: Option<Box<dyn FnMut()>>,
 }
 
 impl Probe {
@@ -50,7 +52,7 @@ impl Probe {
         Rc::new(RefCell::new(Self {
             lines: lines.iter().map(|line| (*line).to_owned()).collect(),
             inputs: Vec::new(),
-            focused: false,
+            focus: FocusFlag::default(),
             capabilities: Capabilities::Full,
             wants_release: false,
             emits_marker: false,
@@ -58,6 +60,7 @@ impl Probe {
             renders: 0,
             on_render: None,
             on_input: None,
+            on_invalidate: None,
         }))
     }
 
@@ -76,7 +79,7 @@ impl Component for Probe {
         let mut lines = self.lines.clone();
         if let Some(last) = lines
             .last_mut()
-            .filter(|_| self.focused && self.emits_marker)
+            .filter(|_| self.focus.get() && self.emits_marker)
         {
             last.push_str(CURSOR_MARKER);
         }
@@ -85,6 +88,9 @@ impl Component for Probe {
 
     fn invalidate(&mut self) {
         self.invalidated += 1;
+        if let Some(on_invalidate) = self.on_invalidate.as_mut() {
+            on_invalidate();
+        }
     }
 
     fn input_handler(&mut self) -> Option<&mut dyn InputHandler> {
@@ -98,10 +104,6 @@ impl Component for Probe {
     fn focusable(&self) -> Option<&dyn Focusable> {
         (self.capabilities != Capabilities::Passive).then_some(self as &dyn Focusable)
     }
-
-    fn focusable_mut(&mut self) -> Option<&mut dyn Focusable> {
-        (self.capabilities != Capabilities::Passive).then_some(self as &mut dyn Focusable)
-    }
 }
 
 impl InputHandler for Probe {
@@ -114,11 +116,7 @@ impl InputHandler for Probe {
 }
 
 impl Focusable for Probe {
-    fn focused(&self) -> bool {
-        self.focused
-    }
-
-    fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
+    fn focus_flag(&self) -> &FocusFlag {
+        &self.focus
     }
 }

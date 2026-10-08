@@ -9,9 +9,9 @@ use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPo
 use maestro_tui::editor_component::EditorCallbacks;
 use maestro_tui::tui::{ComponentHandle, InputHandler};
 use maestro_tui::{
-    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, Focusable,
-    OverlayHandle, OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText,
-    is_focusable, visible_width,
+    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayHandle,
+    OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable,
+    visible_width,
 };
 
 mod fixtures {
@@ -35,18 +35,22 @@ const RESET: &str = "\x1b[0m";
 fn component_capabilities_distinguish_missing_input_and_focus() {
     let mut passive = Passive("p");
     assert!(passive.input_handler().is_none() && passive.focusable().is_none());
-    assert!(passive.focusable_mut().is_none() && !passive.wants_key_release());
+    assert!(!passive.wants_key_release());
     assert!(!is_focusable(Some(&passive)) && !is_focusable(None));
 
     let mut field = Field::default();
     assert!(
-        !field.focused() && is_focusable(Some(&field)),
+        !field.focus.get() && is_focusable(Some(&field)),
         "an unfocused field is still focusable"
     );
-    if let Some(focus) = field.focusable_mut() {
-        focus.set_focused(true);
+    if let Some(focus) = field.focusable() {
+        focus.focus_flag().set(true);
     }
-    assert!(field.focusable().is_some_and(Focusable::focused));
+    assert!(
+        field
+            .focusable()
+            .is_some_and(|focus| focus.focus_flag().get())
+    );
     assert_eq!(field.render(10), [format!("> {CURSOR_MARKER}")]);
     assert_eq!(visible_width(CURSOR_MARKER), 0);
 

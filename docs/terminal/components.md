@@ -26,11 +26,13 @@ Everything else is an optional capability that defaults to absent:
 | Drop cached rendering | `invalidate` | does nothing |
 | Receive input while focused | `input_handler` | `None` |
 | Receive key-release events | `wants_key_release` | `false` |
-| Hold focus and show a cursor | `focusable`, `focusable_mut` | `None` |
+| Hold focus and show a cursor | `focusable` | `None` |
 
 Absence is explicit: a component without input returns `None` from `input_handler`
 rather than a handler that ignores its input. `is_focusable` tests for the
-capability, not for the current focus. A focused component is expected to emit
+capability, not for the current focus. A focusable component holds a `FocusFlag`, which
+the frame writer shares and sets when focus moves; the component reads it when it renders,
+so a change made during that render counts. A focused component is expected to emit
 `CURSOR_MARKER` where the hardware cursor belongs; the marker is an escape that
 occupies no cells.
 
@@ -38,7 +40,9 @@ A `Container` renders its children in order and concatenates their lines. Childr
 are shared handles (`Rc<RefCell<dyn Component>>`), so whoever keeps a handle can
 keep editing the child and the container shows the edit. The same child may appear
 twice. `remove_child` removes the first occurrence by identity and ignores a child
-that is not present; `invalidate` reaches every child in order.
+that is not present; `invalidate` reaches every child in order, except a child that is
+running a callback: it is borrowed exclusively. When the frame writer started that
+callback, it invalidates the component as soon as the callback returns.
 
 `TruncatedText` shows the first line of its text, truncated to the viewport, between
 `padding_y` blank rows. Horizontal padding is `padding_x` on each side but never

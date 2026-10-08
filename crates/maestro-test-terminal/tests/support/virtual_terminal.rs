@@ -55,11 +55,6 @@ impl VirtualTerminal {
         self.port.writes()
     }
 
-    /// Forgets the writes recorded so far.
-    pub fn clear_writes(&self) {
-        self.port.clear_writes();
-    }
-
     /// Delivers input to the started writer.
     pub fn send_input(&self, data: &str) {
         self.port.send_input(data);
