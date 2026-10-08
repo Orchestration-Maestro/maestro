@@ -23,35 +23,75 @@ impl Default for TruncateOptions<'_> {
     }
 }
 
-/// The contiguous prefix of a text that fits a budget, and whether the whole text fits.
-struct Scan {
-    /// Graphemes kept, in order.
-    kept: Vec<Grapheme>,
-    /// Whether the whole text measures at most the width.
+/// The graphemes of a parsed text, segmented once, and how much of it fits a width.
+struct Scan<'p, 'a> {
+    /// Text and escapes the graphemes belong to.
+    parsed: &'p Parsed<'a>,
+    /// Graphemes in order, ending with the first one that takes the total past the limit.
+    graphemes: Vec<Grapheme>,
+    /// Cells of those graphemes.
+    cells: usize,
+    /// Whether the whole text measures at most the limit.
     fits: bool,
 }
 
-impl Scan {
-    /// Keeps graphemes while they fit `budget`; stops measuring once `max_width` is passed.
-    fn new(parsed: &Parsed<'_>, budget: usize, max_width: usize) -> Self {
-        let mut kept = Vec::new();
-        let mut kept_cells = 0;
-        let mut seen = 0;
-        let mut keeping = true;
+impl<'p, 'a> Scan<'p, 'a> {
+    /// Segments `parsed`, stopping once more than `limit` cells were seen.
+    fn new(parsed: &'p Parsed<'a>, limit: usize) -> Self {
+        let mut graphemes = Vec::new();
+        let mut cells = 0;
         for grapheme in parsed.graphemes(0..parsed.visible.len(), TAB_CELLS) {
-            let cells = grapheme.cells;
-            if keeping && kept_cells + cells <= budget {
-                kept_cells += cells;
-                kept.push(grapheme);
-            } else {
-                keeping = false;
-            }
-            seen += cells;
-            if seen > max_width {
-                return Self { kept, fits: false };
+            cells += grapheme.cells;
+            graphemes.push(grapheme);
+            if cells > limit {
+                break;
             }
         }
-        Self { kept, fits: true }
+        Self {
+            parsed,
+            graphemes,
+            cells,
+            fits: cells <= limit,
+        }
+    }
+
+    /// How many leading graphemes together measure at most `budget`.
+    fn prefix_within(&self, budget: usize) -> usize {
+        let mut used = 0;
+        self.graphemes
+            .iter()
+            .take_while(|grapheme| {
+                used += grapheme.cells;
+                used <= budget
+            })
+            .count()
+    }
+
+    /// Emits the first `count` graphemes with every escape anchored at or inside them.
+    fn emit(&self, count: usize) -> Emission<'p, 'a> {
+        let mut emission = Emission::new(self.parsed);
+        for grapheme in &self.graphemes[..count] {
+            emission.grapheme(grapheme);
+        }
+        emission
+    }
+
+    /// The first `count` graphemes, with a hyperlink still open at their end closed.
+    fn render_prefix(&self, count: usize) -> String {
+        self.emit(count).finish(false)
+    }
+
+    /// The whole text, or only its metadata escapes when it has no visible content.
+    ///
+    /// The scan must fit its limit, so that it holds every grapheme of the text.
+    fn render_whole(&self) -> String {
+        let mut emission = self.emit(self.graphemes.len());
+        let events = self.parsed.events.len();
+        match self.graphemes.last() {
+            Some(last) => emission.events(last.events.end..events),
+            None => emission.opaque_events(0..events),
+        }
+        emission.finish(false)
     }
 }
 
@@ -59,31 +99,6 @@ impl Scan {
 fn pad_measured(text: String, max_width: usize) -> String {
     let fill = max_width.saturating_sub(visible_width(&text));
     text + &" ".repeat(fill)
-}
-
-/// Emits a whole text, or only its metadata when it has no visible content.
-fn render_all(parsed: &Parsed<'_>) -> String {
-    let mut emission = Emission::new(parsed);
-    let mut trailing = 0;
-    for grapheme in parsed.graphemes(0..parsed.visible.len(), TAB_CELLS) {
-        emission.grapheme(&grapheme);
-        trailing = grapheme.events.end;
-    }
-    if parsed.visible.is_empty() {
-        emission.opaque_events(0..parsed.events.len());
-    } else {
-        emission.events(trailing..parsed.events.len());
-    }
-    emission.finish(false)
-}
-
-/// Emits the kept graphemes and closes their hyperlink.
-fn render_kept(parsed: &Parsed<'_>, kept: &[Grapheme]) -> String {
-    let mut emission = Emission::new(parsed);
-    for grapheme in kept {
-        emission.grapheme(grapheme);
-    }
-    emission.finish(false)
 }
 
 /// Joins prefix and ellipsis with the resets that isolate them; empty when both are empty.
@@ -95,42 +110,37 @@ fn frame(prefix: &str, ellipsis: &str) -> String {
     }
 }
 
-/// Drops graphemes from the end of `kept` until the prefix framed with `ellipsis` measures at
-/// most `max_width`, or none remain.
+/// Drops graphemes from the end of the `kept` leading ones of `scan` until the prefix framed
+/// with `ellipsis` measures at most `max_width`, or none remain.
 ///
 /// Prefix and ellipsis can join into one grapheme, such as a mark that widens its base, so
 /// each candidate is measured as it will be emitted.
-fn fit_prefix(
-    parsed: &Parsed<'_>,
-    mut kept: Vec<Grapheme>,
-    ellipsis: &str,
-    max_width: usize,
-) -> String {
-    let mut candidate = frame(&render_kept(parsed, &kept), ellipsis);
-    while visible_width(&candidate) > max_width && kept.pop().is_some() {
-        candidate = frame(&render_kept(parsed, &kept), ellipsis);
+fn fit_prefix(scan: &Scan<'_, '_>, mut kept: usize, ellipsis: &str, max_width: usize) -> String {
+    let mut candidate = frame(&scan.render_prefix(kept), ellipsis);
+    while visible_width(&candidate) > max_width && kept > 0 {
+        kept -= 1;
+        candidate = frame(&scan.render_prefix(kept), ellipsis);
     }
     candidate
 }
 
 /// The text cut to `max_width` columns, before any padding.
 fn shorten(text: &str, max_width: usize, ellipsis: &str) -> String {
-    let ellipsis_cells = visible_width(ellipsis);
     let parsed = Parsed::parse(text);
-    let scan = Scan::new(&parsed, max_width.saturating_sub(ellipsis_cells), max_width);
+    let scan = Scan::new(&parsed, max_width);
     if scan.fits {
-        return render_all(&parsed);
+        return scan.render_whole();
     }
-    let ellipsis = Parsed::parse(ellipsis);
-    if ellipsis_cells >= max_width {
-        let clipped = Scan::new(&ellipsis, max_width, max_width).kept;
-        return if clipped.is_empty() {
-            String::new()
-        } else {
-            frame("", &render_kept(&ellipsis, &clipped))
+    let parsed_ellipsis = Parsed::parse(ellipsis);
+    let marker = Scan::new(&parsed_ellipsis, max_width);
+    if marker.cells >= max_width {
+        return match marker.prefix_within(max_width) {
+            0 => String::new(),
+            clipped => frame("", &marker.render_prefix(clipped)),
         };
     }
-    fit_prefix(&parsed, scan.kept, &render_all(&ellipsis), max_width)
+    let kept = scan.prefix_within(max_width - marker.cells);
+    fit_prefix(&scan, kept, &marker.render_whole(), max_width)
 }
 
 /// Returns `text` without the ellipsis when it measures at most `max_width`, and otherwise a
