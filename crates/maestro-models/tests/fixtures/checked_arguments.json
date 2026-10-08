@@ -1,0 +1,4325 @@
+[
+  {
+    "case": "case-01-count",
+    "group": "maestro_validates_without_runtime_code_generation",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "arguments": {
+      "count": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "count": 42
+      }
+    }
+  },
+  {
+    "case": "case-02-01",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 42
+      }
+    }
+  },
+  {
+    "case": "case-02-02",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": true
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 1
+      }
+    }
+  },
+  {
+    "case": "case-02-03",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": null
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 0
+      }
+    }
+  },
+  {
+    "case": "case-02-04",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 42
+      }
+    }
+  },
+  {
+    "case": "case-02-05",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": "true"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": true
+      }
+    }
+  },
+  {
+    "case": "case-02-06",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": "false"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": false
+      }
+    }
+  },
+  {
+    "case": "case-02-07",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": 1
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": true
+      }
+    }
+  },
+  {
+    "case": "case-02-08",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": 0
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": false
+      }
+    }
+  },
+  {
+    "case": "case-02-09",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": null
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": ""
+      }
+    }
+  },
+  {
+    "case": "case-02-10",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": true
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "true"
+      }
+    }
+  },
+  {
+    "case": "case-02-11",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "null"
+        }
+      }
+    },
+    "arguments": {
+      "value": ""
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": null
+      }
+    }
+  },
+  {
+    "case": "case-02-12",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "null"
+        }
+      }
+    },
+    "arguments": {
+      "value": 0
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": null
+      }
+    }
+  },
+  {
+    "case": "case-02-13",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "null"
+        }
+      }
+    },
+    "arguments": {
+      "value": false
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": null
+      }
+    }
+  },
+  {
+    "case": "case-02-14",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "1"
+      }
+    }
+  },
+  {
+    "case": "case-02-15",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "boolean",
+            "number"
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 1
+      }
+    }
+  },
+  {
+    "case": "case-02-16",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": false
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 0
+      }
+    }
+  },
+  {
+    "case": "case-02-17",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": null
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": false
+      }
+    }
+  },
+  {
+    "case": "case-02-18",
+    "group": "maestro_coerces_declared_primitive_types",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "arguments": {
+      "value": null
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 0
+      }
+    }
+  },
+  {
+    "case": "case-03-1",
+    "group": "maestro_rejects_invalid_primitive_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": "1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n\nReceived arguments:\n{\n  \"value\": \"1\"\n}"
+    }
+  },
+  {
+    "case": "case-03-2",
+    "group": "maestro_rejects_invalid_primitive_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n\nReceived arguments:\n{\n  \"value\": \"0\"\n}"
+    }
+  },
+  {
+    "case": "case-03-3",
+    "group": "maestro_rejects_invalid_primitive_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "null"
+        }
+      }
+    },
+    "arguments": {
+      "value": "null"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be null\n\nReceived arguments:\n{\n  \"value\": \"null\"\n}"
+    }
+  },
+  {
+    "case": "case-03-4",
+    "group": "maestro_rejects_invalid_primitive_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42.1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be integer\n\nReceived arguments:\n{\n  \"value\": \"42.1\"\n}"
+    }
+  },
+  {
+    "case": "case-04-duplicate",
+    "group": "maestro_validation_selects_first_duplicate_tool",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "duplicate",
+    "expected": {
+      "Ok": {
+        "value": 42
+      }
+    }
+  },
+  {
+    "case": "case-05-original",
+    "group": "maestro_validation_preserves_inputs_and_schema_changes",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42",
+      "nested": {
+        "list": [
+          1,
+          2
+        ]
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 42,
+        "nested": {
+          "list": [
+            1,
+            2
+          ]
+        }
+      }
+    }
+  },
+  {
+    "case": "case-05-changed-type",
+    "group": "maestro_validation_preserves_inputs_and_schema_changes",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42",
+      "nested": {
+        "list": [
+          1,
+          2
+        ]
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n\nReceived arguments:\n{\n  \"value\": \"42\",\n  \"nested\": {\n    \"list\": [\n      1,\n      2\n    ]\n  }\n}"
+    }
+  },
+  {
+    "case": "case-05-changed-required",
+    "group": "maestro_validation_preserves_inputs_and_schema_changes",
+    "schema": {
+      "required": [
+        "missing"
+      ]
+    },
+    "arguments": {
+      "value": "42",
+      "nested": {
+        "list": [
+          1,
+          2
+        ]
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - missing: must have required properties missing\n\nReceived arguments:\n{\n  \"value\": \"42\",\n  \"nested\": {\n    \"list\": [\n      1,\n      2\n    ]\n  }\n}"
+    }
+  },
+  {
+    "case": "case-06-case",
+    "group": "maestro_reports_missing_tool_exactly",
+    "schema": true,
+    "arguments": {},
+    "name": "Measure",
+    "declaration": "measure",
+    "mode": "missing",
+    "expected": {
+      "Err": "Tool \"Measure\" not found"
+    }
+  },
+  {
+    "case": "case-06-empty",
+    "group": "maestro_reports_missing_tool_exactly",
+    "schema": true,
+    "arguments": {},
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "missing",
+    "expected": {
+      "Err": "Tool \"measure\" not found"
+    }
+  },
+  {
+    "case": "case-07-traverse",
+    "group": "maestro_traverses_objects_items_and_additional_properties",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "nested": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "absent": {
+              "default": 5
+            }
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "tuple": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "nested": {
+        "count": "42",
+        "extra": "true"
+      },
+      "list": [
+        "1",
+        "2"
+      ],
+      "tuple": [
+        "3",
+        "false",
+        "untouched"
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "nested": {
+          "count": 42,
+          "extra": true
+        },
+        "list": [
+          1,
+          2
+        ],
+        "tuple": [
+          3,
+          false,
+          "untouched"
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-08-type-union",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "42"
+      }
+    }
+  },
+  {
+    "case": "case-08-any",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 42
+      }
+    }
+  },
+  {
+    "case": "case-08-all",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"42\"\n}"
+    }
+  },
+  {
+    "case": "case-08-isolated",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "missing"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": "42"
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "x": "42"
+        }
+      }
+    }
+  },
+  {
+    "case": "case-08-one",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "minimum": 0
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match exactly one schema in oneOf\n\nReceived arguments:\n{\n  \"value\": \"42\"\n}"
+    }
+  },
+  {
+    "case": "case-08-no-any",
+    "group": "maestro_preserves_type_unions_but_tries_combinators_in_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n  - value: must be null\n  - value: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "case-09-pattern-bad",
+    "group": "maestro_validates_pattern_and_prefix_constraints_without_extra_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "patternProperties": {
+            "^x": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": "42"
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.x: must be number\n\nReceived arguments:\n{\n  \"value\": {\n    \"x\": \"42\"\n  }\n}"
+    }
+  },
+  {
+    "case": "case-09-pattern-good",
+    "group": "maestro_validates_pattern_and_prefix_constraints_without_extra_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "patternProperties": {
+            "^x": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": 42
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "x": 42
+        }
+      }
+    }
+  },
+  {
+    "case": "case-09-prefix-bad",
+    "group": "maestro_validates_pattern_and_prefix_constraints_without_extra_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        "42"
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.0: must be number\n\nReceived arguments:\n{\n  \"value\": [\n    \"42\"\n  ]\n}"
+    }
+  },
+  {
+    "case": "case-09-prefix-good",
+    "group": "maestro_validates_pattern_and_prefix_constraints_without_extra_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        42
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          42
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-09-pattern-additional",
+    "group": "maestro_validates_pattern_and_prefix_constraints_without_extra_coercion",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "patternProperties": {
+            "^x": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": "42"
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "x": 42
+        }
+      }
+    }
+  },
+  {
+    "case": "case-10-mixed-good",
+    "group": "maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "properties": {
+            "legacy": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                }
+              ],
+              "additionalItems": false
+            },
+            "modern": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false
+            },
+            "literal": {
+              "const": {
+                "items": [
+                  {
+                    "additionalItems": false
+                  }
+                ]
+              },
+              "enum": [
+                {
+                  "items": [
+                    {
+                      "additionalItems": false
+                    }
+                  ]
+                }
+              ],
+              "default": {
+                "items": [
+                  {
+                    "additionalItems": false
+                  }
+                ]
+              },
+              "examples": [
+                {
+                  "items": [
+                    {
+                      "additionalItems": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "legacy": [
+          "42"
+        ],
+        "modern": [
+          42
+        ],
+        "literal": {
+          "items": [
+            {
+              "additionalItems": false
+            }
+          ]
+        }
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "legacy": [
+            42
+          ],
+          "modern": [
+            42
+          ],
+          "literal": {
+            "items": [
+              {
+                "additionalItems": false
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "case": "case-10-mixed-extra",
+    "group": "maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "properties": {
+            "legacy": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                }
+              ],
+              "additionalItems": false
+            },
+            "modern": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false
+            },
+            "literal": {
+              "const": {
+                "items": [
+                  {
+                    "additionalItems": false
+                  }
+                ]
+              },
+              "enum": [
+                {
+                  "items": [
+                    {
+                      "additionalItems": false
+                    }
+                  ]
+                }
+              ],
+              "default": {
+                "items": [
+                  {
+                    "additionalItems": false
+                  }
+                ]
+              },
+              "examples": [
+                {
+                  "items": [
+                    {
+                      "additionalItems": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "legacy": [
+          42,
+          2
+        ],
+        "modern": [
+          42
+        ],
+        "literal": {
+          "items": [
+            {
+              "additionalItems": false
+            }
+          ]
+        }
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.legacy.1: schema is false\n\nReceived arguments:\n{\n  \"value\": {\n    \"legacy\": [\n      42,\n      2\n    ],\n    \"modern\": [\n      42\n    ],\n    \"literal\": {\n      \"items\": [\n        {\n          \"additionalItems\": false\n        }\n      ]\n    }\n  }\n}"
+    }
+  },
+  {
+    "case": "case-10-nested-label",
+    "group": "maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        "42"
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          42
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-10-root-label",
+    "group": "maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data",
+    "schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "x": [
+        "42"
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "x": [
+          42
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-11-required",
+    "group": "maestro_reports_required_and_root_paths",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "nested": {
+          "required": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "nested": {}
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - nested.a: must have required properties a, b\n\nReceived arguments:\n{\n  \"nested\": {}\n}"
+    }
+  },
+  {
+    "case": "case-11-root",
+    "group": "maestro_reports_required_and_root_paths",
+    "schema": false,
+    "arguments": {},
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - root: schema is false\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "case": "case-11-escaped",
+    "group": "maestro_reports_required_and_root_paths",
+    "schema": {
+      "properties": {
+        "a/b~c": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arguments": {
+      "a/b~c": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - a.b~c: must be boolean\n\nReceived arguments:\n{\n  \"a/b~c\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "case-12-original-order",
+    "group": "maestro_formats_original_arguments_in_error_order",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 50
+        }
+      }
+    },
+    "arguments": {
+      "2": 0,
+      "10": 1,
+      "01": 1e+21,
+      "value": "42",
+      "é": "a\n\"\\"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be >= 50\n\nReceived arguments:\n{\n  \"2\": 0,\n  \"10\": 1,\n  \"01\": 1e+21,\n  \"value\": \"42\",\n  \"é\": \"a\\n\\\"\\\\\"\n}"
+    }
+  },
+  {
+    "case": "case-13-01",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": " 42 "
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 42
+      }
+    }
+  },
+  {
+    "case": "case-13-02",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "﻿42﻿"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 42
+      }
+    }
+  },
+  {
+    "case": "case-13-03",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "+1.5e2"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 150
+      }
+    }
+  },
+  {
+    "case": "case-13-04",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x10"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 16
+      }
+    }
+  },
+  {
+    "case": "case-13-05",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0o10"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 8
+      }
+    }
+  },
+  {
+    "case": "case-13-06",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0b10"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 2
+      }
+    }
+  },
+  {
+    "case": "case-13-07",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x1fffffffffffff"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 9007199254740991
+      }
+    }
+  },
+  {
+    "case": "case-13-08",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x20000000000000"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 9007199254740992
+      }
+    }
+  },
+  {
+    "case": "case-13-09",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x20000000000001"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 9007199254740992
+      }
+    }
+  },
+  {
+    "case": "case-13-10",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x10000000000000000000000000"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": 1.2676506002282294e+30
+      }
+    }
+  },
+  {
+    "case": "case-13-11",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": ""
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"\"\n}"
+    }
+  },
+  {
+    "case": "case-13-12",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": " ﻿"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \" ﻿\"\n}"
+    }
+  },
+  {
+    "case": "case-13-13",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"42\"\n}"
+    }
+  },
+  {
+    "case": "case-13-14",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "Infinity"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"Infinity\"\n}"
+    }
+  },
+  {
+    "case": "case-13-15",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "NaN"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"NaN\"\n}"
+    }
+  },
+  {
+    "case": "case-13-16",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "1e400"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"1e400\"\n}"
+    }
+  },
+  {
+    "case": "case-13-17",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "+0x10"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"+0x10\"\n}"
+    }
+  },
+  {
+    "case": "case-13-18",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "-0x10"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"-0x10\"\n}"
+    }
+  },
+  {
+    "case": "case-13-19",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0b2"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"0b2\"\n}"
+    }
+  },
+  {
+    "case": "case-13-20",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x+1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"0x+1\"\n}"
+    }
+  },
+  {
+    "case": "case-13-21",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0x1_0"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"0x1_0\"\n}"
+    }
+  },
+  {
+    "case": "case-13-22",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "0b1_0"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"0b1_0\"\n}"
+    }
+  },
+  {
+    "case": "case-13-23",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "arguments": {
+      "value": "oops"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be number\n\nReceived arguments:\n{\n  \"value\": \"oops\"\n}"
+    }
+  },
+  {
+    "case": "case-13-integer-fraction",
+    "group": "maestro_coerces_numeric_text_at_boundaries",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "arguments": {
+      "value": "1.5"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be integer\n\nReceived arguments:\n{\n  \"value\": \"1.5\"\n}"
+    }
+  },
+  {
+    "case": "case-14-1",
+    "group": "maestro_formats_coerced_numbers_with_stable_spelling",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": 1
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "1"
+      }
+    }
+  },
+  {
+    "case": "case-14-2",
+    "group": "maestro_formats_coerced_numbers_with_stable_spelling",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": 0
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "0"
+      }
+    }
+  },
+  {
+    "case": "case-14-3",
+    "group": "maestro_formats_coerced_numbers_with_stable_spelling",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": 1e-06
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "0.000001"
+      }
+    }
+  },
+  {
+    "case": "case-14-4",
+    "group": "maestro_formats_coerced_numbers_with_stable_spelling",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": 1e-07
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "1e-7"
+      }
+    }
+  },
+  {
+    "case": "case-14-5",
+    "group": "maestro_formats_coerced_numbers_with_stable_spelling",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": 1e+21
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "1e+21"
+      }
+    }
+  },
+  {
+    "case": "case-15-1",
+    "group": "maestro_rejects_invalid_nested_scalar_candidates",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 50
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be >= 50\n\nReceived arguments:\n{\n  \"value\": \"42\"\n}"
+    }
+  },
+  {
+    "case": "case-15-2",
+    "group": "maestro_rejects_invalid_nested_scalar_candidates",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "enum": [
+            1
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "42"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be equal to one of the allowed values\n\nReceived arguments:\n{\n  \"value\": \"42\"\n}"
+    }
+  },
+  {
+    "case": "case-15-3",
+    "group": "maestro_rejects_invalid_nested_scalar_candidates",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": 1
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be string\n\nReceived arguments:\n{\n  \"value\": {\n    \"x\": 1\n  }\n}"
+    }
+  },
+  {
+    "case": "case-15-4",
+    "group": "maestro_rejects_invalid_nested_scalar_candidates",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array"
+        }
+      }
+    },
+    "arguments": {
+      "value": "1"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be array\n\nReceived arguments:\n{\n  \"value\": \"1\"\n}"
+    }
+  },
+  {
+    "case": "case-15-mixed-array",
+    "group": "maestro_rejects_invalid_nested_scalar_candidates",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "properties": {
+            "0": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1,
+        2
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          1,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-15-mixed-object",
+    "group": "maestro_rejects_invalid_nested_scalar_candidates",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "properties": {
+            "0": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "0": "1",
+        "extra": "2"
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "0": 1,
+          "extra": 2
+        }
+      }
+    }
+  },
+  {
+    "case": "case-16-ref-good",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": {
+      "$defs": {
+        "positive": {
+          "type": "number",
+          "minimum": 1
+        }
+      },
+      "properties": {
+        "n": {
+          "$ref": "#/$defs/positive"
+        }
+      }
+    },
+    "arguments": {
+      "n": 2
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "case": "case-16-ref-bad",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": {
+      "$defs": {
+        "positive": {
+          "type": "number",
+          "minimum": 1
+        }
+      },
+      "properties": {
+        "n": {
+          "$ref": "#/$defs/positive"
+        }
+      }
+    },
+    "arguments": {
+      "n": 0
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - n: must be >= 1\n\nReceived arguments:\n{\n  \"n\": 0\n}"
+    }
+  },
+  {
+    "case": "case-16-true",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": true,
+    "arguments": {
+      "n": 2
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "case": "case-16-false",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": false,
+    "arguments": {},
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - root: schema is false\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "case": "case-16-error-1",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": {
+      "type": "unknown"
+    },
+    "arguments": {},
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {}
+    }
+  },
+  {
+    "case": "case-16-error-2",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": {
+      "$ref": "https://example.invalid/schema"
+    },
+    "arguments": {},
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - root: schema is false\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "case": "case-16-error-3",
+    "group": "maestro_validates_offline_refs_and_rejects_unknown_resources",
+    "schema": {
+      "$ref": "file:///unavailable/schema"
+    },
+    "arguments": {},
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - root: schema is false\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "case": "case-ref-legacy",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "properties": {
+        "t": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "n": {
+          "$ref": "#/properties/t/items/0"
+        }
+      }
+    },
+    "arguments": {
+      "t": [
+        1
+      ],
+      "n": 2
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "t": [
+          1
+        ],
+        "n": 2
+      }
+    }
+  },
+  {
+    "case": "case-ref-legacy-bad",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "properties": {
+        "t": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "n": {
+          "$ref": "#/properties/t/items/0"
+        }
+      }
+    },
+    "arguments": {
+      "t": [
+        1
+      ],
+      "n": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"t\": [\n    1\n  ],\n  \"n\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "case-nested-legacy",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": [
+            {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        [
+          2
+        ]
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-nested-legacy-bad",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": [
+            {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        [
+          "bad"
+        ]
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.0.0: must be number\n\nReceived arguments:\n{\n  \"value\": [\n    [\n      \"bad\"\n    ]\n  ]\n}"
+    }
+  },
+  {
+    "case": "case-ref-modern",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "properties": {
+        "t": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "n": {
+          "$ref": "#/properties/t/prefixItems/0"
+        }
+      }
+    },
+    "arguments": {
+      "t": [
+        1
+      ],
+      "n": 2
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "t": [
+          1
+        ],
+        "n": 2
+      }
+    }
+  },
+  {
+    "case": "case-ref-modern-bad",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "properties": {
+        "t": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "n": {
+          "$ref": "#/properties/t/prefixItems/0"
+        }
+      }
+    },
+    "arguments": {
+      "t": [
+        1
+      ],
+      "n": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"t\": [\n    1\n  ],\n  \"n\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "case-nested-modern",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        [
+          2
+        ]
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-nested-modern-bad",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        [
+          "bad"
+        ]
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.0.0: must be number\n\nReceived arguments:\n{\n  \"value\": [\n    [\n      \"bad\"\n    ]\n  ]\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-1-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "é"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "é"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-1-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "é"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"é\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-2-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "👨‍👩‍👧‍👦"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "👨‍👩‍👧‍👦"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-2-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "👨‍👩‍👧‍👦"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"👨‍👩‍👧‍👦\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-3-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "🇫🇷"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "🇫🇷"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-3-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "🇫🇷"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"🇫🇷\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-4-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "ab"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have more than 1 characters\n\nReceived arguments:\n{\n  \"value\": \"ab\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-4-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "ab"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "ab"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-5-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": ""
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": ""
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-5-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": ""
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"\"\n}"
+    }
+  },
+  {
+    "case": "case-format-uuid-good",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "arguments": {
+      "value": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    }
+  },
+  {
+    "case": "case-format-uuid-bad",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"uuid\"\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "case-format-email-good",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "arguments": {
+      "value": "a@example.com"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "a@example.com"
+      }
+    }
+  },
+  {
+    "case": "case-format-email-bad",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"email\"\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "case-format-date-time-good",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "arguments": {
+      "value": "2024-02-29T12:00:00Z"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "2024-02-29T12:00:00Z"
+      }
+    }
+  },
+  {
+    "case": "case-format-date-time-bad",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "arguments": {
+      "value": "2024-02-30T12:00:00Z"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"date-time\"\n\nReceived arguments:\n{\n  \"value\": \"2024-02-30T12:00:00Z\"\n}"
+    }
+  },
+  {
+    "case": "case-format-uri-good",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "arguments": {
+      "value": "https://example.com/a"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "https://example.com/a"
+      }
+    }
+  },
+  {
+    "case": "case-format-uri-bad",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "arguments": {
+      "value": "not a uri"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"uri\"\n\nReceived arguments:\n{\n  \"value\": \"not a uri\"\n}"
+    }
+  },
+  {
+    "case": "case-format-unknown",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "unregistered"
+        }
+      }
+    },
+    "arguments": {
+      "value": "x"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "x"
+      }
+    }
+  },
+  {
+    "case": "case-format-email-local",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "arguments": {
+      "value": "a@b"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "a@b"
+      }
+    }
+  },
+  {
+    "case": "case-format-email-unicode",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "arguments": {
+      "value": "é@example.com"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"email\"\n\nReceived arguments:\n{\n  \"value\": \"é@example.com\"\n}"
+    }
+  },
+  {
+    "case": "case-format-uuid-zero",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "arguments": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  },
+  {
+    "case": "case-format-uri-relative",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "arguments": {
+      "value": "/x"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"uri\"\n\nReceived arguments:\n{\n  \"value\": \"/x\"\n}"
+    }
+  },
+  {
+    "case": "case-object-1",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": 1,
+        "y": 2
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have additional properties\n\nReceived arguments:\n{\n  \"value\": {\n    \"x\": 1,\n    \"y\": 2\n  }\n}"
+    }
+  },
+  {
+    "case": "case-object-2",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": "1",
+        "y": "true"
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "x": 1,
+          "y": true
+        }
+      }
+    }
+  },
+  {
+    "case": "case-object-3",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "patternProperties": {
+            "^x": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "x": 1
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": {
+          "x": 1
+        }
+      }
+    }
+  },
+  {
+    "case": "case-object-4",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "patternProperties": {
+            "^x": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "y": 1
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have additional properties\n\nReceived arguments:\n{\n  \"value\": {\n    \"y\": 1\n  }\n}"
+    }
+  },
+  {
+    "case": "case-object-5",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object",
+          "patternProperties": {
+            "^x": {
+              "type": "number"
+            },
+            "z$": {
+              "minimum": 3
+            }
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "xz": 2
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.xz: must be >= 3\n\nReceived arguments:\n{\n  \"value\": {\n    \"xz\": 2\n  }\n}"
+    }
+  },
+  {
+    "case": "case-call-name",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": false,
+    "arguments": {},
+    "name": "called",
+    "declaration": "declared",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"called\":\n  - root: schema is false\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "case": "case-escaped-ref",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "$defs": {
+        "a/b~c": {
+          "type": "number"
+        }
+      },
+      "properties": {
+        "n": {
+          "$ref": "#/$defs/a~1b~0c"
+        }
+      }
+    },
+    "arguments": {
+      "n": 2
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "n": 2
+      }
+    }
+  },
+  {
+    "case": "case-ref-sibling",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "properties": {
+        "n": {
+          "$ref": "#/$defs/n",
+          "minimum": 2
+        }
+      }
+    },
+    "arguments": {
+      "n": 1
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - n: must be >= 2\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+    }
+  },
+  {
+    "case": "case-both-tuples",
+    "group": "maestro_validates_both_tuple_forms_without_rewriting_literals",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            }
+          ],
+          "prefixItems": [
+            {
+              "minimum": 2
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value.0: must be >= 2\n\nReceived arguments:\n{\n  \"value\": [\n    1\n  ]\n}"
+    }
+  },
+  {
+    "case": "case-label-7",
+    "group": "maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          1
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-label-20",
+    "group": "maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          1
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-unevaluated-prefix",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            }
+          ],
+          "unevaluatedItems": false
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          1
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-unevaluated-any",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "prefixItems": [
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "prefixItems": [
+                true,
+                {
+                  "type": "boolean"
+                }
+              ]
+            }
+          ],
+          "unevaluatedItems": false
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1,
+        true
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": [
+          1,
+          true
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-call-name-object",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "not": {}
+    },
+    "arguments": {},
+    "name": "called",
+    "declaration": "declared",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"called\":\n  - root: must not be valid\n\nReceived arguments:\n{}"
+    }
+  },
+  {
+    "case": "case-tuple-ref-in-items",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "properties": {
+        "t": {
+          "type": "array",
+          "items": [
+            {
+              "$ref": "#/$defs/n"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "t": [
+        2
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "t": [
+          2
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-tuple-ref-in-prefixItems",
+    "group": "maestro_preserves_original_schema_locations_for_tuple_references",
+    "schema": {
+      "$defs": {
+        "n": {
+          "type": "number"
+        }
+      },
+      "properties": {
+        "t": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/n"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "t": [
+        2
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "t": [
+          2
+        ]
+      }
+    }
+  },
+  {
+    "case": "case-format-uuid-urn",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "arguments": {
+      "value": "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
+      }
+    }
+  },
+  {
+    "case": "case-format-email-quoted",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "arguments": {
+      "value": "\"a\"@example.com"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"email\"\n\nReceived arguments:\n{\n  \"value\": \"\\\"a\\\"@example.com\"\n}"
+    }
+  },
+  {
+    "case": "case-format-date-space",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "arguments": {
+      "value": "2024-02-29 12:00:00Z"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match format \"date-time\"\n\nReceived arguments:\n{\n  \"value\": \"2024-02-29 12:00:00Z\"\n}"
+    }
+  },
+  {
+    "case": "case-format-date-leap",
+    "group": "maestro_asserts_registered_formats_and_ignores_unknown_formats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "arguments": {
+      "value": "2016-12-31T23:59:60Z"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "2016-12-31T23:59:60Z"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-skin-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "👍🏽"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "👍🏽"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-skin-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "👍🏽"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"👍🏽\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-variation-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "✌️"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "✌️"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-variation-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "✌️"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"✌️\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-indic-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "क्ष"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "क्ष"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-indic-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "क्ष"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"क्ष\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-hangul-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "가"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "가"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-hangul-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "가"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"가\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-crlf-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "\r\n"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "\r\n"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-crlf-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "\r\n"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"\\r\\n\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-skin-zwj-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "👩🏽‍💻"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "👩🏽‍💻"
+      }
+    }
+  },
+  {
+    "case": "case-grapheme-extended-skin-zwj-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "👩🏽‍💻"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have fewer than 2 characters\n\nReceived arguments:\n{\n  \"value\": \"👩🏽‍💻\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-ordinary-zwj-maxLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 1
+        }
+      }
+    },
+    "arguments": {
+      "value": "a‍b"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have more than 1 characters\n\nReceived arguments:\n{\n  \"value\": \"a‍b\"\n}"
+    }
+  },
+  {
+    "case": "case-grapheme-extended-ordinary-zwj-minLength",
+    "group": "maestro_counts_extended_graphemes_at_both_string_bounds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "arguments": {
+      "value": "a‍b"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Ok": {
+        "value": "a‍b"
+      }
+    }
+  },
+  {
+    "case": "property-names-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "propertyNames": {
+            "pattern": "^[a-z]+$"
+          }
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "bad key": 1
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: property names bad key are invalid\n\nReceived arguments:\n{\n  \"value\": {\n    \"bad key\": 1\n  }\n}"
+    }
+  },
+  {
+    "case": "then-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "if": {
+            "const": 1
+          },
+          "then": false
+        }
+      }
+    },
+    "arguments": {
+      "value": 1
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must match \"then\" schema\n\nReceived arguments:\n{\n  \"value\": 1\n}"
+    }
+  },
+  {
+    "case": "else-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "if": {
+            "const": 1
+          },
+          "else": false
+        }
+      }
+    },
+    "arguments": {
+      "value": 2
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: schema is false\n  - value: must match \"else\" schema\n\nReceived arguments:\n{\n  \"value\": 2\n}"
+    }
+  },
+  {
+    "case": "negation-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "not": true
+        }
+      }
+    },
+    "arguments": {
+      "value": 1
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not be valid\n\nReceived arguments:\n{\n  \"value\": 1\n}"
+    }
+  },
+  {
+    "case": "unevaluated-indices-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "prefixItems": [
+            true
+          ],
+          "unevaluatedItems": false
+        }
+      }
+    },
+    "arguments": {
+      "value": [
+        1,
+        2
+      ]
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have unevaluated items\n\nReceived arguments:\n{\n  \"value\": [\n    1,\n    2\n  ]\n}"
+    }
+  },
+  {
+    "case": "unevaluated-properties-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "properties": {
+            "a": true
+          },
+          "unevaluatedProperties": false
+        }
+      }
+    },
+    "arguments": {
+      "value": {
+        "a": 1,
+        "b": 2
+      }
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must not have unevaluated properties\n\nReceived arguments:\n{\n  \"value\": {\n    \"a\": 1,\n    \"b\": 2\n  }\n}"
+    }
+  },
+  {
+    "case": "type-union-message",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be either boolean or null\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "any-alternative-errors",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n  - value: must be null\n  - value: must match a schema in anyOf\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "exclusive-alternative-errors",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n  - value: must be null\n  - value: must match exactly one schema in oneOf\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  },
+  {
+    "case": "conjunction-errors",
+    "group": "maestro_reports_invocation_names_and_reference_keyword_errors",
+    "schema": {
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "arguments": {
+      "value": "bad"
+    },
+    "name": "measure",
+    "declaration": "measure",
+    "mode": "arguments",
+    "expected": {
+      "Err": "Validation failed for tool \"measure\":\n  - value: must be boolean\n  - value: must be null\n\nReceived arguments:\n{\n  \"value\": \"bad\"\n}"
+    }
+  }
+]

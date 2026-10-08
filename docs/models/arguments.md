@@ -1,6 +1,9 @@
 # Tool arguments
 
-`maestro-models` provides four shared operations for model-supplied JSON.
+## Streamed arguments
+
+`maestro-models` provides four shared parsing and sanitizing operations for
+model-supplied JSON.
 
 `repair_json(&str) -> String` escapes raw controls and invalid backslashes only
 inside string literals. Valid escapes and text outside strings stay unchanged.
@@ -38,4 +41,61 @@ assert_eq!(preview, json!({"count":1,"label":"rea"}));
 let completed = parse_json_with_repair("{\"label\":\"ready\n\"}")?;
 assert_eq!(completed, json!({"label":"ready\n"}));
 # Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+## Invocation checking
+
+`validate_tool_call` selects the first declaration with the invocation's exact
+name. `validate_tool_arguments` checks one supplied declaration independently of
+its name. Both return an owned argument object and leave the invocation and schema
+unchanged.
+
+Checking converts declared primitive values before evaluating the original schema.
+Objects and arrays are traversed only when their type is explicitly declared.
+Combinator alternatives use independent candidates; the first valid converted
+alternative wins. Type unions preserve values that already match a member.
+Missing values are not defaulted and unknown fields are not removed.
+
+The checker supports object, array, string, number and composition constraints,
+offline schema resources, anchors, recursive and dynamic references, and evaluated
+property/item tracking. Both tuple forms can occur in one schema. References are
+never fetched; unknown resources and non-progressing cycles reject normally.
+Known string formats are asserted, unknown format names remain annotations, and
+string lengths count extended grapheme clusters.
+
+Failures report ordered field diagnostics followed by the original arguments as
+two-space-indented JSON. Numeric-index keys precede ordinary insertion-ordered
+keys. Returned diagnostics have an error name and message, without a manufactured
+stack or code.
+
+```rust
+use maestro_models::{JsonObject, Tool, ToolCall, validate_tool_arguments};
+use serde_json::json;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let tool = Tool {
+    name: "count".into(),
+    description: "Count supplied items".into(),
+    parameters: json!({
+        "type": "object",
+        "properties": {"count": {"type": "integer", "minimum": 1}},
+        "required": ["count"]
+    }),
+};
+let mut call = ToolCall {
+    id: "call-1".into(),
+    name: "count".into(),
+    arguments: JsonObject::from_iter([("count".into(), json!("42"))]),
+    thought_signature: None,
+};
+let checked = validate_tool_arguments(&tool, &call)?;
+assert_eq!(checked["count"].as_f64(), Some(42.0));
+assert_eq!(call.arguments["count"], "42");
+
+call.arguments.insert("count".into(), json!("0"));
+let error = validate_tool_arguments(&tool, &call).unwrap_err();
+assert_eq!(error.message,
+    "Validation failed for tool \"count\":\n  - count: must be >= 1\n\nReceived arguments:\n{\n  \"count\": \"0\"\n}");
+# Ok(())
+# }
 ```

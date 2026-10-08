@@ -1,0 +1,99 @@
+use std::io::{self, Write};
+
+use serde::{
+    Serialize, Serializer,
+    ser::{SerializeMap, SerializeSeq},
+};
+use serde_json::{
+    Map, Value,
+    ser::{Formatter, PrettyFormatter},
+};
+
+pub(super) fn pretty(value: &Value) -> Result<String, serde_json::Error> {
+    let mut serializer =
+        serde_json::Serializer::with_formatter(Vec::new(), NumberFormatter(PrettyFormatter::new()));
+    Canonical(value).serialize(&mut serializer)?;
+    String::from_utf8(serializer.into_inner())
+        .map_err(|error| serde_json::Error::io(io::Error::new(io::ErrorKind::InvalidData, error)))
+}
+
+pub(super) fn entries(object: &Map<String, Value>) -> Vec<(&String, &Value)> {
+    let mut entries: Vec<_> = object.iter().collect();
+    entries.sort_by_key(|(key, _)| index(key).map_or((1, 0), |index| (0, index)));
+    entries
+}
+
+fn index(key: &str) -> Option<u32> {
+    let index = key.parse::<u32>().ok()?;
+    (index < u32::MAX && index.to_string() == key).then_some(index)
+}
+
+struct Canonical<'a>(&'a Value);
+
+impl Serialize for Canonical<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0 {
+            Value::Object(object) => {
+                let mut map = serializer.serialize_map(Some(object.len()))?;
+                for (key, value) in entries(object) {
+                    map.serialize_entry(key, &Canonical(value))?;
+                }
+                map.end()
+            }
+            Value::Array(array) => {
+                let mut sequence = serializer.serialize_seq(Some(array.len()))?;
+                for value in array {
+                    sequence.serialize_element(&Canonical(value))?;
+                }
+                sequence.end()
+            }
+            Value::Number(number) => match number.as_f64() {
+                Some(number) => serializer.serialize_f64(number),
+                None => number.serialize(serializer),
+            },
+            value => value.serialize(serializer),
+        }
+    }
+}
+
+struct NumberFormatter<'a>(PrettyFormatter<'a>);
+
+macro_rules! forward {
+    ($($method:ident),* $(,)?) => { $(
+        fn $method<W: Write + ?Sized>(&mut self, writer: &mut W) -> io::Result<()> {
+            self.0.$method(writer)
+        }
+    )* };
+}
+
+impl Formatter for NumberFormatter<'_> {
+    forward!(
+        begin_array,
+        end_array,
+        end_array_value,
+        begin_object,
+        end_object,
+        begin_object_value,
+        end_object_value
+    );
+
+    fn begin_array_value<W: Write + ?Sized>(
+        &mut self,
+        writer: &mut W,
+        first: bool,
+    ) -> io::Result<()> {
+        self.0.begin_array_value(writer, first)
+    }
+
+    fn begin_object_key<W: Write + ?Sized>(
+        &mut self,
+        writer: &mut W,
+        first: bool,
+    ) -> io::Result<()> {
+        self.0.begin_object_key(writer, first)
+    }
+
+    fn write_f64<W: Write + ?Sized>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
+        writer.write_all(ryu_js::Buffer::new().format(value).as_bytes())
+    }
+}
