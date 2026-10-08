@@ -350,6 +350,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-settings"
+version = "0.1.0"
+dependencies = [
+ "maestro-path",
+ "ryu-js",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
 name = "maestro-test-conventions"
 version = "0.1.0"
 dependencies = [

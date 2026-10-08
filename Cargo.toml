@@ -3,7 +3,7 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.dependencies]
-serde_json = { version = "=1.0.151", features = ["preserve_order"] }
+serde_json = { version = "=1.0.151", features = ["preserve_order", "float_roundtrip"] }
 
 [workspace.package]
 edition = "2024"
