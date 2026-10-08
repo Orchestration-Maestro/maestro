@@ -7,6 +7,7 @@ pub(crate) struct Rule {
 }
 /// Scoped crate names paired with their permitted direct dependencies.
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
+    ("maestro-path", &[]),
     ("maestro-extensions-wasm", &[]),
     ("maestro-models", &[]),
     ("maestro-resources", &[]),
@@ -116,6 +117,18 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         ],
     ),
 ];
+
+/// Foundation utility that native crates may use beyond their table row.
+pub(crate) const UTILITY: &str = "maestro-path";
+
+/// Report whether a crate may declare the foundation utility as a production dependency.
+pub(crate) fn uses_utility(name: &str) -> bool {
+    name != UTILITY
+        && !matches!(
+            name,
+            "maestro-extensions-wasm" | "maestro-extensions-wasmtime" | "maestro-test-terminal"
+        )
+}
 
 /// Look up a scoped crate's classification and permitted dependencies.
 pub(crate) fn rule(name: &str) -> Option<Rule> {

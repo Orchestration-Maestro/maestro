@@ -66,6 +66,7 @@ are later scope, not active foundation concepts.
 
 ### State
 
+- **Authored path:** A path string retaining the spelling supplied by a user, setting or file; `maestro-path` operates on it lexically, and it becomes a `std::path::PathBuf` only at a file-system call.
 - **Transcript bytes:** Opaque bytes accessed at caller-supplied paths without parsing or framing.
 - **Branch position:** The selected entry in the session tree, or the position before all entries.
 - **Storage:** The replaceable raw supplied-path byte I/O interface; the SessionManager owns history and persistence timing.
@@ -102,8 +103,8 @@ are later scope, not active foundation concepts.
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context.
 - **Export:** Session document serialization shared with application operations.
-- **Terminal toolkit:** Dependency-free terminal components in `maestro-tui`, without application selectors or framework/highlighting engines.
-- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit.
+- **Terminal toolkit:** Terminal components in `maestro-tui` with no internal dependency beyond the foundation utility, without application selectors or framework/highlighting engines.
+- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit and, optionally, the foundation utility.
 - **Grapheme:** A user-perceived character cluster, indivisible when text is wrapped, truncated or sliced; escapes inside it never split it.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
 - **Image protocol:** The terminal's Kitty or iTerm2 inline image transport, distinct from image file format.
@@ -115,5 +116,6 @@ are later scope, not active foundation concepts.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
+- **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.

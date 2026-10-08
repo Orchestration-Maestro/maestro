@@ -9,7 +9,7 @@ pub(crate) mod metadata;
 /// Scoped crate ownership and direct-dependency rules.
 mod policy;
 use metadata::{canonical, check_kind, members};
-use policy::rule;
+use policy::{UTILITY, rule, uses_utility};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -216,6 +216,9 @@ fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
 fn validate_edge(edge: &Edge) -> Result<(), String> {
     let from = rule(&edge.from).ok_or("unknown scoped source")?;
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
+    if edge.to == UTILITY && edge.kind != Kind::Development && uses_utility(&edge.from) {
+        return Ok(());
+    }
     if from.dependencies.is_empty() {
         return Err(format!(
             "{} must not depend on workspace crate {}",
