@@ -14,7 +14,7 @@ fn wasm_build_command() -> Command {
 }
 
 #[test]
-fn maestro_browser_entry_builds_without_provider_calls() {
+fn maestro_browser_environment_has_no_key() {
     let output = wasm_build_command()
         .args([
             "build",

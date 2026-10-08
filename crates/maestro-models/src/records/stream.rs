@@ -1,4 +1,6 @@
 //! Immediate invocation and eager, independently observed completion.
+pub use crate::builtins::get_env_api_key;
+
 use super::api_registry::{ApiProvider, get_api_provider};
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{
