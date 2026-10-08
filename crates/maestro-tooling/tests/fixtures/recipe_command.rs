@@ -1,11 +1,6 @@
 //! Command fixture for exercising repository recipes with controlled tools.
 
-use std::{
-    env, fs,
-    io::Write,
-    path::Path,
-    process::Command,
-};
+use std::{env, fs, io::Write, path::Path, process::Command};
 /// Routes fixture calls to their controlled or native command.
 fn main() {
     let args: Vec<_> = env::args().skip(1).collect();
@@ -27,7 +22,7 @@ fn main() {
         }
     }
     if let Some(cargo) = env::var_os("MAESTRO_REAL_CARGO") {
-        exit_command(Command::new(cargo).args(&args));
+        run_cargo(Path::new(&cargo), &args);
     }
     log_command(&args);
     if args.first().map(String::as_str) == Some("run") {
@@ -39,6 +34,29 @@ fn main() {
     if env::var("MAESTRO_FAIL").ok().as_deref() == args.first().map(String::as_str) {
         std::process::exit(17);
     }
+}
+
+/// Prints compiled fixture results only after a successful native build.
+fn run_cargo(cargo: &Path, args: &[String]) -> ! {
+    let status = Command::new(cargo).args(args).status().unwrap();
+    if status.success() && args.first().map(String::as_str) == Some("build") {
+        for (binary, arguments) in [
+            ("maestro-models", &[][..]),
+            ("development", &["--rebuild-marker"][..]),
+        ] {
+            let path = Path::new("target/debug").join(binary);
+            if path.is_file() {
+                assert!(
+                    Command::new(path)
+                        .args(arguments)
+                        .status()
+                        .unwrap()
+                        .success()
+                );
+            }
+        }
+    }
+    std::process::exit(status.code().unwrap());
 }
 
 /// Records fake command arguments and the requested environment observations.

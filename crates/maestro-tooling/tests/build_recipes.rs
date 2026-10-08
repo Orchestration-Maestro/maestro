@@ -403,7 +403,7 @@ fn maestro_selected_watch_rebuilds_cargo_configuration() {
 #[cfg(unix)]
 #[test]
 fn maestro_watch_survives_rebuilding_its_development_binary() {
-    assert_watch_rebuild("dev", "crates/maestro-tooling/src/watch.rs");
+    assert_watch_rebuild("dev", "crates/maestro-tooling/src/bin/development.rs");
 }
 
 /// Owns the recipe's process group, including watcher commands and their children.
@@ -425,12 +425,8 @@ impl Drop for ProcessGroup {
 fn assert_watch_rebuild(recipe: &str, changed: &str) {
     let workspace = Workspace::new();
     prepare_watch_workspace(&workspace);
-    let binary = if changed.starts_with("crates/maestro-tooling/") {
-        prepare_tooling_owner(&workspace);
-        workspace.0.join("target/debug/development")
-    } else {
-        PathBuf::from(env!("CARGO_BIN_EXE_development"))
-    };
+    prepare_tooling_owner(&workspace);
+    let binary = workspace.0.join("target/debug/development");
     let (child, receive, threads) = start_watch(&workspace, recipe, &binary);
     let diagnostics = watcher_diagnostics(&workspace.0);
     assert_watch_events(&workspace, changed, &receive, &diagnostics);
@@ -558,6 +554,19 @@ fn maestro_watch_stops_its_children_on_panic() {
 #[cfg(unix)]
 fn prepare_watch_workspace(workspace: &Workspace) {
     native_workspace(workspace);
+    for (owner, marker) in [("maestro-models", "source"), ("maestro-agent", "sibling")] {
+        let path = workspace.0.join(format!("crates/{owner}/src/lib.rs"));
+        let contents = fs::read_to_string(&path).unwrap();
+        fs::write(
+            path,
+            format!("{contents}\npub const MARKER: &str = \"maestro-initial-{marker}\";\n"),
+        )
+        .unwrap();
+    }
+    fs::write(
+        workspace.0.join("crates/maestro-models/src/main.rs"),
+        "fn main() { println!(\"{}\\n{}\\n{}\", maestro_models::MARKER, maestro_agent::MARKER, env!(\"MAESTRO_REBUILD_MARKER\")); }\n",
+    ).unwrap();
     fs::write(workspace.0.join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
         Command::new(env!("CARGO"))
@@ -570,7 +579,7 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     fs::create_dir(workspace.0.join(".cargo")).unwrap();
     fs::write(
         workspace.0.join(".cargo/config.toml"),
-        "[build]\ntarget-dir = 'target'\n",
+        "[build]\ntarget-dir = 'target'\n[env]\nMAESTRO_REBUILD_MARKER = 'maestro-initial-config'\n",
     )
     .unwrap();
     fs::create_dir_all(workspace.0.join("target")).unwrap();
@@ -585,6 +594,16 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.0.join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));
+    let main = root.join("src/bin/development.rs");
+    let contents = fs::read_to_string(&main).unwrap().replace(
+        "fn main() -> std::process::ExitCode {",
+        "fn main() -> std::process::ExitCode {\n    if std::env::args().any(|arg| arg == \"--rebuild-marker\") { println!(\"maestro-initial-binary\"); return std::process::ExitCode::SUCCESS; }",
+    );
+    let contents = contents.replace(
+        "std::path::Path::new(env!(\"CARGO\"))",
+        "std::path::Path::new(\"bin/cargo\")",
+    );
+    fs::write(main, contents).unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
     fs::copy(
         source.join("../../Cargo.toml"),
@@ -623,30 +642,65 @@ fn assert_watch_events(
 ) {
     let mut transcript = String::new();
     wait_for_build(receive, &mut transcript, "initial build", diagnostics);
-    let source = workspace.0.join(changed);
-    let contents = if changed == ".cargo/config.toml" {
-        "[build]\ntarget-dir = 'target'\nincremental = false\n".into()
-    } else if changed.starts_with("crates/maestro-tooling/") {
-        fs::read_to_string(&source).unwrap() + "\n"
-    } else {
-        "pub fn changed() {}\n".into()
-    };
-    fs::write(&source, contents).unwrap();
-    wait_for_build(receive, &mut transcript, "source rebuild", diagnostics);
+    let marker = mutate_watch_input(workspace, changed);
+    wait_for_marker(receive, &mut transcript, &marker, diagnostics);
     if changed.starts_with("crates/maestro-tooling/") {
-        fs::write(
-            workspace.0.join("crates/maestro-agent/src/lib.rs"),
-            "pub fn after_replacement() {}\n",
-        )
-        .unwrap();
-        wait_for_build(
-            receive,
-            &mut transcript,
-            "replaced binary rebuild",
-            diagnostics,
-        );
+        let marker = mutate_watch_input(workspace, "crates/maestro-agent/src/lib.rs");
+        wait_for_marker(receive, &mut transcript, &marker, diagnostics);
     }
     assert!(!transcript.contains("\u{1b}[2J"));
+}
+
+/// Gives each input mutation a marker only its compiled result can print.
+fn mutate_watch_input(workspace: &Workspace, changed: &str) -> String {
+    let input = if changed == ".cargo/config.toml" {
+        "config"
+    } else if changed.starts_with("crates/maestro-tooling/") {
+        "binary"
+    } else if changed.starts_with("crates/maestro-agent/") {
+        "sibling"
+    } else {
+        "source"
+    };
+    let marker = format!(
+        "maestro-rebuild-{}-{input}",
+        workspace.0.file_name().unwrap().to_str().unwrap()
+    );
+    let path = workspace.0.join(changed);
+    let contents = fs::read_to_string(&path).unwrap();
+    let contents = contents.replace(&format!("maestro-initial-{input}"), &marker);
+    fs::write(path, contents).unwrap();
+    marker
+}
+
+/// Waits for the output associated with this mutation, not a queued older build.
+fn wait_for_marker(
+    receive: &std::sync::mpsc::Receiver<String>,
+    transcript: &mut String,
+    marker: &str,
+    diagnostics: &str,
+) {
+    while !has_rebuild_marker(transcript, marker) {
+        let line = receive.recv_timeout(std::time::Duration::from_secs(10)).unwrap_or_else(|error| {
+            panic!("marker {marker}: {error} (10 s wait); {diagnostics}; watcher output:\n{transcript}")
+        });
+        transcript.push_str(&line);
+        transcript.push('\n');
+    }
+}
+
+/// Unrelated successful builds cannot witness a changed input.
+#[test]
+fn maestro_watch_rebuild_requires_its_mutation_marker() {
+    let unrelated = "Finished `dev` profile\n[Command was successful]\n";
+    assert!(!has_rebuild_marker(unrelated, "maestro-rebuild-source-1"));
+    let observed = format!("{unrelated}maestro-rebuild-source-1\n");
+    assert!(has_rebuild_marker(&observed, "maestro-rebuild-source-1"));
+}
+
+/// Recognizes output witnessing the compilation of a changed input.
+fn has_rebuild_marker(transcript: &str, marker: &str) -> bool {
+    transcript.lines().any(|line| line == marker)
 }
 
 /// Captures complete lines from the reader supplied to the thread.

@@ -56,11 +56,15 @@ target switch. `dev` covers delivered owners; `dev-compile` and
 Decision tests use literal watcher events to prove that configured target writes
 are skipped, including bracketed paths; mixed source events and pathless events
 compile. The decision also compiles delayed events under an old target after a
-configuration switch, if those events reach it. Real-watcher recipe tests prove positive rebuilds for source, sibling
-and Cargo configuration changes, including rebuilding the development binary.
-They retain both output streams in one ordered transcript through command
-completion, without exact build counts or negative observation windows. Their
-watch processes share a test-owned process group, stopped on completion or panic.
+configuration switch, if those events reach it. Real-watcher recipe tests wait
+for fresh input-specific markers printed by compiled binaries to prove rebuilds
+for source, sibling dependency and Cargo configuration changes. They also observe
+a marker from a rebuilt development binary, then a fresh sibling marker after
+that replacement. Queued unrelated successful builds cannot satisfy these checks.
+They retain both output streams in one ordered transcript; a controlled-output
+test observes them through command completion. There are no exact build counts
+or negative observation windows. Their watch processes share a test-owned
+process group, stopped on completion or panic.
 
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
