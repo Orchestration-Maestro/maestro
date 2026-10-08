@@ -8,8 +8,11 @@ model-supplied JSON.
 `repair_json(&str) -> String` escapes raw controls and invalid backslashes only
 inside string literals. Valid escapes and text outside strings stay unchanged.
 An unfinished Unicode escape remains invalid. `parse_json_with_repair` tries
-strict JSON first, then changed literal repair; failure returns the last native
-parser cause through `DiagnosticErrorInfo`.
+strict JSON first, then changed literal repair. Native magnitude and lone-surrogate
+errors retry raw projection: overwritten lone-surrogate members may be discarded
+when the surviving value is representable. If projection fails, the native error
+is retained; failure returns the last attempted strict reader's cause through
+`DiagnosticErrorInfo`.
 
 `parse_streaming_json(Option<&str>)` returns a JSON value from the accumulated
 prefix. It tries strict original, strict repaired, partial original and partial

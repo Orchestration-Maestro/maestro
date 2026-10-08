@@ -46,6 +46,8 @@ pub fn repair_json(json: &str) -> String {
 /// Parse the original JSON, retrying repaired string literals only when changed.
 /// Numbers round to binary64 doubles; valid numeric overflow becomes JSON null.
 /// Values may contain at most 127 nested arrays or objects.
+/// Native magnitude and lone-surrogate errors retry raw projection; success requires
+/// a representable surviving value, so overwritten lone-surrogate members may be discarded.
 ///
 /// # Errors
 /// Returns the native strict-reader cause from the last attempted parse.
@@ -74,18 +76,23 @@ fn strict(text: &str) -> Result<serde_json::Value, serde_json::Error> {
             drop(value);
             json_value(raw_json(text)?)
         }
-        Err(error) if magnitude_error(&error) => {
+        Err(error) if projection_error(&error) => {
             raw_json(text).and_then(json_value).map_err(|_| error)
         }
         Err(error) => Err(error),
     }
 }
 
-/// Identify the pinned strict reader's numeric magnitude failure, not syntax errors.
-fn magnitude_error(error: &serde_json::Error) -> bool {
-    error
-        .to_string()
-        .starts_with("number out of range at line ")
+/// Identify native magnitude or lone-surrogate failures that projection may resolve.
+fn projection_error(error: &serde_json::Error) -> bool {
+    let message = error.to_string();
+    [
+        "number out of range at line ",
+        "unexpected end of hex escape at line ",
+        "lone leading surrogate in hex escape at line ",
+    ]
+    .iter()
+    .any(|prefix| message.starts_with(prefix))
 }
 
 /// Recognize the whitespace accepted around streamed JSON.

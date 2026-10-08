@@ -60,7 +60,6 @@ mod tests {
             r#""\uD800" trailing"#,
             r#"{"n":1e400,"s":"\uD800"}"#,
             r#"{"s":"\uD800","n":1e400}"#,
-            r#"{"s":"\uD800","s":"ok"}"#,
             r#"{"n":1e400,]"#,
             "{\"n\":1e400,\"s\":\"a\n\" trailing",
             deep.as_str(),
@@ -102,6 +101,35 @@ mod tests {
                 .unwrap_err()
                 .to_string();
             assert_eq!(parse_json_with_repair(input).unwrap_err().message, expected);
+        }
+    }
+
+    #[test]
+    fn maestro_accepts_representable_discarded_surrogate_duplicates() {
+        use maestro_models::parse_json_with_repair;
+        for (input, expected) in [
+            (r#"{"s":"\uD800","s":"ok"}"#, serde_json::json!({"s":"ok"})),
+            (r#"{"s":"\uDC00","s":"ok"}"#, serde_json::json!({"s":"ok"})),
+            (
+                r#"{"s":"\uD800","n":1e400,"s":"ok"}"#,
+                serde_json::json!({"s":"ok","n":null}),
+            ),
+        ] {
+            assert_eq!(parse_json_with_repair(input).unwrap(), expected, "{input}");
+        }
+        for (input, prefix) in [
+            (r#""\uD800""#, "unexpected end of hex escape at line "),
+            (
+                r#""\uDC00""#,
+                "lone leading surrogate in hex escape at line ",
+            ),
+        ] {
+            let native = serde_json::from_str::<serde_json::Value>(input).unwrap_err();
+            assert!(native.to_string().starts_with(prefix));
+            assert_eq!(
+                parse_json_with_repair(input).unwrap_err().message,
+                native.to_string()
+            );
         }
     }
 
