@@ -9,6 +9,7 @@ repository.workspace = true
 serde = { version = "=1.0.229", features = ["derive", "rc"] }
 serde_json.workspace = true
 indexmap = "=2.14.2"
+regex = "=1.13.1"
 
 [dev-dependencies]
 serde_json = { workspace = true, features = ["float_roundtrip"] }

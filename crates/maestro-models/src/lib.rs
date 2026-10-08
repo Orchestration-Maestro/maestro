@@ -2,6 +2,11 @@
 
 pub mod cancellation;
 mod catalog;
+mod options;
+pub use options::{
+    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, clamp_reasoning,
+    is_context_overflow,
+};
 pub mod records;
 
 pub use cancellation::Cancellation;
