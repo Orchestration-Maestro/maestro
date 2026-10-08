@@ -1,13 +1,11 @@
 //! Failure text for requests, responses and stream error payloads.
 
-use std::borrow::Cow;
-
-use serde_json::Value;
+use serde_json::value::RawValue;
 use url::Url;
 
 use super::FetchError;
 use crate::DiagnosticErrorInfo;
-use crate::providers::json_text::{compact_json, is_truthy};
+use crate::providers::json_text::{compact_raw, is_truthy, member};
 
 /// Why a request ended without a usable response, with upstream detail when reported.
 #[derive(Clone, Debug, PartialEq)]
@@ -48,36 +46,41 @@ impl From<DiagnosticErrorInfo> for RequestFailure {
 }
 
 /// Render a value as compact JSON text.
-fn json_text(value: &Value) -> String {
-    compact_json(value).unwrap_or_default()
+fn json_text(value: &RawValue) -> String {
+    compact_raw(value).unwrap_or_default()
+}
+
+/// Read a JSON string value as its text.
+fn string_text(value: &RawValue) -> Option<String> {
+    serde_json::from_str(value.get()).ok()
 }
 
 /// Build the failure text from a status, a provider `error` payload and plain body text.
-fn describe(status: Option<u16>, error: Option<&Value>, body: Option<&str>) -> String {
+fn describe(status: Option<u16>, error: Option<&RawValue>, body: Option<&str>) -> String {
     let detail = match error.filter(|error| is_truthy(error)) {
-        Some(error) => match error.get("message").filter(|message| is_truthy(message)) {
-            Some(Value::String(message)) => Some(Cow::Borrowed(message.as_str())),
-            Some(message) => Some(Cow::Owned(json_text(message))),
-            None => Some(Cow::Owned(json_text(error))),
-        },
-        None => body.filter(|text| !text.is_empty()).map(Cow::Borrowed),
+        Some(error) => Some(
+            match member(error, "message").filter(|message| is_truthy(message)) {
+                Some(message) => string_text(message).unwrap_or_else(|| json_text(message)),
+                None => json_text(error),
+            },
+        ),
+        None => body.filter(|text| !text.is_empty()).map(str::to_owned),
     };
     match (status.filter(|status| *status != 0), detail) {
         (Some(status), Some(detail)) => format!("{status} {detail}"),
         (Some(status), None) => format!("{status} status code (no body)"),
-        (None, Some(detail)) => detail.into_owned(),
+        (None, Some(detail)) => detail,
         (None, None) => "(no status code or body)".to_owned(),
     }
 }
 
 /// Wrap a provider `error` payload with the upstream explanation it carries.
-fn failure(status: Option<u16>, error: Option<&Value>, body: Option<&str>) -> RequestFailure {
+fn failure(status: Option<u16>, error: Option<&RawValue>, body: Option<&str>) -> RequestFailure {
     let raw = error
-        .and_then(|error| error.get("metadata"))
-        .and_then(|metadata| metadata.get("raw"))
-        .and_then(Value::as_str)
-        .filter(|raw| !raw.is_empty())
-        .map(str::to_owned);
+        .and_then(|error| member(error, "metadata"))
+        .and_then(|metadata| member(metadata, "raw"))
+        .and_then(string_text)
+        .filter(|raw| !raw.is_empty());
     RequestFailure {
         message: describe(status, error, body),
         raw,
@@ -86,14 +89,17 @@ fn failure(status: Option<u16>, error: Option<&Value>, body: Option<&str>) -> Re
 
 /// Describe a non-success HTTP response from its status and body text.
 pub(super) fn status_failure(status: u16, body: &str) -> RequestFailure {
-    match serde_json::from_str::<Value>(body).ok().filter(is_truthy) {
-        Some(parsed) => failure(Some(status), parsed.get("error"), None),
+    let parsed = serde_json::from_str::<&RawValue>(body)
+        .ok()
+        .filter(|parsed| is_truthy(parsed));
+    match parsed {
+        Some(parsed) => failure(Some(status), member(parsed, "error"), None),
         None => failure(Some(status), None, Some(body)),
     }
 }
 
 /// Describe an error payload carried inside a successful event stream.
-pub(crate) fn stream_failure(error: &Value) -> RequestFailure {
+pub(crate) fn stream_failure(error: &RawValue) -> RequestFailure {
     failure(None, Some(error), None)
 }
 

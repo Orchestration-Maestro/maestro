@@ -2,6 +2,7 @@
 
 mod client;
 mod failure;
+mod headers;
 mod line_decoder;
 mod retry;
 mod runtime;
@@ -23,14 +24,16 @@ pub(crate) use runtime::{Raced, race, spawn_detached};
 pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
 pub(crate) use text::decode_utf8;
 
-/// One HTTP attempt: method, final URL, ordered lowercase headers and body bytes.
+/// One HTTP attempt: method, final URL, lowercase headers and body bytes.
 #[derive(Clone)]
 pub struct HttpRequest {
     /// HTTP method.
     pub method: String,
     /// Final request URL.
     pub url: String,
-    /// Header names (lowercase) and values in wire order.
+    /// Header names (lowercase) and values in insertion order. A value is text whose characters
+    /// each name one byte, so none exceeds U+00FF; the sender trims tab, line feed, carriage
+    /// return and space from both ends of each value and keeps a value that becomes empty.
     pub headers: IndexMap<String, String>,
     /// Request body.
     pub body: Vec<u8>,
@@ -43,7 +46,10 @@ pub struct HttpRequest {
 pub struct HttpResponse {
     /// HTTP status code.
     pub status: u16,
-    /// Response headers with lowercase names.
+    /// Response headers with lowercase names, one text per name. The default client reads each
+    /// native value byte by byte as a character, joins repeated values with `, ` (`cookie`
+    /// values with `; `) and keeps only the last `set-cookie`. In a browser the platform has
+    /// decoded the values already, so they carry through as UTF-8 text.
     pub headers: BTreeMap<String, String>,
     /// Streamed body chunks.
     pub body: HttpBody,
@@ -90,8 +96,9 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 /// The default `reqwest`-backed client that requests use when `StreamOptions::fetch` is unset.
 ///
 /// It sends one attempt without timeout, retry or cancellation policy; callers that need those
-/// wrap it, or pass it as `StreamOptions::fetch` to share the process-wide client. On native
-/// targets it needs a Tokio runtime with the I/O driver enabled.
+/// wrap it, or pass it as `StreamOptions::fetch` to share the process-wide client. A header
+/// that cannot be sent (see [`HttpRequest::headers`]) is reported as a connection failure. On
+/// native targets it needs a Tokio runtime with the I/O driver enabled.
 #[must_use]
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)

@@ -119,7 +119,7 @@ pub struct StreamOptions {
     pub on_payload: Option<OnPayload>,
     /// On response.
     pub on_response: Option<OnResponse>,
-    /// Headers, applied in insertion order.
+    /// Headers, applied in insertion order; values follow the rules of `HttpRequest::headers`.
     pub headers: Option<IndexMap<String, String>>,
     /// Timeout ms.
     pub timeout_ms: Option<f64>,

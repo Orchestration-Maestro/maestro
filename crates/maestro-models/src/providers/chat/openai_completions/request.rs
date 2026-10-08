@@ -14,6 +14,7 @@ use super::messages::{
 use super::payload::{
     ChatTemplateKwargs, GatewayOptions, IncludeUsage, Payload, Reasoning, Thinking, ToolParam,
 };
+use crate::arguments::json_parse::whitespace;
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
@@ -348,12 +349,12 @@ fn copied(source: &IndexMap<String, String>) -> impl Iterator<Item = (String, St
         .map(|(name, value)| (name.clone(), value.clone()))
 }
 
-/// Organization and project headers set from the environment; blank variables send nothing.
+/// Organization and project headers set from the environment, trimmed of script whitespace; a
+/// variable that is set but blank sends an empty header.
 fn scope_headers() -> impl Iterator<Item = (String, String)> {
     SCOPE_HEADERS.into_iter().filter_map(|(header, variable)| {
         let value = std::env::var(variable).ok()?;
-        let value = value.trim();
-        (!value.is_empty()).then(|| (header.to_owned(), value.to_owned()))
+        Some((header.to_owned(), value.trim_matches(whitespace).to_owned()))
     })
 }
 

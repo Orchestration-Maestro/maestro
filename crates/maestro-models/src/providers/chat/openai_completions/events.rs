@@ -4,10 +4,11 @@ use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
 use serde_json::Value;
+use serde_json::value::RawValue;
 
 use super::chunk::{Chunk, Delta, RawUsage, StreamIndex, ToolCallDelta};
 use super::usage::parse_usage;
-use crate::providers::json_text::{compact_json, is_truthy};
+use crate::providers::json_text::{compact_raw, is_truthy, member};
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
     JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall,
@@ -81,17 +82,10 @@ impl Reducer {
         self.stream.push(event(Arc::clone(&self.output)));
     }
 
-    /// Reduce one decoded chunk. A value that is not an object is ignored; an object updates
-    /// the response identity and usage even without choices, and only its first choice is
-    /// reduced further.
-    pub(super) fn chunk(&mut self, value: Value) {
-        if !value.is_object() {
-            return;
-        }
-        let Ok(chunk) = serde_json::from_value::<Chunk>(value) else {
-            return;
-        };
-        self.note_identity(&chunk);
+    /// Reduce one decoded chunk: it updates the response identity and usage even without
+    /// choices, and only its first choice is reduced further.
+    pub(super) fn chunk(&mut self, chunk: &Chunk) {
+        self.note_identity(chunk);
         if let Some(usage) = &chunk.usage {
             self.set_usage(usage);
         }
@@ -315,17 +309,19 @@ impl Reducer {
     }
 
     /// Attach an encrypted reasoning detail to the tool call it names.
-    fn attach_signature(&self, detail: &Value) {
-        let encrypted = detail.get("type").and_then(Value::as_str) == Some("reasoning.encrypted");
-        let id = detail
-            .get("id")
-            .and_then(Value::as_str)
-            .filter(|id| !id.is_empty());
-        let data = detail.get("data").is_some_and(is_truthy);
-        let (true, Some(id), true) = (encrypted, id, data) else {
+    fn attach_signature(&self, detail: &RawValue) {
+        let text = |name| {
+            member(detail, name).and_then(|value| serde_json::from_str::<String>(value.get()).ok())
+        };
+        let data = member(detail, "data").is_some_and(is_truthy);
+        let (Some("reasoning.encrypted"), Some(id), true) = (
+            text("type").as_deref(),
+            text("id").filter(|id| !id.is_empty()),
+            data,
+        ) else {
             return;
         };
-        let Ok(signature) = compact_json(detail) else {
+        let Ok(signature) = compact_raw(detail) else {
             return;
         };
         self.update(|message| {
@@ -342,68 +338,51 @@ impl Reducer {
     /// Close every block in content order, finalizing tool arguments.
     pub(super) fn finish(&mut self) {
         for position in 0..self.blocks.len() {
+            let partial = Arc::clone(&self.output);
             let ended = self.update(|message| {
                 close(
                     message.content.get_mut(position)?,
                     self.blocks.get(position)?,
+                    position,
+                    partial,
                 )
             });
             if let Some(ended) = ended {
-                self.announce(|partial| ended.into_event(position, partial));
+                self.stream.push(ended);
             }
         }
     }
 }
 
-/// Finish one block, returning its final content.
-fn close(content: &mut AssistantContent, block: &Block) -> Option<Ended> {
+/// Finish one block, returning the update that announces its end.
+fn close(
+    content: &mut AssistantContent,
+    block: &Block,
+    content_index: usize,
+    partial: SharedAssistantMessage,
+) -> Option<AssistantMessageEvent> {
     match (content, block) {
-        (AssistantContent::Text(text), Block::Text) => Some(Ended::Text(text.text.clone())),
+        (AssistantContent::Text(text), Block::Text) => Some(AssistantMessageEvent::TextEnd {
+            content_index,
+            content: text.text.clone(),
+            partial,
+        }),
         (AssistantContent::Thinking(thinking), Block::Thinking) => {
-            Some(Ended::Thinking(thinking.thinking.clone()))
+            Some(AssistantMessageEvent::ThinkingEnd {
+                content_index,
+                content: thinking.thinking.clone(),
+                partial,
+            })
         }
         (AssistantContent::ToolCall(call), Block::Tool(scratch)) => {
             call.arguments = parsed_arguments(&scratch.partial_args);
-            Some(Ended::Tool(call.clone()))
+            Some(AssistantMessageEvent::ToolcallEnd {
+                content_index,
+                tool_call: call.clone(),
+                partial,
+            })
         }
         _ => None,
-    }
-}
-
-/// A block's final content, copied out so the lock is released before announcing it.
-enum Ended {
-    /// Final text.
-    Text(String),
-    /// Final reasoning.
-    Thinking(String),
-    /// Final tool call.
-    Tool(ToolCall),
-}
-
-impl Ended {
-    /// The update that announces the block's end.
-    fn into_event(
-        self,
-        content_index: usize,
-        partial: SharedAssistantMessage,
-    ) -> AssistantMessageEvent {
-        match self {
-            Self::Text(content) => AssistantMessageEvent::TextEnd {
-                content_index,
-                content,
-                partial,
-            },
-            Self::Thinking(content) => AssistantMessageEvent::ThinkingEnd {
-                content_index,
-                content,
-                partial,
-            },
-            Self::Tool(tool_call) => AssistantMessageEvent::ToolcallEnd {
-                content_index,
-                tool_call,
-                partial,
-            },
-        }
     }
 }
 

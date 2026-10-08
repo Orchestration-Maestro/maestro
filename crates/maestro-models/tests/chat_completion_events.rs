@@ -19,6 +19,7 @@ mod loopback;
 #[path = "support/transport.rs"]
 mod transport;
 
+use std::collections::BTreeMap;
 use std::future::poll_fn;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -371,18 +372,11 @@ fn maestro_chat_retains_failure_context() -> TestResult {
     })
 }
 
-/// Longest a call may take to settle before the test calls it stuck; time is paused, so the
-/// limit passes only when every task is waiting.
-const SETTLE: Duration = Duration::from_secs(60);
-
-/// The update labels and final message of a call whose body arrives as `chunks`; the call
-/// must settle.
+/// The update labels and final message of a call whose body arrives as `chunks`.
 async fn outcome_of_body(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, AssistantMessage)> {
     let body = chunks_then(chunks, || Box::pin(futures_util::stream::empty()));
     let (stream, _) = start(body, &Cancellation::new())?;
-    tokio::time::timeout(SETTLE, drain(&stream))
-        .await
-        .map_err(|_| "the call never settled")?
+    drain(&stream).await
 }
 
 /// The message a call keeps when its body arrives as `chunks`; the call must complete.
@@ -590,19 +584,12 @@ fn tool_fragment(index: &str, id: &str, name: &str, arguments: &str) -> Vec<u8> 
     .into_bytes()
 }
 
-/// Fragments whose indices are spelled differently continue one call exactly when the spellings
-/// name the same number, even though each carries another identifier.
-async fn equal_numbers_are_one_position() -> TestResult {
-    let fragments = [
-        ("0", "a", "lookup", r#"{"a":"#),
-        ("0.0", "b", "", "1"),
-        ("0e0", "c", "", r#","b":"#),
-        ("-0", "d", "", "2}"),
-        ("1", "e", "other", r#"{"k":"#),
-        ("1E0", "f", "", "3}"),
-        ("9007199254740992", "g", "far", r#"{"n":"#),
-        ("9007199254740993", "h", "", "4}"),
-    ];
+/// Assert that a body of tool-call fragments, each given as index, identifier, name and argument
+/// text, produces `expected` as identifier, name and decoded arguments.
+async fn assert_calls(
+    fragments: &[(&str, &str, &str, &str)],
+    expected: &[(&str, &str, Value)],
+) -> TestResult {
     let chunks = fragments
         .iter()
         .map(|(index, id, name, arguments)| tool_fragment(index, id, name, arguments))
@@ -619,20 +606,267 @@ async fn equal_numbers_are_one_position() -> TestResult {
             _ => None,
         })
         .collect();
-    assert_eq!(
-        calls,
-        [
+    assert_eq!(calls, expected);
+    Ok(())
+}
+
+/// Fragments whose indices are spelled differently continue one call exactly when the spellings
+/// name the same number, even though each carries another identifier.
+async fn equal_numbers_are_one_position() -> TestResult {
+    assert_calls(
+        &[
+            ("0", "a", "lookup", r#"{"a":"#),
+            ("0.0", "b", "", "1"),
+            ("0e0", "c", "", r#","b":"#),
+            ("-0", "d", "", "2}"),
+            ("1", "e", "other", r#"{"k":"#),
+            ("1E0", "f", "", "3}"),
+            ("9007199254740992", "g", "far", r#"{"n":"#),
+            ("9007199254740993", "h", "", "4}"),
+        ],
+        &[
             ("a", "lookup", json!({"a": 1, "b": 2})),
             ("e", "other", json!({"k": 3})),
             ("g", "far", json!({"n": 4})),
-        ]
-    );
-    Ok(())
+        ],
+    )
+    .await
+}
+
+/// Numbers beyond the range of a double are the signed infinity or zero they round to, and
+/// those are positions like any other.
+async fn extreme_numbers_are_positions() -> TestResult {
+    assert_calls(
+        &[
+            ("1e400", "a", "up", r#"{"a":"#),
+            ("2e400", "b", "", "1}"),
+            ("-1e400", "c", "down", r#"{"c":"#),
+            ("-2e400", "d", "", "2}"),
+            ("0", "e", "zero", r#"{"e":"#),
+            ("1e-400", "f", "", r#"3,"g":"#),
+            ("-1e-400", "g", "", "4}"),
+            ("1000000000000000100", "h", "large", r#"{"h":"#),
+            ("1.0000000000000001e18", "i", "", "5}"),
+            ("18446744073709551615", "j", "most", r#"{"j":"#),
+            ("18446744073709551616", "k", "", "6}"),
+        ],
+        &[
+            ("a", "up", json!({"a": 1})),
+            ("c", "down", json!({"c": 2})),
+            ("e", "zero", json!({"e": 3, "g": 4})),
+            ("h", "large", json!({"h": 5})),
+            ("j", "most", json!({"j": 6})),
+        ],
+    )
+    .await
 }
 
 #[test]
 fn maestro_chat_matches_tool_indices_by_number() -> TestResult {
-    block_on(true, equal_numbers_are_one_position())
+    block_on(true, async {
+        equal_numbers_are_one_position().await?;
+        extreme_numbers_are_positions().await
+    })
+}
+
+/// One event whose data is `data`, written exactly as given.
+fn raw_event(data: &str) -> Vec<u8> {
+    format!("data: {data}\n\n").into_bytes()
+}
+
+#[test]
+fn maestro_chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
+    block_on(true, async {
+        let usable = raw_event(concat!(
+            r#"{"unread":1e400,"id":"first","id":"r","model":"first","model":"served","#,
+            r#""choices":[{"nested":[-1e400,{"deep":2e400}],"finish_reason":"stop","#,
+            r#""delta":{"content":"lost","content":"usable","#,
+            r#""tool_calls":[{"index":1,"index":0e0,"id":"a","function":{"name":"f"}}]}}],"#,
+            r#""usage":{"prompt_tokens":3,"completion_tokens":4,"extra":2e400}}"#,
+        ));
+        let continued = raw_event(
+            r#"{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"k\":1}"}}]}}]}"#,
+        );
+        let message = message_of_body(vec![usable, continued]).await?;
+        assert_eq!(message.response_id.as_deref(), Some("r"));
+        assert_eq!(message.response_model.as_deref(), Some("served"));
+        assert!(matches!(message.stop_reason, StopReason::Stop));
+        assert_eq!(
+            (message.usage.input, message.usage.output),
+            (3.0, 4.0),
+            "usage read around the unread number"
+        );
+        assert!(
+            matches!(&message.content[..], [AssistantContent::Text(text), AssistantContent::ToolCall(call)]
+                if text.text == "usable" && call.id == "a" && call.arguments["k"] == 1),
+            "the last repeated member wins and the tool call continues at index 0: {:?}",
+            message.content
+        );
+
+        let malformed = vec![text_chunk("so far"), raw_event(r#"{"unread":1e400,"#)];
+        let (labels, message) = outcome_of_body(malformed).await?;
+        assert_eq!(labels.last().map(String::as_str), Some("error"));
+        assert!(matches!(message.stop_reason, StopReason::Error));
+        assert!(
+            message
+                .error_message
+                .as_deref()
+                .is_some_and(|text| !text.is_empty())
+        );
+        assert_only_text(&message, "so far");
+        Ok(())
+    })
+}
+
+/// The signature a tool call `a` keeps after a reasoning detail whose `data` is `data`.
+async fn signature_after(data: &str) -> TestResult<Option<String>> {
+    let detail = format!(r#"{{"type":"reasoning.encrypted","id":"a","data":{data}}}"#);
+    let chunks = vec![
+        tool_fragment("0", "a", "f", "{}"),
+        raw_event(&format!(
+            r#"{{"choices":[{{"delta":{{"reasoning_details":[{detail}]}}}}]}}"#
+        )),
+    ];
+    let message = message_of_body(chunks).await?;
+    let signature = message.content.iter().find_map(|block| match block {
+        AssistantContent::ToolCall(call) => Some(call.thought_signature.clone()),
+        _ => None,
+    });
+    Ok(signature.ok_or("the call is missing")?)
+}
+
+#[test]
+fn maestro_chat_serializes_numeric_signatures() -> TestResult {
+    block_on(true, async {
+        let nested_in = r#"[1e400,{"10":1,"2":2,"n":9007199254740993,"z":-1e400}]"#;
+        let nested_out = r#"[null,{"2":2,"10":1,"n":9007199254740992,"z":null}]"#;
+        let mapped_in = r#"{"b":18446744073709551615,"a":1e21}"#;
+        let mapped_out = r#"{"b":18446744073709552000,"a":1e+21}"#;
+        let cases = [
+            ("9007199254740993", Some("9007199254740992")),
+            ("1e400", Some("null")),
+            ("-1e400", Some("null")),
+            ("5e-324", Some("5e-324")),
+            ("1e21", Some("1e+21")),
+            (nested_in, Some(nested_out)),
+            (mapped_in, Some(mapped_out)),
+            ("-0", None),
+            ("0", None),
+            ("0.0", None),
+            ("1e-400", None),
+            ("2.4703282292062327e-324", None),
+        ];
+        for (data, expected) in cases {
+            let expected = expected
+                .map(|data| format!(r#"{{"type":"reasoning.encrypted","id":"a","data":{data}}}"#));
+            assert_eq!(signature_after(data).await?, expected, "data {data}");
+        }
+        Ok(())
+    })
+}
+
+/// The failure text of a call that receives `events` after some text; the call must fail with
+/// that text retained.
+async fn failure_after_text(event: &str) -> TestResult<String> {
+    let chunks = vec![text_chunk("so far"), raw_event(event)];
+    let (labels, message) = outcome_of_body(chunks).await?;
+    assert_eq!(labels.last().map(String::as_str), Some("error"), "{event}");
+    assert!(matches!(message.stop_reason, StopReason::Error), "{event}");
+    assert_only_text(&message, "so far");
+    message.error_message.ok_or_else(|| "no error text".into())
+}
+
+#[test]
+fn maestro_chat_formats_numeric_failures() -> TestResult {
+    block_on(true, async {
+        let responses = [
+            (
+                r#"{"error":{"n":9007199254740993}}"#,
+                r#"400 {"n":9007199254740992}"#,
+            ),
+            (r#"{"error":{"n":1e400}}"#, r#"400 {"n":null}"#),
+            (r#"{"error":{"message":1e400}}"#, "400 null"),
+            (r#"{"error":{"message":{"n":1e400}}}"#, r#"400 {"n":null}"#),
+            (r#"{"error":{"message":-0}}"#, r#"400 {"message":0}"#),
+            (r#"{"error":1e400}"#, "400 null"),
+            (r#"{"error":-1e400}"#, "400 null"),
+            ("1e400", "400 status code (no body)"),
+            ("[1e400]", "400 status code (no body)"),
+            ("-0", "400 -0"),
+        ];
+        for (body, expected) in responses {
+            let failure = failure_of_error_body(vec![body.as_bytes().to_vec()]).await?;
+            assert_eq!(failure, expected, "body {body}");
+        }
+        let events = [
+            (
+                r#"{"error":{"n":9007199254740993}}"#,
+                r#"{"n":9007199254740992}"#,
+            ),
+            (r#"{"error":{"n":1e400}}"#, r#"{"n":null}"#),
+            (r#"{"error":{"message":1e400}}"#, "null"),
+            (r#"{"error":1e400}"#, "null"),
+            (r#"{"error":{"message":-0}}"#, r#"{"message":0}"#),
+        ];
+        for (event, expected) in events {
+            assert_eq!(failure_after_text(event).await?, expected, "event {event}");
+        }
+        for absent in ["null", "false", "0", "-0", "0.0", "1e-400", r#""""#] {
+            let event =
+                format!(r#"{{"error":{absent},"choices":[{{"delta":{{"content":"fine"}}}}]}}"#);
+            let text = text_of_body(vec![raw_event(&event)]).await?;
+            assert_eq!(text, "fine", "error {absent} is not an error");
+        }
+        Ok(())
+    })
+}
+
+/// The usage a call keeps when a chunk reports `usage` as written.
+async fn usage_of(usage: &str) -> TestResult<maestro_models::Usage> {
+    let event = raw_event(&format!(r#"{{"choices":[],"usage":{usage}}}"#));
+    Ok(message_of_body(vec![event]).await?.usage)
+}
+
+#[test]
+fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
+    block_on(true, async {
+        let infinite =
+            usage_of(r#"{"prompt_tokens":1e400,"prompt_tokens_details":{"cached_tokens":1e400}}"#)
+                .await?;
+        assert!(infinite.input.is_nan() && infinite.total_tokens.is_nan());
+        assert_eq!(infinite.cache_read.to_bits(), f64::INFINITY.to_bits());
+        assert_eq!(infinite.output.to_bits(), 0.0_f64.to_bits());
+
+        let written = usage_of(r#"{"prompt_tokens":5,"prompt_tokens_details":{"cached_tokens":1e400,"cache_write_tokens":1e400}}"#).await?;
+        assert!(written.input.is_nan() && written.cache_read.is_nan());
+        assert_eq!(written.cache_write.to_bits(), f64::INFINITY.to_bits());
+
+        let negative = usage_of(r#"{"completion_tokens":-1e400}"#).await?;
+        assert_eq!(negative.output.to_bits(), f64::NEG_INFINITY.to_bits());
+        assert_eq!(negative.total_tokens.to_bits(), f64::NEG_INFINITY.to_bits());
+        assert_eq!(negative.input.to_bits(), 0.0_f64.to_bits());
+
+        let signed_zero = usage_of(r#"{"prompt_tokens":-0,"completion_tokens":-0}"#).await?;
+        assert_eq!(signed_zero.output.to_bits(), 0.0_f64.to_bits());
+        assert_eq!(signed_zero.input.to_bits(), 0.0_f64.to_bits());
+
+        let exact = usage_of(r#"{"completion_tokens":2.2250738585072011e-308}"#).await?;
+        assert_eq!(exact.output.to_bits(), 0x000F_FFFF_FFFF_FFFF);
+
+        let counted = usage_of(r#"{"prompt_tokens":100,"completion_tokens":20,"prompt_tokens_details":{"cached_tokens":30,"cache_write_tokens":10}}"#).await?;
+        let figures = [
+            counted.input,
+            counted.output,
+            counted.cache_read,
+            counted.cache_write,
+            counted.total_tokens,
+        ];
+        assert_eq!(
+            figures.map(f64::to_bits),
+            [70.0, 20.0, 20.0, 10.0, 120.0].map(f64::to_bits)
+        );
+        Ok(())
+    })
 }
 
 /// A chunk that carries only a finish reason.
@@ -887,6 +1121,67 @@ fn framed_response() -> Vec<u8> {
         .collect();
     body.extend_from_slice(b"data: [DONE]\r\n\r\n");
     body
+}
+
+/// The headers `on_response` receives when a loopback server answers with `head_lines` after the
+/// status line, then an empty event stream.
+async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String, String>> {
+    let mut reply = b"HTTP/1.1 200 OK\r\n".to_vec();
+    reply.extend(head_lines);
+    reply.extend(b"content-length: 14\r\nconnection: close\r\n\r\ndata: [DONE]\n\n");
+    let server = loopback::serve("", vec![reply], Duration::ZERO)?;
+    let mut model = chat::model(&json!({}))?;
+    model.base_url = format!("{}/v1", server.url);
+    let reported: Arc<Mutex<Vec<maestro_models::ProviderResponse>>> = Arc::default();
+    let sink = Arc::clone(&reported);
+    let common = StreamOptions {
+        api_key: Some("fixture-key".into()),
+        max_retries: Some(0.0),
+        on_response: Some(Arc::new(move |response, _| {
+            if let Ok(mut sink) = sink.lock() {
+                sink.push(response);
+            }
+            Box::pin(std::future::ready(Ok(())))
+        })),
+        ..StreamOptions::default()
+    };
+    observe(model, common).await?;
+    server.finish()?;
+    let mut reported = reported.lock().map_err(|error| error.to_string())?;
+    Ok(reported.pop().ok_or("no response was reported")?.headers)
+}
+
+#[test]
+fn maestro_chat_observes_repeated_response_headers() -> TestResult {
+    if child_process::child_case().is_none() {
+        return child_process::rerun("maestro_chat_observes_repeated_response_headers", "*", &[]);
+    }
+    block_on(false, async {
+        let headers = response_headers_after(
+            b"X-Gap: \r\nX-Gap: b\r\nX-Tail: a\r\nX-Tail: \r\n\
+              Cookie: a=1\r\nCookie: b=2\r\nX-Latin: \xE9\x80\xFF\r\n\
+              X-Padded: \t \xE9\xFF \t\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n",
+        )
+        .await?;
+        let seen = |name: &str| headers.get(name).map(String::as_str);
+        assert_eq!(seen("x-gap"), Some(", b"));
+        assert_eq!(seen("x-tail"), Some("a, "));
+        assert_eq!(seen("cookie"), Some("a=1; b=2"));
+        assert_eq!(seen("x-latin"), Some("\u{e9}\u{80}\u{ff}"));
+        assert_eq!(
+            seen("x-padded"),
+            Some("\u{e9}\u{ff}"),
+            "no surrounding whitespace"
+        );
+        assert_eq!(seen("set-cookie"), Some("b=2"), "the last cookie only");
+
+        let emptied =
+            response_headers_after(b"Set-Cookie: a=1\r\nSet-Cookie: \r\nCookie: \r\nCookie: b\r\n")
+                .await?;
+        assert_eq!(emptied.get("set-cookie").map(String::as_str), Some(""));
+        assert_eq!(emptied.get("cookie").map(String::as_str), Some("; b"));
+        Ok(())
+    })
 }
 
 #[test]

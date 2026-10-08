@@ -41,13 +41,24 @@ then `OPENAI_API_KEY`; with none of them the call fails with
 Headers are layered, later layers replacing earlier ones case-insensitively, repeated
 names inside one layer included: the account defaults `openai-organization` and
 `openai-project` from the `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` environment
-variables (surrounding whitespace removed; unset or blank variables send nothing),
-the model's headers, the dynamic headers of the `github-copilot` provider
+variables (surrounding whitespace removed as ECMAScript trims it: the no-break space and
+the byte-order mark count, U+0085 does not; an unset variable sends nothing and a variable
+that is set but blank sends an empty header), the model's headers, the dynamic headers of the `github-copilot` provider
 (`providers::chat::github_copilot_headers`), session affinity headers
 (`session_id`, `x-client-request-id`, `x-session-affinity`) carrying a nonempty session
 identifier when the model's compatibility enables them and caching is on,
 then the caller's headers. Names are
-sent in lowercase. The generated `authorization: Bearer {key}` sits below all layers, so
+sent in lowercase.
+
+A header value is text whose characters each name one byte. Tab, line feed, carriage
+return and space are removed from both ends of every value of the final request, and a
+value that becomes empty is sent empty; no other character counts as whitespace there. A header that cannot be sent ends the stream with an error update before any
+attempt, retry or call to a replacement client: an invalid name, a character above U+00FF
+(U+FEFF included, since it is not HTTP whitespace) or a value that cannot be a header
+value, such as one with an interior line break or NUL. The default client sends each
+character as the single byte it names, so `é` goes out as the byte E9. The browser bridge
+of the default client reads header values as ASCII, so a value with a non-ASCII character
+fails there; that is a known limitation of the browser client. The generated `authorization: Bearer {key}` sits below all layers, so
 any layer replaces it; `cloudflare-ai-gateway` sends the key as `cf-aig-authorization`
 above all layers instead, and an `Authorization` header supplied in any layer (any
 casing) is then kept as the upstream credential.
@@ -107,7 +118,10 @@ Instructions use the developer role when the model reasons and the endpoint supp
 Tool results are grouped; when the model accepts images, their images follow as one user
 message (preceded by an assistant bridge when the endpoint requires one). Tool-call
 arguments are written as compact JSON with array-index keys first in numeric order and
-floats spelled as ECMAScript prints them.
+numbers spelled as ECMAScript prints them; every number is the double it names, so an
+integer beyond 2^53 is rounded. A stored thought signature is replayed when it parses to
+a value that is not null, false, zero or empty text; a number beyond the range of a double
+is such a value, and is written as `null`.
 
 ## Stream and result
 
@@ -128,14 +142,19 @@ fields other than `event` and `data` are ignored. A final line without a line en
 still read, but an event whose blank line never arrives is not delivered.
 
 Chunks update one shared message; a field of the wrong type reads as absent, a chunk
-that is not an object is skipped, and events named `thread.*` are ignored. Text and
+that is not an object is skipped, and events named `thread.*` are ignored. A member name
+that repeats keeps its last value. Every number is read as the double it rounds to: one
+beyond the range of a double is an infinity, one too close to zero for a double is a zero,
+and a number that no field reads cannot fail an event. Text and
 reasoning each keep one open block; tool calls are matched by their stream index, then
 by ID. Stream indices compare as numbers, so `0`, `0.0`, `0e0` and `-0` are one index,
 and a fragment with a known index continues its call whatever ID it carries. The first
 non-empty response ID and the first returned model name that differs from the requested
 one are retained. Usage from the chunk (or, failing that, its first choice when the chunk
 has none) replaces the running usage; when cache writes are reported they are removed from
-reported cache hits, and costs follow the model's rates. `stop` and `end` finish with `stop`,
+reported cache hits, and costs follow the model's rates. A count beyond the range of a
+double stays infinite, and arithmetic on it follows the double rules (infinities that cancel
+give not-a-number). `stop` and `end` finish with `stop`,
 `length` with `length`, and `function_call` and `tool_calls` with `toolUse`; any other
 reason sets an error stop reason with the text `Provider finish_reason: {reason}`. A later
 finish update replaces an earlier one, so an unknown reason fails the call only when it is
@@ -143,7 +162,8 @@ the last one received; an empty reason is ignored. A stream that ends without a 
 reason keeps its initial `stop`. An encrypted reasoning detail (`reasoning.encrypted`,
 with a nonempty ID and a `data` value that is not null, false, zero or empty text) is
 attached to the tool call with that ID when that call is already open, and dropped
-otherwise.
+otherwise. The attached signature is the detail written as compact JSON the way tool-call
+arguments are, so an infinite number in it appears as `null`.
 
 Every update and the final message share the same handle. No lock is held while
 readers are woken. On failure the partial content is kept and the last update is an
@@ -175,10 +195,19 @@ exact integer budget, so even a very large count is used up one retry at a time.
 the signal interrupts a pending request, the read of an error body or a retry wait, and on
 browser targets the timers of requests that finish, fail or are aborted are cleared.
 
+Response headers reach `on_response` and the retry rules as one text per name. The default
+client reads each native byte of a value as the character of that number (the byte E9 is
+`é`), joins repeated values with `, ` (`cookie` values with `; `), keeps empty values and
+keeps only the last `set-cookie`. A value carries no whitespace around it, as RFC 9110
+section 5.5 requires of a field value. In a browser the platform has decoded the values
+already, and they carry through as UTF-8 text.
+
 Failures read `Connection error.`, `Request timed out.`, `Request was aborted.`,
 `{status} {message}`, `{status} status code (no body)` or, for a status of 0 with an empty
-body, `(no status code or body)`. When a provider reports a nonempty `error.metadata.raw`,
-it is appended on a new line. An error body
+body, `(no status code or body)`. A provider `error` value that is not null, false, zero or empty text counts as an error,
+and its message is described the way the client library describes it, numbers beyond the
+range of a double written as `null`. When a provider reports a nonempty
+`error.metadata.raw`, it is appended on a new line. An error body
 is decoded as one text: a leading byte-order mark is dropped, so it does not hide a JSON
 error object, and invalid bytes appear as U+FFFD.
 

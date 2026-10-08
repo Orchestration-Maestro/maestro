@@ -535,6 +535,86 @@ fn maestro_http_default_fetch_sends_requests() -> TestResult {
     child_process::rerun("maestro_http_default_fetch_sends_requests", "default", &[])
 }
 
+/// A request to `url` carrying `headers`, as the default client receives it.
+fn request_with(url: String, headers: &[(&str, &str)]) -> HttpRequest {
+    HttpRequest {
+        method: "GET".into(),
+        url,
+        headers: headers
+            .iter()
+            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+            .collect(),
+        body: Vec::new(),
+        signal: None,
+    }
+}
+
+/// Request values reach the wire as the bytes their characters name, trimmed at the HTTP edges
+/// only, and a response value is read byte by byte as text.
+async fn header_values_are_octets() -> TestResult {
+    let reply = b"HTTP/1.1 200 OK\r\nX-Latin: \xE9\x80\xFF\r\nX-Empty: \r\ncontent-length: 0\r\nconnection: close\r\n\r\n";
+    let server = loopback::serve("", vec![reply.to_vec()], Duration::ZERO)?;
+    let request = request_with(
+        server.url.clone(),
+        &[
+            ("x-latin", " \t\u{e9}\u{80}\u{ff} \t"),
+            ("x-edge", "\r\n value\n\t"),
+            ("x-empty", " \t"),
+            ("x-nbsp", "\u{a0}v\u{a0}"),
+            ("x-next-line", "\u{85}v\u{85}"),
+        ],
+    );
+    let response = default_fetch()(request).await?;
+    assert_eq!(
+        response.headers.get("x-latin").map(String::as_str),
+        Some("\u{e9}\u{80}\u{ff}")
+    );
+    assert_eq!(
+        response.headers.get("x-empty").map(String::as_str),
+        Some("")
+    );
+    let received = server.finish()?;
+    let sent = |name| received.header_octets(name);
+    assert_eq!(sent("x-latin"), Some(&[0xE9, 0x80, 0xFF][..]));
+    assert_eq!(sent("x-edge"), Some(&b"value"[..]));
+    assert_eq!(sent("x-empty"), Some(&b""[..]));
+    assert_eq!(sent("x-nbsp"), Some(&[0xA0, b'v', 0xA0][..]));
+    assert_eq!(sent("x-next-line"), Some(&[0x85, b'v', 0x85][..]));
+    Ok(())
+}
+
+/// A value with a character above U+00FF fails before any connection is made.
+async fn wide_header_values_are_not_sent() -> TestResult {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    listener.set_nonblocking(true)?;
+    let url = format!("http://{}", listener.local_addr()?);
+    for value in ["\u{100}", "\u{feff}v\u{feff}", "\u{1f600}"] {
+        let request = request_with(url.clone(), &[("x-wide", value)]);
+        let Err(error) = default_fetch()(request).await else {
+            return Err(format!("{value:?} was sent").into());
+        };
+        assert!(error.to_string().contains("x-wide"), "{error}");
+    }
+    let connection = listener.accept();
+    assert_eq!(
+        connection.err().map(|error| error.kind()),
+        Some(std::io::ErrorKind::WouldBlock),
+        "nothing connected"
+    );
+    Ok(())
+}
+
+#[test]
+fn maestro_http_preserves_header_octets() -> TestResult {
+    if child_process::child_case().is_some() {
+        return chat::block_on(false, async {
+            header_values_are_octets().await?;
+            wide_header_values_are_not_sent().await
+        });
+    }
+    child_process::rerun("maestro_http_preserves_header_octets", "default", &[])
+}
+
 #[test]
 fn maestro_http_joins_endpoint_urls() -> TestResult {
     chat::block_on(true, async {

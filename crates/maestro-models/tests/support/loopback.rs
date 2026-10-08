@@ -16,6 +16,8 @@ pub struct Received {
     pub headers: Vec<(String, String)>,
     /// Request body.
     pub body: Vec<u8>,
+    /// The request line and header block exactly as received.
+    pub head: Vec<u8>,
 }
 
 impl Received {
@@ -25,6 +27,20 @@ impl Received {
             .iter()
             .find(|(candidate, _)| candidate == name)
             .map(|(_, value)| value.as_str())
+    }
+
+    /// The bytes after `name: ` on the header line of that name (lowercase), as received.
+    pub fn header_octets(&self, name: &str) -> Option<&[u8]> {
+        let prefix = format!("{name}: ").into_bytes();
+        self.head
+            .split(|byte| *byte == b'\n')
+            .map(|line| line.strip_suffix(b"\r").unwrap_or(line))
+            .find_map(|line| {
+                let start = line.get(..prefix.len())?;
+                start
+                    .eq_ignore_ascii_case(&prefix)
+                    .then(|| &line[prefix.len()..])
+            })
     }
 }
 
@@ -104,6 +120,7 @@ pub fn serve(
                 request_line,
                 headers,
                 body,
+                head: bytes[..head].to_vec(),
             })
             .ok();
         connection.write_all(response_head.as_bytes())?;

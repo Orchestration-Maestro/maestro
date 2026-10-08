@@ -2,7 +2,9 @@
 
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
-use serde_json::Value;
+use serde_json::value::RawValue;
+
+use crate::providers::json_text::{object_record, raw_number};
 
 /// Read a value of the wrong type as absent.
 fn lenient<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
@@ -10,7 +12,17 @@ where
     D: Deserializer<'de>,
     T: DeserializeOwned,
 {
-    Ok(T::deserialize(Value::deserialize(deserializer)?).ok())
+    Ok(T::deserialize(<&RawValue>::deserialize(deserializer)?).ok())
+}
+
+/// Read a number as the double it rounds to; anything else as absent.
+fn number<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<f64>, D::Error> {
+    Ok(raw_number(<&RawValue>::deserialize(deserializer)?))
+}
+
+/// Read a number as a tool-call position; anything else as absent.
+fn index<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<StreamIndex>, D::Error> {
+    Ok(number(deserializer)?.map(StreamIndex::of))
 }
 
 /// Read an object as a record; anything else, arrays included, as absent.
@@ -19,28 +31,19 @@ where
     D: Deserializer<'de>,
     T: DeserializeOwned,
 {
-    Ok(object_record(Value::deserialize(deserializer)?))
+    Ok(object_record(<&RawValue>::deserialize(deserializer)?))
 }
 
-/// Read an array element by element, keeping each position; non-objects become `None`.
+/// Read an array element by element, keeping each position; non-objects become `None`, and a
+/// value that is not an array has no elements.
 fn records<'de, D, T>(deserializer: D) -> Result<Vec<Option<T>>, D::Error>
 where
     D: Deserializer<'de>,
     T: DeserializeOwned,
 {
-    Ok(match Value::deserialize(deserializer)? {
-        Value::Array(items) => items.into_iter().map(object_record).collect(),
-        _ => Vec::new(),
-    })
-}
-
-/// Decode an object into a record.
-fn object_record<T: DeserializeOwned>(value: Value) -> Option<T> {
-    if value.is_object() {
-        T::deserialize(value).ok()
-    } else {
-        None
-    }
+    let items: Vec<&RawValue> =
+        serde_json::from_str(<&RawValue>::deserialize(deserializer)?.get()).unwrap_or_default();
+    Ok(items.into_iter().map(object_record).collect())
 }
 
 /// One decoded response chunk.
@@ -58,6 +61,9 @@ pub(super) struct Chunk {
     /// Alternatives; only the first is used.
     #[serde(default, deserialize_with = "records")]
     pub(super) choices: Vec<Option<Choice>>,
+    /// The provider's error report, kept as written.
+    #[serde(default, deserialize_with = "lenient")]
+    pub(super) error: Option<Box<RawValue>>,
 }
 
 /// One alternative of a chunk.
@@ -94,7 +100,7 @@ pub(super) struct Delta {
     pub(super) tool_calls: Vec<Option<ToolCallDelta>>,
     /// Encrypted reasoning details, kept as received.
     #[serde(default, deserialize_with = "lenient")]
-    pub(super) reasoning_details: Option<Vec<Value>>,
+    pub(super) reasoning_details: Option<Vec<Box<RawValue>>>,
 }
 
 impl Delta {
@@ -124,10 +130,10 @@ impl Delta {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(super) struct StreamIndex(u64);
 
-impl<'de> Deserialize<'de> for StreamIndex {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let number = f64::deserialize(deserializer)?;
-        Ok(Self(if number == 0.0 { 0 } else { number.to_bits() }))
+impl StreamIndex {
+    /// The position a number names; both zeros share one.
+    fn of(number: f64) -> Self {
+        Self(if number == 0.0 { 0 } else { number.to_bits() })
     }
 }
 
@@ -135,7 +141,7 @@ impl<'de> Deserialize<'de> for StreamIndex {
 #[derive(Default, Deserialize)]
 pub(super) struct ToolCallDelta {
     /// Position of the call within the response.
-    #[serde(default, deserialize_with = "lenient")]
+    #[serde(default, deserialize_with = "index")]
     pub(super) index: Option<StreamIndex>,
     /// Call identifier.
     #[serde(default, deserialize_with = "lenient")]
@@ -179,13 +185,13 @@ struct FunctionDelta {
 #[derive(Default, Deserialize)]
 pub(super) struct RawUsage {
     /// Tokens in the prompt, cache hits included.
-    #[serde(default, deserialize_with = "lenient")]
+    #[serde(default, deserialize_with = "number")]
     pub(super) prompt_tokens: Option<f64>,
     /// Tokens generated, reasoning included.
-    #[serde(default, deserialize_with = "lenient")]
+    #[serde(default, deserialize_with = "number")]
     pub(super) completion_tokens: Option<f64>,
     /// Cache hits reported at the top level by some providers.
-    #[serde(default, deserialize_with = "lenient")]
+    #[serde(default, deserialize_with = "number")]
     pub(super) prompt_cache_hit_tokens: Option<f64>,
     /// Cache counts reported under the prompt details.
     #[serde(default, deserialize_with = "record")]
@@ -196,9 +202,9 @@ pub(super) struct RawUsage {
 #[derive(Default, Deserialize)]
 pub(super) struct PromptDetails {
     /// Tokens served from the cache.
-    #[serde(default, deserialize_with = "lenient")]
+    #[serde(default, deserialize_with = "number")]
     pub(super) cached_tokens: Option<f64>,
     /// Tokens written to the cache.
-    #[serde(default, deserialize_with = "lenient")]
+    #[serde(default, deserialize_with = "number")]
     pub(super) cache_write_tokens: Option<f64>,
 }

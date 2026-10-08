@@ -1,14 +1,15 @@
 //! Server-sent event framing of a response body.
 
 use futures_util::StreamExt;
-use serde_json::Value;
+use serde_json::value::RawValue;
 
+use super::chunk::Chunk;
 use super::events::Reducer;
 use crate::Cancellation;
 use crate::providers::http::{
     FetchError, HttpBody, Raced, RequestFailure, ServerSentEvent, SseMessages, race, stream_failure,
 };
-use crate::providers::json_text::is_truthy;
+use crate::providers::json_text::{is_truthy, object_record};
 
 /// Reduce one event. The first event whose data starts with `[DONE]` ends the data: it and every
 /// later event are skipped, as is any event named `thread.*`.
@@ -32,12 +33,15 @@ fn reduce(
         *done = true;
         return Ok(());
     }
-    let data: Value = serde_json::from_str(&event.data)
+    let data: &RawValue = serde_json::from_str(&event.data)
         .map_err(|error| RequestFailure::new(error.to_string()))?;
-    if let Some(error) = data.get("error").filter(|error| is_truthy(error)) {
+    let Some(chunk) = object_record::<Chunk>(data) else {
+        return Ok(());
+    };
+    if let Some(error) = chunk.error.as_deref().filter(|error| is_truthy(error)) {
         return Err(stream_failure(error));
     }
-    reducer.chunk(data);
+    reducer.chunk(&chunk);
     Ok(())
 }
 

@@ -144,6 +144,58 @@ fn maestro_chat_serializes_replay_arguments() -> TestResult {
             r#"{"2":2,"10":10,"z":"line\n\"☃","a":1e+21,"b":1e-7,"c":0,"d":{"1":null,"9":[1,0.5]}}"#
         )
     );
+    chat::block_on(true, replayed_numbers())
+}
+
+/// Replayed arguments and signatures carry numbers the way their double prints, in the request
+/// text that goes out: integers beyond 2^53 round, and a number beyond the range of a double
+/// is `null` once written but still counts as present when the signature is read.
+async fn replayed_numbers() -> TestResult {
+    let signatures = [
+        r#"{"type":"reasoning.encrypted","id":"c1","data":9007199254740993}"#,
+        r#"{"type":"reasoning.encrypted","id":"c2","data":1e400}"#,
+        "1e400",
+        "-0",
+        "1e-400",
+        "0",
+        r#"{"a":[1e400,{"10":1e21,"2":-0}],"b":18446744073709551615}"#,
+        "-1e400",
+        r#""""#,
+    ];
+    let calls: Vec<Value> = signatures
+        .iter()
+        .enumerate()
+        .map(|(position, signature)| {
+            json!({"type": "toolCall", "id": format!("c{}", position + 1), "name": "lookup",
+                "arguments": {}, "thoughtSignature": signature})
+        })
+        .collect();
+    let history = json!({"messages": [
+        {"role": "user", "content": "question"},
+        {"role": "assistant", "content": calls}]});
+    let target = transport::transport(vec![transport::Attempt::success()]);
+    let (model, _, common) = transport::call_inputs(&target)?;
+    let mut context = context(&history)?;
+    if let Some(maestro_models::Message::Assistant(message)) = context.messages.get_mut(1)
+        && let Some(maestro_models::AssistantContent::ToolCall(call)) = message.content.first_mut()
+    {
+        call.arguments = serde_json::from_str(
+            r#"{"u":18446744073709551615,"i":9007199254740993,"neg":-9007199254740993,"f":0.1}"#,
+        )?;
+    }
+    transport::finish(model, context, common).await?;
+    let body = String::from_utf8(target.first_request()?.1)?;
+    let sent: Value = serde_json::from_str(&body)?;
+    assert_eq!(
+        sent["messages"][1]["tool_calls"][0]["function"]["arguments"],
+        r#"{"u":18446744073709552000,"i":9007199254740992,"neg":-9007199254740992,"f":0.1}"#
+    );
+    let details = concat!(
+        r#""reasoning_details":[{"type":"reasoning.encrypted","id":"c1","data":9007199254740992},"#,
+        r#"{"type":"reasoning.encrypted","id":"c2","data":null},null,"#,
+        r#"{"a":[null,{"2":0,"10":1e+21}],"b":18446744073709552000},null]"#
+    );
+    assert!(body.contains(details), "{body}");
     Ok(())
 }
 
@@ -521,6 +573,72 @@ fn maestro_chat_applies_compatibility_overrides() -> TestResult {
 fn maestro_chat_preserves_header_precedence() -> TestResult {
     chat::block_on(false, async {
         assert_rows(FIXTURE, "maestro_chat_preserves_header_precedence").await
+    })
+}
+
+/// Run one call whose caller headers are `headers`; return the transport and the outcome.
+async fn send_with_headers(
+    headers: &[(&str, &str)],
+) -> TestResult<(transport::Transport, transport::Outcome)> {
+    let target = transport::transport(vec![transport::Attempt::success()]);
+    let (model, history, mut common) = transport::call_inputs(&target)?;
+    common.headers = Some(
+        headers
+            .iter()
+            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+            .collect(),
+    );
+    let outcome = transport::finish(model, history, common).await?;
+    Ok((target, outcome))
+}
+
+#[test]
+fn maestro_chat_normalizes_request_header_values() -> TestResult {
+    chat::block_on(true, async {
+        let padded = [
+            ("x-edge", " \t\r\nvalue\n\t "),
+            ("x-empty", " \t"),
+            ("x-nbsp", "\u{a0}v\u{a0}"),
+            ("x-next-line", "\u{85}v\u{85}"),
+            ("x-latin", "\u{e9}\u{80}\u{ff}"),
+        ];
+        let (target, outcome) = send_with_headers(&padded).await?;
+        assert!(
+            matches!(outcome.stop_reason, StopReason::Stop),
+            "{:?}",
+            outcome.error
+        );
+        let headers = {
+            let sent = target.requests.lock().map_err(|error| error.to_string())?;
+            sent.first().ok_or("no request")?.headers.clone()
+        };
+        let seen = |name: &str| headers.get(name).map(String::as_str);
+        assert_eq!(seen("x-edge"), Some("value"));
+        assert_eq!(seen("x-empty"), Some(""));
+        assert_eq!(seen("x-nbsp"), Some("\u{a0}v\u{a0}"));
+        assert_eq!(seen("x-next-line"), Some("\u{85}v\u{85}"));
+        assert_eq!(seen("x-latin"), Some("\u{e9}\u{80}\u{ff}"));
+
+        let unsendable = [
+            ("x-wide", "\u{100}"),
+            ("x-wide", "\u{feff}v\u{feff}"),
+            ("x-wide", "a\u{1f600}"),
+            ("x-line", "a\nb"),
+            ("x-nul", "a\0b"),
+            ("bad name", "v"),
+        ];
+        for (name, value) in unsendable {
+            let (target, outcome) = send_with_headers(&[(name, value)]).await?;
+            assert_eq!(
+                target.attempts(),
+                0,
+                "{name}: {value:?} reached the transport"
+            );
+            assert!(matches!(outcome.stop_reason, StopReason::Error), "{name}");
+            let error = outcome.error.unwrap_or_default();
+            assert!(error.contains(name), "{error}");
+        }
+        Ok(())
     })
 }
 

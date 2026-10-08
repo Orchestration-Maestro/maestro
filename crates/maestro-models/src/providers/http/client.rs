@@ -1,10 +1,10 @@
 //! Default HTTP client over reqwest.
 
-use std::collections::BTreeMap;
 use std::error::Error;
 
 use futures_util::StreamExt;
 
+use super::headers::{request_pairs, response_record};
 use super::{FetchError, HttpBody, HttpRequest, HttpResponse};
 use crate::{BoxFuture, DiagnosticErrorInfo};
 
@@ -12,13 +12,14 @@ use crate::{BoxFuture, DiagnosticErrorInfo};
 pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, FetchError>> {
     Box::pin(async move {
         let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
+        let mut headers = request.headers;
         let mut builder = build()?.request(method, &request.url);
-        for (name, value) in &request.headers {
+        for (name, value) in request_pairs(&mut headers).map_err(connection)? {
             builder = builder.header(name, value);
         }
         let response = builder.body(request.body).send().await.map_err(failed)?;
         let status = response.status().as_u16();
-        let headers = collect_headers(response.headers());
+        let headers = response_record(response.headers());
         let body: HttpBody = Box::pin(
             response
                 .bytes_stream()
@@ -53,22 +54,6 @@ fn build() -> Result<&'static reqwest::Client, FetchError> {
 #[cfg(target_arch = "wasm32")]
 fn build() -> Result<reqwest::Client, FetchError> {
     reqwest::Client::builder().build().map_err(failed)
-}
-
-/// Copy headers, joining repeated names the way a header map reports them.
-fn collect_headers(headers: &reqwest::header::HeaderMap) -> BTreeMap<String, String> {
-    let mut copied: BTreeMap<String, String> = BTreeMap::new();
-    for (name, value) in headers {
-        let value = String::from_utf8_lossy(value.as_bytes());
-        copied
-            .entry(name.as_str().to_owned())
-            .and_modify(|joined| {
-                joined.push_str(", ");
-                joined.push_str(&value);
-            })
-            .or_insert_with(|| value.into_owned());
-    }
-    copied
 }
 
 /// Join an error with its causes into one line.

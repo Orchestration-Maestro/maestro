@@ -3,10 +3,11 @@
 use serde::ser::{SerializeMap, SerializeStruct};
 use serde::{Serialize, Serializer};
 use serde_json::Value;
+use serde_json::value::RawValue;
 
 use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
 use crate::arguments::json_parse::whitespace;
-use crate::providers::json_text::{compact_object, is_truthy};
+use crate::providers::json_text::{compact_object, is_truthy, json_value};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, JsonObject, Message, Model,
     ModelInput, ThinkingContent, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -363,8 +364,9 @@ fn convert_assistant(
         .calls
         .iter()
         .filter_map(|call| call.thought_signature.as_deref())
-        .filter_map(|signature| serde_json::from_str::<Value>(signature).ok())
-        .filter(is_truthy)
+        .filter_map(|signature| serde_json::from_str::<&RawValue>(signature).ok())
+        .filter(|signature| is_truthy(signature))
+        .filter_map(|signature| json_value(signature).ok())
         .collect();
     if !details.is_empty() {
         extension_fields.insert("reasoning_details".to_owned(), Value::Array(details));

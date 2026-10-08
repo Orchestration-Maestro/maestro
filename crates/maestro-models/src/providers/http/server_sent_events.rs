@@ -37,9 +37,6 @@ impl SseDecoder {
                 data: std::mem::take(&mut self.data).join("\n"),
             });
         }
-        if line.starts_with(':') {
-            return None;
-        }
         let (field, value) = line.split_once(':').unwrap_or((line, ""));
         let value = value.strip_prefix(' ').unwrap_or(value);
         match field {
