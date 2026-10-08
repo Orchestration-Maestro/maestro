@@ -1,11 +1,14 @@
 # Terminal components
 
 `maestro-tui` defines what a renderable component is and ships the pieces that need
-no terminal: a container, text and image components and the contracts for
-overlays, terminals, editors and completion. It performs no terminal I/O and starts no
-timers; whatever connects a real terminal supplies a `Terminal` implementation.
-See [inline images](images.md) for capability detection and retained image rendering,
-[key input](keys.md) for decoding and [keybindings](keybindings.md) for configurable actions.
+no terminal: a container, text and image components, the contracts for overlays,
+terminals, editors and completion, and the `TUI` frame writer that draws components
+to a terminal. It performs no terminal I/O and starts no timers; whatever connects a
+real terminal supplies a `Terminal` implementation, and the host of the frame writer
+supplies a `TuiRuntime` for time, deferral and log files.
+See [retained frames](rendering.md) for the frame writer, [inline images](images.md)
+for capability detection and retained image rendering, [key input](keys.md) for
+decoding and [keybindings](keybindings.md) for configurable actions.
 
 The crate root re-exports the component, container, overlay, terminal, editor and
 completion names used below, so `maestro_tui::Component` and
@@ -69,7 +72,7 @@ assert_eq!(container.render(14), [" Hello world  "]);
 shown; every member is optional and sizes keep a percentage's spelling. The
 `visible` callback takes the viewport width and height.
 `OverlayHandle` is the control surface of a shown overlay. Resolving positions and
-managing a stack of overlays belong to the renderer that uses these records.
+managing a stack of overlays belong to the frame writer that uses these records.
 
 ## Terminals
 

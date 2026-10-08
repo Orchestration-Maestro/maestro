@@ -30,7 +30,7 @@ pub use text::utils::{
 };
 pub use tui::{
     CURSOR_MARKER, Component, Container, Focusable, OverlayAnchor, OverlayHandle, OverlayMargin,
-    OverlayOptions, SizeValue, is_focusable,
+    OverlayOptions, SizeValue, TUI, is_focusable,
 };
 
 pub use images::terminal_image::{

@@ -5,6 +5,7 @@
   "maestro-path": "core",
   "maestro-settings": "core",
   "maestro-test-conventions": "dedicated",
+  "maestro-test-terminal": "dedicated",
   "maestro-tooling": "dedicated",
   "maestro-tui": "core"
 }
