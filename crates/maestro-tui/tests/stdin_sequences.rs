@@ -510,3 +510,20 @@ fn maestro_stdin_decodes_buffer_inputs_without_guessing_stream_encoding() {
 fn maestro_stdin_preserves_buffer_chunk_decoding() {
     replay("maestro_stdin_preserves_buffer_chunk_decoding");
 }
+
+#[test]
+fn maestro_stdin_holds_a_fragment_when_the_deadline_is_not_representable() {
+    let mut buffer = StdinBuffer::new(StdinBufferOptions {
+        timeout: Duration::MAX,
+    });
+    let now = Instant::now();
+    assert!(
+        buffer
+            .process(StdinBufferInput::Text("\x1b["), now)
+            .is_empty()
+    );
+    assert_eq!(buffer.get_buffer(), "\x1b[");
+    assert_eq!(buffer.deadline(), None);
+    assert!(buffer.expire(now + Duration::from_secs(3600)).is_empty());
+    assert_eq!(buffer.flush(), ["\x1b["]);
+}
