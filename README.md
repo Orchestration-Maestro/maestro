@@ -58,10 +58,12 @@ and dependency boundaries remain defined by the foundation specification.
 
 The checker rejects unlisted members, dependency cycles, core-to-dedicated
 edges and all internal dependencies of leaf crates. Normal, build, dev,
-optional and target-specific dependencies all count. External dependencies
-are not workspace edges. A dependency with a workspace member's package name
-must use a path to that member, not a registry/git source or a different path;
-this prevents Cargo patches or overrides from hiding internal edges.
+optional and target-specific dependencies all count; the one exception is the
+optional production edge to the foundation utility `maestro-path`. External
+dependencies are not workspace edges. A dependency with a workspace member's
+package name must use a path to that member, not a registry/git source or a
+different path; this prevents Cargo patches or overrides from hiding internal
+edges.
 The per-crate dependency allowlist applies whenever a crate exists.
 
 Names are `maestro` or `maestro-` followed by one or two lowercase ASCII

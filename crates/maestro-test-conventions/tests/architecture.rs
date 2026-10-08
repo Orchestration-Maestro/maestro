@@ -194,6 +194,7 @@ fn production_cycles_are_rejected() {
 
 fn leaf_internal_dependencies_are_rejected() {
     for (leaf, class) in [
+        ("maestro-path", "core"),
         ("maestro-models", "core"),
         ("maestro-storage", "core"),
         ("maestro-resources", "core"),
@@ -453,7 +454,7 @@ fn forbidden_direct_edges_are_rejected() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 26);
+    assert_eq!(support::policy::POLICY.len(), 27);
     assert_eq!(
         support::policy::POLICY
             .iter()
@@ -483,6 +484,186 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.dependencies", ""),
     ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
 ];
+
+/// Crates that may not declare the foundation utility.
+const UTILITY_EXCLUDED: &[&str] = &[
+    "maestro-extensions-wasm",
+    "maestro-extensions-wasmtime",
+    "maestro-test-terminal",
+];
+
+/// Direct dependencies a crate must declare, empty unless it has an exact set.
+fn exact_targets(name: &str) -> &'static [&'static str] {
+    if !support::exact(name) {
+        return &[];
+    }
+    support::policy::POLICY
+        .iter()
+        .find(|row| row.0 == name)
+        .unwrap()
+        .1
+}
+
+/// Manifest declaring the required targets and the foundation utility.
+fn dependencies_with_utility(required: &[&str], kind: &str, extra: &str) -> String {
+    let mut declarations = String::from("[dependencies]\n");
+    for target in required {
+        writeln!(
+            declarations,
+            "{} = {{ package = {target:?}, path = \"../{target}\" }}",
+            target.replace('-', "_")
+        )
+        .unwrap();
+    }
+    if kind != "dependencies" {
+        writeln!(declarations, "[{kind}]").unwrap();
+    }
+    writeln!(
+        declarations,
+        "utility = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"
+    )
+    .unwrap();
+    declarations
+}
+
+#[test]
+fn path_utility_edges_preserve_native_layer_rules() {
+    let rows = support::policy::POLICY;
+    let consumers: Vec<_> = rows
+        .iter()
+        .map(|row| row.0)
+        .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
+        .collect();
+    assert_eq!(rows.len(), 27);
+    assert_eq!(consumers.len(), 23);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 9);
+    for from in consumers {
+        native_consumer_may_declare_the_utility(from);
+    }
+    for from in UTILITY_EXCLUDED {
+        excluded_crate_may_not_declare_the_utility(from);
+    }
+    path_utility_has_no_outbound_edges();
+    path_utility_does_not_satisfy_exact_sets();
+}
+
+/// Whether the table row of a crate lists no internal dependencies.
+fn is_leaf(name: &str) -> bool {
+    support::policy::POLICY
+        .iter()
+        .find(|row| row.0 == name)
+        .unwrap()
+        .1
+        .is_empty()
+}
+
+/// Accept every production declaration form of the utility and reject a dev one.
+fn native_consumer_may_declare_the_utility(from: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&[from, "maestro-path"]);
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            from,
+            from,
+            &dependencies_with_utility(exact_targets(from), kind, extra),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Ok(()),
+            "{from} -> maestro-path ({kind}{extra})"
+        );
+    }
+    workspace.member(
+        from,
+        from,
+        &dependencies_with_utility(exact_targets(from), "dev-dependencies", ""),
+    );
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(if is_leaf(from) {
+            format!("{from} must not depend on workspace crate maestro-path")
+        } else {
+            format!(
+                "internal dev dependency requires declared dependency-free test support: {from} -> maestro-path"
+            )
+        })
+    );
+}
+
+/// Reject every declaration form of the utility from a crate outside the permission.
+fn excluded_crate_may_not_declare_the_utility(from: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&[from, "maestro-path"]);
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            from,
+            from,
+            &dependencies_with_utility(exact_targets(from), kind, extra),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(if is_leaf(from) {
+                format!("{from} must not depend on workspace crate maestro-path")
+            } else {
+                format!("forbidden production dependency: {from} -> maestro-path")
+            })
+        );
+    }
+    workspace.foundation(&[from, "maestro-path"]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+/// Reject every dependency kind from the utility to another workspace crate.
+fn path_utility_has_no_outbound_edges() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-path", "maestro-models"]);
+    for kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
+        workspace.member(
+            "maestro-path",
+            "maestro-path",
+            &format!(
+                "[{kind}]\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\" }}"
+            ),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("maestro-path must not depend on workspace crate maestro-models".into())
+        );
+    }
+}
+
+/// Require each exact dependency set with and without the optional utility edge.
+fn path_utility_does_not_satisfy_exact_sets() {
+    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
+        let required = exact_targets(frontend);
+        let workspace = Workspace::new();
+        workspace.foundation(&[&[frontend, "maestro-path"], required].concat());
+        workspace.member(
+            frontend,
+            frontend,
+            &dependencies_with_utility(required, "dependencies", ""),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        for omitted in required {
+            let remaining: Vec<_> = required
+                .iter()
+                .copied()
+                .filter(|target| target != omitted)
+                .collect();
+            workspace.member(
+                frontend,
+                frontend,
+                &dependencies_with_utility(&remaining, "dependencies", ""),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "{frontend}: missing required direct dependency {omitted}"
+                ))
+            );
+        }
+    }
+}
 
 #[test]
 fn sparse_inventory_does_not_create_product_crates() {
@@ -810,6 +991,7 @@ fn documented_foundation_graph_matches_policy() {
     }
     let expected: BTreeMap<_, BTreeSet<_>> = support::policy::POLICY
         .iter()
+        .filter(|row| row.0 != "maestro-path")
         .map(|&(name, dependencies)| (name, dependencies.iter().copied().collect()))
         .collect();
     assert_eq!(documented, expected);
@@ -987,7 +1169,8 @@ fn policy_edge_matrix(dev: bool) {
         .clone();
     for &(from, targets) in support::policy::POLICY {
         for &(to, _) in support::policy::POLICY {
-            if from == to || (!dev && targets.contains(&to)) {
+            let utility_edge = to == "maestro-path" && !UTILITY_EXCLUDED.contains(&from);
+            if from == to || (!dev && (targets.contains(&to) || utility_edge)) {
                 continue;
             }
             let mut declared = valid.clone();

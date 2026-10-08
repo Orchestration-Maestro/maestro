@@ -12,10 +12,12 @@ The extension domain may depend directly on resources for shared source informat
 The binary composition root, conventions checker, terminal scenario harness and
 repository tooling are `dedicated`; all product libraries and adapters are `core`.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies. Classes are not numeric delivery layers. Known absent
-entries do not require placeholder crates; unknown actual members are rejected.
+no internal dependencies apart from the optional utility. Classes are not numeric
+delivery layers. Known absent entries do not require placeholder crates; unknown
+actual members are rejected.
 
-Eight leaves have no internal dependencies. Other crates may use a subset of
+Eight leaves in the specification table have no internal dependencies; the
+foundation utility `maestro-path` is a ninth. Other crates may use a subset of
 their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
@@ -35,6 +37,27 @@ host-filtered full metadata with default features, not all features. Package IDs
 and canonical member paths establish identity, not dependency aliases. Optional,
 build, dev and inactive foreign-target declarations remain subject to policy.
 Malformed metadata and command failures return diagnostics, not acceptance.
+
+## Authored paths and the foundation utility
+
+An authored path, the text a user, setting or file wrote, stays a `String` and
+goes through `maestro-path`; it becomes a `std::path::PathBuf` only at a
+file-system call. The utility offers `join`, `normalize`, `resolve`, `relative`,
+`dirname`, `basename` and `is_absolute` for the `posix` and `win32` flavors, plus
+a POSIX `parse`, with the results of the JavaScript runtime's `path` module. The
+crate root re-exports the flavor of the compile target. Nothing reads the process
+working directory or the environment: `resolve` and `relative` take a `Cwd`
+snapshot from the caller.
+
+`maestro-path` has no internal dependencies and is the one named exception to
+leaf and exact-set rules. Any crate in the specification table may declare it as
+a normal or build dependency (optional and target-specific forms included)
+without changing its layer, except the guest authoring crate, the runtime
+adapter and the terminal scenario harness. The edge is ignored when checking a
+crate's complete direct set or leaf status, so the graph holds 27 crates and 85
+permitted edges: 62 table edges plus 23 utility edges. Dev-dependencies on the
+utility, dependencies from the utility, and cycles are rejected like any other
+internal edge.
 
 ## Bounded ownership checks
 

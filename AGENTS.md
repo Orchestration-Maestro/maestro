@@ -78,6 +78,11 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never depend on dedicated
   (non-core) crates.
+- `maestro-path` is the foundation utility for lexical path strings. It sits
+  below layer 0 and depends on no workspace crate. Native crates may declare it
+  as a production dependency without changing their layer; the guest authoring
+  crate, the component runtime adapter and the terminal scenario harness may not.
+  Keep authored paths as strings and convert to `PathBuf` only at I/O.
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
 
@@ -86,9 +91,10 @@ through declared and host-resolved Cargo metadata, including optional, target an
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness and repository tooling are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies. Sparse workspaces need no placeholder crates. Frontends
-require their full direct sets; the terminal adapter and scenario harness require
-toolkit only. Other non-leaves permit subsets.
+no internal dependencies apart from the optional utility. Sparse workspaces need
+no placeholder crates. Frontends require their full direct sets; the terminal
+adapter and scenario harness require toolkit only. The utility edge never counts
+toward an exact set. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic; the internal dev-target
 allowlist is empty. The scenario harness is not a general dev-dependency target.
 

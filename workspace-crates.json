@@ -1,5 +1,6 @@
 {
   "maestro-models": "core",
+  "maestro-path": "core",
   "maestro-test-conventions": "dedicated",
   "maestro-tooling": "dedicated",
   "maestro-tui": "core"

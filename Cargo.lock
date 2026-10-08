@@ -188,6 +188,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-path"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-test-conventions"
 version = "0.1.0"
 dependencies = [
