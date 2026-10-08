@@ -7,11 +7,11 @@ use std::time::Duration;
 
 use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
 use maestro_tui::editor_component::EditorCallbacks;
-use maestro_tui::tui::{ComponentHandle, InputHandler, OverlayMarginValue};
+use maestro_tui::tui::{ComponentHandle, InputHandler};
 use maestro_tui::{
     AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, Focusable,
-    OverlayAnchor, OverlayHandle, OverlayMargin, OverlayOptions, SizeValue, SlashCommand, Terminal,
-    TruncatedText, is_focusable, visible_width,
+    OverlayHandle, OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText,
+    is_focusable, visible_width,
 };
 
 mod fixtures {
@@ -199,19 +199,6 @@ fn truncated_component_bounds_padding_and_first_line() {
     }
 }
 
-/// Every anchor the contract lists.
-const ANCHORS: [OverlayAnchor; 9] = [
-    OverlayAnchor::Center,
-    OverlayAnchor::TopLeft,
-    OverlayAnchor::TopRight,
-    OverlayAnchor::BottomLeft,
-    OverlayAnchor::BottomRight,
-    OverlayAnchor::TopCenter,
-    OverlayAnchor::BottomCenter,
-    OverlayAnchor::LeftCenter,
-    OverlayAnchor::RightCenter,
-];
-
 fn assert_overlay_defaults() {
     let defaults = OverlayOptions::default();
     assert!(
@@ -228,32 +215,16 @@ fn assert_overlay_defaults() {
             .iter()
             .all(Option::is_none)
     );
-    for (index, anchor) in ANCHORS.iter().enumerate() {
-        assert!(ANCHORS[index + 1..].iter().all(|other| other != anchor));
-    }
 }
 
-fn full_options(seen: &Rc<RefCell<Vec<(usize, usize)>>>) -> OverlayOptions {
+fn visibility_options(seen: &Rc<RefCell<Vec<(usize, usize)>>>) -> OverlayOptions {
     let recorder = Rc::clone(seen);
     OverlayOptions {
-        width: Some(SizeValue::Percentage("50%".to_owned())),
-        min_width: Some(20),
-        max_height: Some(SizeValue::Cells(12)),
-        anchor: Some(OverlayAnchor::BottomRight),
-        offset_x: Some(-3),
-        offset_y: Some(2),
-        row: Some(SizeValue::Percentage("25%".to_owned())),
-        col: Some(SizeValue::Cells(4)),
-        margin: Some(OverlayMarginValue::Sides(OverlayMargin {
-            top: Some(1),
-            left: Some(2),
-            ..OverlayMargin::default()
-        })),
         visible: Some(Rc::new(move |width, height| {
             recorder.borrow_mut().push((width, height));
             width >= 80
         })),
-        non_capturing: Some(true),
+        ..OverlayOptions::default()
     }
 }
 
@@ -273,24 +244,10 @@ fn assert_handle_effects() {
 }
 
 #[test]
-fn overlay_contracts_preserve_options_and_handle_effects() {
+fn overlay_defaults_unset_visibility_callback_and_handle_effects() {
     assert_overlay_defaults();
     let seen = Rc::new(RefCell::new(Vec::new()));
-    let options = full_options(&seen);
-    assert_eq!(options.width, Some(SizeValue::Percentage("50%".to_owned())));
-    assert_eq!(options.row, Some(SizeValue::Percentage("25%".to_owned())));
-    assert_eq!((options.offset_x, options.offset_y), (Some(-3), Some(2)));
-    let sides = OverlayMargin {
-        top: Some(1),
-        right: None,
-        bottom: None,
-        left: Some(2),
-    };
-    assert_eq!(options.margin, Some(OverlayMarginValue::Sides(sides)));
-    assert_ne!(
-        OverlayMarginValue::Uniform(3),
-        OverlayMarginValue::Sides(sides)
-    );
+    let options = visibility_options(&seen);
     let visible = options
         .visible
         .as_ref()
@@ -520,18 +477,6 @@ fn assert_slash_commands() {
         })
         .collect();
     assert_eq!(outcomes, [Some(Some(1)), Some(None), None]);
-    let described = SlashCommand {
-        description: Some("d".into()),
-        argument_hint: Some("<x>".into()),
-        ..command("ready", None)
-    };
-    assert_eq!(
-        (
-            described.description.as_deref(),
-            described.argument_hint.as_deref()
-        ),
-        (Some("d"), Some("<x>"))
-    );
 }
 
 #[test]

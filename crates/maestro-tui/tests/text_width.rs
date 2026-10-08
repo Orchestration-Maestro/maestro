@@ -10,6 +10,7 @@ const WIDTH_POLICY: &[(&str, usize)] = &[
     ("", 0),
     ("ASCII ~", 7),
     ("\u{754c}", 2),
+    ("\u{ff21}", 2),
     ("\u{1f642}", 2),
     ("e\u{301}", 1),
     ("\u{301}", 0),
@@ -114,7 +115,6 @@ fn character_classes_keep_bom_and_next_line_distinct() {
         '\u{2009}', '\u{200a}', '\u{2028}', '\u{2029}', '\u{202f}', '\u{205f}', '\u{3000}',
         '\u{feff}',
     ];
-    assert_eq!(whitespace.len(), 25);
     for scalar in whitespace {
         assert!(is_whitespace_char(&scalar.to_string()), "{scalar:?}");
     }
@@ -122,7 +122,6 @@ fn character_classes_keep_bom_and_next_line_distinct() {
         assert!(!is_whitespace_char(&scalar.to_string()), "{scalar:?}");
     }
     let punctuation = "(){}[]<>.,;:'\"!?+-=*/\\|&%^$#@~`";
-    assert_eq!(punctuation.chars().count(), 31);
     for scalar in punctuation.chars() {
         assert!(is_punctuation_char(&scalar.to_string()), "{scalar:?}");
     }

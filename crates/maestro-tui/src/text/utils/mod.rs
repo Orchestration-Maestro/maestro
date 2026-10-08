@@ -33,7 +33,7 @@ pub fn get_segmenter(text: &str) -> impl Iterator<Item = (usize, &str)> {
     text.grapheme_indices(true)
 }
 
-/// Rewrites the Thai and Lao AM vowels as the pairs terminals repaint reliably.
+/// Rewrites the Thai and Lao AM vowels as the pairs `U+0E4D U+0E32` and `U+0ECD U+0EB2`.
 #[must_use]
 pub fn normalize_terminal_output(text: &str) -> Cow<'_, str> {
     if !text.contains(['\u{e33}', '\u{eb3}']) {

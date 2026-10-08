@@ -210,6 +210,10 @@ fn opaque_metadata_survives_without_printable_content() {
         wrap_text_with_ansi("ab\x1b]133;A\x07 cd", 2),
         ["ab\x1b]133;A\x07", "cd"]
     );
+    assert_eq!(
+        wrap_text_with_ansi("  \x1b]133;A\x07", 1),
+        ["\x1b]133;A\x07"]
+    );
 }
 
 #[test]
@@ -217,7 +221,7 @@ fn segments_keep_before_priority_and_gap_style_changes() {
     let cases = [
         ("a\u{754c}bc", (2, 1, 4, false), ("a\u{754c}", 3, "bc", 2)),
         ("abcd", (0, 2, 0, false), ("", 0, "", 0)),
-        ("abcd", (3, 0, 1, false), ("a", 1, "", 0)),
+        ("abcd", (3, 0, 1, false), ("abc", 3, "", 0)),
         (
             "\x1b[31mab\x1b[1;44mcd\x1b[39mef",
             (1, 4, 4, false),
@@ -249,6 +253,22 @@ fn segments_keep_before_priority_and_gap_style_changes() {
 const MARKER: &str = "\x1b_maestro:c\x07";
 
 #[test]
+fn segments_keep_the_whole_part_before_when_the_overlay_range_lies_inside_it() {
+    let line = format!("a\x1b[31mb{MARKER}cd");
+    let parts = extract_segments(&line, 3, 1, 1, false);
+    assert_eq!(
+        (
+            parts.before.as_str(),
+            parts.before_width,
+            parts.after.as_str(),
+            parts.after_width
+        ),
+        (format!("a\x1b[31mb{MARKER}c").as_str(), 3, "", 0),
+        "the overlay range ends before the part before does"
+    );
+}
+
+#[test]
 fn segments_keep_metadata_in_front_of_the_first_after_grapheme() {
     let gap = extract_segments(&format!("ab{MARKER}c"), 1, 2, 1, false);
     assert_eq!(
@@ -263,6 +283,15 @@ fn segments_keep_metadata_in_front_of_the_first_after_grapheme() {
             start.after_width
         ),
         ("", format!("{MARKER}a").as_str(), 1)
+    );
+}
+
+#[test]
+fn segments_keep_metadata_between_and_after_the_graphemes_of_the_after_region() {
+    let parts = extract_segments(&format!("ab{MARKER}c{MARKER}"), 1, 1, 5, false);
+    assert_eq!(
+        (parts.after.as_str(), parts.after_width),
+        (format!("b{MARKER}c{MARKER}").as_str(), 2)
     );
 }
 

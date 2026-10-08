@@ -111,6 +111,18 @@ fn foreground_carries_across_soft_wraps() {
 }
 
 #[test]
+fn literal_newlines_carry_style_and_leave_underline_open() {
+    assert_eq!(
+        wrap_preserving_styles(&format!("{RED}a\nb"), 5),
+        [format!("{RED}a"), format!("{RED}b")]
+    );
+    assert_eq!(
+        wrap_preserving_styles(&format!("{UNDERLINE_ON}ab\ncd"), 5),
+        [format!("{UNDERLINE_ON}ab"), format!("{UNDERLINE_ON}cd")]
+    );
+}
+
+#[test]
 fn wrapped_st_links_close_and_reopen() {
     let open = "\x1b]8;;https://example.com\x1b\\";
     let close = "\x1b]8;;\x1b\\";
@@ -295,6 +307,10 @@ fn sgr_continuations_keep_canonical_attributes_and_color_spelling() {
         let lines = wrap_preserving_styles(&text, 1);
         assert_eq!(lines.len(), 3, "{control:?}");
         assert_eq!(lines[2], format!("{state}c"), "{control:?}");
+        assert!(
+            lines[1].starts_with(&format!("{base}{control}b")),
+            "{control:?} is written out as spelled"
+        );
         assert!(lines[0].starts_with(&format!("{base}a")), "{control:?}");
     }
 }

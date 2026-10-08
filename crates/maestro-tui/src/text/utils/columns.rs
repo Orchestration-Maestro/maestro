@@ -131,9 +131,9 @@ pub fn slice_by_column(line: &str, start_col: usize, length: usize, strict: bool
 ///
 /// The text after the overlay starts from the style in effect at its first grapheme.
 ///
-/// Metadata escapes stay in place in either part: between their graphemes, in front of
-/// the first grapheme after, and at the end of the text before when the line ends inside
-/// it. The part before wins where the two overlap; metadata under the overlay is dropped.
+/// Metadata escapes stay in place in either part: between its graphemes, in front of the
+/// first grapheme after, and at the end of either part when the line ends inside it. The
+/// part before wins where the two overlap; metadata under the overlay is dropped.
 #[must_use]
 pub fn extract_segments(
     line: &str,
@@ -144,6 +144,11 @@ pub fn extract_segments(
 ) -> ExtractedSegments {
     let parsed = Parsed::parse(line);
     let after_end = after_start.saturating_add(after_len);
+    let walk_end = if after_len == 0 {
+        before_end
+    } else {
+        before_end.max(after_end)
+    };
     let mut before = Run::default();
     let mut after = Run::default();
     let (col, tail) = walk(&parsed, |cols, grapheme| {
@@ -156,11 +161,7 @@ pub fn extract_segments(
                 after.trailing = parsed.leading_events(&grapheme);
             }
         }
-        if after_len == 0 {
-            cols.end >= before_end
-        } else {
-            cols.end >= after_end
-        }
+        cols.end >= walk_end
     });
     if let Some(tail) = tail {
         if col < before_end {
