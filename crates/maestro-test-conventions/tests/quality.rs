@@ -434,11 +434,11 @@ fn documentation_markers_in_literals_and_ordinary_comments_count() {
 }
 
 #[test]
-fn block_documentation_excludes_only_documentation_characters() {
+fn generated_block_documentation_excludes_only_documentation_characters() {
     let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
+    workspace.member("guest", "maestro-extensions-wasm", "");
+    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    let path = workspace.root.join("crates/guest/src/bindings.rs");
     let mut source = "/*!\n Module documentation.\n */\n".to_owned();
     for index in 0..500 {
         writeln!(
@@ -471,7 +471,7 @@ fn included_expressions_exclude_documentation_at_the_line_limit() {
     for index in 0..497 {
         writeln!(source, "/// Item documentation.\nconst P{index}: u8 = 0;").unwrap();
     }
-    source.push_str("/** Return documentation. */\n1_u8\n}\n");
+    source.push_str("/// Return documentation.\n1_u8\n}\n");
     std::fs::write(&fragment, &source).unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
     source.push_str("// Technical.\n");

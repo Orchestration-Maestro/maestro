@@ -41,7 +41,7 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `[lints] workspace = true`. Quality-lint allowances are forbidden.
 The protected `redundant_clone` lint rejects unnecessary copies.
 Conventions reject consecutive repeated nonempty physical documentation lines
-within one contiguous run of same-style documentation comments. An attribute,
+within one contiguous run of same-style line documentation comments. An attribute,
 an ordinary comment or code ends the run. Markdown code blocks, even inside lists
 or block quotes, are ignored. Whitespace is trimmed but list/quote markers remain;
 blank documentation lines are retained and do not reset comparison, while code
@@ -66,6 +66,8 @@ The changelog is generated from conventional commits at release time.
 Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
+Hand-written documentation uses only `///` and `//!`; generated guest bindings in
+`maestro-extensions-wasm/src/bindings.rs` are exempt from this convention.
 
 All Rust comments describe the code, not planning material. Never include
 numbered slices, specs, tasks or tickets, issue/pull-request references,

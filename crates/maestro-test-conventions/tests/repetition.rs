@@ -40,7 +40,7 @@ fn documentation_ignores_code_fences_and_resets_at_each_item() {
 /// ```
 /// Read a value.
 fn first() {}
-/** Read a value. */
+/// Read a value.
 fn second() {}
 /// ~~~~text
 /// repeated code
@@ -139,25 +139,6 @@ fn sample() {
 }
 
 #[test]
-fn block_documentation_repetition_keeps_physical_line_numbers() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    std::fs::write(
-        &path,
-        "/**\r\n * Read a value.\r\n * Read a value.\r\n */\r\nfn read() {}\r\n",
-    )
-    .unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
-    assert!(
-        error.contains("repeated documentation; first at line 2"),
-        "{error}"
-    );
-}
-
-#[test]
 fn markdown_list_marker_is_not_trimmed_from_line_documentation() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
@@ -208,7 +189,6 @@ fn inner_and_outer_documentation_have_distinct_owners() {
     let path = workspace.root.join("crates/tui/src/lib.rs");
     for source in [
         "//! Shared description.\n/// Shared description.\npub struct X;\n",
-        "/*! Shared description. */\n/** Shared description. */\npub struct X;\n",
         "//! ```\n/// Shared description.\n/// Shared description.\npub struct X;\n",
     ] {
         std::fs::write(&path, source).unwrap();
@@ -320,31 +300,25 @@ fn physical_documentation_lines_cover_tight_lists_and_separators() {
         "> - Intro.\n>   Repeat.\n>   Repeat.",
         "1. Intro.\n   Repeat.\n   Repeat.",
     ] {
-        for block in [false, true] {
-            let lines: Vec<_> = prose.lines().collect();
-            let source = if block {
-                format!("/**\n * {}\n */\nfn sample() {{}}\n", lines.join("\n * "))
-            } else {
-                format!("/// {}\nfn sample() {{}}\n", lines.join("\n/// "))
-            };
-            std::fs::write(&path, source).unwrap();
-            let Err(error) = check_workspace(&workspace.root) else {
-                failures.push(format!("missed repetition: block={block}, {prose:?}"));
-                continue;
-            };
-            let last = lines.len() + usize::from(block);
-            assert!(
-                error.contains(&format!("{}:{last}:", path.display())),
-                "{error}"
-            );
-            assert!(
-                error.contains(&format!(
-                    "repeated documentation; first at line {}",
-                    last - 1
-                )),
-                "{error}"
-            );
-        }
+        let lines: Vec<_> = prose.lines().collect();
+        let source = format!("/// {}\nfn sample() {{}}\n", lines.join("\n/// "));
+        std::fs::write(&path, source).unwrap();
+        let Err(error) = check_workspace(&workspace.root) else {
+            failures.push(format!("missed repetition: {prose:?}"));
+            continue;
+        };
+        let last = lines.len();
+        assert!(
+            error.contains(&format!("{}:{last}:", path.display())),
+            "{error}"
+        );
+        assert!(
+            error.contains(&format!(
+                "repeated documentation; first at line {}",
+                last - 1
+            )),
+            "{error}"
+        );
     }
     for separator in ["# Different", "---", "<div>Different</div>"] {
         std::fs::write(

@@ -10,7 +10,11 @@ use crate::source::{Member, Source};
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
-            documentation(source)?;
+            let generated_bindings = member.name == "maestro-extensions-wasm"
+                && source.path == member.directory.join("src/bindings.rs");
+            if !generated_bindings {
+                documentation(source)?;
+            }
             assertions(source, &member.directory)?;
         }
     }
@@ -27,11 +31,16 @@ fn documentation(source: &Source) -> Result<(), String> {
         let body = match token.kind {
             TokenKind::LineComment {
                 doc_style: Some(owner),
-            } => Some((&source.contents[offset + 3..end], false, owner)),
+            } => Some((&source.contents[offset + 3..end], owner)),
             TokenKind::BlockComment {
-                doc_style: Some(owner),
-                terminated: true,
-            } => Some((&source.contents[offset + 3..end - 2], true, owner)),
+                doc_style: Some(_), ..
+            } => {
+                let line = crate::source::line(&source.contents, offset);
+                return Err(format!(
+                    "{}:{line}: block documentation: use /// or //!",
+                    source.path.display()
+                ));
+            }
             TokenKind::Whitespace => None,
             _ => {
                 block.check(source)?;
@@ -40,14 +49,14 @@ fn documentation(source: &Source) -> Result<(), String> {
                 None
             }
         };
-        if let Some((body, decorated, owner)) = body {
+        if let Some((body, owner)) = body {
             if style != Some(owner) {
                 block.check(source)?;
                 block = Documentation::default();
                 style = Some(owner);
             }
             let start = crate::source::line(&source.contents, offset);
-            block.comment(body, start, decorated);
+            block.comment(body, start);
         }
         offset = end;
     }
@@ -64,19 +73,12 @@ struct Documentation {
 }
 
 impl Documentation {
-    /// Retain every physical line, removing decoration and one separator space.
-    fn comment(&mut self, body: &str, start: usize, decorated: bool) {
-        for (index, text) in body.split('\n').enumerate() {
-            let text = if decorated && index > 0 {
-                text.trim_start().strip_prefix('*').unwrap_or(text)
-            } else {
-                text
-            };
-            self.markdown
-                .push_str(text.strip_prefix(' ').unwrap_or(text));
-            self.markdown.push('\n');
-            self.lines.push(start + index);
-        }
+    /// Retain a documentation line, removing one separator space.
+    fn comment(&mut self, body: &str, start: usize) {
+        self.markdown
+            .push_str(body.strip_prefix(' ').unwrap_or(body));
+        self.markdown.push('\n');
+        self.lines.push(start);
     }
 
     /// Compare physical lines, excluding parser-selected code block ranges.
