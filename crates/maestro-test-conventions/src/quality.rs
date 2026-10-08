@@ -105,7 +105,7 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
 #[derive(Default)]
 /// Source spans excluded from the production line count.
 struct TestLines {
-    /// Half-open character ranges occupied by test-only syntax.
+    /// Half-open character ranges occupied by test-only syntax or documentation tokens.
     spans: Vec<std::ops::Range<(usize, usize)>>,
 }
 
@@ -203,7 +203,7 @@ fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
     }
 }
 
-/// Require each crate to inherit workspace lints without overrides.
+/// Require each crate to enable workspace lint inheritance.
 fn check_inheritance(name: &str, manifest: &Path) -> Result<(), String> {
     let contents = std::fs::read_to_string(manifest)
         .map_err(|error| format!("{}: {error}", manifest.display()))?;

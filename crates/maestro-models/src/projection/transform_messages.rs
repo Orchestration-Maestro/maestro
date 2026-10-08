@@ -148,7 +148,9 @@ fn prepare_assistant<'a>(
     }
 }
 
-/// Keep useful thinking while restricting redacted or signed content to its model.
+/// Retain redacted thinking only for the matching model; otherwise keep non-blank thinking
+/// or signed blank thinking for the matching model. Cross-model non-blank thinking is
+/// later projected as unsigned text.
 fn keep_thinking(value: &crate::ThinkingContent, same: bool) -> bool {
     if value.redacted == Some(true) {
         return same;

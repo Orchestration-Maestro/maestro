@@ -22,11 +22,11 @@ enum CrateClass {
 }
 #[derive(Deserialize)]
 #[serde(untagged)]
-/// Decoded classification that preserves an invalid value for diagnostics.
+/// Decoded classification with a marker for discarded invalid values.
 enum Class {
     /// A recognized crate classification.
     Known(CrateClass),
-    /// An unrecognized classification retained for validation.
+    /// An invalid-classification marker used for a crate-specific diagnostic.
     Invalid(serde::de::IgnoredAny),
 }
 impl Class {
