@@ -427,7 +427,7 @@ fn assert_watch_rebuild(recipe: &str, changed: &str) {
     prepare_watch_workspace(&workspace);
     prepare_tooling_owner(&workspace);
     let binary = workspace.0.join("target/debug/development");
-    let (child, receive, threads) = start_watch(&workspace, recipe, &binary);
+    let (child, receive, threads) = start_watch(&workspace, workspace.command(recipe), &binary);
     let diagnostics = watcher_diagnostics(&workspace.0);
     assert_watch_events(&workspace, changed, &receive, &diagnostics);
     drop(child);
@@ -437,11 +437,11 @@ fn assert_watch_rebuild(recipe: &str, changed: &str) {
     }
 }
 
-/// Starts a recipe with group ownership before reading any output.
+/// Isolates profiles before launch because cleanup can forcibly stop the owned group.
 #[cfg(unix)]
 fn start_watch(
     workspace: &Workspace,
-    recipe: &str,
+    mut command: Command,
     binary: &Path,
 ) -> (
     ProcessGroup,
@@ -451,7 +451,9 @@ fn start_watch(
     use std::os::unix::process::CommandExt;
     use std::process::Stdio;
     use std::sync::mpsc;
-    let mut command = workspace.command(recipe);
+    let profiles = workspace.0.join("target/watch-profiles");
+    fs::create_dir_all(&profiles).unwrap();
+    command.env("LLVM_PROFILE_FILE", profiles.join("watch-%p-%m.profraw"));
     command
         .env("MAESTRO_REAL_CARGO", env!("CARGO"))
         .env("MAESTRO_DEVELOPMENT", binary)
@@ -484,7 +486,7 @@ fn maestro_watch_completion_retains_both_output_streams() {
     ).unwrap();
     let (child, receive, threads) = start_watch(
         &workspace,
-        "watch-output",
+        workspace.command("watch-output"),
         Path::new(env!("CARGO_BIN_EXE_development")),
     );
     let mut transcript = String::new();
@@ -513,7 +515,7 @@ fn maestro_watch_stops_its_children_on_panic() {
     prepare_watch_workspace(&workspace);
     let (child, receive, threads) = start_watch(
         &workspace,
-        "models-dev",
+        workspace.command("models-dev"),
         Path::new(env!("CARGO_BIN_EXE_development")),
     );
     let group = child.0.id();
@@ -548,6 +550,187 @@ fn maestro_watch_stops_its_children_on_panic() {
     assert!(
         disconnected,
         "watch descendants retained their output pipes after panic"
+    );
+}
+
+/// Real instrumented descendants write outside merge inputs, even with literal checkout paths.
+#[cfg(unix)]
+#[test]
+fn maestro_watch_profiles_are_isolated_before_group_start() {
+    let mut workspace = Workspace::new();
+    let literal = workspace.0.with_extension("space ' checkout");
+    fs::rename(&workspace.0, &literal).unwrap();
+    workspace.0 = literal;
+    let binary = prepare_profile_writer(&workspace);
+    let merge = workspace.0.join("merge-profiles");
+    let control = profile_control(&binary, &merge);
+    for incoming in [
+        Some(merge.join("incoming-%p-%m.profraw")),
+        None,
+        Some(PathBuf::new()),
+    ] {
+        let scratch = workspace.0.join("target/watch-profiles");
+        if scratch.exists() {
+            fs::remove_dir_all(&scratch).unwrap();
+        }
+        let mut command = Command::new(&binary);
+        command.env_remove("LLVM_PROFILE_FILE");
+        if let Some(value) = incoming {
+            command.env("LLVM_PROFILE_FILE", value);
+        }
+        let (child, receive, threads) = start_watch(&workspace, command, &binary);
+        wait_for_marker(
+            &receive,
+            &mut String::new(),
+            "maestro-profile-child-exited",
+            "profile producer",
+        );
+        let produced = scratch.is_dir().then(|| profile_snapshot(&scratch));
+        let group = child.0.id();
+        drop(child);
+        close_profile_output(group, &receive, threads);
+        assert_eq!(
+            profile_snapshot(&merge),
+            control,
+            "watch group contaminated merge inputs"
+        );
+        assert!(
+            produced.is_some_and(|files| !files.is_empty()),
+            "missing instrumented descendant profile"
+        );
+    }
+    let scratch = workspace.0.join("target/watch-profiles");
+    fs::remove_dir_all(&scratch).unwrap();
+    fs::write(&scratch, "not a directory").unwrap();
+    let failure = std::panic::catch_unwind(|| {
+        let mut command = Command::new(&binary);
+        command
+            .arg("exit")
+            .env("LLVM_PROFILE_FILE", merge.join("failure-%p-%m.profraw"));
+        start_watch(&workspace, command, &binary)
+    });
+    assert!(failure.is_err(), "profile setup must fail before spawning");
+    assert_eq!(profile_snapshot(&merge), control);
+}
+
+/// Unwinding stops the instrumented group without adding profiles to merge inputs.
+#[cfg(unix)]
+#[test]
+fn maestro_watch_profile_isolation_survives_panic_cleanup() {
+    let workspace = Workspace::new();
+    let binary = prepare_profile_writer(&workspace);
+    let merge = workspace.0.join("merge-profiles");
+    let control = profile_control(&binary, &merge);
+    let mut command = Command::new(&binary);
+    command.env("LLVM_PROFILE_FILE", merge.join("incoming-%p-%m.profraw"));
+    let (child, receive, threads) = start_watch(&workspace, command, &binary);
+    wait_for_marker(
+        &receive,
+        &mut String::new(),
+        "maestro-profile-child-exited",
+        "profile producer",
+    );
+    let scratch = workspace.0.join("target/watch-profiles");
+    let produced = scratch.is_dir().then(|| profile_snapshot(&scratch));
+    let group = child.0.id();
+    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _child = child;
+        panic!("controlled panic after profile child exit");
+    }));
+    close_profile_output(group, &receive, threads);
+    assert!(panic.is_err());
+    assert_eq!(
+        profile_snapshot(&merge),
+        control,
+        "panic cleanup contaminated merge inputs"
+    );
+    assert!(
+        produced.is_some_and(|files| !files.is_empty()),
+        "missing instrumented descendant profile"
+    );
+}
+
+/// Compiles the finite profile producer even when the integration test is uninstrumented.
+#[cfg(unix)]
+fn prepare_profile_writer(workspace: &Workspace) -> PathBuf {
+    let source = workspace.0.join("profile_writer.rs");
+    fs::write(&source, include_str!("fixtures/profile_writer.rs")).unwrap();
+    let binary = workspace.0.join("profile_writer");
+    assert!(
+        Command::new("rustc")
+            .arg("-C")
+            .arg("instrument-coverage")
+            .arg(source)
+            .arg("-o")
+            .arg(&binary)
+            .status()
+            .unwrap()
+            .success()
+    );
+    binary
+}
+
+/// Proves ordinary commands retain profiling and returns the completed merge input snapshot.
+#[cfg(unix)]
+fn profile_control(binary: &Path, merge: &Path) -> Vec<(std::ffi::OsString, Vec<u8>)> {
+    fs::create_dir(merge).unwrap();
+    assert!(
+        Command::new(binary)
+            .arg("exit")
+            .env("LLVM_PROFILE_FILE", merge.join("control-%p-%m.profraw"))
+            .status()
+            .unwrap()
+            .success()
+    );
+    let files = profile_snapshot(merge);
+    assert!(
+        !files.is_empty(),
+        "ordinary command must emit a real profile"
+    );
+    files
+}
+
+/// Reads completed native profiles without interpreting LLVM names or bytes.
+#[cfg(unix)]
+fn profile_snapshot(directory: &Path) -> Vec<(std::ffi::OsString, Vec<u8>)> {
+    let mut files: Vec<_> = fs::read_dir(directory)
+        .unwrap()
+        .map(|entry| {
+            let entry = entry.unwrap();
+            let contents = fs::read(entry.path()).unwrap();
+            assert!(!contents.is_empty(), "empty native profile");
+            (entry.file_name(), contents)
+        })
+        .collect();
+    files.sort_by(|left, right| left.0.cmp(&right.0));
+    files
+}
+
+/// Closes the controlled producer set before checking that merge inputs remain unchanged.
+#[cfg(unix)]
+fn close_profile_output(
+    group: u32,
+    receive: &std::sync::mpsc::Receiver<String>,
+    threads: [std::thread::JoinHandle<()>; 1],
+) {
+    let disconnected = loop {
+        match receive.recv_timeout(std::time::Duration::from_secs(10)) {
+            Ok(_) => {}
+            Err(error) => break error == std::sync::mpsc::RecvTimeoutError::Disconnected,
+        }
+    };
+    if !disconnected {
+        Command::new("kill")
+            .args(["-KILL", "--", &format!("-{group}")])
+            .status()
+            .unwrap();
+    }
+    for thread in threads {
+        thread.join().unwrap();
+    }
+    assert!(
+        disconnected,
+        "profile fixture retained its output after cleanup"
     );
 }
 
