@@ -156,7 +156,8 @@ pub(super) fn event_type(data: &str) -> Option<KeyEventType> {
     Report::scan(data).map(|report| report.event_type())
 }
 
-/// Names a logical key held with `modifier`; a base-layout key stands in for an unrecognized key.
+/// Names a logical key held with `modifier`; a base-layout key stands in for any key that
+/// is not a lowercase ASCII letter, digit or symbol.
 fn format_key(code: Code, modifier: u32, base: Option<char>) -> Option<KeyId> {
     let identity = code.identity(modifier);
     let effective = match base {
@@ -179,7 +180,8 @@ pub(super) struct Sequence {
 }
 
 impl Sequence {
-    /// Reads a complete report that names a key; invalid numeric fields reject it.
+    /// Reads a complete report; an invalid or oversized number, a zero modifier field and
+    /// an unnamed tilde number reject it.
     pub(super) fn parse(data: &str) -> Option<Self> {
         let report = Report::scan(data)?;
         let modifier = report.modifier.map_or(Some(1), decimal)?.checked_sub(1)?;
@@ -208,8 +210,9 @@ impl Sequence {
 
     /// Whether the report is `expected` held with exactly `modifier`, ignoring lock bits.
     ///
-    /// The base-layout key identifies the key only when the reported key is not a letter,
-    /// digit or symbol, which are authoritative whatever the physical layout.
+    /// The base-layout key identifies the key only when the reported key, after keypad
+    /// mapping and shift lowering, is not a lowercase ASCII letter, digit or symbol, which
+    /// are authoritative whatever the physical layout.
     pub(super) fn matches(&self, expected: Code, modifier: u32) -> bool {
         if self.modifier & !LOCKS != modifier & !LOCKS {
             return false;
@@ -236,7 +239,8 @@ pub(super) struct ModifyOtherKeys {
 }
 
 impl ModifyOtherKeys {
-    /// Reads `CSI 27 ; modifier ; code ~`; invalid numeric fields reject it.
+    /// Reads `CSI 27 ; modifier ; code ~`; an invalid or oversized number and a zero modifier
+    /// field reject it.
     pub(super) fn parse(data: &str) -> Option<Self> {
         let (modifier, key) = data
             .strip_prefix("\x1b[27;")?
@@ -248,13 +252,13 @@ impl ModifyOtherKeys {
         })
     }
 
-    /// Whether the report is exactly `key` held with exactly `modifier`.
+    /// Whether the report is exactly `key` held with exactly `modifier`, lock bits included.
     pub(super) fn matches(self, key: char, modifier: u32) -> bool {
         self.key == key && self.modifier == modifier
     }
 
-    /// Whether the report is `key` with the same non-empty modifiers, a shifted capital
-    /// counting as its lowercase letter.
+    /// Whether the report is `key` with the same non-empty modifier bits, lock bits
+    /// included, a shifted capital counting as its lowercase letter.
     pub(super) fn matches_printable(self, key: char, modifier: u32) -> bool {
         modifier != 0
             && self.modifier == modifier

@@ -8,7 +8,9 @@ const FUNCTIONAL_KEYS: std::ops::RangeInclusive<char> = '\u{e000}'..='\u{f8ff}';
 
 /// The character typed by an enhanced CSI-u report, if it is plain or shifted text.
 ///
-/// Reports with alt, ctrl or super held, and those of functional keys, type nothing.
+/// Caps Lock and Num Lock are ignored. Reports with alt, ctrl, super or another modifier
+/// bit held, control characters, navigation keypad codes and the reserved functional range
+/// type nothing.
 pub(super) fn decode_kitty(data: &str) -> Option<char> {
     let sequence = Sequence::parse(data)?;
     let Code::Char(code) = sequence.code else {
@@ -28,6 +30,8 @@ pub(super) fn decode_kitty(data: &str) -> Option<char> {
 }
 
 /// The character typed by an xterm modifyOtherKeys report, if it is plain or shifted text.
+///
+/// Caps Lock and Num Lock are ignored; control characters type nothing.
 pub(super) fn decode_modify_other_keys(data: &str) -> Option<char> {
     let report = ModifyOtherKeys::parse(data)?;
     (report.modifier & !(SHIFT | LOCKS) == 0 && !report.key.is_control()).then_some(report.key)

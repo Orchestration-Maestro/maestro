@@ -1,7 +1,8 @@
 //! Key sequences with the exact result of every decoding operation, grouped by what they probe.
 //!
 //! A table lists, for each input, the key identifier it parses to and the candidate
-//! identifiers it matches; every other candidate of the table must not match.
+//! identifiers it matches; every other candidate of the table must not match. The parsed
+//! identifier is tried as a candidate too when the table does not list it.
 
 use maestro_tui::KeyEventType;
 
@@ -1269,6 +1270,9 @@ pub const KEYPAD_CAND: &[&str] = &[
     ".",
     ",",
     "=",
+    "+",
+    "shift++",
+    "ctrl++",
 ];
 
 /// Rows of the `keypad` probe.
@@ -1575,23 +1579,23 @@ pub const KEYPAD: &[Row] = &[
     Row {
         kitty_text: Some('+'),
         text: Some('+'),
-        ..Row::new(Legacy, "\x1b[57413;1u", Some("+"), &[])
+        ..Row::new(Legacy, "\x1b[57413;1u", Some("+"), &["+"])
     },
     Row {
         kitty_text: Some('+'),
         text: Some('+'),
-        ..Row::new(Legacy, "\x1b[57413;2u", Some("shift++"), &[])
+        ..Row::new(Legacy, "\x1b[57413;2u", Some("shift++"), &["shift++"])
     },
-    Row::new(Legacy, "\x1b[57413;5u", Some("ctrl++"), &[]),
+    Row::new(Legacy, "\x1b[57413;5u", Some("ctrl++"), &["ctrl++"]),
     Row {
         kitty_text: Some('+'),
         text: Some('+'),
-        ..Row::new(Legacy, "\x1b[57413;65u", Some("+"), &[])
+        ..Row::new(Legacy, "\x1b[57413;65u", Some("+"), &["+"])
     },
     Row {
         kitty_text: Some('+'),
         text: Some('+'),
-        ..Row::new(Legacy, "\x1b[57413;193u", Some("+"), &[])
+        ..Row::new(Legacy, "\x1b[57413;193u", Some("+"), &["+"])
     },
     Row::new(Legacy, "\x1b[57414;1u", Some("enter"), &["enter", "return"]),
     Row::new(

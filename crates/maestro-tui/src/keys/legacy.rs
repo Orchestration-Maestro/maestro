@@ -26,7 +26,10 @@ const fn row(key: Named, modifier: u32, sequences: &'static [&'static str]) -> R
     }
 }
 
-/// Every legacy sequence with the key and modifiers it reports; matching and naming both read it.
+/// The legacy navigation and function-key sequences with the key and modifiers each
+/// reports; matching and naming both read it. Raw control bytes, escape-prefixed bytes
+/// and the sequences for shift+tab and numpad enter are handled where they are matched
+/// and named.
 const ROWS: [Row; 51] = [
     row(Up, 0, &["\x1b[A", "\x1bOA"]),
     row(Down, 0, &["\x1b[B", "\x1bOB"]),

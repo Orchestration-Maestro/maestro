@@ -14,7 +14,7 @@ pub(super) const ALT: u32 = 2;
 pub(super) const CTRL: u32 = 4;
 /// Modifier bit for super.
 pub(super) const SUPER: u32 = 8;
-/// Caps Lock and Num Lock bits, which never change a key's identity.
+/// Caps Lock and Num Lock bits, which naming, typed text and enhanced matching ignore.
 pub(super) const LOCKS: u32 = 64 | 128;
 
 /// Printable symbols accepted as key identifiers.
@@ -54,7 +54,8 @@ const KEYPAD: [(u32, Code); 27] = [
     (57426, Code::Key(Named::Delete)),
 ];
 
-/// Whether `c` is a lowercase letter, a digit or one of the symbols usable in key identifiers.
+/// Whether `c` is an ASCII lowercase letter, a digit or one of the symbols usable in key
+/// identifiers.
 fn is_key_char(c: char) -> bool {
     c.is_ascii_lowercase() || c.is_ascii_digit() || SYMBOLS.contains(c)
 }
@@ -236,7 +237,8 @@ impl Code {
         }
     }
 
-    /// Whether the code is a letter, digit or symbol that a base-layout key may not replace.
+    /// Whether the code is an ASCII lowercase letter, digit or symbol, which a base-layout
+    /// key may not replace.
     pub(super) fn is_authoritative(self) -> bool {
         matches!(self, Self::Char(c) if is_key_char(c))
     }
@@ -279,8 +281,10 @@ pub(super) struct Identifier {
 impl Identifier {
     /// Parses an identifier, ignoring ASCII case.
     ///
-    /// The key is the text after the last `+`, except that a trailing `+` is the plus key.
-    /// Words before the key that are not modifier names are ignored.
+    /// The key is the text after the last `+`, except that `+` alone and an identifier
+    /// ending in `++` name the plus key. An identifier ending in a single `+` after a word
+    /// has an empty key and names nothing. Words before the key that are not modifier names
+    /// are ignored.
     pub(super) fn parse(id: &str) -> Option<Self> {
         let id = id.to_ascii_lowercase();
         let (prefix, key) = if id == "+" {

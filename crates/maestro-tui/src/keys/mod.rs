@@ -27,8 +27,9 @@ static KITTY_PROTOCOL_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 /// Records whether the terminal runs the enhanced keyboard protocol.
 ///
-/// The flag starts `false`. Matching and parsing read it on every call, because the
-/// protocol changes what a few legacy inputs mean.
+/// The flag starts `false`. [`matches_key`] and [`parse_key`] read it when they
+/// interpret legacy input, because the protocol changes what a few legacy inputs mean;
+/// the typed-text and event functions never read it.
 pub fn set_kitty_protocol_active(active: bool) {
     KITTY_PROTOCOL_ACTIVE.store(active, Ordering::Relaxed);
 }
@@ -45,7 +46,7 @@ struct Input<'a> {
     data: &'a str,
     /// Whether the enhanced protocol is active.
     kitty: bool,
-    /// The input as an enhanced report that names a key.
+    /// The input as an enhanced report whose fields are valid.
     enhanced: Option<Sequence>,
     /// The input as a modifyOtherKeys report.
     other: Option<ModifyOtherKeys>,
@@ -62,14 +63,16 @@ impl<'a> Input<'a> {
         }
     }
 
-    /// Whether the input is an enhanced report of `code` held with exactly `modifier`.
+    /// Whether the input is an enhanced report of `code` held with `modifier`, ignoring
+    /// lock bits.
     fn enhanced(&self, code: Code, modifier: u32) -> bool {
         self.enhanced
             .as_ref()
             .is_some_and(|sequence| sequence.matches(code, modifier))
     }
 
-    /// Whether the input is a modifyOtherKeys report of `key` held with exactly `modifier`.
+    /// Whether the input is a modifyOtherKeys report of `key` held with exactly `modifier`,
+    /// lock bits included.
     fn other(&self, key: char, modifier: u32) -> bool {
         self.other
             .is_some_and(|report| report.matches(key, modifier))
@@ -179,9 +182,13 @@ impl<'a> Input<'a> {
 
 /// Whether `data` is the key named by `key_id`, held with exactly the modifiers it names.
 ///
-/// Every encoding of the key is recognized and lock modifiers are ignored. An identifier
-/// that names no key, or that the input cannot express, never matches. A release report
-/// matches its key; check [`is_key_release`] to skip releases.
+/// The encodings recognized are those of the module page: legacy bytes and sequences,
+/// enhanced reports and modifyOtherKeys reports, some only in one protocol state. Caps
+/// Lock and Num Lock bits in an enhanced report are ignored; a modifyOtherKeys report
+/// must carry exactly the identifier's modifier bits, so one with a lock bit set
+/// matches nothing. An identifier that names no key, or that the input cannot express,
+/// never matches. A release report matches its key; check [`is_key_release`] to skip
+/// releases.
 #[must_use]
 pub fn matches_key(data: &str, key_id: &str) -> bool {
     let Some(identifier) = Identifier::parse(key_id) else {
@@ -209,8 +216,9 @@ pub fn parse_key(data: &str) -> Option<KeyId> {
 
 /// The character typed by an enhanced `CSI u` report of a plain or shifted text key.
 ///
-/// Returns `None` for any other input, for reports with alt, ctrl, super or another
-/// modifier held, and for control characters and functional keys.
+/// Caps Lock and Num Lock do not prevent a character. Returns `None` for any other input,
+/// for reports with alt, ctrl, super or another modifier bit held, and for control
+/// characters and functional keys.
 #[must_use]
 pub fn decode_kitty_printable(data: &str) -> Option<char> {
     printable::decode_kitty(data)
@@ -219,8 +227,8 @@ pub fn decode_kitty_printable(data: &str) -> Option<char> {
 /// The character typed by an enhanced `CSI u` report or an xterm modifyOtherKeys report
 /// of a plain or shifted text key.
 ///
-/// The modifyOtherKeys form keeps private-use characters as text; both forms return
-/// `None` for control characters.
+/// The modifyOtherKeys form keeps private-use characters as text and, like the other
+/// form, ignores the lock bits; both forms return `None` for control characters.
 #[must_use]
 pub fn decode_printable_key(data: &str) -> Option<char> {
     printable::decode_kitty(data).or_else(|| printable::decode_modify_other_keys(data))
