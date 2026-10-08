@@ -683,26 +683,6 @@ fn maestro_preserves_literal_missing_property_names() {
 }
 
 #[test]
-fn maestro_reports_native_errors_for_invalid_constraint_patterns() {
-    let native = regress::Regex::with_flags("[", "u")
-        .unwrap_err()
-        .to_string();
-    for schema in [
-        json!({"pattern":"["}),
-        json!({"patternProperties":{"[":false}}),
-    ] {
-        let input = if schema.get("pattern").is_some() {
-            json!("text")
-        } else {
-            json!({"a":1})
-        };
-        let error = check(schema, input).unwrap_err();
-        assert!(error.contains(&native), "{error}");
-        assert!(!error.contains("must match pattern"), "{error}");
-    }
-}
-
-#[test]
 fn maestro_preserves_inherited_uris_for_relative_schema_resources() {
     let schema = json!({
         "$id":"https://schemas.example/root/",
@@ -2081,11 +2061,13 @@ const UNBUILT_PLACEMENTS: &[Placement] = &[
     ),
 ];
 
-/// A malformed expression written as each keyword that builds one.
-fn malformed(source: &str) -> [Value; 2] {
+/// A malformed expression written as each keyword that builds one, with either boolean schema
+/// behind a `patternProperties` key.
+fn malformed(source: &str) -> [Value; 3] {
     [
         json!({"pattern":source}),
         json!({"patternProperties":{source:true}}),
+        json!({"patternProperties":{source:false}}),
     ]
 }
 
@@ -2274,4 +2256,101 @@ fn maestro_skips_conversion_alternatives_whose_expressions_do_not_compile() {
             }
         }
     }
+}
+
+#[test]
+fn maestro_ignores_keyword_maps_written_as_arrays() {
+    for (row, schema, arguments) in [
+        (
+            "properties, malformed pattern",
+            json!({"properties":[{"pattern":"["}]}),
+            json!({}),
+        ),
+        (
+            "patternProperties, malformed pattern",
+            json!({"patternProperties":[{"pattern":"["}]}),
+            json!({}),
+        ),
+        (
+            "dependencies, malformed pattern",
+            json!({"dependencies":[{"pattern":"["}]}),
+            json!({}),
+        ),
+        (
+            "dependentSchemas, malformed pattern",
+            json!({"dependentSchemas":[{"pattern":"["}]}),
+            json!({}),
+        ),
+        (
+            "properties, violated type",
+            json!({"properties":[{"type":"string"}]}),
+            json!({"0":1}),
+        ),
+        (
+            "patternProperties, violated type",
+            json!({"patternProperties":[{"type":"string"}]}),
+            json!({"0":1}),
+        ),
+        (
+            "dependencies, missing name",
+            json!({"dependencies":[["x"]]}),
+            json!({"0":1}),
+        ),
+        (
+            "dependentSchemas, missing name",
+            json!({"dependentSchemas":[{"required":["x"]}]}),
+            json!({"0":1}),
+        ),
+        (
+            "dependentRequired, missing name",
+            json!({"dependentRequired":[["x"]]}),
+            json!({"0":1}),
+        ),
+    ] {
+        let arguments = [serde_json::from_value(arguments).unwrap()];
+        assert_placed(row, &schema, &arguments, |arguments| Ok(arguments.clone()));
+    }
+}
+
+/// Two scopes reach one shared dynamic reference; only the first scope has a live binding, so the
+/// later scope resolves it to the static anchor whose pattern is `static_pattern`.
+fn shared_dynamic_reference(static_pattern: &str) -> Value {
+    json!({
+        "properties":{
+            "a":{"$dynamicAnchor":"x","pattern":"^a","properties":{"inner":{"$ref":"#/$defs/shared"}}},
+            "b":{"properties":{"inner":{"$ref":"#/$defs/shared"}}}
+        },
+        "$defs":{
+            "shared":{"$dynamicRef":"#x"},
+            "x":{"$dynamicAnchor":"x","pattern":static_pattern}
+        }
+    })
+}
+
+#[test]
+fn maestro_prepares_a_shared_reference_target_in_every_scope_that_reaches_it() -> Checked {
+    let schema = shared_dynamic_reference("^b");
+    expect(&schema, json!({"a":{"inner":"a1"}}), &[])?;
+    expect(&schema, json!({"b":{"inner":"b1"}}), &[])?;
+    expect(
+        &schema,
+        json!({"a":{"inner":"b1"}}),
+        &["  - a.inner: must match pattern \"^a\""],
+    )?;
+    expect(
+        &schema,
+        json!({"b":{"inner":"a1"}}),
+        &["  - b.inner: must match pattern \"^b\""],
+    )
+}
+
+#[test]
+fn maestro_reports_a_malformed_pattern_that_only_a_later_scope_reaches() {
+    assert_eq!(
+        check_object(
+            shared_dynamic_reference("["),
+            maestro_models::JsonObject::new()
+        ),
+        Err(native("["))
+    );
 }

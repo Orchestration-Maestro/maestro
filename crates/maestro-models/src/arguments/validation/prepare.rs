@@ -1,4 +1,4 @@
-//! Regular expressions a schema builds before any argument is checked.
+//! Regular expressions a schema builds before any assertion is evaluated.
 
 use std::collections::{HashMap, hash_map::Entry};
 
@@ -36,7 +36,9 @@ enum Step<'a> {
 ///
 /// A schema is reached through its keywords' nested schemas and through reference targets,
 /// whatever the arguments are; unreferenced definitions and other members are never built.
-/// Each pattern source is built once and shared by every schema that declares it.
+/// A target is expanded once for each set of live anchor bindings that reaches it, because a
+/// dynamic reference selects its target from those bindings. Each pattern source is built once
+/// and shared by every schema that declares it.
 pub(super) fn prepare<'a>(root: &Location<'a>) -> Result<Patterns<'a>, regress::Error> {
     let mut patterns = HashMap::new();
     let mut built: Vec<Context<'a>> = Vec::new();

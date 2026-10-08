@@ -1,4 +1,4 @@
-use maestro_models::{Tool, ToolCall, validate_tool_arguments};
+use maestro_models::{JsonObject, Tool, ToolCall, validate_tool_arguments};
 use serde_json::{Value, json};
 
 fn declaration(schema: Value) -> Tool {
@@ -112,11 +112,11 @@ struct Fixture {
     case: String,
     group: String,
     schema: Value,
-    arguments: maestro_models::JsonObject,
+    arguments: JsonObject,
     name: String,
     declaration: String,
     mode: FixtureMode,
-    expected: Result<maestro_models::JsonObject, String>,
+    expected: Result<JsonObject, String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -173,10 +173,7 @@ fn run_case(fixture: Fixture) {
     };
     match (result, fixture.expected) {
         (Ok(actual), Ok(expected)) => assert!(
-            equivalent(
-                &Value::Object(actual.clone()),
-                &Value::Object(expected.clone())
-            ),
+            equivalent_objects(&actual, &expected),
             "{}: actual {actual:?}, expected {expected:?}",
             fixture.case
         ),
@@ -197,6 +194,13 @@ fn run_case(fixture: Fixture) {
     assert_eq!(call.arguments, arguments, "{}", fixture.case);
 }
 
+fn equivalent_objects(left: &JsonObject, right: &JsonObject) -> bool {
+    left.len() == right.len()
+        && left
+            .iter()
+            .all(|(key, left)| right.get(key).is_some_and(|right| equivalent(left, right)))
+}
+
 fn equivalent(left: &Value, right: &Value) -> bool {
     match (left, right) {
         (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
@@ -207,12 +211,7 @@ fn equivalent(left: &Value, right: &Value) -> bool {
                     .zip(right)
                     .all(|(left, right)| equivalent(left, right))
         }
-        (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| equivalent(left, right)))
-        }
+        (Value::Object(left), Value::Object(right)) => equivalent_objects(left, right),
         _ => left == right,
     }
 }

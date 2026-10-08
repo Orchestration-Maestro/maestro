@@ -79,15 +79,20 @@ dynamic binding. Array pointer segments use exact unsigned index names: `0` and
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 
-Before any argument is examined, the checker builds once the Unicode expression
-of every `pattern` and every `patternProperties` key in the schemas it can
-reach: the nested schemas of each keyword and the targets of `$ref`,
-`$recursiveRef` and `$dynamicRef`, whatever the arguments are. Unreferenced
-`$defs` and `definitions`, `then` and `else` without `if`, data such as `const`
-and `enum`, and keyword values that are not schemas are never built. An
-expression that does not compile is a schema error, not a failed assertion: the
-call returns the expression error alone, so no union tolerates it and no
-negation inverts it. When several are malformed, the one built first is
+Declared conversions run first, skipping a combinator alternative whose own
+expressions do not compile. Then, before any assertion is evaluated, the
+checker builds once the Unicode expression of every `pattern` and every
+`patternProperties` key in the schemas it can reach: the nested schemas of each
+keyword and the targets of `$ref`, `$recursiveRef` and `$dynamicRef`, whatever
+the arguments are. A target is built in every scope that reaches it, because a
+dynamic reference selects its target from the anchors live in that scope.
+Unreferenced `$defs` and `definitions`, `then` and `else` without `if`, data such
+as `const` and `enum`, and keyword values that are not schemas are never built.
+`properties`, `patternProperties`, `dependencies`, `dependentSchemas` and
+`dependentRequired` are read only when they hold an object; a list in their place
+is ignored. An expression that does not compile is a schema error, not a failed
+assertion: the call returns the expression error alone, so no union tolerates it
+and no negation inverts it. When several are malformed, the one built first is
 reported: object and array keywords with their nested schemas, then the
 `pattern` beside them, then reference targets, then conditionals, negation and
 combinators.
