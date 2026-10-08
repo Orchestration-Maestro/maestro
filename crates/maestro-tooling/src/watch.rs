@@ -36,7 +36,8 @@ pub(crate) fn run(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
     Ok(super::exit_code(status))
 }
 
-/// Anchor the output subtree beneath the watched directory, escaping glob syntax.
+/// Anchor the literal output subtree using the watcher's gitignore dialect.
+/// Backslashes escape metacharacters so valid names cannot exclude other paths.
 fn target_ignore(target: &Path, checkout: &Path) -> io::Result<Option<String>> {
     let Ok(relative) = target.strip_prefix(checkout) else {
         return Ok(None);
@@ -45,7 +46,21 @@ fn target_ignore(target: &Path, checkout: &Path) -> io::Result<Option<String>> {
         .to_str()
         .ok_or_else(|| io::Error::other("non-Unicode target path"))?;
     let relative = relative.replace(std::path::MAIN_SEPARATOR, "/");
-    Ok(Some(format!("/{}/", globset::escape(&relative))))
+    Ok(Some(format!("/{}/", escape_gitignore_path(&relative))))
+}
+
+/// Encode a literal path for gitignore, where backslashes escape the next character.
+fn escape_gitignore_path(path: &str) -> String {
+    let mut pattern = String::new();
+    for (index, character) in path.chars().enumerate() {
+        if matches!(character, '\\' | '*' | '?' | '[' | ']' | '{' | '}')
+            || (index == 0 && matches!(character, '!' | '#'))
+        {
+            pattern.push('\\');
+        }
+        pattern.push(character);
+    }
+    pattern
 }
 
 /// Compile on source changes while ignoring events confined to Cargo outputs.

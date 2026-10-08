@@ -8,9 +8,11 @@ publish = false
 
 [dependencies]
 cargo_metadata = "=0.23.1"
-globset = "=0.4.20"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
+
+[dev-dependencies]
+ignore = "=0.4.33"
 
 [lints]
 workspace = true
