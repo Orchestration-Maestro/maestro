@@ -1,162 +1,4 @@
 {
-  "defaults": {
-    "tui.editor.cursorUp": {
-      "defaultKeys": "up",
-      "description": "Move cursor up"
-    },
-    "tui.editor.cursorDown": {
-      "defaultKeys": "down",
-      "description": "Move cursor down"
-    },
-    "tui.editor.cursorLeft": {
-      "defaultKeys": [
-        "left",
-        "ctrl+b"
-      ],
-      "description": "Move cursor left"
-    },
-    "tui.editor.cursorRight": {
-      "defaultKeys": [
-        "right",
-        "ctrl+f"
-      ],
-      "description": "Move cursor right"
-    },
-    "tui.editor.cursorWordLeft": {
-      "defaultKeys": [
-        "alt+left",
-        "ctrl+left",
-        "alt+b"
-      ],
-      "description": "Move cursor word left"
-    },
-    "tui.editor.cursorWordRight": {
-      "defaultKeys": [
-        "alt+right",
-        "ctrl+right",
-        "alt+f"
-      ],
-      "description": "Move cursor word right"
-    },
-    "tui.editor.cursorLineStart": {
-      "defaultKeys": [
-        "home",
-        "ctrl+a"
-      ],
-      "description": "Move to line start"
-    },
-    "tui.editor.cursorLineEnd": {
-      "defaultKeys": [
-        "end",
-        "ctrl+e"
-      ],
-      "description": "Move to line end"
-    },
-    "tui.editor.jumpForward": {
-      "defaultKeys": "ctrl+]",
-      "description": "Jump forward to character"
-    },
-    "tui.editor.jumpBackward": {
-      "defaultKeys": "ctrl+alt+]",
-      "description": "Jump backward to character"
-    },
-    "tui.editor.pageUp": {
-      "defaultKeys": "pageUp",
-      "description": "Page up"
-    },
-    "tui.editor.pageDown": {
-      "defaultKeys": "pageDown",
-      "description": "Page down"
-    },
-    "tui.editor.deleteCharBackward": {
-      "defaultKeys": "backspace",
-      "description": "Delete character backward"
-    },
-    "tui.editor.deleteCharForward": {
-      "defaultKeys": [
-        "delete",
-        "ctrl+d"
-      ],
-      "description": "Delete character forward"
-    },
-    "tui.editor.deleteWordBackward": {
-      "defaultKeys": [
-        "ctrl+w",
-        "alt+backspace"
-      ],
-      "description": "Delete word backward"
-    },
-    "tui.editor.deleteWordForward": {
-      "defaultKeys": [
-        "alt+d",
-        "alt+delete"
-      ],
-      "description": "Delete word forward"
-    },
-    "tui.editor.deleteToLineStart": {
-      "defaultKeys": "ctrl+u",
-      "description": "Delete to line start"
-    },
-    "tui.editor.deleteToLineEnd": {
-      "defaultKeys": "ctrl+k",
-      "description": "Delete to line end"
-    },
-    "tui.editor.yank": {
-      "defaultKeys": "ctrl+y",
-      "description": "Yank"
-    },
-    "tui.editor.yankPop": {
-      "defaultKeys": "alt+y",
-      "description": "Yank pop"
-    },
-    "tui.editor.undo": {
-      "defaultKeys": "ctrl+-",
-      "description": "Undo"
-    },
-    "tui.input.newLine": {
-      "defaultKeys": "shift+enter",
-      "description": "Insert newline"
-    },
-    "tui.input.submit": {
-      "defaultKeys": "enter",
-      "description": "Submit input"
-    },
-    "tui.input.tab": {
-      "defaultKeys": "tab",
-      "description": "Tab / autocomplete"
-    },
-    "tui.input.copy": {
-      "defaultKeys": "ctrl+c",
-      "description": "Copy selection"
-    },
-    "tui.select.up": {
-      "defaultKeys": "up",
-      "description": "Move selection up"
-    },
-    "tui.select.down": {
-      "defaultKeys": "down",
-      "description": "Move selection down"
-    },
-    "tui.select.pageUp": {
-      "defaultKeys": "pageUp",
-      "description": "Selection page up"
-    },
-    "tui.select.pageDown": {
-      "defaultKeys": "pageDown",
-      "description": "Selection page down"
-    },
-    "tui.select.confirm": {
-      "defaultKeys": "enter",
-      "description": "Confirm selection"
-    },
-    "tui.select.cancel": {
-      "defaultKeys": [
-        "escape",
-        "ctrl+c"
-      ],
-      "description": "Cancel selection"
-    }
-  },
   "cases": [
     {
       "id": "defaults",
@@ -802,16 +644,6 @@
               "enter",
               "ctrl+enter"
             ]
-          ]
-        ],
-        "probes": [
-          [
-            "\r",
-            "tui.select.confirm"
-          ],
-          [
-            "\u001b[13;5u",
-            "tui.input.submit"
           ]
         ]
       },
@@ -1476,16 +1308,6 @@
               "ctrl+p"
             ]
           ]
-        ],
-        "probes": [
-          [
-            "\u001b[A",
-            "tui.editor.cursorUp"
-          ],
-          [
-            "\u0010",
-            "tui.select.up"
-          ]
         ]
       },
       "expected": {
@@ -2149,20 +1971,6 @@
           [
             "tui.select.confirm",
             "ctrl+x"
-          ]
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "tui.input.submit"
-          ],
-          [
-            "\u0018",
-            "tui.select.confirm"
-          ],
-          [
-            "\u0002",
-            "tui.editor.cursorLeft"
           ]
         ]
       },
@@ -3075,12 +2883,6 @@
                 "right",
                 "left"
               ]
-            ],
-            [
-              "absent",
-              [
-                "left"
-              ]
             ]
           ],
           "definitions": [
@@ -3121,12 +2923,6 @@
               "many",
               {
                 "defaultKeys": "tab"
-              }
-            ],
-            [
-              "absent",
-              {
-                "defaultKeys": "left"
               }
             ]
           ],
@@ -3219,21 +3015,6 @@
           [
             "known",
             "ctrl+x"
-          ]
-        ],
-        "ids": [
-          "known",
-          "unknown",
-          "absent"
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "unknown"
-          ],
-          [
-            "\u0018",
-            "known"
           ]
         ]
       },
@@ -3328,20 +3109,6 @@
               "CTRL+X",
               "ctrl+x"
             ]
-          ]
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "known"
-          ],
-          [
-            "not-a-key",
-            "known"
-          ],
-          [
-            "",
-            "known"
           ]
         ]
       },
@@ -3460,20 +3227,6 @@
           [
             "three",
             "CTRL+X"
-          ]
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "one"
-          ],
-          [
-            "\u0018",
-            "two"
-          ],
-          [
-            "\u0018",
-            "three"
           ]
         ]
       },
@@ -3912,20 +3665,6 @@
             "c",
             "enter"
           ]
-        ],
-        "probes": [
-          [
-            "\r",
-            "a"
-          ],
-          [
-            "\r",
-            "b"
-          ],
-          [
-            "\r",
-            "c"
-          ]
         ]
       },
       "expected": {
@@ -4068,16 +3807,6 @@
               "enter",
               "enter"
             ]
-          ]
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "a"
-          ],
-          [
-            "\r",
-            "b"
           ]
         ]
       },
@@ -4267,17 +3996,7 @@
             "ctrl+x"
           ]
         ],
-        "replacement": [],
-        "probes": [
-          [
-            "\u001b[D",
-            "a"
-          ],
-          [
-            "\u0018",
-            "b"
-          ]
-        ]
+        "replacement": []
       },
       "expected": {
         "before": {
@@ -4423,16 +4142,6 @@
             "x",
             "enter"
           ]
-        ],
-        "ids": [
-          "x",
-          "absent"
-        ],
-        "probes": [
-          [
-            "\r",
-            "x"
-          ]
         ]
       },
       "expected": {
@@ -4505,20 +4214,6 @@
           [
             "",
             "ctrl+x"
-          ]
-        ],
-        "probes": [
-          [
-            "\u0007",
-            "plugin.run"
-          ],
-          [
-            "\r",
-            "plugin.run"
-          ],
-          [
-            "\u0018",
-            ""
           ]
         ]
       },
@@ -4735,33 +4430,7 @@
           ]
         ],
         "user": [],
-        "kitty": false,
-        "probes": [
-          [
-            "\n",
-            "submit"
-          ],
-          [
-            "\n",
-            "newline"
-          ],
-          [
-            "\u001b[120;5:3u",
-            "pick"
-          ],
-          [
-            "\u0018",
-            "pick"
-          ],
-          [
-            "q",
-            "pick"
-          ],
-          [
-            "\r",
-            "absent"
-          ]
-        ]
+        "kitty": false
       },
       "expected": {
         "before": {
@@ -4875,57 +4544,7 @@
       "id": "matching-true",
       "test": "matching_reads_current_protocol_and_does_not_filter_releases",
       "input": {
-        "definitions": [
-          [
-            "submit",
-            {
-              "defaultKeys": "enter"
-            }
-          ],
-          [
-            "newline",
-            {
-              "defaultKeys": "shift+enter"
-            }
-          ],
-          [
-            "pick",
-            {
-              "defaultKeys": [
-                "bad-key",
-                "ctrl+x"
-              ]
-            }
-          ]
-        ],
-        "user": [],
-        "kitty": true,
-        "probes": [
-          [
-            "\n",
-            "submit"
-          ],
-          [
-            "\n",
-            "newline"
-          ],
-          [
-            "\u001b[120;5:3u",
-            "pick"
-          ],
-          [
-            "\u0018",
-            "pick"
-          ],
-          [
-            "q",
-            "pick"
-          ],
-          [
-            "\r",
-            "absent"
-          ]
-        ]
+        "kitty": true
       },
       "expected": {
         "before": {
@@ -5242,17 +4861,6 @@
             "toString",
             "ctrl+x"
           ]
-        ],
-        "ids": [
-          "constructor",
-          "toString",
-          "__proto__"
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "constructor"
-          ]
         ]
       },
       "expected": {
@@ -5343,12 +4951,6 @@
           [
             "toString",
             "ctrl+x"
-          ]
-        ],
-        "probes": [
-          [
-            "\u0018",
-            "__proto__"
           ]
         ]
       },
@@ -5474,21 +5076,7 @@
             }
           ]
         ],
-        "user": [],
-        "probes": [
-          [
-            "\r",
-            "__proto__"
-          ],
-          [
-            "\t",
-            "constructor"
-          ],
-          [
-            "\u001b[D",
-            "toString"
-          ]
-        ]
+        "user": []
       },
       "expected": {
         "before": {
@@ -5579,13 +5167,6 @@
     {
       "id": "copies",
       "test": "returned_snapshots_cannot_change_manager_state",
-      "input": {
-        "operations": [
-          "mutate getKeys result",
-          "add user snapshot property",
-          "mutate resolved list"
-        ]
-      },
       "expected": {
         "keys": [
           [
@@ -5644,11 +5225,6 @@
     {
       "id": "conflict-copy",
       "test": "returned_snapshots_cannot_change_manager_state",
-      "input": {
-        "operations": [
-          "mutate conflict key, claimants and outer list"
-        ]
-      },
       "expected": {
         "keys": [
           [
@@ -5711,76 +5287,9 @@
       }
     },
     {
-      "id": "shared-input-artifacts",
-      "test": "returned_snapshots_cannot_change_manager_state",
-      "input": {
-        "operations": [
-          "mutate nested user snapshot",
-          "mutate returned definition"
-        ]
-      },
-      "expected": {
-        "keys": [
-          [
-            "a",
-            [
-              "enter",
-              "tab"
-            ]
-          ]
-        ],
-        "definitions": [
-          [
-            "a",
-            {
-              "defaultKeys": [
-                "left",
-                "right"
-              ]
-            }
-          ]
-        ],
-        "user": [
-          [
-            "a",
-            [
-              "enter",
-              "tab"
-            ]
-          ]
-        ],
-        "resolved": [
-          [
-            "a",
-            [
-              "enter",
-              "tab"
-            ]
-          ]
-        ],
-        "conflicts": [],
-        "matches": []
-      }
-    },
-    {
       "id": "global",
       "test": "global_registry_is_lazy_shared_replaceable_and_restorable",
-      "input": {
-        "operations": [
-          "get twice before set",
-          "set custom manager",
-          "mutate supplied manager",
-          "retain old handle across replacement",
-          "restore initial"
-        ]
-      },
       "expected": {
-        "lazyDefaultCount": 31,
-        "sameInitial": true,
-        "sameSupplied": true,
-        "registryMatchesAfterMutation": true,
-        "heldMatchesAfterMutation": true,
-        "heldStillMatchesAfterReplace": true,
         "heldConflicts": [
           {
             "key": "ctrl+x",

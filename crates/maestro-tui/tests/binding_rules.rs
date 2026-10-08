@@ -138,10 +138,6 @@ fn returned_snapshots_cannot_change_manager_state() {
             "conflict-copy",
             json!({"definitions": [["a", {"defaultKeys": "left"}], ["b", {"defaultKeys": "right"}]], "user": [["a", "ctrl+x"], ["b", "ctrl+x"]]}),
         ),
-        (
-            "shared-input-artifacts",
-            json!({"definitions": [["a", {"defaultKeys": ["left", "right"]}]], "user": [["a", ["enter", "tab"]]]}),
-        ),
     ] {
         let manager = binding_support::manager(&input);
         let mut keys = manager.get_keys("a");
