@@ -246,6 +246,14 @@ MIT/Apache-2.0 libraries add no internal crate edge or public runtime API.
 `unicode-width =0.2.2` (both with defaults off) for grapheme boundaries and
 scalar cell widths, and `regress =0.12.0` (defaults `backend-pikevm` and `std`,
 plus `prohibit-unsafe`) for the Unicode property expressions of its width policy.
-All three are MIT OR Apache-2.0. The only added transitive dependency is
+All three are MIT OR Apache-2.0. For the text helpers, the only added transitive
+dependency is
 `memchr =2.8.3` (Unlicense OR MIT; `alloc` and `std`). No type of these libraries
 appears in a public interface.
+
+For inline images, `maestro-tui` may use `base64 =0.23.1` (defaults off,
+`std`) and `rand =0.10.3` (defaults). Its browser target declares
+`getrandom =0.4.3` with `wasm_js` independently. These libraries are MIT OR
+Apache-2.0; base64 adds no transitive dependencies, and the existing random/browser
+closure is reused. Fixture consumption uses `serde_json` only as a dev-dependency.
+No third-party type appears in the image interface.
