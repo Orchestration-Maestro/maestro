@@ -1,11 +1,6 @@
 wasm_crates = ["maestro-models"]
 test_tools = true
 spelling_words = ["ratatui", "relace"]
-privileged_trigger_workflows = [
-    ".github/workflows/approve-contributor.yml",
-    ".github/workflows/contribution-policy.yml",
-    ".github/workflows/pr-gate.yml",
-]
 check_targets = [
     "aarch64-unknown-linux-gnu",
     "x86_64-apple-darwin",

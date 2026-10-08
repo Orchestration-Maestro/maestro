@@ -12,19 +12,6 @@ If you use an agent, run it from the repository root directory so it picks up `A
 
 Use the [identity guide](docs/identity.md) for voice, code naming and brand assets.
 
-## Contribution Gate
-
-All issues and PRs from new contributors are auto-closed by default.
-
-Maintainers review auto-closed issues daily and reopen worthwhile ones. Issues that do not meet the quality bar below will not be reopened or receive a reply.
-
-Approval happens through maintainer replies on issues:
-
-- `lgtmi`: your future issues will not be auto-closed
-- `lgtm`: your future issues and PRs will not be auto-closed
-
-`lgtmi` does not grant rights to submit PRs. Only `lgtm` grants rights to submit PRs.
-
 ## Quality Bar For Issues
 
 If you open an issue, you must use one of the two GitHub issue templates.
@@ -37,8 +24,6 @@ If you open an issue, keep it short, concrete, and worth reading.
 - Explain why it matters.
 - If you want to implement the change yourself, say so.
 
-If the issue is real and written well, a maintainer may reopen it, reply `lgtmi`, or reply `lgtm`.
-
 ## Blocking
 
 If you ignore this document twice, or if you spam the tracker with agent-generated issues, your GitHub account will be permanently blocked.
@@ -46,8 +31,6 @@ If you ignore this document twice, or if you spam the tracker with agent-generat
 If you send a large volume of issues through automation, your GitHub account will be permanently blocked. No taksies backsies.
 
 ## Before Submitting a PR
-
-Do not open a PR unless you have already been approved with `lgtm`.
 
 Before submitting a PR:
 
@@ -80,14 +63,6 @@ Maestro's core is minimal. If your feature does not belong in the core, it shoul
 ## Questions?
 
 ## FAQ
-
-### Why are new issues and PRs auto-closed?
-
-Maestro receives more issues than the maintainers can responsibly review in real time. Many reports do not meet the quality bar in this guide or do not follow CONTRIBUTING.md. Some are slung at the repository mindlessly via an agent instead of being reviewed and shaped by the person submitting them. Auto-closing creates a buffer so maintainers can review the tracker on their own schedule and reopen the issues that meet the quality bar.
-
-### Why are weekend issues not reviewed?
-
-The weekend route is configurable and currently off.
 
 ### Why do some issues get no reply?
 

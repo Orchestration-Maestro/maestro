@@ -2,9 +2,6 @@
 
 use std::path::Path;
 
-/// Executes trusted repository contribution policies through a process adapter.
-pub mod contribution_policy;
-
 mod boundaries;
 mod comments;
 mod graph;

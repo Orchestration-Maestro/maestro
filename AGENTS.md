@@ -116,11 +116,8 @@ See `docs/agents/domain.md`.
 
 ## Contribution policy and communication
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Maintainers review auto-closed
-issues daily; reports below its quality bar need not receive a reply.
-`lgtmi` requests issue capability; `lgtm` requests issue and PR capability.
-Changes are pending until their signed approval PR merges. Existing effective
-approval is not a grant of a stronger capability. Human triage remains final.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). Reports below its quality bar need not
+receive a reply. Human triage remains final.
 Use the existing five triage-role mappings, not a parallel package-label list.
 
 Keep communication concise, technical and concrete, without emojis or filler.
@@ -225,12 +222,6 @@ syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
 `unicode-ident` is held at 1.0.24 in the lockfile because the lexer asserts
 matching Unicode tables; the hold lifts when `unicode-properties` publishes
 the newer tables.
-
-The private contribution-policy executable may use `base64 =0.23.1` with only
-`std` for GitHub content, and `chrono =0.4.45` with only `std` for UTC metadata
-dates. Neither enables its defaults. Tests may use dev-only `yaml-rust2 =0.13.0`
-without default features to parse actual adapters/templates. These exceptions
-are MIT OR Apache-2.0 and add no internal crate edge or public library API.
 
 `maestro-tooling` alone may use `cargo_metadata =0.23.1` with default features
 (MIT). Its dependency closure uses MIT OR Apache-2.0 (camino, cargo-platform,
