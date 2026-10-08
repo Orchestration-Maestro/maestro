@@ -87,8 +87,8 @@ scratch workspaces, not certified as delivered capabilities.
 ## Quality checks
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
-Conventions reject consecutive identical nonempty trimmed documentation lines, ignoring fenced code and resetting at each comment block.
-Conventions reject adjacent token-identical assertion statements in the same test block only when their arguments contain no calls, method calls, macros, assignments or compound assignments; opaque arguments and repetition across functions or files remain review judgement.
+Conventions reject consecutive identical nonempty trimmed paragraph lines within a documentation owner/style, ignoring all Markdown code blocks (including nested list and block-quote fences) and resetting at each item or style change.
+Conventions reject adjacent token-identical assertion statements, including attributes, only within test-attributed functions or functions inside `#[cfg(test)]` modules. Expression arguments and pattern guards must contain no calls, method calls, macros, assignments or compound assignments; matching arguments are parsed as patterns. Production methods and constant/static initializers are excluded; opaque arguments and repetition across functions or files remain review judgement.
 
 The root manifest must forbid every protected quality lint; member manifests
 are parsed as TOML and must set the boolean `lints.workspace` to `true`.

@@ -1,3 +1,4 @@
+use pulldown_cmark::{Event, Parser, Tag};
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
@@ -18,92 +19,108 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 fn documentation(source: &Source) -> Result<(), String> {
     let mut offset = ra_ap_rustc_lexer::strip_shebang(&source.contents).unwrap_or(0);
     let mut block = Documentation::default();
+    let mut style = None;
     for token in ra_ap_rustc_lexer::tokenize(&source.contents[offset..], FrontmatterAllowed::No) {
         let end = offset + token.len as usize;
         let body = match token.kind {
-            TokenKind::LineComment { doc_style: Some(_) } => {
-                Some((&source.contents[offset + 3..end], false))
-            }
+            TokenKind::LineComment {
+                doc_style: Some(owner),
+            } => Some((&source.contents[offset + 3..end], false, owner)),
             TokenKind::BlockComment {
-                doc_style: Some(_),
+                doc_style: Some(owner),
                 terminated: true,
-            } => Some((&source.contents[offset + 3..end - 2], true)),
+            } => Some((&source.contents[offset + 3..end - 2], true, owner)),
             TokenKind::Whitespace => None,
             _ => {
+                block.check(source)?;
                 block = Documentation::default();
+                style = None;
                 None
             }
         };
-        if let Some((body, decorated)) = body {
+        if let Some((body, decorated, owner)) = body {
+            if style != Some(owner) {
+                block.check(source)?;
+                block = Documentation::default();
+                style = Some(owner);
+            }
             let start = crate::source::line(&source.contents, offset);
-            block.comment(body, start, decorated, source)?;
+            block.comment(body, start, decorated);
         }
         offset = end;
     }
-    Ok(())
+    block.check(source)
 }
 
 #[derive(Default)]
 /// Documentation state for a contiguous comment block.
-struct Documentation<'a> {
-    /// Last nonempty prose line and its source location.
-    previous: Option<(&'a str, usize)>,
-    /// Opening Markdown code fence, including its marker length.
-    fence: Option<&'a str>,
+struct Documentation {
+    /// Markdown source retaining indentation for code-block parsing.
+    markdown: String,
+    /// Physical source locations of the Markdown lines.
+    lines: Vec<usize>,
 }
 
-impl<'a> Documentation<'a> {
-    /// Compare prose lines, removing conventional block-comment decoration.
-    fn comment(
-        &mut self,
-        body: &'a str,
-        start: usize,
-        decorated: bool,
-        source: &Source,
-    ) -> Result<(), String> {
+impl Documentation {
+    /// Collect comments, removing only comment decoration and one separator space.
+    fn comment(&mut self, body: &str, start: usize, decorated: bool) {
         for (index, text) in body.lines().enumerate() {
-            let text = text.trim();
             let text = if decorated && index > 0 {
-                text.strip_prefix("* ").unwrap_or(text).trim()
+                text.trim_start().strip_prefix('*').unwrap_or(text)
             } else {
                 text
             };
-            if decorated && text == "*" {
-                continue;
+            self.markdown
+                .push_str(text.strip_prefix(' ').unwrap_or(text));
+            self.markdown.push('\n');
+            self.lines.push(start + index);
+        }
+    }
+
+    /// Compare physical paragraph lines while the parser excludes all code blocks.
+    fn check(&self, source: &Source) -> Result<(), String> {
+        let mut previous = None;
+        for (event, range) in Parser::new(&self.markdown).into_offset_iter() {
+            match event {
+                Event::Start(Tag::CodeBlock(_)) => previous = None,
+                Event::Start(Tag::Paragraph) => self.paragraph(range, &mut previous, source)?,
+                _ => {}
             }
-            self.line(text, start + index, source)?;
         }
         Ok(())
     }
 
-    /// Compare trimmed prose while skipping fenced code and empty lines.
-    fn line(&mut self, text: &'a str, line: usize, source: &Source) -> Result<(), String> {
-        let text = text.trim();
-        if let Some(fence) = self.fence {
-            if text.starts_with(fence) && text.bytes().all(|byte| byte == fence.as_bytes()[0]) {
-                self.fence = None;
+    /// Compare the original trimmed lines within a parser-selected paragraph.
+    fn paragraph<'a>(
+        &'a self,
+        range: std::ops::Range<usize>,
+        previous: &mut Option<(&'a str, usize)>,
+        source: &Source,
+    ) -> Result<(), String> {
+        let start = self.markdown[..range.start]
+            .bytes()
+            .filter(|b| *b == b'\n')
+            .count();
+        let end = self.markdown[..range.end.saturating_sub(1)]
+            .bytes()
+            .filter(|b| *b == b'\n')
+            .count();
+        for (index, text) in self.markdown.lines().enumerate().take(end + 1).skip(start) {
+            let text = text.trim();
+            if text.is_empty() {
+                continue;
             }
-            return Ok(());
+            let line = self.lines[index];
+            if let Some((prior, first)) = previous
+                && *prior == text
+            {
+                return Err(format!(
+                    "{}:{line}: repeated documentation; first at line {first}",
+                    source.path.display()
+                ));
+            }
+            *previous = Some((text, line));
         }
-        if text.starts_with("```") || text.starts_with("~~~") {
-            let marker = text.as_bytes()[0];
-            let length = text.bytes().take_while(|byte| *byte == marker).count();
-            self.fence = Some(&text[..length]);
-            self.previous = None;
-            return Ok(());
-        }
-        if text.is_empty() {
-            return Ok(());
-        }
-        if let Some((previous, first)) = self.previous
-            && previous == text
-        {
-            return Err(format!(
-                "{}:{line}: repeated documentation; first at line {first}",
-                source.path.display()
-            ));
-        }
-        self.previous = Some((text, line));
         Ok(())
     }
 }
@@ -113,6 +130,8 @@ fn assertions(source: &Source) -> Result<(), String> {
     let mut visitor = Assertions {
         source,
         error: None,
+        test_module: false,
+        test_function: false,
     };
     if let Some(syntax) = &source.syntax {
         visitor.visit_file(syntax);
@@ -126,23 +145,66 @@ struct Assertions<'a> {
     source: &'a Source,
     /// First repeated assertion, if any.
     error: Option<String>,
+    /// Whether the containing module is selected for tests.
+    test_module: bool,
+    /// Whether traversal is inside a selected function.
+    test_function: bool,
 }
 
 impl<'ast> Visit<'ast> for Assertions<'_> {
+    fn visit_expr_const(&mut self, _expression: &'ast syn::ExprConst) {}
+
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        let active = self.test_function;
+        self.test_function = false;
+        match item {
+            syn::Item::Fn(function) => self.visit_item_fn(function),
+            syn::Item::Mod(module) => self.visit_item_mod(module),
+            syn::Item::Impl(item) => syn::visit::visit_item_impl(self, item),
+            syn::Item::Trait(item) => syn::visit::visit_item_trait(self, item),
+            _ => {}
+        }
+        self.test_function = active;
+    }
+
+    fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
+        let prior = self.test_module;
+        self.test_module |= item.attrs.iter().any(|attr| {
+            attr.path().is_ident("cfg")
+                && attr
+                    .parse_args::<syn::Path>()
+                    .is_ok_and(|path| path.is_ident("test"))
+        });
+        syn::visit::visit_item_mod(self, item);
+        self.test_module = prior;
+    }
+
     fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        if item.attrs.iter().any(|attr| {
-            attr.path()
-                .segments
-                .last()
-                .is_some_and(|segment| segment.ident == "test")
-        }) {
-            self.visit_block(&item.block);
+        self.function(&item.attrs, &item.block);
+    }
+
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        if let syn::ImplItem::Fn(function) = item {
+            self.function(&function.attrs, &function.block);
+        }
+    }
+
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        if let syn::TraitItem::Fn(function) = item
+            && let Some(block) = &function.default
+        {
+            self.function(&function.attrs, block);
         }
     }
 
     fn visit_block(&mut self, block: &'ast syn::Block) {
+        if !self.test_function {
+            return;
+        }
         for pair in block.stmts.windows(2) {
-            if let (Some(first), Some(second)) = (assertion(&pair[0]), assertion(&pair[1]))
+            if let (Some((first, first_attrs)), Some((second, second_attrs))) =
+                (assertion(&pair[0]), assertion(&pair[1]))
+                && first_attrs == second_attrs
                 && first
                     .path
                     .segments
@@ -167,30 +229,57 @@ impl<'ast> Visit<'ast> for Assertions<'_> {
     }
 }
 
+impl Assertions<'_> {
+    /// Enter only functions selected by their test attribute or containing module.
+    fn function(&mut self, attrs: &[syn::Attribute], block: &syn::Block) {
+        let prior = self.test_function;
+        self.test_function = self.test_module
+            || attrs.iter().any(|attr| {
+                attr.path()
+                    .segments
+                    .last()
+                    .is_some_and(|segment| segment.ident == "test")
+            });
+        self.visit_block(block);
+        self.test_function = prior;
+    }
+}
+
 /// Extract direct assertion statements with transparent expression arguments.
 ///
 /// Calls, method calls, macros, assignments and compound assignments are opaque:
 /// repeated tokens may observe changing state, so those remain review judgement.
-fn assertion(statement: &syn::Stmt) -> Option<&syn::Macro> {
-    let call = match statement {
-        syn::Stmt::Macro(statement) => &statement.mac,
-        syn::Stmt::Expr(syn::Expr::Macro(expression), _) => &expression.mac,
+fn assertion(statement: &syn::Stmt) -> Option<(&syn::Macro, &[syn::Attribute])> {
+    let (call, attrs) = match statement {
+        syn::Stmt::Macro(statement) => (&statement.mac, statement.attrs.as_slice()),
+        syn::Stmt::Expr(syn::Expr::Macro(expression), _) => {
+            (&expression.mac, expression.attrs.as_slice())
+        }
         _ => return None,
     };
     let name = call.path.segments.last()?.ident.to_string();
-    let arguments = call
-        .parse_body_with(syn::punctuated::Punctuated::<syn::Expr, syn::Token![,]>::parse_terminated)
-        .ok()?;
     let mut effects = Effects::default();
-    for argument in &arguments {
-        effects.visit_expr(argument);
+    if name == "assert_matches" || name == "debug_assert_matches" {
+        call.parse_body_with(|input: syn::parse::ParseStream<'_>| {
+            effects.matching_arguments(input)
+        })
+        .ok()?;
+    } else {
+        let arguments = call
+            .parse_body_with(
+                syn::punctuated::Punctuated::<syn::Expr, syn::Token![,]>::parse_terminated,
+            )
+            .ok()?;
+        for argument in &arguments {
+            effects.visit_expr(argument);
+        }
     }
     (!effects.opaque
         && (name == "assert"
             || name.starts_with("assert_")
             || name == "debug_assert"
             || name.starts_with("debug_assert_")))
-    .then_some(call)
+    .then_some((call, attrs))
 }
 
 #[derive(Default)]
@@ -200,7 +289,34 @@ struct Effects {
     opaque: bool,
 }
 
+impl Effects {
+    /// Inspect the value, pattern, optional guard and message of a matching assertion.
+    fn matching_arguments(&mut self, input: syn::parse::ParseStream<'_>) -> syn::Result<()> {
+        self.visit_expr(&input.parse()?);
+        input.parse::<syn::Token![,]>()?;
+        self.visit_pat(&syn::Pat::parse_multi_with_leading_vert(input)?);
+        if input.peek(syn::Token![if]) {
+            input.parse::<syn::Token![if]>()?;
+            self.visit_expr(&input.parse()?);
+        }
+        if input.peek(syn::Token![,]) {
+            input.parse::<syn::Token![,]>()?;
+            for argument in
+                syn::punctuated::Punctuated::<syn::Expr, syn::Token![,]>::parse_terminated(input)?
+            {
+                self.visit_expr(&argument);
+            }
+        }
+        Ok(())
+    }
+}
+
 impl<'ast> Visit<'ast> for Effects {
+    fn visit_pat(&mut self, pattern: &'ast syn::Pat) {
+        self.opaque |= matches!(pattern, syn::Pat::Macro(_));
+        syn::visit::visit_pat(self, pattern);
+    }
+
     fn visit_expr(&mut self, expression: &'ast syn::Expr) {
         self.opaque |= matches!(
             expression,
