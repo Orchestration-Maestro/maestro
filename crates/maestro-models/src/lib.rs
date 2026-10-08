@@ -42,3 +42,6 @@ pub use records::session_resources::{
 pub use records::stream::{complete, complete_simple, stream, stream_simple};
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;
+
+pub mod providers;
+pub use providers::faux::*;

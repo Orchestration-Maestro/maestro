@@ -125,3 +125,9 @@ emits two concatenated lower-case base-36 words. It is not a cryptographic hash.
 repeated key replaces its previous value, without parsing or HTTP normalization.
 `string_enum` retains supplied order and nonempty description/default strings
 without trimming, list validation or default-membership validation.
+
+## Scripted models
+
+The opt-in faux provider supplies offline queued responses, async factories and
+ordered cancellable events through the ordinary invocation interface. See the
+[scripted model guide](models/faux.md) for a two-turn tool flow and defaults.
