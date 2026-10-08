@@ -113,6 +113,10 @@ are later scope, not active foundation concepts.
 - **Cell dimensions:** Positive pixel width and height of a terminal cell, used to reserve image rows.
 - **Byte cursor:** A cursor position counted in UTF-8 bytes within a line, never in cells or characters.
 - **Key identifier:** Open text naming one key and the modifiers held with it, such as `ctrl+c` or `shift+tab`; terminal input is matched against it or parsed into it.
+- **Keybinding/action:** An open terminal action ID resolved to one or more literal key identifiers.
+- **Keybinding definition:** Default keys and an optional description for an action.
+- **User binding:** A supplied action override; an unset value uses defaults and an empty list disables the action.
+- **Keybinding conflict:** Multiple distinct known actions explicitly claiming the same literal key, in claim order.
 - **Enhanced keyboard protocol:** The terminal mode that reports keys as escape sequences carrying exact modifiers, alternate layouts and press, repeat and release events; one process-wide flag records whether it is active.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The `maestro-extensions-wasm` library, without internal dependencies, owning the canonical WIT source inputs and the facade extension authors write against.

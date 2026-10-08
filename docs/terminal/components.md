@@ -4,7 +4,8 @@
 no terminal: a container, text and image components and the contracts for
 overlays, terminals, editors and completion. It performs no terminal I/O and starts no
 timers; whatever connects a real terminal supplies a `Terminal` implementation.
-See [inline images](images.md) for capability detection and retained image rendering.
+See [inline images](images.md) for capability detection and retained image rendering,
+[key input](keys.md) for decoding and [keybindings](keybindings.md) for configurable actions.
 
 The crate root re-exports the component, container, overlay, terminal, editor and
 completion names used below, so `maestro_tui::Component` and

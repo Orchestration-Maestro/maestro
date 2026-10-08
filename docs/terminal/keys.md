@@ -200,3 +200,5 @@ assert!(matches_key("\n", "shift+enter"));
 assert!(!matches_key("\n", "enter"));
 set_kitty_protocol_active(false);
 ```
+
+For configurable actions, defaults and user overrides, see [keybindings](keybindings.md).

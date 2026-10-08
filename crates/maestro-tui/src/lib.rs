@@ -4,6 +4,7 @@ pub mod autocomplete;
 pub mod components;
 pub mod editor_component;
 pub mod images;
+pub mod keybindings;
 pub mod keys;
 pub mod terminal;
 pub mod text;
@@ -36,4 +37,9 @@ pub use images::terminal_image::{
     delete_all_kitty_images, delete_kitty_image, encode_i_term2, encode_kitty, get_gif_dimensions,
     get_image_dimensions, get_jpeg_dimensions, get_png_dimensions, get_webp_dimensions, hyperlink,
     image_fallback, is_image_line,
+};
+
+pub use keybindings::{
+    Keybinding, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
+    KeybindingsConfig, KeybindingsManager, TUI_KEYBINDINGS, get_keybindings, set_keybindings,
 };
