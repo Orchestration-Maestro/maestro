@@ -1,0 +1,46 @@
+package maestro:extension@0.1.0;
+
+/// Capabilities and resources the host provides to an extension.
+interface host {
+    use session.{new-session-command-data, session-change-result};
+
+    /// Host-owned identity of one guest closure.
+    resource callback {
+        constructor();
+        /// Stable key of this identity, equal for the owner handle and every borrow.
+        id: func() -> u32;
+    }
+
+    /// Host-owned cancellation flag.
+    resource abort-signal {
+        aborted: func() -> bool;
+    }
+
+    /// Live capabilities available to every callback.
+    resource context {
+        cwd: func() -> result<string, string>;
+    }
+
+    /// Context with the session-replacing operations; only commands receive it.
+    resource command-context {
+        cwd: func() -> result<string, string>;
+        wait-for-idle: async func() -> result<_, string>;
+        new-session: async func(
+            data: new-session-command-data, with-session: option<borrow<callback>>,
+        ) -> result<session-change-result, string>;
+    }
+
+    /// Context bound to the session an operation created.
+    resource replaced-session-context {
+        command: func() -> command-context;
+    }
+
+    /// Registers one handler for an event name.
+    on: func(event: string, handler: borrow<callback>) -> result<_, string>;
+    /// Registers a command.
+    register-command: func(
+        name: string, description: option<string>, handler: borrow<callback>,
+    ) -> result<_, string>;
+    /// Appends a custom entry to the session; `data` is JSON text.
+    append-entry: func(custom-type: string, data: option<string>) -> result<_, string>;
+}

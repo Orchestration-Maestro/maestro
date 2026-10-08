@@ -1,0 +1,7 @@
+package maestro:extension@0.1.0;
+
+/// Message, content and model data shared by the other interfaces.
+interface models {
+    /// Base64 image data.
+    record image-content { data: string, mime-type: string }
+}

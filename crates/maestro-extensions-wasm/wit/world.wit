@@ -1,0 +1,8 @@
+package maestro:extension@0.1.0;
+
+/// The one world an authored extension component targets: the host provides its
+/// capabilities and the component serves the callbacks it registered.
+world extension {
+    import host;
+    export guest;
+}

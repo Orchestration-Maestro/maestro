@@ -24,6 +24,11 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
         "wasmtime-wasi-http",
     ] {
         for &(owner, _) in support::policy::POLICY {
+            // The guest's test-only host dependencies have their own test.
+            if owner == "maestro-extensions-wasm" && matches!(library, "wasmtime" | "wasmtime-wasi")
+            {
+                continue;
+            }
             let workspace = Workspace::new();
             workspace.foundation(&[owner]);
             workspace.external(library);
@@ -240,7 +245,7 @@ fn wit_codegen_inputs_share_one_canonical_source() {
     source(
         &workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: "interfaces", world: "fixture" });"#,
     );
     for host in [
@@ -285,7 +290,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
     source(
         workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: "../maestro-extensions-wasmtime/copied" });"#,
     );
     assert!(
@@ -296,7 +301,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
     source(
         workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: ["interfaces"] });"#,
     );
     assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -318,7 +323,7 @@ fn wit_options_ignore_module_paths_in_nested_values() {
     source(
         &workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         r#"wit_bindgen::generate!({
             path: "interfaces",
             with: {
@@ -375,7 +380,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     source(
         &workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         r#"wit_bindgen::generate!("fixture");"#,
     );
     source(
@@ -466,7 +471,7 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
     source(
         &workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         r#"wit_bindgen::generate!("fixture\0");"#,
     );
     source(
@@ -717,7 +722,7 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
     source(
         workspace,
         "maestro-extensions-wasm",
-        "src/lib.rs",
+        "src/bindings.rs",
         &format!("wit_bindgen::generate!({{ path: {literal} }});"),
     );
     let host_path = format!("../maestro-extensions-wasm/{directory}");
@@ -820,7 +825,7 @@ fn wit_ownership_without_both_sides() {
         source(
             &workspace,
             "maestro-extensions-wasm",
-            "src/lib.rs",
+            "src/bindings.rs",
             declaration,
         );
         assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -835,7 +840,7 @@ fn wit_ownership_without_both_sides() {
         source(
             &workspace,
             "maestro-extensions-wasm",
-            "src/lib.rs",
+            "src/bindings.rs",
             &format!("wit_bindgen::generate!({input});"),
         );
         assert!(
@@ -843,7 +848,7 @@ fn wit_ownership_without_both_sides() {
                 .unwrap_err()
                 .contains("requires review")
         );
-        source(&workspace, "maestro-extensions-wasm", "src/lib.rs", "");
+        source(&workspace, "maestro-extensions-wasm", "src/bindings.rs", "");
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
 }
@@ -878,4 +883,33 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
         r#"wasmtime::component::bindgen!({ path: "linked" });"#,
     );
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn guest_host_probe_keeps_engine_dependencies_test_only() {
+    for library in ["wasmtime", "wasmtime-wasi", "wasmtime-wasi-http"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-extensions-wasm"]);
+        workspace.external(library);
+        let manifest = workspace
+            .root
+            .join("crates/maestro-extensions-wasm/Cargo.toml");
+        let baseline = std::fs::read_to_string(&manifest).unwrap();
+        for (kind, extra) in DECLARATIONS {
+            let declaration =
+                format!("alias = {{ package = {library:?}, path = \"../../external\"{extra} }}\n");
+            std::fs::write(&manifest, format!("{baseline}\n[{kind}]\n{declaration}")).unwrap();
+            let outcome = check_workspace(&workspace.root);
+            let test_only = kind.ends_with("dev-dependencies") && library != "wasmtime-wasi-http";
+            if test_only {
+                assert_eq!(outcome, Ok(()), "{library} in {kind}");
+            } else {
+                let error = outcome.unwrap_err();
+                assert!(
+                    error.contains("maestro-extensions-wasm") && error.contains(library),
+                    "{library} in {kind}: {error}"
+                );
+            }
+        }
+    }
 }

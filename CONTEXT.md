@@ -115,7 +115,7 @@ are later scope, not active foundation concepts.
 - **Key identifier:** Open text naming one key and the modifiers held with it, such as `ctrl+c` or `shift+tab`; terminal input is matched against it or parsed into it.
 - **Enhanced keyboard protocol:** The terminal mode that reports keys as escape sequences carrying exact modifiers, alternate layouts and press, repeat and release events; one process-wide flag records whether it is active.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
-- **Guest authoring:** The dependency-free `maestro-extensions-wasm` library owning canonical WIT source inputs.
+- **Guest authoring:** The `maestro-extensions-wasm` library, without internal dependencies, owning the canonical WIT source inputs and the facade extension authors write against.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
