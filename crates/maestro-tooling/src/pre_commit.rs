@@ -3,6 +3,7 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
+/// Failure message printed when formatting or verification fails.
 const CHECK_FAILURE: &str = "❌ Checks failed. Please fix the errors before committing.";
 
 /// Format captured index paths, restage surviving files and run checks.
@@ -62,6 +63,7 @@ pub fn run(
     Ok(ExitCode::SUCCESS)
 }
 
+/// Check whether captured paths affect browser compilation.
 fn needs_smoke(paths: &[OsString]) -> bool {
     paths.iter().any(|path| {
         let path = Path::new(path);
@@ -72,6 +74,7 @@ fn needs_smoke(paths: &[OsString]) -> bool {
     })
 }
 
+/// Capture staged paths without losing native filename bytes.
 fn capture(root: &Path) -> io::Result<Vec<OsString>> {
     let captured = Command::new("git")
         .current_dir(root)

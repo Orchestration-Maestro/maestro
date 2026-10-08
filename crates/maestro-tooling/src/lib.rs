@@ -16,8 +16,10 @@ pub mod run_source;
 /// Run explicitly credential-free tests.
 pub mod run_tests;
 
+/// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
+/// Provider credential variables removed by controlled development commands.
 pub(crate) const CREDENTIALS: &[&str] = &[
     "ANTHROPIC_API_KEY",
     "ANTHROPIC_OAUTH_TOKEN",
@@ -121,12 +123,14 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
     }
 }
 
+/// Print the selected asset-output directory.
 fn asset_output(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
     let owner = args.first().and_then(|name| name.to_str()).unwrap_or("");
     println!("{}", asset_directory(owner, cargo)?.display());
     Ok(ExitCode::SUCCESS)
 }
 
+/// Resolve an asset owner's directory beneath the Cargo target directory.
 fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> {
     let directory = match owner {
         "app" => "maestro-app-assets",
@@ -144,6 +148,7 @@ fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> 
         .into_std_path_buf())
 }
 
+/// Wire formatting, checks and the delivered browser smoke command into the hook.
 fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut format = Command::new(cargo);
     format.current_dir(checkout).args(["fmt", "--all"]);
@@ -162,6 +167,7 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
+/// Compile the delivered browser import example and capture its diagnostics.
 fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     if !checkout
         .join("crates/maestro-models/examples/browser_import_check.rs")
@@ -188,6 +194,7 @@ fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
+/// Find the composition-root manifest in the checkout's Cargo metadata.
 fn binary_manifest(cargo: &Path, checkout: &Path) -> io::Result<std::path::PathBuf> {
     let metadata = cargo_metadata::MetadataCommand::new()
         .cargo_path(cargo)
@@ -204,12 +211,14 @@ fn binary_manifest(cargo: &Path, checkout: &Path) -> io::Result<std::path::PathB
         .ok_or_else(|| io::Error::other("missing maestro binary package"))
 }
 
+/// Read a required path argument or name the missing parameter.
 fn argument<'a>(args: &'a [OsString], index: usize, name: &str) -> io::Result<&'a Path> {
     args.get(index)
         .map(Path::new)
         .ok_or_else(|| io::Error::other(format!("missing {name} parameter")))
 }
 
+/// Convert a native child status into the development command's exit code.
 pub(crate) fn exit_code(status: std::process::ExitStatus) -> ExitCode {
     ExitCode::from(
         status

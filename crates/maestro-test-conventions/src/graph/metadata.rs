@@ -6,6 +6,7 @@ use cargo_metadata::{DependencyKind, Metadata, MetadataCommand, Package, Package
 
 use super::{Edge, Kind};
 
+/// Read declared or host-resolved Cargo metadata using offline resolution.
 pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> {
     let mut command = MetadataCommand::new();
     command
@@ -39,6 +40,7 @@ pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> 
     MetadataCommand::parse(text).map_err(|error| format!("invalid cargo metadata: {error}"))
 }
 
+/// Read the compiler's native target triple from its version output.
 pub(super) fn compiler_host() -> Result<String, String> {
     let output = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()))
         .arg("-vV")
@@ -60,6 +62,7 @@ pub(super) fn compiler_host() -> Result<String, String> {
         .ok_or_else(|| "rustc -vV failed: missing or empty host line".into())
 }
 
+/// Select packages whose identities belong to the workspace.
 pub(crate) fn members(metadata: &Metadata) -> impl Iterator<Item = &Package> {
     metadata
         .packages
@@ -67,6 +70,7 @@ pub(crate) fn members(metadata: &Metadata) -> impl Iterator<Item = &Package> {
         .filter(|package| metadata.workspace_members.contains(&package.id))
 }
 
+/// Reject missing, duplicate or inconsistent package identities.
 pub(super) fn identities(metadata: &Metadata) -> Result<(), String> {
     let mut members = BTreeSet::new();
     for id in &metadata.workspace_members {
@@ -90,11 +94,13 @@ pub(super) fn identities(metadata: &Metadata) -> Result<(), String> {
     Ok(())
 }
 
+/// Resolve a filesystem path or report its native failure.
 pub(super) fn canonical(path: &Path) -> Result<PathBuf, String> {
     path.canonicalize()
         .map_err(|error| format!("cannot resolve {}: {error}", path.display()))
 }
 
+/// Convert Cargo dependency kinds into the graph's typed edge kinds.
 pub(super) fn check_kind(kind: DependencyKind) -> Result<Kind, String> {
     match kind {
         DependencyKind::Normal => Ok(Kind::Normal),
@@ -104,6 +110,7 @@ pub(super) fn check_kind(kind: DependencyKind) -> Result<Kind, String> {
     }
 }
 
+/// Validate resolved identities and collect internal resolved dependency edges.
 pub(super) fn resolved(metadata: &Metadata, declared: &Metadata) -> Result<BTreeSet<Edge>, String> {
     identities(metadata)?;
     let packages: BTreeMap<_, _> = metadata.packages.iter().map(|p| (&p.id, p)).collect();
@@ -136,6 +143,7 @@ pub(super) fn resolved(metadata: &Metadata, declared: &Metadata) -> Result<BTree
     Ok(edges)
 }
 
+/// Collect edges for one resolved node, including every dependency kind.
 fn resolved_edges(
     node: &cargo_metadata::Node,
     packages: &BTreeMap<&PackageId, &Package>,

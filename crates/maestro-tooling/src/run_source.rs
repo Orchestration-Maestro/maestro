@@ -13,6 +13,7 @@ pub(crate) enum Mode {
 }
 
 impl Mode {
+    /// Recognize the environment-removal switch using platform comparison rules.
     fn owns_switch(self, argument: &std::ffi::OsStr) -> bool {
         match self {
             Self::Unix => argument == "--no-env",

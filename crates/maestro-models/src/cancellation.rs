@@ -11,7 +11,9 @@ use crate::EventStream;
 /// Cooperative signal independent of reader and result-observer lifetimes.
 #[derive(Clone)]
 pub struct Cancellation {
+    /// Shared flag marking cancellation across cloned handles.
     aborted: Arc<AtomicBool>,
+    /// Stream used to notify observers of cancellation.
     notification: EventStream<(), ()>,
 }
 

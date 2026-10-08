@@ -29,6 +29,7 @@ pub fn copy(source: &Path, destination: &Path, layout: Layout<'_>) -> io::Result
     }
 }
 
+/// Copy the library theme, interactive images and prepared export assets.
 fn copy_library(source: &Path, destination: &Path) -> io::Result<()> {
     copy_matches(
         &source.join("src/modes/interactive/theme"),
@@ -55,6 +56,7 @@ fn copy_library(source: &Path, destination: &Path) -> io::Result<()> {
     )
 }
 
+/// Copy standalone metadata, themes, viewer assets, documentation and examples.
 fn copy_standalone(
     source: &Path,
     destination: &Path,
@@ -89,6 +91,7 @@ fn copy_standalone(
     Ok(())
 }
 
+/// Copy visible files matching an extension in stable filename order.
 fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<()> {
     fs::create_dir_all(destination)?;
     let mut matches = fs::read_dir(source)?
@@ -117,6 +120,7 @@ fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<(
     Ok(())
 }
 
+/// Copy a directory recursively while preserving symbolic links.
 fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
     let metadata = fs::symlink_metadata(source)?;
     if metadata.is_symlink() {
@@ -135,6 +139,7 @@ fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Replace a destination file with the source's symbolic link.
 fn copy_link(source: &Path, destination: &Path) -> io::Result<()> {
     if let Ok(metadata) = fs::symlink_metadata(destination) {
         if metadata.is_dir() {

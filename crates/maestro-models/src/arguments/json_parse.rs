@@ -63,6 +63,7 @@ pub fn parse_json_with_repair(json: &str) -> Result<serde_json::Value, crate::Di
         })
 }
 
+/// Recognize the whitespace accepted around streamed JSON.
 pub(super) fn whitespace(ch: char) -> bool {
     matches!(ch, '\u{09}'..='\u{0d}' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
 }
@@ -81,22 +82,28 @@ pub fn parse_streaming_json(partial_json: Option<&str>) -> serde_json::Value {
         .unwrap_or_else(|| serde_json::json!({}))
 }
 
+/// Byte cursor over the incomplete JSON input.
 struct Cursor<'a> {
+    /// Borrowed JSON text being parsed.
     input: &'a str,
+    /// Byte offset of the next token.
     position: usize,
 }
 
 impl Cursor<'_> {
+    /// Read the current byte without advancing.
     fn peek(&self) -> Option<u8> {
         self.input.as_bytes().get(self.position).copied()
     }
 
+    /// Advance past JSON whitespace.
     fn skip_space(&mut self) {
         while matches!(self.peek(), Some(b' ' | b'\t' | b'\r' | b'\n')) {
             self.position += 1;
         }
     }
 
+    /// Decode a string, completing or trimming an unfinished escape when needed.
     fn string(&mut self) -> Option<String> {
         let start = self.position;
         self.position += 1;
@@ -119,6 +126,7 @@ impl Cursor<'_> {
         })
     }
 
+    /// Read a boolean, null or numeric token, completing partial literals.
     fn atom(&mut self) -> Option<serde_json::Value> {
         let tail = &self.input[self.position..];
         for (literal, value) in [
@@ -134,6 +142,7 @@ impl Cursor<'_> {
         self.number()
     }
 
+    /// Parse a number after removing a trailing incomplete fraction or exponent.
     fn number(&mut self) -> Option<serde_json::Value> {
         let start = self.position;
         while matches!(
@@ -162,20 +171,29 @@ impl Cursor<'_> {
     }
 }
 
+/// Accumulated members of an unfinished JSON container.
 enum Members {
+    /// Object members with a pending key awaiting its value.
     Object {
+        /// Completed key-value pairs in insertion order.
         values: serde_json::Map<String, serde_json::Value>,
+        /// Decoded key for the next value.
         key: Option<String>,
     },
+    /// Array elements accumulated in input order.
     Array(Vec<serde_json::Value>),
 }
 
+/// One open container on the iterative parsing stack.
 struct Frame {
+    /// Values accumulated for this container.
     members: Members,
+    /// Whether this container has stopped accepting members.
     finished: bool,
 }
 
 impl Frame {
+    /// Start an empty object or array from its opening delimiter.
     fn new(open: u8) -> Self {
         let members = if open == b'{' {
             Members::Object {
@@ -191,6 +209,7 @@ impl Frame {
         }
     }
 
+    /// Read an object key and colon, or recognize a container boundary.
     fn prepare(&mut self, cursor: &mut Cursor<'_>) {
         cursor.skip_space();
         if let Members::Object { key, .. } = &mut self.members {
@@ -212,6 +231,7 @@ impl Frame {
         }
     }
 
+    /// Attach a completed value and consume its following separator.
     fn accept(&mut self, value: serde_json::Value, cursor: &mut Cursor<'_>) {
         match &mut self.members {
             Members::Object { values, key } => {
@@ -229,6 +249,7 @@ impl Frame {
         }
     }
 
+    /// Build the container value and consume an available closing delimiter.
     fn finish(self, cursor: &mut Cursor<'_>) -> serde_json::Value {
         let (close, value) = match self.members {
             Members::Object { values, .. } => (b'}', serde_json::Value::Object(values)),
@@ -241,6 +262,7 @@ impl Frame {
     }
 }
 
+/// Recover a useful value from incomplete JSON without recursive descent.
 fn partial(input: &str) -> Option<serde_json::Value> {
     let mut cursor = Cursor {
         input: input.trim_matches(whitespace),

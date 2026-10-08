@@ -15,6 +15,7 @@ pub fn short_hash(value: &str) -> String {
     base36(second) + &base36(first)
 }
 
+/// Encode an unsigned hash in lowercase base 36.
 fn base36(mut value: u32) -> String {
     let mut digits = Vec::new();
     loop {

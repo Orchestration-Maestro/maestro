@@ -5,6 +5,7 @@ use regex::RegexSet;
 
 use crate::{AssistantMessage, StopReason};
 
+/// Compiled patterns for provider context-window errors.
 static OVERFLOW_PATTERNS: LazyLock<Result<RegexSet, regex::Error>> = LazyLock::new(|| {
     RegexSet::new([
         "prompt is too long",
@@ -33,6 +34,7 @@ static OVERFLOW_PATTERNS: LazyLock<Result<RegexSet, regex::Error>> = LazyLock::n
     ])
 });
 
+/// Compiled exclusions for unrelated provider failures.
 static NON_OVERFLOW_PATTERNS: LazyLock<Result<RegexSet, regex::Error>> = LazyLock::new(|| {
     RegexSet::new([
         r"^(throttling error|throttlingexception|service unavailable):",

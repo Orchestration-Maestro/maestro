@@ -13,19 +13,26 @@ pub type SessionResourceCleanup =
 pub type SessionResourceCleanup = Arc<dyn Fn(Option<&str>) -> Result<(), DiagnosticErrorInfo>>;
 
 #[derive(Default)]
+/// Ordered cleanup registrations with monotonically assigned identifiers.
 struct Resources {
+    /// Identifier to assign to the next cleanup registration.
     next: usize,
+    /// Cleanup callbacks keyed by their registration identifiers.
     entries: BTreeMap<usize, SessionResourceCleanup>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+/// Native process-wide cleanup registrations.
 static RESOURCES: std::sync::Mutex<Resources> = std::sync::Mutex::new(Resources {
     next: 0,
     entries: BTreeMap::new(),
 });
 #[cfg(target_arch = "wasm32")]
-thread_local! { static RESOURCES: std::cell::RefCell<Resources> = std::cell::RefCell::new(Resources::default()); }
+thread_local! {
+/// Browser-thread cleanup registrations.
+static RESOURCES: std::cell::RefCell<Resources> = std::cell::RefCell::new(Resources::default()); }
 
+/// Access native shared or browser-local cleanup registrations.
 fn with_resources<T>(operation: impl FnOnce(&mut Resources) -> T) -> T {
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -43,6 +50,7 @@ fn with_resources<T>(operation: impl FnOnce(&mut Resources) -> T) -> T {
 
 /// Explicit removal by callback identity; dropping this handle does not unsubscribe.
 pub struct SessionResourceRemoval {
+    /// Callback identity used to remove its cleanup registration.
     cleanup: SessionResourceCleanup,
 }
 

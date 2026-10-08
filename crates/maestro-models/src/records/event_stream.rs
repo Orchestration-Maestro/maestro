@@ -6,39 +6,61 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::task::{Poll, Waker};
 
 #[cfg(not(target_arch = "wasm32"))]
+/// Shared callback that recognizes terminal events.
 type Classifier<T> = Arc<dyn Fn(&T) -> bool + Send + Sync>;
 #[cfg(target_arch = "wasm32")]
+/// Browser-local callback that recognizes terminal events.
 type Classifier<T> = Arc<dyn Fn(&T) -> bool>;
 #[cfg(not(target_arch = "wasm32"))]
+/// Shared callback that extracts a retained result from an event.
 type Extractor<T, R> = Arc<dyn Fn(&T) -> R + Send + Sync>;
 #[cfg(target_arch = "wasm32")]
+/// Browser-local callback that extracts the retained final result.
 type Extractor<T, R> = Arc<dyn Fn(&T) -> R>;
 
+/// Queued read with its assigned event and wake registration.
 struct Reader<T> {
+    /// Stable identity used to locate this read across polls.
     identity: Arc<()>,
+    /// Whether this read still awaits assignment.
     pending: bool,
+    /// Event assigned to this reader before its next poll.
     event: Option<T>,
+    /// Latest wake registration for a pending read.
     waker: Option<Arc<Waker>>,
 }
 
+/// Wake registration for an independently observed final result.
 struct Observer {
+    /// Stable identity used to replace or remove this observation.
     identity: Arc<()>,
+    /// Latest wake registration for this observation.
     waker: Arc<Waker>,
 }
 
+/// Shared FIFO, reader registrations and terminal-result state.
 struct State<T, R> {
+    /// Events awaiting an available reader.
     queue: VecDeque<T>,
+    /// Competing readers in registration order.
     readers: VecDeque<Reader<T>>,
+    /// Independent final-result observers.
     observers: Vec<Observer>,
+    /// First published final result, shared without cloning under the lock.
     result: Option<Arc<R>>,
+    /// Whether further event admission has stopped.
     ended: bool,
+    /// Whether the terminal callback is still computing the result.
     extracting: bool,
 }
 
 /// Producer-owned FIFO whose readers compete for events, not final results.
 pub struct EventStream<T, R = T> {
+    /// Shared mutable stream state.
     state: Arc<Mutex<State<T, R>>>,
+    /// Caller callback recognizing a terminal event.
     is_complete: Classifier<T>,
+    /// Caller callback extracting the final result.
     extract_result: Extractor<T, R>,
 }
 
@@ -52,6 +74,7 @@ impl<T, R> Clone for EventStream<T, R> {
     }
 }
 
+/// Acquire stream state even after a prior lock holder panicked.
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex
         .lock()
@@ -83,6 +106,7 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
         Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
     }
 
+    /// Initialize stream state from shared callbacks.
     fn from_callbacks(is_complete: Classifier<T>, extract_result: Extractor<T, R>) -> Self {
         Self {
             state: Arc::new(Mutex::new(State {
@@ -189,6 +213,7 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
     }
 }
 
+/// Complete pending reads with EOF and collect their wake registrations.
 fn finish_readers<T>(readers: &mut VecDeque<Reader<T>>, wakes: &mut Vec<Arc<Waker>>) {
     for reader in readers.iter_mut().filter(|reader| reader.pending) {
         reader.pending = false;
@@ -196,6 +221,7 @@ fn finish_readers<T>(readers: &mut VecDeque<Reader<T>>, wakes: &mut Vec<Arc<Wake
     }
 }
 
+/// Notify readers and result observers after releasing stream state.
 fn wake(wakes: Vec<Arc<Waker>>, observers: Vec<Observer>) {
     for waker in wakes {
         waker.wake_by_ref();
@@ -205,12 +231,16 @@ fn wake(wakes: Vec<Arc<Waker>>, observers: Vec<Observer>) {
     }
 }
 
+/// Future-owned registration for a competing event read.
 struct Reading<T, R> {
+    /// Stream state that supplies the next event.
     state: Arc<Mutex<State<T, R>>>,
+    /// Stable registration identity retained across polls.
     identity: Arc<()>,
 }
 
 impl<T, R> Reading<T, R> {
+    /// Assign a queued event, observe EOF or register a pending read.
     fn poll(&mut self, waker: Arc<Waker>) -> Poll<Option<T>> {
         let mut retired = None;
         let mut replaced = None;
@@ -261,12 +291,16 @@ impl<T, R> Drop for Reading<T, R> {
     }
 }
 
+/// Future-owned registration for an independent final-result observation.
 struct Observing<T, R> {
+    /// Stream state that retains the terminal result.
     state: Arc<Mutex<State<T, R>>>,
+    /// Stable observation identity retained across polls.
     identity: Arc<()>,
 }
 
 impl<T, R: Clone> Observing<T, R> {
+    /// Observe a published result or register for later notification.
     fn poll(&mut self, waker: Arc<Waker>) -> Poll<R> {
         let mut replaced = None;
         let result;
@@ -315,6 +349,7 @@ use super::types::{AssistantMessageEvent, SharedAssistantMessage};
 /// Assistant-event FIFO with an independently observable shared final message.
 #[derive(Clone)]
 pub struct AssistantMessageEventStream {
+    /// Generic FIFO carrying assistant events and the shared final message.
     inner: EventStream<AssistantMessageEvent, SharedAssistantMessage>,
 }
 impl Default for AssistantMessageEventStream {

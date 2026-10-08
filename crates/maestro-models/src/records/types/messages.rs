@@ -257,6 +257,7 @@ pub struct Context {
     pub tools: Option<Vec<Tool>>,
 }
 
+/// Decode and require the supported text-signature version.
 fn deserialize_version<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u8, D::Error> {
     let version = u8::deserialize(deserializer)?;
     if version == 1 {
@@ -265,6 +266,7 @@ fn deserialize_version<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Res
         Err(serde::de::Error::custom("text signature version must be 1"))
     }
 }
+/// Serialize a text-signature version only when it is supported.
 fn serialize_version<S: serde::Serializer>(
     version: impl std::borrow::Borrow<u8>,
     serializer: S,

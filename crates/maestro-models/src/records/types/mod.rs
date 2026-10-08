@@ -13,6 +13,7 @@ pub type KnownProvider = Provider;
 /// Open JSON object for schemas, arguments and metadata.
 pub type JsonObject = serde_json::Map<String, serde_json::Value>;
 
+/// Preserve an explicitly present value, including null, as an outer option.
 pub(super) fn present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: serde::Deserializer<'de>,

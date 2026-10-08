@@ -18,6 +18,7 @@ pub(crate) fn run(home: &Path, child: &mut Command) -> io::Result<ExitCode> {
     result
 }
 
+/// Back up authentication and run the child without provider credentials.
 fn run_without_auth(
     auth: &Path,
     backup: &mut Option<PathBuf>,
@@ -38,6 +39,7 @@ fn run_without_auth(
     Ok(super::exit_code(status))
 }
 
+/// Move a file, resolving a directory destination to its original filename.
 fn move_file(source: &Path, destination: &Path) -> io::Result<PathBuf> {
     let destination = if destination.is_dir() {
         destination.join(

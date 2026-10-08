@@ -5,6 +5,7 @@ use std::process::{Command, ExitCode};
 
 use serde::Deserialize;
 
+/// Launch a source watcher that queues compilation after file changes.
 pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     let status = Command::new("watchexec")
         .args([
@@ -25,6 +26,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     Ok(super::exit_code(status))
 }
 
+/// Compile on source changes while ignoring events confined to Cargo outputs.
 pub(crate) fn step(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
     let metadata = cargo_metadata::MetadataCommand::new()
         .cargo_path(cargo)
@@ -48,16 +50,22 @@ pub(crate) fn step(args: &[OsString], cargo: &Path) -> io::Result<ExitCode> {
 }
 
 #[derive(Deserialize)]
+/// File-watcher event decoded from standard input.
 struct Event {
+    /// Event annotations used to find changed paths.
     tags: Vec<Tag>,
 }
 
 #[derive(Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
+/// Supported watcher annotations with a fallback for unrelated kinds.
 enum Tag {
+    /// Filesystem path affected by the event.
     Path {
+        /// Absolute changed path used to exclude build outputs.
         absolute: PathBuf,
     },
     #[serde(other)]
+    /// Annotation unrelated to a filesystem path.
     Other,
 }

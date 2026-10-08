@@ -1,7 +1,11 @@
+/// Classification and permitted direct dependencies for a scoped crate.
 pub(crate) struct Rule {
+    /// Required workspace classification for this crate.
     pub(crate) class: &'static str,
+    /// Names of permitted direct internal dependencies.
     pub(crate) dependencies: &'static [&'static str],
 }
+/// Scoped crate names paired with their permitted direct dependencies.
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-extensions-wasm", &[]),
     ("maestro-models", &[]),
@@ -113,6 +117,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
 ];
 
+/// Look up a scoped crate's classification and permitted dependencies.
 pub(crate) fn rule(name: &str) -> Option<Rule> {
     let dependencies = POLICY.iter().find(|row| row.0 == name)?.1;
     Some(Rule {
@@ -128,6 +133,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
     })
 }
 
+/// Identify crates that require their full direct dependency set.
 pub(crate) fn exact(name: &str) -> bool {
     matches!(
         name,

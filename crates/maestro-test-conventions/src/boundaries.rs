@@ -4,9 +4,11 @@ use crate::source::{Member, Source};
 use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
 
+/// Static interface inputs for extension code generation.
 mod wit;
 use wit::{ScanContext, WitInputs};
 
+/// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
         .iter()
@@ -41,15 +43,20 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     wit.finish()
 }
 
+/// Rust declaration keywords whose following identifiers are inspected.
 const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
 
 #[derive(Default)]
+/// Declarations and interface-generation macros found in one source.
 struct Records {
+    /// Declaration names paired with their source lines.
     declarations: Vec<(String, usize)>,
+    /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
 }
 
 impl Records {
+    /// Walk tokens while ignoring attributes and generated metavariable names.
     fn scan(&mut self, tokens: TokenStream) {
         let tokens: Vec<_> = tokens.into_iter().collect();
         for (index, token) in tokens.iter().enumerate() {
@@ -67,6 +74,7 @@ impl Records {
         }
     }
 
+    /// Record a recognized declaration with its unescaped name.
     fn declaration(&mut self, keyword: &proc_macro2::Ident, following: &[TokenTree]) {
         let kind = keyword.to_string();
         if !DECLARATION_KINDS.contains(&kind.as_str()) {
@@ -82,6 +90,7 @@ impl Records {
             .push((name.unraw().to_string(), keyword.span().start().line));
     }
 
+    /// Record supported interface-generation macro inputs.
     fn wit_macro(&mut self, tokens: &[TokenTree]) {
         if !matches!(tokens.first(), Some(TokenTree::Ident(name)) if name == "wit_bindgen" || name == "wasmtime")
         {
@@ -109,6 +118,7 @@ impl Records {
     }
 }
 
+/// Recognize token groups belonging to an attribute.
 fn attribute_group(previous: &[TokenTree]) -> bool {
     match previous {
         [.., TokenTree::Punct(hash)] if hash.as_char() == '#' => true,
@@ -119,6 +129,7 @@ fn attribute_group(previous: &[TokenTree]) -> bool {
     }
 }
 
+/// Distinguish a union declaration from an identifier used as a value.
 fn union_body(token: Option<&TokenTree>) -> bool {
     match token {
         Some(TokenTree::Group(group)) => group.delimiter() == proc_macro2::Delimiter::Brace,
@@ -128,6 +139,7 @@ fn union_body(token: Option<&TokenTree>) -> bool {
     }
 }
 
+/// Recognize selector declarations owned by the chat frontend.
 fn selector(name: &str) -> bool {
     matches!(
         name,
@@ -159,6 +171,7 @@ fn selector(name: &str) -> bool {
     )
 }
 
+/// Reject declarations outside their owning crate or duplicate tool contracts.
 fn check_declarations(
     member: &Member,
     source: &Source,

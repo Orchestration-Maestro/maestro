@@ -5,6 +5,7 @@ use syn::{spanned::Spanned, visit::Visit};
 
 use crate::source::{Member, Source};
 
+/// Verify protected lint settings and production source size for every member.
 pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     check_protected_lints(root)?;
     for member in members {
@@ -16,9 +17,12 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     Ok(())
 }
 
+/// Enforce the hand-written production source line limit.
 fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     let path = &source.path;
-    if path.file_name().is_some_and(|name| name == "tests.rs")
+    if member.name == "maestro-models"
+        && path.starts_with(member.directory.join("src/catalog/models_generated"))
+        || path.file_name().is_some_and(|name| name == "tests.rs")
         || path
             .strip_prefix(&member.directory)
             .map_err(|error| error.to_string())?
@@ -38,6 +42,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     Ok(())
 }
 
+/// Count lines with non-whitespace characters outside documentation tokens and test-only spans.
 fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
     let mut exclusions = TestLines::default();
     if let Some(syntax) = syntax {
@@ -98,7 +103,9 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
 }
 
 #[derive(Default)]
+/// Source spans excluded from the production line count.
 struct TestLines {
+    /// Half-open character ranges occupied by test-only syntax or documentation tokens.
     spans: Vec<std::ops::Range<(usize, usize)>>,
 }
 
@@ -157,12 +164,14 @@ impl<'ast> Visit<'ast> for TestLines {
     }
 }
 
+/// Convert a syntax span into comparable line and character coordinates.
 fn span_positions(span: proc_macro2::Span) -> std::ops::Range<(usize, usize)> {
     let start = span.start();
     let end = span.end();
     (start.line, start.column)..(end.line, end.column)
 }
 
+/// Recognize an item explicitly gated by the test configuration.
 fn is_test(attributes: &[syn::Attribute]) -> bool {
     attributes.iter().any(|attribute| {
         attribute.path().is_ident("cfg")
@@ -172,6 +181,7 @@ fn is_test(attributes: &[syn::Attribute]) -> bool {
     })
 }
 
+/// Access attributes on supported Rust item variants.
 fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
     match item {
         syn::Item::Const(item) => &item.attrs,
@@ -193,6 +203,7 @@ fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
     }
 }
 
+/// Require each crate to enable workspace lint inheritance.
 fn check_inheritance(name: &str, manifest: &Path) -> Result<(), String> {
     let contents = std::fs::read_to_string(manifest)
         .map_err(|error| format!("{}: {error}", manifest.display()))?;
@@ -211,6 +222,7 @@ fn check_inheritance(name: &str, manifest: &Path) -> Result<(), String> {
     Err(format!("{name}: must inherit workspace lints"))
 }
 
+/// Require every protected lint to retain its forbid level.
 fn check_protected_lints(root: &Path) -> Result<(), String> {
     let manifest = root.join("Cargo.toml");
     let contents = std::fs::read_to_string(&manifest)
@@ -235,10 +247,12 @@ fn check_protected_lints(root: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Lint groups and names that cannot be weakened by workspace manifests.
 const PROTECTED: &[(&str, &str)] = &[
     ("rust", "unsafe_code"),
     ("rust", "forbidden_lint_groups"),
     ("clippy", "pedantic"),
+    ("clippy", "missing_docs_in_private_items"),
     ("clippy", "too_many_arguments"),
     ("clippy", "fn_params_excessive_bools"),
     ("clippy", "too_many_lines"),

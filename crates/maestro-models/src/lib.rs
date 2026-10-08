@@ -2,16 +2,19 @@
 
 pub mod arguments;
 pub use arguments::*;
+/// Built-in provider environment utilities.
 mod builtins;
 pub use builtins::{find_env_keys, get_env_api_key};
 
 pub mod cancellation;
+/// Model descriptors and catalog lookup helpers.
 mod catalog;
 mod options;
 pub use options::{
     AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, clamp_reasoning,
     is_context_overflow,
 };
+/// Conversation adaptation for the destination model.
 mod projection;
 pub mod records;
 pub use projection::transform_messages;

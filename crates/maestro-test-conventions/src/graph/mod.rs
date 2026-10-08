@@ -4,24 +4,33 @@ use std::path::Path;
 use cargo_metadata::Metadata;
 use serde::Deserialize;
 
+/// Cargo metadata acquisition and identity validation.
 pub(crate) mod metadata;
+/// Scoped crate ownership and direct-dependency rules.
 mod policy;
 use metadata::{canonical, check_kind, members};
 use policy::rule;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
+/// Allowed workspace crate classifications.
 enum CrateClass {
+    /// A reusable capability crate.
     Core,
+    /// A binary, checker, harness or repository-tooling crate.
     Dedicated,
 }
 #[derive(Deserialize)]
 #[serde(untagged)]
+/// Decoded classification with a marker for discarded invalid values.
 enum Class {
+    /// A recognized crate classification.
     Known(CrateClass),
+    /// An invalid-classification marker used for a crate-specific diagnostic.
     Invalid(serde::de::IgnoredAny),
 }
 impl Class {
+    /// Return the accepted classification spelling or a crate-specific diagnostic.
     fn name(&self, name: &str) -> Result<&str, String> {
         match self {
             Self::Known(CrateClass::Core) => Ok("core"),
@@ -33,6 +42,7 @@ impl Class {
     }
 }
 
+/// Validate declared and host-resolved workspace graphs.
 pub(crate) fn check(root: &Path) -> Result<Metadata, String> {
     let declared = metadata::load(root, None)?;
     metadata::identities(&declared)?;
@@ -47,6 +57,7 @@ pub(crate) fn check(root: &Path) -> Result<Metadata, String> {
     Ok(declared)
 }
 
+/// Require every Cargo member to match the named crate inventory.
 fn inventory(root: &Path, metadata: &Metadata) -> Result<(), String> {
     let path = root.join("workspace-crates.json");
     let contents = std::fs::read(&path).map_err(|error| format!("{}: {error}", path.display()))?;
@@ -76,6 +87,7 @@ fn inventory(root: &Path, metadata: &Metadata) -> Result<(), String> {
     Ok(())
 }
 
+/// Recognize the composition root or an accepted Maestro crate name.
 fn valid_name(name: &str) -> bool {
     if name == "maestro" {
         return true;
@@ -97,19 +109,28 @@ fn valid_name(name: &str) -> bool {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+/// Dependency category used to separate production and test graphs.
 enum Kind {
+    /// Ordinary library dependency.
     Normal,
+    /// Build-time dependency.
     Build,
+    /// Dependency available only to development targets.
     Development,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+/// Directed dependency between named workspace crates.
 pub(super) struct Edge {
+    /// Name of the depending crate.
     from: String,
+    /// Name of the dependency crate.
     to: String,
+    /// Cargo dependency category for this edge.
     kind: Kind,
 }
 
+/// Resolve declared path dependencies into internal graph edges.
 fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
     let names: BTreeMap<_, _> = members(metadata)
         .map(|package| {
@@ -156,6 +177,7 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
     Ok(edges)
 }
 
+/// Check graph identities, cycles and each dependency's ownership policy.
 fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
     let mut production: BTreeMap<_, BTreeSet<String>> = members(metadata)
         .map(|package| (package.name.to_string(), BTreeSet::new()))
@@ -190,6 +212,7 @@ fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
     Ok(())
 }
 
+/// Require a direct edge to obey its source and target crate rules.
 fn validate_edge(edge: &Edge) -> Result<(), String> {
     let from = rule(&edge.from).ok_or("unknown scoped source")?;
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
@@ -220,6 +243,7 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
     Ok(())
 }
 
+/// Require the full direct dependency set for crates with exact boundaries.
 fn complete(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
     for package in members(metadata) {
         let name = package.name.as_str();
@@ -239,6 +263,7 @@ fn complete(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
     Ok(())
 }
 
+/// Detect a cycle using the current traversal path and completed nodes.
 fn check_cycles<'a>(
     name: &'a str,
     graph: &'a BTreeMap<String, BTreeSet<String>>,
@@ -263,6 +288,7 @@ fn check_cycles<'a>(
     Ok(())
 }
 
+/// Reject runtime or toolkit libraries outside their owning adapter.
 fn check_library_dependency(owner: &str, dependency_name: &str) -> Result<(), String> {
     if dependency_name == "wasmtime-wasi-http"
         || (dependency_name == "wasmtime" || dependency_name.starts_with("wasmtime-"))

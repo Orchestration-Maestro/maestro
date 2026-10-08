@@ -473,3 +473,51 @@ fn included_expressions_exclude_documentation_at_the_line_limit() {
     let error = check_workspace(&workspace.root).unwrap_err();
     assert!(error.contains("value.rs: 501 production lines"), "{error}");
 }
+
+#[test]
+fn private_documentation_lint_cannot_be_downgraded() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace(
+            "missing_docs_in_private_items = \"forbid\"",
+            "missing_docs_in_private_items = \"deny\"",
+        ),
+    )
+    .unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("missing_docs_in_private_items must be forbid")
+    );
+}
+
+#[test]
+fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
+    let workspace = Workspace::new();
+    workspace.member("models", "maestro-models", "");
+    workspace.list(&[("maestro-models", "core")]);
+    let source = workspace.root.join("crates/models/src");
+    let generated = source.join("catalog/models_generated");
+    std::fs::create_dir_all(&generated).unwrap();
+    let file = generated.join("provider.rs");
+    std::fs::write(
+        &file,
+        format!(
+            "{}pub fn descriptor() {{}}\n",
+            "// Recorded descriptor.\n".repeat(501)
+        ),
+    )
+    .unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    std::fs::rename(&file, source.join("provider.rs")).unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("production lines exceeds 500")
+    );
+}
