@@ -118,6 +118,9 @@ are later scope, not active foundation concepts.
 - **User binding:** A supplied action override; an unset value uses defaults and an empty list disables the action.
 - **Keybinding conflict:** Multiple distinct known actions explicitly claiming the same literal key, in claim order.
 - **Enhanced keyboard protocol:** The terminal mode that reports keys as escape sequences carrying exact modifiers, alternate layouts and press, repeat and release events; one process-wide flag records whether it is active.
+- **Input buffer:** The `StdinBuffer` of `maestro-tui`, which frames raw terminal input chunks into ordered data and paste events and owns no clock; its caller supplies each input's instant and expires the buffer at its deadline.
+- **Fragment:** An incomplete escape sequence the input buffer retains for more input; it can be completed, explicitly flushed or cleared, released as it is at a representable deadline, or delivered as data immediately before a paste starts.
+- **Bracketed paste:** Text a terminal wraps in start and end markers; the input buffer delivers it as one paste event without the markers.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The `maestro-extensions-wasm` library, without internal dependencies, owning the canonical WIT source inputs and the facade extension authors write against.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
