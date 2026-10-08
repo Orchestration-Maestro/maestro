@@ -223,12 +223,15 @@ fn parse_number(text: &str) -> Option<f64> {
     number.is_finite().then_some(number)
 }
 
-/// Keep the first independently converted alternative that validates.
+/// Keep the first independently converted alternative that validates; an alternative whose
+/// own expressions do not compile never validates.
 fn union(value: &mut Value, schemas: &[Value]) {
     for child in schemas {
         let mut candidate = value.clone();
         coerce(&mut candidate, child);
-        if child.is_object() && super::check::check(child, &candidate).is_empty() {
+        if child.is_object()
+            && super::check::check(child, &candidate).is_ok_and(|errors| errors.is_empty())
+        {
             *value = candidate;
             break;
         }

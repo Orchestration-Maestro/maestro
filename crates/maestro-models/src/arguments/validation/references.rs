@@ -111,7 +111,7 @@ impl<'a> Location<'a> {
 #[derive(Clone, Default)]
 /// Live recursive and dynamic anchor bindings; the outermost binding wins.
 struct Scope<'a> {
-    /// First active resource declaring a true recursive anchor.
+    /// First entered schema declaring a true recursive anchor, with or without an identifier.
     recursive: Option<Location<'a>>,
     /// First active location declaring each dynamic anchor name.
     dynamic: BTreeMap<&'a str, Location<'a>>,
@@ -243,16 +243,16 @@ impl<'a> Context<'a> {
 enum ReferenceKind {
     /// Static reference resolved against the enclosing identifier.
     Ref,
-    /// Reference searched only in its own resource or the recursive anchor resource.
+    /// Reference searched in its own resource or, when that resource declares a recursive
+    /// anchor, in the subtree of the first entered schema declaring one.
     Recursive,
     /// Static reference replaced by a live dynamic binding.
     Dynamic,
 }
 
-/// Schedule all reference keywords through the shared offline resolver.
-pub(super) fn instructions<'a>(root: &Location<'a>, job: &Job<'a>) -> Vec<Instruction<'a>> {
-    /// Rejecting target schema used when offline resolution fails.
-    const FALSE: Value = Value::Bool(false);
+/// Targets of the reference keywords the context's schema applies, in application order;
+/// `None` marks a reference that offline resolution cannot satisfy.
+pub(super) fn targets<'a>(root: &Location<'a>, context: &Context<'a>) -> Vec<Option<Location<'a>>> {
     [
         ("$ref", ReferenceKind::Ref),
         ("$recursiveRef", ReferenceKind::Recursive),
@@ -260,13 +260,24 @@ pub(super) fn instructions<'a>(root: &Location<'a>, job: &Job<'a>) -> Vec<Instru
     ]
     .into_iter()
     .filter_map(|(keyword, kind)| {
-        let reference = job.schema().get(keyword)?.as_str()?;
-        let resolved = target(root, &job.context, kind, reference)
-            .filter(|target| is_schema(target.schema))
-            .map_or_else(|| job.same_instance(&FALSE), |target| job.resolved(target));
-        Some(Instruction::Children(Batch::new(Mode::All, [resolved])))
+        let reference = context.location.schema.get(keyword)?.as_str()?;
+        Some(target(root, context, kind, reference).filter(|target| is_schema(target.schema)))
     })
     .collect()
+}
+
+/// Schedule all reference keywords through the shared offline resolver.
+pub(super) fn instructions<'a>(root: &Location<'a>, job: &Job<'a>) -> Vec<Instruction<'a>> {
+    /// Rejecting target schema used when offline resolution fails.
+    const FALSE: Value = Value::Bool(false);
+    targets(root, &job.context)
+        .into_iter()
+        .map(|target| {
+            let resolved =
+                target.map_or_else(|| job.same_instance(&FALSE), |target| job.resolved(target));
+            Instruction::Children(Batch::new(Mode::All, [resolved]))
+        })
+        .collect()
 }
 
 /// Resolve a reference from the context's resource, applying the keyword's search rule.

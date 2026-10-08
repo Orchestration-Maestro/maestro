@@ -6,10 +6,11 @@ use std::{
 };
 
 use num_traits::ToPrimitive;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use super::{
     collections,
+    prepare::{self, Patterns},
     references::{self, Context, Location},
     scalars,
 };
@@ -249,9 +250,9 @@ struct Frame<'a> {
 
 impl<'a> Frame<'a> {
     /// Prepare an evaluation frame for one schema application.
-    fn new(job: Job<'a>, root: &Location<'a>) -> Self {
+    fn new(job: Job<'a>, root: &Location<'a>, patterns: &Patterns<'_>) -> Self {
         Self {
-            instructions: instructions(&job, root).into(),
+            instructions: instructions(&job, root, patterns).into(),
             context: job.context,
             instance: job.value,
             pending: None,
@@ -273,15 +274,17 @@ impl<'a> Frame<'a> {
     }
 }
 
-/// Return ordered failures while evaluating schemas without recursive frames.
-pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
+/// Return ordered failures while evaluating schemas without recursive frames, or the first
+/// pattern error found while preparing the schema.
+pub(super) fn check(schema: &Value, value: &Value) -> Result<Vec<String>, regress::Error> {
     let root = Location::root(schema);
+    let patterns = prepare::prepare(&root)?;
     let job = Job {
         context: Context::root(root.clone()),
         value: Instance::Json(value),
         path: String::new(),
     };
-    let mut frames = vec![Frame::new(job, &root)];
+    let mut frames = vec![Frame::new(job, &root, &patterns)];
     while let Some(frame) = frames.last_mut() {
         if let Some(job) = frame.next_child() {
             if frames
@@ -290,7 +293,7 @@ pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
             {
                 reject_cycle(&mut frames, &job.path);
             } else {
-                frames.push(Frame::new(job, &root));
+                frames.push(Frame::new(job, &root, &patterns));
             }
             continue;
         }
@@ -307,7 +310,7 @@ pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
             None => {
                 let Some(completed) = frames.pop() else { break };
                 let Some(parent) = frames.last_mut() else {
-                    return completed.result.errors;
+                    return Ok(completed.result.errors);
                 };
                 if let Some(batch) = &mut parent.pending {
                     batch.results.push(completed.result.finish());
@@ -315,20 +318,24 @@ pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
             }
         }
     }
-    Vec::new()
+    Ok(Vec::new())
 }
 
 /// Schedule keyword assertions in their diagnostic order.
-fn instructions<'a>(job: &Job<'a>, root: &Location<'a>) -> Vec<Instruction<'a>> {
+fn instructions<'a>(
+    job: &Job<'a>,
+    root: &Location<'a>,
+    patterns: &Patterns<'_>,
+) -> Vec<Instruction<'a>> {
     let schema = job.schema();
     let value = job.value.value();
     let mut instructions = vec![Instruction::Errors(scalars::type_errors(
         schema, &value, &job.path,
     ))];
-    collections::object(job, &mut instructions);
+    collections::object(job, patterns, &mut instructions);
     collections::array(job, &mut instructions);
     instructions.push(Instruction::Errors(scalars::string_errors(
-        schema, &value, &job.path,
+        schema, &value, &job.path, patterns,
     )));
     instructions.push(Instruction::Errors(scalars::number_errors(
         schema, &value, &job.path,
@@ -525,6 +532,13 @@ fn reject_cycle(frames: &mut [Frame<'_>], path: &str) {
 /// Recognize the admitted object and boolean schema forms.
 pub(super) fn is_schema(value: &Value) -> bool {
     value.is_object() || value.is_boolean()
+}
+
+/// Borrow an object only when every member is an admitted schema.
+pub(super) fn schema_map(value: Option<&Value>) -> Option<&Map<String, Value>> {
+    value
+        .and_then(Value::as_object)
+        .filter(|schemas| schemas.values().all(is_schema))
 }
 
 /// Borrow a list only when every member is an admitted schema.

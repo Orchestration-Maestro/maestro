@@ -66,9 +66,9 @@ is resolved once against its enclosing resource. Relative `$ref` and
 not the document root, however that resource was reached: by identifier,
 pointer, anchor or dynamic binding. A `$recursiveRef` searches only its own
 resource; when that resource declares `$recursiveAnchor: true` it searches only
-the outermost live schema declaring one and resolves against the resource
-containing that schema. Entering any schema, with or without `$id`, binds its
-own `$recursiveAnchor: true` and `$dynamicAnchor`; entering a schema with `$id`
+the subtree of the first entered schema declaring one and resolves against the
+resource containing that schema. Entering any schema, with or without `$id`, binds
+its own `$recursiveAnchor: true` and `$dynamicAnchor`; entering a schema with `$id`
 also binds the dynamic anchors declared below it, arrays of schemas included,
 without crossing a nested `$id`. Following a reference keeps the caller's live
 anchors, enters the target's enclosing resources that are not yet entered, then
@@ -78,6 +78,19 @@ dynamic binding. Array pointer segments use exact unsigned index names: `0` and
 `1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
+
+Before any argument is examined, the checker builds once the Unicode expression
+of every `pattern` and every `patternProperties` key in the schemas it can
+reach: the nested schemas of each keyword and the targets of `$ref`,
+`$recursiveRef` and `$dynamicRef`, whatever the arguments are. Unreferenced
+`$defs` and `definitions`, `then` and `else` without `if`, data such as `const`
+and `enum`, and keyword values that are not schemas are never built. An
+expression that does not compile is a schema error, not a failed assertion: the
+call returns the expression error alone, so no union tolerates it and no
+negation inverts it. When several are malformed, the one built first is
+reported: object and array keywords with their nested schemas, then the
+`pattern` beside them, then reference targets, then conditionals, negation and
+combinators.
 
 Evaluated properties and items come only from schemas that succeed. A failing
 branch, a negation, a failing `then` or `else`, and the items checked by `contains`

@@ -1917,3 +1917,361 @@ fn maestro_prebinds_dynamic_anchors_only_for_schemas_with_an_identifier() {
     expect(&identified, json!({"n":"a"}), &[]).unwrap();
     expect(&identified, json!({"n":"b"}), &rejected).unwrap();
 }
+
+/// A schema that places a fragment as a function of that fragment.
+type Placement = (&'static str, fn(Value) -> Value);
+
+/// Schemas in which the checker builds a placed fragment.
+const BUILT_PLACEMENTS: &[Placement] = &[
+    ("root", |bad| json!(bad)),
+    ("properties", |bad| json!({"properties":{"p":bad}})),
+    (
+        "patternProperties",
+        |bad| json!({"patternProperties":{"^a":bad}}),
+    ),
+    (
+        "additionalProperties",
+        |bad| json!({"additionalProperties":bad}),
+    ),
+    ("propertyNames", |bad| json!({"propertyNames":bad})),
+    (
+        "unevaluatedProperties",
+        |bad| json!({"unevaluatedProperties":bad}),
+    ),
+    (
+        "dependentSchemas",
+        |bad| json!({"dependentSchemas":{"p":bad}}),
+    ),
+    ("dependencies", |bad| json!({"dependencies":{"p":bad}})),
+    (
+        "dependencies beside a name list",
+        |bad| json!({"dependencies":{"q":["r"],"p":bad}}),
+    ),
+    ("items", |bad| json!({"items":bad})),
+    ("items tuple", |bad| json!({"items":[true,bad]})),
+    ("prefixItems", |bad| json!({"prefixItems":[true,bad]})),
+    (
+        "additionalItems",
+        |bad| json!({"items":[true],"additionalItems":bad}),
+    ),
+    ("contains", |bad| json!({"contains":bad})),
+    (
+        "contains with minContains 0",
+        |bad| json!({"contains":bad,"minContains":0}),
+    ),
+    ("unevaluatedItems", |bad| json!({"unevaluatedItems":bad})),
+    ("not", |bad| json!({"not":bad})),
+    ("anyOf", |bad| json!({"anyOf":[bad]})),
+    (
+        "anyOf after a passing alternative",
+        |bad| json!({"anyOf":[true,bad]}),
+    ),
+    ("oneOf", |bad| json!({"oneOf":[bad]})),
+    (
+        "oneOf after a passing alternative",
+        |bad| json!({"oneOf":[true,bad]}),
+    ),
+    ("allOf", |bad| json!({"allOf":[bad]})),
+    ("if", |bad| json!({"if":bad})),
+    ("then", |bad| json!({"if":true,"then":bad})),
+    ("else", |bad| json!({"if":true,"else":bad})),
+    (
+        "$ref to $defs",
+        |bad| json!({"$ref":"#/$defs/d","$defs":{"d":bad}}),
+    ),
+    (
+        "$ref to definitions",
+        |bad| json!({"$ref":"#/definitions/d","definitions":{"d":bad}}),
+    ),
+    (
+        "$ref chain",
+        |bad| json!({"$ref":"#/$defs/a","$defs":{"a":{"$ref":"#/$defs/b"},"b":bad}}),
+    ),
+    (
+        "$ref to an anchor",
+        |bad| json!({"$ref":"#a","$defs":{"d":{"$anchor":"a","allOf":[bad]}}}),
+    ),
+    (
+        "$ref to an identified resource",
+        |bad| json!({"$ref":"https://schemas.example/d","$defs":{"d":{"$id":"https://schemas.example/d","allOf":[bad]}}}),
+    ),
+    (
+        "$ref to the root",
+        |bad| json!({"$ref":"#","properties":{"p":bad}}),
+    ),
+    (
+        "$recursiveRef cycle",
+        |bad| json!({"$recursiveAnchor":true,"properties":{"p":{"$recursiveRef":"#"}},"allOf":[bad]}),
+    ),
+    (
+        "$dynamicRef",
+        |bad| json!({"$id":"https://schemas.example/root","$dynamicRef":"#d","$defs":{"d":{"$dynamicAnchor":"d","allOf":[bad]}}}),
+    ),
+];
+
+/// Schemas in which the checker never builds a placed fragment.
+const UNBUILT_PLACEMENTS: &[Placement] = &[
+    ("then without if", |bad| json!({"then":bad})),
+    ("else without if", |bad| json!({"else":bad})),
+    ("unreferenced $defs", |bad| json!({"$defs":{"d":bad}})),
+    (
+        "unreferenced definitions",
+        |bad| json!({"definitions":{"d":bad}}),
+    ),
+    (
+        "unreferenced $defs beside a referenced one",
+        |bad| json!({"$ref":"#/$defs/used","$defs":{"used":true,"unused":bad}}),
+    ),
+    ("unknown keyword", |bad| json!({"unknown":bad})),
+    (
+        "const data",
+        |bad| json!({"properties":{"p":{"const":bad}}}),
+    ),
+    (
+        "enum data",
+        |bad| json!({"properties":{"p":{"enum":[bad]}}}),
+    ),
+    (
+        "default data",
+        |bad| json!({"properties":{"p":{"default":bad}}}),
+    ),
+    (
+        "properties with a non-schema member",
+        |bad| json!({"properties":{"p":bad,"q":1}}),
+    ),
+    (
+        "patternProperties with a non-schema member",
+        |bad| json!({"patternProperties":{"^a":bad,"^b":1}}),
+    ),
+    (
+        "dependentSchemas with a non-schema member",
+        |bad| json!({"dependentSchemas":{"p":bad,"q":1}}),
+    ),
+    (
+        "dependencies with a non-schema member",
+        |bad| json!({"dependencies":{"p":bad,"q":1}}),
+    ),
+    (
+        "items tuple with a non-schema member",
+        |bad| json!({"items":[bad,1]}),
+    ),
+    (
+        "prefixItems with a non-schema member",
+        |bad| json!({"prefixItems":[bad,1]}),
+    ),
+    (
+        "allOf with a non-schema member",
+        |bad| json!({"allOf":[bad,1]}),
+    ),
+    (
+        "anyOf with a non-schema member",
+        |bad| json!({"anyOf":[bad,1]}),
+    ),
+    (
+        "oneOf with a non-schema member",
+        |bad| json!({"oneOf":[bad,1]}),
+    ),
+    (
+        "additionalItems without a tuple",
+        |bad| json!({"additionalItems":bad}),
+    ),
+    (
+        "additionalItems beside homogeneous items",
+        |bad| json!({"items":{},"additionalItems":bad}),
+    ),
+];
+
+/// A malformed expression written as each keyword that builds one.
+fn malformed(source: &str) -> [Value; 2] {
+    [
+        json!({"pattern":source}),
+        json!({"patternProperties":{source:true}}),
+    ]
+}
+
+/// The native error of an expression the Unicode matcher rejects.
+fn native(source: &str) -> String {
+    regress::Regex::with_flags(source, "u")
+        .err()
+        .map_or_else(String::new, |error| error.to_string())
+}
+
+/// Assert the outcome of one placed schema for each argument object.
+fn assert_placed(
+    label: &str,
+    schema: &Value,
+    argument_sets: &[maestro_models::JsonObject],
+    outcome: impl Fn(&maestro_models::JsonObject) -> Result<maestro_models::JsonObject, String>,
+) {
+    for arguments in argument_sets {
+        assert_eq!(
+            check_object(schema.clone(), arguments.clone()),
+            outcome(arguments),
+            "{label}: {schema} against {arguments:?}"
+        );
+    }
+}
+
+#[test]
+fn maestro_rejects_malformed_patterns_in_every_schema_the_checker_builds() {
+    let argument_sets = [
+        maestro_models::JsonObject::new(),
+        maestro_models::JsonObject::from_iter([
+            ("p".into(), json!("text")),
+            ("q".into(), json!(3)),
+        ]),
+    ];
+    let native = native("[");
+    for (placement, place) in BUILT_PLACEMENTS {
+        for fragment in malformed("[") {
+            assert_placed(placement, &place(fragment), &argument_sets, |_| {
+                Err(native.clone())
+            });
+        }
+    }
+}
+
+#[test]
+fn maestro_ignores_malformed_patterns_in_schemas_the_checker_never_builds() {
+    let empty = [maestro_models::JsonObject::new()];
+    for (placement, place) in UNBUILT_PLACEMENTS {
+        for fragment in malformed("[") {
+            assert_placed(placement, &place(fragment), &empty, |arguments| {
+                Ok(arguments.clone())
+            });
+        }
+    }
+    for (name, schema, arguments) in [
+        (
+            "pattern that is not a string",
+            json!({"pattern":5}),
+            json!({}),
+        ),
+        ("pattern list", json!({"pattern":["["]}), json!({})),
+        ("property name", json!({"properties":{"[":true}}), json!({})),
+        ("required name", json!({"required":["["]}), json!({"[":1})),
+        (
+            "dependentRequired name",
+            json!({"dependentRequired":{"[":["["]}}),
+            json!({}),
+        ),
+    ] {
+        let arguments = [arguments.as_object().unwrap().clone()];
+        assert_placed(name, &schema, &arguments, |arguments| Ok(arguments.clone()));
+    }
+}
+
+#[test]
+fn maestro_reports_a_malformed_pattern_before_any_argument_is_checked() {
+    let schema = json!({
+        "type":"object", "required":["name"],
+        "properties":{"name":{"type":"string","pattern":"["}}
+    });
+    for arguments in [
+        json!({}),
+        json!({"name":"text"}),
+        json!({"name":3}),
+        json!({"other":true}),
+    ] {
+        assert_eq!(
+            check_object(schema.clone(), arguments.as_object().unwrap().clone()),
+            Err(native("[")),
+            "{arguments}"
+        );
+    }
+}
+
+/// Schemas with two malformed expressions and the source the build reaches first.
+const BUILD_ORDER: &[(&str, &str, &str)] = &[
+    (
+        "a nested schema before the pattern beside it",
+        r#"{"properties":{"p":{"pattern":"["}},"pattern":"("}"#,
+        "[",
+    ),
+    (
+        "patternProperties before pattern",
+        r#"{"pattern":"(","patternProperties":{"[":true}}"#,
+        "[",
+    ),
+    (
+        "properties before allOf",
+        r#"{"allOf":[{"pattern":"["}],"properties":{"p":{"pattern":"("}}}"#,
+        "(",
+    ),
+    (
+        "a pattern key before its schema",
+        r#"{"patternProperties":{"(":{"pattern":"["}}}"#,
+        "(",
+    ),
+    (
+        "pattern before a reference target",
+        r##"{"pattern":"(","$ref":"#/$defs/d","$defs":{"d":{"pattern":"["}}}"##,
+        "(",
+    ),
+    (
+        "a reference target before if",
+        r##"{"$ref":"#/$defs/d","$defs":{"d":{"pattern":"["}},"if":{"pattern":"("}}"##,
+        "[",
+    ),
+    (
+        "contains before items",
+        r#"{"items":{"pattern":"["},"contains":{"pattern":"("}}"#,
+        "(",
+    ),
+    (
+        "contains after items when minContains is 0",
+        r#"{"items":{"pattern":"["},"contains":{"pattern":"("},"minContains":0}"#,
+        "[",
+    ),
+    (
+        "the first patternProperties key",
+        r#"{"patternProperties":{"[":true,"(":true}}"#,
+        "[",
+    ),
+    (
+        "dependencies before properties",
+        r#"{"properties":{"p":{"pattern":"("}},"dependencies":{"q":{"pattern":"["}}}"#,
+        "[",
+    ),
+    (
+        "patternProperties keys before additionalProperties",
+        r#"{"patternProperties":{"(":true},"additionalProperties":{"pattern":"["}}"#,
+        "(",
+    ),
+    (
+        "oneOf before unevaluatedItems",
+        r#"{"unevaluatedItems":{"pattern":"("},"oneOf":[{"pattern":"["}]}"#,
+        "[",
+    ),
+];
+
+#[test]
+fn maestro_reports_the_first_malformed_pattern_in_build_order() {
+    assert_ne!(native("["), native("("));
+    for (row, schema, first) in BUILD_ORDER {
+        let schema: Value = serde_json::from_str(schema).unwrap();
+        assert_eq!(
+            check_object(schema, maestro_models::JsonObject::new()),
+            Err(native(first)),
+            "{row}"
+        );
+    }
+}
+
+#[test]
+fn maestro_skips_conversion_alternatives_whose_expressions_do_not_compile() {
+    for keyword in ["anyOf", "oneOf"] {
+        for (source, converted) in [("^a", json!(5.0)), ("[", json!("5"))] {
+            for mut alternative in malformed(source) {
+                alternative["type"] = json!("number");
+                let schema = json!({"type":"object","properties":{"p":{keyword:[alternative, 1]}}});
+                let arguments = maestro_models::JsonObject::from_iter([("p".into(), json!("5"))]);
+                assert_eq!(
+                    check_object(schema, arguments).map(|arguments| arguments["p"].clone()),
+                    Ok(converted.clone()),
+                    "{keyword} {source}"
+                );
+            }
+        }
+    }
+}

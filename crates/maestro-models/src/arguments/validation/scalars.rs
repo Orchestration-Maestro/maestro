@@ -1,6 +1,6 @@
 //! Scalar assertions with the established keyword diagnostics.
 
-use super::coercion::Kind;
+use super::{coercion::Kind, prepare::Patterns};
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use unicode_segmentation::UnicodeSegmentation;
@@ -169,8 +169,13 @@ fn object_pairs<'a>(
         .collect()
 }
 
-/// Check grapheme bounds, registered formats and Unicode patterns.
-pub(super) fn string_errors(schema: &Value, value: &Value, path: &str) -> Vec<String> {
+/// Check grapheme bounds, registered formats and prepared Unicode patterns.
+pub(super) fn string_errors(
+    schema: &Value,
+    value: &Value,
+    path: &str,
+    patterns: &Patterns<'_>,
+) -> Vec<String> {
     let Some(text) = value.as_str() else {
         return Vec::new();
     };
@@ -202,14 +207,12 @@ pub(super) fn string_errors(schema: &Value, value: &Value, path: &str) -> Vec<St
     {
         errors.push(render(path, &format!("must match format \"{format}\"")));
     }
-    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str) {
-        match regress::Regex::with_flags(pattern, "u") {
-            Err(error) => errors.push(render(path, &error.to_string())),
-            Ok(regex) if regex.find(text).is_none() => {
-                errors.push(render(path, &format!("must match pattern \"{pattern}\"")));
-            }
-            Ok(_) => {}
-        }
+    if let Some(pattern) = schema.get("pattern").and_then(Value::as_str)
+        && patterns
+            .get(pattern)
+            .is_none_or(|regex| regex.find(text).is_none())
+    {
+        errors.push(render(path, &format!("must match pattern \"{pattern}\"")));
     }
     errors
 }

@@ -5,6 +5,7 @@ mod coercion;
 mod collections;
 mod diagnostics;
 mod formats;
+mod prepare;
 mod references;
 mod scalars;
 
@@ -14,7 +15,8 @@ use serde_json::Value;
 /// Select the first declaration with the invocation's exact name and check its arguments.
 ///
 /// # Errors
-/// Returns a corrective diagnostic when no declaration matches or arguments are invalid.
+/// Returns a corrective diagnostic when no declaration matches, the schema holds a malformed
+/// regular expression or the arguments are invalid.
 pub fn validate_tool_call(
     tools: &[Tool],
     tool_call: &ToolCall,
@@ -34,14 +36,17 @@ pub fn validate_tool_call(
 ///
 /// # Errors
 /// Returns at most eight distinct corrective messages in evaluation order,
-/// followed by the original, unconverted arguments.
+/// followed by the original, unconverted arguments. A regular expression that the schema
+/// builds and that does not compile is a schema error: the diagnostic carries the expression
+/// error alone, whatever the arguments are.
 pub fn validate_tool_arguments(
     tool: &Tool,
     tool_call: &ToolCall,
 ) -> Result<JsonObject, DiagnosticErrorInfo> {
     let mut candidate = Value::Object(tool_call.arguments.clone());
     coercion::coerce(&mut candidate, &tool.parameters);
-    let errors = check::check(&tool.parameters, &candidate);
+    let errors = check::check(&tool.parameters, &candidate)
+        .map_err(|error| diagnostic(error.to_string()))?;
     if errors.is_empty()
         && let Value::Object(arguments) = candidate
     {

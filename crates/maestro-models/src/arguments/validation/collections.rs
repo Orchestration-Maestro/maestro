@@ -5,39 +5,30 @@ use serde_json::{Map, Value};
 
 use super::{
     check::{Batch, Instance, Instruction, Job, Mark, Marks, Mode},
-    check::{is_schema, schema_array},
-    diagnostics, scalars,
+    check::{is_schema, schema_array, schema_map},
+    diagnostics,
+    prepare::Patterns,
+    scalars,
 };
 
-/// Compiled Unicode patterns paired with their member schemas.
-type Patterns<'a> = Vec<(regress::Regex, &'a Value)>;
+/// Prepared pattern expressions paired with their member schemas.
+type Matchers<'p, 'a> = Vec<(&'p regress::Regex, &'a Value)>;
 
 /// Schedule object assertions using one Unicode pattern membership set.
-pub(super) fn object<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>) {
+pub(super) fn object<'a>(
+    job: &Job<'a>,
+    prepared: &Patterns<'_>,
+    instructions: &mut Vec<Instruction<'a>>,
+) {
     let Instance::Json(Value::Object(value)) = job.value else {
         return;
     };
     let schema = job.schema();
-    let patterns: Result<Patterns<'a>, _> = schema
-        .get("patternProperties")
-        .and_then(Value::as_object)
-        .filter(|properties| properties.values().all(is_schema))
+    let patterns: Matchers<'_, 'a> = schema_map(schema.get("patternProperties"))
         .into_iter()
-        .flat_map(|patterns| diagnostics::entries(patterns).into_iter())
-        .map(|(pattern, schema)| {
-            regress::Regex::with_flags(pattern, "u").map(|regex| (regex, schema))
-        })
+        .flat_map(diagnostics::entries)
+        .filter_map(|(source, schema)| Some((prepared.get(source)?, schema)))
         .collect();
-    let patterns = match patterns {
-        Ok(patterns) => patterns,
-        Err(error) => {
-            instructions.push(Instruction::Errors(vec![scalars::render(
-                &job.path,
-                &error.to_string(),
-            )]));
-            return;
-        }
-    };
     instructions.push(Instruction::Errors(scalars::required_errors(
         schema, value, &job.path,
     )));
@@ -55,7 +46,7 @@ pub(super) fn object<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>)
 fn additional_properties<'a>(
     job: &Job<'a>,
     value: &'a Map<String, Value>,
-    patterns: &Patterns<'a>,
+    patterns: &Matchers<'_, 'a>,
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     let Some(schema) = job
@@ -65,11 +56,7 @@ fn additional_properties<'a>(
     else {
         return;
     };
-    let declared = job
-        .schema()
-        .get("properties")
-        .and_then(Value::as_object)
-        .filter(|properties| properties.values().all(is_schema));
+    let declared = schema_map(job.schema().get("properties"));
     let members = diagnostics::entries(value)
         .into_iter()
         .filter(|(key, _)| {
@@ -95,7 +82,7 @@ fn additional_properties<'a>(
 fn pattern_properties<'a>(
     job: &Job<'a>,
     value: &'a Map<String, Value>,
-    patterns: &Patterns<'a>,
+    patterns: &Matchers<'_, 'a>,
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     for (regex, schema) in patterns {
@@ -120,12 +107,7 @@ fn properties<'a>(
     value: &'a Map<String, Value>,
     instructions: &mut Vec<Instruction<'a>>,
 ) {
-    if let Some(properties) = job
-        .schema()
-        .get("properties")
-        .and_then(Value::as_object)
-        .filter(|properties| properties.values().all(is_schema))
-    {
+    if let Some(properties) = schema_map(job.schema().get("properties")) {
         let members = diagnostics::entries(properties)
             .into_iter()
             .filter_map(|(key, schema)| {
@@ -147,16 +129,9 @@ fn dependencies<'a>(
     keyword: &str,
     instructions: &mut Vec<Instruction<'a>>,
 ) {
-    let Some(dependencies) = job.schema().get(keyword).and_then(Value::as_object) else {
+    let Some(dependencies) = dependency_map(job.schema(), keyword) else {
         return;
     };
-    if !dependencies.values().all(|schema| match keyword {
-        "dependentSchemas" => is_schema(schema),
-        "dependentRequired" => names(schema),
-        _ => is_schema(schema) || names(schema),
-    }) {
-        return;
-    }
     for (key, schema) in diagnostics::entries(dependencies) {
         if !value.contains_key(key) {
             continue;
@@ -181,6 +156,23 @@ fn dependencies<'a>(
             )));
         }
     }
+}
+
+/// Borrow a dependency keyword's object only when every entry suits that keyword.
+pub(super) fn dependency_map<'a>(
+    schema: &'a Value,
+    keyword: &str,
+) -> Option<&'a Map<String, Value>> {
+    schema
+        .get(keyword)
+        .and_then(Value::as_object)
+        .filter(|dependencies| {
+            dependencies.values().all(|entry| match keyword {
+                "dependentSchemas" => is_schema(entry),
+                "dependentRequired" => names(entry),
+                _ => is_schema(entry) || names(entry),
+            })
+        })
 }
 
 /// Validate keys as strings while retaining an aggregate name failure.
