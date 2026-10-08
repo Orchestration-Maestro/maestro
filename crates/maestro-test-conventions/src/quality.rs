@@ -53,6 +53,10 @@ fn production_lines(contents: &str, syntax: &syn::File) -> usize {
         .take(end)
         .enumerate()
         .filter(|(line, text)| {
+            let trimmed = text.trim_start();
+            if trimmed.starts_with("///") || trimmed.starts_with("//!") {
+                return false;
+            }
             // Span columns and text columns both count Unicode characters.
             text.chars().enumerate().any(|(column, character)| {
                 !character.is_whitespace()

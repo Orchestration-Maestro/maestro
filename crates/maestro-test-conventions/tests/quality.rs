@@ -24,6 +24,42 @@ fn production_files_stop_at_five_hundred_lines() {
 }
 
 #[test]
+fn five_hundred_code_lines_with_doc_comments_pass() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut source = "\t//! Module documentation.\n".repeat(600);
+    for index in 0..500 {
+        writeln!(
+            source,
+            "    /// Item documentation.\nconst P{index}: u8 = 0;"
+        )
+        .unwrap();
+    }
+    std::fs::write(&path, source).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn five_hundred_one_code_lines_with_doc_comments_fail() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut source = "  //! Module documentation.\n".repeat(600);
+    for index in 0..501 {
+        writeln!(source, "\t/// Item documentation.\nconst P{index}: u8 = 0;").unwrap();
+    }
+    std::fs::write(&path, source).unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.ends_with("lib.rs: 501 production lines exceeds 500"),
+        "{error}"
+    );
+}
+
+#[test]
 fn all_crates_must_inherit_workspace_lints() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
