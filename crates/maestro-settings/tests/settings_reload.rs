@@ -7,7 +7,9 @@ mod support;
 mod tests {
     use super::support;
     use super::support::{Backend, ControlledStorage, block_on, settings};
-    use maestro_settings::{SettingsListEntry, SettingsManager, SettingsScope, ThinkingLevel};
+    use maestro_settings::{
+        PackageSource, SettingsListEntry, SettingsManager, SettingsScope, ThinkingLevel,
+    };
     use serde_json::{Value, json};
 
     const GLOBAL: SettingsScope = SettingsScope::Global;
@@ -109,6 +111,25 @@ mod tests {
                 manager.get_extension_paths(),
                 entries(&["/old"]),
                 "the cache is unchanged"
+            );
+        }
+    }
+
+    #[test]
+    fn external_empty_packages_list_survives_unrelated_save() {
+        for backend in Backend::all() {
+            let seed = json!({"theme": "dark", "packages": ["npm:old"]});
+            let mut manager = loaded(&backend, Some(&seed), None);
+            assert_eq!(
+                manager.get_packages(),
+                vec![PackageSource::Source("npm:old".into())]
+            );
+            backend.write(GLOBAL, r#"{"theme":"dark","packages":[]}"#);
+            manager.set_theme("light".into());
+            block_on(manager.flush());
+            assert_eq!(
+                backend.json(GLOBAL),
+                json!({"theme": "light", "packages": []})
             );
         }
     }
@@ -475,6 +496,9 @@ mod tests {
             ],
             "first-in first-out across both scopes, each save from its own snapshot"
         );
+        let stored = |scope| serde_json::from_str::<Value>(&storage.text(scope).unwrap()).unwrap();
+        assert_eq!(stored(GLOBAL), json!({"theme": "a", "defaultModel": "m"}));
+        assert_eq!(stored(PROJECT), json!({"extensions": ["p"]}));
     }
 
     /// Three edits: the first and second are queued together, the third after the second fails.
@@ -700,6 +724,11 @@ mod tests {
         drop(manager.flush());
         storage.release();
         storage.wait_for_writes(1);
+        assert_eq!(
+            serde_json::from_str::<Value>(&storage.text(GLOBAL).unwrap()).unwrap(),
+            json!({"theme": "a"}),
+            "the dropped waiter's write reached the stored scope"
+        );
 
         storage.hold();
         manager.set_default_model("m".into());

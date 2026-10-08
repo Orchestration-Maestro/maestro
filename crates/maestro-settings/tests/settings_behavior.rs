@@ -117,6 +117,84 @@ mod tests {
         }
     }
 
+    /// Loads a document that holds one stored value and returns the manager.
+    fn manager_storing(key: &str, text: &str) -> SettingsManager {
+        manager_with(json!({ key: text })).0
+    }
+
+    /// Saves a document through `set` and returns the stored global document.
+    fn saved_after(set: impl FnOnce(&mut SettingsManager)) -> Value {
+        let (mut settings, storage) = manager();
+        set(&mut settings);
+        block_on(settings.flush());
+        raw_json(&*storage, SettingsScope::Global)
+    }
+
+    #[test]
+    fn transport_vocabulary_loads_every_value() {
+        let vocabulary = [
+            ("sse", TransportSetting::Sse),
+            ("websocket", TransportSetting::Websocket),
+            ("websocket-cached", TransportSetting::WebsocketCached),
+            ("auto", TransportSetting::Auto),
+        ];
+        for (text, transport) in vocabulary {
+            let loaded = manager_storing("transport", text);
+            assert_eq!(loaded.get_transport(), transport, "{text}");
+        }
+    }
+
+    #[test]
+    fn cached_and_automatic_transports_save_their_values() {
+        let values = [
+            (TransportSetting::WebsocketCached, "websocket-cached"),
+            (TransportSetting::Auto, "auto"),
+        ];
+        for (transport, text) in values {
+            let saved = saved_after(|settings| settings.set_transport(transport));
+            assert_eq!(saved, json!({ "transport": text }));
+        }
+    }
+
+    #[test]
+    fn thinking_level_vocabulary_loads_every_value() {
+        let vocabulary = [
+            ("off", ThinkingLevel::Off),
+            ("minimal", ThinkingLevel::Minimal),
+            ("low", ThinkingLevel::Low),
+            ("medium", ThinkingLevel::Medium),
+            ("high", ThinkingLevel::High),
+            ("xhigh", ThinkingLevel::Xhigh),
+        ];
+        for (text, level) in vocabulary {
+            let loaded = manager_storing("defaultThinkingLevel", text);
+            assert_eq!(loaded.get_default_thinking_level(), Some(level), "{text}");
+        }
+    }
+
+    #[test]
+    fn thinking_levels_other_than_high_save_their_values() {
+        let values = [
+            (ThinkingLevel::Off, "off"),
+            (ThinkingLevel::Minimal, "minimal"),
+            (ThinkingLevel::Low, "low"),
+            (ThinkingLevel::Medium, "medium"),
+            (ThinkingLevel::Xhigh, "xhigh"),
+        ];
+        for (level, text) in values {
+            let saved = saved_after(|settings| settings.set_default_thinking_level(level));
+            assert_eq!(saved, json!({ "defaultThinkingLevel": text }));
+        }
+    }
+
+    #[test]
+    fn image_members_read_independently() {
+        let (settings, _) =
+            manager_with(json!({"images": {"autoResize": false, "blockImages": true}}));
+        assert!(!settings.get_image_auto_resize());
+        assert!(settings.get_block_images());
+    }
+
     /// Every resolved context and retry record of a manager, as JSON.
     fn resolved(settings: &SettingsManager) -> Value {
         let compaction = settings.get_compaction_settings();
@@ -377,12 +455,16 @@ mod tests {
     fn assert_set_and_unset() {
         let (mut settings, storage) = manager();
         settings.set_shell_path(Some("/bin/sh".into()));
+        settings.set_shell_command_prefix(Some("shopt -s expand_aliases".into()));
         settings.set_npm_command(Some(text_entries(&["mise", "exec"])));
         settings.set_enabled_models(Some(text_entries(&["model*"])));
         block_on(settings.flush());
         assert_eq!(
             raw_json(&*storage, SettingsScope::Global),
-            json!({"shellPath": "/bin/sh", "npmCommand": ["mise", "exec"], "enabledModels": ["model*"]})
+            json!({
+                "shellPath": "/bin/sh", "shellCommandPrefix": "shopt -s expand_aliases",
+                "npmCommand": ["mise", "exec"], "enabledModels": ["model*"]
+            })
         );
         settings.set_shell_path(None);
         settings.set_shell_command_prefix(None);
@@ -503,26 +585,19 @@ mod tests {
     fn assert_typed_packages(packages: &[PackageSource]) {
         assert_eq!(packages.len(), 8);
         assert_eq!(packages[0], PackageSource::Source("npm:custom".into()));
-        let PackageSource::Filtered {
-            source,
-            filters,
-            extra,
-        } = &packages[1]
-        else {
+        let PackageSource::Filtered(package) = &packages[1] else {
             panic!("filtered entry expected, got {:?}", packages[1]);
         };
-        assert_eq!(source, "git:custom");
-        assert_eq!(filters.extensions, Some(Vec::new()));
+        assert_eq!(package.source().as_deref(), Some("git:custom"));
+        assert_eq!(package.extensions(), Some(Vec::new()));
         let skills = vec![
             SettingsListEntry::String("a".into()),
             SettingsListEntry::Unknown(json!(1)),
         ];
-        assert_eq!(filters.skills, Some(skills));
-        assert_eq!((&filters.prompts, &filters.themes), (&None, &None));
-        assert_eq!(extra.get("opaque"), Some(&json!({"x": 2})));
-        assert!(
-            matches!(&packages[2], PackageSource::Filtered { filters, .. } if filters.skills.is_none())
-        );
+        assert_eq!(package.skills(), Some(skills));
+        assert_eq!((package.prompts(), package.themes()), (None, None));
+        assert_eq!(package.0.get("opaque"), Some(&json!({"x": 2})));
+        assert!(matches!(&packages[2], PackageSource::Filtered(bare) if bare.skills().is_none()));
         assert!(
             packages[3..]
                 .iter()
@@ -558,6 +633,33 @@ mod tests {
     }
 
     #[test]
+    fn packages_round_trip_keeps_member_order() {
+        let seed =
+            r#"{"packages":[{"custom":1,"source":"x","skills":["a"],"zeta":2,"extensions":[]}]}"#;
+        let text = saved_text_after(seed, |settings| {
+            let packages = settings.get_packages();
+            settings.set_packages(packages);
+        });
+        let expected = [
+            "{",
+            "  \"packages\": [",
+            "    {",
+            "      \"custom\": 1,",
+            "      \"source\": \"x\",",
+            "      \"skills\": [",
+            "        \"a\"",
+            "      ],",
+            "      \"zeta\": 2,",
+            "      \"extensions\": []",
+            "    }",
+            "  ]",
+            "}",
+        ]
+        .join("\n");
+        assert_eq!(text, expected);
+    }
+
+    #[test]
     fn no_packages_inferred_from_extensions() {
         let (settings, _) = manager_with(json!({"extensions": ["/local/ext", "./relative/ext"]}));
         assert_eq!(settings.get_packages(), Vec::new());
@@ -583,17 +685,17 @@ mod tests {
         let mut packages = manager.get_packages();
         packages.clear();
         let mut budgets = manager.get_thinking_budgets().unwrap();
-        budgets.low = Some(99.0);
+        budgets.set_low(Some(99.0));
         let mut warnings: WarningSettings = manager.get_warnings();
-        warnings.anthropic_extra_usage = Some(false);
+        warnings.set_anthropic_extra_usage(Some(false));
 
         assert_eq!(manager.get_theme(), None);
         assert_eq!(manager.get_project_settings().0.len(), 0);
         assert_eq!(manager.get_global_settings(), seed);
         assert_eq!(manager.get_extension_paths(), text_entries(&["a"]));
         assert_eq!(manager.get_packages().len(), 1);
-        assert_eq!(manager.get_thinking_budgets().unwrap().low, Some(1.0));
-        assert_eq!(manager.get_warnings().anthropic_extra_usage, Some(true));
+        assert_eq!(manager.get_thinking_budgets().unwrap().low(), Some(1.0));
+        assert_eq!(manager.get_warnings().anthropic_extra_usage(), Some(true));
         manager.set_theme("kept".into());
         assert_eq!(manager.get_theme().as_deref(), Some("kept"));
     }
@@ -984,6 +1086,25 @@ mod tests {
     }
 
     #[test]
+    fn accepted_nan_survives_overrides() {
+        let (mut settings, _) = manager();
+        settings.set_editor_padding_x(f64::NAN);
+        settings.set_autocomplete_max_visible(f64::NAN);
+        settings.apply_overrides(support::settings(
+            json!({"editorPaddingX": 2, "autocompleteMaxVisible": 7}),
+        ));
+        support::assert_number(settings.get_editor_padding_x(), 2.0);
+        support::assert_number(settings.get_autocomplete_max_visible(), 7.0);
+
+        settings.set_theme("unrelated".into());
+        assert!(
+            settings.get_editor_padding_x().is_nan(),
+            "the setter discards the overrides and the accepted padding returns"
+        );
+        assert!(settings.get_autocomplete_max_visible().is_nan());
+    }
+
+    #[test]
     fn numeric_setters_keep_nonfinite_until_reload() {
         assert_nan_until_reload();
         assert_nan_superseded();
@@ -1057,6 +1178,30 @@ mod tests {
         }
         let (settings, _) = manager_with(json!({"markdown": {"codeBlockIndent": 4}}));
         assert_eq!(settings.get_code_block_indent(), "  ");
+    }
+
+    #[test]
+    fn mode_vocabularies_read_every_stored_spelling() {
+        let escapes = [
+            ("fork", DoubleEscapeAction::Fork),
+            ("tree", DoubleEscapeAction::Tree),
+            ("none", DoubleEscapeAction::None),
+        ];
+        for (text, action) in escapes {
+            let loaded = manager_storing("doubleEscapeAction", text);
+            assert_eq!(loaded.get_double_escape_action(), action, "{text}");
+        }
+        let modes = [
+            ("default", TreeFilterMode::Default),
+            ("no-tools", TreeFilterMode::NoTools),
+            ("user-only", TreeFilterMode::UserOnly),
+            ("labeled-only", TreeFilterMode::LabeledOnly),
+            ("all", TreeFilterMode::All),
+        ];
+        for (text, mode) in modes {
+            let loaded = manager_storing("treeFilterMode", text);
+            assert_eq!(loaded.get_tree_filter_mode(), mode, "{text}");
+        }
     }
 
     /// Property type of a stored member.
@@ -1188,7 +1333,7 @@ mod tests {
     fn observe(settings: &SettingsManager) -> Value {
         let budgets = settings
             .get_thinking_budgets()
-            .map_or([None; 4], |b| [b.minimal, b.low, b.medium, b.high]);
+            .map_or([None; 4], |b| [b.minimal(), b.low(), b.medium(), b.high()]);
         json!({
             "text": [settings.get_last_changelog_version(), settings.get_default_provider(),
                 settings.get_default_model(), settings.get_theme(), settings.get_shell_path(),
@@ -1483,6 +1628,66 @@ mod tests {
         );
     }
 
+    /// A home directory that holds dot segments, as the platform spells it.
+    #[cfg(unix)]
+    const NATIVE_HOME: &str = "/home/a/../b/./user";
+    /// A home directory that holds dot segments, as the platform spells it.
+    #[cfg(windows)]
+    const NATIVE_HOME: &str = r"C:\Users\a\..\b\.\user";
+
+    /// Stored session directories and the paths the platform's separators give below `NATIVE_HOME`.
+    #[cfg(unix)]
+    const NATIVE_CASES: [(&str, &str); 6] = [
+        ("~", "/home/a/../b/./user"),
+        ("~/x", "/home/b/user/x"),
+        ("~/a\\..\\b", "/home/b/user/a\\..\\b"),
+        ("~/../..", "/home"),
+        ("~/x/", "/home/b/user/x/"),
+        ("~/x\\", "/home/b/user/x\\"),
+    ];
+    /// Stored session directories and the paths the platform's separators give below `NATIVE_HOME`.
+    #[cfg(windows)]
+    const NATIVE_CASES: [(&str, &str); 6] = [
+        ("~", r"C:\Users\a\..\b\.\user"),
+        ("~/x", r"C:\Users\b\user\x"),
+        (r"~/a\..\b", r"C:\Users\b\user\b"),
+        ("~/../..", r"C:\Users"),
+        ("~/x/", r"C:\Users\b\user\x\"),
+        (r"~/x\", r"C:\Users\b\user\x\"),
+    ];
+
+    /// Child side: resolves every native case.
+    fn report_native_session_dirs() {
+        let paths: Vec<String> = NATIVE_CASES
+            .iter()
+            .map(|(stored, _)| {
+                let (settings, _) = manager_with(json!({"sessionDir": stored}));
+                let path = settings.get_session_dir().unwrap();
+                path.to_string_lossy().into_owned()
+            })
+            .collect();
+        support::report(&json!(paths));
+    }
+
+    #[test]
+    fn session_dir_folds_segments_with_platform_separators() {
+        if support::child_case().is_some() {
+            return report_native_session_dirs();
+        }
+        let mut child = support::child_command(
+            "session_dir_folds_segments_with_platform_separators",
+            "native",
+        );
+        child
+            .env("HOME", NATIVE_HOME)
+            .env("USERPROFILE", NATIVE_HOME);
+        let expected: Vec<&str> = NATIVE_CASES.iter().map(|(_, expected)| *expected).collect();
+        assert_eq!(
+            support::child_report(&child.output().unwrap()),
+            json!(expected)
+        );
+    }
+
     /// Runs one setter batch against storage seeded with `seed` text and returns the saved text.
     fn saved_text_after(seed: &str, edit: impl FnOnce(&mut SettingsManager)) -> String {
         let storage = support::seeded(Some(seed), None);
@@ -1557,6 +1762,22 @@ mod tests {
     }
 
     #[test]
+    fn decimal_numbers_survive_load_and_save_exactly() {
+        let seed = r#"{"ratio":51.248178375505404,"sum":0.30000000000000004,"tiny":5e-324}"#;
+        let text = saved_text_after(seed, |settings| settings.set_theme("x".into()));
+        let expected = [
+            "{",
+            "  \"ratio\": 51.248178375505404,",
+            "  \"sum\": 0.30000000000000004,",
+            "  \"tiny\": 5e-324,",
+            "  \"theme\": \"x\"",
+            "}",
+        ]
+        .join("\n");
+        assert_eq!(text, expected);
+    }
+
+    #[test]
     fn string_content_survives_without_trimming() {
         for text in [
             "",
@@ -1591,34 +1812,73 @@ mod tests {
             manager_with(json!({"thinkingBudgets": {"low": 100, "high": "many", "custom": 1}}));
         let budgets = settings.get_thinking_budgets().unwrap();
         assert_eq!(
-            (budgets.minimal, budgets.low, budgets.medium, budgets.high),
+            (
+                budgets.minimal(),
+                budgets.low(),
+                budgets.medium(),
+                budgets.high()
+            ),
             (None, Some(100.0), None, None)
         );
-        assert_eq!(budgets.extra.get("high"), Some(&json!("many")));
-        assert_eq!(budgets.extra.get("custom"), Some(&json!(1)));
+        assert_eq!(budgets.0.get("high"), Some(&json!("many")));
+        assert_eq!(budgets.0.get("custom"), Some(&json!(1)));
         let (settings, _) = manager_with(json!({"thinkingBudgets": "x"}));
         assert_eq!(settings.get_thinking_budgets(), None);
 
         let seed = json!({"warnings": {"anthropicExtraUsage": "bad", "extra": 7}});
         let (mut settings, storage) = manager_with(seed.clone());
         let mut warnings = settings.get_warnings();
-        assert_eq!(warnings.anthropic_extra_usage, None);
-        assert_eq!(
-            warnings.extra.get("anthropicExtraUsage"),
-            Some(&json!("bad"))
-        );
+        assert_eq!(warnings.anthropic_extra_usage(), None);
+        assert_eq!(warnings.0.get("anthropicExtraUsage"), Some(&json!("bad")));
         settings.set_warnings(warnings.clone());
         block_on(settings.flush());
         assert_eq!(raw_json(&*storage, SettingsScope::Global), seed);
 
-        warnings.anthropic_extra_usage = Some(false);
+        warnings.set_anthropic_extra_usage(Some(false));
         settings.set_warnings(warnings);
         block_on(settings.flush());
         assert_eq!(
             raw_json(&*storage, SettingsScope::Global),
             json!({"warnings": {"anthropicExtraUsage": false, "extra": 7}})
         );
-        assert_eq!(settings.get_warnings().anthropic_extra_usage, Some(false));
+        assert_eq!(settings.get_warnings().anthropic_extra_usage(), Some(false));
+    }
+
+    #[test]
+    fn warnings_round_trip_keeps_member_order() {
+        let seed = r#"{"warnings":{"extra":7,"anthropicExtraUsage":false}}"#;
+        let text = saved_text_after(seed, |settings| {
+            let warnings = settings.get_warnings();
+            settings.set_warnings(warnings);
+        });
+        let expected = [
+            "{",
+            "  \"warnings\": {",
+            "    \"extra\": 7,",
+            "    \"anthropicExtraUsage\": false",
+            "  }",
+            "}",
+        ]
+        .join("\n");
+        assert_eq!(text, expected);
+    }
+
+    #[test]
+    fn view_edits_replace_in_place_append_and_remove() {
+        let stored = r#"{"keep":1,"enabled":true,"other":2}"#;
+        let mut compaction: CompactionSettings = serde_json::from_str(stored).unwrap();
+        compaction.set_enabled(Some(false));
+        compaction.set_reserve_tokens(Some(5.0));
+        compaction.set_keep_recent_tokens(None);
+        assert_eq!(
+            serde_json::to_string(&compaction).unwrap(),
+            r#"{"keep":1,"enabled":false,"other":2,"reserveTokens":5}"#
+        );
+        compaction.set_enabled(None);
+        assert_eq!(
+            serde_json::to_string(&compaction).unwrap(),
+            r#"{"keep":1,"other":2,"reserveTokens":5}"#
+        );
     }
 
     /// Deserializes a sparse record and serializes it again.
@@ -1678,11 +1938,10 @@ mod tests {
             serde_json::to_value(CompactionSettings::default()).unwrap(),
             json!({})
         );
-        let overlay = CompactionSettings {
-            enabled: Some(true),
-            extra: serde_json::from_value(json!({"enabled": "stale", "keep": 1})).unwrap(),
-            ..CompactionSettings::default()
-        };
+        let mut overlay: CompactionSettings =
+            serde_json::from_value(json!({"enabled": "stale", "keep": 1})).unwrap();
+        assert_eq!(overlay.enabled(), None);
+        overlay.set_enabled(Some(true));
         assert_eq!(
             serde_json::to_value(overlay).unwrap(),
             json!({"enabled": true, "keep": 1})

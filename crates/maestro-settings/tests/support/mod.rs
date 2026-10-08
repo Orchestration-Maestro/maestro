@@ -160,7 +160,7 @@ impl ControlledStorage {
         }
     }
 
-    /// Waits until at least `count` writes have succeeded.
+    /// Waits until at least `count` writes have reached the stored scope.
     pub fn wait_for_writes(&self, count: usize) {
         let mut control = self.control.lock().unwrap();
         while control.writes.len() < count {
@@ -178,7 +178,7 @@ impl ControlledStorage {
         raw(&self.inner, scope)
     }
 
-    /// Every successful write in order.
+    /// Every write that reached the stored scope, in order.
     pub fn writes(&self) -> Vec<(SettingsScope, String)> {
         self.control.lock().unwrap().writes.clone()
     }
@@ -200,15 +200,15 @@ impl ControlledStorage {
         control.fail_reads
     }
 
-    /// Records a write attempt and reports whether it succeeds.
-    fn attempt_write(&self, scope: SettingsScope, text: &str) -> bool {
+    /// Takes the next scripted write outcome: `true` succeeds, `false` fails.
+    fn next_write_succeeds(&self) -> bool {
         let mut control = self.control.lock().unwrap();
-        let succeeds = control.outcomes.pop_front().unwrap_or(true);
-        if succeeds {
-            control.writes.push((scope, text.to_owned()));
-            self.changed.notify_all();
-        }
-        succeeds
+        control.outcomes.pop_front().unwrap_or(true)
+    }
+
+    /// Records a write that has reached the stored scope and wakes its waiters.
+    fn announce_write(&self, scope: SettingsScope, text: &str) {
+        self.update(|control| control.writes.push((scope, text.to_owned())));
     }
 }
 
@@ -225,10 +225,11 @@ impl SettingsStorage for ControlledStorage {
         let Some(next) = update(current.as_deref())? else {
             return Ok(());
         };
-        if !self.attempt_write(scope, &next) {
+        if !self.next_write_succeeds() {
             return Err("controlled failure".into());
         }
         put(&self.inner, scope, &next);
+        self.announce_write(scope, &next);
         Ok(())
     }
 }

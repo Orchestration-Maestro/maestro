@@ -77,22 +77,24 @@ fn convert_transport(document: &mut Map<String, Value>) {
 
 /// Turns the legacy `skills` object into a command preference and directory list.
 fn convert_skills(document: &mut Map<String, Value>) {
-    let Some(Value::Object(skills)) = document.get("skills") else {
+    let Some(Value::Object(skills)) = document.get_mut("skills") else {
         return;
     };
-    let command = skills.get("enableSkillCommands").cloned();
+    let command = skills.shift_remove("enableSkillCommands");
     let directories = skills
-        .get("customDirectories")
-        .and_then(Value::as_array)
-        .filter(|directories| !directories.is_empty())
-        .cloned();
+        .shift_remove("customDirectories")
+        .filter(|directories| {
+            directories
+                .as_array()
+                .is_some_and(|items| !items.is_empty())
+        });
     if let Some(command) = command
         && !document.contains_key("enableSkillCommands")
     {
         document.insert("enableSkillCommands".to_owned(), command);
     }
     match directories {
-        Some(directories) => document.insert("skills".to_owned(), Value::Array(directories)),
+        Some(directories) => document.insert("skills".to_owned(), directories),
         None => document.shift_remove("skills"),
     };
 }
@@ -102,16 +104,15 @@ fn convert_retry_delay(document: &mut Map<String, Value>) {
     let Some(Value::Object(retry)) = document.get_mut("retry") else {
         return;
     };
-    let legacy = retry.shift_remove("maxDelayMs");
-    let Some(delay @ Value::Number(_)) = legacy else {
+    let Some(delay @ Value::Number(_)) = retry.shift_remove("maxDelayMs") else {
         return;
     };
-    let mut provider = match retry.get("provider") {
-        Some(Value::Object(provider)) => provider.clone(),
-        _ => Map::new(),
-    };
-    if provider.get("maxRetryDelayMs").is_none_or(Value::is_null) {
-        provider.insert("maxRetryDelayMs".to_owned(), delay);
+    if let Some(Value::Object(provider)) = retry.get_mut("provider") {
+        if provider.get("maxRetryDelayMs").is_none_or(Value::is_null) {
+            provider.insert("maxRetryDelayMs".to_owned(), delay);
+        }
+    } else {
+        let provider = Map::from_iter([("maxRetryDelayMs".to_owned(), delay)]);
         retry.insert("provider".to_owned(), Value::Object(provider));
     }
 }

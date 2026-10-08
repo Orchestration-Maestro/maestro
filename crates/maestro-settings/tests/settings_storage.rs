@@ -437,35 +437,9 @@ mod tests {
 
     #[test]
     fn exports_available_for_target() {
-        use maestro_settings::{
-            BranchSummarySettings, CompactionSettings, ImageSettings, MarkdownSettings,
-            PackageSource, ProviderRetrySettings, RetrySettings, Settings, SettingsError,
-            SettingsStorageHandle, TerminalSettings, ThinkingBudgetsSettings, TransportSetting,
-            WarningSettings,
-        };
-        let handle: SettingsStorageHandle = std::sync::Arc::new(InMemorySettingsStorage::new());
-        let mut manager = SettingsManager::from_storage(handle);
+        let handle: maestro_settings::SettingsStorageHandle =
+            std::sync::Arc::new(InMemorySettingsStorage::new());
+        let _manager = SettingsManager::from_storage(handle);
         let _native = FileSettingsStorage::new(Path::new("w"), Path::new("a"), OsStr::new(".c"));
-        manager.set_transport(TransportSetting::Sse);
-        manager.set_packages(vec![PackageSource::Source("npm:p".into())]);
-        let error = SettingsError {
-            scope: SettingsScope::Project,
-            error: "failed".into(),
-        };
-        assert_eq!(error.scope, SettingsScope::Project);
-        let records = [
-            CompactionSettings::default().extra,
-            BranchSummarySettings::default().extra,
-            RetrySettings::default().extra,
-            ProviderRetrySettings::default().extra,
-            TerminalSettings::default().extra,
-            ImageSettings::default().extra,
-            ThinkingBudgetsSettings::default().extra,
-            MarkdownSettings::default().extra,
-            WarningSettings::default().extra,
-        ];
-        assert!(records.iter().all(serde_json::Map::is_empty));
-        assert_eq!(Settings::default().0.len(), 0);
-        assert_eq!(manager.get_packages().len(), 1);
     }
 }

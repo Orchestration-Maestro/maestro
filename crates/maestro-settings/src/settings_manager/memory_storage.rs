@@ -4,7 +4,8 @@ use std::sync::Mutex;
 
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
 
-/// Storage that keeps each scope's raw text in memory.
+/// Storage that keeps each scope's raw text in memory and holds it exclusively
+/// while the update callback runs.
 #[derive(Debug, Default)]
 pub struct InMemorySettingsStorage {
     /// Raw text per scope, in `[global, project]` order.
@@ -32,17 +33,14 @@ impl SettingsStorage for InMemorySettingsStorage {
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> Result<(), SettingsStorageError> {
-        let slot = scope as usize;
-        let current = self
+        let mut texts = self
             .texts
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)[slot]
-            .clone();
-        let next = update(current.as_deref())?;
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let slot = &mut texts[scope as usize];
+        let next = update(slot.as_deref())?;
         if next.is_some() {
-            self.texts
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)[slot] = next;
+            *slot = next;
         }
         Ok(())
     }

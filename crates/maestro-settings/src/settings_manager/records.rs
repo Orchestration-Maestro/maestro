@@ -1,11 +1,10 @@
-//! Sparse stored records and resolved getter results.
+//! Typed views over stored preference objects and resolved getter results.
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Value};
 
 use super::conversion::number;
 
-/// A typed member that a sparse record can read from and write to JSON.
+/// A typed member that an object view can read from and write to JSON.
 pub(crate) trait Member: Sized {
     /// Reads the member, or `None` when the JSON has another type.
     fn read(value: &Value) -> Option<Self>;
@@ -40,175 +39,167 @@ impl Member for String {
     }
 }
 
-/// Conversion between a sparse record and its stored object.
-pub(crate) trait Sparse: Default {
-    /// Reads a record from a stored object, keeping untyped members.
-    fn from_map(map: &Map<String, Value>) -> Self;
-    /// Writes typed fields over the retained members, without duplicate keys.
-    fn into_map(self) -> Map<String, Value>;
+impl Member for ProviderRetrySettings {
+    fn read(value: &Value) -> Option<Self> {
+        value.as_object().cloned().map(Self)
+    }
+    fn write(self) -> Value {
+        Value::Object(self.0)
+    }
 }
 
-/// Declares a sparse record: optional typed fields plus the members that are not
-/// typed, including known members whose stored value has another type.
-macro_rules! sparse_record {
-    ($(#[$meta:meta])* $name:ident { $($(#[$field_meta:meta])* $field:ident: $ty:ty = $key:literal),+ $(,)? }) => {
+/// Reads a typed member of a stored object.
+pub(crate) fn get_member<T: Member>(object: &Map<String, Value>, key: &str) -> Option<T> {
+    object.get(key).and_then(T::read)
+}
+
+/// Replaces a member in place, appends it when new, or removes it for `None`.
+pub(crate) fn set_member<T: Member>(object: &mut Map<String, Value>, key: &str, value: Option<T>) {
+    match value {
+        Some(value) => {
+            object.insert(key.to_owned(), value.write());
+        }
+        None => {
+            object.shift_remove(key);
+        }
+    }
+}
+
+/// Declares a typed view over a stored object. The view owns the object as
+/// written: a getter reads one typed member, a setter replaces a member where it
+/// stands, appends a new member at the end or removes it, and every other member
+/// keeps its value and position.
+macro_rules! object_view {
+    (
+        $(#[$meta:meta])* $name:ident {
+            $($(#[$field_meta:meta])* $get:ident / $set:ident: $ty:ty = $key:literal),+ $(,)?
+        }
+    ) => {
         $(#[$meta])*
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct $name {
-            $($(#[$field_meta])* pub $field: Option<$ty>,)+
-            /// Members without a typed field, and known members of another type.
-            pub extra: Map<String, Value>,
-        }
+        #[derive(Clone, Debug, Default, PartialEq, ::serde::Serialize, ::serde::Deserialize)]
+        #[serde(transparent)]
+        pub struct $name(
+            /// The stored object, with members of any type in their original order.
+            pub ::serde_json::Map<String, ::serde_json::Value>,
+        );
 
-        impl Sparse for $name {
-            fn from_map(map: &Map<String, Value>) -> Self {
-                let mut record = Self::default();
-                for (key, value) in map {
-                    let typed = match key.as_str() {
-                        $($key => <$ty as Member>::read(value).map(|read| record.$field = Some(read)),)+
-                        _ => None,
-                    };
-                    if typed.is_none() {
-                        record.extra.insert(key.clone(), value.clone());
-                    }
+        impl $name {
+            $(
+                $(#[$field_meta])*
+                #[must_use]
+                pub fn $get(&self) -> Option<$ty> {
+                    $crate::settings_manager::records::get_member(&self.0, $key)
                 }
-                record
-            }
 
-            fn into_map(self) -> Map<String, Value> {
-                let mut map = Map::new();
-                $(if let Some(value) = self.$field {
-                    map.insert($key.to_owned(), Member::write(value));
-                })+
-                for (key, value) in self.extra {
-                    map.entry(key).or_insert(value);
+                #[doc = concat!("Sets `", $key, "` in place, appending it when new; `None` removes it.")]
+                pub fn $set(&mut self, value: Option<$ty>) {
+                    $crate::settings_manager::records::set_member(&mut self.0, $key, value);
                 }
-                map
-            }
-        }
-
-        impl Serialize for $name {
-            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-                self.clone().into_map().serialize(serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for $name {
-            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-                Ok(Self::from_map(&Map::deserialize(deserializer)?))
-            }
+            )+
         }
     };
 }
+pub(super) use object_view;
 
-impl Member for ProviderRetrySettings {
-    fn read(value: &Value) -> Option<Self> {
-        value.as_object().map(Self::from_map)
-    }
-    fn write(self) -> Value {
-        Value::Object(self.into_map())
-    }
-}
-
-sparse_record! {
+object_view! {
     /// Context compaction preferences.
     CompactionSettings {
         /// Whether compaction runs automatically.
-        enabled: bool = "enabled",
+        enabled / set_enabled: bool = "enabled",
         /// Tokens reserved for the prompt and response.
-        reserve_tokens: f64 = "reserveTokens",
+        reserve_tokens / set_reserve_tokens: f64 = "reserveTokens",
         /// Recent tokens kept verbatim.
-        keep_recent_tokens: f64 = "keepRecentTokens",
+        keep_recent_tokens / set_keep_recent_tokens: f64 = "keepRecentTokens",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Branch summarization preferences.
     BranchSummarySettings {
         /// Tokens reserved for the prompt and response.
-        reserve_tokens: f64 = "reserveTokens",
+        reserve_tokens / set_reserve_tokens: f64 = "reserveTokens",
         /// Whether the summarize prompt is skipped.
-        skip_prompt: bool = "skipPrompt",
+        skip_prompt / set_skip_prompt: bool = "skipPrompt",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Provider-level request retry preferences.
     ProviderRetrySettings {
         /// Provider request timeout in milliseconds.
-        timeout_ms: f64 = "timeoutMs",
+        timeout_ms / set_timeout_ms: f64 = "timeoutMs",
         /// Provider retry attempts.
-        max_retries: f64 = "maxRetries",
+        max_retries / set_max_retries: f64 = "maxRetries",
         /// Longest server-requested delay accepted before failing.
-        max_retry_delay_ms: f64 = "maxRetryDelayMs",
+        max_retry_delay_ms / set_max_retry_delay_ms: f64 = "maxRetryDelayMs",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Automatic retry preferences.
     RetrySettings {
         /// Whether failed requests are retried.
-        enabled: bool = "enabled",
+        enabled / set_enabled: bool = "enabled",
         /// Retry attempts.
-        max_retries: f64 = "maxRetries",
+        max_retries / set_max_retries: f64 = "maxRetries",
         /// Base delay of the exponential backoff in milliseconds.
-        base_delay_ms: f64 = "baseDelayMs",
+        base_delay_ms / set_base_delay_ms: f64 = "baseDelayMs",
         /// Provider-level retry preferences.
-        provider: ProviderRetrySettings = "provider",
+        provider / set_provider: ProviderRetrySettings = "provider",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Terminal presentation preferences.
     TerminalSettings {
         /// Whether inline images are shown.
-        show_images: bool = "showImages",
+        show_images / set_show_images: bool = "showImages",
         /// Preferred inline image width in terminal cells.
-        image_width_cells: f64 = "imageWidthCells",
+        image_width_cells / set_image_width_cells: f64 = "imageWidthCells",
         /// Whether empty rows are cleared when content shrinks.
-        clear_on_shrink: bool = "clearOnShrink",
+        clear_on_shrink / set_clear_on_shrink: bool = "clearOnShrink",
         /// Whether terminal progress indicators are shown.
-        show_terminal_progress: bool = "showTerminalProgress",
+        show_terminal_progress / set_show_terminal_progress: bool = "showTerminalProgress",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Image handling preferences.
     ImageSettings {
         /// Whether images are resized for model compatibility.
-        auto_resize: bool = "autoResize",
+        auto_resize / set_auto_resize: bool = "autoResize",
         /// Whether images are withheld from model providers.
-        block_images: bool = "blockImages",
+        block_images / set_block_images: bool = "blockImages",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Custom token budgets per thinking level.
     ThinkingBudgetsSettings {
         /// Budget for the minimal level.
-        minimal: f64 = "minimal",
+        minimal / set_minimal: f64 = "minimal",
         /// Budget for the low level.
-        low: f64 = "low",
+        low / set_low: f64 = "low",
         /// Budget for the medium level.
-        medium: f64 = "medium",
+        medium / set_medium: f64 = "medium",
         /// Budget for the high level.
-        high: f64 = "high",
+        high / set_high: f64 = "high",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Markdown rendering preferences.
     MarkdownSettings {
         /// Indentation of rendered code blocks.
-        code_block_indent: String = "codeBlockIndent",
+        code_block_indent / set_code_block_indent: String = "codeBlockIndent",
     }
 }
 
-sparse_record! {
+object_view! {
     /// Warning preferences.
     WarningSettings {
         /// Whether the extra-usage warning is shown.
-        anthropic_extra_usage: bool = "anthropicExtraUsage",
+        anthropic_extra_usage / set_anthropic_extra_usage: bool = "anthropicExtraUsage",
     }
 }
 

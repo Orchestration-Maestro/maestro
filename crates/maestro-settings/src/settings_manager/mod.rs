@@ -20,7 +20,7 @@ use serde_json::{Map, Value};
 use conversion::{convert, merge_one_level, parse_document, to_text};
 use persistence::{Edit, Queue};
 
-pub use entries::{PackageFilters, PackageSource, SettingsListEntry};
+pub use entries::{FilteredPackage, PackageSource, SettingsListEntry};
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_storage::FileSettingsStorage;
 pub use memory_storage::InMemorySettingsStorage;
@@ -58,10 +58,13 @@ struct NotANumber {
 }
 
 impl NotANumber {
-    /// Forgets results that a document now defines itself.
-    fn supersede(&mut self, document: &Map<String, Value>) {
-        self.editor_padding_x &= !document.contains_key("editorPaddingX");
-        self.autocomplete_max_visible &= !document.contains_key("autocompleteMaxVisible");
+    /// The results that a document does not define itself.
+    fn unless_defined_by(&self, document: &Map<String, Value>) -> Self {
+        Self {
+            editor_padding_x: self.editor_padding_x && !document.contains_key("editorPaddingX"),
+            autocomplete_max_visible: self.autocomplete_max_visible
+                && !document.contains_key("autocompleteMaxVisible"),
+        }
     }
 }
 
@@ -126,8 +129,12 @@ pub struct SettingsManager {
     project: Scope,
     /// Global merged with project, then with any runtime overrides.
     effective: Map<String, Value>,
-    /// Typed `NaN` results awaiting a reload.
-    not_a_number: NotANumber,
+    /// The `NaN` results of the accepted global scope, which setters change and
+    /// only a global load discards.
+    accepted_nan: NotANumber,
+    /// The accepted `NaN` results that no project value or applied override
+    /// supersedes.
+    effective_nan: NotANumber,
     /// The ordered write queue and unsaved edits.
     queue: Queue,
 }
@@ -142,7 +149,8 @@ impl SettingsManager {
             global: Scope::default(),
             project: Scope::default(),
             effective: Map::new(),
-            not_a_number: NotANumber::default(),
+            accepted_nan: NotANumber::default(),
+            effective_nan: NotANumber::default(),
             queue,
         };
         manager.load_scope(SettingsScope::Global);
@@ -164,7 +172,8 @@ impl SettingsManager {
         )))
     }
 
-    /// Creates a manager over in-memory storage seeded with global settings.
+    /// Creates a manager over in-memory storage seeded with global settings after
+    /// the stored-format conversions.
     #[must_use]
     pub fn in_memory(settings: Settings) -> Self {
         let mut seed = settings.0;
@@ -207,7 +216,7 @@ impl SettingsManager {
 
     /// Layers runtime preferences over the effective settings without saving them.
     pub fn apply_overrides(&mut self, overrides: Settings) {
-        self.not_a_number.supersede(&overrides.0);
+        self.effective_nan = self.effective_nan.unless_defined_by(&overrides.0);
         let effective = std::mem::take(&mut self.effective);
         self.effective = merge_one_level(effective, overrides.0);
     }
@@ -228,7 +237,7 @@ impl SettingsManager {
         match self.read_scope(scope) {
             Ok(settings) => {
                 if scope == SettingsScope::Global {
-                    self.not_a_number = NotANumber::default();
+                    self.accepted_nan = NotANumber::default();
                 }
                 *self.scope_mut(scope) = Scope {
                     settings,
@@ -264,10 +273,11 @@ impl SettingsManager {
     fn rebuild(&mut self) {
         self.effective =
             merge_one_level(self.global.settings.clone(), self.project.settings.clone());
-        self.not_a_number.supersede(&self.project.settings);
+        self.effective_nan = self.accepted_nan.unless_defined_by(&self.project.settings);
     }
 
-    /// Publishes edits to a scope immediately and queues one save of them.
+    /// Publishes edits to a scope immediately and queues one save of them unless
+    /// the scope's load failed.
     fn edit(&mut self, scope: SettingsScope, changes: Vec<Change>) {
         let document = &mut self.scope_mut(scope).settings;
         let edits: Vec<Edit> = changes

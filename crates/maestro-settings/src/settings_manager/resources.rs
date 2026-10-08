@@ -2,8 +2,8 @@
 
 use serde_json::Value;
 
-use super::entries::{PackageSource, SettingsListEntry, write_entries};
-use super::records::{Sparse, WarningSettings};
+use super::entries::{PackageSource, SettingsListEntry};
+use super::records::{Member, WarningSettings};
 use super::{Change, SettingsManager, SettingsScope};
 
 impl SettingsManager {
@@ -17,7 +17,7 @@ impl SettingsManager {
         self.edit(scope, vec![Change::field(field, Some(value))]);
     }
 
-    /// Returns the configured package sources, project entries replacing global ones.
+    /// Returns the configured package sources; a project list replaces the global one.
     #[must_use]
     pub fn get_packages(&self) -> Vec<PackageSource> {
         let stored = self.effective.get("packages").and_then(Value::as_array);
@@ -44,12 +44,12 @@ impl SettingsManager {
 
     /// Replaces the global extension paths.
     pub fn set_extension_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Global, "extensions", write_entries(value));
+        self.set_list(SettingsScope::Global, "extensions", Member::write(value));
     }
 
     /// Replaces the project extension paths.
     pub fn set_project_extension_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Project, "extensions", write_entries(value));
+        self.set_list(SettingsScope::Project, "extensions", Member::write(value));
     }
 
     /// Returns the configured skill paths.
@@ -60,12 +60,12 @@ impl SettingsManager {
 
     /// Replaces the global skill paths.
     pub fn set_skill_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Global, "skills", write_entries(value));
+        self.set_list(SettingsScope::Global, "skills", Member::write(value));
     }
 
     /// Replaces the project skill paths.
     pub fn set_project_skill_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Project, "skills", write_entries(value));
+        self.set_list(SettingsScope::Project, "skills", Member::write(value));
     }
 
     /// Returns the configured prompt template paths.
@@ -76,12 +76,12 @@ impl SettingsManager {
 
     /// Replaces the global prompt template paths.
     pub fn set_prompt_template_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Global, "prompts", write_entries(value));
+        self.set_list(SettingsScope::Global, "prompts", Member::write(value));
     }
 
     /// Replaces the project prompt template paths.
     pub fn set_project_prompt_template_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Project, "prompts", write_entries(value));
+        self.set_list(SettingsScope::Project, "prompts", Member::write(value));
     }
 
     /// Returns the configured theme paths.
@@ -92,23 +92,23 @@ impl SettingsManager {
 
     /// Replaces the global theme paths.
     pub fn set_theme_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Global, "themes", write_entries(value));
+        self.set_list(SettingsScope::Global, "themes", Member::write(value));
     }
 
     /// Replaces the project theme paths.
     pub fn set_project_theme_paths(&mut self, value: Vec<SettingsListEntry>) {
-        self.set_list(SettingsScope::Project, "themes", write_entries(value));
+        self.set_list(SettingsScope::Project, "themes", Member::write(value));
     }
 
     /// Returns the warning preferences; unset members stay unset.
     #[must_use]
     pub fn get_warnings(&self) -> WarningSettings {
-        self.record("warnings")
+        WarningSettings(self.object("warnings").cloned().unwrap_or_default())
     }
 
     /// Replaces the global warning preferences.
     pub fn set_warnings(&mut self, value: WarningSettings) {
-        self.set_global("warnings", Value::Object(value.into_map()));
+        self.set_global("warnings", Value::Object(value.0));
     }
 }
 

@@ -68,12 +68,14 @@ pub(super) fn share(storage: impl SettingsStorage + 'static) -> SettingsStorageH
 /// Raw-text storage for one scope at a time.
 pub trait SettingsStorage: thread_bound::StorageThreadBound {
     /// Runs `update` exactly once, synchronously, with the current raw text
-    /// (`None` when the scope has never been written).
+    /// (`None` when the scope has never been written), unless the adapter fails
+    /// to acquire its exclusion or to read first; it then returns that failure
+    /// without calling `update`.
     ///
     /// `Ok(None)` leaves the stored text untouched, `Ok(Some(text))` replaces it
-    /// and `Err` propagates without writing. File adapters hold their lock from
-    /// before the read until after the write; a missing file runs `update`
-    /// before any directory or lock is created.
+    /// and `Err` propagates without writing. Adapters hold their exclusion from
+    /// before the read until after the write; the file adapter runs `update` for
+    /// a missing file before any directory or lock is created.
     ///
     /// # Errors
     ///

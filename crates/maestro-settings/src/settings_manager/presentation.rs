@@ -6,12 +6,13 @@ use serde_json::Value;
 
 use super::SettingsManager;
 use super::conversion::number;
-use super::records::{ImageSettings, MarkdownSettings, TerminalSettings};
 use super::vocabulary::{DoubleEscapeAction, TreeFilterMode};
 
-/// Environment variable that enables clearing empty rows when none is configured.
+/// Environment variable that enables clearing empty rows when the preference is
+/// neither a boolean nor `null`.
 const CLEAR_ON_SHRINK_ENV: &str = "MAESTRO_CLEAR_ON_SHRINK";
-/// Environment variable that shows the hardware cursor when none is configured.
+/// Environment variable that shows the hardware cursor when the preference is
+/// not a boolean.
 const HARDWARE_CURSOR_ENV: &str = "MAESTRO_HARDWARE_CURSOR";
 
 /// Whether an environment variable is set to exactly `1`.
@@ -20,7 +21,9 @@ fn env_enabled(name: &str) -> bool {
 }
 
 impl SettingsManager {
-    /// Returns the session directory; an exact `~` or `~/` prefix expands to the home directory.
+    /// Returns the session directory. An exact `~` reads as the home directory and
+    /// a `~/` prefix is joined onto it; any other text, and any text while the
+    /// home directory is unknown, is returned as written.
     #[must_use]
     pub fn get_session_dir(&self) -> Option<PathBuf> {
         let configured = self.text("sessionDir")?;
@@ -37,9 +40,7 @@ impl SettingsManager {
     /// Returns whether inline images are shown (default true).
     #[must_use]
     pub fn get_show_images(&self) -> bool {
-        self.record::<TerminalSettings>("terminal")
-            .show_images
-            .unwrap_or(true)
+        self.nested("terminal", "showImages").unwrap_or(true)
     }
 
     /// Shows or hides inline images.
@@ -47,15 +48,16 @@ impl SettingsManager {
         self.set_global_key("terminal", "showImages", value);
     }
 
-    /// Returns the inline image width in cells (default 60, at least 1).
+    /// Returns the inline image width in cells: a stored number rounded down with a
+    /// minimum of 1, or 60 when it is unset or not a number.
     #[must_use]
     pub fn get_image_width_cells(&self) -> f64 {
-        self.record::<TerminalSettings>("terminal")
-            .image_width_cells
-            .map_or(60.0, |width| width.floor().max(1.0))
+        self.nested("terminal", "imageWidthCells")
+            .map_or(60.0, |width: f64| width.floor().max(1.0))
     }
 
-    /// Sets the inline image width in cells, rounded down to at least 1.
+    /// Sets the inline image width in cells, rounded down with a minimum of 1;
+    /// `NaN` and positive infinity are stored as `null`.
     pub fn set_image_width_cells(&mut self, value: f64) {
         let width = value.floor();
         let width = if width.is_nan() {
@@ -66,13 +68,12 @@ impl SettingsManager {
         self.set_global_key("terminal", "imageWidthCells", number(width));
     }
 
-    /// Returns whether empty rows are cleared when content shrinks. A configured
-    /// value, including `null`, wins over the environment.
+    /// Returns whether empty rows are cleared when content shrinks: a stored
+    /// boolean, `false` for a stored `null`, and otherwise the environment.
     #[must_use]
     pub fn get_clear_on_shrink(&self) -> bool {
         let configured = self
-            .effective
-            .get("terminal")
+            .object("terminal")
             .and_then(|terminal| terminal.get("clearOnShrink"));
         match configured {
             Some(Value::Bool(value)) => *value,
@@ -89,8 +90,7 @@ impl SettingsManager {
     /// Returns whether terminal progress indicators are shown (default false).
     #[must_use]
     pub fn get_show_terminal_progress(&self) -> bool {
-        self.record::<TerminalSettings>("terminal")
-            .show_terminal_progress
+        self.nested("terminal", "showTerminalProgress")
             .unwrap_or(false)
     }
 
@@ -102,9 +102,7 @@ impl SettingsManager {
     /// Returns whether images are resized for model compatibility (default true).
     #[must_use]
     pub fn get_image_auto_resize(&self) -> bool {
-        self.record::<ImageSettings>("images")
-            .auto_resize
-            .unwrap_or(true)
+        self.nested("images", "autoResize").unwrap_or(true)
     }
 
     /// Enables or disables image resizing.
@@ -115,9 +113,7 @@ impl SettingsManager {
     /// Returns whether images are withheld from model providers (default false).
     #[must_use]
     pub fn get_block_images(&self) -> bool {
-        self.record::<ImageSettings>("images")
-            .block_images
-            .unwrap_or(false)
+        self.nested("images", "blockImages").unwrap_or(false)
     }
 
     /// Blocks or allows images for model providers.
@@ -125,13 +121,11 @@ impl SettingsManager {
         self.set_global_key("images", "blockImages", value);
     }
 
-    /// Returns the double-escape action (default tree).
+    /// Returns the double-escape action (default tree); unrecognized text is retained.
     #[must_use]
     pub fn get_double_escape_action(&self) -> DoubleEscapeAction {
         self.text("doubleEscapeAction")
-            .map_or(DoubleEscapeAction::Tree, |text| {
-                DoubleEscapeAction::from_text(&text)
-            })
+            .map_or(DoubleEscapeAction::Tree, DoubleEscapeAction::from_text)
     }
 
     /// Sets the double-escape action.
@@ -139,11 +133,12 @@ impl SettingsManager {
         self.set_global("doubleEscapeAction", value);
     }
 
-    /// Returns the tree filter mode; unrecognized values read as the default.
+    /// Returns the tree filter mode; unrecognized or wrong-typed values read as the
+    /// default.
     #[must_use]
     pub fn get_tree_filter_mode(&self) -> TreeFilterMode {
         self.text("treeFilterMode")
-            .and_then(|text| TreeFilterMode::from_text(&text))
+            .and_then(TreeFilterMode::from_text)
             .unwrap_or(TreeFilterMode::Default)
     }
 
@@ -152,8 +147,8 @@ impl SettingsManager {
         self.set_global("treeFilterMode", value.as_str());
     }
 
-    /// Returns whether the hardware cursor is shown; an unset or `null` value
-    /// falls back to the environment.
+    /// Returns whether the hardware cursor is shown; an unset, `null` or
+    /// wrong-typed value falls back to the environment.
     #[must_use]
     pub fn get_show_hardware_cursor(&self) -> bool {
         self.flag("showHardwareCursor")
@@ -165,10 +160,12 @@ impl SettingsManager {
         self.set_global("showHardwareCursor", value);
     }
 
-    /// Returns the editor's horizontal padding (default 0).
+    /// Returns the editor's horizontal padding: `NaN` while a `NaN` setter result
+    /// is not superseded, otherwise the stored number, or 0 when it is unset or not
+    /// a number.
     #[must_use]
     pub fn get_editor_padding_x(&self) -> f64 {
-        if self.not_a_number.editor_padding_x {
+        if self.effective_nan.editor_padding_x {
             return f64::NAN;
         }
         self.effective
@@ -177,17 +174,20 @@ impl SettingsManager {
             .unwrap_or(0.0)
     }
 
-    /// Sets the editor's horizontal padding, rounded down into 0 to 3.
+    /// Sets the editor's horizontal padding, rounded down into 0 to 3; `NaN` is
+    /// kept as the typed result and stored as `null`.
     pub fn set_editor_padding_x(&mut self, value: f64) {
         let padding = clamp_floor(value, 0.0, 3.0);
-        self.not_a_number.editor_padding_x = padding.is_nan();
+        self.accepted_nan.editor_padding_x = padding.is_nan();
         self.set_global("editorPaddingX", number(padding));
     }
 
-    /// Returns the visible autocomplete rows (default 5).
+    /// Returns the visible autocomplete rows: `NaN` while a `NaN` setter result is
+    /// not superseded, otherwise the stored number, or 5 when it is unset or not a
+    /// number.
     #[must_use]
     pub fn get_autocomplete_max_visible(&self) -> f64 {
-        if self.not_a_number.autocomplete_max_visible {
+        if self.effective_nan.autocomplete_max_visible {
             return f64::NAN;
         }
         self.effective
@@ -196,18 +196,18 @@ impl SettingsManager {
             .unwrap_or(5.0)
     }
 
-    /// Sets the visible autocomplete rows, rounded down into 3 to 20.
+    /// Sets the visible autocomplete rows, rounded down into 3 to 20; `NaN` is kept
+    /// as the typed result and stored as `null`.
     pub fn set_autocomplete_max_visible(&mut self, value: f64) {
         let rows = clamp_floor(value, 3.0, 20.0);
-        self.not_a_number.autocomplete_max_visible = rows.is_nan();
+        self.accepted_nan.autocomplete_max_visible = rows.is_nan();
         self.set_global("autocompleteMaxVisible", number(rows));
     }
 
-    /// Returns the code block indentation (default two spaces).
+    /// Returns the code block indentation (two spaces when unset or not a string).
     #[must_use]
     pub fn get_code_block_indent(&self) -> String {
-        self.record::<MarkdownSettings>("markdown")
-            .code_block_indent
+        self.nested("markdown", "codeBlockIndent")
             .unwrap_or_else(|| "  ".to_owned())
     }
 }
@@ -221,24 +221,28 @@ fn clamp_floor(value: f64, low: f64, high: f64) -> f64 {
     floored.clamp(low, high) + 0.0
 }
 
-/// Joins `suffix` onto `home`, resolving empty, `.` and `..` segments and keeping a trailing separator.
+/// Joins `suffix` onto `home` with the platform's separators: `.` and `..` fold
+/// lexically in the whole path and a trailing separator is kept.
 fn join_normalized(home: &Path, suffix: &str) -> PathBuf {
-    let mut parts: Vec<Component<'_>> = home.components().collect();
-    for segment in suffix.split('/') {
-        match segment {
-            "" | "." => {}
-            ".." => match parts.last() {
+    let suffix_parts = Path::new(suffix)
+        .components()
+        .filter(|part| matches!(part, Component::Normal(_) | Component::ParentDir));
+    let mut parts: Vec<Component<'_>> = Vec::new();
+    for part in home.components().chain(suffix_parts) {
+        match part {
+            Component::CurDir => {}
+            Component::ParentDir => match parts.last() {
                 Some(Component::Normal(_)) => {
                     parts.pop();
                 }
                 Some(Component::RootDir | Component::Prefix(_)) => {}
-                _ => parts.push(Component::ParentDir),
+                _ => parts.push(part),
             },
-            name => parts.push(Component::Normal(name.as_ref())),
+            _ => parts.push(part),
         }
     }
     let mut path: PathBuf = parts.into_iter().collect();
-    if suffix.ends_with('/') {
+    if suffix.ends_with(std::path::is_separator) {
         path.push("");
     }
     path

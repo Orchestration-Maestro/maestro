@@ -50,6 +50,8 @@ vocabulary! {
         Sse = "sse",
         /// WebSocket.
         Websocket = "websocket",
+        /// WebSocket that continues from the context cached on the connection.
+        WebsocketCached = "websocket-cached",
         /// Choose the transport automatically.
         Auto = "auto",
     }
