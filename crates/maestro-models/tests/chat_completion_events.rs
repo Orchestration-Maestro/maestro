@@ -1293,7 +1293,7 @@ fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
     )
 }
 
-/// An error payload is described in full as deep as JSON text may nest; a deeper one is
+/// An error payload is described in full up to 127 nested arrays or objects; a deeper one is
 /// malformed, so it adds no description.
 async fn error_details_convert_to_the_json_limit() -> TestResult {
     let deepest = cases::DEEPEST_NESTING;
@@ -1319,8 +1319,8 @@ fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
     child_process::rerun("maestro_chat_bounds_error_detail_nesting", "nesting", &[])
 }
 
-/// A streamed signature is kept as deep as JSON text may nest; a deeper one is dropped and the
-/// call still completes.
+/// A streamed signature is kept up to 127 nested arrays or objects; a deeper one is dropped
+/// and the call still completes.
 async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
     let deepest = cases::DEEPEST_NESTING;
     let data = cases::nested_json(deepest - 1);
