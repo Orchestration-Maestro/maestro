@@ -11,8 +11,9 @@ handles remain usable after replacement, removal or clear.
 `complete` and `complete_simple` also invoke immediately, but return setup errors
 inside their futures. Options, hooks and cancellation signals reach the adapter
 unchanged; adapters own payload policy, credentials, I/O and provider defaults.
-Payload hooks can keep or replace a submitted value; response hooks observe
-status and copied headers before the adapter consumes a response body.
+A payload hook receives the submitted payload and returns the one to send, so it can
+keep, edit or replace it; a response hook observes status and headers before the adapter
+consumes a response body. Both receive the invocation's model, shared and read-only.
 
 The [offline model catalog](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/catalog.md) provides owned embedded descriptors,
 exact lookup, thinking-level selection, identity comparison and flat-rate costs.
@@ -22,6 +23,10 @@ explains explicit environment-key discovery and ambient configuration.
 
 The [model option helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
 copy common settings, adjust thinking budgets and classify context overflow.
+
+The [chat-completion guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md)
+covers direct streamed requests, header and cache policy, retries and the shared
+Cloudflare and Copilot helpers.
 
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
 

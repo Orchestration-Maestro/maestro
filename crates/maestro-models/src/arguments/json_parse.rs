@@ -64,7 +64,7 @@ pub fn parse_json_with_repair(json: &str) -> Result<serde_json::Value, crate::Di
 }
 
 /// Recognize the whitespace accepted around streamed JSON.
-pub(super) fn whitespace(ch: char) -> bool {
+pub(crate) fn whitespace(ch: char) -> bool {
     matches!(ch, '\u{09}'..='\u{0d}' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
 }
 

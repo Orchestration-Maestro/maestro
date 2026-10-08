@@ -273,7 +273,7 @@ mod tests {
             transport: Some(Transport::WebsocketCached),
             cache_retention: Some(CacheRetention::Long),
             session_id: Some("session".into()),
-            on_payload: Some(Arc::new(|_, _| Box::pin(async { Ok(None) }))),
+            on_payload: Some(Arc::new(|payload, _| Box::pin(async { Ok(payload) }))),
             on_response: Some(Arc::new(|_, _| Box::pin(async { Ok(()) }))),
             headers: Some([("x".into(), "y".into())].into()),
             timeout_ms: Some(123.0),
@@ -285,6 +285,9 @@ mod tests {
                     .unwrap()
                     .clone(),
             ),
+            fetch: Some(Arc::new(|_| {
+                Box::pin(async { Err(maestro_models::FetchError::Aborted) })
+            })),
         }
     }
     fn check_common(
@@ -313,6 +316,15 @@ mod tests {
         actual.signal.as_ref().unwrap().abort();
         assert!(expected.signal.as_ref().unwrap().is_aborted());
     }
+    fn check_fetch(
+        actual: &maestro_models::records::types::StreamOptions,
+        expected: &maestro_models::records::types::StreamOptions,
+    ) {
+        assert!(Arc::ptr_eq(
+            actual.fetch.as_ref().unwrap(),
+            expected.fetch.as_ref().unwrap()
+        ));
+    }
     fn completion_provider(
         output: &maestro_models::records::types::AssistantMessageEventStream,
         expected: &maestro_models::records::types::StreamOptions,
@@ -334,6 +346,7 @@ mod tests {
                 assert_eq!(conversation, context());
                 let options = options.unwrap();
                 check_common(&options.common, &raw_expected);
+                check_fetch(&options.common, &raw_expected);
                 assert_eq!(
                     options.extra,
                     serde_json::json!({"providerSpecific":"present","maxTokens":999})
@@ -349,6 +362,8 @@ mod tests {
                 assert_eq!(conversation, context());
                 let options = options.unwrap();
                 check_common(&options.common, &simple_expected);
+                check_fetch(&options.common, &simple_expected);
+                assert_eq!(options.tool_choice, Some(ToolChoice::Required));
                 assert_eq!(options.reasoning, Some(ThinkingLevel::Xhigh));
                 assert_eq!(
                     options.thinking_budgets,
@@ -401,6 +416,7 @@ mod tests {
                     medium: Some(3.0),
                     high: Some(4.0),
                 }),
+                tool_choice: Some(ToolChoice::Required),
             }),
         );
         assert_eq!(simple_count.load(std::sync::atomic::Ordering::SeqCst), 2);
@@ -431,18 +447,18 @@ mod tests {
         let response_calls = Arc::clone(calls);
         let on_payload: OnPayload = Arc::new(move |payload, descriptor| {
             payload_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert_eq!(descriptor, model("hooks"));
+            assert_eq!(*descriptor, model("hooks"));
             Box::pin(async move {
                 match payload["mode"].as_str().unwrap() {
-                    "replace" => Ok(Some(serde_json::json!({"stamp":2}))),
+                    "replace" => Ok(serde_json::json!({"stamp":2})),
                     "payload_error" => Err(error("payload failure")),
-                    _ => Ok(None),
+                    _ => Ok(payload),
                 }
             })
         });
         let on_response: OnResponse = Arc::new(move |response, descriptor| {
             response_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert_eq!(descriptor, model("hooks"));
+            assert_eq!(*descriptor, model("hooks"));
             assert_eq!(
                 response.headers.get("x").map(String::as_str),
                 Some("response")
@@ -466,11 +482,11 @@ mod tests {
                 let options = options.unwrap().common;
                 let mode = conversation.system_prompt.unwrap();
                 let payload = serde_json::json!({"mode":mode,"stamp":1});
-                let replacement = ready(options.on_payload.unwrap()(
-                    payload.clone(),
-                    descriptor.clone(),
+                let descriptor = Arc::new(descriptor);
+                let submitted = ready(options.on_payload.unwrap()(
+                    payload,
+                    Arc::clone(&descriptor),
                 ))?;
-                let submitted = replacement.unwrap_or(payload);
                 ready(options.on_response.unwrap()(
                     ProviderResponse {
                         status: if mode == "response_error" {

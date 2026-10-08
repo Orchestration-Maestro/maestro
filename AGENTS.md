@@ -119,6 +119,15 @@ The base owner-approved libraries are: tokio, reqwest, serde, serde_json,
 toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
 Ask before adding any unapproved crate; never add one silently.
 
+`maestro-models` pins `reqwest =0.13.5` (default features plus `stream`),
+`url =2.5.8`, `futures-core =0.3.34` and `futures-util =0.3.34` (`std` only),
+`httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.2`
+(`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
+`wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
+except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).
+The models crate reads server-sent events with its own reader, so no event-stream
+library is a dependency.
+
 Keep one current format for everything. No compatibility code.
 
 ## Public text
@@ -269,8 +278,10 @@ Tokio `=1.53.2`, defaults off, with `rt-multi-thread`, `sync` and `time`.
 Browser scheduling uses js-sys `=0.3.106`, wasm-bindgen `=0.2.129` and
 wasm-bindgen-futures `=0.4.79` with defaults; getrandom `=0.4.3` enables
 `wasm_js`. Compact serde_json `=1.0.151` retains `preserve_order` and the
-workspace-wide `float_roundtrip`. These MIT/Apache-2.0 libraries add no
-internal crate edge or public runtime API.
+workspace-wide `float_roundtrip`; the models crate adds `raw_value` to keep
+number syntax as written, and `arbitrary_precision` stays off because it changes
+every `Number`. These MIT/Apache-2.0 libraries add no internal crate edge or
+public runtime API.
 
 ## Approved toolkit libraries
 

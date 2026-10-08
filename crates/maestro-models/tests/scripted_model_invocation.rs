@@ -1453,6 +1453,7 @@ mod tests {
                 high: Some(123.0),
                 ..ThinkingBudgets::default()
             }),
+            ..SimpleStreamOptions::default()
         };
         let result = wait(complete_simple(
             model(&registration),
