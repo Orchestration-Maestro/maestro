@@ -10,6 +10,9 @@ use serde_json::Value;
 
 use super::{collections, references, scalars};
 
+/// Maximum number of distinct corrective messages retained per evaluation.
+const ERROR_LIMIT: usize = 8;
+
 #[derive(Default)]
 /// Failures and evaluated locations for one instance and schema branch.
 pub(super) struct Evaluation {
@@ -22,9 +25,21 @@ pub(super) struct Evaluation {
 }
 
 impl Evaluation {
+    /// Retain ordered distinct failures within the diagnostic limit.
+    fn add_errors(&mut self, errors: impl IntoIterator<Item = String>) {
+        for error in errors {
+            if self.errors.len() == ERROR_LIMIT {
+                break;
+            }
+            if !self.errors.contains(&error) {
+                self.errors.push(error);
+            }
+        }
+    }
+
     /// Append child errors and union its evaluated locations.
     fn merge(&mut self, mut other: Self) {
-        self.errors.append(&mut other.errors);
+        self.add_errors(other.errors);
         self.keys.append(&mut other.keys);
         self.indices.append(&mut other.indices);
     }
@@ -223,7 +238,7 @@ pub(super) fn check(schema: &Value, value: &Value) -> Vec<String> {
             continue;
         }
         match frame.instructions.pop_front() {
-            Some(Instruction::Errors(mut errors)) => frame.result.errors.append(&mut errors),
+            Some(Instruction::Errors(errors)) => frame.result.add_errors(errors),
             Some(Instruction::Children(batch)) => frame.pending = Some(batch),
             Some(Instruction::Unevaluated(job)) => frame
                 .instructions
@@ -320,11 +335,11 @@ fn apply<'a>(batch: Batch<'a>, path: &str, result: &mut Evaluation) -> Option<Ba
         _ => false,
     };
     if let Mode::Members(names) = batch.mode {
-        for (name, mut child) in names.into_iter().zip(batch.results) {
+        for (name, child) in names.into_iter().zip(batch.results) {
             if child.errors.is_empty() {
                 add_mark(&name, result);
             }
-            result.errors.append(&mut child.errors);
+            result.add_errors(child.errors);
         }
         return None;
     }
@@ -337,11 +352,11 @@ fn apply<'a>(batch: Batch<'a>, path: &str, result: &mut Evaluation) -> Option<Ba
         if valid && child.errors.is_empty() {
             result.merge(child);
         } else if !valid && (passing == 0 || matches!(batch.mode, Mode::All)) {
-            result.errors.extend(child.errors);
+            result.add_errors(child.errors);
         }
     }
     if !valid && let Some(summary) = summary {
-        result.errors.push(scalars::render(path, summary));
+        result.add_errors([scalars::render(path, summary)]);
     }
     None
 }
@@ -361,7 +376,7 @@ fn apply_collection(batch: &Batch<'_>, path: &str, result: &mut Evaluation) -> b
                 }
             }
             if passing != batch.results.len() {
-                result.errors.push(scalars::render(path, message));
+                result.add_errors([scalars::render(path, message)]);
             }
         }
         Mode::Count {
@@ -373,7 +388,7 @@ fn apply_collection(batch: &Batch<'_>, path: &str, result: &mut Evaluation) -> b
                 minimum.is_some_and(|limit| passing < limit)
                     || maximum.is_some_and(|limit| passing > limit)
             }) {
-                result.errors.push(scalars::render(path, message));
+                result.add_errors([scalars::render(path, message)]);
             }
         }
         Mode::Names(names) => {
@@ -384,10 +399,10 @@ fn apply_collection(batch: &Batch<'_>, path: &str, result: &mut Evaluation) -> b
                 .map(|(name, _)| name.as_str())
                 .collect();
             if !invalid.is_empty() {
-                result.errors.push(scalars::render(
+                result.add_errors([scalars::render(
                     path,
                     &format!("property names {} are invalid", invalid.join(", ")),
-                ));
+                )]);
             }
         }
         _ => return false,
@@ -451,9 +466,7 @@ fn apply_conditional<'a>(
     match batch.mode {
         Mode::Not => {
             if child.errors.is_empty() {
-                result
-                    .errors
-                    .push(scalars::render(path, "must not be valid"));
+                result.add_errors([scalars::render(path, "must not be valid")]);
             }
         }
         Mode::If { then, otherwise } => {
@@ -480,13 +493,13 @@ fn apply_conditional<'a>(
                 result.merge(child);
             } else {
                 if !then {
-                    result.errors.extend(child.errors);
+                    result.add_errors(child.errors);
                 }
                 let keyword = if then { "then" } else { "else" };
-                result.errors.push(scalars::render(
+                result.add_errors([scalars::render(
                     path,
                     &format!("must match \"{keyword}\" schema"),
-                ));
+                )]);
             }
         }
         _ => {}

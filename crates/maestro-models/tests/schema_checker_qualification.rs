@@ -983,3 +983,62 @@ fn maestro_requires_exact_array_pointer_indexes() {
         }
     }
 }
+
+#[test]
+fn maestro_limits_ordered_diagnostics_to_eight_distinct_messages() {
+    let schema = json!({"properties":{
+        "a":{"type":"number"},"b":{"type":"number"},"c":{"type":"number"},
+        "d":{"type":"number"},"e":{"type":"number"},"f":{"type":"number"},
+        "g":{"type":"number"},"h":{"type":"number"},"i":{"type":"number"}
+    }});
+    let arguments = json!({"a":{},"b":{},"c":{},"d":{},"e":{},"f":{},"g":{},"h":{},"i":{}});
+    assert_eq!(
+        check_object(schema, arguments.as_object().unwrap().clone()).unwrap_err(),
+        format!(
+            "Validation failed for tool \"check\":\n  - a: must be number\n  - b: must be number\n  - c: must be number\n  - d: must be number\n  - e: must be number\n  - f: must be number\n  - g: must be number\n  - h: must be number\n\nReceived arguments:\n{}",
+            serde_json::to_string_pretty(&arguments).unwrap()
+        )
+    );
+}
+
+#[test]
+fn maestro_reports_missing_dependencies_once_per_distinct_message() {
+    // The reference prints the same missing-b,c line twice; Maestro prints it once.
+    let schema = json!({"dependentRequired":{"a":["b","c"]}});
+    let arguments = json!({"a":1});
+    assert_eq!(
+        check_object(schema.clone(), arguments.as_object().unwrap().clone()).unwrap_err(),
+        "Validation failed for tool \"check\":\n  - root: must have properties b, c when property a is present\n\nReceived arguments:\n{\n  \"a\": 1\n}"
+    );
+    assert_eq!(
+        check_object(
+            json!({"allOf":[schema.clone(),schema]}),
+            arguments.as_object().unwrap().clone()
+        )
+        .unwrap_err(),
+        "Validation failed for tool \"check\":\n  - root: must have properties b, c when property a is present\n\nReceived arguments:\n{\n  \"a\": 1\n}"
+    );
+}
+
+#[test]
+fn maestro_resolves_relative_references_against_the_enclosing_id() {
+    for keyword in ["$ref", "$dynamicRef"] {
+        let schema = json!({
+            "$id":"https://e.example/root/",
+            "$defs":{
+                "number":{"$id":"target","type":"number"},
+                "string":{"$id":"sub/target","type":"string"}
+            },
+            "properties":{"n":{"$id":"sub/", keyword:"target"}}
+        });
+        // The reference accepts n:1 and rejects n:"x" by using the document root.
+        assert_eq!(
+            check_object(schema.clone(), json!({"n":1}).as_object().unwrap().clone()).unwrap_err(),
+            "Validation failed for tool \"check\":\n  - n: must be string\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+        );
+        assert_eq!(
+            check_object(schema, json!({"n":"x"}).as_object().unwrap().clone()).unwrap(),
+            json!({"n":"x"}).as_object().unwrap().clone()
+        );
+    }
+}

@@ -61,14 +61,16 @@ offline schema resources, anchors, recursive and dynamic references, and evaluat
 property/item tracking. Both tuple forms can occur in one schema. References are
 never fetched; unknown resources and non-progressing cycles reject normally.
 Every string `$id`, including a fragment-only identifier, becomes the reference
-base for its subtree. Array pointer segments use exact unsigned index names:
+base for its subtree. Relative `$ref` and `$dynamicRef` targets resolve against
+that enclosing base, not the document root. Array pointer segments use exact unsigned index names:
 `0` and `1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 
-Failures report ordered field diagnostics followed by the original arguments as
-two-space-indented JSON. Numeric-index keys precede ordinary insertion-ordered
-keys. Returned diagnostics have an error name and message, without a manufactured
+Failures report at most eight distinct field diagnostics in evaluation order,
+followed by the original arguments as two-space-indented JSON. Repeated identical
+messages, including missing-dependency messages, appear only once. Numeric-index
+keys precede ordinary insertion-ordered keys. Returned diagnostics have an error name and message, without a manufactured
 stack or code.
 
 ```rust

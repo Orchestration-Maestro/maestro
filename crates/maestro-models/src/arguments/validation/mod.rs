@@ -33,7 +33,8 @@ pub fn validate_tool_call(
 /// References resolve offline against the original schema, without resource retrieval.
 ///
 /// # Errors
-/// Returns ordered corrective messages with the original, unconverted arguments.
+/// Returns at most eight distinct corrective messages in evaluation order,
+/// followed by the original, unconverted arguments.
 pub fn validate_tool_arguments(
     tool: &Tool,
     tool_call: &ToolCall,
