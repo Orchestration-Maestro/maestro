@@ -34,7 +34,11 @@ fn check_object(
         arguments,
         thought_signature: None,
     };
-    validate_tool_arguments(&tool, &call).map_err(|error| error.message)
+    validate_tool_arguments(&tool, &call).map_err(|error| {
+        assert_eq!(error.name.as_deref(), Some("Error"));
+        assert_eq!((error.stack, error.code), (None, None));
+        error.message
+    })
 }
 
 #[test]
@@ -429,6 +433,7 @@ fn maestro_keeps_schema_resource_origins_distinct() {
     for (reference, valid) in [
         ("https://one.example/schema", true),
         ("https://two.example/schema", false),
+        ("https://one.example/schema?q=1", false),
     ] {
         let schema = json!({"$id":"https://one.example/schema", "$defs":{"target":{"$id":"target", "type":"number"}},"properties":{"n":{"$ref":format!("{reference}#/$defs/target")}}});
         let tool = Tool {
@@ -613,27 +618,6 @@ fn maestro_checks_fractional_multiples_independently_of_sign() {
             assert!(check(json!({"multipleOf":divisor}), json!(invalid)).is_err());
         }
     }
-}
-
-#[test]
-fn maestro_discards_failed_condition_property_and_item_marks() {
-    let schema = json!({"if":{"required":["missing"],"properties":{"a":true}},"else":true,"unevaluatedProperties":false});
-    let error = check_object(
-        schema,
-        maestro_models::JsonObject::from_iter([("a".into(), json!(1))]),
-    )
-    .unwrap_err();
-    assert_eq!(
-        error,
-        "Validation failed for tool \"check\":\n  - root: must not have unevaluated properties\n\nReceived arguments:\n{\n  \"a\": 1\n}"
-    );
-    let schema =
-        json!({"if":{"prefixItems":[true],"minItems":2},"else":true,"unevaluatedItems":false});
-    assert!(
-        check(schema, json!([1]))
-            .unwrap_err()
-            .contains("must not have unevaluated items")
-    );
 }
 
 #[test]
@@ -875,64 +859,6 @@ fn maestro_checks_schema_valued_additional_and_unevaluated_members() {
 }
 
 #[test]
-fn maestro_isolates_nested_marks_and_carries_reference_marks() {
-    for (schema, accepted, rejected, diagnostics) in [
-        (
-            json!({"properties":{"nested":{"properties":{"a":true},"unevaluatedProperties":false}},"unevaluatedProperties":false}),
-            json!({"nested":{"a":1}}),
-            json!({"nested":{"a":1},"a":1}),
-            "  - value: must not have unevaluated properties",
-        ),
-        (
-            json!({"properties":{"nested":{"properties":{"a":true},"unevaluatedProperties":false}},"unevaluatedProperties":false}),
-            json!({"nested":{}}),
-            json!({"nested":{"nested":1}}),
-            "  - value.nested: must not have unevaluated properties\n  - value: must not have unevaluated properties",
-        ),
-        (
-            json!({"$id":"https://marks.example/", "$defs":{"members":{"properties":{"a":true}}},"$ref":"#/$defs/members","unevaluatedProperties":false}),
-            json!({"a":1}),
-            json!({"a":1,"b":2}),
-            "  - value: must not have unevaluated properties",
-        ),
-        (
-            json!({"$id":"https://marks.example/", "$defs":{"members":{"prefixItems":[true]}},"$ref":"#/$defs/members","unevaluatedItems":false}),
-            json!([1]),
-            json!([1, 2]),
-            "  - value: must not have unevaluated items",
-        ),
-    ] {
-        assert_outcomes(schema, accepted, rejected, diagnostics).unwrap();
-    }
-}
-
-#[test]
-fn maestro_discards_failed_combinator_marks() {
-    for (schema, accepted, rejected, diagnostics) in [
-        (
-            json!({"anyOf":[{"required":["missing"],"properties":{"a":true}},{"properties":{"b":true}}],"unevaluatedProperties":false}),
-            json!({"b":1}),
-            json!({"a":1,"b":1}),
-            "  - value: must not have unevaluated properties",
-        ),
-        (
-            json!({"oneOf":[{"minItems":2,"prefixItems":[true]},{"maxItems":2}],"unevaluatedItems":false}),
-            json!([]),
-            json!([1]),
-            "  - value: must not have unevaluated items",
-        ),
-        (
-            json!({"allOf":[{"required":["missing"],"properties":{"a":true,"missing":true}}],"unevaluatedProperties":false}),
-            json!({"missing":1}),
-            json!({"a":1}),
-            "  - value.missing: must have required properties missing\n  - value: must not have unevaluated properties",
-        ),
-    ] {
-        assert_outcomes(schema, accepted, rejected, diagnostics).unwrap();
-    }
-}
-
-#[test]
 fn maestro_accepts_dependent_schemas_and_active_contains_maximum() {
     assert_outcomes(
         json!({"dependentSchemas":{"a":{"required":["b"]}}}),
@@ -1040,5 +966,841 @@ fn maestro_resolves_relative_references_against_the_enclosing_id() {
             check_object(schema, json!({"n":"x"}).as_object().unwrap().clone()).unwrap(),
             json!({"n":"x"}).as_object().unwrap().clone()
         );
+    }
+}
+
+const ROOT: &str = "https://e.example/root/";
+const KEYWORDS: [&str; 3] = ["$ref", "$recursiveRef", "$dynamicRef"];
+const MUST_BE_STRING: &str = "  - n: must be string";
+const MUST_BE_NUMBER: &str = "  - n: must be number";
+const SCHEMA_IS_FALSE: &str = "  - n: schema is false";
+
+type Checked = Result<(), Box<dyn std::error::Error>>;
+type Rows<'a> = Vec<(Value, Vec<&'a str>)>;
+
+/// Check one complete public result; no diagnostic lines means unchanged acceptance.
+fn expect(schema: &Value, arguments: Value, lines: &[&str]) -> Checked {
+    let arguments: maestro_models::JsonObject = serde_json::from_value(arguments)?;
+    let expected = if lines.is_empty() {
+        Ok(arguments.clone())
+    } else {
+        Err(format!(
+            "Validation failed for tool \"check\":\n{}\n\nReceived arguments:\n{}",
+            lines.join("\n"),
+            serde_json::to_string_pretty(&arguments)?
+        ))
+    };
+    assert_eq!(
+        check_object(schema.clone(), arguments),
+        expected,
+        "{schema}"
+    );
+    Ok(())
+}
+
+/// Check each `(schema, rows)` pair with the schema applied to property `n`.
+fn expect_at_n(cases: Vec<(Value, Rows)>) -> Checked {
+    for (schema, rows) in cases {
+        let schema = json!({"properties":{"n":schema}});
+        for (n, lines) in rows {
+            expect(&schema, json!({"n":n}), &lines)?;
+        }
+    }
+    Ok(())
+}
+
+/// Leaf pair S: `"x"` is accepted and `1` is not a string.
+fn expect_string_leaf(schema: &Value) -> Checked {
+    expect(schema, json!({"n":"x"}), &[])?;
+    expect(schema, json!({"n":1}), &[MUST_BE_STRING])
+}
+
+/// Leaf pair N: `1` is accepted and `"x"` is not a number.
+fn expect_number_leaf(schema: &Value) -> Checked {
+    expect(schema, json!({"n":"x"}), &[MUST_BE_NUMBER])?;
+    expect(schema, json!({"n":1}), &[])
+}
+
+/// Leaf pair F: no input reaches an assertion.
+fn expect_unreachable(schema: &Value) -> Checked {
+    expect(schema, json!({"n":"x"}), &[SCHEMA_IS_FALSE])?;
+    expect(schema, json!({"n":1}), &[SCHEMA_IS_FALSE])
+}
+
+/// Every keyword word of the given length.
+fn keyword_words(length: usize) -> Vec<Vec<&'static str>> {
+    (0..length).fold(vec![vec![]], |words, _| {
+        words
+            .into_iter()
+            .flat_map(|word| KEYWORDS.map(|keyword| [word.clone(), vec![keyword]].concat()))
+            .collect()
+    })
+}
+
+/// One generated reference chain: nodes nest by `parents` (`None` is the document root)
+/// and are named by pointer (`P`), fragment (`F`), relative (`L`), directory (`D`)
+/// or absolute (`U`) identifiers.
+struct Chain {
+    direction: &'static str,
+    parents: Vec<Option<usize>>,
+    form: char,
+    keywords: Vec<&'static str>,
+}
+
+impl Chain {
+    fn id(&self, node: usize) -> Option<String> {
+        let name = node + 1;
+        match self.form {
+            'F' => Some(format!("#r{name}")),
+            'L' => Some(format!("r{name}")),
+            'D' => Some(format!("r{name}/")),
+            'U' => Some(format!("{ROOT}r{name}")),
+            _ => None,
+        }
+    }
+
+    fn uri(&self, node: Option<usize>) -> Result<url::Url, Box<dyn std::error::Error>> {
+        let Some(node) = node else {
+            return Ok(ROOT.parse()?);
+        };
+        let parent = self.uri(self.parents[node])?;
+        Ok(match self.id(node) {
+            Some(id) => parent.join(&id)?,
+            None => parent,
+        })
+    }
+
+    fn pointer(&self, node: usize) -> String {
+        let parent = self.parents[node].map_or_else(String::new, |parent| self.pointer(parent));
+        format!("{parent}/$defs/r{}", node + 1)
+    }
+
+    fn reference(
+        &self,
+        from: Option<usize>,
+        to: usize,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(match self.form {
+            'P' => format!("#{}", self.pointer(to)),
+            'F' => format!("{ROOT}#r{}", to + 1),
+            'U' => self.uri(Some(to))?.to_string(),
+            _ => self
+                .uri(from)?
+                .make_relative(&self.uri(Some(to))?)
+                .ok_or("relative reference")?,
+        })
+    }
+
+    fn node(&self, node: usize) -> Result<Value, Box<dyn std::error::Error>> {
+        let mut schema = json!({});
+        if let Some(id) = self.id(node) {
+            schema["$id"] = json!(id);
+        }
+        if node + 1 < self.parents.len() {
+            schema[self.keywords[node + 1]] = json!(self.reference(Some(node), node + 1)?);
+        } else {
+            schema["type"] = json!("string");
+        }
+        self.insert_children(&mut schema, Some(node))?;
+        Ok(schema)
+    }
+
+    fn insert_children(&self, schema: &mut Value, parent: Option<usize>) -> Checked {
+        for (node, _) in self
+            .parents
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| **p == parent)
+        {
+            schema["$defs"][format!("r{}", node + 1)] = self.node(node)?;
+        }
+        Ok(())
+    }
+
+    fn schema(&self) -> Result<Value, Box<dyn std::error::Error>> {
+        let mut schema = json!({
+            "$id": ROOT,
+            "properties": {"n": {self.keywords[0]: self.reference(None, 0)?}}
+        });
+        self.insert_children(&mut schema, None)?;
+        Ok(schema)
+    }
+
+    /// A recursive reference cannot leave the resource that declares it.
+    fn leaves_recursive_resource(&self) -> bool {
+        self.form != 'P'
+            && self
+                .keywords
+                .iter()
+                .enumerate()
+                .skip(1)
+                .any(|(hop, keyword)| {
+                    *keyword == "$recursiveRef" && self.direction.chars().nth(hop - 1) != Some('N')
+                })
+    }
+}
+
+/// Chains of one to three hops over sibling, nested and ancestor targets.
+fn chains() -> Vec<Chain> {
+    let shapes = [
+        ("", "-"),
+        ("S", "--"),
+        ("N", "-0"),
+        ("A", "1-"),
+        ("SS", "---"),
+        ("SN", "--1"),
+        ("SA", "22-"),
+        ("NS", "-00"),
+        ("NN", "-01"),
+        ("NA", "20-"),
+        ("AS", "1--"),
+        ("AN", "1-1"),
+        ("AA", "12-"),
+    ];
+    let mut chains = Vec::new();
+    for (direction, parents) in shapes {
+        let parents: Vec<_> = parents
+            .chars()
+            .map(|node| {
+                node.to_digit(10)
+                    .and_then(|node| usize::try_from(node).ok())
+            })
+            .collect();
+        for form in ['P', 'F', 'L', 'D', 'U'] {
+            for keywords in keyword_words(parents.len()) {
+                let parents = parents.clone();
+                chains.push(Chain {
+                    direction,
+                    parents,
+                    form,
+                    keywords,
+                });
+            }
+        }
+    }
+    assert_eq!(chains.len(), 1365);
+    chains
+}
+
+/// Check the chains of the given forms that do (or do not) leave a recursive resource.
+fn expect_chains(forms: &[char], leaves: bool) -> Checked {
+    let selected: Vec<_> = chains()
+        .into_iter()
+        .filter(|chain| forms.contains(&chain.form) && chain.leaves_recursive_resource() == leaves)
+        .collect();
+    assert!(!selected.is_empty());
+    for chain in selected {
+        if leaves {
+            expect_unreachable(&chain.schema()?)?;
+        } else {
+            expect_string_leaf(&chain.schema()?)?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_shares_one_resource_for_pointer_chains_of_every_keyword() {
+    expect_chains(&['P'], false).unwrap();
+}
+
+#[test]
+fn maestro_follows_fragment_relative_and_absolute_ids_across_resources() {
+    expect_chains(&['F', 'L', 'U'], false).unwrap();
+}
+
+#[test]
+fn maestro_confines_recursive_references_to_their_active_resource() {
+    expect_chains(&['F', 'L', 'U'], true).unwrap();
+}
+
+#[test]
+fn maestro_resolves_directory_ids_against_each_lexical_parent() {
+    expect_chains(&['D'], false).unwrap();
+}
+
+#[test]
+fn maestro_confines_recursive_search_for_directory_ids() {
+    expect_chains(&['D'], true).unwrap();
+}
+
+#[test]
+fn maestro_resolves_every_reference_kind_without_a_root_id() {
+    for keyword in KEYWORDS {
+        for (target, reference) in [
+            (json!({"type":"string"}), "#/$defs/child"),
+            (json!({"$id":"child","type":"string"}), "child"),
+            (
+                json!({"$id":"https://e.example/child","type":"string"}),
+                "https://e.example/child",
+            ),
+        ] {
+            let schema = json!({
+                "$defs":{"child":target},
+                "properties":{"n":{keyword:reference}}
+            });
+            expect_string_leaf(&schema).unwrap();
+        }
+    }
+}
+
+#[test]
+fn maestro_resolves_each_hop_against_its_target_resource() {
+    for outer in KEYWORDS {
+        for inner in KEYWORDS {
+            let schema = json!({
+                "$id":ROOT,
+                "$defs":{"container":{"$id":"sub/","$defs":{
+                    "entry":{"$id":"entry",inner:"leaf"},
+                    "leaf":{"$id":"leaf","type":"string"}
+                }}},
+                "properties":{"n":{outer:"sub/entry"}}
+            });
+            if inner == "$recursiveRef" {
+                expect_unreachable(&schema).unwrap();
+            } else {
+                expect_string_leaf(&schema).unwrap();
+            }
+        }
+    }
+}
+
+#[test]
+fn maestro_keeps_the_inherited_uri_for_every_target_return_route() {
+    for outer in KEYWORDS {
+        for (marks, reference) in [
+            (json!({"$id":"entry"}), format!("{ROOT}sub/entry")),
+            (json!({}), format!("{ROOT}sub/#/$defs/entry")),
+            (json!({}), "#/$defs/box/$defs/entry".to_owned()),
+            (json!({"$anchor":"go"}), format!("{ROOT}sub/#go")),
+            (json!({"$dynamicAnchor":"go"}), format!("{ROOT}sub/#go")),
+        ] {
+            let mut entry = marks;
+            entry["$ref"] = json!("leaf");
+            let schema = json!({
+                "$id":ROOT,
+                "$defs":{"box":{"$id":format!("{ROOT}sub/"),"$defs":{
+                    "entry":entry,
+                    "leaf":{"$id":"leaf","type":"string"}
+                }}},
+                "properties":{"n":{outer:reference}}
+            });
+            expect_string_leaf(&schema).unwrap();
+        }
+    }
+}
+
+#[test]
+fn maestro_keeps_local_pointers_valid_across_mixed_identifier_hops() {
+    for outer in KEYWORDS {
+        for inner in KEYWORDS {
+            let schema = json!({
+                "$id":ROOT,
+                "$defs":{"directory":{"$id":"sub/","$defs":{"entry":{
+                    "$id":"a", inner:"#/$defs/next",
+                    "$defs":{"next":{"$id":"#next","$ref":"#/$defs/end","$defs":{"end":{"type":"string"}}}}
+                }}}},
+                "properties":{"n":{outer:"sub/a"}}
+            });
+            expect_string_leaf(&schema).unwrap();
+        }
+    }
+}
+
+#[test]
+fn maestro_does_not_treat_every_hash_bearing_id_as_an_alias() {
+    for id in ["path#alias", "https://e.example/path#alias"] {
+        let schema = json!({
+            "$defs":{"target":{"$id":id,"type":"string"}},
+            "properties":{"n":{"$ref":id}}
+        });
+        expect_unreachable(&schema).unwrap();
+    }
+}
+
+#[test]
+fn maestro_selects_the_identified_resource_for_an_empty_fragment() {
+    for keyword in KEYWORDS {
+        let target = json!({"$id":"leaf","type":"string"});
+        let schema = json!({"$defs":{"target":target},"properties":{"n":{keyword:"leaf#"}}});
+        expect_string_leaf(&schema).unwrap();
+        for missing in ["missing#", "missing", "#missing"] {
+            let schema = json!({"$defs":{"target":target},"properties":{"n":{keyword:missing}}});
+            expect_unreachable(&schema).unwrap();
+        }
+    }
+}
+
+#[test]
+fn maestro_overrides_dynamic_anchors_only_for_anchor_references() {
+    for (target, reference, number) in [
+        (
+            json!({"$dynamicAnchor":"kind","type":"string"}),
+            "#/$defs/str",
+            false,
+        ),
+        (
+            json!({"$dynamicAnchor":"kind","type":"string"}),
+            "#%2F$defs%2Fstr",
+            false,
+        ),
+        (
+            json!({"$dynamicAnchor":"kind","$anchor":"str","type":"string"}),
+            "#str",
+            true,
+        ),
+        (json!({"$anchor":"kind","type":"string"}), "#kind", false),
+    ] {
+        let schema = json!({
+            "$id":ROOT,
+            "$defs":{"num":{"$dynamicAnchor":"kind","type":"number"},"str":target},
+            "properties":{"n":{"$dynamicRef":reference}}
+        });
+        if number {
+            expect_number_leaf(&schema).unwrap();
+        } else {
+            expect_string_leaf(&schema).unwrap();
+        }
+    }
+}
+
+/// A dynamic anchor declared in a resource that the reference chain enters but never evaluates.
+fn hidden_dynamic_schema(route: &str, outer: &str, via: bool) -> Value {
+    let entry = json!({"$dynamicRef":"https://e.example/leaf#kind"});
+    let (name, node, reference) = match route {
+        "anchor" => (
+            "entry",
+            json!({"$anchor":"entry","$dynamicRef":"https://e.example/leaf#kind"}),
+            "https://e.example/box/#entry",
+        ),
+        "tuple" => (
+            "tuple",
+            json!([entry]),
+            "https://e.example/box/#/$defs/tuple/0",
+        ),
+        _ => ("entry", entry, "https://e.example/box/#/$defs/entry"),
+    };
+    let mut schema = json!({
+        "$id":ROOT,
+        "$defs":{"box":{"$id":"https://e.example/box/","$defs":{
+            "override":{"$dynamicAnchor":"kind","type":"number"},
+            "leaf":{"$id":"https://e.example/leaf","$dynamicAnchor":"kind","type":"string"},
+            name:node
+        }}},
+        "properties":{"n":{outer:reference}}
+    });
+    if via {
+        schema["$defs"]["via"] = json!({"$id":"https://e.example/via","$ref":reference});
+        schema["properties"]["n"] = json!({outer:"https://e.example/via"});
+    }
+    schema
+}
+
+#[test]
+fn maestro_activates_the_target_resource_chain_for_dynamic_anchors() {
+    for route in ["pointer", "anchor", "tuple"] {
+        for outer in KEYWORDS {
+            for via in [false, true] {
+                expect_number_leaf(&hidden_dynamic_schema(route, outer, via)).unwrap();
+            }
+        }
+    }
+}
+
+#[test]
+fn maestro_finds_dynamic_anchors_declared_in_tuple_schemas() {
+    let schema = json!({
+        "$id":ROOT,
+        "$defs":{"box":{
+            "$id":"https://e.example/box/", "$ref":"#/$defs/entry",
+            "properties":{"unused":{"prefixItems":[{"$dynamicAnchor":"kind","type":"number"}]}},
+            "$defs":{
+                "entry":{"$dynamicRef":"https://e.example/leaf#kind"},
+                "leaf":{"$id":"https://e.example/leaf","$dynamicAnchor":"kind","type":"string"}
+            }
+        }},
+        "properties":{"n":{"$ref":"https://e.example/box/"}}
+    });
+    expect_number_leaf(&schema).unwrap();
+}
+
+#[test]
+fn maestro_isolates_dynamic_bindings_between_sibling_references() {
+    let mut schema = hidden_dynamic_schema("pointer", "$ref", false);
+    schema["properties"] = json!({
+        "a":{"$ref":"https://e.example/box/#/$defs/entry"},
+        "b":{"$dynamicRef":"https://e.example/leaf#kind"}
+    });
+    expect(&schema, json!({"a":1,"b":"x"}), &[]).unwrap();
+    expect(&schema, json!({"a":1,"b":1}), &["  - b: must be string"]).unwrap();
+    expect(
+        &schema,
+        json!({"a":"x","b":"x"}),
+        &["  - a: must be number"],
+    )
+    .unwrap();
+}
+
+#[test]
+fn maestro_binds_recursive_anchors_of_the_entered_resource() {
+    for keyword in KEYWORDS {
+        let schema = json!({
+            "$id":ROOT,
+            "$defs":{"box":{
+                "$id":"https://e.example/box/", "$recursiveAnchor":true, "type":"number",
+                "$defs":{"entry":{"$recursiveRef":"#"}}
+            }},
+            "properties":{"n":{keyword:"https://e.example/box/#/$defs/entry"}}
+        });
+        expect_number_leaf(&schema).unwrap();
+    }
+}
+
+/// An outer and an inner resource, each tagging its own instance level.
+fn tagged_resource(name: &str, next: &Value, extra: Value) -> Value {
+    let mut resource = json!({
+        "$id":format!("https://e.example/{name}"),
+        "properties":{"tag":{"const":name},"next":next}
+    });
+    if let (Value::Object(resource), Value::Object(extra)) = (&mut resource, extra) {
+        resource.extend(extra);
+    }
+    resource
+}
+
+#[test]
+fn maestro_selects_outermost_recursive_and_dynamic_bindings_by_instance_depth() {
+    let recursive = json!({"$recursiveRef":"#"});
+    let dynamic = json!({"$dynamicRef":"#node"});
+    for (outer_extra, inner_extra, next, accepted, rejected) in [
+        (
+            json!({"$recursiveAnchor":true}),
+            json!({"$recursiveAnchor":true}),
+            &recursive,
+            "outer",
+            "inner",
+        ),
+        (
+            json!({"$recursiveAnchor":true}),
+            json!({"$recursiveAnchor":false}),
+            &recursive,
+            "inner",
+            "outer",
+        ),
+        (
+            json!({"$dynamicAnchor":"node"}),
+            json!({"$dynamicAnchor":"node"}),
+            &dynamic,
+            "outer",
+            "inner",
+        ),
+        (
+            json!({"$dynamicAnchor":"node"}),
+            json!({"$dynamicAnchor":"other","$defs":{"local":{"$dynamicAnchor":"node"}}}),
+            &dynamic,
+            "outer",
+            "local",
+        ),
+    ] {
+        let outer = tagged_resource(
+            "outer",
+            &json!({"$ref":"https://e.example/inner"}),
+            outer_extra,
+        );
+        let schema = json!({
+            "$id":"https://e.example/",
+            "$defs":{"outer":outer,"inner":tagged_resource("inner", next, inner_extra)},
+            "properties":{"n":{"$ref":"https://e.example/outer"}}
+        });
+        let input =
+            |tag: &str| json!({"n":{"tag":"outer","next":{"tag":"inner","next":{"tag":tag}}}});
+        expect(&schema, input(accepted), &[]).unwrap();
+        let constant = ["  - n.next.next.tag: must be equal to constant"];
+        expect(&schema, input(rejected), &constant).unwrap();
+    }
+}
+
+#[test]
+fn maestro_rejects_reference_rings_of_every_keyword_mix() {
+    for size in 1..=3 {
+        for keywords in keyword_words(size) {
+            let mut schema = json!({"properties":{"n":{keywords[0]:"#/$defs/s0"}}});
+            for (index, keyword) in keywords.iter().enumerate() {
+                let next = format!("#/$defs/s{}", (index + 1) % size);
+                schema["$defs"][format!("s{index}")] = json!({*keyword: next});
+            }
+            expect_unreachable(&schema).unwrap();
+        }
+    }
+}
+
+const UP: &str = "  - n: must not have unevaluated properties";
+const UI: &str = "  - n: must not have unevaluated items";
+const NOT_VALID: &str = "  - n: must not be valid";
+const ANY_OF: &str = "  - n: must match a schema in anyOf";
+const ONE_OF: &str = "  - n: must match exactly one schema in oneOf";
+const THEN: &str = "  - n: must match \"then\" schema";
+const ELSE: &str = "  - n: must match \"else\" schema";
+const CONTAINS: &str = "  - n: must contain at least 1 valid item";
+const MIN_TWO_ITEMS: &str = "  - n: must not have fewer than 2 items";
+const REQUIRED_A: &str = "  - n.a: must have required properties a";
+const REQUIRED_B: &str = "  - n.b: must have required properties b";
+const REQUIRED_X: &str = "  - n.x: must have required properties x";
+const REQUIRED_Y: &str = "  - n.y: must have required properties y";
+
+#[test]
+fn maestro_exports_no_marks_from_negation() {
+    expect_at_n(vec![
+        (
+            json!({"not":{"properties":{"a":true},"minProperties":2},"unevaluatedProperties":false}),
+            vec![(json!({}), vec![]), (json!({"a":1}), vec![UP]), (json!({"a":1,"b":2}), vec![NOT_VALID, UP])],
+        ),
+        (
+            json!({"not":{"items":[true],"minItems":2},"unevaluatedItems":false}),
+            vec![(json!([]), vec![]), (json!([1]), vec![UI]), (json!([1, 2]), vec![NOT_VALID, UI])],
+        ),
+        (
+            json!({"not":{"properties":{"a":true},"required":["a"]},"unevaluatedProperties":false}),
+            vec![(json!({}), vec![]), (json!({"a":1}), vec![NOT_VALID, UP])],
+        ),
+        (
+            json!({"not":{"prefixItems":[true],"minItems":1},"unevaluatedItems":false}),
+            vec![(json!([]), vec![]), (json!([1]), vec![NOT_VALID, UI])],
+        ),
+        (
+            json!({"properties":{"a":true},"not":{"properties":{"b":true},"minProperties":3},"unevaluatedProperties":false}),
+            vec![(json!({"a":1}), vec![]), (json!({"a":1,"b":2}), vec![UP])],
+        ),
+        (
+            json!({"prefixItems":[true],"not":{"items":[true,true],"minItems":3},"unevaluatedItems":false}),
+            vec![(json!([1]), vec![]), (json!([1, 2]), vec![UI])],
+        ),
+    ])
+    .unwrap();
+}
+
+#[test]
+fn maestro_exports_conditional_marks_only_from_the_successful_branch() {
+    expect_at_n(vec![
+        (
+            json!({"if":{"properties":{"a":true},"required":["a"]},"then":{"properties":{"b":true}},"else":{"properties":{"c":true}},"unevaluatedProperties":false}),
+            vec![(json!({"a":1,"b":2}), vec![]), (json!({"c":2}), vec![]), (json!({"b":2}), vec![UP])],
+        ),
+        (
+            json!({"if":{"properties":{"a":true},"minProperties":2},"else":true,"unevaluatedProperties":false}),
+            vec![(json!({}), vec![]), (json!({"a":1}), vec![UP])],
+        ),
+        (
+            json!({"if":{"items":[true],"minItems":2},"then":{"prefixItems":[true,true]},"else":true,"unevaluatedItems":false}),
+            vec![(json!([]), vec![]), (json!([1]), vec![UI]), (json!([1, 2]), vec![])],
+        ),
+        (
+            json!({"if":{"properties":{"a":true}},"unevaluatedProperties":false}),
+            vec![(json!({"a":1}), vec![]), (json!({"b":2}), vec![UP])],
+        ),
+        (
+            json!({"if":{"properties":{"a":true}},"then":false,"unevaluatedProperties":false}),
+            vec![(json!({"a":1}), vec![THEN, UP])],
+        ),
+        (
+            json!({"if":false,"else":{"properties":{"a":true},"required":["b"]},"unevaluatedProperties":false}),
+            vec![(json!({"a":1}), vec![REQUIRED_B, ELSE, UP])],
+        ),
+    ])
+    .unwrap();
+}
+
+#[test]
+fn maestro_exports_marks_only_from_passing_combinator_branches() {
+    expect_at_n(vec![
+        (
+            json!({"allOf":[{"properties":{"a":true}},{"required":["b"],"properties":{"b":true}}],"unevaluatedProperties":false}),
+            vec![(json!({"a":1,"b":2}), vec![]), (json!({"a":1}), vec![REQUIRED_B, UP])],
+        ),
+        (
+            json!({"allOf":[{"prefixItems":[true]},{"items":[true,true],"minItems":2}],"unevaluatedItems":false}),
+            vec![(json!([1, 2]), vec![]), (json!([1]), vec![MIN_TWO_ITEMS, UI])],
+        ),
+        (
+            json!({"anyOf":[{"properties":{"a":true}},{"required":["b"],"properties":{"b":true}}],"unevaluatedProperties":false}),
+            vec![(json!({"a":1,"b":2}), vec![]), (json!({"a":1,"c":2}), vec![UP])],
+        ),
+        (
+            json!({"anyOf":[{"items":[true,true],"minItems":3},{"prefixItems":[true]}],"unevaluatedItems":false}),
+            vec![(json!([1]), vec![]), (json!([1, 2]), vec![UI])],
+        ),
+        (
+            json!({"anyOf":[{"properties":{"a":true},"required":["x"]},{"properties":{"b":true},"required":["y"]}],"unevaluatedProperties":false}),
+            vec![(json!({"a":1,"b":2}), vec![REQUIRED_X, REQUIRED_Y, ANY_OF, UP])],
+        ),
+        (
+            json!({"oneOf":[{"properties":{"a":true},"required":["a"]},{"properties":{"b":true},"required":["b"]}],"unevaluatedProperties":false}),
+            vec![
+                (json!({"a":1}), vec![]),
+                (json!({"a":1,"b":2}), vec![ONE_OF, UP]),
+                (json!({}), vec![REQUIRED_A, REQUIRED_B, ONE_OF]),
+            ],
+        ),
+        (
+            json!({"oneOf":[{"items":[true],"maxItems":1},{"prefixItems":[true,true],"minItems":2}],"unevaluatedItems":false}),
+            vec![(json!([1]), vec![]), (json!([1, 2]), vec![]), (json!([1, 2, 3]), vec![UI])],
+        ),
+        (
+            json!({"dependentSchemas":{"a":{"properties":{"a":true,"b":true},"required":["b"]}},"unevaluatedProperties":false}),
+            vec![(json!({}), vec![]), (json!({"a":1,"b":2}), vec![]), (json!({"a":1}), vec![REQUIRED_B, UP])],
+        ),
+    ])
+    .unwrap();
+}
+
+#[test]
+fn maestro_marks_object_members_only_when_they_succeed() {
+    expect_at_n(vec![
+        (
+            json!({"properties":{"a":{"type":"number"}},"unevaluatedProperties":false}),
+            vec![
+                (json!({}), vec![]),
+                (json!({"a":1}), vec![]),
+                (json!({"a":"x"}), vec!["  - n.a: must be number", UP]),
+                (json!({"a":1,"b":2}), vec![UP]),
+            ],
+        ),
+        (
+            json!({"patternProperties":{"^a":{"type":"number"},"a$":{"minimum":2}},"unevaluatedProperties":false}),
+            vec![
+                (json!({"a":2}), vec![]),
+                (json!({"a":1}), vec!["  - n.a: must be >= 2"]),
+                (json!({"a":"x"}), vec!["  - n.a: must be number"]),
+                (json!({"b":2}), vec![UP]),
+            ],
+        ),
+        (
+            json!({"properties":{"a":true},"additionalProperties":{"type":"number"},"unevaluatedProperties":false}),
+            vec![
+                (json!({"a":1,"b":2}), vec![]),
+                (json!({"a":1,"b":"x"}), vec!["  - n: must not have additional properties", UP]),
+            ],
+        ),
+        (
+            json!({"properties":{"a":{"properties":{"z":true},"unevaluatedProperties":false}},"unevaluatedProperties":false}),
+            vec![
+                (json!({"a":{"z":1}}), vec![]),
+                (json!({"a":{"z":1},"z":2}), vec![UP]),
+                (json!({"a":{"y":1}}), vec!["  - n.a: must not have unevaluated properties", UP]),
+            ],
+        ),
+        (
+            json!({"unevaluatedProperties":{"type":"number"}}),
+            vec![(json!({"a":1}), vec![]), (json!({"a":"x"}), vec![UP])],
+        ),
+    ])
+    .unwrap();
+}
+
+#[test]
+fn maestro_marks_array_items_only_when_they_succeed() {
+    expect_at_n(vec![
+        (
+            json!({"items":{"type":"number"},"unevaluatedItems":false}),
+            vec![(json!([]), vec![]), (json!([1]), vec![]), (json!([1, "x"]), vec!["  - n.1: must be number", UI])],
+        ),
+        (
+            json!({"prefixItems":[{"type":"number"}],"items":{"type":"string"},"unevaluatedItems":false}),
+            vec![
+                (json!([1, "x"]), vec![]),
+                (json!(["x", 1]), vec!["  - n.1: must be string", "  - n.0: must be number", UI]),
+            ],
+        ),
+        (
+            json!({"items":[{"type":"number"}],"unevaluatedItems":false}),
+            vec![(json!([1]), vec![]), (json!([1, 2]), vec![UI])],
+        ),
+        (
+            json!({"items":[{"type":"number"}],"prefixItems":[{"minimum":2}],"unevaluatedItems":false}),
+            vec![(json!([2]), vec![]), (json!([1]), vec!["  - n.0: must be >= 2"]), (json!([2, 3]), vec![UI])],
+        ),
+        (
+            json!({"prefixItems":[{"prefixItems":[true],"unevaluatedItems":false}],"unevaluatedItems":false}),
+            vec![(json!([[1]]), vec![]), (json!([[1], 2]), vec![UI])],
+        ),
+        (
+            json!({"unevaluatedItems":{"type":"number"}}),
+            vec![(json!([1]), vec![]), (json!(["x"]), vec![UI])],
+        ),
+    ])
+    .unwrap();
+}
+
+#[test]
+fn maestro_isolates_contains_item_marks_from_the_containing_array() {
+    expect_at_n(vec![
+        (
+            json!({"contains":{"type":"number"},"unevaluatedItems":false}),
+            vec![(json!([]), vec![CONTAINS]), (json!([1]), vec![UI]), (json!([1, "x"]), vec![UI])],
+        ),
+        (
+            json!({"contains":{"type":"number"},"items":true,"unevaluatedItems":false}),
+            vec![(json!([1]), vec![]), (json!(["x"]), vec![CONTAINS])],
+        ),
+        (
+            json!({"contains":false,"minContains":0,"unevaluatedItems":false}),
+            vec![(json!([]), vec![]), (json!([1]), vec![UI])],
+        ),
+        (
+            json!({"contains":{"type":"number"},"items":true,"minContains":1,"maxContains":1,"unevaluatedItems":false}),
+            vec![
+                (json!([1]), vec![]),
+                (json!([1, 2]), vec!["  - n: must contain at most 1 valid item"]),
+                (json!(["x"]), vec![CONTAINS]),
+            ],
+        ),
+        (
+            json!({"contains":{"prefixItems":[true]},"unevaluatedItems":false}),
+            vec![(json!([[1]]), vec![UI]), (json!([]), vec![CONTAINS])],
+        ),
+        (
+            json!({"contains":{"prefixItems":[true]},"items":true,"unevaluatedItems":false}),
+            vec![(json!([[1]]), vec![]), (json!([]), vec![CONTAINS])],
+        ),
+    ])
+    .unwrap();
+}
+
+#[test]
+fn maestro_carries_only_successful_reference_marks_for_every_keyword() {
+    for keyword in KEYWORDS {
+        for (unevaluated, members, rows) in [
+            (
+                "unevaluatedProperties",
+                json!({"properties":{"a":true}}),
+                vec![(json!({"a":1}), vec![]), (json!({"a":1,"b":2}), vec![UP])],
+            ),
+            (
+                "unevaluatedItems",
+                json!({"prefixItems":[true]}),
+                vec![(json!([1]), vec![]), (json!([1, 2]), vec![UI])],
+            ),
+            (
+                "unevaluatedProperties",
+                json!({"properties":{"a":true},"minProperties":2}),
+                vec![(
+                    json!({"a":1}),
+                    vec!["  - n: must not have fewer than 2 properties", UP],
+                )],
+            ),
+            (
+                "unevaluatedItems",
+                json!({"items":[true],"minItems":2}),
+                vec![(json!([1]), vec![MIN_TWO_ITEMS, UI])],
+            ),
+        ] {
+            let schema = json!({
+                "$id":ROOT, "$defs":{"members":members},
+                "properties":{"n":{keyword:"#/$defs/members",unevaluated:false}}
+            });
+            for (n, lines) in rows {
+                expect(&schema, json!({"n":n}), &lines).unwrap();
+            }
+        }
     }
 }

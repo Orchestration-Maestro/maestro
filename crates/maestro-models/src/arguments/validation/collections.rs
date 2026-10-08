@@ -4,7 +4,7 @@ use num_traits::ToPrimitive;
 use serde_json::{Map, Value};
 
 use super::{
-    check::{Batch, Instance, Instruction, Job, Mark, Mode},
+    check::{Batch, Instance, Instruction, Job, Mark, Marks, Mode},
     check::{is_schema, schema_array},
     diagnostics, scalars,
 };
@@ -17,8 +17,8 @@ pub(super) fn object<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>)
     let Instance::Json(Value::Object(value)) = job.value else {
         return;
     };
-    let patterns: Result<Patterns<'a>, _> = job
-        .schema
+    let schema = job.schema();
+    let patterns: Result<Patterns<'a>, _> = schema
         .get("patternProperties")
         .and_then(Value::as_object)
         .filter(|properties| properties.values().all(is_schema))
@@ -39,7 +39,7 @@ pub(super) fn object<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>)
         }
     };
     instructions.push(Instruction::Errors(scalars::required_errors(
-        job.schema, value, &job.path,
+        schema, value, &job.path,
     )));
     additional_properties(job, value, &patterns, instructions);
     for keyword in ["dependencies", "dependentRequired", "dependentSchemas"] {
@@ -59,14 +59,14 @@ fn additional_properties<'a>(
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     let Some(schema) = job
-        .schema
+        .schema()
         .get("additionalProperties")
         .filter(|schema| schema.is_boolean() || schema.is_object())
     else {
         return;
     };
     let declared = job
-        .schema
+        .schema()
         .get("properties")
         .and_then(Value::as_object)
         .filter(|properties| properties.values().all(is_schema));
@@ -84,15 +84,11 @@ fn additional_properties<'a>(
                 format!("{}/{key}", job.path),
             )
         });
-    let mut batch = members_batch(members);
-    let Mode::Members(marks) = batch.mode else {
-        return;
-    };
-    batch.mode = Mode::Aggregate {
-        marks,
-        message: "must not have additional properties".to_owned(),
-    };
-    instructions.push(Instruction::Children(batch));
+    instructions.push(aggregate(
+        job,
+        members,
+        "must not have additional properties",
+    ));
 }
 
 /// Apply every matching pattern schema to each object member.
@@ -114,7 +110,7 @@ fn pattern_properties<'a>(
                     format!("{}/{key}", job.path),
                 )
             });
-        instructions.push(Instruction::Children(members_batch(members)));
+        instructions.push(Instruction::Children(members_batch(job, members)));
     }
 }
 
@@ -125,7 +121,7 @@ fn properties<'a>(
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     if let Some(properties) = job
-        .schema
+        .schema()
         .get("properties")
         .and_then(Value::as_object)
         .filter(|properties| properties.values().all(is_schema))
@@ -140,7 +136,7 @@ fn properties<'a>(
                     format!("{}/{key}", job.path),
                 ))
             });
-        instructions.push(Instruction::Children(members_batch(members)));
+        instructions.push(Instruction::Children(members_batch(job, members)));
     }
 }
 
@@ -151,7 +147,7 @@ fn dependencies<'a>(
     keyword: &str,
     instructions: &mut Vec<Instruction<'a>>,
 ) {
-    let Some(dependencies) = job.schema.get(keyword).and_then(Value::as_object) else {
+    let Some(dependencies) = job.schema().get(keyword).and_then(Value::as_object) else {
         return;
     };
     if !dependencies.values().all(|schema| match keyword {
@@ -179,17 +175,10 @@ fn dependencies<'a>(
                 )]));
             }
         } else if keyword != "dependentRequired" && (schema.is_boolean() || schema.is_object()) {
-            let jobs = [Job {
-                schema,
-                value: job.value,
-                path: job.path.clone(),
-            }]
-            .into();
-            instructions.push(Instruction::Children(Batch {
-                mode: Mode::All,
-                jobs,
-                results: Vec::new(),
-            }));
+            instructions.push(Instruction::Children(Batch::new(
+                Mode::All,
+                [job.same_instance(schema)],
+            )));
         }
     }
 }
@@ -201,7 +190,7 @@ fn property_names<'a>(
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     let Some(schema) = job
-        .schema
+        .schema()
         .get("propertyNames")
         .filter(|schema| is_schema(schema))
     else {
@@ -213,17 +202,8 @@ fn property_names<'a>(
         .collect();
     let jobs = diagnostics::entries(value)
         .into_iter()
-        .map(|(key, _)| Job {
-            schema,
-            value: Instance::Name(key),
-            path: job.path.clone(),
-        })
-        .collect();
-    instructions.push(Instruction::Children(Batch {
-        mode: Mode::Names(names),
-        jobs,
-        results: Vec::new(),
-    }));
+        .map(|(key, _)| job.child(schema, Instance::Name(key), job.path.clone()));
+    instructions.push(Instruction::Children(Batch::new(Mode::Names(names), jobs)));
 }
 
 /// Render minimum and maximum collection-cardinality failures.
@@ -231,7 +211,7 @@ fn bounds<'a>(job: &Job<'a>, size: usize, suffix: &str, noun: &str) -> Instructi
     let mut errors = Vec::new();
     for (prefix, comparison) in [("min", "fewer"), ("max", "more")] {
         let Some(limit) = job
-            .schema
+            .schema()
             .get(format!("{prefix}{suffix}"))
             .and_then(Value::as_f64)
         else {
@@ -264,7 +244,7 @@ pub(super) fn array<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>) 
     instructions.push(single_bound(job, values.len(), "maxItems", "more"));
     contains(job, values, "minContains", instructions);
     instructions.push(single_bound(job, values.len(), "minItems", "fewer"));
-    if let Some(prefix) = job.schema.get("prefixItems").and_then(schema_array) {
+    if let Some(prefix) = job.schema().get("prefixItems").and_then(schema_array) {
         let members = prefix
             .iter()
             .zip(values)
@@ -277,9 +257,9 @@ pub(super) fn array<'a>(job: &Job<'a>, instructions: &mut Vec<Instruction<'a>>) 
                     format!("{}/{index}", job.path),
                 )
             });
-        instructions.push(Instruction::Children(members_batch(members)));
+        instructions.push(Instruction::Children(members_batch(job, members)));
     }
-    if job.schema.get("uniqueItems") == Some(&Value::Bool(true))
+    if job.schema().get("uniqueItems") == Some(&Value::Bool(true))
         && values.iter().enumerate().any(|(index, value)| {
             values[..index]
                 .iter()
@@ -301,7 +281,7 @@ fn single_bound<'a>(
     comparison: &str,
 ) -> Instruction<'a> {
     let mut errors = Vec::new();
-    if let Some(limit) = job.schema.get(keyword).and_then(Value::as_f64)
+    if let Some(limit) = job.schema().get(keyword).and_then(Value::as_f64)
         && ((keyword == "maxItems" && length.to_f64().is_some_and(|length| length > limit))
             || (keyword == "minItems" && length.to_f64().is_some_and(|length| length < limit)))
     {
@@ -323,8 +303,8 @@ fn additional_items<'a>(
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     let (Some(items), Some(schema)) = (
-        job.schema.get("items").and_then(schema_array),
-        job.schema
+        job.schema().get("items").and_then(schema_array),
+        job.schema()
             .get("additionalItems")
             .filter(|schema| is_schema(schema)),
     ) else {
@@ -342,16 +322,16 @@ fn additional_items<'a>(
                 format!("{}/{index}", job.path),
             )
         });
-    instructions.push(Instruction::Children(members_batch(members)));
+    instructions.push(Instruction::Children(members_batch(job, members)));
 }
 
 /// Check tuple positions or homogeneous items after the declared prefix.
 fn items<'a>(job: &Job<'a>, values: &'a [Value], instructions: &mut Vec<Instruction<'a>>) {
-    let Some(items) = job.schema.get("items") else {
+    let Some(items) = job.schema().get("items") else {
         return;
     };
     let prefix_length = job
-        .schema
+        .schema()
         .get("prefixItems")
         .and_then(schema_array)
         .map_or(0, <[Value]>::len);
@@ -368,7 +348,7 @@ fn items<'a>(job: &Job<'a>, values: &'a [Value], instructions: &mut Vec<Instruct
             format!("{}/{index}", job.path),
         ))
     });
-    instructions.push(Instruction::Children(members_batch(members)));
+    instructions.push(Instruction::Children(members_batch(job, members)));
 }
 
 /// Count matching items only when a contains schema is active.
@@ -379,21 +359,23 @@ fn contains<'a>(
     instructions: &mut Vec<Instruction<'a>>,
 ) {
     let Some(schema) = job
-        .schema
+        .schema()
         .get("contains")
         .filter(|schema| is_schema(schema))
     else {
         return;
     };
     let (minimum, maximum, message) = match keyword {
-        "contains" if job.schema.get("minContains").and_then(Value::as_f64) == Some(0.0) => return,
+        "contains" if job.schema().get("minContains").and_then(Value::as_f64) == Some(0.0) => {
+            return;
+        }
         "contains" => (
             Some(1.0),
             None,
             "must contain at least 1 valid item".to_owned(),
         ),
         "minContains" | "maxContains" => {
-            let Some(limit) = job.schema.get(keyword).and_then(Value::as_f64) else {
+            let Some(limit) = job.schema().get(keyword).and_then(Value::as_f64) else {
                 return;
             };
             let minimum = (keyword == "minContains").then_some(limit);
@@ -417,61 +399,43 @@ fn contains<'a>(
     };
     let jobs = values
         .iter()
-        .map(|value| Job {
-            schema,
-            value: Instance::Json(value),
-            path: job.path.clone(),
-        })
-        .collect();
-    instructions.push(Instruction::Children(Batch {
-        mode: Mode::Count {
-            minimum,
-            maximum,
-            message,
-        },
-        jobs,
-        results: Vec::new(),
-    }));
+        .map(|value| job.child(schema, Instance::Json(value), job.path.clone()));
+    let mode = Mode::Count {
+        minimum,
+        maximum,
+        message,
+    };
+    instructions.push(Instruction::Children(Batch::new(mode, jobs)));
 }
 
 /// Pair child evaluations with the locations they can mark.
 fn members_batch<'a>(
+    parent: &Job<'a>,
     members: impl Iterator<Item = (Mark, &'a Value, &'a Value, String)>,
 ) -> Batch<'a> {
     let mut marks = Vec::new();
-    let jobs = members
+    let jobs: Vec<_> = members
         .map(|(mark, schema, value, path)| {
             marks.push(mark);
-            Job {
-                schema,
-                value: Instance::Json(value),
-                path,
-            }
+            parent.child(schema, Instance::Json(value), path)
         })
         .collect();
-    Batch {
-        mode: Mode::Members(marks),
-        jobs,
-        results: Vec::new(),
-    }
+    Batch::new(Mode::Members(marks), jobs)
 }
 
 /// Schedule remaining members after successful location marks are known.
-pub(super) fn unevaluated<'a>(
-    job: &Job<'a>,
-    result: &super::check::Evaluation,
-) -> Vec<Instruction<'a>> {
+pub(super) fn unevaluated<'a>(job: &Job<'a>, evaluated: &Marks) -> Vec<Instruction<'a>> {
     let mut instructions = Vec::new();
     if let (Instance::Json(Value::Array(values)), Some(schema)) = (
         job.value,
-        job.schema
+        job.schema()
             .get("unevaluatedItems")
             .filter(|schema| is_schema(schema)),
     ) {
         let members = values
             .iter()
             .enumerate()
-            .filter(|(index, _)| !result.indices.contains(index))
+            .filter(|(index, _)| !evaluated.indices.contains(index))
             .map(|(index, value)| {
                 (
                     Mark::Index(index),
@@ -480,17 +444,17 @@ pub(super) fn unevaluated<'a>(
                     format!("{}/{index}", job.path),
                 )
             });
-        instructions.push(aggregate(members, "must not have unevaluated items"));
+        instructions.push(aggregate(job, members, "must not have unevaluated items"));
     }
     if let (Instance::Json(Value::Object(values)), Some(schema)) = (
         job.value,
-        job.schema
+        job.schema()
             .get("unevaluatedProperties")
             .filter(|schema| is_schema(schema)),
     ) {
         let members = diagnostics::entries(values)
             .into_iter()
-            .filter(|(key, _)| !result.keys.contains(*key))
+            .filter(|(key, _)| !evaluated.keys.contains(*key))
             .map(|(key, value)| {
                 (
                     Mark::Key(key.clone()),
@@ -499,17 +463,22 @@ pub(super) fn unevaluated<'a>(
                     format!("{}/{key}", job.path),
                 )
             });
-        instructions.push(aggregate(members, "must not have unevaluated properties"));
+        instructions.push(aggregate(
+            job,
+            members,
+            "must not have unevaluated properties",
+        ));
     }
     instructions
 }
 
 /// Suppress member details in favor of one containing-instance failure.
 fn aggregate<'a>(
+    parent: &Job<'a>,
     members: impl Iterator<Item = (Mark, &'a Value, &'a Value, String)>,
     message: &str,
 ) -> Instruction<'a> {
-    let mut batch = members_batch(members);
+    let mut batch = members_batch(parent, members);
     if let Mode::Members(marks) = batch.mode {
         batch.mode = Mode::Aggregate {
             marks,
