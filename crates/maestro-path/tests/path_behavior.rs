@@ -250,7 +250,7 @@ fn win32_relative_reaches_the_destination_for_every_pair_with_an_anchored_end() 
         .into_iter()
         .filter(|case| case["flavor"] == "win32" && case["op"] == "relative")
         .collect();
-    assert_eq!(cases.len(), 73, "recorded win32 relative cases");
+    assert_eq!(cases.len(), 143, "recorded win32 relative cases");
     let (mut anchored, mut mixed) = (0, 0);
     for case in &cases {
         let inputs = Inputs::of(case);
@@ -276,8 +276,8 @@ fn win32_relative_reaches_the_destination_for_every_pair_with_an_anchored_end() 
             }
         }
     }
-    assert_eq!(anchored, 61, "cases whose both ends are absolute");
-    assert_eq!(mixed, 10, "cases whose ends differ in anchoring");
+    assert_eq!(anchored, 69, "cases whose both ends are absolute");
+    assert_eq!(mixed, 12, "cases whose ends differ in anchoring");
 }
 
 /// Fixture rows whose inputs make the two flavors disagree, one per root operation.
@@ -439,4 +439,19 @@ fn win32_relative_folds_dot_and_parent_segments_of_the_working_directory() {
         assert_eq!(win32::join(&[current, &down]), child, "{current:?}");
         assert_eq!(win32::relative("c", "", &cwd), "..", "{current:?}");
     }
+}
+
+#[test]
+fn win32_relative_uses_resolved_anchors_for_siblings() {
+    check("win32_relative_uses_resolved_anchors_for_siblings", 32);
+}
+
+#[test]
+fn win32_relative_keeps_unanchored_component_boundaries() {
+    check("win32_relative_keeps_unanchored_component_boundaries", 20);
+}
+
+#[test]
+fn win32_relative_compares_unanchored_unicode_components() {
+    check("win32_relative_compares_unanchored_unicode_components", 18);
 }
