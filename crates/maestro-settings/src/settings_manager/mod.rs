@@ -131,7 +131,7 @@ pub struct SettingsManager {
     /// Global merged with project, then with any runtime overrides.
     effective: Map<String, Value>,
     /// The `NaN` results of the accepted global scope, which setters change and
-    /// only a global load discards.
+    /// only a successful global load discards.
     accepted_nan: NotANumber,
     /// The accepted `NaN` results that no project value or applied override
     /// supersedes.

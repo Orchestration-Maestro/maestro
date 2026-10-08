@@ -1,12 +1,13 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use std::path::{Component, Path, PathBuf};
+use std::ffi::OsStr;
+use std::path::PathBuf;
 
 use serde_json::Value;
 
 use super::SettingsManager;
 use super::conversion::number;
-use super::paths::normalized;
+use super::paths::join;
 use super::vocabulary::{DoubleEscapeAction, TreeFilterMode};
 
 /// Environment variable that enables clearing empty rows when the preference is
@@ -23,8 +24,8 @@ fn env_enabled(name: &str) -> bool {
 
 impl SettingsManager {
     /// Returns the session directory. An exact `~` reads as the home directory and
-    /// a `~/` prefix is joined onto it; any other text, and any text while the
-    /// home directory is unknown, is returned as written.
+    /// a `~/` prefix is joined onto it as text and folded once; any other text, and
+    /// any text while the home directory is unknown, is returned as written.
     #[must_use]
     pub fn get_session_dir(&self) -> Option<PathBuf> {
         let configured = self.text("sessionDir")?;
@@ -32,8 +33,10 @@ impl SettingsManager {
             std::env::home_dir()
         } else {
             let suffix = configured.strip_prefix("~/");
-            suffix
-                .and_then(|suffix| std::env::home_dir().map(|home| join_normalized(&home, suffix)))
+            suffix.and_then(|suffix| {
+                let home = std::env::home_dir()?;
+                Some(join(&[home.as_os_str(), OsStr::new(suffix)]))
+            })
         };
         Some(expanded.unwrap_or_else(|| PathBuf::from(configured)))
     }
@@ -220,18 +223,4 @@ fn clamp_floor(value: f64, low: f64, high: f64) -> f64 {
         return floored;
     }
     floored.clamp(low, high) + 0.0
-}
-
-/// Joins `suffix` onto `home` with the platform's separators: `.` and `..` fold
-/// lexically in the whole path and a trailing separator is kept.
-fn join_normalized(home: &Path, suffix: &str) -> PathBuf {
-    let relative: PathBuf = Path::new(suffix)
-        .components()
-        .filter(|part| matches!(part, Component::Normal(_) | Component::ParentDir))
-        .collect();
-    let mut path = normalized(&home.join(relative));
-    if suffix.ends_with(std::path::is_separator) {
-        path.push("");
-    }
-    path
 }

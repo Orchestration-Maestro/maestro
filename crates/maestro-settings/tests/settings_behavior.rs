@@ -1042,7 +1042,7 @@ mod tests {
         }
     }
 
-    /// `NaN` is held as a typed result until reload, while snapshots and files hold `null`.
+    /// `NaN` is held as a typed result until a successful global reload, while snapshots and files hold `null`.
     fn assert_nan_until_reload() {
         let (mut settings, storage) = manager();
         settings.set_editor_padding_x(f64::NAN);
@@ -1110,6 +1110,26 @@ mod tests {
             "the setter discards the overrides and the accepted padding returns"
         );
         assert!(settings.get_autocomplete_max_visible().is_nan());
+    }
+
+    #[test]
+    fn accepted_nan_survives_a_failed_global_reload() {
+        let (mut settings, storage) = manager();
+        settings.set_editor_padding_x(f64::NAN);
+        settings.set_autocomplete_max_visible(f64::NAN);
+        block_on(settings.flush());
+
+        support::put(&*storage, SettingsScope::Global, "{broken");
+        block_on(settings.reload());
+        assert_eq!(settings.drain_errors().len(), 1, "the global load failed");
+        assert!(settings.get_editor_padding_x().is_nan());
+        assert!(settings.get_autocomplete_max_visible().is_nan());
+
+        support::put(&*storage, SettingsScope::Global, "{}");
+        block_on(settings.reload());
+        assert!(settings.drain_errors().is_empty());
+        support::assert_number(settings.get_editor_padding_x(), 0.0);
+        support::assert_number(settings.get_autocomplete_max_visible(), 5.0);
     }
 
     #[test]
@@ -1679,37 +1699,89 @@ mod tests {
         );
     }
 
+    /// A child case: its name, the home directory it is given and the stored session
+    /// directories with the paths the platform's join gives below that home.
+    type HomeCases = (
+        &'static str,
+        &'static str,
+        &'static [(&'static str, &'static str)],
+    );
+
     /// A home directory that holds dot segments, as the platform spells it.
     #[cfg(unix)]
-    const NATIVE_HOME: &str = "/home/a/../b/./user";
+    const NATIVE: HomeCases = (
+        "native",
+        "/home/a/../b/./user",
+        &[
+            ("~", "/home/a/../b/./user"),
+            ("~/x", "/home/b/user/x"),
+            ("~/a\\..\\b", "/home/b/user/a\\..\\b"),
+            ("~/../..", "/home"),
+            ("~/x/", "/home/b/user/x/"),
+            ("~/x\\", "/home/b/user/x\\"),
+            ("~/C:foo", "/home/b/user/C:foo"),
+            ("~//server/share/x", "/home/b/user/server/share/x"),
+            ("~/../../x", "/home/x"),
+            ("~/../../../../x", "/x"),
+        ],
+    );
     /// A home directory that holds dot segments, as the platform spells it.
     #[cfg(windows)]
-    const NATIVE_HOME: &str = r"C:\Users\a\..\b\.\user";
+    const NATIVE: HomeCases = (
+        "native",
+        r"C:\Users\a\..\b\.\user",
+        &[
+            ("~", r"C:\Users\a\..\b\.\user"),
+            ("~/x", r"C:\Users\b\user\x"),
+            (r"~/a\..\b", r"C:\Users\b\user\b"),
+            ("~/../..", r"C:\Users"),
+            ("~/x/", r"C:\Users\b\user\x\"),
+            (r"~/x\", r"C:\Users\b\user\x\"),
+            // Node `path.win32.join(home, 'C:foo')`: the suffix keeps its drive text.
+            ("~/C:foo", r"C:\Users\b\user\C:foo"),
+            // Node `path.win32.join(home, '\\\\server\\share\\x')`: the suffix is not a new root.
+            (r"~/\\server\share\x", r"C:\Users\b\user\server\share\x"),
+            // Node `path.win32.join(home, '..\\..\\x')`.
+            (r"~/..\..\x", r"C:\Users\x"),
+            // Node `path.win32.join(home, '..\\..\\..\\..\\x')`: a `..` at the root is dropped.
+            (r"~/..\..\..\..\x", r"C:\x"),
+        ],
+    );
 
-    /// Stored session directories and the paths the platform's separators give below `NATIVE_HOME`.
+    /// A relative home directory, whose folded paths keep or lose their leading parents.
     #[cfg(unix)]
-    const NATIVE_CASES: [(&str, &str); 6] = [
-        ("~", "/home/a/../b/./user"),
-        ("~/x", "/home/b/user/x"),
-        ("~/a\\..\\b", "/home/b/user/a\\..\\b"),
-        ("~/../..", "/home"),
-        ("~/x/", "/home/b/user/x/"),
-        ("~/x\\", "/home/b/user/x\\"),
-    ];
-    /// Stored session directories and the paths the platform's separators give below `NATIVE_HOME`.
+    const RELATIVE: HomeCases = (
+        "relative",
+        "rel/home",
+        &[
+            ("~/x", "rel/home/x"),
+            ("~/../..", "."),
+            ("~/../../", "./"),
+            ("~/../../..", ".."),
+            ("~/../../../y", "../y"),
+        ],
+    );
+    /// A relative home directory, whose folded paths keep or lose their leading parents.
     #[cfg(windows)]
-    const NATIVE_CASES: [(&str, &str); 6] = [
-        ("~", r"C:\Users\a\..\b\.\user"),
-        ("~/x", r"C:\Users\b\user\x"),
-        (r"~/a\..\b", r"C:\Users\b\user\b"),
-        ("~/../..", r"C:\Users"),
-        ("~/x/", r"C:\Users\b\user\x\"),
-        (r"~/x\", r"C:\Users\b\user\x\"),
-    ];
+    const RELATIVE: HomeCases = (
+        "relative",
+        r"rel\home",
+        &[
+            ("~/x", r"rel\home\x"),
+            ("~/../..", "."),
+            ("~/../../", r".\"),
+            ("~/../../..", ".."),
+            (r"~/..\..\..\y", r"..\y"),
+        ],
+    );
 
-    /// Child side: resolves every native case.
-    fn report_native_session_dirs() {
-        let paths: Vec<String> = NATIVE_CASES
+    /// Child side: resolves every stored session directory of the named case.
+    fn report_session_dirs_below(case: &str) {
+        let (_, _, cases) = [NATIVE, RELATIVE]
+            .into_iter()
+            .find(|(name, _, _)| *name == case)
+            .unwrap();
+        let paths: Vec<String> = cases
             .iter()
             .map(|(stored, _)| {
                 let (settings, _) = manager_with(json!({"sessionDir": stored}));
@@ -1722,21 +1794,20 @@ mod tests {
 
     #[test]
     fn session_dir_folds_segments_with_platform_separators() {
-        if support::child_case().is_some() {
-            return report_native_session_dirs();
+        if let Some(case) = support::child_case() {
+            return report_session_dirs_below(&case);
         }
-        let mut child = support::child_command(
-            "session_dir_folds_segments_with_platform_separators",
-            "native",
-        );
-        child
-            .env("HOME", NATIVE_HOME)
-            .env("USERPROFILE", NATIVE_HOME);
-        let expected: Vec<&str> = NATIVE_CASES.iter().map(|(_, expected)| *expected).collect();
-        assert_eq!(
-            support::child_report(&child.output().unwrap()),
-            json!(expected)
-        );
+        for (case, home, cases) in [NATIVE, RELATIVE] {
+            let mut child =
+                support::child_command("session_dir_folds_segments_with_platform_separators", case);
+            child.env("HOME", home).env("USERPROFILE", home);
+            let expected: Vec<&str> = cases.iter().map(|(_, expected)| *expected).collect();
+            assert_eq!(
+                support::child_report(&child.output().unwrap()),
+                json!(expected),
+                "home case {case}"
+            );
+        }
     }
 
     /// Runs one setter batch against storage seeded with `seed` text and returns the saved text.

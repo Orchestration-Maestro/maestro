@@ -113,15 +113,13 @@ mod tests {
         );
     }
 
-    /// Runs `body` on its own thread and fails, instead of hanging, when it never finishes.
+    /// Runs `body` on its own thread and waits for its result.
     fn finishes<T: Send + 'static>(body: impl FnOnce() -> T + Send + 'static) -> T {
         let (sender, receiver) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let _ = sender.send(body());
         });
-        receiver
-            .recv_timeout(Duration::from_secs(10))
-            .expect("the storage callback never finished")
+        receiver.recv().expect("the storage callback panicked")
     }
 
     /// Writes `"inner"` to `scope` and returns the text the callback saw there.

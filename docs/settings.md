@@ -92,9 +92,11 @@ removes the key. A setter on a nested key such as `compaction.enabled` replaces 
 parent value of another type with an object that holds the edit. A number setter
 stores `NaN` as `null`, and the image width setter also stores positive infinity as
 `null`. After `set_editor_padding_x` or `set_autocomplete_max_visible` receives
-`NaN`, the typed read returns `NaN` until a finite setter, a project value or the
-next `reload` supersedes it. A runtime override supersedes it only while the override
-lasts: the next setter discards the overrides and the accepted `NaN` returns.
+`NaN`, the typed read returns `NaN` until the same setter stores a number or a
+`reload` loads the global scope successfully; a failed global load keeps it. While
+a project value or a runtime override defines the preference, that value is read
+instead. The next setter of another preference discards the overrides, and the
+accepted `NaN` returns unless a project value defines the preference.
 
 ### Failures
 
@@ -122,8 +124,11 @@ replace it, or an error, which is returned without writing.
 `InMemorySettingsStorage` keeps one text per scope. It hands the callback an owned copy
 and holds no lock while the callback runs, so the callback may use the same storage
 again, in either scope; when callbacks overlap, the last write wins.
-`FileSettingsStorage` (not available for the browser build) folds the `.` and `..`
-segments of the supplied global and project locations before any file access, then
+`FileSettingsStorage` (not available for the browser build) joins the supplied
+agent directory, and the working directory with the configuration directory, with
+`settings.json` as text and folds the `.` and `..` segments of each result before
+any file access (a `..` with nothing to remove is dropped below a root and kept
+otherwise, so `../agent` and the Windows drive-relative `C:..` keep theirs), then
 works in place:
 
 1. For an existing file it locks the stable `settings.json.lock` sidecar before
@@ -235,7 +240,7 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `shellPath` | string | unset | Custom shell path |
 | `shellCommandPrefix` | string | unset | Prefix for every shell command |
 | `npmCommand` | string[] | unset | Package-manager argument vector |
-| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it with the platform's separators, folding `.` and `..` segments and keeping a trailing separator; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
+| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it as text with the platform's separators and folded once: `.` segments drop, a `..` removes the segment before it, and a `..` with none is dropped below a root and kept otherwise; a trailing separator is kept; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
 ### Resources

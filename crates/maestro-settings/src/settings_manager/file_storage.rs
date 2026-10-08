@@ -5,7 +5,7 @@ use std::fs::{self, File, OpenOptions, TryLockError};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use super::paths::normalized;
+use super::paths::join;
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
 
 /// How often a contended lock is tried before giving up.
@@ -24,12 +24,14 @@ pub struct FileSettingsStorage {
 
 impl FileSettingsStorage {
     /// Addresses `settings.json` in `agent_dir` and in `config_dir` below `cwd`,
-    /// folding `.` and `..` segments of both paths before any file access.
+    /// joining the parts as text and folding `.` and `..` segments of the result
+    /// before any file access.
     #[must_use]
     pub fn new(cwd: &Path, agent_dir: &Path, config_dir: &OsStr) -> Self {
+        let file = OsStr::new("settings.json");
         Self {
-            global: normalized(&agent_dir.join("settings.json")),
-            project: normalized(&cwd.join(config_dir).join("settings.json")),
+            global: join(&[agent_dir.as_os_str(), file]),
+            project: join(&[cwd.as_os_str(), config_dir, file]),
         }
     }
 }
@@ -92,5 +94,32 @@ impl SettingsStorage for FileSettingsStorage {
         fs::write(path, next)?;
         drop(lock);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn leading_parents_stay_in_front_of_relative_locations() {
+        let storage =
+            FileSettingsStorage::new(Path::new("../.."), Path::new(".."), OsStr::new(".maestro"));
+        // Node `path.posix.join('..', 'settings.json')` and
+        // `join('../..', '.maestro', 'settings.json')`.
+        assert_eq!(storage.global.as_os_str(), "../settings.json");
+        assert_eq!(storage.project.as_os_str(), "../../.maestro/settings.json");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn parents_of_a_drive_relative_location_stay_after_the_drive() {
+        let storage =
+            FileSettingsStorage::new(Path::new("C:.."), Path::new("C:.."), OsStr::new(".maestro"));
+        // Node `path.win32.join('C:..', 'settings.json')` and
+        // `join('C:..', '.maestro', 'settings.json')`.
+        assert_eq!(storage.global.as_os_str(), r"C:..\settings.json");
+        assert_eq!(storage.project.as_os_str(), r"C:..\.maestro\settings.json");
     }
 }
