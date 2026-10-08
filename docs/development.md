@@ -50,6 +50,12 @@ target directory before compiling. `dev` covers delivered owners;
 `dev-compile` and `models-dev-compile` select models only. Missing owners fail.
 Cargo stages a brand-new target directory under a temporary sibling name, so the
 first switch to a not-yet-existing target can cause one extra build.
+Recipe tests confirm watch registration with up to ten uniquely named, filtered
+output markers before changing inputs. Subsequent ignored writes wait for their
+named completion acknowledgment, not a quiet-time window. Their watch processes
+share a test-owned process group, which is stopped when the test finishes,
+including on panic.
+
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
 The catalog owner's package build will invoke its generator when

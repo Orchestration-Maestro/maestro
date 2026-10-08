@@ -22,36 +22,7 @@ impl Workspace {
         )
         .unwrap();
         let source = root.join("tool.rs");
-        fs::write(&source, r#"
-use std::{env, fs, io::Write, path::Path};
-fn main() {
-    let args: Vec<_> = env::args().skip(1).collect();
-    if args.first().map(String::as_str) == Some("run") && env::var_os("MAESTRO_REAL_CARGO").is_some() {
-        if let Some(binary) = env::var_os("MAESTRO_DEVELOPMENT") {
-            let start = args.iter().position(|arg| arg == "--").unwrap() + 1;
-            std::process::exit(std::process::Command::new(binary).args(&args[start..]).status().unwrap().code().unwrap());
-        }
-    }
-    if let Some(cargo) = env::var_os("MAESTRO_REAL_CARGO") {
-        std::process::exit(std::process::Command::new(cargo).args(&args).status().unwrap().code().unwrap());
-    }
-    if let Some(path) = env::var_os("MAESTRO_CWD") { fs::write(path, env::current_dir().unwrap().as_os_str().as_encoded_bytes()).unwrap(); }
-    let name = Path::new(&env::args().next().unwrap()).file_stem().unwrap().to_str().unwrap().to_owned();
-    let mut log = fs::OpenOptions::new().create(true).append(true).open(env::var_os("MAESTRO_LOG").unwrap()).unwrap();
-    writeln!(log, "{name} {}", args.join("|")).unwrap();
-    if let Some(path) = env::var_os("MAESTRO_ENV_RESULT") {
-        let auth = Path::new(&env::var_os("HOME").unwrap()).join(".maestro/agent/auth.json");
-        fs::write(path, format!("key={} auth={} flag={}\n", env::var_os("OPENAI_API_KEY").is_some(), auth.is_file(), env::var("MAESTRO_NO_LOCAL_LLM").unwrap_or_default())).unwrap();
-    }
-    if args.first().map(String::as_str) == Some("run") {
-        if let Some(binary) = env::var_os("MAESTRO_DEVELOPMENT") {
-            let start = args.iter().position(|arg| arg == "--").unwrap() + 1;
-            std::process::exit(std::process::Command::new(binary).args(&args[start..]).status().unwrap().code().unwrap());
-        }
-    }
-    if env::var("MAESTRO_FAIL").ok().as_deref() == args.first().map(String::as_str) { std::process::exit(17); }
-}
-"#).unwrap();
+        fs::write(&source, include_str!("fixtures/recipe_command.rs")).unwrap();
         let tool = root.join("bin/cargo");
         assert!(
             Command::new("rustc")
@@ -96,6 +67,10 @@ fn main() {
 
 impl Drop for Workspace {
     fn drop(&mut self) {
+        let fifo = self.0.with_extension("watch-ack");
+        if fifo.exists() {
+            fs::remove_file(fifo).unwrap();
+        }
         fs::remove_dir_all(&self.0).unwrap();
     }
 }
@@ -457,11 +432,28 @@ fn maestro_watch_survives_rebuilding_its_development_binary() {
     assert_watch_rebuild("dev", "crates/maestro-tooling/src/watch.rs", "target");
 }
 
+/// Owns the recipe's process group, including watcher commands and their children.
+#[cfg(unix)]
+struct ProcessGroup(
+    /// The recipe leader whose group contains every descendant.
+    std::process::Child,
+    /// Keeps the acknowledgment reader open until group cleanup completes.
+    Option<fs::File>,
+);
+
+#[cfg(unix)]
+impl Drop for ProcessGroup {
+    fn drop(&mut self) {
+        // The fixture disables nested watcher groups so every child inherits this group.
+        let _ = Command::new("kill")
+            .args(["-KILL", "--", &format!("-{}", self.0.id())])
+            .status();
+        let _ = self.0.wait();
+    }
+}
+
 #[cfg(unix)]
 fn assert_watch_rebuild(recipe: &str, changed: &str, target: &str) {
-    use std::os::unix::process::CommandExt;
-    use std::process::Stdio;
-    use std::sync::mpsc;
     let workspace = Workspace::new();
     prepare_watch_workspace(&workspace, target);
     let binary = if changed.starts_with("crates/maestro-tooling/") {
@@ -470,48 +462,112 @@ fn assert_watch_rebuild(recipe: &str, changed: &str, target: &str) {
     } else {
         PathBuf::from(env!("CARGO_BIN_EXE_development"))
     };
-    let mut command = workspace.command(recipe);
-    command
-        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
-        .env("MAESTRO_DEVELOPMENT", binary);
-    command
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .process_group(0);
-    let mut child = command.spawn().unwrap();
-    let (send, receive) = mpsc::channel();
-    let output = child.stdout.take().unwrap();
-    let error = child.stderr.take().unwrap();
-    let threads = [
-        capture_lines(output, send.clone()),
-        capture_lines(error, send.clone()),
-    ];
-    drop(send);
+    let (child, receive, threads) = start_watch(&workspace, recipe, &binary);
     let diagnostics = watcher_diagnostics(&workspace.0);
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        assert_watch_events(&workspace, changed, target, &receive, &diagnostics);
-    }));
-    assert!(
-        Command::new("kill")
-            .args(["-TERM", "--", &format!("-{}", child.id())])
-            .status()
-            .unwrap()
-            .success()
-    );
-    child.wait().unwrap();
+    assert_watch_events(&workspace, changed, target, &receive, &diagnostics);
+    drop(child);
     drop(receive);
     for thread in threads {
         thread.join().unwrap();
     }
-    if let Err(error) = result {
-        std::panic::resume_unwind(error);
+}
+
+/// Starts a recipe with group ownership before reading any output.
+#[cfg(unix)]
+fn start_watch(
+    workspace: &Workspace,
+    recipe: &str,
+    binary: &Path,
+) -> (
+    ProcessGroup,
+    std::sync::mpsc::Receiver<String>,
+    [std::thread::JoinHandle<()>; 3],
+) {
+    use std::os::unix::process::CommandExt;
+    use std::process::Stdio;
+    use std::sync::mpsc;
+    let mut command = workspace.command(recipe);
+    command
+        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+        .env("MAESTRO_DEVELOPMENT", binary)
+        .env("MAESTRO_REAL_WATCHEXEC", watcher_path())
+        .env("MAESTRO_ACK_FIFO", workspace.0.with_extension("watch-ack"));
+    command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .process_group(0);
+    let mut child = ProcessGroup(command.spawn().unwrap(), None);
+    let (send, receive) = mpsc::channel();
+    let output = child.0.stdout.take().unwrap();
+    let error = child.0.stderr.take().unwrap();
+    let fifo = workspace.0.with_extension("watch-ack");
+    let reader = fifo.clone();
+    let threads = [
+        capture_lines(move || output, send.clone()),
+        capture_lines(move || error, send.clone()),
+        capture_lines(move || fs::File::open(reader).unwrap(), send.clone()),
+    ];
+    child.1 = Some(fs::OpenOptions::new().append(true).open(fifo).unwrap());
+    drop(send);
+    (child, receive, threads)
+}
+
+/// Panic cleanup closes every descendant's output pipe, not just the recipe leader's.
+#[cfg(unix)]
+#[test]
+fn maestro_watch_stops_its_children_on_panic() {
+    let workspace = Workspace::new();
+    prepare_watch_workspace(&workspace, "target");
+    let (child, receive, threads) = start_watch(
+        &workspace,
+        "models-dev",
+        Path::new(env!("CARGO_BIN_EXE_development")),
+    );
+    let group = child.0.id();
+    wait_for_build(
+        &receive,
+        &mut String::new(),
+        "panic cleanup readiness",
+        &watcher_diagnostics(&workspace.0),
+    );
+    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _child = child;
+        panic!("controlled panic after starting the watch");
+    }));
+    let disconnected = loop {
+        match receive.recv_timeout(std::time::Duration::from_secs(10)) {
+            Ok(_) => {}
+            Err(error) => break error == std::sync::mpsc::RecvTimeoutError::Disconnected,
+        }
+    };
+    // Rescue descendants when checking an incomplete cleanup implementation.
+    if !disconnected {
+        Command::new("kill")
+            .args(["-KILL", "--", &format!("-{group}")])
+            .status()
+            .unwrap();
     }
+    drop(receive);
+    for thread in threads {
+        thread.join().unwrap();
+    }
+    assert!(panic.is_err());
+    assert!(
+        disconnected,
+        "watch descendants retained their output pipes after panic"
+    );
 }
 
 #[cfg(unix)]
 fn prepare_watch_workspace(workspace: &Workspace, target: &str) {
     native_workspace(workspace);
-    fs::remove_file(workspace.0.join("bin/watchexec")).unwrap();
+    assert!(
+        Command::new("mkfifo")
+            .arg(workspace.0.with_extension("watch-ack"))
+            .status()
+            .unwrap()
+            .success()
+    );
     fs::write(workspace.0.join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
         Command::new(env!("CARGO"))
@@ -577,9 +633,14 @@ fn assert_watch_events(
     receive: &std::sync::mpsc::Receiver<String>,
     diagnostics: &str,
 ) {
-    use std::time::Duration;
     let mut transcript = String::new();
     wait_for_build(receive, &mut transcript, "initial build", diagnostics);
+    wait_for_watch_readiness(
+        &workspace.0.join(target),
+        receive,
+        &mut transcript,
+        diagnostics,
+    );
     let (changed, target) = changed.split_once(':').unwrap_or((changed, target));
     let source = workspace.0.join(changed);
     let contents = if changed == ".cargo/config.toml" {
@@ -591,19 +652,17 @@ fn assert_watch_events(
     };
     fs::write(&source, contents).unwrap();
     wait_for_build(receive, &mut transcript, "source rebuild", diagnostics);
+    acknowledge_target_write(
+        &workspace.0.join(target).join("ignored-output-processed"),
+        receive,
+        &mut transcript,
+        diagnostics,
+    );
     assert_eq!(
         transcript.matches("Finished `dev`").count(),
         2,
         "{transcript}"
     );
-    assert!(!transcript.contains("\u{1b}[2J"));
-    fs::write(workspace.0.join(target).join("asset"), "ignored").unwrap();
-    while let Ok(line) = receive.recv_timeout(Duration::from_millis(300)) {
-        assert!(
-            !line.contains("Finished `dev`"),
-            "unexpected rebuild: {line}; {transcript}"
-        );
-    }
     if changed.starts_with("crates/maestro-tooling/") {
         fs::write(
             workspace.0.join("crates/maestro-agent/src/lib.rs"),
@@ -622,15 +681,73 @@ fn assert_watch_events(
             "{transcript}"
         );
     }
+    assert!(!transcript.contains("\u{1b}[2J"));
 }
 
-fn capture_lines(
-    reader: impl std::io::Read + Send + 'static,
+/// Confirms registration through one bounded sequence of filtered marker events.
+#[cfg(unix)]
+fn wait_for_watch_readiness(
+    target: &Path,
+    receive: &std::sync::mpsc::Receiver<String>,
+    transcript: &mut String,
+    diagnostics: &str,
+) {
+    for attempt in 1..=10 {
+        let marker = format!("initial-output-drained-{attempt}");
+        fs::write(target.join(&marker), "ignored").unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+        loop {
+            let line = match receive
+                .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
+            {
+                Ok(line) => line,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
+                Err(error) => panic!("watch readiness: {error}; {diagnostics}; {transcript}"),
+            };
+            transcript.push_str(&line);
+            transcript.push('\n');
+            if line.starts_with("[Watch step complete]") && line.contains(&format!("[{marker}]")) {
+                assert!(line.contains("status=0 "), "{transcript}");
+                return;
+            }
+        }
+    }
+    panic!("watch registration was not acknowledged; {diagnostics}; {transcript}");
+}
+
+/// Waits for a named output write to pass through the watcher's filtered command.
+#[cfg(unix)]
+fn acknowledge_target_write(
+    marker: &Path,
+    receive: &std::sync::mpsc::Receiver<String>,
+    transcript: &mut String,
+    diagnostics: &str,
+) {
+    fs::write(marker, "ignored").unwrap();
+    let marker = format!("{}=true", marker.file_name().unwrap().to_str().unwrap());
+    loop {
+        let line = receive
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .unwrap_or_else(|error| {
+                panic!("target acknowledgment: {error}; {diagnostics}; {transcript}")
+            });
+        transcript.push_str(&line);
+        transcript.push('\n');
+        if line.starts_with("[Watch step complete]") && line.contains(&marker) {
+            assert!(line.contains("status=0 "), "{transcript}");
+            return;
+        }
+    }
+}
+
+/// Captures complete lines from a stream opened inside its reader thread.
+fn capture_lines<R: std::io::Read>(
+    reader: impl FnOnce() -> R + Send + 'static,
     send: std::sync::mpsc::Sender<String>,
 ) -> std::thread::JoinHandle<()> {
     use std::io::{BufRead, BufReader};
     std::thread::spawn(move || {
-        for line in BufReader::new(reader).lines() {
+        for line in BufReader::new(reader()).lines() {
             if send.send(line.unwrap()).is_err() {
                 break;
             }
@@ -638,11 +755,16 @@ fn capture_lines(
     })
 }
 
-fn watcher_diagnostics(root: &Path) -> String {
-    let path = std::env::split_paths(&std::env::var_os("PATH").unwrap())
+/// Finds the pinned external watcher before fixture commands extend PATH.
+fn watcher_path() -> PathBuf {
+    std::env::split_paths(&std::env::var_os("PATH").unwrap())
         .map(|directory| directory.join("watchexec"))
         .find(|path| path.is_file())
-        .unwrap();
+        .unwrap()
+}
+
+fn watcher_diagnostics(root: &Path) -> String {
+    let path = watcher_path();
     let version = Command::new(&path).arg("--version").output().unwrap();
     let mounts = fs::read_to_string("/proc/mounts").unwrap_or_default();
     let filesystem = mounts
