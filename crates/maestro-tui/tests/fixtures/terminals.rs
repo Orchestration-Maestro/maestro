@@ -6,7 +6,7 @@ use std::io;
 use std::pin::Pin;
 use std::time::Duration;
 
-use maestro_tui::terminal::Terminal;
+use maestro_tui::Terminal;
 
 /// Callback delivering input chunks.
 pub type InputCallback = Box<dyn FnMut(&str)>;

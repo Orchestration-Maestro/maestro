@@ -31,7 +31,7 @@ pub(super) enum LinkChange<'a> {
 /// An open OSC 8 hyperlink with the exact parameters and terminator of its opener.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct Hyperlink<'a> {
-    /// Text between the second and third semicolon of the opener.
+    /// Text between the first and second semicolon of the opener.
     params: &'a str,
     /// Target of the link; never empty for an open link.
     uri: &'a str,
@@ -40,7 +40,8 @@ pub(super) struct Hyperlink<'a> {
 }
 
 impl<'a> Hyperlink<'a> {
-    /// Interprets an OSC 8 escape; `None` for any other escape.
+    /// Interprets an OSC 8 escape; `None` for any other escape and for an OSC 8 escape
+    /// without a parameter separator.
     pub(super) fn parse(code: &'a str) -> Option<LinkChange<'a>> {
         let body = code.strip_prefix("\x1b]8;")?;
         let (body, terminator) = match body.strip_suffix('\x07') {

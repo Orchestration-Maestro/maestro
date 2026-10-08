@@ -9,7 +9,8 @@ use super::render::{Emission, RESET};
 pub struct TruncateOptions<'a> {
     /// Text appended after the kept prefix when something was cut.
     pub ellipsis: &'a str,
-    /// Whether the result is padded with spaces to the full width.
+    /// Whether the result is padded with spaces up to the full width, measured on the
+    /// finished result.
     pub pad: bool,
 }
 
@@ -68,6 +69,15 @@ fn padding(pad: bool, cells: usize) -> String {
     }
 }
 
+/// Fills a finished result with spaces up to `max_width` as measured on the result itself.
+///
+/// Prefix and ellipsis can join into one cluster, such as a flag, that is narrower than
+/// the sum of their widths.
+fn pad_measured(text: String, max_width: usize) -> String {
+    let fill = max_width.saturating_sub(visible_width(&text));
+    text + &" ".repeat(fill)
+}
+
 /// Emits a whole text, or only its metadata when it has no visible content.
 fn render_all(parsed: &Parsed<'_>) -> String {
     let mut emission = Emission::new(parsed);
@@ -118,23 +128,18 @@ pub fn truncate_to_width(text: &str, max_width: usize, options: TruncateOptions<
         return render_all(&parsed) + &padding(options.pad, max_width - total);
     }
     let ellipsis = Parsed::parse(options.ellipsis);
-    let (prefix, ellipsis, used) = if ellipsis_cells >= max_width {
+    let framed = if ellipsis_cells >= max_width {
         let clipped = Scan::new(&ellipsis, max_width, max_width);
-        if clipped.kept_cells == 0 {
+        if clipped.kept.is_empty() {
             return padding(options.pad, max_width);
         }
-        (
-            String::new(),
-            render_kept(&ellipsis, &clipped.kept),
-            clipped.kept_cells,
-        )
+        frame("", &render_kept(&ellipsis, &clipped.kept))
     } else {
-        let prefix = render_kept(&parsed, &scan.kept);
-        (
-            prefix,
-            render_all(&ellipsis),
-            scan.kept_cells + ellipsis_cells,
-        )
+        frame(&render_kept(&parsed, &scan.kept), &render_all(&ellipsis))
     };
-    frame(&prefix, &ellipsis) + &padding(options.pad, max_width.saturating_sub(used))
+    if options.pad {
+        pad_measured(framed, max_width)
+    } else {
+        framed
+    }
 }

@@ -3,7 +3,8 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use maestro_tui::tui::{CURSOR_MARKER, Component, Focusable, InputHandler, OverlayHandle};
+use maestro_tui::tui::InputHandler;
+use maestro_tui::{CURSOR_MARKER, Component, Focusable, OverlayHandle};
 
 /// Renders a fixed set of lines and counts invalidations.
 pub struct Lines {

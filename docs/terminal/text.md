@@ -14,9 +14,12 @@ Only these sequences are recognized; anything else is ordinary text:
 - OSC and APC strings ended by BEL or by `ESC \`. OSC 8 opens and closes hyperlinks;
   other strings, such as prompt markers and the cursor marker, are metadata.
 
-An escape with no terminator stays in the text as visible characters. Escapes keep
-their exact spelling, including padded parameters and the BEL or `ESC \` ending of
-a hyperlink. This is not a terminal emulator: nothing is sanitized or reordered.
+An escape with no terminator stays in the text as visible characters. Escapes are
+written out with their exact spelling, including padded parameters and the BEL or
+`ESC \` ending of a hyperlink. Only the style that a continuation line or the part
+after an overlay starts from is rebuilt: attributes in a fixed order, then the
+foreground and the background, with indexed and true-colour parameters kept
+verbatim. This is not a terminal emulator: nothing is sanitized.
 
 ## Measuring
 
@@ -57,13 +60,16 @@ than the width breaks between whole graphemes. A single grapheme wider than the
 width, such as a double-width character at width one, is kept alone on its line
 rather than clipped or dropped.
 
-Each continuation line starts with the style in effect at its first character and
-each wrapped line closes underline and any hyperlink, but not other attributes, so
-backgrounds survive across lines. A full reset does not close a hyperlink. The
-close uses the terminator the link was opened with. The last line of a text ends
-without a reset, except for a hyperlink that is still open, which is closed too.
-Style escapes attached to whitespace that wrapping drops are folded into the style
-the next line starts with; metadata escapes such as markers are never dropped.
+Each continuation line starts with the style in effect at its first character.
+A line that another line of the same literal line follows closes underline; the
+last line of a literal line leaves underline as the text left it. Every line closes a hyperlink that is still open at its end, with
+the terminator the link was opened with, and a full reset does not close a
+hyperlink. Colours and other attributes are not closed at a line end and each
+continuation restores them, so backgrounds survive across lines. Style escapes
+attached to whitespace that wrapping drops are folded into the style the next line
+starts with. Wrapping never drops metadata escapes such as markers: metadata of
+whitespace dropped at a break moves to the end of the previous line, and metadata of
+whitespace dropped before the first line's content moves to the start of that line.
 
 ```rust
 use maestro_tui::wrap_text_with_ansi;
@@ -90,10 +96,16 @@ assert_eq!(
 graphemes that fits beside the ellipsis, which defaults to `...`. When something
 was cut, the prefix, the ellipsis and the end of the result are separated by full
 resets, and a hyperlink in the prefix or the ellipsis is closed before its reset.
-Text that already fits is returned unchanged, even if the ellipsis would be wider
-than the limit. An ellipsis wider than the limit is clipped between graphemes. A
-result with no kept text and no ellipsis is empty, never a lone reset. With
-`pad`, the result is filled with spaces to the limit.
+Text that already fits is kept whole, even if the ellipsis would be wider than the
+limit; the only changes are that a hyperlink still open at its end is closed and
+that text with no visible characters keeps just its metadata escapes, so style
+escapes alone give an empty result. An ellipsis as wide as the limit or wider
+replaces the text and is clipped between graphemes; a clipped ellipsis whose
+graphemes take no cells, such as a combining mark, is still kept and framed. A
+result with no kept text and no ellipsis is empty, never a lone reset. With `pad`,
+spaces fill what the result measures short of the limit; a prefix and an ellipsis
+that join into one grapheme, such as the two halves of a flag, measure as that one
+grapheme.
 
 ```rust
 use maestro_tui::{truncate_to_width, TruncateOptions};
@@ -122,9 +134,11 @@ unlike in `visible_width`, and offsets beyond the text select nothing.
 
 `extract_segments` takes the text before an overlay and the text after it in one
 pass; the part before wins where they overlap. The part after begins with the
-style that was in effect at its first grapheme. `apply_background_to_line` pads a
-line to a width and hands it to a caller-supplied function exactly once; it never
-truncates.
+style that was in effect at its first grapheme. Metadata escapes such as the cursor
+marker stay in either part: between its graphemes, in front of the first grapheme
+after, and at the end of either part when the line ends inside it; metadata under
+the overlay is dropped. `apply_background_to_line` pads a line to a width and
+hands it to a caller-supplied function exactly once; it never truncates.
 
 ```rust
 use maestro_tui::{apply_background_to_line, extract_segments, slice_by_column};

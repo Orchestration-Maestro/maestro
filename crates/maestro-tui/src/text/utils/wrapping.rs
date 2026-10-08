@@ -49,6 +49,29 @@ struct Placed {
     kept: Range<usize>,
 }
 
+/// Breaks the graphemes of one literal line into lines, dropping whitespace-only lines.
+fn place_lines(parsed: &Parsed<'_>, graphemes: &[Grapheme], width: usize) -> Vec<Placed> {
+    let total: usize = graphemes.iter().map(|grapheme| grapheme.cells).sum();
+    let fits = total <= width;
+    let added = if fits {
+        std::iter::once(0..graphemes.len()).collect()
+    } else {
+        line_ranges(parsed, graphemes, width)
+    };
+    added
+        .into_iter()
+        .map(|added| Placed {
+            kept: if fits {
+                added.clone()
+            } else {
+                trim_end(parsed, graphemes, added.clone())
+            },
+            added,
+        })
+        .filter(|line| !line.kept.is_empty())
+        .collect()
+}
+
 /// Wraps one literal line.
 fn wrap_line(parsed: &Parsed<'_>, span: &Range<usize>, width: usize) -> Vec<String> {
     let graphemes: Vec<Grapheme> = parsed.graphemes(span.clone(), TAB_CELLS).collect();
@@ -56,25 +79,7 @@ fn wrap_line(parsed: &Parsed<'_>, span: &Range<usize>, width: usize) -> Vec<Stri
     let trailing_start = graphemes
         .last()
         .map_or(events.start, |last| last.events.end);
-    let total: usize = graphemes.iter().map(|grapheme| grapheme.cells).sum();
-    let fits = total <= width;
-    let added = if fits {
-        std::iter::once(0..graphemes.len()).collect()
-    } else {
-        line_ranges(parsed, &graphemes, width)
-    };
-    let placed: Vec<Placed> = added
-        .into_iter()
-        .map(|added| Placed {
-            kept: if fits {
-                added.clone()
-            } else {
-                trim_end(parsed, &graphemes, added.clone())
-            },
-            added,
-        })
-        .filter(|line| !line.kept.is_empty())
-        .collect();
+    let placed = place_lines(parsed, &graphemes, width);
     if placed.is_empty() {
         let mut empty = Emission::new(parsed);
         empty.opaque_events(events);
@@ -92,6 +97,9 @@ fn wrap_line(parsed: &Parsed<'_>, span: &Range<usize>, width: usize) -> Vec<Stri
         .map(|(position, line)| {
             let mut emission = Emission::new(parsed);
             emission.inherit(graphemes[line.kept.start].state);
+            if position == 0 {
+                emission.opaque_events(events.start..event_start(line.kept.start));
+            }
             for grapheme in &graphemes[line.kept.clone()] {
                 emission.grapheme(grapheme);
             }
@@ -108,7 +116,7 @@ fn wrap_line(parsed: &Parsed<'_>, span: &Range<usize>, width: usize) -> Vec<Stri
         .collect()
 }
 
-/// Grapheme ranges of the lines a too-wide logical line breaks into.
+/// Grapheme ranges of the lines a too-wide literal line breaks into.
 fn line_ranges(parsed: &Parsed<'_>, graphemes: &[Grapheme], width: usize) -> Vec<Range<usize>> {
     let mut lines = Vec::new();
     let mut current: Option<Fill> = None;

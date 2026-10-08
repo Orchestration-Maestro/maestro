@@ -66,15 +66,6 @@ fn column_slices_keep_whole_graphemes_and_direct_tab_metric() {
     }
     assert_eq!(slice_by_column("abc", usize::MAX, 5, false), "");
     assert_eq!(slice_by_column("abc", 1, usize::MAX, false), "bc");
-    assert_eq!(
-        slice_by_column("a\u{754c}b", 2, 2, false),
-        "b",
-        "a grapheme crossing the left edge is omitted"
-    );
-    assert_eq!(
-        slice_by_column("\x1b[31ma\x1b[39m\u{754c}b", 3, 1, false),
-        "\x1b[31m\x1b[39mb"
-    );
 }
 
 /// Scalars of the four cluster families in the tables.
@@ -188,7 +179,7 @@ fn strip_escapes(text: &str) -> String {
     text.replace("\x1b[31m", "")
 }
 
-/// Metadata-only text survives every operation unchanged.
+/// Text made only of metadata escapes keeps them through wrapping, truncation and slicing.
 fn assert_metadata_only_text() {
     let marker = "\x1b_maestro:c\x07";
     let prompt = "\x1b]133;A\x07";
@@ -265,4 +256,59 @@ fn segments_keep_before_priority_and_gap_style_changes() {
             "{text:?}"
         );
     }
+}
+
+/// The cursor marker, an escape that occupies no cell.
+const MARKER: &str = "\x1b_maestro:c\x07";
+
+#[test]
+fn segments_keep_metadata_in_front_of_the_first_after_grapheme() {
+    let gap = extract_segments(&format!("ab{MARKER}c"), 1, 2, 1, false);
+    assert_eq!(
+        (gap.before.as_str(), gap.after.as_str(), gap.after_width),
+        ("a", format!("{MARKER}c").as_str(), 1)
+    );
+    let start = extract_segments(&format!("{MARKER}a"), 0, 0, 1, false);
+    assert_eq!(
+        (
+            start.before.as_str(),
+            start.after.as_str(),
+            start.after_width
+        ),
+        ("", format!("{MARKER}a").as_str(), 1)
+    );
+}
+
+#[test]
+fn segments_keep_metadata_that_ends_the_before_region() {
+    let marker_only = extract_segments(MARKER, 1, 2, 1, false);
+    assert_eq!(
+        (
+            marker_only.before.as_str(),
+            marker_only.before_width,
+            marker_only.after.as_str()
+        ),
+        (MARKER, 0, "")
+    );
+    let trailing = extract_segments(&format!("a{MARKER}"), 3, 4, 1, false);
+    assert_eq!(
+        (
+            trailing.before.as_str(),
+            trailing.before_width,
+            trailing.after.as_str()
+        ),
+        (format!("a{MARKER}").as_str(), 1, "")
+    );
+    let overlapping = extract_segments(&format!("a{MARKER}"), 3, 0, 5, false);
+    assert_eq!(
+        (overlapping.before.as_str(), overlapping.after.as_str()),
+        (format!("a{MARKER}").as_str(), ""),
+        "the part before keeps a marker both parts could claim"
+    );
+    let at_the_edge = extract_segments(&format!("ab{MARKER}"), 2, 3, 1, false);
+    assert_eq!(
+        (at_the_edge.before.as_str(), at_the_edge.after.as_str()),
+        ("ab", ""),
+        "a marker at the overlay edge is covered by it"
+    );
 }

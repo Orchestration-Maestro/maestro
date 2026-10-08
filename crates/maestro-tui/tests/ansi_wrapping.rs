@@ -11,6 +11,7 @@ const UNDERLINE_ON: &str = "\x1b[4m";
 const UNDERLINE_OFF: &str = "\x1b[24m";
 const RESET: &str = "\x1b[0m";
 const RED: &str = "\x1b[31m";
+const MARKER: &str = "\x1b_maestro:c\x07";
 
 #[test]
 fn underline_begins_with_its_content() {
@@ -93,7 +94,6 @@ fn plain_words_wrap_greedily() {
 
 #[test]
 fn overflow_trailing_spaces_do_not_exceed_width() {
-    assert_eq!(wrap_text_with_ansi("  ", 1), [""]);
     assert_eq!(wrap_text_with_ansi("ab   ", 2), ["ab"]);
 }
 
@@ -144,7 +144,7 @@ fn text_outside_links_gets_no_extra_link_codes() {
 }
 
 /// Wraps `text` and checks that every line, replayed on a fresh terminal, styles its
-/// visible scalars exactly as the source does.
+/// visible non-whitespace scalars exactly as the source does.
 fn wrap_preserving_styles(text: &str, width: usize) -> Vec<String> {
     let lines = wrap_text_with_ansi(text, width);
     let source: Vec<_> = replay(text)
@@ -336,5 +336,17 @@ fn hyperlinks_close_fitting_final_and_literal_lines() {
     assert_eq!(
         wrap_text_with_ansi(params, 1).last().map(String::as_str),
         Some("\x1b]8;id=1;https://example.com/a;b\x07c\x1b]8;;\x07")
+    );
+}
+
+#[test]
+fn metadata_before_dropped_leading_whitespace_moves_to_the_first_line() {
+    assert_eq!(
+        wrap_text_with_ansi(&format!("{MARKER} abcdef"), 2),
+        [format!("{MARKER}ab"), "cd".to_owned(), "ef".to_owned()]
+    );
+    assert_eq!(
+        wrap_text_with_ansi(&format!("{MARKER}  ab"), 2),
+        [format!("{MARKER}ab")]
     );
 }

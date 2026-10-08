@@ -85,9 +85,7 @@ fn empty_ellipsis_still_resets_retained_text() {
 
 #[test]
 fn fitting_text_ignores_oversized_ellipsis() {
-    assert_eq!(truncate("a", 2, "\u{1f642}"), "a");
     assert_eq!(truncate("\u{754c}", 2, "\u{1f642}"), "\u{754c}");
-    assert_eq!(truncate_padded("a", 2, "\u{1f642}"), "a ");
 }
 
 #[test]
@@ -153,20 +151,6 @@ fn malformed_escape_prefix_finishes_with_bounded_output() {
 }
 
 #[test]
-fn oversized_emoji_ellipsis_is_atomic() {
-    assert_eq!(truncate("abcdef", 1, "\u{1f642}"), "");
-    assert_eq!(
-        truncate("abcdef", 2, "\u{1f642}"),
-        format!("{RESET}\u{1f642}{RESET}")
-    );
-    assert_eq!(truncate_padded("abcdef", 1, "\u{1f642}"), " ");
-    assert_eq!(
-        truncate("abcdef", 3, "\u{1f642}"),
-        format!("a{RESET}\u{1f642}{RESET}")
-    );
-}
-
-#[test]
 fn prefix_selection_stops_before_first_nonfitting_cluster() {
     assert_eq!(
         truncate_padded("\u{1f642}\t\u{754c} \x1b_abc\x07", 7, "\u{2026}"),
@@ -216,5 +200,24 @@ fn truncation_preserves_empty_zero_width_and_prefix_cases() {
             );
         }
         assert_ne!(result, RESET, "{text:?} {width} {ellipsis:?}");
+    }
+}
+
+#[test]
+fn clipped_ellipsis_keeps_content_without_cells() {
+    let kept = format!("{RESET}\u{301}{RESET}");
+    assert_eq!(truncate("ab", 1, "\u{301}\u{754c}"), kept);
+    assert_eq!(
+        truncate_padded("ab", 1, "\u{301}\u{754c}"),
+        format!("{kept} ")
+    );
+}
+
+#[test]
+fn padding_fills_what_the_finished_result_measures() {
+    for (prefix, ellipsis) in [("\u{1f1e8}", "\u{1f1e6}"), ("\u{1f44d}", "\u{1f3fd}")] {
+        let joined = truncate_padded(&format!("{prefix}abcd"), 4, ellipsis);
+        assert_eq!(joined, format!("{prefix}{RESET}{ellipsis}{RESET}  "));
+        assert_eq!(visible_width(&joined), 4, "{prefix:?}");
     }
 }

@@ -3,9 +3,9 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use maestro_tui::autocomplete::AutocompleteProvider;
-use maestro_tui::editor_component::{EditorCallbacks, EditorComponent};
-use maestro_tui::tui::{Component, InputHandler};
+use maestro_tui::editor_component::EditorCallbacks;
+use maestro_tui::tui::InputHandler;
+use maestro_tui::{AutocompleteProvider, Component, EditorComponent};
 
 /// The provider type the rich editor accepts.
 pub type FlagProvider = dyn AutocompleteProvider<Signal = Cell<bool>>;

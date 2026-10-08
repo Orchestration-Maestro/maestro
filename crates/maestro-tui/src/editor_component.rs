@@ -24,8 +24,10 @@ pub struct EditorCallbacks {
 
 /// A text editor that extensions can substitute for the built-in one.
 ///
-/// Optional operations return `None` when the editor does not support them and
-/// `Some(())` once they were carried out.
+/// Optional operations return `None` when the editor does not support them. Those that
+/// act return `Some(())` once carried out; [`get_expanded_text`] returns the expanded text.
+///
+/// [`get_expanded_text`]: EditorComponent::get_expanded_text
 pub trait EditorComponent: Component + InputHandler {
     /// The cancellation signal type of the completion providers the editor accepts.
     type Signal: ?Sized;
@@ -49,7 +51,8 @@ pub trait EditorComponent: Component + InputHandler {
         None
     }
 
-    /// The text with markers such as pastes expanded; callers fall back to [`get_text`].
+    /// The text with markers such as pastes expanded, or `None` when the editor does not
+    /// support expansion and [`get_text`] is all there is.
     ///
     /// [`get_text`]: EditorComponent::get_text
     fn get_expanded_text(&self) -> Option<String> {

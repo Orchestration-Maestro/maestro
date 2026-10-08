@@ -5,17 +5,14 @@ use std::io;
 use std::rc::Rc;
 use std::time::Duration;
 
-use maestro_tui::autocomplete::{
-    ArgumentCompletions, AutocompleteProvider, CompletionOptions, CursorPosition, SlashCommand,
+use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
+use maestro_tui::editor_component::EditorCallbacks;
+use maestro_tui::tui::{ComponentHandle, InputHandler, OverlayMarginValue};
+use maestro_tui::{
+    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, Focusable,
+    OverlayAnchor, OverlayHandle, OverlayMargin, OverlayOptions, SizeValue, SlashCommand, Terminal,
+    TruncatedText, is_focusable, visible_width,
 };
-use maestro_tui::components::TruncatedText;
-use maestro_tui::editor_component::{EditorCallbacks, EditorComponent};
-use maestro_tui::terminal::Terminal;
-use maestro_tui::tui::{
-    CURSOR_MARKER, Component, ComponentHandle, Container, Focusable, InputHandler, OverlayAnchor,
-    OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue, is_focusable,
-};
-use maestro_tui::{TruncateOptions, truncate_to_width, visible_width, wrap_text_with_ansi};
 
 mod fixtures {
     pub mod editors;
@@ -112,27 +109,7 @@ fn container_retains_shared_children_order_and_invalidation() {
 }
 
 #[test]
-fn documented_helpers_return_exact_styled_results() {
-    assert_eq!(visible_width("\x1b[31mHello\x1b[0m"), 5);
-    assert_eq!(
-        truncate_to_width("Hello World", 8, TruncateOptions::default()),
-        format!("Hello{RESET}...{RESET}")
-    );
-    assert_eq!(
-        truncate_to_width(
-            "Hello World",
-            8,
-            TruncateOptions {
-                ellipsis: "",
-                pad: false
-            }
-        ),
-        format!("Hello Wo{RESET}")
-    );
-    assert_eq!(
-        wrap_text_with_ansi("This is a long line that needs wrapping", 20),
-        ["This is a long line", "that needs wrapping"]
-    );
+fn tui_module_reexports_the_width_measure() {
     assert_eq!(maestro_tui::tui::visible_width("\x1b[31mHello\x1b[0m"), 5);
 }
 

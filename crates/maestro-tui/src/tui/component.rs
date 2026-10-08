@@ -16,7 +16,8 @@ pub trait Focusable {
     /// Whether the component currently has focus.
     fn focused(&self) -> bool;
 
-    /// Records a focus change; a focused component emits [`CURSOR_MARKER`] when it renders.
+    /// Records a focus change; a focused component is expected to emit [`CURSOR_MARKER`]
+    /// when it renders.
     fn set_focused(&mut self, focused: bool);
 }
 
@@ -33,7 +34,7 @@ pub trait Component {
         None
     }
 
-    /// Whether the component wants key-release events, which are filtered out otherwise.
+    /// Whether the component wants key-release events; `false` unless overridden.
     fn wants_key_release(&self) -> bool {
         false
     }

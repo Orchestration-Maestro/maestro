@@ -13,7 +13,7 @@ use super::parsed::Parsed;
 /// Cells a tab occupies when a text is measured, wrapped or truncated.
 pub(super) const TAB_CELLS: usize = 3;
 
-/// Strings measured at most this many at a time stay cached.
+/// Measured strings the width cache keeps before it evicts the oldest.
 const WIDTH_CACHE_SIZE: usize = 512;
 
 /// Compiles one of the fixed Unicode property expressions.
@@ -42,6 +42,8 @@ fn matches(expression: &LazyLock<Option<Regex>>, text: &str) -> bool {
 }
 
 /// Cells of one scalar: wide and fullwidth forms take two, everything else one.
+///
+/// The width library lists U+17A4 and U+17D8 as two and three cells; both take one.
 fn scalar_cells(scalar: char) -> usize {
     if matches!(scalar, '\u{17a4}' | '\u{17d8}') {
         return 1;

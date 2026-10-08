@@ -87,6 +87,8 @@ fn select(parsed: &Parsed<'_>, start: usize, end: usize, strict: bool) -> Run {
 }
 
 /// Emits a selection, carrying every earlier escape in front of its first grapheme.
+///
+/// A selection without graphemes emits only the metadata escapes of its range.
 fn render_run(parsed: &Parsed<'_>, run: &Run) -> String {
     let mut emission = Emission::new(parsed);
     if let Some(first) = run.graphemes.first() {
@@ -127,6 +129,10 @@ pub fn slice_by_column(line: &str, start_col: usize, length: usize, strict: bool
 /// Splits a line into the text before `before_end` and the text in `after_start..+after_len`.
 ///
 /// The text after the overlay starts from the style in effect at its first grapheme.
+///
+/// Metadata escapes stay in place in either part: between their graphemes, in front of
+/// the first grapheme after, and at the end of the text before when the line ends inside
+/// it. The part before wins where the two overlap; metadata under the overlay is dropped.
 #[must_use]
 pub fn extract_segments(
     line: &str,
@@ -156,21 +162,29 @@ pub fn extract_segments(
             next >= after_end
         }
     });
-    if let Some(tail) = tail.filter(|_| col >= after_start && col < after_end) {
-        after.trailing = tail;
+    if let Some(tail) = tail {
+        if col < before_end {
+            before.trailing = tail;
+        } else if col >= after_start && col < after_end {
+            after.trailing = tail;
+        }
     }
     ExtractedSegments {
-        before: render_run(
-            &parsed,
-            &Run {
-                trailing: 0..0,
-                ..before
-            },
-        ),
+        before: render_before(&parsed, &before),
         before_width: before.cells,
         after: render_after(&parsed, &after),
         after_width: after.cells,
     }
+}
+
+/// Emits the text before an overlay: its graphemes and the metadata that ends the region.
+fn render_before(parsed: &Parsed<'_>, run: &Run) -> String {
+    let mut emission = Emission::new(parsed);
+    for grapheme in &run.graphemes {
+        emission.grapheme(grapheme);
+    }
+    emission.opaque_events(run.trailing.clone());
+    emission.finish(false)
 }
 
 /// Emits the text after an overlay, starting from the style in effect at its first grapheme.
@@ -186,6 +200,7 @@ fn render_after(parsed: &Parsed<'_>, run: &Run) -> String {
         .map_or(first.state, |last| parsed.events[last].state);
     let mut emission = Emission::new(parsed);
     emission.inherit(state);
+    emission.opaque_events(leading);
     emission.content(first);
     for grapheme in rest {
         emission.grapheme(grapheme);
