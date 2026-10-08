@@ -126,7 +126,7 @@ thread_local! {
     static CACHE: RefCell<WidthCache> = RefCell::new(WidthCache::default());
 }
 
-/// Terminal columns `text` occupies; escapes take none and a tab takes three.
+/// Terminal columns `text` occupies; supported escapes take none and a tab takes three.
 #[must_use]
 pub fn visible_width(text: &str) -> usize {
     if text.is_empty() {
@@ -155,37 +155,35 @@ mod tests {
         CACHE.with_borrow(|cache| cache.get(text).is_some())
     }
 
-    fn entries() -> usize {
-        CACHE.with_borrow(|cache| cache.order.len())
-    }
-
     #[test]
     fn width_cache_preserves_original_keys_and_insertion_eviction() {
         assert_eq!(visible_width("plain ascii"), 11);
-        assert_eq!(entries(), 0, "printable ASCII bypasses the cache");
+        assert!(!cached("plain ascii"), "printable ASCII bypasses the cache");
 
         let variants = [("\t", 3), ("\x1b[31m\u{754c}", 2), ("\u{754c}", 2)];
         for (text, width) in variants {
             assert_eq!(visible_width(text), width);
+            assert!(cached(text), "{text:?} keeps its own key");
         }
-        assert_eq!(
-            entries(),
-            variants.len(),
-            "tab and escape variants keep their own keys"
-        );
 
-        for n in 0..WIDTH_CACHE_SIZE - variants.len() {
-            assert_eq!(
-                visible_width(&format!("\u{754c}{n}")),
-                2 + n.to_string().len()
-            );
+        let fillers: Vec<String> = (0..WIDTH_CACHE_SIZE - variants.len())
+            .map(|n| format!("\u{754c}{n}"))
+            .collect();
+        for (n, filler) in fillers.iter().enumerate() {
+            assert_eq!(visible_width(filler), 2 + n.to_string().len());
         }
-        assert_eq!(entries(), WIDTH_CACHE_SIZE);
+        assert!(
+            variants.iter().all(|(text, _)| cached(text)) && fillers.iter().all(|f| cached(f)),
+            "a full cache has evicted nothing"
+        );
         assert_eq!(visible_width("\t"), 3);
 
         assert_eq!(visible_width("\u{754c}overflow"), 10);
-        assert_eq!(entries(), WIDTH_CACHE_SIZE);
         assert!(!cached("\t"), "a hit must not refresh the oldest entry");
-        assert!(cached("\x1b[31m\u{754c}") && cached("\u{754c}overflow"));
+        assert!(
+            cached("\x1b[31m\u{754c}") && cached("\u{754c}") && cached("\u{754c}overflow"),
+            "only the oldest entry is evicted"
+        );
+        assert!(fillers.iter().all(|filler| cached(filler)));
     }
 }

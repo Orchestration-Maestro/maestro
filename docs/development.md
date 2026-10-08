@@ -113,8 +113,9 @@ controlled processes, without provider calls or operator credentials.
 
 `models-`, `agent-`, `tui-` and `app-` each offer `clean`, `build`, `dev`, `test` and
 `prepublish` forms. Package prepublish is clean then build, without root checks.
-`tui-test-ansi` explicitly selects terminal wrapping tests. These commands fail
-when their owning crate is absent; no placeholder product package is installed.
+`tui-test-ansi` runs only the `ansi_wrapping` integration-test target of the
+terminal toolkit. These commands fail when their owning crate is absent; no
+placeholder product package is installed.
 
 The following command groups are unavailable until delivered by their owners:
 

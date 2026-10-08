@@ -27,52 +27,35 @@ impl Default for TruncateOptions<'_> {
 struct Scan {
     /// Graphemes kept, in order.
     kept: Vec<Grapheme>,
-    /// Cells of the kept graphemes.
-    kept_cells: usize,
-    /// Cells of the whole text when it fits the width, otherwise `None`.
-    total: Option<usize>,
+    /// Whether the whole text measures at most the width.
+    fits: bool,
 }
 
 impl Scan {
     /// Keeps graphemes while they fit `budget`; stops measuring once `max_width` is passed.
     fn new(parsed: &Parsed<'_>, budget: usize, max_width: usize) -> Self {
-        let mut scan = Self {
-            kept: Vec::new(),
-            kept_cells: 0,
-            total: None,
-        };
+        let mut kept = Vec::new();
+        let mut kept_cells = 0;
         let mut seen = 0;
         let mut keeping = true;
         for grapheme in parsed.graphemes(0..parsed.visible.len(), TAB_CELLS) {
-            if keeping && scan.kept_cells + grapheme.cells <= budget {
-                scan.kept_cells += grapheme.cells;
-                scan.kept.push(grapheme.clone());
+            let cells = grapheme.cells;
+            if keeping && kept_cells + cells <= budget {
+                kept_cells += cells;
+                kept.push(grapheme);
             } else {
                 keeping = false;
             }
-            seen += grapheme.cells;
+            seen += cells;
             if seen > max_width {
-                return scan;
+                return Self { kept, fits: false };
             }
         }
-        scan.total = Some(seen);
-        scan
-    }
-}
-
-/// Spaces that fill `cells` columns when padding is requested.
-fn padding(pad: bool, cells: usize) -> String {
-    if pad {
-        " ".repeat(cells)
-    } else {
-        String::new()
+        Self { kept, fits: true }
     }
 }
 
 /// Fills a finished result with spaces up to `max_width` as measured on the result itself.
-///
-/// Prefix and ellipsis can join into one cluster, such as a flag, that is narrower than
-/// the sum of their widths.
 fn pad_measured(text: String, max_width: usize) -> String {
     let fill = max_width.saturating_sub(visible_width(&text));
     text + &" ".repeat(fill)
@@ -112,34 +95,54 @@ fn frame(prefix: &str, ellipsis: &str) -> String {
     }
 }
 
+/// Drops graphemes from the end of `kept` until the prefix framed with `ellipsis` measures at
+/// most `max_width`, or none remain.
+///
+/// Prefix and ellipsis can join into one grapheme, such as a mark that widens its base, so
+/// each candidate is measured as it will be emitted.
+fn fit_prefix(
+    parsed: &Parsed<'_>,
+    mut kept: Vec<Grapheme>,
+    ellipsis: &str,
+    max_width: usize,
+) -> String {
+    let mut candidate = frame(&render_kept(parsed, &kept), ellipsis);
+    while visible_width(&candidate) > max_width && kept.pop().is_some() {
+        candidate = frame(&render_kept(parsed, &kept), ellipsis);
+    }
+    candidate
+}
+
+/// The text cut to `max_width` columns, before any padding.
+fn shorten(text: &str, max_width: usize, ellipsis: &str) -> String {
+    let ellipsis_cells = visible_width(ellipsis);
+    let parsed = Parsed::parse(text);
+    let scan = Scan::new(&parsed, max_width.saturating_sub(ellipsis_cells), max_width);
+    if scan.fits {
+        return render_all(&parsed);
+    }
+    let ellipsis = Parsed::parse(ellipsis);
+    if ellipsis_cells >= max_width {
+        let clipped = Scan::new(&ellipsis, max_width, max_width).kept;
+        return if clipped.is_empty() {
+            String::new()
+        } else {
+            frame("", &render_kept(&ellipsis, &clipped))
+        };
+    }
+    fit_prefix(&parsed, scan.kept, &render_all(&ellipsis), max_width)
+}
+
 /// Shortens `text` to at most `max_width` columns, appending the ellipsis when it cuts.
 #[must_use]
 pub fn truncate_to_width(text: &str, max_width: usize, options: TruncateOptions<'_>) -> String {
     if max_width == 0 {
         return String::new();
     }
-    if text.is_empty() {
-        return padding(options.pad, max_width);
-    }
-    let ellipsis_cells = visible_width(options.ellipsis);
-    let parsed = Parsed::parse(text);
-    let scan = Scan::new(&parsed, max_width.saturating_sub(ellipsis_cells), max_width);
-    if let Some(total) = scan.total {
-        return render_all(&parsed) + &padding(options.pad, max_width - total);
-    }
-    let ellipsis = Parsed::parse(options.ellipsis);
-    let framed = if ellipsis_cells >= max_width {
-        let clipped = Scan::new(&ellipsis, max_width, max_width);
-        if clipped.kept.is_empty() {
-            return padding(options.pad, max_width);
-        }
-        frame("", &render_kept(&ellipsis, &clipped.kept))
-    } else {
-        frame(&render_kept(&parsed, &scan.kept), &render_all(&ellipsis))
-    };
+    let shortened = shorten(text, max_width, options.ellipsis);
     if options.pad {
-        pad_measured(framed, max_width)
+        pad_measured(shortened, max_width)
     } else {
-        framed
+        shortened
     }
 }

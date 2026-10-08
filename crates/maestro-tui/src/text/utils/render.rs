@@ -4,7 +4,7 @@ use std::ops::Range;
 
 use super::parsed::{Grapheme, Parsed};
 
-/// Terminal reset that separates the parts of a truncated result and ends it.
+/// Full terminal reset written after the prefix and after the ellipsis of a cut text.
 pub(super) const RESET: &str = "\x1b[0m";
 
 /// One output string under construction, tracking the style the terminal is left in.

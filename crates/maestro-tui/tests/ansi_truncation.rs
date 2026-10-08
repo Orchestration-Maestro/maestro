@@ -221,3 +221,15 @@ fn padding_fills_what_the_finished_result_measures() {
         assert_eq!(visible_width(&joined), 4, "{prefix:?}");
     }
 }
+
+#[test]
+fn prefix_shrinks_until_the_joined_result_fits() {
+    let ellipsis = format!("{RESET}\u{fe0f}{RESET}");
+    for (text, width, kept) in [("©abcd", 1, ""), ("ab©cd", 3, "ab")] {
+        let unpadded = truncate(text, width, "\u{fe0f}");
+        assert_eq!(unpadded, format!("{kept}{ellipsis}"), "{text:?}");
+        let padded = truncate_padded(text, width, "\u{fe0f}");
+        assert_eq!(visible_width(&padded), width, "{text:?}");
+        assert_eq!(padded.trim_end_matches(' '), unpadded, "{text:?}");
+    }
+}

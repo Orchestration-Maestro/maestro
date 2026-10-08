@@ -3,7 +3,8 @@
 use crate::text::utils::{TruncateOptions, truncate_to_width, visible_width};
 use crate::tui::Component;
 
-/// Shows the first line of a text, truncated to the viewport, between blank rows.
+/// Shows the first line of a text, truncated to the viewport, with `padding_y` blank rows
+/// above and below.
 pub struct TruncatedText {
     /// Source text; only its first line is shown.
     text: String,

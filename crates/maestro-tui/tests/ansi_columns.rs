@@ -68,12 +68,12 @@ fn column_slices_keep_whole_graphemes_and_direct_tab_metric() {
     assert_eq!(slice_by_column("abc", 1, usize::MAX, false), "bc");
 }
 
-/// Scalars of the four cluster families in the tables.
-const FAMILIES: [&[char]; 4] = [
-    &['\u{1f1e8}', '\u{1f1e6}'],
-    &['e', '\u{301}'],
-    &['\u{1f44d}', '\u{1f3fd}'],
-    &['\u{1f468}', '\u{200d}', '\u{1f4bb}'],
+/// Scalars of the four cluster families in the tables, and their cells when followed by `X`.
+const FAMILIES: [(&[char], usize); 4] = [
+    (&['\u{1f1e8}', '\u{1f1e6}'], 3),
+    (&['e', '\u{301}'], 2),
+    (&['\u{1f44d}', '\u{1f3fd}'], 3),
+    (&['\u{1f468}', '\u{200d}', '\u{1f4bb}'], 3),
 ];
 
 /// The text of one family with `escape` before scalar `position`, followed by `X`.
@@ -92,9 +92,9 @@ fn with_escape(family: &[char], position: usize) -> String {
     text
 }
 
-/// Checks every column operation on one text against its expected results.
-fn assert_cluster_case(text: &str, width: usize, case: &ClusterCase) {
-    assert_eq!(visible_width(text), case.cells, "{text:?}");
+/// Checks every column operation on one text against its expected results, and that the
+/// pieces of output hold the whole `cluster` or none of it.
+fn assert_cluster_case(text: &str, cluster: &str, width: usize, case: &ClusterCase) {
     assert_eq!(
         wrap_text_with_ansi(text, width),
         case.wrapped,
@@ -125,6 +125,9 @@ fn assert_cluster_case(text: &str, width: usize, case: &ClusterCase) {
         (before, before_width, after, after_width),
         "{text:?} {width}"
     );
+    for piece in [&slice.text, &strict.text, &parts.before, &parts.after] {
+        assert_cluster_whole(piece, cluster, text);
+    }
 }
 
 /// A piece of output keeps the cluster whole: it holds all of it or none of it.
@@ -137,41 +140,25 @@ fn assert_cluster_whole(piece: &str, cluster: &str, text: &str) {
     );
 }
 
-/// Every family, escape position and width in the cluster tables.
-fn cluster_inputs() -> Vec<(String, String, usize)> {
-    let mut inputs = Vec::new();
-    for family in FAMILIES {
+#[test]
+fn maestro_text_keeps_escaped_flag_atomic() {
+    let mut checked = 0;
+    for (family, cells) in FAMILIES {
         let cluster: String = family.iter().collect();
         for position in 0..=family.len() {
+            let text = with_escape(family, position);
+            assert_eq!(visible_width(&text), cells, "{text:?}");
             for width in 0..=4 {
-                inputs.push((with_escape(family, position), cluster.clone(), width));
+                let case = CLUSTER_CASES
+                    .iter()
+                    .find(|case| case.text == text && case.width == width)
+                    .unwrap_or_else(|| panic!("no expected result for {text:?} at {width}"));
+                assert_cluster_case(&text, &cluster, width, case);
+                checked += 1;
             }
         }
     }
-    inputs
-}
-
-#[test]
-fn maestro_text_keeps_escaped_flag_atomic() {
-    let inputs = cluster_inputs();
-    assert_eq!(inputs.len(), CLUSTER_CASES.len());
-    for (text, cluster, width) in &inputs {
-        let case = CLUSTER_CASES
-            .iter()
-            .find(|case| case.text == *text && case.width == *width)
-            .unwrap_or_else(|| panic!("no expected result for {text:?} at {width}"));
-        assert_cluster_case(text, *width, case);
-        let segments = extract_segments(text, *width, *width, 1, true);
-        let pieces = [
-            slice_by_column(text, 0, *width, false),
-            slice_by_column(text, 0, *width, true),
-            segments.before,
-            segments.after,
-        ];
-        for piece in &pieces {
-            assert_cluster_whole(piece, cluster, text);
-        }
-    }
+    assert_eq!(checked, CLUSTER_CASES.len());
 }
 
 /// Text without the `ESC [ 31 m` escape used by the cluster tables.

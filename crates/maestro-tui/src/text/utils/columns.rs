@@ -40,26 +40,27 @@ struct Run {
 
 impl Run {
     /// Adds a grapheme to the selection.
-    fn push(&mut self, grapheme: &Grapheme) {
+    fn push(&mut self, grapheme: Grapheme) {
         self.cells += grapheme.cells;
-        self.graphemes.push(grapheme.clone());
+        self.graphemes.push(grapheme);
     }
 }
 
-/// Walks the graphemes of a line with their start columns until `visit` returns `true`.
+/// Walks the graphemes of a line with the columns each spans until `visit` returns `true`.
 ///
 /// Returns the column reached and the escapes after the last grapheme when the walk
 /// consumed the whole line.
 fn walk(
     parsed: &Parsed<'_>,
-    mut visit: impl FnMut(usize, &Grapheme) -> bool,
+    mut visit: impl FnMut(Range<usize>, Grapheme) -> bool,
 ) -> (usize, Option<Range<usize>>) {
     let mut col = 0usize;
     let mut trailing = 0;
     for grapheme in parsed.graphemes(0..parsed.visible.len(), 0) {
-        let stop = visit(col, &grapheme);
-        col = col.saturating_add(grapheme.cells);
+        let next = col.saturating_add(grapheme.cells);
         trailing = grapheme.events.end;
+        let stop = visit(col..next, grapheme);
+        col = next;
         if stop {
             return (col, None);
         }
@@ -70,15 +71,15 @@ fn walk(
 /// Selects the graphemes that start in `start..end`, optionally only those that also end there.
 fn select(parsed: &Parsed<'_>, start: usize, end: usize, strict: bool) -> Run {
     let mut run = Run::default();
-    let (col, tail) = walk(parsed, |col, grapheme| {
-        if col >= start && col < end {
-            if !strict || col.saturating_add(grapheme.cells) <= end {
+    let (col, tail) = walk(parsed, |cols, grapheme| {
+        if cols.start >= start && cols.start < end {
+            if !strict || cols.end <= end {
                 run.push(grapheme);
             } else {
-                run.trailing = parsed.leading_events(grapheme);
+                run.trailing = parsed.leading_events(&grapheme);
             }
         }
-        col.saturating_add(grapheme.cells) >= end
+        cols.end >= end
     });
     if let Some(tail) = tail.filter(|_| col >= start && col < end) {
         run.trailing = tail;
@@ -145,21 +146,20 @@ pub fn extract_segments(
     let after_end = after_start.saturating_add(after_len);
     let mut before = Run::default();
     let mut after = Run::default();
-    let (col, tail) = walk(&parsed, |col, grapheme| {
-        let next = col.saturating_add(grapheme.cells);
-        if col < before_end {
+    let (col, tail) = walk(&parsed, |cols, grapheme| {
+        if cols.start < before_end {
             before.push(grapheme);
-        } else if col >= after_start && col < after_end {
-            if !strict_after || next <= after_end {
+        } else if cols.start >= after_start && cols.start < after_end {
+            if !strict_after || cols.end <= after_end {
                 after.push(grapheme);
             } else {
-                after.trailing = parsed.leading_events(grapheme);
+                after.trailing = parsed.leading_events(&grapheme);
             }
         }
         if after_len == 0 {
-            next >= before_end
+            cols.end >= before_end
         } else {
-            next >= after_end
+            cols.end >= after_end
         }
     });
     if let Some(tail) = tail {

@@ -6,8 +6,6 @@ pub struct ClusterCase {
     pub text: &'static str,
     /// Width passed to every operation.
     pub width: usize,
-    /// Cells of the whole text.
-    pub cells: usize,
     /// Wrapped lines.
     pub wrapped: &'static [&'static str],
     /// Truncation without an ellipsis.
@@ -25,7 +23,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -35,7 +32,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1b}[31m\u{1f1e8}\u{1f1e6}", 2),
@@ -45,7 +41,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "\u{1b}[31m\u{1f1e8}\u{1f1e6}\u{1b}[0m",
         slice: ("\u{1b}[31m\u{1f1e8}\u{1f1e6}", 2),
@@ -55,7 +50,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f1e8}\u{1f1e6}X"],
         truncated: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         slice: ("\u{1b}[31m\u{1f1e8}\u{1f1e6}X", 3),
@@ -65,7 +59,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f1e8}\u{1f1e6}X"],
         truncated: "\u{1b}[31m\u{1f1e8}\u{1f1e6}X",
         slice: ("\u{1b}[31m\u{1f1e8}\u{1f1e6}X", 3),
@@ -75,7 +68,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1b}[31m\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -85,7 +77,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1b}[31m\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f1e8}\u{1b}[31m\u{1f1e6}", 2),
@@ -95,7 +86,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1b}[31m\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "\u{1f1e8}\u{1b}[31m\u{1f1e6}\u{1b}[0m",
         slice: ("\u{1f1e8}\u{1b}[31m\u{1f1e6}", 2),
@@ -105,7 +95,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1b}[31m\u{1f1e6}X"],
         truncated: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         slice: ("\u{1f1e8}\u{1b}[31m\u{1f1e6}X", 3),
@@ -115,7 +104,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1b}[31m\u{1f1e6}X"],
         truncated: "\u{1f1e8}\u{1b}[31m\u{1f1e6}X",
         slice: ("\u{1f1e8}\u{1b}[31m\u{1f1e6}X", 3),
@@ -125,7 +113,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -135,7 +122,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f1e8}\u{1f1e6}", 2),
@@ -145,7 +131,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1f1e6}", "\u{1b}[31mX"],
         truncated: "\u{1f1e8}\u{1f1e6}\u{1b}[0m",
         slice: ("\u{1f1e8}\u{1f1e6}", 2),
@@ -155,7 +140,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1f1e6}\u{1b}[31mX"],
         truncated: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         slice: ("\u{1f1e8}\u{1f1e6}\u{1b}[31mX", 3),
@@ -165,7 +149,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f1e8}\u{1f1e6}\u{1b}[31mX"],
         truncated: "\u{1f1e8}\u{1f1e6}\u{1b}[31mX",
         slice: ("\u{1f1e8}\u{1f1e6}\u{1b}[31mX", 3),
@@ -175,7 +158,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31me\u{301}X",
         width: 0,
-        cells: 2,
         wrapped: &["\u{1b}[31me\u{301}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -185,7 +167,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31me\u{301}X",
         width: 1,
-        cells: 2,
         wrapped: &["\u{1b}[31me\u{301}", "\u{1b}[31mX"],
         truncated: "\u{1b}[31me\u{301}\u{1b}[0m",
         slice: ("\u{1b}[31me\u{301}", 1),
@@ -195,7 +176,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31me\u{301}X",
         width: 2,
-        cells: 2,
         wrapped: &["\u{1b}[31me\u{301}X"],
         truncated: "\u{1b}[31me\u{301}X",
         slice: ("\u{1b}[31me\u{301}X", 2),
@@ -205,7 +185,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31me\u{301}X",
         width: 3,
-        cells: 2,
         wrapped: &["\u{1b}[31me\u{301}X"],
         truncated: "\u{1b}[31me\u{301}X",
         slice: ("\u{1b}[31me\u{301}X", 2),
@@ -215,7 +194,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31me\u{301}X",
         width: 4,
-        cells: 2,
         wrapped: &["\u{1b}[31me\u{301}X"],
         truncated: "\u{1b}[31me\u{301}X",
         slice: ("\u{1b}[31me\u{301}X", 2),
@@ -225,7 +203,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{1b}[31m\u{301}X",
         width: 0,
-        cells: 2,
         wrapped: &["e\u{1b}[31m\u{301}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -235,7 +212,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{1b}[31m\u{301}X",
         width: 1,
-        cells: 2,
         wrapped: &["e\u{1b}[31m\u{301}", "\u{1b}[31mX"],
         truncated: "e\u{1b}[31m\u{301}\u{1b}[0m",
         slice: ("e\u{1b}[31m\u{301}", 1),
@@ -245,7 +221,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{1b}[31m\u{301}X",
         width: 2,
-        cells: 2,
         wrapped: &["e\u{1b}[31m\u{301}X"],
         truncated: "e\u{1b}[31m\u{301}X",
         slice: ("e\u{1b}[31m\u{301}X", 2),
@@ -255,7 +230,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{1b}[31m\u{301}X",
         width: 3,
-        cells: 2,
         wrapped: &["e\u{1b}[31m\u{301}X"],
         truncated: "e\u{1b}[31m\u{301}X",
         slice: ("e\u{1b}[31m\u{301}X", 2),
@@ -265,7 +239,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{1b}[31m\u{301}X",
         width: 4,
-        cells: 2,
         wrapped: &["e\u{1b}[31m\u{301}X"],
         truncated: "e\u{1b}[31m\u{301}X",
         slice: ("e\u{1b}[31m\u{301}X", 2),
@@ -275,7 +248,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 0,
-        cells: 2,
         wrapped: &["e\u{301}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -285,7 +257,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 1,
-        cells: 2,
         wrapped: &["e\u{301}", "\u{1b}[31mX"],
         truncated: "e\u{301}\u{1b}[0m",
         slice: ("e\u{301}", 1),
@@ -295,7 +266,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 2,
-        cells: 2,
         wrapped: &["e\u{301}\u{1b}[31mX"],
         truncated: "e\u{301}\u{1b}[31mX",
         slice: ("e\u{301}\u{1b}[31mX", 2),
@@ -305,7 +275,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 3,
-        cells: 2,
         wrapped: &["e\u{301}\u{1b}[31mX"],
         truncated: "e\u{301}\u{1b}[31mX",
         slice: ("e\u{301}\u{1b}[31mX", 2),
@@ -315,7 +284,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "e\u{301}\u{1b}[31mX",
         width: 4,
-        cells: 2,
         wrapped: &["e\u{301}\u{1b}[31mX"],
         truncated: "e\u{301}\u{1b}[31mX",
         slice: ("e\u{301}\u{1b}[31mX", 2),
@@ -325,7 +293,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -335,7 +302,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1b}[31m\u{1f44d}\u{1f3fd}", 2),
@@ -345,7 +311,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "\u{1b}[31m\u{1f44d}\u{1f3fd}\u{1b}[0m",
         slice: ("\u{1b}[31m\u{1f44d}\u{1f3fd}", 2),
@@ -355,7 +320,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f44d}\u{1f3fd}X"],
         truncated: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         slice: ("\u{1b}[31m\u{1f44d}\u{1f3fd}X", 3),
@@ -365,7 +329,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f44d}\u{1f3fd}X"],
         truncated: "\u{1b}[31m\u{1f44d}\u{1f3fd}X",
         slice: ("\u{1b}[31m\u{1f44d}\u{1f3fd}X", 3),
@@ -375,7 +338,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1b}[31m\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -385,7 +347,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1b}[31m\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f44d}\u{1b}[31m\u{1f3fd}", 2),
@@ -395,7 +356,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1b}[31m\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "\u{1f44d}\u{1b}[31m\u{1f3fd}\u{1b}[0m",
         slice: ("\u{1f44d}\u{1b}[31m\u{1f3fd}", 2),
@@ -405,7 +365,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1b}[31m\u{1f3fd}X"],
         truncated: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         slice: ("\u{1f44d}\u{1b}[31m\u{1f3fd}X", 3),
@@ -415,7 +374,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1b}[31m\u{1f3fd}X"],
         truncated: "\u{1f44d}\u{1b}[31m\u{1f3fd}X",
         slice: ("\u{1f44d}\u{1b}[31m\u{1f3fd}X", 3),
@@ -425,7 +383,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -435,7 +392,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f44d}\u{1f3fd}", 2),
@@ -445,7 +401,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1f3fd}", "\u{1b}[31mX"],
         truncated: "\u{1f44d}\u{1f3fd}\u{1b}[0m",
         slice: ("\u{1f44d}\u{1f3fd}", 2),
@@ -455,7 +410,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1f3fd}\u{1b}[31mX"],
         truncated: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         slice: ("\u{1f44d}\u{1f3fd}\u{1b}[31mX", 3),
@@ -465,7 +419,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f44d}\u{1f3fd}\u{1b}[31mX"],
         truncated: "\u{1f44d}\u{1f3fd}\u{1b}[31mX",
         slice: ("\u{1f44d}\u{1f3fd}\u{1b}[31mX", 3),
@@ -475,7 +428,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -485,7 +437,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}", 2),
@@ -495,7 +446,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}\u{1b}[0m",
         slice: ("\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}", 2),
@@ -505,7 +455,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X"],
         truncated: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         slice: ("\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X", 3),
@@ -515,7 +464,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X"],
         truncated: "\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X",
         slice: ("\u{1b}[31m\u{1f468}\u{200d}\u{1f4bb}X", 3),
@@ -525,7 +473,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -535,7 +482,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}", 2),
@@ -545,7 +491,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}\u{1b}[0m",
         slice: ("\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}", 2),
@@ -555,7 +500,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X"],
         truncated: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         slice: ("\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X", 3),
@@ -565,7 +509,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X"],
         truncated: "\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X",
         slice: ("\u{1f468}\u{1b}[31m\u{200d}\u{1f4bb}X", 3),
@@ -575,7 +518,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -585,7 +527,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}", 2),
@@ -595,7 +536,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}\u{1b}[0m",
         slice: ("\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}", 2),
@@ -605,7 +545,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X"],
         truncated: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         slice: ("\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X", 3),
@@ -615,7 +554,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X"],
         truncated: "\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X",
         slice: ("\u{1f468}\u{200d}\u{1b}[31m\u{1f4bb}X", 3),
@@ -625,7 +563,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 0,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("", 0),
@@ -635,7 +572,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 1,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "",
         slice: ("\u{1f468}\u{200d}\u{1f4bb}", 2),
@@ -645,7 +581,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 2,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1f4bb}", "\u{1b}[31mX"],
         truncated: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[0m",
         slice: ("\u{1f468}\u{200d}\u{1f4bb}", 2),
@@ -655,7 +590,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 3,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX"],
         truncated: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         slice: ("\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX", 3),
@@ -665,7 +599,6 @@ pub const CLUSTER_CASES: &[ClusterCase] = &[
     ClusterCase {
         text: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         width: 4,
-        cells: 3,
         wrapped: &["\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX"],
         truncated: "\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX",
         slice: ("\u{1f468}\u{200d}\u{1f4bb}\u{1b}[31mX", 3),

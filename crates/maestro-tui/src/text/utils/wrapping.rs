@@ -37,7 +37,7 @@ pub fn wrap_text_with_ansi(text: &str, width: usize) -> Vec<String> {
     parsed
         .lines()
         .into_iter()
-        .flat_map(|span| wrap_line(&parsed, &span, width))
+        .flat_map(|span| wrap_line(&parsed, span, width))
         .collect()
 }
 
@@ -45,11 +45,16 @@ pub fn wrap_text_with_ansi(text: &str, width: usize) -> Vec<String> {
 struct Placed {
     /// Graphemes added to the line, trailing whitespace included.
     added: Range<usize>,
-    /// The added graphemes without trailing whitespace.
+    /// The added graphemes; the trailing whitespace is left out only when the literal line
+    /// overflows the width.
     kept: Range<usize>,
 }
 
-/// Breaks the graphemes of one literal line into lines, dropping whitespace-only lines.
+/// Breaks the graphemes of one literal line into lines.
+///
+/// A literal line that fits the width stays whole, whitespace included. An overflowing one
+/// is broken into lines; each loses its trailing whitespace and a line left empty by that is
+/// dropped.
 fn place_lines(parsed: &Parsed<'_>, graphemes: &[Grapheme], width: usize) -> Vec<Placed> {
     let total: usize = graphemes.iter().map(|grapheme| grapheme.cells).sum();
     let fits = total <= width;
@@ -60,22 +65,25 @@ fn place_lines(parsed: &Parsed<'_>, graphemes: &[Grapheme], width: usize) -> Vec
     };
     added
         .into_iter()
-        .map(|added| Placed {
-            kept: if fits {
-                added.clone()
+        .map(|added| {
+            let end = if fits {
+                added.end
             } else {
-                trim_end(parsed, graphemes, added.clone())
-            },
-            added,
+                trim_end(parsed, graphemes, &added)
+            };
+            Placed {
+                kept: added.start..end,
+                added,
+            }
         })
         .filter(|line| !line.kept.is_empty())
         .collect()
 }
 
 /// Wraps one literal line.
-fn wrap_line(parsed: &Parsed<'_>, span: &Range<usize>, width: usize) -> Vec<String> {
-    let graphemes: Vec<Grapheme> = parsed.graphemes(span.clone(), TAB_CELLS).collect();
-    let events = parsed.events_in(span);
+fn wrap_line(parsed: &Parsed<'_>, span: Range<usize>, width: usize) -> Vec<String> {
+    let events = parsed.events_in(&span);
+    let graphemes: Vec<Grapheme> = parsed.graphemes(span, TAB_CELLS).collect();
     let trailing_start = graphemes
         .last()
         .map_or(events.start, |last| last.events.end);
@@ -200,11 +208,10 @@ fn break_word(
     piece
 }
 
-/// Drops whitespace graphemes from the end of a line.
-fn trim_end(parsed: &Parsed<'_>, graphemes: &[Grapheme], range: Range<usize>) -> Range<usize> {
-    let kept = graphemes[range.clone()]
+/// Index after the last non-whitespace grapheme of `line`, or its start when all are whitespace.
+fn trim_end(parsed: &Parsed<'_>, graphemes: &[Grapheme], line: &Range<usize>) -> usize {
+    graphemes[line.start..line.end]
         .iter()
         .rposition(|grapheme| !parsed.text(grapheme).chars().all(is_whitespace_scalar))
-        .map_or(0, |last| last + 1);
-    range.start..range.start + kept
+        .map_or(line.start, |last| line.start + last + 1)
 }

@@ -41,7 +41,6 @@ use maestro_tui::{extract_ansi_code, get_segmenter, visible_width};
 
 assert_eq!(visible_width("\x1b[31mHello\x1b[0m"), 5);
 assert_eq!(visible_width("\t\x1b[31m\u{754c}\x1b[0m"), 5);
-assert_eq!(visible_width("\u{1f1e8}"), 2);
 
 let segments: Vec<_> = get_segmenter("a\u{1f642}e\u{301}").collect();
 assert_eq!(segments, [(0, "a"), (1, "\u{1f642}"), (5, "e\u{301}")]);
@@ -53,12 +52,13 @@ assert_eq!((found.code, found.length), ("\x1b[1;4m", 6));
 ## Wrapping
 
 `wrap_text_with_ansi(text, width)` breaks at ASCII spaces, greedily, and returns
-lines without padding. Whitespace that fits stays; whitespace that would overflow
-is dropped, and trailing whitespace of a wrapped line is trimmed. Literal newlines
-keep their structure, and an intentionally empty line stays empty. A word wider
-than the width breaks between whole graphemes. A single grapheme wider than the
-width, such as a double-width character at width one, is kept alone on its line
-rather than clipped or dropped.
+lines without padding. A literal line that fits the width is returned as it is,
+whitespace included. One that overflows loses the whitespace that would overflow
+and the trailing whitespace of each wrapped line, and a line left empty by that
+is dropped. Literal newlines keep their structure, and an intentionally empty
+line stays empty. A word wider than the width breaks between whole graphemes. A
+single grapheme wider than the width, such as a double-width character at width
+one, is kept alone on its line rather than clipped or dropped.
 
 Each continuation line starts with the style in effect at its first character.
 A line that another line of the same literal line follows closes underline; the
@@ -103,9 +103,10 @@ escapes alone give an empty result. An ellipsis as wide as the limit or wider
 replaces the text and is clipped between graphemes; a clipped ellipsis whose
 graphemes take no cells, such as a combining mark, is still kept and framed. A
 result with no kept text and no ellipsis is empty, never a lone reset. With `pad`,
-spaces fill what the result measures short of the limit; a prefix and an ellipsis
-that join into one grapheme, such as the two halves of a flag, measure as that one
-grapheme.
+spaces fill what the result measures short of the limit. A prefix and an ellipsis
+can join into one grapheme, such as the two halves of a flag or a base followed by
+a variation selector. The result is measured as emitted: when joining makes it
+wider than the limit, the prefix loses graphemes until it fits.
 
 ```rust
 use maestro_tui::{truncate_to_width, TruncateOptions};
@@ -141,10 +142,7 @@ the overlay is dropped. `apply_background_to_line` pads a line to a width and
 hands it to a caller-supplied function exactly once; it never truncates.
 
 ```rust
-use maestro_tui::{apply_background_to_line, extract_segments, slice_by_column};
-
-assert_eq!(slice_by_column("a\u{754c}b", 0, 2, false), "a\u{754c}");
-assert_eq!(slice_by_column("a\u{754c}b", 0, 2, true), "a");
+use maestro_tui::{apply_background_to_line, extract_segments};
 
 let parts = extract_segments("\x1b[31mab\x1b[1;44mcd\x1b[39mef", 1, 4, 2, false);
 assert_eq!((parts.before.as_str(), parts.before_width), ("\x1b[31ma", 1));

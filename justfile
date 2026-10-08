@@ -127,9 +127,9 @@ dev-compile: models-dev
 # Select the model compiler only.
 models-dev-compile: models-dev
 
-# Run the terminal wrapping subset explicitly.
+# Run the terminal wrapping integration tests explicitly.
 tui-test-ansi *args:
-    cargo test -p maestro-tui --locked wrap_ansi "$@"
+    cargo test -p maestro-tui --locked --test ansi_wrapping "$@"
 
 # Compile standalone prerequisites before copying prepared assets.
 build-binary:
