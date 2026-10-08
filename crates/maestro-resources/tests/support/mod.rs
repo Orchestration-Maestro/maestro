@@ -141,3 +141,18 @@ impl ResourceOperations for Rooted {
         NativeResourceOperations.canonicalize(&self.0.join(path))
     }
 }
+
+/// Borrow a UTF-8 authored fixture path.
+///
+/// # Panics
+/// Panics if a fixture path is not UTF-8.
+#[must_use]
+pub fn text(path: &Path) -> &str {
+    path.to_str().unwrap()
+}
+
+/// Convert supplied filesystem fixture paths to authored loader inputs.
+#[must_use]
+pub fn strings(paths: &[PathBuf]) -> Vec<String> {
+    paths.iter().map(|path| text(path).to_owned()).collect()
+}

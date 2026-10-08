@@ -1,12 +1,15 @@
 //! Ordered directory traversal of instruction entry files.
 use super::{LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations, load_file};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
+use maestro_path::{Cwd, SEP, dirname, join, relative, resolve};
 use std::path::Path;
 
 /// Shared scan-local observations and ignore-rule state.
 struct Discovery<'a> {
     /// Containing scan root for authored rule prefixes.
-    root: &'a Path,
+    root: String,
+    /// Working directory for matcher coordinates.
+    cwd: Cwd<'a>,
     /// Source label for every discovery.
     source: &'a str,
     /// Replaceable filesystem adapter.
@@ -18,14 +21,21 @@ struct Discovery<'a> {
 }
 /// Scan nested directories, preferring each directory's entry file.
 pub(super) fn scan(
-    dir: &Path,
+    dir: &str,
+    cwd: &str,
     source: &str,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    let mut builder = GitignoreBuilder::new(dir);
+    let cwd = Cwd {
+        current: cwd,
+        drive_directories: &[],
+    };
+    let root = resolve(&[dir], &cwd);
+    let mut builder = GitignoreBuilder::new(&root);
     let _ = builder.case_insensitive(true);
     let mut scan = Discovery {
-        root: dir,
+        root,
+        cwd,
         source,
         operations,
         builder,
@@ -35,17 +45,17 @@ pub(super) fn scan(
 }
 impl Discovery<'_> {
     /// Traverse in adapter order, stopping after an attempted root entry.
-    fn visit(&mut self, dir: &Path, include_root_files: bool) -> LoadSkillsResult {
+    fn visit(&mut self, dir: &str, include_root_files: bool) -> LoadSkillsResult {
         let mut result = LoadSkillsResult::default();
-        if !self.operations.exists(dir) {
+        if !self.operations.exists(Path::new(dir)) {
             return result;
         }
         self.add_rules(dir);
-        let Ok(entries) = self.operations.read_dir(dir) else {
+        let Ok(entries) = self.operations.read_dir(Path::new(dir)) else {
             return result;
         };
         for entry in entries.iter().filter(|e| e.name == "SKILL.md") {
-            let path = crate::paths::join_path(&[dir, Path::new(&entry.name)]);
+            let path = join(&[dir, &entry.name.to_string_lossy()]);
             if observed_type(entry, &path, self.operations) == Some(ResourceFileType::File)
                 && !self.ignored(&path, false)
             {
@@ -56,7 +66,7 @@ impl Discovery<'_> {
             if entry.name.to_string_lossy().starts_with('.') || entry.name == "node_modules" {
                 continue;
             }
-            let path = crate::paths::join_path(&[dir, Path::new(&entry.name)]);
+            let path = join(&[dir, &entry.name.to_string_lossy()]);
             let kind = observed_type(&entry, &path, self.operations);
             if self.ignored(&path, kind == Some(ResourceFileType::Directory)) {
                 continue;
@@ -74,25 +84,21 @@ impl Discovery<'_> {
         result
     }
     /// Check excluded ancestors before a candidate's own negations.
-    fn ignored(&self, path: &Path, is_dir: bool) -> bool {
-        let relative = path.strip_prefix(self.root).unwrap_or(path);
-        relative
-            .ancestors()
-            .skip(1)
-            .filter(|p| !p.as_os_str().is_empty())
-            .any(|parent| {
-                self.matcher
-                    .matched(crate::paths::join_path(&[self.root, parent]), true)
-                    .is_ignore()
-            })
-            || self.matcher.matched(path, is_dir).is_ignore()
+    fn ignored(&self, path: &str, is_dir: bool) -> bool {
+        let candidate = resolve(&[path], &self.cwd);
+        let candidate = relative(&self.root, &candidate, &self.cwd);
+        let mut parent = dirname(&candidate);
+        while parent != "." {
+            if self.matcher.matched(&parent, true).is_ignore() {
+                return true;
+            }
+            parent = dirname(&parent);
+        }
+        self.matcher.matched(&candidate, is_dir).is_ignore()
     }
     /// Append authored directory-prefixed rules in ignore-file order.
-    fn add_rules(&mut self, dir: &Path) {
-        let relative = pathdiff::diff_paths(dir, self.root).unwrap_or_default();
-        let prefix = relative
-            .to_string_lossy()
-            .replace(std::path::MAIN_SEPARATOR, "/");
+    fn add_rules(&mut self, dir: &str) {
+        let prefix = relative(&self.root, dir, &self.cwd).replace(SEP, "/");
         let prefix = if prefix.is_empty() {
             prefix
         } else {
@@ -100,11 +106,11 @@ impl Discovery<'_> {
         };
         let mut changed = false;
         for filename in [".gitignore", ".ignore", ".fdignore"] {
-            let path = crate::paths::join_path(&[dir, Path::new(filename)]);
-            if !self.operations.exists(&path) {
+            let path = join(&[dir, filename]);
+            if !self.operations.exists(Path::new(&path)) {
                 continue;
             }
-            let Ok(text) = self.operations.read_file(&path) else {
+            let Ok(text) = self.operations.read_file(Path::new(&path)) else {
                 continue;
             };
             for pattern in text
@@ -133,11 +139,11 @@ fn prefix_pattern(line: &str, prefix: &str) -> Option<String> {
 /// Follow symlink metadata without turning broken links into diagnostics.
 fn observed_type(
     entry: &ResourceEntry,
-    path: &Path,
+    path: &str,
     operations: &dyn ResourceOperations,
 ) -> Option<ResourceFileType> {
     if entry.file_type == ResourceFileType::Symlink {
-        operations.metadata(path).ok()
+        operations.metadata(Path::new(path)).ok()
     } else {
         Some(entry.file_type)
     }

@@ -1,6 +1,7 @@
 #[cfg(test)]
 pub mod support;
 use maestro_resources::{NativeResourceOperations, canonicalize_path, is_local_path};
+use support::text;
 
 /// Classify only the six exact lowercase source prefixes.
 #[test]
@@ -40,11 +41,11 @@ fn maestro_paths_follow_file_and_directory_links() {
     std::os::unix::fs::symlink(&file, &file_link).unwrap();
     std::os::unix::fs::symlink(dir.0.join("target"), &dir_link).unwrap();
     assert_eq!(
-        canonicalize_path(&file_link, &NativeResourceOperations),
+        canonicalize_path(text(&file_link), &NativeResourceOperations),
         file
     );
     assert_eq!(
-        canonicalize_path(&dir_link, &NativeResourceOperations),
+        canonicalize_path(text(&dir_link), &NativeResourceOperations),
         dir.0.join("target")
     );
 }
@@ -53,15 +54,21 @@ fn maestro_paths_follow_file_and_directory_links() {
 #[test]
 fn maestro_paths_preserve_unresolvable_spelling() {
     let path = std::path::Path::new("relative/../missing");
-    assert_eq!(canonicalize_path(path, &NativeResourceOperations), path);
-    assert_eq!(canonicalize_path(path, &support::Unresolvable), path);
+    assert_eq!(
+        canonicalize_path(text(path), &NativeResourceOperations),
+        text(path)
+    );
+    assert_eq!(
+        canonicalize_path(text(path), &support::Unresolvable),
+        text(path)
+    );
     #[cfg(unix)]
     {
         let dir = support::Directory::new();
         let dangling = dir.0.join("dangling");
         std::os::unix::fs::symlink(dir.0.join("missing"), &dangling).unwrap();
         assert_eq!(
-            canonicalize_path(&dangling, &NativeResourceOperations),
+            canonicalize_path(text(&dangling), &NativeResourceOperations),
             dangling
         );
     }
@@ -71,7 +78,7 @@ fn maestro_paths_preserve_unresolvable_spelling() {
 #[test]
 fn maestro_source_info_preserves_explicit_metadata() {
     use maestro_resources::{PathMetadata, SourceOrigin, SourceScope, create_source_info};
-    for base_dir in [None, Some(std::path::PathBuf::new()), Some("/base".into())] {
+    for base_dir in [None, Some(String::new()), Some("/base".into())] {
         let source = create_source_info(
             "/file".into(),
             PathMetadata {
@@ -81,7 +88,7 @@ fn maestro_source_info_preserves_explicit_metadata() {
                 base_dir: base_dir.clone(),
             },
         );
-        assert_eq!(source.path, std::path::Path::new("/file"));
+        assert_eq!(source.path, "/file");
         assert_eq!(source.source, "custom");
         assert_eq!(source.scope, SourceScope::User);
         assert_eq!(source.origin, SourceOrigin::Package);
@@ -104,7 +111,7 @@ fn maestro_source_info_defaults_only_synthetic_fields() {
             base_dir: None,
         },
     );
-    assert_eq!(source.path, std::path::Path::new("/file"));
+    assert_eq!(source.path, "/file");
     assert_eq!(source.source, "local");
     assert_eq!(source.scope, SourceScope::Temporary);
     assert_eq!(source.origin, SourceOrigin::TopLevel);
@@ -116,14 +123,14 @@ fn maestro_source_info_defaults_only_synthetic_fields() {
                 source: "custom".into(),
                 scope: Some(scope),
                 origin: Some(SourceOrigin::Package),
-                base_dir: Some(std::path::PathBuf::new()),
+                base_dir: Some(String::new()),
             },
         );
-        assert_eq!(source.path, std::path::Path::new("/custom"));
+        assert_eq!(source.path, "/custom");
         assert_eq!(source.source, "custom");
         assert_eq!(source.scope, scope);
         assert_eq!(source.origin, SourceOrigin::Package);
-        assert_eq!(source.base_dir, Some(std::path::PathBuf::new()));
+        assert_eq!(source.base_dir, Some(String::new()));
     }
 }
 
@@ -136,7 +143,7 @@ fn maestro_paths_canonicalize_existing_files() {
     let path = dir.0.join("detour/../target/./skill.md");
     assert_ne!(path.as_os_str(), file.as_os_str());
     assert_eq!(
-        canonicalize_path(&path, &NativeResourceOperations).as_os_str(),
-        std::fs::canonicalize(file).unwrap().as_os_str()
+        canonicalize_path(text(&path), &NativeResourceOperations),
+        text(&std::fs::canonicalize(file).unwrap())
     );
 }

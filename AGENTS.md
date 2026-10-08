@@ -277,11 +277,11 @@ The resources crate uses `yaml-rust2 =0.13.0` with defaults off for native
 YAML parsing events and `ryu-js =1.0.3` with defaults for numeric scalar-key
 spelling. Their selected license branches are MIT OR Apache-2.0 and
 Apache-2.0, respectively. Discovery uses `ignore =0.4.23` with defaults off for
-compiled ignore rules, and `pathdiff =0.2.3` with defaults for authored rule
-prefixes. Radix scalar resolution uses `num-bigint =0.4.8` and
+compiled ignore rules. Authored path operations use the shared `maestro-path`
+utility. Radix scalar resolution uses `num-bigint =0.4.8` and
 `num-traits =0.2.19` with defaults (MIT OR Apache-2.0) for arbitrary-width integers
-and correctly rounded floating-point conversion. Resources remain a leaf with no
-internal dependencies.
+and correctly rounded floating-point conversion. Resources remain a leaf apart
+from the permitted shared path utility edge.
 
 ## Approved scripted-model libraries
 

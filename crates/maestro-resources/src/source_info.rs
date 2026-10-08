@@ -1,7 +1,5 @@
 //! Resource provenance without configuration selection.
 
-use std::path::PathBuf;
-
 /// The scope from which a resource was supplied.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceScope {
@@ -31,14 +29,14 @@ pub struct PathMetadata {
     /// Resource origin.
     pub origin: SourceOrigin,
     /// Optional containing directory, retaining explicit empty spelling.
-    pub base_dir: Option<PathBuf>,
+    pub base_dir: Option<String>,
 }
 
 /// Provenance associated with a resource file.
 #[derive(Debug)]
 pub struct SourceInfo {
     /// Supplied resource path.
-    pub path: PathBuf,
+    pub path: String,
     /// Extensible source label.
     pub source: String,
     /// Resource scope.
@@ -46,7 +44,7 @@ pub struct SourceInfo {
     /// Resource origin.
     pub origin: SourceOrigin,
     /// Optional containing directory.
-    pub base_dir: Option<PathBuf>,
+    pub base_dir: Option<String>,
 }
 
 /// Provenance inputs with defaults only for synthetic scope and origin.
@@ -58,12 +56,12 @@ pub struct SyntheticSourceOptions {
     /// Explicit origin, or top-level when absent.
     pub origin: Option<SourceOrigin>,
     /// Optional containing directory, retaining explicit empty spelling.
-    pub base_dir: Option<PathBuf>,
+    pub base_dir: Option<String>,
 }
 
 /// Attach synthetic provenance, defaulting scope and origin only.
 #[must_use]
-pub fn create_synthetic_source_info(path: PathBuf, options: SyntheticSourceOptions) -> SourceInfo {
+pub fn create_synthetic_source_info(path: String, options: SyntheticSourceOptions) -> SourceInfo {
     create_source_info(
         path,
         PathMetadata {
@@ -77,7 +75,7 @@ pub fn create_synthetic_source_info(path: PathBuf, options: SyntheticSourceOptio
 
 /// Attach explicit provenance to a path without selecting defaults.
 #[must_use]
-pub fn create_source_info(path: PathBuf, metadata: PathMetadata) -> SourceInfo {
+pub fn create_source_info(path: String, metadata: PathMetadata) -> SourceInfo {
     SourceInfo {
         path,
         source: metadata.source,

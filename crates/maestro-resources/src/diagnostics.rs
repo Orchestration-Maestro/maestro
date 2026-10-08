@@ -1,5 +1,4 @@
 //! Ordered resource diagnostics without process output.
-use std::path::PathBuf;
 
 /// The category of a resource diagnostic.
 #[derive(Debug, PartialEq, Eq)]
@@ -19,9 +18,9 @@ pub struct ResourceCollision {
     /// Conflicting name.
     pub name: String,
     /// Retained file.
-    pub winner_path: PathBuf,
+    pub winner_path: String,
     /// Omitted file.
-    pub loser_path: PathBuf,
+    pub loser_path: String,
     /// Optional retained source label.
     pub winner_source: Option<String>,
     /// Optional omitted source label.
@@ -35,13 +34,13 @@ pub struct ResourceDiagnostic {
     /// Authored message or native error cause.
     pub message: String,
     /// Associated resource path.
-    pub path: Option<PathBuf>,
+    pub path: Option<String>,
     /// Collision details when applicable.
     pub collision: Option<ResourceCollision>,
 }
 impl ResourceDiagnostic {
     /// Associate a warning with a file.
-    pub(crate) fn warning(path: &std::path::Path, message: impl Into<String>) -> Self {
+    pub(crate) fn warning(path: &str, message: impl Into<String>) -> Self {
         Self {
             r#type: DiagnosticType::Warning,
             message: message.into(),

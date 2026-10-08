@@ -6,10 +6,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-path = { path = "../maestro-path" }
 num-bigint.workspace = true
 num-traits.workspace = true
 ignore.workspace = true
-pathdiff.workspace = true
 yaml-rust2.workspace = true
 ryu-js.workspace = true
 

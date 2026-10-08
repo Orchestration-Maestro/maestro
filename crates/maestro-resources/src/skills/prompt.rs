@@ -26,7 +26,7 @@ pub fn format_skills_for_prompt(skills: &[Skill]) -> String {
         ));
         lines.push(format!(
             "    <location>{}</location>",
-            escape_xml(&skill.file_path.to_string_lossy())
+            escape_xml(&skill.file_path)
         ));
         lines.push("  </skill>".into());
     }

@@ -16,11 +16,12 @@ let directory = root.join("calendar");
 std::fs::create_dir_all(&directory)?;
 std::fs::write(directory.join("SKILL.md"),
     "---\nname: calendar\ndescription: Schedule meetings\n---\nRead the calendar.")?;
-let paths = [directory];
+let paths = [directory.to_string_lossy().into_owned()];
+let root_text = root.to_str().ok_or("non-UTF-8 fixture path")?;
 let loaded = load_skills(LoadSkillsOptions {
-    cwd: &root,
-    home: &root,
-    agent_dir: &root,
+    cwd: root_text,
+    home: root_text,
+    agent_dir: root_text,
     config_dir_name: ".maestro",
     skill_paths: &paths,
     include_defaults: false,
@@ -44,17 +45,23 @@ follow their targets.
 
 Relative paths normalize against `cwd`. `~`, `~/suffix` and `~suffix` expand
 against supplied `home`, including repeated slashes after the tilde. Joined
-configuration and scanned child paths concatenate their parts before lexical
-normalization; later rooted parts do not replace the earlier root.
-Already-absolute explicit file spelling is preserved. Canonical
+user configuration and scanned child paths concatenate their parts before lexical
+normalization; later rooted parts do not replace the earlier root. Project
+configuration paths instead resolve against `cwd`; an absolute configuration
+directory replaces the working-directory prefix.
+Authored path fields and loader inputs are strings; only filesystem calls use
+native paths. Already-absolute explicit file spelling is preserved, including
+repeated separators and dot components. Canonical
 aliases of retained files are silently deduplicated; duplicate names keep the
 first discovery. Only winning paths are remembered, so repeated losing paths
 produce repeated collisions. When canonicalization fails, exact authored strings
 are the identity keys, so distinct absolute spellings can produce name collisions.
 Ordinary diagnostics precede all collisions.
-With defaults disabled, explicit paths under the user or project skills roots
-receive that scope, with user precedence when roots overlap. Other explicit paths
-are temporary; defaults-enabled explicit paths are always temporary.
+With defaults disabled, explicit paths equal to a resolved user or project skills
+root, or beginning with that root plus its separator, receive that scope, with user
+precedence when roots overlap. The target spelling is not normalized for this comparison; a repeated
+separator inside the root spelling therefore leaves the path temporary. Other
+explicit paths are temporary; defaults-enabled explicit paths are always temporary.
 
 ## Validation and metadata
 
@@ -63,7 +70,8 @@ omit the skill after collecting name warnings. Other validation warnings retain
 it: overlong descriptions, parent-name mismatch, overlong names, invalid name
 characters, edge hyphens and consecutive hyphens. Lengths count complete Unicode
 characters. Missing, null or empty names use the containing directory basename,
-including the literal names `.` and `..` for relative scan roots.
+including the literal names `.` and `..` when they end the authored parent
+directory. The base directory retains that authored spelling.
 Non-null nonstring names/descriptions produce one path-bearing typed failure.
 Only boolean `disable-model-invocation: true` hides a skill from the prompt.
 Descriptions retain authored newlines and whitespace. Prompt XML escapes each
@@ -88,7 +96,10 @@ link-following `metadata`, independent `exists` observations and fallible
 caller algorithm changes. Native operations are available outside `wasm32`;
 browser callers supply their own adapter.
 
-Each scan shares one case-insensitive ignore matcher. Rules are appended in
+Both loaders take an explicit `cwd` for relative path coordinates. Each scan
+shares one case-insensitive ignore matcher. Its root and candidates are resolved
+against that working directory; rule prefixes use their lexical relative paths.
+Rules are appended in
 `.gitignore`, `.ignore`, `.fdignore` order with directory prefixes and compiled
 when rules change. Later rules may reopen files, but child negation cannot reopen
 an excluded parent. Escaped leading exclamation marks stay literal. Invalid
