@@ -108,7 +108,7 @@ pub(super) enum Mode<'a> {
         /// Containing locations corresponding to the child evaluations.
         marks: Vec<Mark>,
         /// Keyword failure text rendered at the containing instance.
-        message: String,
+        message: &'static str,
     },
     /// Compare the number of successful children with contains bounds.
     Count {
@@ -117,10 +117,10 @@ pub(super) enum Mode<'a> {
         /// Active upper bound on the number of matching items.
         maximum: Option<f64>,
         /// Keyword failure text rendered at the containing instance.
-        message: String,
+        message: Cow<'static, str>,
     },
     /// Aggregate invalid property-name evaluations by their original names.
-    Names(Vec<String>),
+    Names(Vec<&'a str>),
     /// Invert child validity without exporting its errors or marks.
     Not,
     /// Evaluate a condition before choosing one of two branch jobs.
@@ -424,7 +424,7 @@ fn apply_collection(mode: Mode<'_>, results: &[Outcome], path: &str, result: &mu
                 result.marks.add(mark);
             }
             if passing != results.len() {
-                result.add_errors([scalars::render(path, &message)]);
+                result.add_errors([scalars::render(path, message)]);
             }
         }
         Mode::Count {
@@ -444,7 +444,7 @@ fn apply_collection(mode: Mode<'_>, results: &[Outcome], path: &str, result: &mu
                 .iter()
                 .zip(results)
                 .filter(|(_, outcome)| !valid(outcome))
-                .map(|(name, _)| name.as_str())
+                .map(|(name, _)| *name)
                 .collect();
             if !invalid.is_empty() {
                 result.add_errors([scalars::render(

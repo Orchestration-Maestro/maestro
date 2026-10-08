@@ -1,5 +1,7 @@
 //! Object and array assertions with per-location evaluation evidence.
 
+use std::borrow::Cow;
+
 use num_traits::ToPrimitive;
 use serde_json::{Map, Value};
 
@@ -188,11 +190,9 @@ fn property_names<'a>(
     else {
         return;
     };
-    let names = diagnostics::entries(value)
-        .into_iter()
-        .map(|(key, _)| key.clone())
-        .collect();
-    let jobs = diagnostics::entries(value)
+    let entries = diagnostics::entries(value);
+    let names = entries.iter().map(|(key, _)| key.as_str()).collect();
+    let jobs = entries
         .into_iter()
         .map(|(key, _)| job.child(schema, Instance::Name(key), job.path.clone()));
     instructions.push(Instruction::Children(Batch::new(Mode::Names(names), jobs)));
@@ -364,7 +364,7 @@ fn contains<'a>(
         "contains" => (
             Some(1.0),
             None,
-            "must contain at least 1 valid item".to_owned(),
+            Cow::Borrowed("must contain at least 1 valid item"),
         ),
         "minContains" | "maxContains" => {
             let Some(limit) = job.schema().get(keyword).and_then(Value::as_f64) else {
@@ -381,10 +381,10 @@ fn contains<'a>(
             (
                 minimum,
                 maximum,
-                format!(
+                Cow::Owned(format!(
                     "must contain at {comparison} {} valid {noun}",
                     ryu_js::Buffer::new().format(limit)
-                ),
+                )),
             )
         }
         _ => return,
@@ -468,14 +468,11 @@ pub(super) fn unevaluated<'a>(job: &Job<'a>, evaluated: &Marks) -> Vec<Instructi
 fn aggregate<'a>(
     parent: &Job<'a>,
     members: impl Iterator<Item = (Mark, &'a Value, &'a Value, String)>,
-    message: &str,
+    message: &'static str,
 ) -> Instruction<'a> {
     let mut batch = members_batch(parent, members);
     if let Mode::Members(marks) = batch.mode {
-        batch.mode = Mode::Aggregate {
-            marks,
-            message: message.to_owned(),
-        };
+        batch.mode = Mode::Aggregate { marks, message };
     }
     Instruction::Children(batch)
 }

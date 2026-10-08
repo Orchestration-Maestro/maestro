@@ -2354,3 +2354,13 @@ fn maestro_reports_a_malformed_pattern_that_only_a_later_scope_reaches() {
         Err(native("["))
     );
 }
+
+#[test]
+fn maestro_lists_every_invalid_property_name_in_traversal_order() {
+    let schema = json!({"propertyNames":{"pattern":"^[a-z]+$"}});
+    let input = json!({"b!":1,"ok":2,"2":3,"fine":4,"A":5});
+    assert_eq!(
+        check(schema, input),
+        Err("Validation failed for tool \"check\":\n  - value: property names 2, b!, A are invalid\n\nReceived arguments:\n{\n  \"value\": {\n    \"2\": 3,\n    \"b!\": 1,\n    \"ok\": 2,\n    \"fine\": 4,\n    \"A\": 5\n  }\n}".to_owned())
+    );
+}
