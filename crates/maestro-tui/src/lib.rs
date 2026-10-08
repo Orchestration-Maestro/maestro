@@ -4,6 +4,7 @@ pub mod autocomplete;
 pub mod components;
 pub mod editor_component;
 pub mod images;
+pub mod keys;
 pub mod terminal;
 pub mod text;
 pub mod tui;
@@ -13,6 +14,10 @@ pub use autocomplete::{
 };
 pub use components::{Image, ImageOptions, ImageTheme, TruncatedText};
 pub use editor_component::EditorComponent;
+pub use keys::{
+    Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
+    is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
+};
 pub use terminal::Terminal;
 pub use text::utils::{
     AnsiCode, ColumnSlice, ExtractedSegments, TruncateOptions, apply_background_to_line,
