@@ -6,6 +6,7 @@ mod entries;
 #[cfg(not(target_arch = "wasm32"))]
 mod file_storage;
 mod memory_storage;
+mod paths;
 mod persistence;
 mod preferences;
 mod presentation;

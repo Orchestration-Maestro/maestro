@@ -3,7 +3,8 @@
 `maestro-settings` owns the accepted global and project preferences. A
 `SettingsManager` loads both scopes through a replaceable raw-text storage,
 answers typed reads from memory, publishes every edit immediately and persists
-edits through one ordered queue.
+edits through one ordered queue. Every public item lives in the `settings_manager`
+module and is re-exported at the crate root.
 
 | Scope | Holds |
 |-------|-------|
@@ -118,9 +119,12 @@ adapter that fails to acquire or read returns that failure without calling it. T
 callback returns `Ok(None)` to leave the stored text untouched, `Ok(Some(text))` to
 replace it, or an error, which is returned without writing.
 
-`InMemorySettingsStorage` keeps one text per scope and holds it exclusively while the
-callback runs. `FileSettingsStorage` (not available for the browser build) works in
-place:
+`InMemorySettingsStorage` keeps one text per scope. It hands the callback an owned copy
+and holds no lock while the callback runs, so the callback may use the same storage
+again, in either scope; when callbacks overlap, the last write wins.
+`FileSettingsStorage` (not available for the browser build) folds the `.` and `..`
+segments of the supplied global and project locations before any file access, then
+works in place:
 
 1. For an existing file it locks the stable `settings.json.lock` sidecar before
    reading, keeps the lock through the callback and the write, and releases it on
@@ -131,6 +135,16 @@ place:
    failure is returned at once.
 
 Writes are not atomic: there is no rename, rollback or sync step.
+
+## Stored numbers
+
+Decimal numbers are read to the nearest double and saved in their shortest spelling
+that reads back to the same double (`1e+21` for large magnitudes, no fraction for
+whole values). Integers from `-9223372036854775808` up to `18446744073709551615` are
+kept digit for digit. An integer beyond that range is read as a double and saved
+with the double's spelling, so `18446744073709551617` is saved as
+`18446744073709552000`. This is a deliberate representation limit: keeping integers
+of any size would change how numbers compare in every crate that reads JSON.
 
 ## Stored-format conversions
 

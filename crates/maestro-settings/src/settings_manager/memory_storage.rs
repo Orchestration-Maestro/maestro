@@ -1,11 +1,12 @@
 //! In-memory raw-text storage.
 
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
 
-/// Storage that keeps each scope's raw text in memory and holds it exclusively
-/// while the update callback runs.
+/// Storage that keeps each scope's raw text in memory. The callback runs on an
+/// owned copy of the text with no lock held, so it may use this storage again;
+/// the last write wins.
 #[derive(Debug, Default)]
 pub struct InMemorySettingsStorage {
     /// Raw text per scope, in `[global, project]` order.
@@ -25,6 +26,13 @@ impl InMemorySettingsStorage {
             texts: Mutex::new([Some(text), None]),
         }
     }
+
+    /// Locks the texts for a single read or write, never across caller code.
+    fn locked(&self) -> MutexGuard<'_, [Option<String>; 2]> {
+        self.texts
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
 }
 
 impl SettingsStorage for InMemorySettingsStorage {
@@ -33,14 +41,9 @@ impl SettingsStorage for InMemorySettingsStorage {
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> Result<(), SettingsStorageError> {
-        let mut texts = self
-            .texts
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let slot = &mut texts[scope as usize];
-        let next = update(slot.as_deref())?;
-        if next.is_some() {
-            *slot = next;
+        let current = self.locked()[scope as usize].clone();
+        if let Some(next) = update(current.as_deref())? {
+            self.locked()[scope as usize] = Some(next);
         }
         Ok(())
     }

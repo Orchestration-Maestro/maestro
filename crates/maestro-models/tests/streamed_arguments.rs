@@ -88,6 +88,22 @@ mod tests {
         }
     }
 
+    #[test]
+    fn maestro_parses_decimal_arguments_exactly() {
+        use maestro_models::{parse_json_with_repair, parse_streaming_json};
+        let ratio = 51.248_178_375_505_404_f64;
+        let complete = parse_json_with_repair(r#"{"ratio":51.248178375505404}"#).unwrap();
+        assert_eq!(
+            complete["ratio"].as_f64().map(f64::to_bits),
+            Some(ratio.to_bits())
+        );
+        let streamed = parse_streaming_json(Some(r#"{"ratio":51.248178375505404"#));
+        assert_eq!(
+            streamed["ratio"].as_f64().map(f64::to_bits),
+            Some(ratio.to_bits())
+        );
+    }
+
     fn cut(json: &str, trailing_bytes: usize) -> &str {
         &json[..json.len() - trailing_bytes]
     }

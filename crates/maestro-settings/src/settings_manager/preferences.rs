@@ -73,9 +73,10 @@ pub trait SettingsStorage: thread_bound::StorageThreadBound {
     /// without calling `update`.
     ///
     /// `Ok(None)` leaves the stored text untouched, `Ok(Some(text))` replaces it
-    /// and `Err` propagates without writing. Adapters hold their exclusion from
-    /// before the read until after the write; the file adapter runs `update` for
-    /// a missing file before any directory or lock is created.
+    /// and `Err` propagates without writing. The file adapter holds its lock from
+    /// before the read until after the write and runs `update` for a missing file
+    /// before any directory or lock is created; the in-memory adapter holds
+    /// nothing while `update` runs, so `update` may use the same storage again.
     ///
     /// # Errors
     ///

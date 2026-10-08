@@ -5,6 +5,7 @@ use std::fs::{self, File, OpenOptions, TryLockError};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use super::paths::normalized;
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
 
 /// How often a contended lock is tried before giving up.
@@ -22,12 +23,13 @@ pub struct FileSettingsStorage {
 }
 
 impl FileSettingsStorage {
-    /// Addresses `settings.json` in `agent_dir` and in `config_dir` below `cwd`.
+    /// Addresses `settings.json` in `agent_dir` and in `config_dir` below `cwd`,
+    /// folding `.` and `..` segments of both paths before any file access.
     #[must_use]
     pub fn new(cwd: &Path, agent_dir: &Path, config_dir: &OsStr) -> Self {
         Self {
-            global: agent_dir.join("settings.json"),
-            project: cwd.join(config_dir).join("settings.json"),
+            global: normalized(&agent_dir.join("settings.json")),
+            project: normalized(&cwd.join(config_dir).join("settings.json")),
         }
     }
 }

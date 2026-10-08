@@ -6,6 +6,7 @@ use serde_json::Value;
 
 use super::SettingsManager;
 use super::conversion::number;
+use super::paths::normalized;
 use super::vocabulary::{DoubleEscapeAction, TreeFilterMode};
 
 /// Environment variable that enables clearing empty rows when the preference is
@@ -224,24 +225,11 @@ fn clamp_floor(value: f64, low: f64, high: f64) -> f64 {
 /// Joins `suffix` onto `home` with the platform's separators: `.` and `..` fold
 /// lexically in the whole path and a trailing separator is kept.
 fn join_normalized(home: &Path, suffix: &str) -> PathBuf {
-    let suffix_parts = Path::new(suffix)
+    let relative: PathBuf = Path::new(suffix)
         .components()
-        .filter(|part| matches!(part, Component::Normal(_) | Component::ParentDir));
-    let mut parts: Vec<Component<'_>> = Vec::new();
-    for part in home.components().chain(suffix_parts) {
-        match part {
-            Component::CurDir => {}
-            Component::ParentDir => match parts.last() {
-                Some(Component::Normal(_)) => {
-                    parts.pop();
-                }
-                Some(Component::RootDir | Component::Prefix(_)) => {}
-                _ => parts.push(part),
-            },
-            _ => parts.push(part),
-        }
-    }
-    let mut path: PathBuf = parts.into_iter().collect();
+        .filter(|part| matches!(part, Component::Normal(_) | Component::ParentDir))
+        .collect();
+    let mut path = normalized(&home.join(relative));
     if suffix.ends_with(std::path::is_separator) {
         path.push("");
     }

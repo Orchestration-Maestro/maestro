@@ -10,12 +10,13 @@ mod tests {
     use std::ffi::OsStr;
     use std::fs;
     use std::path::Path;
+    use std::sync::Arc;
     use std::time::{Duration, Instant};
 
     use super::support::{ControlledStorage, Holder, TempDir, block_on, probe_lock, raw};
     use maestro_settings::{
-        FileSettingsStorage, InMemorySettingsStorage, SettingsManager, SettingsScope,
-        SettingsStorage, SettingsStorageError,
+        FileSettingsStorage, InMemorySettingsStorage, PackageSource, SettingsManager,
+        SettingsScope, SettingsStorage, SettingsStorageError,
     };
 
     const BOTH: [SettingsScope; 2] = [SettingsScope::Global, SettingsScope::Project];
@@ -112,6 +113,130 @@ mod tests {
         );
     }
 
+    /// Runs `body` on its own thread and fails, instead of hanging, when it never finishes.
+    fn finishes<T: Send + 'static>(body: impl FnOnce() -> T + Send + 'static) -> T {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = sender.send(body());
+        });
+        receiver
+            .recv_timeout(Duration::from_secs(10))
+            .expect("the storage callback never finished")
+    }
+
+    /// Writes `"inner"` to `scope` and returns the text the callback saw there.
+    fn write_inner(storage: &InMemorySettingsStorage, scope: SettingsScope) -> Option<String> {
+        let mut seen = None;
+        storage
+            .with_lock(scope, &mut |current| {
+                seen = current.map(str::to_owned);
+                Ok(Some("inner".to_owned()))
+            })
+            .unwrap();
+        seen
+    }
+
+    /// Runs a callback on `outer` that re-enters `inner` through [`write_inner`], then
+    /// returns `outer_text`; yields the text the inner callback saw and both stored scopes.
+    fn reenter(
+        outer: SettingsScope,
+        inner: SettingsScope,
+        outer_text: Option<&'static str>,
+    ) -> (Option<String>, [Option<String>; 2]) {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        support::put(&*storage, SettingsScope::Global, "global");
+        let nested = storage.clone();
+        let inner_seen = finishes(move || {
+            let mut seen = None;
+            nested
+                .with_lock(outer, &mut |_| {
+                    seen = write_inner(&nested, inner);
+                    Ok(outer_text.map(str::to_owned))
+                })
+                .unwrap();
+            seen
+        });
+        (inner_seen, BOTH.map(|scope| raw(&*storage, scope)))
+    }
+
+    #[test]
+    fn memory_callbacks_may_reenter_the_same_scope() {
+        let (seen, stored) = reenter(SettingsScope::Global, SettingsScope::Global, Some("outer"));
+        assert_eq!(seen.as_deref(), Some("global"));
+        assert_eq!(
+            stored,
+            [Some("outer".to_owned()), None],
+            "the outer write is the last write"
+        );
+
+        let (_, stored) = reenter(SettingsScope::Global, SettingsScope::Global, None);
+        assert_eq!(
+            stored,
+            [Some("inner".to_owned()), None],
+            "an outer callback that writes nothing keeps the inner write"
+        );
+    }
+
+    #[test]
+    fn memory_callbacks_may_reenter_the_other_scope() {
+        let (seen, stored) = reenter(SettingsScope::Global, SettingsScope::Project, Some("outer"));
+        assert_eq!(seen, None);
+        assert_eq!(
+            stored,
+            [Some("outer".to_owned()), Some("inner".to_owned())],
+            "each scope keeps its own last write"
+        );
+
+        let (seen, stored) = reenter(SettingsScope::Project, SettingsScope::Global, None);
+        assert_eq!(seen.as_deref(), Some("global"));
+        assert_eq!(stored, [Some("inner".to_owned()), None]);
+    }
+
+    /// File storage whose supplied directories pass through a directory that does not exist.
+    fn dotted_storage(root: &Path) -> FileSettingsStorage {
+        FileSettingsStorage::new(
+            &root.join("missing/../work"),
+            &root.join("missing/../agent"),
+            OsStr::new(".maestro"),
+        )
+    }
+
+    #[test]
+    fn supplied_paths_fold_dot_segments_before_reading() {
+        let root = TempDir::new();
+        let (agent, config) = (root.path().join("agent"), root.path().join("work/.maestro"));
+        fs::create_dir_all(&agent).unwrap();
+        fs::create_dir_all(&config).unwrap();
+        fs::write(agent.join("settings.json"), "global").unwrap();
+        fs::write(config.join("settings.json"), "project").unwrap();
+        let storage = dotted_storage(root.path());
+        for (scope, text) in [
+            (SettingsScope::Global, "global"),
+            (SettingsScope::Project, "project"),
+        ] {
+            assert_eq!(transact(&storage, scope, Ok(None)).0.as_deref(), Some(text));
+        }
+    }
+
+    #[test]
+    fn supplied_paths_fold_dot_segments_before_writing() {
+        let root = TempDir::new();
+        let storage = dotted_storage(root.path());
+        for scope in BOTH {
+            transact(&storage, scope, Ok(Some("written"))).1.unwrap();
+        }
+        for file in ["agent/settings.json", "work/.maestro/settings.json"] {
+            assert_eq!(
+                fs::read_to_string(root.path().join(file)).unwrap(),
+                "written"
+            );
+        }
+        assert!(
+            !root.path().join("missing").exists(),
+            "a folded segment is never created"
+        );
+    }
+
     /// Creates a manager over the temporary tree's supplied directories.
     fn create_manager(root: &Path) -> SettingsManager {
         SettingsManager::create(
@@ -191,6 +316,29 @@ mod tests {
             serde_json::from_str(&fs::read_to_string(config.join("settings.json")).unwrap())
                 .unwrap();
         assert_eq!(saved, serde_json::json!({"extensions": ["p"]}));
+    }
+
+    #[test]
+    fn first_project_write_creates_the_configuration_directory() {
+        let root = TempDir::new();
+        fs::create_dir_all(root.path().join("agent")).unwrap();
+        fs::write(
+            root.path().join("agent/settings.json"),
+            r#"{"theme":"dark"}"#,
+        )
+        .unwrap();
+        let config = root.path().join("work/.maestro");
+        let mut settings = create_manager(root.path());
+        assert!(!config.exists(), "reading alone creates nothing");
+
+        settings.set_project_packages(vec![PackageSource::Source("npm:test-pkg".into())]);
+        block_on(settings.flush());
+        assert!(config.is_dir(), "the write creates the directory");
+        assert!(config.join("settings.json").is_file());
+        assert_eq!(
+            fs::read_to_string(config.join("settings.json")).unwrap(),
+            "{\n  \"packages\": [\n    \"npm:test-pkg\"\n  ]\n}"
+        );
     }
 
     /// Probes the sidecar of `settings.json` in `directory` from another process.
@@ -441,5 +589,24 @@ mod tests {
             std::sync::Arc::new(InMemorySettingsStorage::new());
         let _manager = SettingsManager::from_storage(handle);
         let _native = FileSettingsStorage::new(Path::new("w"), Path::new("a"), OsStr::new(".c"));
+    }
+
+    #[test]
+    fn settings_manager_module_exposes_the_crate_root_items() {
+        use maestro_settings::settings_manager::{
+            FileSettingsStorage as ModuleFileStorage, InMemorySettingsStorage as ModuleMemory,
+            SettingsManager as ModuleManager, SettingsScope as ModuleScope,
+        };
+        let _file: FileSettingsStorage =
+            ModuleFileStorage::new(Path::new("w"), Path::new("a"), OsStr::new(".c"));
+        let storage: Arc<InMemorySettingsStorage> = Arc::new(ModuleMemory::new());
+        let mut manager: SettingsManager = ModuleManager::from_storage(storage.clone());
+        manager.set_theme("light".into());
+        block_on(manager.flush());
+        let scope: SettingsScope = ModuleScope::Global;
+        assert_eq!(
+            raw(&*storage, scope).as_deref(),
+            Some("{\n  \"theme\": \"light\"\n}")
+        );
     }
 }

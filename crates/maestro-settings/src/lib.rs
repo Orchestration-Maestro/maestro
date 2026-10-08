@@ -1,6 +1,6 @@
 #![doc = include_str!("../../../docs/settings.md")]
 
-mod settings_manager;
+pub mod settings_manager;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use settings_manager::FileSettingsStorage;

@@ -383,6 +383,14 @@ mod tests {
             }
             (toggle.set)(&mut settings, flipped);
             assert_eq!((toggle.get)(&settings), flipped, "{:?}", toggle.path);
+            (toggle.set)(&mut settings, !flipped);
+            assert_eq!(
+                (toggle.get)(&settings),
+                !flipped,
+                "{:?} flips back",
+                toggle.path
+            );
+            (toggle.set)(&mut settings, flipped);
             block_on(settings.flush());
             assert_eq!(
                 raw_json(&*storage, SettingsScope::Global),
@@ -1527,29 +1535,70 @@ mod tests {
         }
     }
 
-    /// Stored session directories and the paths expected when the home directory is `/home/maestro`.
-    const SESSION_DIRS: [(Option<&str>, Option<&str>); 12] = [
-        (None, None),
-        (Some(""), Some("")),
-        (Some("~"), Some("/home/maestro")),
-        (Some("~/sessions"), Some("/home/maestro/sessions")),
-        (Some("~/"), Some("/home/maestro")),
-        (
-            Some("~//nested/../sessions/"),
-            Some("/home/maestro/sessions/"),
-        ),
-        (Some("~/../sibling"), Some("/home/sibling")),
-        (Some("relative/../literal"), Some("relative/../literal")),
-        (Some("~other"), Some("~other")),
-        (Some("\\literal"), Some("\\literal")),
-        (Some("\u{feff}folder\u{85}"), Some("\u{feff}folder\u{85}")),
-        (Some("/abs//path/"), Some("/abs//path/")),
-    ];
+    /// How the platform names and spells the home directory a child process sees.
+    #[cfg(unix)]
+    mod home {
+        /// The environment variable the home directory is read from.
+        pub const VARIABLE: &str = "HOME";
+        /// The home directory the child is given.
+        pub const PATH: &str = "/home/maestro";
+        /// The parent of the home directory.
+        pub const PARENT: &str = "/home";
+        /// The separator joined paths use.
+        pub const SEPARATOR: &str = "/";
+    }
+
+    /// How the platform names and spells the home directory a child process sees.
+    #[cfg(windows)]
+    mod home {
+        /// The environment variable the home directory is read from.
+        pub const VARIABLE: &str = "USERPROFILE";
+        /// The home directory the child is given.
+        pub const PATH: &str = r"C:\Users\maestro";
+        /// The parent of the home directory.
+        pub const PARENT: &str = r"C:\Users";
+        /// The separator joined paths use.
+        pub const SEPARATOR: &str = "\\";
+    }
+
+    /// `base` with `parts` joined below it by the platform's separator.
+    fn below(base: &str, parts: &[&str]) -> String {
+        let mut path = base.to_owned();
+        for part in parts {
+            path.push_str(home::SEPARATOR);
+            path.push_str(part);
+        }
+        path
+    }
+
+    /// Stored session directories and the paths expected when the home directory is
+    /// `home::PATH`.
+    fn session_dir_cases() -> Vec<(Option<&'static str>, Option<String>)> {
+        let (home, parent) = (home::PATH, home::PARENT);
+        let literal = |text: &'static str| (Some(text), Some(text.to_owned()));
+        vec![
+            (None, None),
+            literal(""),
+            (Some("~"), Some(home.to_owned())),
+            (Some("~/sessions"), Some(below(home, &["sessions"]))),
+            (Some("~/"), Some(home.to_owned())),
+            (
+                Some("~//nested/../sessions/"),
+                Some(below(home, &["sessions", ""])),
+            ),
+            (Some("~/../sibling"), Some(below(parent, &["sibling"]))),
+            literal("relative/../literal"),
+            literal("~other"),
+            literal("\\literal"),
+            literal("\u{feff}folder\u{85}"),
+            literal("/abs//path/"),
+        ]
+    }
 
     /// Child side: resolves every stored session directory, then a project override.
     fn report_session_dirs() {
         let mut paths = Vec::new();
-        for (stored, _) in SESSION_DIRS {
+        for (stored, _) in session_dir_cases() {
             let document = stored.map_or_else(|| json!({}), |stored| json!({"sessionDir": stored}));
             let (settings, _) = manager_with(document);
             paths.push(
@@ -1618,10 +1667,12 @@ mod tests {
         #[cfg(unix)]
         assert_lossless_home();
         let mut child = support::child_command("session_dir_expands_only_home_prefix", "paths");
-        child.env("HOME", "/home/maestro");
-        let mut expected: Vec<Option<&str>> =
-            SESSION_DIRS.iter().map(|(_, expected)| *expected).collect();
-        expected.extend([Some("./sessions"), None]);
+        child.env(home::VARIABLE, home::PATH);
+        let mut expected: Vec<Option<String>> = session_dir_cases()
+            .into_iter()
+            .map(|(_, expected)| expected)
+            .collect();
+        expected.extend([Some("./sessions".to_owned()), None]);
         assert_eq!(
             support::child_report(&child.output().unwrap()),
             json!(expected)
@@ -1759,6 +1810,25 @@ mod tests {
             support::raw(&*storage, SettingsScope::Global).unwrap(),
             expected
         );
+    }
+
+    #[test]
+    fn integers_beyond_64_bits_become_doubles_and_i64_min_survives() {
+        let seed = concat!(
+            r#"{"min":-9223372036854775808,"over":18446744073709551617,"#,
+            r#""under":-9223372036854775809}"#
+        );
+        let text = saved_text_after(seed, |settings| settings.set_theme("x".into()));
+        let expected = [
+            "{",
+            "  \"min\": -9223372036854775808,",
+            "  \"over\": 18446744073709552000,",
+            "  \"under\": -9223372036854776000,",
+            "  \"theme\": \"x\"",
+            "}",
+        ]
+        .join("\n");
+        assert_eq!(text, expected);
     }
 
     #[test]

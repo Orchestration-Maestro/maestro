@@ -39,13 +39,22 @@ mod tests {
     #[test]
     fn external_models_survive_thinking_save() {
         for backend in Backend::all() {
-            let mut manager = loaded(&backend, Some(&json!({"theme": "dark"})), None);
-            backend.write(GLOBAL, r#"{"theme":"dark","enabledModels":["a","b"]}"#);
+            let seed = json!({"theme": "dark", "defaultModel": "claude-sonnet"});
+            let mut manager = loaded(&backend, Some(&seed), None);
+            backend.write(
+                GLOBAL,
+                r#"{"theme":"dark","defaultModel":"claude-sonnet","enabledModels":["a","b"]}"#,
+            );
             manager.set_default_thinking_level(ThinkingLevel::High);
             block_on(manager.flush());
             assert_eq!(
                 backend.json(GLOBAL),
-                json!({"theme": "dark", "enabledModels": ["a", "b"], "defaultThinkingLevel": "high"})
+                json!({
+                    "theme": "dark",
+                    "defaultModel": "claude-sonnet",
+                    "enabledModels": ["a", "b"],
+                    "defaultThinkingLevel": "high"
+                })
             );
             assert_eq!(
                 manager.get_enabled_models(),
@@ -75,10 +84,17 @@ mod tests {
     fn local_global_edit_wins() {
         for backend in Backend::all() {
             let mut manager = loaded(&backend, Some(&json!({"theme": "dark"})), None);
-            backend.write(GLOBAL, r#"{"theme":"external","other":1}"#);
+            backend.write(
+                GLOBAL,
+                r#"{"theme":"external","other":1,"defaultThinkingLevel":"low"}"#,
+            );
             manager.set_theme("local".into());
+            manager.set_default_thinking_level(ThinkingLevel::High);
             block_on(manager.flush());
-            assert_eq!(backend.json(GLOBAL), json!({"theme": "local", "other": 1}));
+            assert_eq!(
+                backend.json(GLOBAL),
+                json!({"theme": "local", "other": 1, "defaultThinkingLevel": "high"})
+            );
         }
     }
 
@@ -173,17 +189,25 @@ mod tests {
     fn reload_accepts_new_global_data() {
         let storage = ControlledStorage::new();
         let backend = Backend::Controlled(storage.clone());
-        let seed = json!({"theme": "dark", "defaultModel": "m1", "extensions": ["a"], "packages": ["npm:p"]});
+        let seed = json!({
+            "theme": "dark", "defaultModel": "m1", "extensions": ["a"],
+            "prompts": ["old"], "packages": ["npm:p"]
+        });
         let mut manager = loaded(&backend, Some(&seed), Some(&json!({"quietStartup": true})));
         backend.write(
             GLOBAL,
-            r#"{"theme":"light","defaultModel":"m2","extensions":[]}"#,
+            r#"{"theme":"light","defaultModel":"m2","extensions":["/after.ts"],"prompts":[]}"#,
         );
         assert_eq!(manager.get_theme().as_deref(), Some("dark"));
         block_on(manager.reload());
         assert_eq!(manager.get_theme().as_deref(), Some("light"));
         assert_eq!(manager.get_default_model().as_deref(), Some("m2"));
-        assert_eq!(manager.get_extension_paths(), Vec::new());
+        assert_eq!(manager.get_extension_paths(), entries(&["/after.ts"]));
+        assert_eq!(
+            manager.get_prompt_template_paths(),
+            Vec::new(),
+            "an emptied array replaces the old list"
+        );
         assert_eq!(
             manager.get_packages(),
             Vec::new(),
@@ -350,7 +374,15 @@ mod tests {
         assert_eq!(manager.get_theme().as_deref(), Some("dark"));
         assert!(!manager.get_image_auto_resize());
         assert!(!manager.get_compaction_enabled());
-        assert_eq!(manager.get_global_settings().0["steeringMode"], "all");
+        assert_eq!(
+            manager.get_global_settings(),
+            settings(json!({
+                "images": {"autoResize": false},
+                "compaction": {"enabled": false},
+                "steeringMode": "all",
+                "theme": "dark"
+            }))
+        );
     }
 
     #[test]

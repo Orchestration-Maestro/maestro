@@ -262,8 +262,9 @@ The models crate uses rand `=0.10.3` with defaults. Native scheduling uses
 Tokio `=1.53.2`, defaults off, with `rt-multi-thread`, `sync` and `time`.
 Browser scheduling uses js-sys `=0.3.106`, wasm-bindgen `=0.2.129` and
 wasm-bindgen-futures `=0.4.79` with defaults; getrandom `=0.4.3` enables
-`wasm_js`. Compact serde_json `=1.0.151` retains `preserve_order`. These
-MIT/Apache-2.0 libraries add no internal crate edge or public runtime API.
+`wasm_js`. Compact serde_json `=1.0.151` retains `preserve_order` and the
+workspace-wide `float_roundtrip`. These MIT/Apache-2.0 libraries add no
+internal crate edge or public runtime API.
 
 ## Approved toolkit libraries
 
@@ -304,8 +305,9 @@ pin exact and inspect the resolved licence and feature closure after changes.
 ## Approved settings libraries
 
 The settings crate uses serde `=1.0.229` with `derive`, serde_json `=1.0.151`
-with `preserve_order` and `float_roundtrip` (exact decimal parsing), Tokio
-`=1.53.2` with defaults off and `sync` for completion barriers, and
-`ryu-js =1.0.3` for float spelling at the JSON boundary (Apache-2.0 OR BSL-1.0).
+with `preserve_order` and `float_roundtrip` (exact decimal parsing, enabled once
+on the workspace dependency for every crate), Tokio `=1.53.2` with defaults off
+and `sync` for completion barriers, and `ryu-js =1.0.3` for float spelling at
+the JSON boundary (Apache-2.0 OR BSL-1.0).
 Browser scheduling uses wasm-bindgen-futures `=0.4.79`. Native tests add Tokio's
 `rt` feature. These add no internal crate edge or public runtime API.
