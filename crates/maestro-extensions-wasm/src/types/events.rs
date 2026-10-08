@@ -1,9 +1,9 @@
 //! Author-facing events and results over the generated wire unions.
 //!
-//! The wire unions carry cancellation signals beside the event, so an edit a handler makes
-//! survives a returned error and capabilities an author retains are never handed back. Only
-//! the events that hold such a capability differ from the wire; every other payload is the
-//! generated record itself.
+//! Each event export returns the event as the handler left it together with the handler's
+//! decision, so an edit survives a returned error. A cancellation signal travels to the
+//! guest beside its event and is never handed back. Only the events that hold such a
+//! capability differ from the wire; every other payload is the generated record itself.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -15,8 +15,7 @@ use std::rc::Rc;
 
 use super::context::{AbortSignal, ExtensionContext};
 use super::extension_result::ExtensionFuture;
-use crate::bindings::maestro::extension::events as wire;
-use wire::{
+use crate::bindings::maestro::extension::events::{
     InputEvent, InputEventResult, SessionBeforeCompactEventData, SessionBeforeCompactResult,
 };
 
@@ -69,21 +68,9 @@ pub enum ExtensionEventResult {
     Input(InputEventResult),
 }
 
-impl ExtensionEventResult {
-    /// The wire union for this result.
-    #[must_use]
-    pub fn into_wire(self) -> wire::ExtensionEventResult {
-        match self {
-            Self::SessionBeforeCompact(result) => {
-                wire::ExtensionEventResult::SessionBeforeCompact(result)
-            }
-            Self::Input(result) => wire::ExtensionEventResult::Input(result),
-        }
-    }
-}
-
-/// A registered event handler. It receives the event mutably, so an edit survives a
-/// returned error, and answers with an optional result.
+/// A registered event handler. It receives the event mutably and answers with an optional
+/// result; the adapter returns the event as the handler left it, whether the handler
+/// answered or failed.
 pub type ExtensionHandler = Rc<
     dyn for<'a> Fn(
         &'a mut ExtensionEvent,

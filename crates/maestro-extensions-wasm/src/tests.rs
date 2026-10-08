@@ -1,5 +1,6 @@
-//! Component-level tests: a test-only host instantiates the built author component and the
-//! same extension runs under the controlled adapter.
+//! Component-level tests: a test-only host instantiates the built author component, and an
+//! in-process host runs the component adapter's own functions natively; both are driven
+//! through the same scenario with the same extension.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -11,16 +12,20 @@ mod build;
 mod component_driver;
 mod controlled;
 mod controlled_driver;
+mod event_kind;
 #[macro_use]
 mod fixtures;
 mod guest_family;
 pub(crate) mod host;
 mod host_family;
 mod join;
+mod observed;
 mod scenario;
 
 use std::future::Future;
 
+use component_driver::ComponentDriver;
+use controlled_driver::ControlledDriver;
 use scenario::{Driver, EXPECTED};
 
 /// Runs a future to completion on a current-thread runtime.
@@ -39,13 +44,10 @@ fn path_of_component() -> Result<std::path::PathBuf, String> {
 /// Runs the scenario through the built component and through the controlled adapter and
 /// returns both transcripts.
 fn both_transcripts() -> Result<(Vec<String>, Vec<String>), String> {
-    let path = path_of_component()?;
-    let component = block_on(scenario::run(&mut component_driver::ComponentDriver::new(
-        path,
+    let component = block_on(scenario::run(&mut ComponentDriver::new(
+        path_of_component()?
     )))?;
-    let controlled = block_on(scenario::run(
-        &mut controlled_driver::ControlledDriver::new(),
-    ))?;
+    let controlled = block_on(scenario::run(&mut ControlledDriver::new()))?;
     Ok((component, controlled))
 }
 
@@ -59,22 +61,18 @@ fn maestro_component_registers_invokes_and_releases() -> Result<(), String> {
 
 /// Runs the command against a host that rejects its session operation, and returns what the
 /// host observed.
-async fn rejected_session_transcript(path: std::path::PathBuf) -> Result<Vec<String>, String> {
-    let mut driver = component_driver::ComponentDriver::new(path);
+async fn rejected_session_transcript(mut driver: impl Driver) -> Result<Vec<String>, String> {
     driver.start().await?;
-    driver
-        .reject_next_session()
-        .map_err(|error| error.to_string())?;
-    driver.command("go").await;
+    driver.reject_next_session();
+    scenario::command(&mut driver, "go").await;
     Ok(driver.transcript())
 }
 
-/// Where the component reports its release of a callback: the host sees the owner handles
-/// dropped, in the order the extension released them.
-#[test]
-fn maestro_callbacks_release_after_reentry_and_failed_registration() -> Result<(), String> {
-    let mut driver = component_driver::ComponentDriver::new(path_of_component()?);
-    let transcript = block_on(scenario::run(&mut driver))?;
+/// Checks how an adapter releases what it holds: the host sees the owner handles dropped, in
+/// the order the extension released them. Each check drives a fresh adapter from `adapter`.
+async fn check_release<D: Driver>(adapter: impl Fn() -> D) -> Result<(), String> {
+    let mut scenario_driver = adapter();
+    let transcript = scenario::run(&mut scenario_driver).await?;
     let position = |line: &str| transcript.iter().position(|seen| seen == line);
     assert!(
         position(r#"entry released "rejected-handler""#)
@@ -85,16 +83,19 @@ fn maestro_callbacks_release_after_reentry_and_failed_registration() -> Result<(
         position(r#"entry released "reentrant-guard""#) < position("register event late"),
         "a destructor registered a handler while its own entry was being released, without a conflict"
     );
-    let dropped = driver
-        .dropped_identities()
-        .map_err(|error| error.to_string())?;
     assert_eq!(
-        dropped,
-        [4, 6, 1, 2, 3, 5],
+        scenario_driver.dropped(),
+        [4, 8, 1, 2, 3, 5, 6, 7, 9],
         "the rejected identity drops at once, the continuation when its operation ends, and the \
-         registered callbacks follow in registration order"
+         registered callbacks follow in registration order, ending with the one a destructor \
+         registered"
     );
-    let rejected = block_on(rejected_session_transcript(path_of_component()?))?;
+    assert_eq!(
+        scenario_driver.live(),
+        0,
+        "every context, signal and callback the host lent was dropped"
+    );
+    let rejected = rejected_session_transcript(adapter()).await?;
     let position = |line: &str| rejected.iter().position(|seen| seen == line);
     assert!(
         position("new-session start parent=parent") < position(r#"entry released "continuation""#)
@@ -102,9 +103,10 @@ fn maestro_callbacks_release_after_reentry_and_failed_registration() -> Result<(
                 < position("command failed: session rejected"),
         "a continuation the host never ran is released when its operation ends: {rejected:?}"
     );
-    let missing = block_on(driver.invoke_unknown_callbacks()).map_err(|error| error.to_string())?;
+    let mut missing_driver = adapter();
+    missing_driver.start().await?;
     assert_eq!(
-        missing,
+        missing_driver.invoke_unknown_callbacks().await,
         [
             "no callback registered for identity 4242".to_owned(),
             "no pending continuation for identity 4242".to_owned(),
@@ -112,6 +114,13 @@ fn maestro_callbacks_release_after_reentry_and_failed_registration() -> Result<(
         "an invalid callback gets the adapter's exact diagnostic"
     );
     Ok(())
+}
+
+#[test]
+fn maestro_callbacks_release_after_reentry_and_failed_registration() -> Result<(), String> {
+    let path = path_of_component()?;
+    block_on(check_release(|| ComponentDriver::new(path.clone())))?;
+    block_on(check_release(ControlledDriver::new))
 }
 
 /// The functions of one interface of a component type with whether each is asynchronous.

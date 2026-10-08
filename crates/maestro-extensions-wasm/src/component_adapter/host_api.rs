@@ -1,16 +1,16 @@
-//! Registrations and actions forwarded to the generated host imports.
+//! Registrations and actions forwarded to the host imports.
 
 use super::callbacks::Identity;
-use crate::bindings::maestro::extension::host;
+use super::imports::Imports;
 use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionResult};
 
-/// Generated imports behind the facade.
-pub(super) struct GeneratedHost;
+/// The host imports behind the facade.
+pub(super) struct Host<I: Imports>(pub(super) I);
 
-impl ExtensionHost for GeneratedHost {
+impl<I: Imports> ExtensionHost for Host<I> {
     fn on(&self, event: &str, handler: ExtensionHandler) -> ExtensionResult<()> {
-        let identity = Identity::new();
-        host::on(event, &identity.handle)?;
+        let identity = Identity::new(&self.0);
+        self.0.on(event, &identity.handle)?;
         identity.keep(handler);
         Ok(())
     }
@@ -20,8 +20,9 @@ impl ExtensionHost for GeneratedHost {
             description,
             handler,
         } = options;
-        let identity = Identity::new();
-        host::register_command(name, description.as_deref(), &identity.handle)?;
+        let identity = Identity::new(&self.0);
+        self.0
+            .register_command(name, description.as_deref(), &identity.handle)?;
         identity.keep(handler);
         Ok(())
     }
@@ -31,6 +32,7 @@ impl ExtensionHost for GeneratedHost {
         custom_type: &str,
         data: Option<serde_json::Value>,
     ) -> ExtensionResult<()> {
-        host::append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
+        self.0
+            .append_entry(custom_type, data.map(|data| data.to_string()).as_deref())
     }
 }

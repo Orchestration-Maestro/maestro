@@ -45,7 +45,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         register_compaction(&api)?;
         register_command(&api)?;
         register_rejected(&api)?;
-        register_reentrant(&api)
+        register_reentrant(&api)?;
+        register_trim(&api)?;
+        register_note(&api)
     })
 }
 
@@ -104,6 +106,46 @@ fn register_compaction(api: &ExtensionAPI) -> Result<(), String> {
                         }),
                     },
                 )))
+            })
+        }),
+    )
+}
+
+/// Registers the handler that trims an input in place and fails when nothing is left.
+fn register_trim(api: &ExtensionAPI) -> Result<(), String> {
+    api.on(
+        "trim_input",
+        Rc::new(|event, _ctx| {
+            Box::pin(async move {
+                let ExtensionEvent::Input(input) = event else {
+                    return Ok(None);
+                };
+                input.text = input.text.trim().to_owned();
+                if input.text.is_empty() {
+                    return Err("nothing is left of the input after trimming".to_owned());
+                }
+                Ok(None)
+            })
+        }),
+    )
+}
+
+/// Registers the handler that notes the tokens in the compaction preparation and fails when
+/// the compaction was aborted.
+fn register_note(api: &ExtensionAPI) -> Result<(), String> {
+    api.on(
+        "note_compaction",
+        Rc::new(|event, _ctx| {
+            Box::pin(async move {
+                let ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) = event else {
+                    return Ok(None);
+                };
+                let tokens = compact.preparation.tokens_before;
+                compact.preparation.previous_summary = Some(format!("noted {tokens} tokens"));
+                if compact.signal.aborted() {
+                    return Err("compaction aborted after the note".to_owned());
+                }
+                Ok(None)
             })
         }),
     )

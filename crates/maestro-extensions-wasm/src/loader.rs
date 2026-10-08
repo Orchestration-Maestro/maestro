@@ -10,8 +10,9 @@ use crate::types::{ExtensionAPI, ExtensionFuture};
 /// An extension factory: registers callbacks through the API it receives.
 pub type ExtensionFactory = Box<dyn FnOnce(ExtensionAPI) -> ExtensionFuture<'static, ()>>;
 
-/// An extension the host runs once, awaiting its completion before its registrations are
-/// observed.
+/// An extension the host activates once. Activation is the host's: it calls the `start`
+/// export, which runs [`Extension::load`] and resolves when that has completed. Each
+/// registration reaches the host through its imports as `load` makes it.
 pub trait Extension {
     /// Registers callbacks through `api`.
     fn load(api: ExtensionAPI) -> ExtensionFuture<'static, ()>;
@@ -33,7 +34,8 @@ pub fn load_extension_from_factory(
 ///
 /// The factory is a function `fn(ExtensionAPI) -> ExtensionFuture<'static, ()>`. The
 /// expansion defines the exported type and invokes the generated export macro, so the
-/// calling crate needs no handles, identities or raw bindings.
+/// calling crate needs no handles, identities or raw bindings. The glue it names exists only
+/// when building for `wasm32`.
 #[macro_export]
 macro_rules! export_extension {
     ($factory:path) => {

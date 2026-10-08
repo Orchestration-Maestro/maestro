@@ -86,12 +86,12 @@ pub type WithSession = Box<dyn FnOnce(ReplacedSessionContext) -> ExtensionFuture
 pub struct NewSessionCommandOptions {
     /// Plain data of the new session.
     pub data: NewSessionCommandData,
-    /// Runs once the new session is current, against its own context.
+    /// The host runs it against a context bound to the replacement session.
     pub with_session: Option<WithSession>,
 }
 
-/// Session-replacing operations of a [`CommandContextPort`]; each method forwards one
-/// operation and resolves to the host's message when the host rejects it.
+/// Session-replacing operations of a command context; each method forwards one operation and
+/// resolves to the host's message when the host rejects it.
 pub trait CommandContextPort: ContextPort {
     /// Waits for the agent to finish streaming.
     fn wait_for_idle(&self) -> ExtensionFuture<'_, ()>;
@@ -125,7 +125,8 @@ impl ExtensionCommandContext {
         self.port.wait_for_idle()
     }
 
-    /// Starts a new session; its `with_session` runs after the session becomes current.
+    /// Starts a new session; the host runs its `with_session`, if any, against the
+    /// replacement session.
     #[must_use]
     pub fn new_session(
         &self,

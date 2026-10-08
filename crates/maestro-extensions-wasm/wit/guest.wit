@@ -8,6 +8,22 @@ interface guest {
     /// What an event handler decided: a result, no result, or the message it failed with.
     type decision = result<option<extension-event-result>, string>;
 
+    /// A compaction preparation after its handler ran.
+    record session-before-compact-outcome {
+        /// The event as the handler left it, whether the handler succeeded or failed; absent
+        /// only when the handler replaced the event with one of another kind.
+        event: option<session-before-compact-event-data>,
+        decision: decision,
+    }
+
+    /// An input after its handler ran.
+    record input-outcome {
+        /// The event as the handler left it, whether the handler succeeded or failed; absent
+        /// only when the handler replaced the event with one of another kind.
+        event: option<input-event>,
+        decision: decision,
+    }
+
     /// Runs the extension factory; returns when it has completed.
     start: async func() -> result<_, string>;
     /// Drops the closure behind a registered callback and its identity.
@@ -28,8 +44,8 @@ interface guest {
         event: session-before-compact-event-data,
         signal: abort-signal,
         ctx: context,
-    ) -> decision;
+    ) -> session-before-compact-outcome;
     invoke-input: async func(
         handler: borrow<callback>, event: input-event, ctx: context,
-    ) -> decision;
+    ) -> input-outcome;
 }

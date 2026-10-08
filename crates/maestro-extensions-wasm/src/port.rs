@@ -8,21 +8,19 @@
 /// Declares a port trait and the facade methods that forward to it from one list.
 ///
 /// Each listed method returns `ExtensionResult<T>`; the facade reaches its port through the
-/// field `$access`. The optional `extra` block adds trait methods the facade implements by
-/// hand, and the optional supertrait is the port a wider port extends.
+/// field `$access`.
 macro_rules! port {
     (
         $(#[$port_meta:meta])*
-        $port:ident $(: $super:ident)? for $facade:ident via $access:tt {
+        $port:ident for $facade:ident via $access:tt {
             $(
                 $(#[$meta:meta])*
                 fn $method:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;
             )*
         }
-        $(extra { $($extra:tt)* })?
     ) => {
         $(#[$port_meta])*
-        pub trait $port $(: $super)? {
+        pub trait $port {
             $(
                 $(#[$meta])*
                 ///
@@ -30,7 +28,6 @@ macro_rules! port {
                 /// Returns the host's message when the host rejects the request.
                 fn $method(&self $(, $arg: $ty)*) -> ExtensionResult<$ret>;
             )*
-            $($($extra)*)?
         }
 
         impl $facade {

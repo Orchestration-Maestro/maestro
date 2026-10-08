@@ -38,7 +38,13 @@ function, cognitive complexity 15, nesting depth 4 and
 Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `panic!`. Unsafe code is forbidden. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
-`[lints] workspace = true`. Quality-lint allowances are forbidden.
+`[lints] workspace = true`. Quality-lint allowances are forbidden, with one exception.
+`maestro-extensions-wasm` declares its own lint table instead of inheriting the workspace's:
+the same table with `pedantic`, `too_many_arguments` and `excessive_nesting` at `deny`
+rather than `forbid`, because its generated bindings cannot compile under `forbid`. Its
+generated `src/bindings.rs` alone may carry a lint attribute, the single allowance
+`clippy::same_length_and_capacity`. Every handwritten top-level module, test and example of
+that crate restores the three groups with `forbid`, and the workspace conventions enforce it.
 The protected `redundant_clone` lint rejects unnecessary copies.
 Conventions reject consecutive repeated nonempty physical documentation lines
 within one contiguous run of same-style line documentation comments. An attribute,

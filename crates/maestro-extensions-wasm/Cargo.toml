@@ -28,6 +28,7 @@ forbidden_lint_groups = "forbid"
 [lints.clippy]
 pedantic = { level = "deny", priority = -1 }
 missing_docs_in_private_items = "forbid"
+redundant_clone = "forbid"
 too_many_arguments = "deny"
 fn_params_excessive_bools = "forbid"
 too_many_lines = "forbid"

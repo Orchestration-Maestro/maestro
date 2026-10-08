@@ -5,10 +5,11 @@
 //! table first and drop afterwards, so a destructor or callback may register, release or
 //! look up other entries.
 
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::bindings::maestro::extension::host;
+use super::imports::Imports;
 use crate::types::{CommandHandler, ExtensionHandler, ExtensionResult, WithSession};
 
 /// Declares the closure kinds the table keeps. Shared closures are cloned out of their entry;
@@ -95,13 +96,13 @@ kinds! {
 }
 
 /// One table entry: the closure and, for registered callbacks, the owner handle that keeps
-/// the host identity alive until the entry is released.
+/// the host identity alive until the entry is released. The closure drops before the handle.
 struct Entry {
     /// The closure.
     kind: Kind,
     /// The owner handle of a registered callback; operation-scoped entries hold theirs in
     /// [`Scoped`].
-    _owner: Option<host::Callback>,
+    _owner: Option<Box<dyn Any>>,
 }
 
 thread_local! {
@@ -110,18 +111,17 @@ thread_local! {
 }
 
 /// A host identity that is not in the table yet.
-pub(super) struct Identity {
+pub(super) struct Identity<I: Imports> {
     /// The owner handle created by the host.
-    pub(super) handle: host::Callback,
+    pub(super) handle: I::Callback,
     /// Key of the identity.
     id: u32,
 }
 
-impl Identity {
+impl<I: Imports> Identity<I> {
     /// Asks the host for a fresh identity.
-    pub(super) fn new() -> Self {
-        let handle = host::Callback::new();
-        let id = handle.id();
+    pub(super) fn new(imports: &I) -> Self {
+        let (id, handle) = imports.new_callback();
         Self { handle, id }
     }
 
@@ -133,24 +133,27 @@ impl Identity {
             id,
             Entry {
                 kind: closure.wrap(),
-                _owner: Some(handle),
+                _owner: Some(Box::new(handle)),
             },
         );
     }
 }
 
-/// An operation-scoped callback: its closure lives until the operation completes.
-pub(super) struct Scoped {
+/// An operation-scoped callback. The call that runs a one-shot closure consumes it, so what
+/// the closure captured drops when the continuation finishes. The identity lasts until the
+/// operation ends: its table entry is released then, which also drops a closure the host
+/// never ran, and the owner handle drops right after.
+pub(super) struct Scoped<I: Imports> {
     /// The owner handle created by the host.
-    pub(super) handle: host::Callback,
+    pub(super) handle: I::Callback,
     /// Key of the identity.
     id: u32,
 }
 
-impl Scoped {
+impl<I: Imports> Scoped<I> {
     /// Registers a closure that lives only for one operation.
-    pub(super) fn new(closure: impl Stored) -> Self {
-        let Identity { handle, id } = Identity::new();
+    pub(super) fn new(imports: &I, closure: impl Stored) -> Self {
+        let Identity { handle, id } = Identity::<I>::new(imports);
         insert(
             id,
             Entry {
@@ -162,7 +165,7 @@ impl Scoped {
     }
 }
 
-impl Drop for Scoped {
+impl<I: Imports> Drop for Scoped<I> {
     fn drop(&mut self) {
         release(self.id);
     }
@@ -174,8 +177,9 @@ fn insert(id: u32, entry: Entry) {
     drop(replaced);
 }
 
-/// Removes an entry and drops its closure after the table borrow ended.
-pub(super) fn release(id: u32) {
+/// Removes an entry, then drops its closure and its owner handle after the table borrow
+/// ended.
+pub(crate) fn release(id: u32) {
     let removed = TABLE.with_borrow_mut(|table| table.remove(&id));
     drop(removed);
 }
@@ -184,8 +188,7 @@ pub(super) fn release(id: u32) {
 ///
 /// # Errors
 /// Returns a message naming the identity when no closure of that kind is registered.
-pub(super) fn find<T: Shared>(handler: &host::Callback) -> ExtensionResult<T> {
-    let id = handler.id();
+pub(super) fn find<T: Shared>(id: u32) -> ExtensionResult<T> {
     TABLE
         .with_borrow(|table| table.get(&id).and_then(|entry| T::pick(&entry.kind)))
         .ok_or_else(|| format!("no callback registered for identity {id}"))
@@ -195,8 +198,7 @@ pub(super) fn find<T: Shared>(handler: &host::Callback) -> ExtensionResult<T> {
 ///
 /// # Errors
 /// Returns a message naming the identity when no such closure is pending.
-pub(super) fn take<T: Once>(handler: &host::Callback) -> ExtensionResult<T> {
-    let id = handler.id();
+pub(super) fn take<T: Once>(id: u32) -> ExtensionResult<T> {
     TABLE
         .with_borrow_mut(|table| {
             table

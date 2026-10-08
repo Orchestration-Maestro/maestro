@@ -32,10 +32,13 @@ of the example links an empty library, so only the `wasm32` build produces a com
 
 ## Register
 
-A factory may finish immediately or after awaiting; the host observes the registrations once
-the factory's future completes. `on` forwards each handler under its event name, including
-names the host does not define, and `register_command` forwards a command. A rejected
-registration returns the host's message and retains nothing.
+A factory may finish immediately or after awaiting. Each registration reaches the host
+through its imports at the moment the factory makes it, so the host has seen it before the
+factory's next statement runs. Whether and when the host treats the extension as active is
+the host's decision; the `start` export resolves when the factory's future completes. `on`
+forwards each handler under its event name, including names the host does not define, and
+`register_command` forwards a command. A rejected registration returns the host's message and
+retains nothing.
 
 Each closure you register stays alive in the guest until the host releases it, exactly once,
 and never while the guest's closure table is borrowed. A destructor may register again while
@@ -56,6 +59,11 @@ A handler receives `&mut ExtensionEvent` and an `ExtensionContext` and answers w
 An `AbortSignal` is a capability, not a snapshot: keep it past the callback and read
 `aborted()` later.
 
+The component returns the event as the handler left it together with the handler's decision,
+whether the handler answered or failed, so a host can reuse an event a failed handler edited.
+Signals travel to the guest and are never returned. A handler that replaces its event with an
+event of another kind leaves no edit to return, and the host receives no event.
+
 ## Contexts and sessions
 
 Handlers run with an `ExtensionContext`, which reads the working directory. Commands run with
@@ -63,11 +71,13 @@ an `ExtensionCommandContext`, which adds `wait_for_idle` and `new_session`; the 
 context has neither method, which the rustdoc examples check at compile time.
 
 `new_session` takes a `with_session` continuation. The host runs it against a
-`ReplacedSessionContext` bound to the replacement session while the operation is pending, and
-the guest releases the continuation when the operation ends. Afterwards the context that
-started the operation reports the host's stale-context message from `cwd`, while the
-replacement context keeps working. Errors are the plain text the host supplies, so an author
-can catch one and continue.
+`ReplacedSessionContext` bound to the replacement session while the operation is pending. The
+continuation runs once and what it captured drops when it finishes; the identity the host
+announced for it lasts until the operation ends, and a continuation the host never ran is
+released then. The facade forwards the host's answers: after the operation, `cwd` on the
+context that started it returns whatever the host reports, which the test host makes a
+stale-context message, while the replacement context keeps working. Errors are the plain text
+the host supplies, so an author can catch one and continue.
 
 ## Example
 
@@ -75,5 +85,12 @@ can catch one and continue.
 upper-cases text, a before-compact handler that cancels an aborted compaction and reports the
 state of the signal it kept from the previous one, a command that starts a new session and
 waits for idle from its continuation, a handler the host rejects, and a handler whose
-destructor registers another. `src/tests.rs` runs it through the built component and through
-the controlled adapter and compares the two transcripts.
+destructor registers another. Two more handlers edit their event: one trims an input in place
+and fails when nothing is left, the other notes the tokens in a compaction preparation and
+fails when the compaction was aborted.
+
+`src/tests.rs` runs the extension through the built component and through an in-process host
+that runs the component adapter's own functions, and compares the two transcripts. The host
+holds the continuation's wait for idle until the test saw it pending, so the command finishes
+only after that wait resumes. Afterwards the test checks that every callback, including the
+one a destructor registered, and every context and signal the host lent was dropped.

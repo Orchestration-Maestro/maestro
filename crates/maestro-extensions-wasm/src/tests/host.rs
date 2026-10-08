@@ -1,14 +1,10 @@
 //! A test-only native host: it instantiates the built author component and implements the
 //! imports the component calls.
-use std::collections::HashMap;
-use std::future::Future;
-
-use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
-use super::controlled::{Hold, REJECTED, STALE};
+use super::observed::{Observed, Session, pause};
 use crate::bindings::host_side::Extension;
 use crate::bindings::host_side::exports::maestro::extension::guest::Guest;
 use crate::bindings::host_side::maestro::extension::session::{
@@ -21,14 +17,6 @@ pub struct Identity(u32);
 /// Cancellation flag.
 pub struct Flag(bool);
 
-/// Session state; each context kind wraps it in its own host type.
-pub struct Session {
-    /// Working directory of the session.
-    cwd: String,
-    /// Whether an operation replaced the session.
-    stale: bool,
-}
-
 /// Host type of the ordinary context resource.
 pub struct Ordinary(Session);
 /// Host type of the command context resource.
@@ -36,45 +24,14 @@ pub struct Command(Session);
 /// Host type of the replacement context resource.
 pub struct Replaced(Session);
 
-impl Session {
-    /// A live session in `cwd`.
-    fn new(cwd: &str) -> Self {
-        Self {
-            cwd: cwd.to_owned(),
-            stale: false,
-        }
-    }
-
-    /// The working directory, or the stale message.
-    fn cwd(&self) -> Result<String, String> {
-        if self.stale {
-            Err(STALE.to_owned())
-        } else {
-            Ok(self.cwd.clone())
-        }
-    }
-}
-
 /// Host state shared by every import.
 pub struct State {
     /// WASI state the component's standard library needs.
     wasi: WasiCtx,
     /// Host-side resources by handle.
     pub table: ResourceTable,
-    /// Lines the host observed, in time order.
-    pub transcript: Vec<String>,
-    /// Identities the component dropped, in drop order.
-    pub dropped: Vec<u32>,
-    /// Last identity handed out.
-    next: u32,
-    /// Registered callback identities by key, such as `event input`.
-    pub registered: HashMap<String, u32>,
-    /// Keys in registration order.
-    pub order: Vec<String>,
-    /// The hold set for the next session operation.
-    hold: Option<Hold>,
-    /// Whether the next session operation fails without running its continuation.
-    reject_session: bool,
+    /// What the host observed.
+    pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
     guest: Option<Guest>,
 }
@@ -94,37 +51,22 @@ impl State {
         Self {
             wasi: WasiCtxBuilder::new().build(),
             table: ResourceTable::new(),
-            transcript: Vec::new(),
-            dropped: Vec::new(),
-            next: 0,
-            registered: HashMap::new(),
-            order: Vec::new(),
-            hold: None,
-            reject_session: false,
+            observed: Observed::default(),
             guest: None,
         }
     }
 
-    /// Adds a resource to the table.
+    /// Adds a resource to the table and counts it as lent to the extension.
     fn push<T: Send + 'static>(&mut self, value: T) -> wasmtime::Result<Resource<T>> {
+        self.observed.lend();
         Ok(self.table.push(value)?)
     }
 
     /// Removes a resource the component dropped.
     fn release<T: 'static>(&mut self, this: Resource<T>) -> wasmtime::Result<()> {
         self.table.delete(this)?;
+        self.observed.reclaim();
         Ok(())
-    }
-
-    /// Appends a line to the transcript.
-    fn log(&mut self, line: String) {
-        self.transcript.push(line);
-    }
-
-    /// Remembers the identity a callback was registered under.
-    fn register(&mut self, key: String, callback: &Resource<Identity>) {
-        self.order.push(key.clone());
-        self.registered.insert(key, callback.rep());
     }
 }
 
@@ -134,8 +76,8 @@ impl session::Host for State {}
 
 impl host::HostCallback for State {
     fn new(&mut self) -> wasmtime::Result<Resource<Identity>> {
-        self.next += 1;
-        self.push(Identity(self.next))
+        let identity = self.observed.next_identity();
+        Ok(self.table.push(Identity(identity))?)
     }
 
     fn id(&mut self, this: Resource<Identity>) -> wasmtime::Result<u32> {
@@ -143,7 +85,8 @@ impl host::HostCallback for State {
     }
 
     fn drop(&mut self, this: Resource<Identity>) -> wasmtime::Result<()> {
-        self.dropped.push(self.table.delete(this)?.0);
+        let identity = self.table.delete(this)?.0;
+        self.observed.drop_identity(identity);
         Ok(())
     }
 }
@@ -196,13 +139,7 @@ impl host::Host for State {
         event: String,
         handler: Resource<Identity>,
     ) -> wasmtime::Result<Result<(), String>> {
-        if event == REJECTED {
-            self.log(format!("reject event {event}"));
-            return Ok(Err(format!("registration rejected: {event}")));
-        }
-        self.log(format!("register event {event}"));
-        self.register(format!("event {event}"), &handler);
-        Ok(Ok(()))
+        Ok(self.observed.on(&event, handler.rep()))
     }
 
     fn register_command(
@@ -211,8 +148,7 @@ impl host::Host for State {
         _description: Option<String>,
         handler: Resource<Identity>,
     ) -> wasmtime::Result<Result<(), String>> {
-        self.log(format!("register command {name}"));
-        self.register(format!("command {name}"), &handler);
+        self.observed.register_command(&name, handler.rep());
         Ok(Ok(()))
     }
 
@@ -221,10 +157,7 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Result<(), String>> {
-        self.log(format!(
-            "entry {custom_type} {}",
-            data.as_deref().unwrap_or("none")
-        ));
+        self.observed.entry(&custom_type, data.as_deref());
         Ok(Ok(()))
     }
 }
@@ -237,15 +170,6 @@ impl HasData for Imports {
 }
 
 impl Imports {
-    /// Reports that an operation is pending and waits until the driver lets it continue.
-    async fn pending(accessor: &Accessor<State, Self>) {
-        let hold = accessor.with(|mut access| access.get().hold.take());
-        if let Some(Hold { started, open }) = hold {
-            let _ = started.send(());
-            let _ = open.await;
-        }
-    }
-
     /// Runs the continuation announced for an operation against a fresh replacement context.
     async fn continue_with(
         accessor: &Accessor<State, Self>,
@@ -270,16 +194,18 @@ impl Imports {
 }
 
 impl host::HostCommandContextWithStore<State> for Imports {
-    fn wait_for_idle(
+    async fn wait_for_idle(
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,
-    ) -> impl Future<Output = wasmtime::Result<Result<(), String>>> + Send {
-        std::future::ready(accessor.with(|mut access| -> wasmtime::Result<_> {
+    ) -> wasmtime::Result<Result<(), String>> {
+        let hold = accessor.with(|mut access| -> wasmtime::Result<_> {
             let state = access.get();
             let cwd = state.table.get(&this)?.0.cwd.clone();
-            state.log(format!("wait-for-idle {cwd}"));
-            Ok(Ok(()))
-        }))
+            state.observed.log(format!("wait-for-idle {cwd}"));
+            Ok(state.observed.take_hold())
+        })?;
+        pause(hold).await;
+        Ok(Ok(()))
     }
 
     async fn new_session(
@@ -290,9 +216,8 @@ impl host::HostCommandContextWithStore<State> for Imports {
     ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
         let parent = data.parent_session.as_deref().unwrap_or("none");
         let line = format!("new-session start parent={parent}");
-        accessor.with(|mut access| access.get().log(line));
-        Self::pending(accessor).await;
-        if accessor.with(|mut access| std::mem::take(&mut access.get().reject_session)) {
+        accessor.with(|mut access| access.get().observed.log(line));
+        if accessor.with(|mut access| access.get().observed.take_rejection()) {
             return Ok(Err("session rejected".to_owned()));
         }
         if let Err(message) = Self::continue_with(accessor, with_session, "/replacement").await? {
@@ -300,8 +225,8 @@ impl host::HostCommandContextWithStore<State> for Imports {
         }
         accessor.with(|mut access| -> wasmtime::Result<_> {
             let state = access.get();
-            state.table.get_mut(&this)?.0.stale = true;
-            state.log("new-session done cancelled=false".to_owned());
+            state.table.get(&this)?.0.stale.set(true);
+            state.observed.log("new-session done cancelled=false");
             Ok(Ok(SessionChangeResult { cancelled: false }))
         })
     }
@@ -348,29 +273,18 @@ impl Harness {
         Ok(Self { store, exports })
     }
 
-    /// The identity a callback was registered under.
-    pub fn callback(&self, key: &str) -> wasmtime::Result<u32> {
+    /// The table key a callback was registered under.
+    pub fn callback(&self, name: &str) -> wasmtime::Result<u32> {
         self.store
             .data()
-            .registered
-            .get(key)
-            .copied()
-            .ok_or_else(|| wasmtime::format_err!("nothing registered as {key}"))
+            .observed
+            .callback(name)
+            .map_err(wasmtime::Error::msg)
     }
 
-    /// Adds a line to the transcript.
-    pub fn note(&mut self, line: String) {
-        self.store.data_mut().transcript.push(line);
-    }
-
-    /// Keeps the next session operation pending.
-    pub fn hold_next_session(&mut self, hold: Hold) {
-        self.store.data_mut().hold = Some(hold);
-    }
-
-    /// Makes the next session operation fail without running its continuation.
-    pub fn reject_next_session(&mut self) {
-        self.store.data_mut().reject_session = true;
+    /// What the host observed.
+    pub fn observed(&mut self) -> &mut Observed {
+        &mut self.store.data_mut().observed
     }
 
     /// A fresh ordinary context in `cwd`.
@@ -408,26 +322,11 @@ impl Harness {
         Ok(())
     }
 
-    /// Asks the component to release the callback registered under `key`.
-    pub async fn release(&mut self, key: &str) -> wasmtime::Result<()> {
-        let rep = self.callback(key)?;
+    /// Asks the component to release the callback at table key `rep`.
+    pub async fn release(&mut self, rep: u32) -> wasmtime::Result<()> {
         self.exports
             .func_release()
             .call_async(&mut self.store, (borrow(rep),))
             .await
     }
-}
-
-/// Channels that hold a new session pending until the driver saw it.
-pub fn gate() -> (Hold, oneshot::Receiver<()>, oneshot::Sender<()>) {
-    let (started_tx, started) = oneshot::channel();
-    let (open, opened) = oneshot::channel();
-    (
-        Hold {
-            started: started_tx,
-            open: opened,
-        },
-        started,
-        open,
-    )
 }

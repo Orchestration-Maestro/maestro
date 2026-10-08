@@ -1,9 +1,9 @@
-//! Generated context and signal resources behind the author ports.
+//! Host context and signal resources behind the author ports.
 
 use std::rc::Rc;
 
 use super::callbacks::Scoped;
-use crate::bindings::maestro::extension::host;
+use super::imports::Imports;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
@@ -11,46 +11,67 @@ use crate::types::{
     ReplacedSessionContextPort, SignalPort,
 };
 
-/// Generated signal behind the facade.
-struct GeneratedSignal(host::AbortSignal);
+/// Host signal behind the facade.
+struct Signal<I: Imports> {
+    /// The host the signal belongs to.
+    imports: I,
+    /// The host's cancellation flag.
+    signal: I::Signal,
+}
 
-impl SignalPort for GeneratedSignal {
+impl<I: Imports> SignalPort for Signal<I> {
     fn aborted(&self) -> bool {
-        self.0.aborted()
+        self.imports.aborted(&self.signal)
     }
 }
 
-/// Wraps a generated signal.
-pub(super) fn signal(signal: host::AbortSignal) -> AbortSignal {
-    AbortSignal::new(Rc::new(GeneratedSignal(signal)))
+/// Wraps a host signal.
+pub(super) fn signal<I: Imports>(imports: &I, signal: I::Signal) -> AbortSignal {
+    AbortSignal::new(Rc::new(Signal {
+        imports: imports.clone(),
+        signal,
+    }))
 }
 
-/// Generated ordinary context behind the facade.
-struct GeneratedContext(host::Context);
+/// Host ordinary context behind the facade.
+struct Ordinary<I: Imports> {
+    /// The host the context belongs to.
+    imports: I,
+    /// The host's context.
+    context: I::Context,
+}
 
-impl ContextPort for GeneratedContext {
+impl<I: Imports> ContextPort for Ordinary<I> {
     fn cwd(&self) -> ExtensionResult<String> {
-        self.0.cwd()
+        self.imports.cwd(&self.context)
     }
 }
 
-/// Wraps a generated ordinary context.
-pub(super) fn context(ctx: host::Context) -> ExtensionContext {
-    ExtensionContext::new(Rc::new(GeneratedContext(ctx)))
+/// Wraps a host ordinary context.
+pub(super) fn context<I: Imports>(imports: &I, context: I::Context) -> ExtensionContext {
+    ExtensionContext::new(Rc::new(Ordinary {
+        imports: imports.clone(),
+        context,
+    }))
 }
 
-/// Generated command context behind the facade.
-struct GeneratedCommand(host::CommandContext);
+/// Host command context behind the facade.
+struct Command<I: Imports> {
+    /// The host the context belongs to.
+    imports: I,
+    /// The host's command context.
+    context: I::CommandContext,
+}
 
-impl ContextPort for GeneratedCommand {
+impl<I: Imports> ContextPort for Command<I> {
     fn cwd(&self) -> ExtensionResult<String> {
-        self.0.cwd()
+        self.imports.command_cwd(&self.context)
     }
 }
 
-impl CommandContextPort for GeneratedCommand {
+impl<I: Imports> CommandContextPort for Command<I> {
     fn wait_for_idle(&self) -> ExtensionFuture<'_, ()> {
-        Box::pin(self.0.wait_for_idle())
+        self.imports.wait_for_idle(&self.context)
     }
 
     fn new_session(
@@ -65,29 +86,53 @@ impl CommandContextPort for GeneratedCommand {
                     },
                     with_session: None,
                 });
-            let with_session = with_session.map(Scoped::new);
-            self.0
-                .new_session(data, with_session.as_ref().map(|scoped| &scoped.handle))
+            let with_session = with_session.map(|closure| Scoped::new(&self.imports, closure));
+            self.imports
+                .new_session(
+                    &self.context,
+                    data,
+                    with_session.as_ref().map(|scoped| &scoped.handle),
+                )
                 .await
         })
     }
 }
 
-/// Wraps a generated command context.
-pub(super) fn command_context(ctx: host::CommandContext) -> ExtensionCommandContext {
-    ExtensionCommandContext::new(Rc::new(GeneratedCommand(ctx)))
+/// Wraps a host command context.
+pub(super) fn command_context<I: Imports>(
+    imports: &I,
+    context: I::CommandContext,
+) -> ExtensionCommandContext {
+    ExtensionCommandContext::new(Rc::new(Command {
+        imports: imports.clone(),
+        context,
+    }))
 }
 
-/// Generated replacement context behind the facade.
-struct GeneratedReplaced(host::ReplacedSessionContext);
+/// Host replacement context behind the facade.
+struct Replaced<I: Imports> {
+    /// The host the context belongs to.
+    imports: I,
+    /// The host's replacement context.
+    context: I::ReplacedContext,
+}
 
-impl ReplacedSessionContextPort for GeneratedReplaced {
+impl<I: Imports> ReplacedSessionContextPort for Replaced<I> {
     fn command(&self) -> Rc<dyn CommandContextPort> {
-        Rc::new(GeneratedCommand(self.0.command()))
+        Rc::new(Command {
+            imports: self.imports.clone(),
+            context: self.imports.command(&self.context),
+        })
     }
 }
 
-/// Wraps a generated replacement context.
-pub(super) fn replaced_context(ctx: host::ReplacedSessionContext) -> ReplacedSessionContext {
-    ReplacedSessionContext::new(&GeneratedReplaced(ctx))
+/// Wraps a host replacement context.
+pub(super) fn replaced_context<I: Imports>(
+    imports: &I,
+    context: I::ReplacedContext,
+) -> ReplacedSessionContext {
+    ReplacedSessionContext::new(&Replaced {
+        imports: imports.clone(),
+        context,
+    })
 }
