@@ -1,5 +1,7 @@
 //! Invocation settings with retained adapter hooks.
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
+use crate::providers::http::Fetch;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 /// Represent the accepted reasoning levels, with Off only on model selection.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
@@ -32,6 +34,17 @@ pub enum ModelThinkingLevel {
     High,
     /// Xhigh.
     Xhigh,
+}
+impl From<ThinkingLevel> for ModelThinkingLevel {
+    fn from(level: ThinkingLevel) -> Self {
+        match level {
+            ThinkingLevel::Minimal => Self::Minimal,
+            ThinkingLevel::Low => Self::Low,
+            ThinkingLevel::Medium => Self::Medium,
+            ThinkingLevel::High => Self::High,
+            ThinkingLevel::Xhigh => Self::Xhigh,
+        }
+    }
 }
 /// Carry optional per-level token budgets.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -105,8 +118,8 @@ pub struct StreamOptions {
     pub on_payload: Option<OnPayload>,
     /// On response.
     pub on_response: Option<OnResponse>,
-    /// Headers.
-    pub headers: Option<std::collections::BTreeMap<String, String>>,
+    /// Headers, applied in insertion order.
+    pub headers: Option<IndexMap<String, String>>,
     /// Timeout ms.
     pub timeout_ms: Option<f64>,
     /// Max retries.
@@ -115,6 +128,8 @@ pub struct StreamOptions {
     pub max_retry_delay_ms: Option<f64>,
     /// Metadata.
     pub metadata: Option<JsonObject>,
+    /// Replacement for the default HTTP transport.
+    pub fetch: Option<Fetch>,
 }
 /// Retain typed common options plus provider-specific open fields.
 #[derive(Clone, Default)]
@@ -133,4 +148,92 @@ pub struct SimpleStreamOptions {
     pub reasoning: Option<ThinkingLevel>,
     /// Thinking budgets.
     pub thinking_budgets: Option<ThinkingBudgets>,
+    /// Tool selection forwarded by adapters that support it.
+    pub tool_choice: Option<ToolChoice>,
+}
+
+/// Select whether and which tool the model must call.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(from = "ToolChoiceWire", into = "ToolChoiceWire")]
+pub enum ToolChoice {
+    /// Let the model decide.
+    Auto,
+    /// Forbid tool calls.
+    None,
+    /// Require some tool call.
+    Required,
+    /// Require a call to the named function.
+    Function {
+        /// Function name.
+        name: String,
+    },
+}
+
+/// Serialized tool choice: a mode string or a named function object.
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+enum ToolChoiceWire {
+    /// Mode string.
+    Mode(ToolChoiceMode),
+    /// Named function object.
+    Function {
+        /// Constant discriminator.
+        r#type: FunctionTag,
+        /// Function reference.
+        function: FunctionName,
+    },
+}
+
+/// Mode strings accepted for a tool choice.
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum ToolChoiceMode {
+    /// Let the model decide.
+    Auto,
+    /// Forbid tool calls.
+    None,
+    /// Require some tool call.
+    Required,
+}
+
+/// Constant `function` discriminator.
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum FunctionTag {
+    /// The only accepted discriminator.
+    Function,
+}
+
+/// Function reference inside a named tool choice.
+#[derive(Clone, Serialize, Deserialize)]
+struct FunctionName {
+    /// Function name.
+    name: String,
+}
+
+impl From<ToolChoiceWire> for ToolChoice {
+    fn from(wire: ToolChoiceWire) -> Self {
+        match wire {
+            ToolChoiceWire::Mode(ToolChoiceMode::Auto) => Self::Auto,
+            ToolChoiceWire::Mode(ToolChoiceMode::None) => Self::None,
+            ToolChoiceWire::Mode(ToolChoiceMode::Required) => Self::Required,
+            ToolChoiceWire::Function { function, .. } => Self::Function {
+                name: function.name,
+            },
+        }
+    }
+}
+
+impl From<ToolChoice> for ToolChoiceWire {
+    fn from(choice: ToolChoice) -> Self {
+        match choice {
+            ToolChoice::Auto => Self::Mode(ToolChoiceMode::Auto),
+            ToolChoice::None => Self::Mode(ToolChoiceMode::None),
+            ToolChoice::Required => Self::Mode(ToolChoiceMode::Required),
+            ToolChoice::Function { name } => Self::Function {
+                r#type: FunctionTag::Function,
+                function: FunctionName { name },
+            },
+        }
+    }
 }

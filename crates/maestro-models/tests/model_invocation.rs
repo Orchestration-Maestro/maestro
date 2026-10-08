@@ -285,6 +285,9 @@ mod tests {
                     .unwrap()
                     .clone(),
             ),
+            fetch: Some(Arc::new(|_| {
+                Box::pin(async { Err(maestro_models::FetchError::Aborted) })
+            })),
         }
     }
     fn check_common(
@@ -313,6 +316,15 @@ mod tests {
         actual.signal.as_ref().unwrap().abort();
         assert!(expected.signal.as_ref().unwrap().is_aborted());
     }
+    fn check_fetch(
+        actual: &maestro_models::records::types::StreamOptions,
+        expected: &maestro_models::records::types::StreamOptions,
+    ) {
+        assert!(Arc::ptr_eq(
+            actual.fetch.as_ref().unwrap(),
+            expected.fetch.as_ref().unwrap()
+        ));
+    }
     fn completion_provider(
         output: &maestro_models::records::types::AssistantMessageEventStream,
         expected: &maestro_models::records::types::StreamOptions,
@@ -334,6 +346,7 @@ mod tests {
                 assert_eq!(conversation, context());
                 let options = options.unwrap();
                 check_common(&options.common, &raw_expected);
+                check_fetch(&options.common, &raw_expected);
                 assert_eq!(
                     options.extra,
                     serde_json::json!({"providerSpecific":"present","maxTokens":999})
@@ -349,6 +362,8 @@ mod tests {
                 assert_eq!(conversation, context());
                 let options = options.unwrap();
                 check_common(&options.common, &simple_expected);
+                check_fetch(&options.common, &simple_expected);
+                assert_eq!(options.tool_choice, Some(ToolChoice::Required));
                 assert_eq!(options.reasoning, Some(ThinkingLevel::Xhigh));
                 assert_eq!(
                     options.thinking_budgets,
@@ -401,6 +416,7 @@ mod tests {
                     medium: Some(3.0),
                     high: Some(4.0),
                 }),
+                tool_choice: Some(ToolChoice::Required),
             }),
         );
         assert_eq!(simple_count.load(std::sync::atomic::Ordering::SeqCst), 2);

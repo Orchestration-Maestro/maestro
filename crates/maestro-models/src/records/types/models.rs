@@ -307,7 +307,7 @@ pub struct Model {
     pub max_tokens: f64,
     /// Headers.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub headers: Option<std::collections::BTreeMap<String, String>>,
+    pub headers: Option<indexmap::IndexMap<String, String>>,
     /// Compat.
     #[serde(default, skip_serializing_if = "Option::is_none", skip_deserializing)]
     pub compat: Option<ModelCompat>,

@@ -8,9 +8,14 @@ repository.workspace = true
 [dependencies]
 serde = { version = "=1.0.229", features = ["derive", "rc"] }
 serde_json.workspace = true
-indexmap = "=2.14.2"
+indexmap = { version = "=2.14.2", features = ["serde"] }
 regex = "=1.13.1"
 rand = "=0.10.3"
+reqwest = { version = "=0.13.5", features = ["stream"] }
+eventsource-stream = "=0.2.3"
+futures-core = { version = "=0.3.34", default-features = false, features = ["std"] }
+futures-util = { version = "=0.3.34", default-features = false, features = ["std"] }
+httpdate = "=1.0.3"
 
 num-bigint = "=0.4.8"
 num-traits = "=0.2.19"
@@ -34,3 +39,6 @@ getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "time"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "=1.53.2", features = ["rt", "time", "test-util"] }

@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
+    use indexmap::IndexMap;
     use maestro_models::{
-        CacheRetention, Cancellation, Model, OnPayload, OnResponse, ProviderResponse,
-        SimpleStreamOptions, StreamOptions, Transport, build_base_options,
+        CacheRetention, Cancellation, Fetch, FetchError, Model, OnPayload, OnResponse,
+        ProviderResponse, SimpleStreamOptions, StreamOptions, Transport, build_base_options,
     };
     use std::{
-        collections::BTreeMap,
         sync::{
             Arc,
             atomic::{AtomicUsize, Ordering},
@@ -36,6 +36,7 @@ mod tests {
             response_calls.fetch_add(1, Ordering::SeqCst);
             Box::pin(async { Ok(()) })
         });
+        let fetch: Fetch = Arc::new(|_| Box::pin(async { Err(FetchError::Aborted) }));
         let signal = Cancellation::new();
         let mut options = SimpleStreamOptions {
             common: StreamOptions {
@@ -46,13 +47,14 @@ mod tests {
                 transport: Some(Transport::WebsocketCached),
                 cache_retention: Some(CacheRetention::Long),
                 session_id: Some("session".into()),
-                headers: Some(BTreeMap::from([("header".into(), "value".into())])),
+                headers: Some(IndexMap::from([("header".into(), "value".into())])),
                 on_payload: Some(Arc::clone(&on_payload)),
                 on_response: Some(Arc::clone(&on_response)),
                 timeout_ms: Some(17.0),
                 max_retries: Some(3.0),
                 max_retry_delay_ms: Some(29.0),
                 metadata: Some(serde_json::from_value(serde_json::json!({"marker": 42})).unwrap()),
+                fetch: Some(Arc::clone(&fetch)),
             },
             ..Default::default()
         };
@@ -250,6 +252,10 @@ mod tests {
         assert_eq!(base.session_id.as_deref(), Some("session"));
         assert_eq!(base.headers, original.headers);
         assert_eq!(base.metadata, original.metadata);
+        assert!(Arc::ptr_eq(
+            base.fetch.as_ref().unwrap(),
+            original.fetch.as_ref().unwrap()
+        ));
         assert_eq!(
             (base.timeout_ms, base.max_retries, base.max_retry_delay_ms),
             (Some(17.0), Some(3.0), Some(29.0))

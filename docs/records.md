@@ -23,6 +23,10 @@ explains explicit environment-key discovery and ambient configuration.
 The [model option helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
 copy common settings, adjust thinking budgets and classify context overflow.
 
+The [chat-completion guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md)
+covers direct streamed requests, header and cache policy, retries and the shared
+Cloudflare and Copilot helpers.
+
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
 
 The [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md)
