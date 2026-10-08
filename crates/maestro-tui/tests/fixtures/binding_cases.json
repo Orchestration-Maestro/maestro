@@ -1,0 +1,5309 @@
+{
+  "cases": [
+    {
+      "id": "defaults",
+      "test": "default_definitions_keep_every_key_and_description",
+      "input": {
+        "definitions": "builtins",
+        "user": []
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "tui.editor.cursorUp",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.editor.cursorDown",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              [
+                "ctrl+]"
+              ]
+            ],
+            [
+              "tui.editor.jumpBackward",
+              [
+                "ctrl+alt+]"
+              ]
+            ],
+            [
+              "tui.editor.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.editor.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              [
+                "backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              [
+                "ctrl+u"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              [
+                "ctrl+k"
+              ]
+            ],
+            [
+              "tui.editor.yank",
+              [
+                "ctrl+y"
+              ]
+            ],
+            [
+              "tui.editor.yankPop",
+              [
+                "alt+y"
+              ]
+            ],
+            [
+              "tui.editor.undo",
+              [
+                "ctrl+-"
+              ]
+            ],
+            [
+              "tui.input.newLine",
+              [
+                "shift+enter"
+              ]
+            ],
+            [
+              "tui.input.submit",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "tui.input.tab",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "tui.input.copy",
+              [
+                "ctrl+c"
+              ]
+            ],
+            [
+              "tui.select.up",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.select.down",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.select.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.select.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.select.confirm",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "tui.editor.cursorUp",
+              {
+                "defaultKeys": "up",
+                "description": "Move cursor up"
+              }
+            ],
+            [
+              "tui.editor.cursorDown",
+              {
+                "defaultKeys": "down",
+                "description": "Move cursor down"
+              }
+            ],
+            [
+              "tui.editor.cursorLeft",
+              {
+                "defaultKeys": [
+                  "left",
+                  "ctrl+b"
+                ],
+                "description": "Move cursor left"
+              }
+            ],
+            [
+              "tui.editor.cursorRight",
+              {
+                "defaultKeys": [
+                  "right",
+                  "ctrl+f"
+                ],
+                "description": "Move cursor right"
+              }
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              {
+                "defaultKeys": [
+                  "alt+left",
+                  "ctrl+left",
+                  "alt+b"
+                ],
+                "description": "Move cursor word left"
+              }
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              {
+                "defaultKeys": [
+                  "alt+right",
+                  "ctrl+right",
+                  "alt+f"
+                ],
+                "description": "Move cursor word right"
+              }
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              {
+                "defaultKeys": [
+                  "home",
+                  "ctrl+a"
+                ],
+                "description": "Move to line start"
+              }
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              {
+                "defaultKeys": [
+                  "end",
+                  "ctrl+e"
+                ],
+                "description": "Move to line end"
+              }
+            ],
+            [
+              "tui.editor.jumpForward",
+              {
+                "defaultKeys": "ctrl+]",
+                "description": "Jump forward to character"
+              }
+            ],
+            [
+              "tui.editor.jumpBackward",
+              {
+                "defaultKeys": "ctrl+alt+]",
+                "description": "Jump backward to character"
+              }
+            ],
+            [
+              "tui.editor.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Page up"
+              }
+            ],
+            [
+              "tui.editor.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Page down"
+              }
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              {
+                "defaultKeys": "backspace",
+                "description": "Delete character backward"
+              }
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              {
+                "defaultKeys": [
+                  "delete",
+                  "ctrl+d"
+                ],
+                "description": "Delete character forward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              {
+                "defaultKeys": [
+                  "ctrl+w",
+                  "alt+backspace"
+                ],
+                "description": "Delete word backward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              {
+                "defaultKeys": [
+                  "alt+d",
+                  "alt+delete"
+                ],
+                "description": "Delete word forward"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              {
+                "defaultKeys": "ctrl+u",
+                "description": "Delete to line start"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              {
+                "defaultKeys": "ctrl+k",
+                "description": "Delete to line end"
+              }
+            ],
+            [
+              "tui.editor.yank",
+              {
+                "defaultKeys": "ctrl+y",
+                "description": "Yank"
+              }
+            ],
+            [
+              "tui.editor.yankPop",
+              {
+                "defaultKeys": "alt+y",
+                "description": "Yank pop"
+              }
+            ],
+            [
+              "tui.editor.undo",
+              {
+                "defaultKeys": "ctrl+-",
+                "description": "Undo"
+              }
+            ],
+            [
+              "tui.input.newLine",
+              {
+                "defaultKeys": "shift+enter",
+                "description": "Insert newline"
+              }
+            ],
+            [
+              "tui.input.submit",
+              {
+                "defaultKeys": "enter",
+                "description": "Submit input"
+              }
+            ],
+            [
+              "tui.input.tab",
+              {
+                "defaultKeys": "tab",
+                "description": "Tab / autocomplete"
+              }
+            ],
+            [
+              "tui.input.copy",
+              {
+                "defaultKeys": "ctrl+c",
+                "description": "Copy selection"
+              }
+            ],
+            [
+              "tui.select.up",
+              {
+                "defaultKeys": "up",
+                "description": "Move selection up"
+              }
+            ],
+            [
+              "tui.select.down",
+              {
+                "defaultKeys": "down",
+                "description": "Move selection down"
+              }
+            ],
+            [
+              "tui.select.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Selection page up"
+              }
+            ],
+            [
+              "tui.select.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Selection page down"
+              }
+            ],
+            [
+              "tui.select.confirm",
+              {
+                "defaultKeys": "enter",
+                "description": "Confirm selection"
+              }
+            ],
+            [
+              "tui.select.cancel",
+              {
+                "defaultKeys": [
+                  "escape",
+                  "ctrl+c"
+                ],
+                "description": "Cancel selection"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [],
+          "resolved": [
+            [
+              "tui.editor.cursorUp",
+              "up"
+            ],
+            [
+              "tui.editor.cursorDown",
+              "down"
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              "ctrl+]"
+            ],
+            [
+              "tui.editor.jumpBackward",
+              "ctrl+alt+]"
+            ],
+            [
+              "tui.editor.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.editor.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              "backspace"
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              "ctrl+u"
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              "ctrl+k"
+            ],
+            [
+              "tui.editor.yank",
+              "ctrl+y"
+            ],
+            [
+              "tui.editor.yankPop",
+              "alt+y"
+            ],
+            [
+              "tui.editor.undo",
+              "ctrl+-"
+            ],
+            [
+              "tui.input.newLine",
+              "shift+enter"
+            ],
+            [
+              "tui.input.submit",
+              "enter"
+            ],
+            [
+              "tui.input.tab",
+              "tab"
+            ],
+            [
+              "tui.input.copy",
+              "ctrl+c"
+            ],
+            [
+              "tui.select.up",
+              "up"
+            ],
+            [
+              "tui.select.down",
+              "down"
+            ],
+            [
+              "tui.select.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.select.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.select.confirm",
+              "enter"
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "submit-regression",
+      "test": "maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound",
+      "input": {
+        "definitions": "builtins",
+        "user": [
+          [
+            "tui.input.submit",
+            [
+              "enter",
+              "ctrl+enter"
+            ]
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "tui.editor.cursorUp",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.editor.cursorDown",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              [
+                "ctrl+]"
+              ]
+            ],
+            [
+              "tui.editor.jumpBackward",
+              [
+                "ctrl+alt+]"
+              ]
+            ],
+            [
+              "tui.editor.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.editor.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              [
+                "backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              [
+                "ctrl+u"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              [
+                "ctrl+k"
+              ]
+            ],
+            [
+              "tui.editor.yank",
+              [
+                "ctrl+y"
+              ]
+            ],
+            [
+              "tui.editor.yankPop",
+              [
+                "alt+y"
+              ]
+            ],
+            [
+              "tui.editor.undo",
+              [
+                "ctrl+-"
+              ]
+            ],
+            [
+              "tui.input.newLine",
+              [
+                "shift+enter"
+              ]
+            ],
+            [
+              "tui.input.submit",
+              [
+                "enter",
+                "ctrl+enter"
+              ]
+            ],
+            [
+              "tui.input.tab",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "tui.input.copy",
+              [
+                "ctrl+c"
+              ]
+            ],
+            [
+              "tui.select.up",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.select.down",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.select.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.select.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.select.confirm",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "tui.editor.cursorUp",
+              {
+                "defaultKeys": "up",
+                "description": "Move cursor up"
+              }
+            ],
+            [
+              "tui.editor.cursorDown",
+              {
+                "defaultKeys": "down",
+                "description": "Move cursor down"
+              }
+            ],
+            [
+              "tui.editor.cursorLeft",
+              {
+                "defaultKeys": [
+                  "left",
+                  "ctrl+b"
+                ],
+                "description": "Move cursor left"
+              }
+            ],
+            [
+              "tui.editor.cursorRight",
+              {
+                "defaultKeys": [
+                  "right",
+                  "ctrl+f"
+                ],
+                "description": "Move cursor right"
+              }
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              {
+                "defaultKeys": [
+                  "alt+left",
+                  "ctrl+left",
+                  "alt+b"
+                ],
+                "description": "Move cursor word left"
+              }
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              {
+                "defaultKeys": [
+                  "alt+right",
+                  "ctrl+right",
+                  "alt+f"
+                ],
+                "description": "Move cursor word right"
+              }
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              {
+                "defaultKeys": [
+                  "home",
+                  "ctrl+a"
+                ],
+                "description": "Move to line start"
+              }
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              {
+                "defaultKeys": [
+                  "end",
+                  "ctrl+e"
+                ],
+                "description": "Move to line end"
+              }
+            ],
+            [
+              "tui.editor.jumpForward",
+              {
+                "defaultKeys": "ctrl+]",
+                "description": "Jump forward to character"
+              }
+            ],
+            [
+              "tui.editor.jumpBackward",
+              {
+                "defaultKeys": "ctrl+alt+]",
+                "description": "Jump backward to character"
+              }
+            ],
+            [
+              "tui.editor.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Page up"
+              }
+            ],
+            [
+              "tui.editor.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Page down"
+              }
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              {
+                "defaultKeys": "backspace",
+                "description": "Delete character backward"
+              }
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              {
+                "defaultKeys": [
+                  "delete",
+                  "ctrl+d"
+                ],
+                "description": "Delete character forward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              {
+                "defaultKeys": [
+                  "ctrl+w",
+                  "alt+backspace"
+                ],
+                "description": "Delete word backward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              {
+                "defaultKeys": [
+                  "alt+d",
+                  "alt+delete"
+                ],
+                "description": "Delete word forward"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              {
+                "defaultKeys": "ctrl+u",
+                "description": "Delete to line start"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              {
+                "defaultKeys": "ctrl+k",
+                "description": "Delete to line end"
+              }
+            ],
+            [
+              "tui.editor.yank",
+              {
+                "defaultKeys": "ctrl+y",
+                "description": "Yank"
+              }
+            ],
+            [
+              "tui.editor.yankPop",
+              {
+                "defaultKeys": "alt+y",
+                "description": "Yank pop"
+              }
+            ],
+            [
+              "tui.editor.undo",
+              {
+                "defaultKeys": "ctrl+-",
+                "description": "Undo"
+              }
+            ],
+            [
+              "tui.input.newLine",
+              {
+                "defaultKeys": "shift+enter",
+                "description": "Insert newline"
+              }
+            ],
+            [
+              "tui.input.submit",
+              {
+                "defaultKeys": "enter",
+                "description": "Submit input"
+              }
+            ],
+            [
+              "tui.input.tab",
+              {
+                "defaultKeys": "tab",
+                "description": "Tab / autocomplete"
+              }
+            ],
+            [
+              "tui.input.copy",
+              {
+                "defaultKeys": "ctrl+c",
+                "description": "Copy selection"
+              }
+            ],
+            [
+              "tui.select.up",
+              {
+                "defaultKeys": "up",
+                "description": "Move selection up"
+              }
+            ],
+            [
+              "tui.select.down",
+              {
+                "defaultKeys": "down",
+                "description": "Move selection down"
+              }
+            ],
+            [
+              "tui.select.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Selection page up"
+              }
+            ],
+            [
+              "tui.select.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Selection page down"
+              }
+            ],
+            [
+              "tui.select.confirm",
+              {
+                "defaultKeys": "enter",
+                "description": "Confirm selection"
+              }
+            ],
+            [
+              "tui.select.cancel",
+              {
+                "defaultKeys": [
+                  "escape",
+                  "ctrl+c"
+                ],
+                "description": "Cancel selection"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "tui.input.submit",
+              [
+                "enter",
+                "ctrl+enter"
+              ]
+            ]
+          ],
+          "resolved": [
+            [
+              "tui.editor.cursorUp",
+              "up"
+            ],
+            [
+              "tui.editor.cursorDown",
+              "down"
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              "ctrl+]"
+            ],
+            [
+              "tui.editor.jumpBackward",
+              "ctrl+alt+]"
+            ],
+            [
+              "tui.editor.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.editor.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              "backspace"
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              "ctrl+u"
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              "ctrl+k"
+            ],
+            [
+              "tui.editor.yank",
+              "ctrl+y"
+            ],
+            [
+              "tui.editor.yankPop",
+              "alt+y"
+            ],
+            [
+              "tui.editor.undo",
+              "ctrl+-"
+            ],
+            [
+              "tui.input.newLine",
+              "shift+enter"
+            ],
+            [
+              "tui.input.submit",
+              [
+                "enter",
+                "ctrl+enter"
+              ]
+            ],
+            [
+              "tui.input.tab",
+              "tab"
+            ],
+            [
+              "tui.input.copy",
+              "ctrl+c"
+            ],
+            [
+              "tui.select.up",
+              "up"
+            ],
+            [
+              "tui.select.down",
+              "down"
+            ],
+            [
+              "tui.select.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.select.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.select.confirm",
+              "enter"
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\r",
+              "id": "tui.select.confirm",
+              "result": true
+            },
+            {
+              "data": "\u001b[13;5u",
+              "id": "tui.input.submit",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cursor-regression",
+      "test": "maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_same_key",
+      "input": {
+        "definitions": "builtins",
+        "user": [
+          [
+            "tui.select.up",
+            [
+              "up",
+              "ctrl+p"
+            ]
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "tui.editor.cursorUp",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.editor.cursorDown",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              [
+                "ctrl+]"
+              ]
+            ],
+            [
+              "tui.editor.jumpBackward",
+              [
+                "ctrl+alt+]"
+              ]
+            ],
+            [
+              "tui.editor.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.editor.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              [
+                "backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              [
+                "ctrl+u"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              [
+                "ctrl+k"
+              ]
+            ],
+            [
+              "tui.editor.yank",
+              [
+                "ctrl+y"
+              ]
+            ],
+            [
+              "tui.editor.yankPop",
+              [
+                "alt+y"
+              ]
+            ],
+            [
+              "tui.editor.undo",
+              [
+                "ctrl+-"
+              ]
+            ],
+            [
+              "tui.input.newLine",
+              [
+                "shift+enter"
+              ]
+            ],
+            [
+              "tui.input.submit",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "tui.input.tab",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "tui.input.copy",
+              [
+                "ctrl+c"
+              ]
+            ],
+            [
+              "tui.select.up",
+              [
+                "up",
+                "ctrl+p"
+              ]
+            ],
+            [
+              "tui.select.down",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.select.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.select.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.select.confirm",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "tui.editor.cursorUp",
+              {
+                "defaultKeys": "up",
+                "description": "Move cursor up"
+              }
+            ],
+            [
+              "tui.editor.cursorDown",
+              {
+                "defaultKeys": "down",
+                "description": "Move cursor down"
+              }
+            ],
+            [
+              "tui.editor.cursorLeft",
+              {
+                "defaultKeys": [
+                  "left",
+                  "ctrl+b"
+                ],
+                "description": "Move cursor left"
+              }
+            ],
+            [
+              "tui.editor.cursorRight",
+              {
+                "defaultKeys": [
+                  "right",
+                  "ctrl+f"
+                ],
+                "description": "Move cursor right"
+              }
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              {
+                "defaultKeys": [
+                  "alt+left",
+                  "ctrl+left",
+                  "alt+b"
+                ],
+                "description": "Move cursor word left"
+              }
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              {
+                "defaultKeys": [
+                  "alt+right",
+                  "ctrl+right",
+                  "alt+f"
+                ],
+                "description": "Move cursor word right"
+              }
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              {
+                "defaultKeys": [
+                  "home",
+                  "ctrl+a"
+                ],
+                "description": "Move to line start"
+              }
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              {
+                "defaultKeys": [
+                  "end",
+                  "ctrl+e"
+                ],
+                "description": "Move to line end"
+              }
+            ],
+            [
+              "tui.editor.jumpForward",
+              {
+                "defaultKeys": "ctrl+]",
+                "description": "Jump forward to character"
+              }
+            ],
+            [
+              "tui.editor.jumpBackward",
+              {
+                "defaultKeys": "ctrl+alt+]",
+                "description": "Jump backward to character"
+              }
+            ],
+            [
+              "tui.editor.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Page up"
+              }
+            ],
+            [
+              "tui.editor.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Page down"
+              }
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              {
+                "defaultKeys": "backspace",
+                "description": "Delete character backward"
+              }
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              {
+                "defaultKeys": [
+                  "delete",
+                  "ctrl+d"
+                ],
+                "description": "Delete character forward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              {
+                "defaultKeys": [
+                  "ctrl+w",
+                  "alt+backspace"
+                ],
+                "description": "Delete word backward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              {
+                "defaultKeys": [
+                  "alt+d",
+                  "alt+delete"
+                ],
+                "description": "Delete word forward"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              {
+                "defaultKeys": "ctrl+u",
+                "description": "Delete to line start"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              {
+                "defaultKeys": "ctrl+k",
+                "description": "Delete to line end"
+              }
+            ],
+            [
+              "tui.editor.yank",
+              {
+                "defaultKeys": "ctrl+y",
+                "description": "Yank"
+              }
+            ],
+            [
+              "tui.editor.yankPop",
+              {
+                "defaultKeys": "alt+y",
+                "description": "Yank pop"
+              }
+            ],
+            [
+              "tui.editor.undo",
+              {
+                "defaultKeys": "ctrl+-",
+                "description": "Undo"
+              }
+            ],
+            [
+              "tui.input.newLine",
+              {
+                "defaultKeys": "shift+enter",
+                "description": "Insert newline"
+              }
+            ],
+            [
+              "tui.input.submit",
+              {
+                "defaultKeys": "enter",
+                "description": "Submit input"
+              }
+            ],
+            [
+              "tui.input.tab",
+              {
+                "defaultKeys": "tab",
+                "description": "Tab / autocomplete"
+              }
+            ],
+            [
+              "tui.input.copy",
+              {
+                "defaultKeys": "ctrl+c",
+                "description": "Copy selection"
+              }
+            ],
+            [
+              "tui.select.up",
+              {
+                "defaultKeys": "up",
+                "description": "Move selection up"
+              }
+            ],
+            [
+              "tui.select.down",
+              {
+                "defaultKeys": "down",
+                "description": "Move selection down"
+              }
+            ],
+            [
+              "tui.select.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Selection page up"
+              }
+            ],
+            [
+              "tui.select.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Selection page down"
+              }
+            ],
+            [
+              "tui.select.confirm",
+              {
+                "defaultKeys": "enter",
+                "description": "Confirm selection"
+              }
+            ],
+            [
+              "tui.select.cancel",
+              {
+                "defaultKeys": [
+                  "escape",
+                  "ctrl+c"
+                ],
+                "description": "Cancel selection"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "tui.select.up",
+              [
+                "up",
+                "ctrl+p"
+              ]
+            ]
+          ],
+          "resolved": [
+            [
+              "tui.editor.cursorUp",
+              "up"
+            ],
+            [
+              "tui.editor.cursorDown",
+              "down"
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              "ctrl+]"
+            ],
+            [
+              "tui.editor.jumpBackward",
+              "ctrl+alt+]"
+            ],
+            [
+              "tui.editor.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.editor.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              "backspace"
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              "ctrl+u"
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              "ctrl+k"
+            ],
+            [
+              "tui.editor.yank",
+              "ctrl+y"
+            ],
+            [
+              "tui.editor.yankPop",
+              "alt+y"
+            ],
+            [
+              "tui.editor.undo",
+              "ctrl+-"
+            ],
+            [
+              "tui.input.newLine",
+              "shift+enter"
+            ],
+            [
+              "tui.input.submit",
+              "enter"
+            ],
+            [
+              "tui.input.tab",
+              "tab"
+            ],
+            [
+              "tui.input.copy",
+              "ctrl+c"
+            ],
+            [
+              "tui.select.up",
+              [
+                "up",
+                "ctrl+p"
+              ]
+            ],
+            [
+              "tui.select.down",
+              "down"
+            ],
+            [
+              "tui.select.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.select.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.select.confirm",
+              "enter"
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u001b[A",
+              "id": "tui.editor.cursorUp",
+              "result": true
+            },
+            {
+              "data": "\u0010",
+              "id": "tui.select.up",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conflict-regression",
+      "test": "maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_defaults",
+      "input": {
+        "definitions": "builtins",
+        "user": [
+          [
+            "tui.input.submit",
+            "ctrl+x"
+          ],
+          [
+            "tui.select.confirm",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "tui.editor.cursorUp",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.editor.cursorDown",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              [
+                "ctrl+]"
+              ]
+            ],
+            [
+              "tui.editor.jumpBackward",
+              [
+                "ctrl+alt+]"
+              ]
+            ],
+            [
+              "tui.editor.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.editor.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              [
+                "backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              [
+                "ctrl+u"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              [
+                "ctrl+k"
+              ]
+            ],
+            [
+              "tui.editor.yank",
+              [
+                "ctrl+y"
+              ]
+            ],
+            [
+              "tui.editor.yankPop",
+              [
+                "alt+y"
+              ]
+            ],
+            [
+              "tui.editor.undo",
+              [
+                "ctrl+-"
+              ]
+            ],
+            [
+              "tui.input.newLine",
+              [
+                "shift+enter"
+              ]
+            ],
+            [
+              "tui.input.submit",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "tui.input.tab",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "tui.input.copy",
+              [
+                "ctrl+c"
+              ]
+            ],
+            [
+              "tui.select.up",
+              [
+                "up"
+              ]
+            ],
+            [
+              "tui.select.down",
+              [
+                "down"
+              ]
+            ],
+            [
+              "tui.select.pageUp",
+              [
+                "pageUp"
+              ]
+            ],
+            [
+              "tui.select.pageDown",
+              [
+                "pageDown"
+              ]
+            ],
+            [
+              "tui.select.confirm",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "tui.editor.cursorUp",
+              {
+                "defaultKeys": "up",
+                "description": "Move cursor up"
+              }
+            ],
+            [
+              "tui.editor.cursorDown",
+              {
+                "defaultKeys": "down",
+                "description": "Move cursor down"
+              }
+            ],
+            [
+              "tui.editor.cursorLeft",
+              {
+                "defaultKeys": [
+                  "left",
+                  "ctrl+b"
+                ],
+                "description": "Move cursor left"
+              }
+            ],
+            [
+              "tui.editor.cursorRight",
+              {
+                "defaultKeys": [
+                  "right",
+                  "ctrl+f"
+                ],
+                "description": "Move cursor right"
+              }
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              {
+                "defaultKeys": [
+                  "alt+left",
+                  "ctrl+left",
+                  "alt+b"
+                ],
+                "description": "Move cursor word left"
+              }
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              {
+                "defaultKeys": [
+                  "alt+right",
+                  "ctrl+right",
+                  "alt+f"
+                ],
+                "description": "Move cursor word right"
+              }
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              {
+                "defaultKeys": [
+                  "home",
+                  "ctrl+a"
+                ],
+                "description": "Move to line start"
+              }
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              {
+                "defaultKeys": [
+                  "end",
+                  "ctrl+e"
+                ],
+                "description": "Move to line end"
+              }
+            ],
+            [
+              "tui.editor.jumpForward",
+              {
+                "defaultKeys": "ctrl+]",
+                "description": "Jump forward to character"
+              }
+            ],
+            [
+              "tui.editor.jumpBackward",
+              {
+                "defaultKeys": "ctrl+alt+]",
+                "description": "Jump backward to character"
+              }
+            ],
+            [
+              "tui.editor.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Page up"
+              }
+            ],
+            [
+              "tui.editor.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Page down"
+              }
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              {
+                "defaultKeys": "backspace",
+                "description": "Delete character backward"
+              }
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              {
+                "defaultKeys": [
+                  "delete",
+                  "ctrl+d"
+                ],
+                "description": "Delete character forward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              {
+                "defaultKeys": [
+                  "ctrl+w",
+                  "alt+backspace"
+                ],
+                "description": "Delete word backward"
+              }
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              {
+                "defaultKeys": [
+                  "alt+d",
+                  "alt+delete"
+                ],
+                "description": "Delete word forward"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              {
+                "defaultKeys": "ctrl+u",
+                "description": "Delete to line start"
+              }
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              {
+                "defaultKeys": "ctrl+k",
+                "description": "Delete to line end"
+              }
+            ],
+            [
+              "tui.editor.yank",
+              {
+                "defaultKeys": "ctrl+y",
+                "description": "Yank"
+              }
+            ],
+            [
+              "tui.editor.yankPop",
+              {
+                "defaultKeys": "alt+y",
+                "description": "Yank pop"
+              }
+            ],
+            [
+              "tui.editor.undo",
+              {
+                "defaultKeys": "ctrl+-",
+                "description": "Undo"
+              }
+            ],
+            [
+              "tui.input.newLine",
+              {
+                "defaultKeys": "shift+enter",
+                "description": "Insert newline"
+              }
+            ],
+            [
+              "tui.input.submit",
+              {
+                "defaultKeys": "enter",
+                "description": "Submit input"
+              }
+            ],
+            [
+              "tui.input.tab",
+              {
+                "defaultKeys": "tab",
+                "description": "Tab / autocomplete"
+              }
+            ],
+            [
+              "tui.input.copy",
+              {
+                "defaultKeys": "ctrl+c",
+                "description": "Copy selection"
+              }
+            ],
+            [
+              "tui.select.up",
+              {
+                "defaultKeys": "up",
+                "description": "Move selection up"
+              }
+            ],
+            [
+              "tui.select.down",
+              {
+                "defaultKeys": "down",
+                "description": "Move selection down"
+              }
+            ],
+            [
+              "tui.select.pageUp",
+              {
+                "defaultKeys": "pageUp",
+                "description": "Selection page up"
+              }
+            ],
+            [
+              "tui.select.pageDown",
+              {
+                "defaultKeys": "pageDown",
+                "description": "Selection page down"
+              }
+            ],
+            [
+              "tui.select.confirm",
+              {
+                "defaultKeys": "enter",
+                "description": "Confirm selection"
+              }
+            ],
+            [
+              "tui.select.cancel",
+              {
+                "defaultKeys": [
+                  "escape",
+                  "ctrl+c"
+                ],
+                "description": "Cancel selection"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "tui.input.submit",
+              "ctrl+x"
+            ],
+            [
+              "tui.select.confirm",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "tui.editor.cursorUp",
+              "up"
+            ],
+            [
+              "tui.editor.cursorDown",
+              "down"
+            ],
+            [
+              "tui.editor.cursorLeft",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorRight",
+              [
+                "right",
+                "ctrl+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordLeft",
+              [
+                "alt+left",
+                "ctrl+left",
+                "alt+b"
+              ]
+            ],
+            [
+              "tui.editor.cursorWordRight",
+              [
+                "alt+right",
+                "ctrl+right",
+                "alt+f"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineStart",
+              [
+                "home",
+                "ctrl+a"
+              ]
+            ],
+            [
+              "tui.editor.cursorLineEnd",
+              [
+                "end",
+                "ctrl+e"
+              ]
+            ],
+            [
+              "tui.editor.jumpForward",
+              "ctrl+]"
+            ],
+            [
+              "tui.editor.jumpBackward",
+              "ctrl+alt+]"
+            ],
+            [
+              "tui.editor.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.editor.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.editor.deleteCharBackward",
+              "backspace"
+            ],
+            [
+              "tui.editor.deleteCharForward",
+              [
+                "delete",
+                "ctrl+d"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordBackward",
+              [
+                "ctrl+w",
+                "alt+backspace"
+              ]
+            ],
+            [
+              "tui.editor.deleteWordForward",
+              [
+                "alt+d",
+                "alt+delete"
+              ]
+            ],
+            [
+              "tui.editor.deleteToLineStart",
+              "ctrl+u"
+            ],
+            [
+              "tui.editor.deleteToLineEnd",
+              "ctrl+k"
+            ],
+            [
+              "tui.editor.yank",
+              "ctrl+y"
+            ],
+            [
+              "tui.editor.yankPop",
+              "alt+y"
+            ],
+            [
+              "tui.editor.undo",
+              "ctrl+-"
+            ],
+            [
+              "tui.input.newLine",
+              "shift+enter"
+            ],
+            [
+              "tui.input.submit",
+              "ctrl+x"
+            ],
+            [
+              "tui.input.tab",
+              "tab"
+            ],
+            [
+              "tui.input.copy",
+              "ctrl+c"
+            ],
+            [
+              "tui.select.up",
+              "up"
+            ],
+            [
+              "tui.select.down",
+              "down"
+            ],
+            [
+              "tui.select.pageUp",
+              "pageUp"
+            ],
+            [
+              "tui.select.pageDown",
+              "pageDown"
+            ],
+            [
+              "tui.select.confirm",
+              "ctrl+x"
+            ],
+            [
+              "tui.select.cancel",
+              [
+                "escape",
+                "ctrl+c"
+              ]
+            ]
+          ],
+          "conflicts": [
+            {
+              "key": "ctrl+x",
+              "keybindings": [
+                "tui.input.submit",
+                "tui.select.confirm"
+              ]
+            }
+          ],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "tui.input.submit",
+              "result": true
+            },
+            {
+              "data": "\u0018",
+              "id": "tui.select.confirm",
+              "result": true
+            },
+            {
+              "data": "\u0002",
+              "id": "tui.editor.cursorLeft",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "default-shapes",
+      "test": "key_lists_deduplicate_without_changing_definition_shapes",
+      "input": {
+        "definitions": [
+          [
+            "single",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "empty",
+            {
+              "defaultKeys": [],
+              "description": ""
+            }
+          ],
+          [
+            "many",
+            {
+              "defaultKeys": [
+                "left",
+                "left",
+                "ctrl+b",
+                "left"
+              ]
+            }
+          ],
+          [
+            "one",
+            {
+              "defaultKeys": [
+                "tab",
+                "tab"
+              ]
+            }
+          ]
+        ],
+        "user": []
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "single",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "empty",
+              []
+            ],
+            [
+              "many",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "one",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "single",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "empty",
+              {
+                "defaultKeys": [],
+                "description": ""
+              }
+            ],
+            [
+              "many",
+              {
+                "defaultKeys": [
+                  "left",
+                  "left",
+                  "ctrl+b",
+                  "left"
+                ]
+              }
+            ],
+            [
+              "one",
+              {
+                "defaultKeys": [
+                  "tab",
+                  "tab"
+                ]
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [],
+          "resolved": [
+            [
+              "single",
+              "enter"
+            ],
+            [
+              "empty",
+              []
+            ],
+            [
+              "many",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "one",
+              "tab"
+            ]
+          ],
+          "conflicts": [],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "override-shapes",
+      "test": "overrides_distinguish_absent_undefined_empty_and_single",
+      "input": {
+        "definitions": [
+          [
+            "absent",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "unset",
+            {
+              "defaultKeys": [
+                "left",
+                "ctrl+b"
+              ]
+            }
+          ],
+          [
+            "empty",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "single",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "one",
+            {
+              "defaultKeys": "right"
+            }
+          ],
+          [
+            "many",
+            {
+              "defaultKeys": "tab"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "unset",
+            null
+          ],
+          [
+            "empty",
+            []
+          ],
+          [
+            "single",
+            "enter"
+          ],
+          [
+            "one",
+            [
+              "tab",
+              "tab"
+            ]
+          ],
+          [
+            "many",
+            [
+              "right",
+              "left",
+              "right"
+            ]
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "absent",
+              [
+                "left"
+              ]
+            ],
+            [
+              "unset",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "empty",
+              []
+            ],
+            [
+              "single",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "one",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "many",
+              [
+                "right",
+                "left"
+              ]
+            ]
+          ],
+          "definitions": [
+            [
+              "absent",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "unset",
+              {
+                "defaultKeys": [
+                  "left",
+                  "ctrl+b"
+                ]
+              }
+            ],
+            [
+              "empty",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "single",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "one",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "many",
+              {
+                "defaultKeys": "tab"
+              }
+            ]
+          ],
+          "user": [
+            [
+              "unset",
+              null
+            ],
+            [
+              "empty",
+              []
+            ],
+            [
+              "single",
+              "enter"
+            ],
+            [
+              "one",
+              [
+                "tab",
+                "tab"
+              ]
+            ],
+            [
+              "many",
+              [
+                "right",
+                "left",
+                "right"
+              ]
+            ]
+          ],
+          "resolved": [
+            [
+              "absent",
+              "left"
+            ],
+            [
+              "unset",
+              [
+                "left",
+                "ctrl+b"
+              ]
+            ],
+            [
+              "empty",
+              []
+            ],
+            [
+              "single",
+              "enter"
+            ],
+            [
+              "one",
+              "tab"
+            ],
+            [
+              "many",
+              [
+                "right",
+                "left"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "unknown-action",
+      "test": "unknown_actions_remain_in_user_data_but_not_resolution",
+      "input": {
+        "definitions": [
+          [
+            "known",
+            {
+              "defaultKeys": "enter"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "unknown",
+            [
+              "ctrl+x",
+              "ctrl+x"
+            ]
+          ],
+          [
+            "known",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "known",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "unknown",
+              []
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "known",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "unknown",
+              null
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "unknown",
+              [
+                "ctrl+x",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "known",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "known",
+              "ctrl+x"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "unknown",
+              "result": false
+            },
+            {
+              "data": "\u0018",
+              "id": "known",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "unsupported-key",
+      "test": "unsupported_key_identifiers_are_retained_but_never_match",
+      "input": {
+        "definitions": [
+          [
+            "known",
+            {
+              "defaultKeys": "enter"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "known",
+            [
+              "not-a-key",
+              "",
+              " ctrl+x ",
+              "CTRL+X",
+              "ctrl+x"
+            ]
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "known",
+              [
+                "not-a-key",
+                "",
+                " ctrl+x ",
+                "CTRL+X",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "known",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "known",
+              [
+                "not-a-key",
+                "",
+                " ctrl+x ",
+                "CTRL+X",
+                "ctrl+x"
+              ]
+            ]
+          ],
+          "resolved": [
+            [
+              "known",
+              [
+                "not-a-key",
+                "",
+                " ctrl+x ",
+                "CTRL+X",
+                "ctrl+x"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "known",
+              "result": true
+            },
+            {
+              "data": "not-a-key",
+              "id": "known",
+              "result": false
+            },
+            {
+              "data": "",
+              "id": "known",
+              "result": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "literal-claims",
+      "test": "conflicts_compare_literal_keys_not_decoder_equivalence",
+      "input": {
+        "definitions": [
+          [
+            "one",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "two",
+            {
+              "defaultKeys": "tab"
+            }
+          ],
+          [
+            "three",
+            {
+              "defaultKeys": "up"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "one",
+            [
+              "CTRL+X",
+              "ctrl+x",
+              "ctrl+x"
+            ]
+          ],
+          [
+            "two",
+            "ctrl+x"
+          ],
+          [
+            "three",
+            "CTRL+X"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "one",
+              [
+                "CTRL+X",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "two",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "three",
+              [
+                "CTRL+X"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "one",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "two",
+              {
+                "defaultKeys": "tab"
+              }
+            ],
+            [
+              "three",
+              {
+                "defaultKeys": "up"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "one",
+              [
+                "CTRL+X",
+                "ctrl+x",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "two",
+              "ctrl+x"
+            ],
+            [
+              "three",
+              "CTRL+X"
+            ]
+          ],
+          "resolved": [
+            [
+              "one",
+              [
+                "CTRL+X",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "two",
+              "ctrl+x"
+            ],
+            [
+              "three",
+              "CTRL+X"
+            ]
+          ],
+          "conflicts": [
+            {
+              "key": "CTRL+X",
+              "keybindings": [
+                "one",
+                "three"
+              ]
+            },
+            {
+              "key": "ctrl+x",
+              "keybindings": [
+                "one",
+                "two"
+              ]
+            }
+          ],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "one",
+              "result": true
+            },
+            {
+              "data": "\u0018",
+              "id": "two",
+              "result": true
+            },
+            {
+              "data": "\u0018",
+              "id": "three",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "claim-order",
+      "test": "conflicts_keep_first_key_claim_and_claimant_order",
+      "input": {
+        "definitions": [
+          [
+            "alpha",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "beta",
+            {
+              "defaultKeys": "right"
+            }
+          ],
+          [
+            "gamma",
+            {
+              "defaultKeys": "up"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "gamma",
+            [
+              "ctrl+z",
+              "ctrl+x",
+              "ctrl+z"
+            ]
+          ],
+          [
+            "alpha",
+            [
+              "ctrl+x",
+              "ctrl+z"
+            ]
+          ],
+          [
+            "beta",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "alpha",
+              [
+                "ctrl+x",
+                "ctrl+z"
+              ]
+            ],
+            [
+              "beta",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "gamma",
+              [
+                "ctrl+z",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "alpha",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "beta",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "gamma",
+              {
+                "defaultKeys": "up"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "gamma",
+              [
+                "ctrl+z",
+                "ctrl+x",
+                "ctrl+z"
+              ]
+            ],
+            [
+              "alpha",
+              [
+                "ctrl+x",
+                "ctrl+z"
+              ]
+            ],
+            [
+              "beta",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "alpha",
+              [
+                "ctrl+x",
+                "ctrl+z"
+              ]
+            ],
+            [
+              "beta",
+              "ctrl+x"
+            ],
+            [
+              "gamma",
+              [
+                "ctrl+z",
+                "ctrl+x"
+              ]
+            ]
+          ],
+          "conflicts": [
+            {
+              "key": "ctrl+z",
+              "keybindings": [
+                "gamma",
+                "alpha"
+              ]
+            },
+            {
+              "key": "ctrl+x",
+              "keybindings": [
+                "gamma",
+                "alpha",
+                "beta"
+              ]
+            }
+          ],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "default-overlap",
+      "test": "defaults_and_single_user_claims_do_not_report_conflicts",
+      "input": {
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": [
+                "enter",
+                "left"
+              ]
+            }
+          ],
+          [
+            "b",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "c",
+            {
+              "defaultKeys": "up"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "c",
+            "enter"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "a",
+              [
+                "enter",
+                "left"
+              ]
+            ],
+            [
+              "b",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "c",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": [
+                  "enter",
+                  "left"
+                ]
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "c",
+              {
+                "defaultKeys": "up"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "c",
+              "enter"
+            ]
+          ],
+          "resolved": [
+            [
+              "a",
+              [
+                "enter",
+                "left"
+              ]
+            ],
+            [
+              "b",
+              "enter"
+            ],
+            [
+              "c",
+              "enter"
+            ]
+          ],
+          "conflicts": [],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "disabled-conflict",
+      "test": "empty_and_undefined_overrides_do_not_claim_keys",
+      "input": {
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "b",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "c",
+            {
+              "defaultKeys": "enter"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "a",
+            []
+          ],
+          [
+            "b",
+            null
+          ],
+          [
+            "c",
+            "enter"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "c",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "c",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              null
+            ],
+            [
+              "c",
+              "enter"
+            ]
+          ],
+          "resolved": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              "enter"
+            ],
+            [
+              "c",
+              "enter"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\r",
+              "id": "a",
+              "result": false
+            },
+            {
+              "data": "\r",
+              "id": "b",
+              "result": true
+            },
+            {
+              "data": "\r",
+              "id": "c",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "replace",
+      "test": "replacing_user_bindings_rebuilds_keys_and_conflicts",
+      "input": {
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "b",
+            {
+              "defaultKeys": "right"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "a",
+            "ctrl+x"
+          ],
+          [
+            "b",
+            "ctrl+x"
+          ],
+          [
+            "unknown",
+            "tab"
+          ]
+        ],
+        "replacement": [
+          [
+            "a",
+            []
+          ],
+          [
+            "b",
+            [
+              "enter",
+              "enter"
+            ]
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "a",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "b",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "a",
+              "ctrl+x"
+            ],
+            [
+              "b",
+              "ctrl+x"
+            ],
+            [
+              "unknown",
+              "tab"
+            ]
+          ],
+          "resolved": [
+            [
+              "a",
+              "ctrl+x"
+            ],
+            [
+              "b",
+              "ctrl+x"
+            ]
+          ],
+          "conflicts": [
+            {
+              "key": "ctrl+x",
+              "keybindings": [
+                "a",
+                "b"
+              ]
+            }
+          ],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "a",
+              "result": true
+            },
+            {
+              "data": "\r",
+              "id": "b",
+              "result": false
+            }
+          ]
+        },
+        "after": {
+          "keys": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              [
+                "enter",
+                "enter"
+              ]
+            ]
+          ],
+          "resolved": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              "enter"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "a",
+              "result": false
+            },
+            {
+              "data": "\r",
+              "id": "b",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reset",
+      "test": "replacing_with_empty_configuration_restores_defaults",
+      "input": {
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "b",
+            {
+              "defaultKeys": "right"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "a",
+            []
+          ],
+          [
+            "b",
+            "ctrl+x"
+          ]
+        ],
+        "replacement": []
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "a",
+              []
+            ],
+            [
+              "b",
+              "ctrl+x"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u001b[D",
+              "id": "a",
+              "result": false
+            },
+            {
+              "data": "\u0018",
+              "id": "b",
+              "result": true
+            }
+          ]
+        },
+        "after": {
+          "keys": [
+            [
+              "a",
+              [
+                "left"
+              ]
+            ],
+            [
+              "b",
+              [
+                "right"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [],
+          "resolved": [
+            [
+              "a",
+              "left"
+            ],
+            [
+              "b",
+              "right"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u001b[D",
+              "id": "a",
+              "result": true
+            },
+            {
+              "data": "\u0018",
+              "id": "b",
+              "result": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "empty",
+      "test": "empty_definitions_leave_only_the_user_snapshot",
+      "input": {
+        "definitions": [],
+        "user": [
+          [
+            "x",
+            "enter"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "x",
+              []
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "x",
+              null
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "x",
+              "enter"
+            ]
+          ],
+          "resolved": [],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\r",
+              "id": "x",
+              "result": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "custom",
+      "test": "custom_actions_and_empty_action_ids_are_open_data",
+      "input": {
+        "definitions": [
+          [
+            "plugin.run",
+            {
+              "defaultKeys": [
+                "ctrl+x",
+                "enter"
+              ],
+              "description": "Run"
+            }
+          ],
+          [
+            "",
+            {
+              "defaultKeys": "tab"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "plugin.run",
+            "ctrl+g"
+          ],
+          [
+            "",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "plugin.run",
+              [
+                "ctrl+g"
+              ]
+            ],
+            [
+              "",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "plugin.run",
+              {
+                "defaultKeys": [
+                  "ctrl+x",
+                  "enter"
+                ],
+                "description": "Run"
+              }
+            ],
+            [
+              "",
+              {
+                "defaultKeys": "tab"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "plugin.run",
+              "ctrl+g"
+            ],
+            [
+              "",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "plugin.run",
+              "ctrl+g"
+            ],
+            [
+              "",
+              "ctrl+x"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u0007",
+              "id": "plugin.run",
+              "result": true
+            },
+            {
+              "data": "\r",
+              "id": "plugin.run",
+              "result": false
+            },
+            {
+              "data": "\u0018",
+              "id": "",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "replace-pair",
+      "test": "repeated_record_entries_replace_value_without_moving_slot",
+      "input": {
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "b",
+            {
+              "defaultKeys": "right"
+            }
+          ],
+          [
+            "a",
+            {
+              "defaultKeys": "tab"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "b",
+            "ctrl+x"
+          ],
+          [
+            "a",
+            "ctrl+x"
+          ],
+          [
+            "b",
+            "ctrl+z"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "a",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "b",
+              [
+                "ctrl+z"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "a",
+              {
+                "defaultKeys": "tab"
+              }
+            ],
+            [
+              "b",
+              {
+                "defaultKeys": "right"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "b",
+              "ctrl+z"
+            ],
+            [
+              "a",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "a",
+              "ctrl+x"
+            ],
+            [
+              "b",
+              "ctrl+z"
+            ]
+          ],
+          "conflicts": [],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "matching-false",
+      "test": "matching_reads_current_protocol_and_does_not_filter_releases",
+      "input": {
+        "definitions": [
+          [
+            "submit",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "newline",
+            {
+              "defaultKeys": "shift+enter"
+            }
+          ],
+          [
+            "pick",
+            {
+              "defaultKeys": [
+                "bad-key",
+                "ctrl+x"
+              ]
+            }
+          ]
+        ],
+        "user": [],
+        "kitty": false
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "submit",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "newline",
+              [
+                "shift+enter"
+              ]
+            ],
+            [
+              "pick",
+              [
+                "bad-key",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "submit",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "newline",
+              {
+                "defaultKeys": "shift+enter"
+              }
+            ],
+            [
+              "pick",
+              {
+                "defaultKeys": [
+                  "bad-key",
+                  "ctrl+x"
+                ]
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [],
+          "resolved": [
+            [
+              "submit",
+              "enter"
+            ],
+            [
+              "newline",
+              "shift+enter"
+            ],
+            [
+              "pick",
+              [
+                "bad-key",
+                "ctrl+x"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\n",
+              "id": "submit",
+              "result": true
+            },
+            {
+              "data": "\n",
+              "id": "newline",
+              "result": false
+            },
+            {
+              "data": "\u001b[120;5:3u",
+              "id": "pick",
+              "result": true
+            },
+            {
+              "data": "\u0018",
+              "id": "pick",
+              "result": true
+            },
+            {
+              "data": "q",
+              "id": "pick",
+              "result": false
+            },
+            {
+              "data": "\r",
+              "id": "absent",
+              "result": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "matching-true",
+      "test": "matching_reads_current_protocol_and_does_not_filter_releases",
+      "input": {
+        "kitty": true
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "submit",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "newline",
+              [
+                "shift+enter"
+              ]
+            ],
+            [
+              "pick",
+              [
+                "bad-key",
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "submit",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "newline",
+              {
+                "defaultKeys": "shift+enter"
+              }
+            ],
+            [
+              "pick",
+              {
+                "defaultKeys": [
+                  "bad-key",
+                  "ctrl+x"
+                ]
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [],
+          "resolved": [
+            [
+              "submit",
+              "enter"
+            ],
+            [
+              "newline",
+              "shift+enter"
+            ],
+            [
+              "pick",
+              [
+                "bad-key",
+                "ctrl+x"
+              ]
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\n",
+              "id": "submit",
+              "result": false
+            },
+            {
+              "data": "\n",
+              "id": "newline",
+              "result": true
+            },
+            {
+              "data": "\u001b[120;5:3u",
+              "id": "pick",
+              "result": true
+            },
+            {
+              "data": "\u0018",
+              "id": "pick",
+              "result": true
+            },
+            {
+              "data": "q",
+              "id": "pick",
+              "result": false
+            },
+            {
+              "data": "\r",
+              "id": "absent",
+              "result": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "numeric-order",
+      "test": "numeric_action_ids_keep_insertion_order",
+      "input": {
+        "definitions": [
+          [
+            "10",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "2",
+            {
+              "defaultKeys": "tab"
+            }
+          ],
+          [
+            "01",
+            {
+              "defaultKeys": "up"
+            }
+          ],
+          [
+            "0",
+            {
+              "defaultKeys": "down"
+            }
+          ],
+          [
+            "4294967295",
+            {
+              "defaultKeys": "left"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "10",
+            "ctrl+x"
+          ],
+          [
+            "2",
+            "ctrl+x"
+          ],
+          [
+            "01",
+            "ctrl+x"
+          ],
+          [
+            "0",
+            "ctrl+x"
+          ],
+          [
+            "4294967295",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "10",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "2",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "01",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "0",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "4294967295",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "10",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "2",
+              {
+                "defaultKeys": "tab"
+              }
+            ],
+            [
+              "01",
+              {
+                "defaultKeys": "up"
+              }
+            ],
+            [
+              "0",
+              {
+                "defaultKeys": "down"
+              }
+            ],
+            [
+              "4294967295",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "10",
+              "ctrl+x"
+            ],
+            [
+              "2",
+              "ctrl+x"
+            ],
+            [
+              "01",
+              "ctrl+x"
+            ],
+            [
+              "0",
+              "ctrl+x"
+            ],
+            [
+              "4294967295",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "10",
+              "ctrl+x"
+            ],
+            [
+              "2",
+              "ctrl+x"
+            ],
+            [
+              "01",
+              "ctrl+x"
+            ],
+            [
+              "0",
+              "ctrl+x"
+            ],
+            [
+              "4294967295",
+              "ctrl+x"
+            ]
+          ],
+          "conflicts": [
+            {
+              "key": "ctrl+x",
+              "keybindings": [
+                "10",
+                "2",
+                "01",
+                "0",
+                "4294967295"
+              ]
+            }
+          ],
+          "matches": []
+        }
+      }
+    },
+    {
+      "id": "prototype-unknown",
+      "test": "prototype_named_actions_are_ordinary_record_entries",
+      "input": {
+        "definitions": [],
+        "user": [
+          [
+            "constructor",
+            "ctrl+x"
+          ],
+          [
+            "toString",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "constructor",
+              []
+            ],
+            [
+              "toString",
+              []
+            ],
+            [
+              "__proto__",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "constructor",
+              null
+            ],
+            [
+              "toString",
+              null
+            ],
+            [
+              "__proto__",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "constructor",
+              "ctrl+x"
+            ],
+            [
+              "toString",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "constructor",
+              "result": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prototype-defined",
+      "test": "prototype_named_actions_are_ordinary_record_entries",
+      "input": {
+        "definitions": [
+          [
+            "__proto__",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "constructor",
+            {
+              "defaultKeys": "tab"
+            }
+          ],
+          [
+            "toString",
+            {
+              "defaultKeys": "left"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "__proto__",
+            "ctrl+x"
+          ],
+          [
+            "constructor",
+            "ctrl+x"
+          ],
+          [
+            "toString",
+            "ctrl+x"
+          ]
+        ]
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "__proto__",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "constructor",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "toString",
+              [
+                "ctrl+x"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "__proto__",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "constructor",
+              {
+                "defaultKeys": "tab"
+              }
+            ],
+            [
+              "toString",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [
+            [
+              "__proto__",
+              "ctrl+x"
+            ],
+            [
+              "constructor",
+              "ctrl+x"
+            ],
+            [
+              "toString",
+              "ctrl+x"
+            ]
+          ],
+          "resolved": [
+            [
+              "__proto__",
+              "ctrl+x"
+            ],
+            [
+              "constructor",
+              "ctrl+x"
+            ],
+            [
+              "toString",
+              "ctrl+x"
+            ]
+          ],
+          "conflicts": [
+            {
+              "key": "ctrl+x",
+              "keybindings": [
+                "__proto__",
+                "constructor",
+                "toString"
+              ]
+            }
+          ],
+          "matches": [
+            {
+              "data": "\u0018",
+              "id": "__proto__",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prototype-defaults",
+      "test": "prototype_named_actions_are_ordinary_record_entries",
+      "input": {
+        "definitions": [
+          [
+            "__proto__",
+            {
+              "defaultKeys": "enter"
+            }
+          ],
+          [
+            "constructor",
+            {
+              "defaultKeys": "tab"
+            }
+          ],
+          [
+            "toString",
+            {
+              "defaultKeys": "left"
+            }
+          ]
+        ],
+        "user": []
+      },
+      "expected": {
+        "before": {
+          "keys": [
+            [
+              "__proto__",
+              [
+                "enter"
+              ]
+            ],
+            [
+              "constructor",
+              [
+                "tab"
+              ]
+            ],
+            [
+              "toString",
+              [
+                "left"
+              ]
+            ],
+            [
+              "absent",
+              []
+            ]
+          ],
+          "definitions": [
+            [
+              "__proto__",
+              {
+                "defaultKeys": "enter"
+              }
+            ],
+            [
+              "constructor",
+              {
+                "defaultKeys": "tab"
+              }
+            ],
+            [
+              "toString",
+              {
+                "defaultKeys": "left"
+              }
+            ],
+            [
+              "absent",
+              null
+            ]
+          ],
+          "user": [],
+          "resolved": [
+            [
+              "__proto__",
+              "enter"
+            ],
+            [
+              "constructor",
+              "tab"
+            ],
+            [
+              "toString",
+              "left"
+            ]
+          ],
+          "conflicts": [],
+          "matches": [
+            {
+              "data": "\r",
+              "id": "__proto__",
+              "result": true
+            },
+            {
+              "data": "\t",
+              "id": "constructor",
+              "result": true
+            },
+            {
+              "data": "\u001b[D",
+              "id": "toString",
+              "result": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "copies",
+      "test": "returned_snapshots_cannot_change_manager_state",
+      "expected": {
+        "keys": [
+          [
+            "a",
+            [
+              "enter",
+              "tab"
+            ]
+          ],
+          [
+            "extra",
+            []
+          ]
+        ],
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": [
+                "left",
+                "right"
+              ]
+            }
+          ],
+          [
+            "extra",
+            null
+          ]
+        ],
+        "user": [
+          [
+            "a",
+            [
+              "enter",
+              "tab"
+            ]
+          ],
+          [
+            "unknown",
+            null
+          ]
+        ],
+        "resolved": [
+          [
+            "a",
+            [
+              "enter",
+              "tab"
+            ]
+          ]
+        ],
+        "conflicts": [],
+        "matches": []
+      }
+    },
+    {
+      "id": "conflict-copy",
+      "test": "returned_snapshots_cannot_change_manager_state",
+      "expected": {
+        "keys": [
+          [
+            "a",
+            [
+              "ctrl+x"
+            ]
+          ],
+          [
+            "b",
+            [
+              "ctrl+x"
+            ]
+          ]
+        ],
+        "definitions": [
+          [
+            "a",
+            {
+              "defaultKeys": "left"
+            }
+          ],
+          [
+            "b",
+            {
+              "defaultKeys": "right"
+            }
+          ]
+        ],
+        "user": [
+          [
+            "a",
+            "ctrl+x"
+          ],
+          [
+            "b",
+            "ctrl+x"
+          ]
+        ],
+        "resolved": [
+          [
+            "a",
+            "ctrl+x"
+          ],
+          [
+            "b",
+            "ctrl+x"
+          ]
+        ],
+        "conflicts": [
+          {
+            "key": "ctrl+x",
+            "keybindings": [
+              "a",
+              "b"
+            ]
+          }
+        ],
+        "matches": []
+      }
+    },
+    {
+      "id": "global",
+      "test": "global_registry_is_lazy_shared_replaceable_and_restorable",
+      "expected": {
+        "heldConflicts": [
+          {
+            "key": "ctrl+x",
+            "keybindings": [
+              "plugin.run",
+              "tui.input.submit"
+            ]
+          }
+        ],
+        "newLacksCustom": [],
+        "newDefaults": [
+          "enter"
+        ]
+      }
+    }
+  ]
+}
