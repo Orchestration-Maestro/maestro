@@ -16,7 +16,8 @@ The application chooses the directories. `SettingsManager::create` and
 configuration directory name, and read or write `settings.json` below the agent
 directory (global) and below the configuration directory in the working directory
 (project). The three names are authored path strings: they are joined lexically
-with `maestro-path` and become a file-system path only when a file is opened.
+with `maestro-path` and become a native path only at a filesystem call (existence
+check, open, write or lock).
 
 ```rust
 use maestro_settings::{Settings, SettingsManager};
@@ -114,10 +115,10 @@ runtime overrides and pending edits. Nothing is printed by any of these operatio
 
 ## Storage
 
-`SettingsStorage::with_lock` exchanges raw text for one scope. Once the adapter has
-acquired its exclusion and read the scope, it calls the update callback exactly once,
-synchronously, with the current text (`None` if the scope was never written); an
-adapter that fails to acquire or read returns that failure without calling it. The
+`SettingsStorage::with_lock` exchanges raw text for one scope. It calls the update
+callback exactly once, synchronously, with the current text (`None` if the scope
+was never written), unless the adapter fails to acquire its exclusion or read
+first; it then returns that failure without calling the callback. The
 callback returns `Ok(None)` to leave the stored text untouched, `Ok(Some(text))` to
 replace it, or an error, which is returned without writing.
 
@@ -126,9 +127,8 @@ and holds no lock while the callback runs, so the callback may use the same stor
 again, in either scope; when callbacks overlap, the last write wins.
 `FileSettingsStorage` (not available for the browser build) joins the supplied
 agent directory, and the working directory with the configuration directory, with
-`settings.json` through `maestro-path`, which folds the `.` and `..` segments of
-each result before any file access (a relative `../agent` keeps its leading
-parent), then works in place:
+`settings.json` through the shared `maestro-path` functions, giving the runtime's
+join results, then works in place:
 
 1. For an existing file it locks the stable `settings.json.lock` sidecar before
    reading, keeps the lock through the callback and the write, and releases it on

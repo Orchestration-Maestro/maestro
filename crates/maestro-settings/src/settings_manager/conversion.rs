@@ -9,8 +9,9 @@ use serde_json::{Map, Serializer, Value};
 /// Largest magnitude below which every integral `f64` is an exact integer.
 const EXACT_INTEGER_LIMIT: f64 = 9_007_199_254_740_992.0;
 
-/// Writes a typed number as JSON; integral values become integers and
-/// non-finite values become `null`.
+/// Writes a typed number as JSON; integral values with magnitude below 2^53
+/// become integers, other finite values stay doubles, and non-finite values
+/// become `null`.
 pub(crate) fn number(value: f64) -> Value {
     if value == 0.0 {
         return Value::from(0);

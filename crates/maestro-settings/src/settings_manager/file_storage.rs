@@ -24,8 +24,8 @@ pub struct FileSettingsStorage {
 
 impl FileSettingsStorage {
     /// Addresses `settings.json` in `agent_dir` and in `config_dir` below `cwd`.
-    /// Each location is the lexical join of its authored parts, with `.` and `..`
-    /// segments folded before any file access.
+    /// Each location is joined by the shared path functions, giving the runtime's
+    /// join results.
     #[must_use]
     pub fn new(cwd: &str, agent_dir: &str, config_dir: &str) -> Self {
         Self {
