@@ -20,6 +20,8 @@ exact lookup, thinking-level selection, identity comparison and flat-rate costs.
 The [model option helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
 copy common settings, adjust thinking budgets and classify context overflow.
 
+See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
+
 ## Controlled registered invocation
 
 ```rust

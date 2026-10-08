@@ -1,0 +1,259 @@
+[
+  {
+    "input": "+1",
+    "expected": {}
+  },
+  {
+    "input": ";1",
+    "expected": {}
+  },
+  {
+    "input": ";{\"a\":1}",
+    "expected": {}
+  },
+  {
+    "input": "[\"x}",
+    "expected": [
+      "x}"
+    ]
+  },
+  {
+    "input": "{\"a\":\"x}",
+    "expected": {
+      "a": "x}"
+    }
+  },
+  {
+    "input": "[\"x\\\"",
+    "expected": [
+      "x\""
+    ]
+  },
+  {
+    "input": "[\"x\\\\",
+    "expected": [
+      "x\\"
+    ]
+  },
+  {
+    "input": "[\"x\\/",
+    "expected": [
+      "x/"
+    ]
+  },
+  {
+    "input": "[\"x\\b",
+    "expected": [
+      "x\b"
+    ]
+  },
+  {
+    "input": "[\"x\\f",
+    "expected": [
+      "x\f"
+    ]
+  },
+  {
+    "input": "[\"x\\r",
+    "expected": [
+      "x\r"
+    ]
+  },
+  {
+    "input": "[\"x\\t",
+    "expected": [
+      "x\t"
+    ]
+  },
+  {
+    "input": "[\"x\\u",
+    "expected": [
+      "x"
+    ]
+  },
+  {
+    "input": "[\"x\\u1",
+    "expected": [
+      "x"
+    ]
+  },
+  {
+    "input": "[\"x\\u12",
+    "expected": [
+      "x"
+    ]
+  },
+  {
+    "input": "[\"x\\u123",
+    "expected": [
+      "x"
+    ]
+  },
+  {
+    "input": "[\"x\\u1234",
+    "expected": [
+      "xሴ"
+    ]
+  },
+  {
+    "input": "[\"x\\uZZ",
+    "expected": [
+      "x"
+    ]
+  },
+  {
+    "input": "[\"x\\Hmore",
+    "expected": [
+      "x"
+    ]
+  },
+  {
+    "input": "[\"x\\Hmore\\n",
+    "expected": []
+  },
+  {
+    "input": "1e-",
+    "expected": 1
+  },
+  {
+    "input": "1E+",
+    "expected": 1
+  },
+  {
+    "input": "1E-",
+    "expected": 1
+  },
+  {
+    "input": "-1.",
+    "expected": -1
+  },
+  {
+    "input": "[1e",
+    "expected": [
+      1
+    ]
+  },
+  {
+    "input": "[1E",
+    "expected": [
+      1
+    ]
+  },
+  {
+    "input": "[1.",
+    "expected": [
+      1
+    ]
+  },
+  {
+    "input": "{\"n\":1e",
+    "expected": {
+      "n": 1
+    }
+  },
+  {
+    "input": "{\"n\":1E",
+    "expected": {
+      "n": 1
+    }
+  },
+  {
+    "input": "{\"n\":1.",
+    "expected": {
+      "n": 1
+    }
+  },
+  {
+    "input": "[1,2,",
+    "expected": [
+      1,
+      2
+    ]
+  },
+  {
+    "input": "[1,2,]",
+    "expected": [
+      1,
+      2
+    ]
+  },
+  {
+    "input": "{\"a\":1,",
+    "expected": {
+      "a": 1
+    }
+  },
+  {
+    "input": "{\"a\":1,}",
+    "expected": {
+      "a": 1
+    }
+  },
+  {
+    "input": "{\"a\":[{\"b\":\"x",
+    "expected": {
+      "a": [
+        {
+          "b": "x"
+        }
+      ]
+    }
+  },
+  {
+    "input": "[1,{\"a\":[2,",
+    "expected": [
+      1,
+      {
+        "a": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "input": "  ",
+    "expected": {}
+  },
+  {
+    "input": "\u000b",
+    "expected": {}
+  },
+  {
+    "input": " [1",
+    "expected": [
+      1
+    ]
+  },
+  {
+    "input": "[ 1",
+    "expected": []
+  },
+  {
+    "input": "oops",
+    "expected": {}
+  },
+  {
+    "input": "undefined",
+    "expected": {}
+  },
+  {
+    "input": "/1",
+    "expected": {}
+  },
+  {
+    "input": "'x'",
+    "expected": {}
+  },
+  {
+    "input": "--1",
+    "expected": {}
+  },
+  {
+    "input": "[+1",
+    "expected": []
+  },
+  {
+    "input": "[;1",
+    "expected": []
+  }
+]

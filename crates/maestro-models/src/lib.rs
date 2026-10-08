@@ -1,5 +1,7 @@
 #![doc = include_str!("../../../docs/records.md")]
 
+pub mod arguments;
+pub use arguments::*;
 pub mod cancellation;
 mod catalog;
 mod options;
