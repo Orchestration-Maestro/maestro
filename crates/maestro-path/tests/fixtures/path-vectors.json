@@ -51,8 +51,8 @@
     ],
     "context": "cwd/env supplied to unmodified runtime path source in isolated vm; no external npm dependencies",
     "license_text": "// Permission is hereby granted, free of charge, to any person obtaining a\n// copy of this software and associated documentation files (the\n// \"Software\"), to deal in the Software without restriction, including\n// without limitation the rights to use, copy, modify, merge, publish,\n// distribute, sublicense, and/or sell copies of the Software, and to permit\n// persons to whom the Software is furnished to do so, subject to the\n// following conditions:\n//\n// The above copyright notice and this permission notice shall be included\n// in all copies or substantial portions of the Software.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS\n// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN\n// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\n// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR\n// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE\n// USE OR OTHER DEALINGS IN THE SOFTWARE.\n",
-    "case_count": 1504,
-    "corrections": "Only cases with reference_expected differ; expected is the required result. Forty-eight rows differ: three root-parent parse rows, four cross-server relative rows, four cross-share relative rows, seven basename rows whose runtime result kept the trailing separators of a partly matched suffix, and thirty Windows normalize rows whose runtime result prefixed a name with no colon (a reserved name plus one more character).",
+    "case_count": 1574,
+    "corrections": "Only cases with reference_expected differ; expected is the required result. Fifty-six rows differ: three root-parent parse rows, four cross-server relative rows, four cross-share relative rows, seven basename rows whose runtime result kept the trailing separators of a partly matched suffix, thirty Windows normalize rows whose runtime result prefixed a name with no colon (a reserved name plus one more character), three Windows relative rows whose runtime result crossed first-component prefix boundaries, and five Windows relative rows whose runtime result mishandled bare-drive empty tails or lowercase expansion.",
     "drive_keys": "Windows per-drive keys are ASCII case-insensitive; the input snapshot stores canonical =X: keys.",
     "test_mapping": "test names are functions in crates/maestro-path/tests/path_behavior.rs"
   },
@@ -21280,6 +21280,1298 @@
         "boundary:relative"
       ],
       "test": "win32_relative_returns_the_destination_when_anchoring_differs"
+    },
+    {
+      "id": "s001",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "UNC absent drive",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s002",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": ""
+      },
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "UNC empty drive",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s003",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\?\\C:\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "namespace question cwd",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s004",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\.\\PIPE\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "namespace dot cwd",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s005",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "d:a",
+        "D:B"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:B",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "drive letter case",
+      "resolved": [
+        "d:a",
+        "D:B"
+      ]
+    },
+    {
+      "id": "s006",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "D:\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "same-drive cwd",
+      "resolved": [
+        "D:\\work\\a",
+        "D:\\work\\b"
+      ]
+    },
+    {
+      "id": "s007",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "C:\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "other-drive cwd",
+      "resolved": [
+        "D:\\a",
+        "D:\\b"
+      ]
+    },
+    {
+      "id": "s008",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "D:\\"
+      },
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided drive root",
+      "resolved": [
+        "D:\\a",
+        "D:\\b"
+      ]
+    },
+    {
+      "id": "s009",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "D:\\base"
+      },
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided drive directory",
+      "resolved": [
+        "D:\\base\\a",
+        "D:\\base\\b"
+      ]
+    },
+    {
+      "id": "s010",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "d:\\base"
+      },
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided lowercase drive",
+      "resolved": [
+        "D:\\base\\a",
+        "D:\\base\\b"
+      ]
+    },
+    {
+      "id": "s011",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "C:\\wrong"
+      },
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "wrong-drive fallback",
+      "resolved": [
+        "D:\\a",
+        "D:\\b"
+      ]
+    },
+    {
+      "id": "s012",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "D:base"
+      },
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided relative drive with base",
+      "resolved": [
+        "D:base\\a",
+        "D:base\\b"
+      ]
+    },
+    {
+      "id": "s013",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "D:"
+      },
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided bare drive",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s014",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "C:base"
+      },
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided other relative drive",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s015",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "\\\\other\\share\\base"
+      },
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided UNC directory",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s016",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "\\\\?\\D:\\base"
+      },
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided namespace directory",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s017",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "rooted slash cwd",
+      "resolved": [
+        "D:\\work\\a",
+        "D:\\work\\b"
+      ]
+    },
+    {
+      "id": "s018",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "/work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "POSIX-spelled cwd",
+      "resolved": [
+        "D:\\work\\a",
+        "D:\\work\\b"
+      ]
+    },
+    {
+      "id": "s019",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "deviceless relative cwd",
+      "resolved": [
+        "D:work\\a",
+        "D:work\\b"
+      ]
+    },
+    {
+      "id": "s020",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "empty cwd",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s021",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=C:": "C:\\base"
+      },
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "unrelated drive entry",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s022",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {
+        "=D:": "D:base\\x\\.."
+      },
+      "expected": "..\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "provided normalized shared base",
+      "resolved": [
+        "D:base\\a",
+        "D:base\\b"
+      ]
+    },
+    {
+      "id": "s023",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:b",
+        "D:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:a",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:b",
+        "D:a"
+      ]
+    },
+    {
+      "id": "s024",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "C:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "C:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:a",
+        "C:b"
+      ]
+    },
+    {
+      "id": "s025",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:\\a",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:\\a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s026",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:\\b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:\\b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:a",
+        "D:\\b"
+      ]
+    },
+    {
+      "id": "s027",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:a",
+        "D:a"
+      ]
+    },
+    {
+      "id": "s028",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:A",
+        "d:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:A",
+        "d:a"
+      ]
+    },
+    {
+      "id": "s029",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\.",
+        "D:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:a",
+        "D:a"
+      ]
+    },
+    {
+      "id": "s030",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\..\\x",
+        "D:b\\."
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:x",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s031",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a/child/..",
+        "D:b/"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s032",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:b\\child"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b\\child",
+      "test": "win32_relative_uses_resolved_anchors_for_siblings",
+      "rule": "resolved root and normalization",
+      "resolved": [
+        "D:a",
+        "D:b\\child"
+      ]
+    },
+    {
+      "id": "s033",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\b",
+        "D:a\\c"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\c",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "common component siblings",
+      "resolved": [
+        "D:a\\b",
+        "D:a\\c"
+      ]
+    },
+    {
+      "id": "s034",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:a\\b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "descendant",
+      "resolved": [
+        "D:a",
+        "D:a\\b"
+      ]
+    },
+    {
+      "id": "s035",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\b",
+        "D:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "ancestor",
+      "resolved": [
+        "D:a\\b",
+        "D:a"
+      ]
+    },
+    {
+      "id": "s036",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:",
+        "d:"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "bare drive identity",
+      "resolved": [
+        "D:",
+        "d:"
+      ]
+    },
+    {
+      "id": "s037",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "bare drive source",
+      "resolved": [
+        "D:",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s038",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:b",
+        "D:"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "bare drive destination",
+      "resolved": [
+        "D:b",
+        "D:"
+      ],
+      "reference_expected": ""
+    },
+    {
+      "id": "s039",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\b",
+        "D:"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\..",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "multi-component bare drive destination",
+      "resolved": [
+        "D:a\\b",
+        "D:"
+      ],
+      "reference_expected": ".."
+    },
+    {
+      "id": "s040",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:ab"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:ab",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "prefix collision forward",
+      "resolved": [
+        "D:a",
+        "D:ab"
+      ],
+      "reference_expected": "..D:ab"
+    },
+    {
+      "id": "s041",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:ab",
+        "D:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:a",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "prefix collision reverse",
+      "resolved": [
+        "D:ab",
+        "D:a"
+      ],
+      "reference_expected": "..D:a"
+    },
+    {
+      "id": "s042",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:ab\\c"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:ab\\c",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "prefix collision with descendant",
+      "resolved": [
+        "D:a",
+        "D:ab\\c"
+      ],
+      "reference_expected": "..D:ab\\c"
+    },
+    {
+      "id": "s043",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:..\\a",
+        "D:..\\b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "shared parent",
+      "resolved": [
+        "D:..\\a",
+        "D:..\\b"
+      ]
+    },
+    {
+      "id": "s044",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:..",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "unshared parent",
+      "resolved": [
+        "D:..",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s045",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:...",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "literal dots",
+      "resolved": [
+        "D:...",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s046",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\..",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "cancellation empties source",
+      "resolved": [
+        "D:",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s047",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:b",
+        "D:a\\.."
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "cancellation empties destination",
+      "resolved": [
+        "D:b",
+        "D:"
+      ],
+      "reference_expected": ""
+    },
+    {
+      "id": "s048",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\b",
+        "D:a\\bc"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\bc",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "shared prefix then collision",
+      "resolved": [
+        "D:a\\b",
+        "D:a\\bc"
+      ]
+    },
+    {
+      "id": "s049",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\bc",
+        "D:a\\b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "shared prefix collision reversed",
+      "resolved": [
+        "D:a\\bc",
+        "D:a\\b"
+      ]
+    },
+    {
+      "id": "s050",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:..\\a\\..",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "parent traversal sibling",
+      "resolved": [
+        "D:..",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s051",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\",
+        "D:b\\"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "trailing separator normalization",
+      "resolved": [
+        "D:a",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s052",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a/x",
+        "D:a/y"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\y",
+      "test": "win32_relative_keeps_unanchored_component_boundaries",
+      "rule": "mixed separator descendants",
+      "resolved": [
+        "D:a\\x",
+        "D:a\\y"
+      ]
+    },
+    {
+      "id": "s053",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ",
+        "D:b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:b",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode unshared",
+      "resolved": [
+        "D:İ",
+        "D:b"
+      ]
+    },
+    {
+      "id": "s054",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ",
+        "d:i̇"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode equivalent",
+      "resolved": [
+        "D:İ",
+        "d:i̇"
+      ]
+    },
+    {
+      "id": "s055",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ\\a",
+        "D:i̇\\B"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\B",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode shared first",
+      "resolved": [
+        "D:İ\\a",
+        "D:i̇\\B"
+      ]
+    },
+    {
+      "id": "s056",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ\\a",
+        "D:i̇"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode ancestor",
+      "resolved": [
+        "D:İ\\a",
+        "D:i̇"
+      ]
+    },
+    {
+      "id": "s057",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ",
+        "D:i̇\\B"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "B",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode descendant",
+      "resolved": [
+        "D:İ",
+        "D:i̇\\B"
+      ]
+    },
+    {
+      "id": "s058",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ",
+        "D:İx"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:İx",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode prefix forward",
+      "resolved": [
+        "D:İ",
+        "D:İx"
+      ]
+    },
+    {
+      "id": "s059",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İx",
+        "D:İ"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:İ",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode prefix reverse",
+      "resolved": [
+        "D:İx",
+        "D:İ"
+      ]
+    },
+    {
+      "id": "s060",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a",
+        "D:aİ"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:aİ",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode expansion destination",
+      "resolved": [
+        "D:a",
+        "D:aİ"
+      ]
+    },
+    {
+      "id": "s061",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:aİ",
+        "D:a"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:a",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode expansion source",
+      "resolved": [
+        "D:aİ",
+        "D:a"
+      ]
+    },
+    {
+      "id": "s062",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:",
+        "D:İ"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "İ",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode bare source",
+      "resolved": [
+        "D:",
+        "D:İ"
+      ],
+      "reference_expected": "D:İ"
+    },
+    {
+      "id": "s063",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:İ",
+        "D:"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Unicode bare destination",
+      "resolved": [
+        "D:İ",
+        "D:"
+      ],
+      "reference_expected": "D:"
+    },
+    {
+      "id": "s064",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:ΟΣ\\a",
+        "D:ος\\B"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\B",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Greek contextual lowercase",
+      "resolved": [
+        "D:ΟΣ\\a",
+        "D:ος\\B"
+      ]
+    },
+    {
+      "id": "s065",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:K\\a",
+        "D:k\\B"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\B",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "Kelvin lowercase",
+      "resolved": [
+        "D:K\\a",
+        "D:k\\B"
+      ]
+    },
+    {
+      "id": "s066",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:ß",
+        "D:SS"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:SS",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "sharp s is not ss",
+      "resolved": [
+        "D:ß",
+        "D:SS"
+      ]
+    },
+    {
+      "id": "s067",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:😀",
+        "D:😀\\終"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "終",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "astral descendant",
+      "resolved": [
+        "D:😀",
+        "D:😀\\終"
+      ]
+    },
+    {
+      "id": "s068",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:é",
+        "D:é"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "D:é",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "combining is not normalization",
+      "resolved": [
+        "D:é",
+        "D:é"
+      ]
+    },
+    {
+      "id": "s069",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\﻿",
+        "D:a\\b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "FEFF literal component",
+      "resolved": [
+        "D:a\\﻿",
+        "D:a\\b"
+      ]
+    },
+    {
+      "id": "s070",
+      "flavor": "win32",
+      "op": "relative",
+      "args": [
+        "D:a\\",
+        "D:a\\b"
+      ],
+      "cwd": "\\\\srv\\share\\work",
+      "drives": {},
+      "expected": "..\\b",
+      "test": "win32_relative_compares_unanchored_unicode_components",
+      "rule": "0085 literal component",
+      "resolved": [
+        "D:a\\",
+        "D:a\\b"
+      ]
     }
   ]
 }

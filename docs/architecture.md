@@ -48,7 +48,12 @@ a POSIX `parse`, with the results of the JavaScript runtime's `path` module,
 except where its result is a defect; the crate's tests mark each one. The crate
 root re-exports the flavor of the compile target. Nothing reads the process
 working directory or the environment: `resolve` and `relative` take a `Cwd`
-snapshot from the caller.
+snapshot from the caller. Windows relative paths require matching resolved
+root identities, including anchoring. A matching anchored drive, share or
+namespace supplies a comparison base; otherwise, nonempty tails need a complete
+shared first component. Empty tails still permit component traversal. Without a
+shared base the normalized destination is returned: `D:a` to `D:b` under a UNC
+working directory with no drive entries yields `D:b`, not `..\b`.
 
 `maestro-path` has no internal dependencies and is the one named exception to
 leaf and exact-set rules. Any crate in the specification table may declare it as

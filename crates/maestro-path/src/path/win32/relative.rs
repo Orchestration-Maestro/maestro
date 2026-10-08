@@ -27,10 +27,11 @@ fn same_root(from: &Location<'_>, to: &Location<'_>) -> bool {
 /// folded. Whole components are compared with Unicode lowercase equality and
 /// the destination keeps the spelling it was resolved with. Paths that start
 /// at different roots (another drive, UNC share or device namespace, a root of
-/// another kind, or an absolute path against a relative one) have no
-/// relative path, and neither have two paths without a drive, share or
-/// namespace whose first components differ: the normalized destination is
-/// returned. Equal locations give an empty string.
+/// another kind, or an absolute path against a relative one) have no shared
+/// comparison base. A matching named root supplies a base only when anchored;
+/// otherwise, nonempty tails must share a complete first component. Without a
+/// base the normalized destination is returned. Empty tails permit component
+/// traversal, and equal locations give an empty string.
 ///
 /// # Examples
 ///
@@ -46,12 +47,21 @@ fn same_root(from: &Location<'_>, to: &Location<'_>) -> bool {
 ///
 /// let share = Cwd { current: "\\\\srv\\share\\work", drive_directories: &[] };
 /// assert_eq!(win32::relative("D:\\foo", "D:foo", &share), "D:foo");
+/// assert_eq!(win32::relative("D:a", "D:b", &share), "D:b");
 /// ```
 #[must_use]
 pub fn relative(from: &str, to: &str, cwd: &Cwd<'_>) -> String {
     let (from, to) = (locate(&[from], cwd), locate(&[to], cwd));
-    if !same_root(&from, &to) {
-        return to.spell();
+    match shared_base(&from, &to) {
+        Some(shared) => climb_and_descend(from.parts.len() - shared, &to.parts[shared..], "\\"),
+        None => to.spell(),
+    }
+}
+
+/// Count shared components when the resolved roots and tails permit traversal.
+fn shared_base(from: &Location<'_>, to: &Location<'_>) -> Option<usize> {
+    if !same_root(from, to) {
+        return None;
     }
     let shared = from
         .parts
@@ -59,9 +69,10 @@ pub fn relative(from: &str, to: &str, cwd: &Cwd<'_>) -> String {
         .zip(&to.parts)
         .take_while(|(a, b)| same_name(a, b))
         .count();
-    let rootless = from.device.is_none();
-    if shared == 0 && rootless && !from.parts.is_empty() && !to.parts.is_empty() {
-        return to.spell();
+    let anchored_root = from.absolute && from.device.is_some();
+    if shared == 0 && !anchored_root && !from.parts.is_empty() && !to.parts.is_empty() {
+        None
+    } else {
+        Some(shared)
     }
-    climb_and_descend(from.parts.len() - shared, &to.parts[shared..], "\\")
 }
