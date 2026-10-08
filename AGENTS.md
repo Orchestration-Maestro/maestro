@@ -229,7 +229,7 @@ next release's history from conventional commits. PRs never edit CHANGELOG.md.
 ## Approved repository-tooling libraries
 
 The private conventions checker may use `syn =3.0.6` (defaults off;
-`full`, `parsing`, `printing`, `visit`, `extra-traits`), `proc-macro2 =1.0.107` (default
+`full`, `parsing`, `printing`, `visit`), `proc-macro2 =1.0.107` (default
 `proc-macro` plus `span-locations`), `toml =1.1.6` (locked as
 `1.1.6+spec-1.1.0`; default `std`, `serde`, `parse`, `display`),
 `ra-ap-rustc_lexer =0.176.0` (no features) and `cargo_metadata =0.23.1`
