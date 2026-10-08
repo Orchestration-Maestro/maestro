@@ -7,13 +7,16 @@ mod support;
 #[cfg(test)]
 mod tests {
     use super::support;
-    use std::ffi::OsStr;
     use std::fs;
     use std::path::Path;
     use std::sync::Arc;
     use std::time::{Duration, Instant};
 
-    use super::support::{ControlledStorage, Holder, TempDir, block_on, probe_lock, raw};
+    use serde_json::json;
+
+    use super::support::{
+        ControlledStorage, Holder, TempDir, block_on, file_storage, location, probe_lock, raw,
+    };
     use maestro_settings::{
         FileSettingsStorage, InMemorySettingsStorage, PackageSource, SettingsManager,
         SettingsScope, SettingsStorage, SettingsStorageError,
@@ -88,15 +91,6 @@ mod tests {
         );
     }
 
-    /// File storage below a temporary tree: working directory, agent directory and configuration name.
-    fn file_storage(root: &Path) -> FileSettingsStorage {
-        FileSettingsStorage::new(
-            &root.join("work"),
-            &root.join("agent"),
-            OsStr::new(".maestro"),
-        )
-    }
-
     #[test]
     fn adapters_share_raw_transaction_contract() {
         assert_raw_transaction_contract(&InMemorySettingsStorage::new());
@@ -111,15 +105,6 @@ mod tests {
             fs::read_to_string(root.path().join("work/.maestro/settings.json")).unwrap(),
             ""
         );
-    }
-
-    /// Runs `body` on its own thread and waits for its result.
-    fn finishes<T: Send + 'static>(body: impl FnOnce() -> T + Send + 'static) -> T {
-        let (sender, receiver) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            let _ = sender.send(body());
-        });
-        receiver.recv().expect("the storage callback panicked")
     }
 
     /// Writes `"inner"` to `scope` and returns the text the callback saw there.
@@ -139,22 +124,18 @@ mod tests {
     fn reenter(
         outer: SettingsScope,
         inner: SettingsScope,
-        outer_text: Option<&'static str>,
+        outer_text: Option<&str>,
     ) -> (Option<String>, [Option<String>; 2]) {
-        let storage = Arc::new(InMemorySettingsStorage::new());
-        support::put(&*storage, SettingsScope::Global, "global");
-        let nested = storage.clone();
-        let inner_seen = finishes(move || {
-            let mut seen = None;
-            nested
-                .with_lock(outer, &mut |_| {
-                    seen = write_inner(&nested, inner);
-                    Ok(outer_text.map(str::to_owned))
-                })
-                .unwrap();
-            seen
-        });
-        (inner_seen, BOTH.map(|scope| raw(&*storage, scope)))
+        let storage = InMemorySettingsStorage::new();
+        support::put(&storage, SettingsScope::Global, "global");
+        let mut inner_seen = None;
+        storage
+            .with_lock(outer, &mut |_| {
+                inner_seen = write_inner(&storage, inner);
+                Ok(outer_text.map(str::to_owned))
+            })
+            .unwrap();
+        (inner_seen, BOTH.map(|scope| raw(&storage, scope)))
     }
 
     #[test]
@@ -193,9 +174,9 @@ mod tests {
     /// File storage whose supplied directories pass through a directory that does not exist.
     fn dotted_storage(root: &Path) -> FileSettingsStorage {
         FileSettingsStorage::new(
-            &root.join("missing/../work"),
-            &root.join("missing/../agent"),
-            OsStr::new(".maestro"),
+            &location(root, "missing/../work"),
+            &location(root, "missing/../agent"),
+            ".maestro",
         )
     }
 
@@ -235,12 +216,54 @@ mod tests {
         );
     }
 
+    /// Child side: replaces both scopes through locations relative to the process
+    /// directory and reports the text each scope held.
+    fn replace_through_relative_locations() {
+        let storage = FileSettingsStorage::new("../..", "../agent", ".maestro");
+        let held = BOTH.map(|scope| {
+            let (seen, outcome) = transact(&storage, scope, Ok(Some("replaced")));
+            outcome.unwrap();
+            seen
+        });
+        support::report(&json!(held));
+    }
+
+    #[test]
+    fn relative_locations_keep_their_leading_parents() {
+        if support::child_case().is_some() {
+            return replace_through_relative_locations();
+        }
+        let root = TempDir::new();
+        let process_directory = root.path().join("a/b");
+        let files = [
+            root.path().join("a/agent/settings.json"),
+            root.path().join(".maestro/settings.json"),
+        ];
+        fs::create_dir_all(&process_directory).unwrap();
+        for (file, text) in files.iter().zip(["global seed", "project seed"]) {
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(file, text).unwrap();
+        }
+        let output = support::child_command("relative_locations_keep_their_leading_parents", "run")
+            .current_dir(&process_directory)
+            .output()
+            .unwrap();
+        assert_eq!(
+            support::child_report(&output),
+            json!(["global seed", "project seed"]),
+            "each scope reads the file its parents lead to"
+        );
+        for file in &files {
+            assert_eq!(fs::read_to_string(file).unwrap(), "replaced");
+        }
+    }
+
     /// Creates a manager over the temporary tree's supplied directories.
     fn create_manager(root: &Path) -> SettingsManager {
         SettingsManager::create(
-            &root.join("work"),
-            &root.join("agent"),
-            OsStr::new(".maestro"),
+            &location(root, "work"),
+            &location(root, "agent"),
+            ".maestro",
         )
     }
 
@@ -512,28 +535,6 @@ mod tests {
         assert!(sidecar.exists(), "release never unlinks the sidecar");
     }
 
-    #[cfg(unix)]
-    #[test]
-    fn non_utf8_paths_preserved() {
-        use std::os::unix::ffi::OsStrExt;
-        let root = TempDir::new();
-        let cwd = root.path().join(OsStr::from_bytes(b"w\xffk"));
-        let agent = root.path().join(OsStr::from_bytes(b"a\xffg"));
-        let config = OsStr::from_bytes(b".m\xffc");
-        let mut settings = SettingsManager::create(&cwd, &agent, config);
-        settings.set_theme("raw bytes".into());
-        settings.set_project_extension_paths(vec![maestro_settings::SettingsListEntry::String(
-            "p".into(),
-        )]);
-        block_on(settings.flush());
-        assert!(agent.join("settings.json").is_file());
-        assert!(cwd.join(config).join("settings.json").is_file());
-
-        let reloaded = SettingsManager::create(&cwd, &agent, config);
-        assert_eq!(reloaded.get_theme().as_deref(), Some("raw bytes"));
-        assert_eq!(reloaded.get_extension_paths().len(), 1);
-    }
-
     /// Child side: successful saves, a reload and a failed load, with nothing printed.
     fn run_quiet_operations() {
         let root = TempDir::new();
@@ -582,21 +583,12 @@ mod tests {
     }
 
     #[test]
-    fn exports_available_for_target() {
-        let handle: maestro_settings::SettingsStorageHandle =
-            std::sync::Arc::new(InMemorySettingsStorage::new());
-        let _manager = SettingsManager::from_storage(handle);
-        let _native = FileSettingsStorage::new(Path::new("w"), Path::new("a"), OsStr::new(".c"));
-    }
-
-    #[test]
     fn settings_manager_module_exposes_the_crate_root_items() {
         use maestro_settings::settings_manager::{
             FileSettingsStorage as ModuleFileStorage, InMemorySettingsStorage as ModuleMemory,
             SettingsManager as ModuleManager, SettingsScope as ModuleScope,
         };
-        let _file: FileSettingsStorage =
-            ModuleFileStorage::new(Path::new("w"), Path::new("a"), OsStr::new(".c"));
+        let _file: FileSettingsStorage = ModuleFileStorage::new("w", "a", ".c");
         let storage: Arc<InMemorySettingsStorage> = Arc::new(ModuleMemory::new());
         let mut manager: SettingsManager = ModuleManager::from_storage(storage.clone());
         manager.set_theme("light".into());

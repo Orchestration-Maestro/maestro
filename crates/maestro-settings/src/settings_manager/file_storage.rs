@@ -1,11 +1,11 @@
 //! Native file storage with sidecar file locks.
 
-use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions, TryLockError};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
-use super::paths::join;
+use maestro_path::join;
+
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
 
 /// How often a contended lock is tried before giving up.
@@ -16,22 +16,21 @@ const LOCK_RETRY_DELAY: Duration = Duration::from_millis(20);
 /// Storage backed by `settings.json` files at caller-supplied locations.
 #[derive(Debug)]
 pub struct FileSettingsStorage {
-    /// The global preference file.
-    global: PathBuf,
-    /// The project preference file.
-    project: PathBuf,
+    /// The authored location of the global preference file.
+    global: String,
+    /// The authored location of the project preference file.
+    project: String,
 }
 
 impl FileSettingsStorage {
-    /// Addresses `settings.json` in `agent_dir` and in `config_dir` below `cwd`,
-    /// joining the parts as text and folding `.` and `..` segments of the result
-    /// before any file access.
+    /// Addresses `settings.json` in `agent_dir` and in `config_dir` below `cwd`.
+    /// Each location is the lexical join of its authored parts, with `.` and `..`
+    /// segments folded before any file access.
     #[must_use]
-    pub fn new(cwd: &Path, agent_dir: &Path, config_dir: &OsStr) -> Self {
-        let file = OsStr::new("settings.json");
+    pub fn new(cwd: &str, agent_dir: &str, config_dir: &str) -> Self {
         Self {
-            global: join(&[agent_dir.as_os_str(), file]),
-            project: join(&[cwd.as_os_str(), config_dir, file]),
+            global: join(&[agent_dir, "settings.json"]),
+            project: join(&[cwd, config_dir, "settings.json"]),
         }
     }
 }
@@ -75,10 +74,10 @@ impl SettingsStorage for FileSettingsStorage {
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> Result<(), SettingsStorageError> {
-        let path = match scope {
+        let path = Path::new(match scope {
             SettingsScope::Global => &self.global,
             SettingsScope::Project => &self.project,
-        };
+        });
         let exists = path.exists();
         let mut lock = exists.then(|| Lock::acquire(path)).transpose()?;
         let current = exists.then(|| fs::read_to_string(path)).transpose()?;
@@ -94,32 +93,5 @@ impl SettingsStorage for FileSettingsStorage {
         fs::write(path, next)?;
         drop(lock);
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[cfg(unix)]
-    #[test]
-    fn leading_parents_stay_in_front_of_relative_locations() {
-        let storage =
-            FileSettingsStorage::new(Path::new("../.."), Path::new(".."), OsStr::new(".maestro"));
-        // Node `path.posix.join('..', 'settings.json')` and
-        // `join('../..', '.maestro', 'settings.json')`.
-        assert_eq!(storage.global.as_os_str(), "../settings.json");
-        assert_eq!(storage.project.as_os_str(), "../../.maestro/settings.json");
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn parents_of_a_drive_relative_location_stay_after_the_drive() {
-        let storage =
-            FileSettingsStorage::new(Path::new("C:.."), Path::new("C:.."), OsStr::new(".maestro"));
-        // Node `path.win32.join('C:..', 'settings.json')` and
-        // `join('C:..', '.maestro', 'settings.json')`.
-        assert_eq!(storage.global.as_os_str(), r"C:..\settings.json");
-        assert_eq!(storage.project.as_os_str(), r"C:..\.maestro\settings.json");
     }
 }

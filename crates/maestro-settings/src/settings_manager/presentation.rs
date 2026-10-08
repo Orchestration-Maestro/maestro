@@ -1,13 +1,10 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use std::ffi::OsStr;
-use std::path::PathBuf;
-
+use maestro_path::join;
 use serde_json::Value;
 
 use super::SettingsManager;
 use super::conversion::number;
-use super::paths::join;
 use super::vocabulary::{DoubleEscapeAction, TreeFilterMode};
 
 /// Environment variable that enables clearing empty rows when the preference is
@@ -22,23 +19,26 @@ fn env_enabled(name: &str) -> bool {
     std::env::var_os(name).is_some_and(|value| value == "1")
 }
 
+/// The home directory as authored text; bytes that are not valid UTF-8 read as U+FFFD.
+fn home_dir() -> Option<String> {
+    std::env::home_dir().map(|home| home.to_string_lossy().into_owned())
+}
+
 impl SettingsManager {
     /// Returns the session directory. An exact `~` reads as the home directory and
-    /// a `~/` prefix is joined onto it as text and folded once; any other text, and
-    /// any text while the home directory is unknown, is returned as written.
+    /// a `~/` prefix is joined onto it lexically; any other text, and any text while
+    /// the home directory is unknown, is returned as written.
     #[must_use]
-    pub fn get_session_dir(&self) -> Option<PathBuf> {
+    pub fn get_session_dir(&self) -> Option<String> {
         let configured = self.text("sessionDir")?;
         let expanded = if configured == "~" {
-            std::env::home_dir()
+            home_dir()
         } else {
-            let suffix = configured.strip_prefix("~/");
-            suffix.and_then(|suffix| {
-                let home = std::env::home_dir()?;
-                Some(join(&[home.as_os_str(), OsStr::new(suffix)]))
-            })
+            configured
+                .strip_prefix("~/")
+                .and_then(|suffix| Some(join(&[&home_dir()?, suffix])))
         };
-        Some(expanded.unwrap_or_else(|| PathBuf::from(configured)))
+        Some(expanded.unwrap_or_else(|| configured.to_owned()))
     }
 
     /// Returns whether inline images are shown (default true).

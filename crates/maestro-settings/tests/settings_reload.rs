@@ -6,21 +6,12 @@ mod support;
 #[cfg(test)]
 mod tests {
     use super::support;
-    use super::support::{Backend, ControlledStorage, block_on, settings};
-    use maestro_settings::{
-        PackageSource, SettingsListEntry, SettingsManager, SettingsScope, ThinkingLevel,
-    };
+    use super::support::{Backend, ControlledStorage, block_on, settings, text_entries};
+    use maestro_settings::{PackageSource, SettingsManager, SettingsScope, ThinkingLevel};
     use serde_json::{Value, json};
 
     const GLOBAL: SettingsScope = SettingsScope::Global;
     const PROJECT: SettingsScope = SettingsScope::Project;
-
-    fn entries(items: &[&str]) -> Vec<SettingsListEntry> {
-        items
-            .iter()
-            .map(|item| SettingsListEntry::String((*item).into()))
-            .collect()
-    }
 
     /// Seeds a backend and loads a manager over it.
     fn loaded(
@@ -62,7 +53,10 @@ mod tests {
                 "external data enters the cache only on reload"
             );
             block_on(manager.reload());
-            assert_eq!(manager.get_enabled_models(), Some(entries(&["a", "b"])));
+            assert_eq!(
+                manager.get_enabled_models(),
+                Some(text_entries(&["a", "b"]))
+            );
         }
     }
 
@@ -125,7 +119,7 @@ mod tests {
             assert_eq!(saved["theme"], "light");
             assert_eq!(
                 manager.get_extension_paths(),
-                entries(&["/old"]),
+                text_entries(&["/old"]),
                 "the cache is unchanged"
             );
         }
@@ -163,7 +157,7 @@ mod tests {
                 "packages": [{"source": "git:x", "extensions": ["*.ts"], "opaque": {"k": 1}}]
             });
             backend.write(PROJECT, &external.to_string());
-            manager.set_project_extension_paths(entries(&["b"]));
+            manager.set_project_extension_paths(text_entries(&["b"]));
             block_on(manager.flush());
             let mut expected = external;
             expected["extensions"] = json!(["b"]);
@@ -176,7 +170,7 @@ mod tests {
         for backend in Backend::all() {
             let mut manager = loaded(&backend, None, Some(&json!({"extensions": ["a"]})));
             backend.write(PROJECT, r#"{"extensions":["external"],"skills":["s"]}"#);
-            manager.set_project_extension_paths(entries(&["local"]));
+            manager.set_project_extension_paths(text_entries(&["local"]));
             block_on(manager.flush());
             assert_eq!(
                 backend.json(PROJECT),
@@ -202,7 +196,7 @@ mod tests {
         block_on(manager.reload());
         assert_eq!(manager.get_theme().as_deref(), Some("light"));
         assert_eq!(manager.get_default_model().as_deref(), Some("m2"));
-        assert_eq!(manager.get_extension_paths(), entries(&["/after.ts"]));
+        assert_eq!(manager.get_extension_paths(), text_entries(&["/after.ts"]));
         assert_eq!(
             manager.get_prompt_template_paths(),
             Vec::new(),
@@ -297,7 +291,7 @@ mod tests {
         assert!(manager.drain_errors().is_empty(), "errors drain once");
 
         manager.set_theme("memory only".into());
-        manager.set_project_extension_paths(entries(&["p"]));
+        manager.set_project_extension_paths(text_entries(&["p"]));
         block_on(manager.flush());
         assert_eq!(
             manager.get_theme().as_deref(),
@@ -313,7 +307,7 @@ mod tests {
         backend.write(PROJECT, "{}");
         block_on(manager.reload());
         manager.drain_errors();
-        manager.set_project_extension_paths(entries(&["p"]));
+        manager.set_project_extension_paths(text_entries(&["p"]));
         block_on(manager.flush());
         assert_eq!(
             backend.json(PROJECT),
@@ -501,7 +495,7 @@ mod tests {
         storage.hold();
         manager.set_theme("a".into());
         storage.wait_blocked();
-        manager.set_project_extension_paths(entries(&["p"]));
+        manager.set_project_extension_paths(text_entries(&["p"]));
         manager.set_default_model("m".into());
         assert_eq!(
             manager.get_theme().as_deref(),
@@ -509,7 +503,7 @@ mod tests {
             "memory is published before any write ends"
         );
         assert_eq!(manager.get_default_model().as_deref(), Some("m"));
-        assert_eq!(manager.get_extension_paths(), entries(&["p"]));
+        assert_eq!(manager.get_extension_paths(), text_entries(&["p"]));
         assert!(storage.writes().is_empty());
 
         storage.release();
@@ -576,9 +570,9 @@ mod tests {
             Recovery {
                 scope: PROJECT,
                 edits: [
-                    |m| m.set_project_extension_paths(entries(&["e"])),
-                    |m| m.set_project_prompt_template_paths(entries(&["p"])),
-                    |m| m.set_project_skill_paths(entries(&["s"])),
+                    |m| m.set_project_extension_paths(text_entries(&["e"])),
+                    |m| m.set_project_prompt_template_paths(text_entries(&["p"])),
+                    |m| m.set_project_skill_paths(text_entries(&["s"])),
                 ],
                 expected: json!({"extensions": ["e"], "prompts": ["p"], "skills": ["s"]}),
             },
@@ -651,7 +645,7 @@ mod tests {
         );
         storage.fail_reads(false);
         storage.script_writes(&[false]);
-        manager.set_project_extension_paths(entries(&["p"]));
+        manager.set_project_extension_paths(text_entries(&["p"]));
         block_on(manager.flush());
         assert_eq!(
             manager.drain_errors()[0].scope,
@@ -661,7 +655,7 @@ mod tests {
 
         storage.inject(GLOBAL, "{}");
         manager.set_quiet_startup(true);
-        manager.set_project_skill_paths(entries(&["s"]));
+        manager.set_project_skill_paths(text_entries(&["s"]));
         block_on(manager.flush());
         assert!(
             manager.drain_errors().is_empty(),

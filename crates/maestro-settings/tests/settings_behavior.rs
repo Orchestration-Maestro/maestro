@@ -6,7 +6,9 @@ mod support;
 #[cfg(test)]
 mod tests {
     use super::support;
-    use super::support::{block_on, manager, manager_with, manager_with_both, raw_json, settings};
+    use super::support::{
+        block_on, manager, manager_with, manager_with_both, raw_json, settings, text_entries,
+    };
     use maestro_settings::{
         BranchSummarySettings, CompactionSettings, DoubleEscapeAction, ImageSettings,
         MarkdownSettings, MessageDeliveryMode, PackageSource, ProviderRetrySettings, RetrySettings,
@@ -427,13 +429,6 @@ mod tests {
                 );
             }
         }
-    }
-
-    fn text_entries(items: &[&str]) -> Vec<SettingsListEntry> {
-        items
-            .iter()
-            .map(|item| SettingsListEntry::String((*item).into()))
-            .collect()
     }
 
     /// Unset command preferences read as absent.
@@ -1562,8 +1557,6 @@ mod tests {
         pub const VARIABLE: &str = "HOME";
         /// The home directory the child is given.
         pub const PATH: &str = "/home/maestro";
-        /// The parent of the home directory.
-        pub const PARENT: &str = "/home";
         /// The separator joined paths use.
         pub const SEPARATOR: &str = "/";
     }
@@ -1575,8 +1568,6 @@ mod tests {
         pub const VARIABLE: &str = "USERPROFILE";
         /// The home directory the child is given.
         pub const PATH: &str = r"C:\Users\maestro";
-        /// The parent of the home directory.
-        pub const PARENT: &str = r"C:\Users";
         /// The separator joined paths use.
         pub const SEPARATOR: &str = "\\";
     }
@@ -1594,7 +1585,7 @@ mod tests {
     /// Stored session directories and the paths expected when the home directory is
     /// `home::PATH`.
     fn session_dir_cases() -> Vec<(Option<&'static str>, Option<String>)> {
-        let (home, parent) = (home::PATH, home::PARENT);
+        let home = home::PATH;
         let literal = |text: &'static str| (Some(text), Some(text.to_owned()));
         vec![
             (None, None),
@@ -1602,11 +1593,6 @@ mod tests {
             (Some("~"), Some(home.to_owned())),
             (Some("~/sessions"), Some(below(home, &["sessions"]))),
             (Some("~/"), Some(home.to_owned())),
-            (
-                Some("~//nested/../sessions/"),
-                Some(below(home, &["sessions", ""])),
-            ),
-            (Some("~/../sibling"), Some(below(parent, &["sibling"]))),
             literal("relative/../literal"),
             literal("~other"),
             literal("\\literal"),
@@ -1621,71 +1607,23 @@ mod tests {
         for (stored, _) in session_dir_cases() {
             let document = stored.map_or_else(|| json!({}), |stored| json!({"sessionDir": stored}));
             let (settings, _) = manager_with(document);
-            paths.push(
-                settings
-                    .get_session_dir()
-                    .map(|path| path.to_string_lossy().into_owned()),
-            );
+            paths.push(settings.get_session_dir());
         }
         let (settings, _) = manager_with_both(
             json!({"sessionDir": "/global/sessions"}),
             json!({"sessionDir": "./sessions"}),
         );
-        paths.push(
-            settings
-                .get_session_dir()
-                .map(|path| path.to_string_lossy().into_owned()),
-        );
+        paths.push(settings.get_session_dir());
         let (settings, _) = manager_with(json!({"sessionDir": null}));
-        paths.push(
-            settings
-                .get_session_dir()
-                .map(|path| path.to_string_lossy().into_owned()),
-        );
+        paths.push(settings.get_session_dir());
         support::report(&json!(paths));
-    }
-
-    /// Child side: the expanded path of `~/x` as hexadecimal bytes.
-    #[cfg(unix)]
-    fn report_lossless_home() {
-        use std::fmt::Write;
-        use std::os::unix::ffi::OsStrExt;
-        let (settings, _) = manager_with(json!({"sessionDir": "~/x"}));
-        let path = settings.get_session_dir().unwrap();
-        let hex = path
-            .as_os_str()
-            .as_bytes()
-            .iter()
-            .fold(String::new(), |mut hex, byte| {
-                let _ = write!(hex, "{byte:02x}");
-                hex
-            });
-        support::report(&json!(hex));
-    }
-
-    /// A home directory with an invalid UTF-8 byte must survive expansion byte for byte.
-    #[cfg(unix)]
-    fn assert_lossless_home() {
-        use std::os::unix::ffi::OsStrExt;
-        let home = std::ffi::OsStr::from_bytes(b"/h\xffme");
-        let mut child = support::child_command("session_dir_expands_only_home_prefix", "lossless");
-        child.env("HOME", home);
-        assert_eq!(
-            support::child_report(&child.output().unwrap()),
-            json!("2f68ff6d652f78")
-        );
     }
 
     #[test]
     fn session_dir_expands_only_home_prefix() {
-        match support::child_case().as_deref() {
-            Some("paths") => return report_session_dirs(),
-            #[cfg(unix)]
-            Some("lossless") => return report_lossless_home(),
-            _ => {}
+        if support::child_case().is_some() {
+            return report_session_dirs();
         }
-        #[cfg(unix)]
-        assert_lossless_home();
         let mut child = support::child_command("session_dir_expands_only_home_prefix", "paths");
         child.env(home::VARIABLE, home::PATH);
         let mut expected: Vec<Option<String>> = session_dir_cases()
@@ -1697,117 +1635,6 @@ mod tests {
             support::child_report(&child.output().unwrap()),
             json!(expected)
         );
-    }
-
-    /// A child case: its name, the home directory it is given and the stored session
-    /// directories with the paths the platform's join gives below that home.
-    type HomeCases = (
-        &'static str,
-        &'static str,
-        &'static [(&'static str, &'static str)],
-    );
-
-    /// A home directory that holds dot segments, as the platform spells it.
-    #[cfg(unix)]
-    const NATIVE: HomeCases = (
-        "native",
-        "/home/a/../b/./user",
-        &[
-            ("~", "/home/a/../b/./user"),
-            ("~/x", "/home/b/user/x"),
-            ("~/a\\..\\b", "/home/b/user/a\\..\\b"),
-            ("~/../..", "/home"),
-            ("~/x/", "/home/b/user/x/"),
-            ("~/x\\", "/home/b/user/x\\"),
-            ("~/C:foo", "/home/b/user/C:foo"),
-            ("~//server/share/x", "/home/b/user/server/share/x"),
-            ("~/../../x", "/home/x"),
-            ("~/../../../../x", "/x"),
-        ],
-    );
-    /// A home directory that holds dot segments, as the platform spells it.
-    #[cfg(windows)]
-    const NATIVE: HomeCases = (
-        "native",
-        r"C:\Users\a\..\b\.\user",
-        &[
-            ("~", r"C:\Users\a\..\b\.\user"),
-            ("~/x", r"C:\Users\b\user\x"),
-            (r"~/a\..\b", r"C:\Users\b\user\b"),
-            ("~/../..", r"C:\Users"),
-            ("~/x/", r"C:\Users\b\user\x\"),
-            (r"~/x\", r"C:\Users\b\user\x\"),
-            // Node `path.win32.join(home, 'C:foo')`: the suffix keeps its drive text.
-            ("~/C:foo", r"C:\Users\b\user\C:foo"),
-            // Node `path.win32.join(home, '\\\\server\\share\\x')`: the suffix is not a new root.
-            (r"~/\\server\share\x", r"C:\Users\b\user\server\share\x"),
-            // Node `path.win32.join(home, '..\\..\\x')`.
-            (r"~/..\..\x", r"C:\Users\x"),
-            // Node `path.win32.join(home, '..\\..\\..\\..\\x')`: a `..` at the root is dropped.
-            (r"~/..\..\..\..\x", r"C:\x"),
-        ],
-    );
-
-    /// A relative home directory, whose folded paths keep or lose their leading parents.
-    #[cfg(unix)]
-    const RELATIVE: HomeCases = (
-        "relative",
-        "rel/home",
-        &[
-            ("~/x", "rel/home/x"),
-            ("~/../..", "."),
-            ("~/../../", "./"),
-            ("~/../../..", ".."),
-            ("~/../../../y", "../y"),
-        ],
-    );
-    /// A relative home directory, whose folded paths keep or lose their leading parents.
-    #[cfg(windows)]
-    const RELATIVE: HomeCases = (
-        "relative",
-        r"rel\home",
-        &[
-            ("~/x", r"rel\home\x"),
-            ("~/../..", "."),
-            ("~/../../", r".\"),
-            ("~/../../..", ".."),
-            (r"~/..\..\..\y", r"..\y"),
-        ],
-    );
-
-    /// Child side: resolves every stored session directory of the named case.
-    fn report_session_dirs_below(case: &str) {
-        let (_, _, cases) = [NATIVE, RELATIVE]
-            .into_iter()
-            .find(|(name, _, _)| *name == case)
-            .unwrap();
-        let paths: Vec<String> = cases
-            .iter()
-            .map(|(stored, _)| {
-                let (settings, _) = manager_with(json!({"sessionDir": stored}));
-                let path = settings.get_session_dir().unwrap();
-                path.to_string_lossy().into_owned()
-            })
-            .collect();
-        support::report(&json!(paths));
-    }
-
-    #[test]
-    fn session_dir_folds_segments_with_platform_separators() {
-        if let Some(case) = support::child_case() {
-            return report_session_dirs_below(&case);
-        }
-        for (case, home, cases) in [NATIVE, RELATIVE] {
-            let mut child =
-                support::child_command("session_dir_folds_segments_with_platform_separators", case);
-            child.env("HOME", home).env("USERPROFILE", home);
-            let expected: Vec<&str> = cases.iter().map(|(_, expected)| *expected).collect();
-            assert_eq!(
-                support::child_report(&child.output().unwrap()),
-                json!(expected),
-                "home case {case}"
-            );
-        }
     }
 
     /// Runs one setter batch against storage seeded with `seed` text and returns the saved text.

@@ -9,8 +9,8 @@ use std::process::{Command, Output};
 use std::sync::{Arc, Condvar, Mutex};
 
 use maestro_settings::{
-    InMemorySettingsStorage, Settings, SettingsManager, SettingsScope, SettingsStorage,
-    SettingsStorageError, SettingsUpdate,
+    FileSettingsStorage, InMemorySettingsStorage, Settings, SettingsListEntry, SettingsManager,
+    SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate,
 };
 use serde_json::Value;
 
@@ -20,6 +20,14 @@ pub fn block_on<F: Future>(future: F) -> F::Output {
         .build()
         .unwrap()
         .block_on(future)
+}
+
+/// Builds list entries that are plain strings.
+pub fn text_entries(items: &[&str]) -> Vec<SettingsListEntry> {
+    items
+        .iter()
+        .map(|item| SettingsListEntry::String((*item).into()))
+        .collect()
 }
 
 /// Builds a settings document from JSON text.
@@ -392,10 +400,24 @@ pub fn probe_lock(test: &str, path: &std::path::Path) -> String {
     child_report(&output).as_str().unwrap().to_owned()
 }
 
+/// `relative` below `root` as authored text, with `/` between the parts.
+pub fn location(root: &std::path::Path, relative: &str) -> String {
+    format!("{}/{relative}", root.to_str().unwrap())
+}
+
+/// File storage below a temporary tree: working directory, agent directory and configuration name.
+pub fn file_storage(root: &std::path::Path) -> FileSettingsStorage {
+    FileSettingsStorage::new(
+        &location(root, "work"),
+        &location(root, "agent"),
+        ".maestro",
+    )
+}
+
 /// A storage adapter that scenarios seed and edit from outside the manager.
 pub enum Backend {
     Memory(Arc<InMemorySettingsStorage>),
-    Native(TempDir, Arc<maestro_settings::FileSettingsStorage>),
+    Native(TempDir, Arc<FileSettingsStorage>),
     Controlled(Arc<ControlledStorage>),
 }
 
@@ -403,11 +425,7 @@ impl Backend {
     /// One backend per adapter.
     pub fn all() -> Vec<Self> {
         let root = TempDir::new();
-        let native = Arc::new(maestro_settings::FileSettingsStorage::new(
-            &root.path().join("work"),
-            &root.path().join("agent"),
-            std::ffi::OsStr::new(".maestro"),
-        ));
+        let native = Arc::new(file_storage(root.path()));
         vec![
             Self::Memory(Arc::new(InMemorySettingsStorage::new())),
             Self::Native(root, native),

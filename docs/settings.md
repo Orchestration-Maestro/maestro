@@ -15,8 +15,8 @@ The application chooses the directories. `SettingsManager::create` and
 `FileSettingsStorage::new` take the working directory, the agent directory and the
 configuration directory name, and read or write `settings.json` below the agent
 directory (global) and below the configuration directory in the working directory
-(project). Paths are `Path` and `OsStr` values, so names that are not valid UTF-8
-work unchanged.
+(project). The three names are authored path strings: they are joined lexically
+with `maestro-path` and become a file-system path only when a file is opened.
 
 ```rust
 use maestro_settings::{Settings, SettingsManager};
@@ -126,10 +126,9 @@ and holds no lock while the callback runs, so the callback may use the same stor
 again, in either scope; when callbacks overlap, the last write wins.
 `FileSettingsStorage` (not available for the browser build) joins the supplied
 agent directory, and the working directory with the configuration directory, with
-`settings.json` as text and folds the `.` and `..` segments of each result before
-any file access (a `..` with nothing to remove is dropped below a root and kept
-otherwise, so `../agent` and the Windows drive-relative `C:..` keep theirs), then
-works in place:
+`settings.json` through `maestro-path`, which folds the `.` and `..` segments of
+each result before any file access (a relative `../agent` keeps its leading
+parent), then works in place:
 
 1. For an existing file it locks the stable `settings.json.lock` sidecar before
    reading, keeps the lock through the callback and the write, and releases it on
@@ -240,7 +239,7 @@ The crate stores and returns these values; applying them belongs to the callers.
 | `shellPath` | string | unset | Custom shell path |
 | `shellCommandPrefix` | string | unset | Prefix for every shell command |
 | `npmCommand` | string[] | unset | Package-manager argument vector |
-| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it as text with the platform's separators and folded once: `.` segments drop, a `..` removes the segment before it, and a `..` with none is dropped below a root and kept otherwise; a trailing separator is kept; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
+| `sessionDir` | string | unset | An exact `~` reads as the home directory; a `~/` prefix is joined onto it through `maestro-path`; bytes of the home directory that are not valid UTF-8 read as U+FFFD; every other text, and any text while the home directory is unknown, is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
 ### Resources

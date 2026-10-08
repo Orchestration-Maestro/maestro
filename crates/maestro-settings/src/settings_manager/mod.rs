@@ -6,7 +6,6 @@ mod entries;
 #[cfg(not(target_arch = "wasm32"))]
 mod file_storage;
 mod memory_storage;
-mod paths;
 mod persistence;
 mod preferences;
 mod presentation;
@@ -163,11 +162,7 @@ impl SettingsManager {
     /// Loads both scopes from `settings.json` files at the supplied locations.
     #[cfg(not(target_arch = "wasm32"))]
     #[must_use]
-    pub fn create(
-        cwd: &std::path::Path,
-        agent_dir: &std::path::Path,
-        config_dir: &std::ffi::OsStr,
-    ) -> Self {
+    pub fn create(cwd: &str, agent_dir: &str, config_dir: &str) -> Self {
         Self::from_storage(std::sync::Arc::new(FileSettingsStorage::new(
             cwd, agent_dir, config_dir,
         )))
