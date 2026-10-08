@@ -43,10 +43,15 @@ only at its root and descends into directories for entry files. Hidden entries,
 follow their targets.
 
 Relative paths normalize against `cwd`. `~`, `~/suffix` and `~suffix` expand
-against supplied `home`. Already-absolute input spelling is preserved. Canonical
+against supplied `home`, including repeated slashes after the tilde. Joined
+configuration and scanned child paths concatenate their parts before lexical
+normalization; later rooted parts do not replace the earlier root.
+Already-absolute explicit file spelling is preserved. Canonical
 aliases of retained files are silently deduplicated; duplicate names keep the
 first discovery. Only winning paths are remembered, so repeated losing paths
-produce repeated collisions. Ordinary diagnostics precede all collisions.
+produce repeated collisions. When canonicalization fails, exact authored strings
+are the identity keys, so distinct absolute spellings can produce name collisions.
+Ordinary diagnostics precede all collisions.
 With defaults disabled, explicit paths under the user or project skills roots
 receive that scope, with user precedence when roots overlap. Other explicit paths
 are temporary; defaults-enabled explicit paths are always temporary.
@@ -57,7 +62,8 @@ Description validation precedes name validation. Missing or blank descriptions
 omit the skill after collecting name warnings. Other validation warnings retain
 it: overlong descriptions, parent-name mismatch, overlong names, invalid name
 characters, edge hyphens and consecutive hyphens. Lengths count complete Unicode
-characters. Missing, null or empty names use the containing directory basename.
+characters. Missing, null or empty names use the containing directory basename,
+including the literal names `.` and `..` for relative scan roots.
 Non-null nonstring names/descriptions produce one path-bearing typed failure.
 Only boolean `disable-model-invocation: true` hides a skill from the prompt.
 Descriptions retain authored newlines and whitespace. Prompt XML escapes each
@@ -65,8 +71,11 @@ field, preserves visible caller order and uses the instruction file location.
 
 Metadata parsing normalizes line endings, retains typed scalars, aliases and
 ordered collections, rejects duplicate equal YAML keys and multiple documents,
-and reports native parser causes with coordinates. Unknown skill fields are
-ignored by discovery. Extra YAML tags `binary`, `set`, `timestamp`, `omap` and
+and reports native parser causes with coordinates. Hexadecimal and octal integers
+require unsigned digits after `0x` or `0o`; an inner sign remains text, even with
+an explicit integer tag. Integers of any width round to the numeric scalar's
+floating-point representation, overflowing to infinity rather than becoming text.
+Unknown skill fields are ignored by discovery. Extra YAML tags `binary`, `set`, `timestamp`, `omap` and
 `pairs` resolve as underlying core-schema data, not foreign runtime objects.
 Collection-valued mapping-key pairs are discarded while ordinary fields survive.
 Library/process warnings are not printed or returned as skill diagnostics.

@@ -121,3 +121,23 @@ impl ResourceOperations for Controlled {
         NativeResourceOperations.canonicalize(path)
     }
 }
+
+/// Resolve relative filesystem requests beneath a supplied fixture directory.
+pub struct Rooted(pub PathBuf);
+impl ResourceOperations for Rooted {
+    fn exists(&self, path: &Path) -> bool {
+        NativeResourceOperations.exists(&self.0.join(path))
+    }
+    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
+        NativeResourceOperations.read_dir(&self.0.join(path))
+    }
+    fn read_file(&self, path: &Path) -> io::Result<String> {
+        NativeResourceOperations.read_file(&self.0.join(path))
+    }
+    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        NativeResourceOperations.metadata(&self.0.join(path))
+    }
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        NativeResourceOperations.canonicalize(&self.0.join(path))
+    }
+}

@@ -1334,6 +1334,8 @@ name = "maestro-resources"
 version = "0.1.0"
 dependencies = [
  "ignore",
+ "num-bigint",
+ "num-traits",
  "pathdiff",
  "ryu-js",
  "yaml-rust2",

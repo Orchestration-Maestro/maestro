@@ -1,6 +1,7 @@
 //! Compose ordered metadata from native YAML events.
 
 use super::{FrontmatterError, FrontmatterValue};
+use num_traits::ToPrimitive;
 use std::collections::HashMap;
 use yaml_rust2::{
     parser::{Event, MarkedEventReceiver, Parser, Tag},
@@ -102,11 +103,10 @@ fn boolean(text: &str) -> Option<bool> {
 fn integer(text: &str) -> Option<f64> {
     for (prefix, radix) in [("0x", 16), ("0o", 8)] {
         if let Some(digits) = text.strip_prefix(prefix) {
-            return u128::from_str_radix(digits, radix)
-                .ok()?
-                .to_string()
-                .parse()
-                .ok();
+            if digits.is_empty() || !digits.chars().all(|digit| digit.is_digit(radix)) {
+                return None;
+            }
+            return num_bigint::BigUint::parse_bytes(digits.as_bytes(), radix)?.to_f64();
         }
     }
     let digits = text.strip_prefix(['-', '+']).unwrap_or(text);

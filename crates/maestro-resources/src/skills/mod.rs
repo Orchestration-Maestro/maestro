@@ -74,19 +74,24 @@ fn load_file(path: &Path, source: &str, operations: &dyn ResourceOperations) -> 
 }
 /// Validate supported fields before deciding whether the file is retained.
 fn validated_skill(path: &Path, source: &str, fields: SkillFrontmatter) -> LoadSkillsResult {
-    let base_dir = path.parent().unwrap_or_else(|| Path::new(""));
-    let parent = base_dir.file_name().unwrap_or_default().to_string_lossy();
+    let base_dir = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let parent = match base_dir.components().next_back() {
+        Some(std::path::Component::Normal(name)) => name.to_string_lossy(),
+        Some(std::path::Component::CurDir) => ".".into(),
+        Some(std::path::Component::ParentDir) => "..".into(),
+        _ => "".into(),
+    };
     let name = fields
         .name
         .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| parent.into_owned());
+        .unwrap_or_else(|| parent.to_string());
     let description = fields.description.unwrap_or_default();
     let diagnostics = validation::description_warnings(&description)
         .into_iter()
-        .chain(validation::name_warnings(
-            &name,
-            &base_dir.file_name().unwrap_or_default().to_string_lossy(),
-        ))
+        .chain(validation::name_warnings(&name, &parent))
         .map(|message| ResourceDiagnostic::warning(path, message))
         .collect();
     let mut result = LoadSkillsResult {
@@ -97,15 +102,11 @@ fn validated_skill(path: &Path, source: &str, fields: SkillFrontmatter) -> LoadS
         .trim_matches(crate::frontmatter::text_whitespace)
         .is_empty()
     {
-        let scope = match source {
-            "user" => Some(SourceScope::User),
-            "project" => Some(SourceScope::Project),
-            _ => None,
-        };
-        let label = if matches!(source, "user" | "project" | "path") {
-            "local"
-        } else {
-            source
+        let (scope, label) = match source {
+            "user" => (Some(SourceScope::User), "local"),
+            "project" => (Some(SourceScope::Project), "local"),
+            "path" => (None, "local"),
+            _ => (None, source),
         };
         let source_info = create_synthetic_source_info(
             path.into(),
@@ -153,37 +154,28 @@ pub fn load_skills(
     let mut result = LoadSkillsResult::default();
     let mut collisions = Vec::new();
     let mut paths = std::collections::HashSet::new();
+    let user_skills = crate::paths::join_path(&[options.agent_dir, Path::new("skills")]);
+    let project_skills = crate::paths::join_path(&[
+        options.cwd,
+        Path::new(options.config_dir_name),
+        Path::new("skills"),
+    ]);
     if options.include_defaults {
-        for (path, source) in [
-            (options.agent_dir.join("skills"), "user"),
-            (
-                crate::paths::normalize_path(
-                    &options.cwd.join(options.config_dir_name).join("skills"),
-                ),
-                "project",
-            ),
-        ] {
+        for (path, source) in [(&user_skills, "user"), (&project_skills, "project")] {
             add_skills(
                 &mut result,
                 &mut collisions,
                 &mut paths,
                 operations,
-                discovery::scan(&path, source, operations),
+                discovery::scan(path, source, operations),
             );
         }
     }
     for path in options.skill_paths {
         let path = crate::paths::resolve_skill_path(path, options.cwd, options.home);
-        let source = if !options.include_defaults
-            && path.starts_with(crate::paths::normalize_path(
-                &options.agent_dir.join("skills"),
-            )) {
+        let source = if !options.include_defaults && path.starts_with(&user_skills) {
             "user"
-        } else if !options.include_defaults
-            && path.starts_with(crate::paths::normalize_path(
-                &options.cwd.join(options.config_dir_name).join("skills"),
-            ))
-        {
+        } else if !options.include_defaults && path.starts_with(&project_skills) {
             "project"
         } else {
             "path"
@@ -198,13 +190,13 @@ pub fn load_skills(
 fn add_skills(
     result: &mut LoadSkillsResult,
     collisions: &mut Vec<ResourceDiagnostic>,
-    paths: &mut std::collections::HashSet<PathBuf>,
+    paths: &mut std::collections::HashSet<std::ffi::OsString>,
     operations: &dyn ResourceOperations,
     loaded: LoadSkillsResult,
 ) {
     result.diagnostics.extend(loaded.diagnostics);
     for skill in loaded.skills {
-        let real_path = crate::canonicalize_path(&skill.file_path, operations);
+        let real_path = crate::canonicalize_path(&skill.file_path, operations).into_os_string();
         if paths.contains(&real_path) {
             continue;
         }

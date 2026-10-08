@@ -353,3 +353,92 @@ fn maestro_frontmatter_reads_metadata_and_body() {
         ])
     );
 }
+
+/// Signs inside radix prefixes remain strings in plain and tagged scalars.
+#[test]
+fn maestro_frontmatter_rejects_inner_radix_signs() {
+    for scalar in ["0x+10", "0o+10", "0x-10", "0o-10", "0x", "0o", "0xg", "0o8"] {
+        for tag in ["", "!!int "] {
+            let parsed = parse_frontmatter(&format!("---\nn: {tag}{scalar}\n---")).unwrap();
+            assert_eq!(
+                parsed.frontmatter,
+                FrontmatterValue::Mapping(vec![(
+                    "n".into(),
+                    FrontmatterValue::String(scalar.into())
+                )]),
+                "{tag}{scalar}"
+            );
+        }
+    }
+}
+
+/// Radix integers have no intermediate width limit and round ties to even.
+#[test]
+fn maestro_frontmatter_rounds_unbounded_radix_numbers() {
+    for (scalar, expected) in [
+        (
+            "0x100000000000000000000000000000000",
+            3.402_823_669_209_385e38,
+        ),
+        (
+            "0o4000000000000000000000000000000000000000000",
+            3.402_823_669_209_385e38,
+        ),
+        ("0x20000000000001", 9_007_199_254_740_992.0),
+        ("0x20000000000003", 9_007_199_254_740_996.0),
+        ("0o400000000000000001", 9_007_199_254_740_992.0),
+        ("0o400000000000000003", 9_007_199_254_740_996.0),
+    ] {
+        for tag in ["", "!!int "] {
+            let parsed = parse_frontmatter(&format!("---\nn: {tag}{scalar}\n---")).unwrap();
+            assert_eq!(
+                parsed.frontmatter,
+                FrontmatterValue::Mapping(vec![("n".into(), FrontmatterValue::Number(expected))]),
+                "{tag}{scalar}"
+            );
+        }
+    }
+    for (prefix, digit) in [("0x", 'f'), ("0o", '7')] {
+        for tag in ["", "!!int "] {
+            let scalar = format!("{prefix}{}", digit.to_string().repeat(400));
+            let parsed = parse_frontmatter(&format!("---\nn: {tag}{scalar}\n---")).unwrap();
+            assert_eq!(
+                parsed.frontmatter,
+                FrontmatterValue::Mapping(vec![(
+                    "n".into(),
+                    FrontmatterValue::Number(f64::INFINITY)
+                )])
+            );
+        }
+    }
+}
+
+/// Core scalar spellings resolve to typed values while lookalikes remain text.
+#[test]
+fn maestro_frontmatter_resolves_schema_scalar_spellings() {
+    for (yaml, expected) in [
+        ("0o17", FrontmatterValue::Number(15.0)),
+        ("-12", FrontmatterValue::Number(-12.0)),
+        ("+12", FrontmatterValue::Number(12.0)),
+        (".5", FrontmatterValue::Number(0.5)),
+        ("12.", FrontmatterValue::Number(12.0)),
+        ("1.5e+2", FrontmatterValue::Number(150.0)),
+        ("true", FrontmatterValue::Bool(true)),
+        ("False", FrontmatterValue::Bool(false)),
+        ("FALSE", FrontmatterValue::Bool(false)),
+        ("", FrontmatterValue::Null),
+        ("~", FrontmatterValue::Null),
+        ("Null", FrontmatterValue::Null),
+        ("NULL", FrontmatterValue::Null),
+        ("yes", FrontmatterValue::String("yes".into())),
+        ("1e", FrontmatterValue::String("1e".into())),
+        ("0O17", FrontmatterValue::String("0O17".into())),
+    ] {
+        let parsed = parse_frontmatter(&format!("---\nn: {yaml}\n---")).unwrap();
+        assert_eq!(
+            parsed.frontmatter,
+            FrontmatterValue::Mapping(vec![("n".into(), expected)]),
+            "{yaml}"
+        );
+    }
+}

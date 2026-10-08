@@ -45,7 +45,7 @@ impl Discovery<'_> {
             return result;
         };
         for entry in entries.iter().filter(|e| e.name == "SKILL.md") {
-            let path = dir.join(&entry.name);
+            let path = crate::paths::join_path(&[dir, Path::new(&entry.name)]);
             if observed_type(entry, &path, self.operations) == Some(ResourceFileType::File)
                 && !self.ignored(&path, false)
             {
@@ -56,7 +56,7 @@ impl Discovery<'_> {
             if entry.name.to_string_lossy().starts_with('.') || entry.name == "node_modules" {
                 continue;
             }
-            let path = dir.join(&entry.name);
+            let path = crate::paths::join_path(&[dir, Path::new(&entry.name)]);
             let kind = observed_type(&entry, &path, self.operations);
             if self.ignored(&path, kind == Some(ResourceFileType::Directory)) {
                 continue;
@@ -82,7 +82,7 @@ impl Discovery<'_> {
             .filter(|p| !p.as_os_str().is_empty())
             .any(|parent| {
                 self.matcher
-                    .matched(self.root.join(parent), true)
+                    .matched(crate::paths::join_path(&[self.root, parent]), true)
                     .is_ignore()
             })
             || self.matcher.matched(path, is_dir).is_ignore()
@@ -100,7 +100,7 @@ impl Discovery<'_> {
         };
         let mut changed = false;
         for filename in [".gitignore", ".ignore", ".fdignore"] {
-            let path = dir.join(filename);
+            let path = crate::paths::join_path(&[dir, Path::new(filename)]);
             if !self.operations.exists(&path) {
                 continue;
             }

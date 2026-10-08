@@ -130,9 +130,13 @@ fn maestro_source_info_defaults_only_synthetic_fields() {
 /// Return the native canonical path of an existing file.
 #[test]
 fn maestro_paths_canonicalize_existing_files() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+    let dir = support::Directory::new();
+    let file = dir.file("target/skill.md", "hello");
+    std::fs::create_dir(dir.0.join("detour")).unwrap();
+    let path = dir.0.join("detour/../target/./skill.md");
+    assert_ne!(path.as_os_str(), file.as_os_str());
     assert_eq!(
-        canonicalize_path(&path, &NativeResourceOperations),
-        std::fs::canonicalize(path).unwrap()
+        canonicalize_path(&path, &NativeResourceOperations).as_os_str(),
+        std::fs::canonicalize(file).unwrap().as_os_str()
     );
 }

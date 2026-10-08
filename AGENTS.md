@@ -278,7 +278,10 @@ YAML parsing events and `ryu-js =1.0.3` with defaults for numeric scalar-key
 spelling. Their selected license branches are MIT OR Apache-2.0 and
 Apache-2.0, respectively. Discovery uses `ignore =0.4.23` with defaults off for
 compiled ignore rules, and `pathdiff =0.2.3` with defaults for authored rule
-prefixes. Resources remain a leaf with no internal dependencies.
+prefixes. Radix scalar resolution uses `num-bigint =0.4.8` and
+`num-traits =0.2.19` with defaults (MIT OR Apache-2.0) for arbitrary-width integers
+and correctly rounded floating-point conversion. Resources remain a leaf with no
+internal dependencies.
 
 ## Approved scripted-model libraries
 

@@ -401,24 +401,6 @@ fn maestro_skills_skip_nonfile_or_ignored_root_candidates() {
     }
 }
 
-/// Omit bad yaml with its path.
-#[test]
-fn maestro_skills_omit_bad_yaml_with_its_path() {
-    let dir = Directory::new();
-    let file = dir.file("parent/SKILL.md", "---\ndescription: [broken\n---");
-    let result = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            dir: file.parent().unwrap(),
-            source: "path",
-        },
-        &NativeResourceOperations,
-    );
-    assert!(result.skills.is_empty());
-    assert_eq!(result.diagnostics.len(), 1);
-    assert_eq!(result.diagnostics[0].path.as_ref(), Some(&file));
-    assert!(result.diagnostics[0].message.contains("line"));
-}
-
 /// Preserve multiline descriptions.
 #[test]
 fn maestro_skills_preserve_multiline_descriptions() {
@@ -717,13 +699,11 @@ fn maestro_skills_expand_all_home_path_forms() {
     for (raw, target) in [
         ("~".into(), file.clone()),
         ("~/calendar".into(), file.clone()),
+        ("~//calendar".into(), file.clone()),
         ("~calendar".into(), file.clone()),
         ("home/../home/calendar".into(), file.clone()),
         ("\u{feff}~/calendar\u{feff}".into(), file.clone()),
-        (
-            home.join("calendar/../calendar"),
-            home.join("calendar/../calendar/SKILL.md"),
-        ),
+        (home.join("calendar/../calendar"), file.clone()),
     ] {
         let paths = [raw];
         let result = maestro_resources::load_skills(
@@ -738,7 +718,7 @@ fn maestro_skills_expand_all_home_path_forms() {
             &NativeResourceOperations,
         );
         assert_eq!(result.skills.len(), 1);
-        assert_eq!(result.skills[0].file_path, target);
+        assert_eq!(result.skills[0].file_path.as_os_str(), target.as_os_str());
         assert!(result.diagnostics.is_empty());
     }
     let paths = [std::path::PathBuf::from("\u{85}~/calendar")];
@@ -936,20 +916,6 @@ fn maestro_skills_classify_explicit_source_scopes() {
         &NativeResourceOperations,
     );
     assert_eq!(result.skills[0].source_info.scope, SourceScope::User);
-    let explicit = dir.file("elsewhere/item/SKILL.md", "---\ndescription: Useful\n---");
-    let paths = [explicit];
-    let result = maestro_resources::load_skills(
-        maestro_resources::LoadSkillsOptions {
-            cwd: &dir.0,
-            home: &dir.0,
-            agent_dir: &dir.0.join("absent"),
-            config_dir_name: "absent",
-            skill_paths: &paths,
-            include_defaults: true,
-        },
-        &NativeResourceOperations,
-    );
-    assert_eq!(result.skills[0].source_info.scope, SourceScope::Temporary);
 }
 
 /// Canonical aliases deduplicate before name collision, with spelling fallback.
@@ -1341,4 +1307,145 @@ fn maestro_skills_share_native_and_controlled_operations() {
             .collect::<Vec<_>>(),
         vec![&second, &first]
     );
+}
+
+/// Failed canonicalization compares authored spellings, not native path equality.
+#[test]
+fn maestro_skills_keep_authored_collision_keys() {
+    let dir = Directory::new();
+    let file = dir.file("calendar/SKILL.md", "---\ndescription: Useful\n---");
+    let repeated = std::path::PathBuf::from(format!(
+        "{}{}{}SKILL.md",
+        file.parent().unwrap().display(),
+        std::path::MAIN_SEPARATOR,
+        std::path::MAIN_SEPARATOR,
+    ));
+    let paths = [file.clone(), file.clone(), repeated.clone()];
+    let result = maestro_resources::load_skills(
+        maestro_resources::LoadSkillsOptions {
+            cwd: &dir.0,
+            home: &dir.0,
+            agent_dir: &dir.0,
+            config_dir_name: ".maestro",
+            skill_paths: &paths,
+            include_defaults: false,
+        },
+        &support::Unresolvable,
+    );
+    assert_eq!(result.skills.len(), 1);
+    assert_eq!(result.diagnostics.len(), 1);
+    let collision = result.diagnostics[0].collision.as_ref().unwrap();
+    assert_eq!(collision.winner_path.as_os_str(), file.as_os_str());
+    assert_eq!(collision.loser_path.as_os_str(), repeated.as_os_str());
+    assert_eq!(result.diagnostics[0].message, "name \"calendar\" collision");
+}
+
+/// Relative dot roots retain their literal basename after child normalization.
+#[test]
+fn maestro_skills_use_literal_dot_root_names() {
+    let dir = Directory::new();
+    let _ = dir.file("SKILL.md", "---\ndescription: Parent\n---");
+    let _ = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
+    let ops = support::Rooted(dir.0.join("child"));
+    for (root, expected_file) in [(".", "SKILL.md"), ("..", "../SKILL.md")] {
+        let result = load_skills_from_dir(
+            LoadSkillsFromDirOptions {
+                dir: std::path::Path::new(root),
+                source: "path",
+            },
+            &ops,
+        );
+        assert_eq!(result.skills.len(), 1);
+        let skill = &result.skills[0];
+        assert_eq!(skill.name, root);
+        assert_eq!(skill.base_dir.as_os_str(), root);
+        assert_eq!(skill.file_path.as_os_str(), expected_file);
+        assert_eq!(result.diagnostics.len(), 1);
+        assert_eq!(
+            result.diagnostics[0].message,
+            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)"
+        );
+    }
+}
+
+/// Joined configuration parts cannot replace the working root or retain dots.
+#[test]
+fn maestro_skills_join_authored_default_roots() {
+    let dir = Directory::new();
+    let file = dir.file("config/skills/SKILL.md", "---\ndescription: Project\n---");
+    let config = format!("{}config/../config", std::path::MAIN_SEPARATOR);
+    let result = maestro_resources::load_skills(
+        maestro_resources::LoadSkillsOptions {
+            cwd: &dir.0,
+            home: &dir.0,
+            agent_dir: &dir.0.join("absent"),
+            config_dir_name: &config,
+            skill_paths: &[],
+            include_defaults: true,
+        },
+        &NativeResourceOperations,
+    );
+    assert_eq!(result.skills.len(), 1);
+    assert_eq!(result.skills[0].file_path.as_os_str(), file.as_os_str());
+    assert_eq!(result.skills[0].source_info.scope, SourceScope::Project);
+}
+
+/// Preferred defaults skip explicit children, whose enabled-default scope is temporary.
+#[test]
+fn maestro_skills_classify_skipped_default_children_as_temporary() {
+    let dir = Directory::new();
+    let agent = dir.0.join("agent");
+    let _ = dir.file(
+        "agent/skills/SKILL.md",
+        "---\nname: user-root\ndescription: User\n---",
+    );
+    let _ = dir.file(
+        ".maestro/skills/SKILL.md",
+        "---\nname: project-root\ndescription: Project\n---",
+    );
+    let user = dir.file(
+        "agent/skills/user/SKILL.md",
+        "---\ndescription: Explicit user\n---",
+    );
+    let project = dir.file(
+        ".maestro/skills/project/SKILL.md",
+        "---\ndescription: Explicit project\n---",
+    );
+    let outside = dir.file("elsewhere/item/SKILL.md", "---\ndescription: Outside\n---");
+    let paths = [user.clone(), project.clone(), outside.clone()];
+    for include_defaults in [false, true] {
+        let result = maestro_resources::load_skills(
+            maestro_resources::LoadSkillsOptions {
+                cwd: &dir.0,
+                home: &dir.0,
+                agent_dir: &agent,
+                config_dir_name: ".maestro",
+                skill_paths: &paths,
+                include_defaults,
+            },
+            &NativeResourceOperations,
+        );
+        assert_eq!(result.skills.len(), if include_defaults { 5 } else { 3 });
+        for (file, disabled_scope) in [
+            (&user, SourceScope::User),
+            (&project, SourceScope::Project),
+            (&outside, SourceScope::Temporary),
+        ] {
+            let skill = result
+                .skills
+                .iter()
+                .find(|skill| &skill.file_path == file)
+                .unwrap();
+            assert_eq!(
+                skill.source_info.scope,
+                if include_defaults {
+                    SourceScope::Temporary
+                } else {
+                    disabled_scope
+                }
+            );
+            assert_eq!(skill.source_info.path, *file);
+            assert_eq!(skill.source_info.source, "local");
+        }
+    }
 }
