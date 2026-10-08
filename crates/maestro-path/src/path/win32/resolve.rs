@@ -13,7 +13,7 @@ struct Resolution<'a> {
     device: Cow<'a, str>,
     /// The text after each operand's root, the last operand first.
     tails: Vec<&'a str>,
-    /// Whether an operand fixed the location independent of the current directory.
+    /// Whether an operand starts at a root; the operands before it add only a device.
     absolute: bool,
 }
 
@@ -102,9 +102,11 @@ impl<'a> Resolution<'a> {
 /// names are ignored. A drive-relative operand such as `C:notes` continues from
 /// the entry of `cwd.drive_directories` for that drive, or from `cwd.current`
 /// when the entry is missing or empty; a directory that starts with another
-/// drive and a backslash is replaced by the root of the drive. With no operands,
-/// or one that is empty or `.` while `cwd.current` starts with a separator,
-/// `cwd.current` is returned with `/` written as `\`.
+/// drive and a backslash is replaced by the root of the drive. A rooted operand
+/// such as `\x` takes its drive or UNC share from `cwd.current`. With no
+/// operands, `cwd.current` is returned with `/` written as `\`; so it is for a
+/// single operand that is empty or `.` when `cwd.current` starts with a
+/// separator.
 ///
 /// # Examples
 ///
@@ -115,6 +117,7 @@ impl<'a> Resolution<'a> {
 /// assert_eq!(win32::resolve(&["notes", "..\\a"], &cwd), "D:\\work\\a");
 /// assert_eq!(win32::resolve(&["C:notes"], &cwd), "C:\\Users\\notes");
 /// assert_eq!(win32::resolve(&["C:\\a", "D:\\b", "C:c"], &cwd), "C:\\a\\c");
+/// assert_eq!(win32::resolve(&["\\x"], &cwd), "D:\\x");
 /// assert_eq!(win32::resolve(&[], &cwd), "D:\\work");
 /// ```
 #[must_use]

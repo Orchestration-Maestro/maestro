@@ -210,11 +210,13 @@ pub fn parse(path: &str) -> ParsedPath<'_> {
     }
 }
 
-/// Resolve `paths` from right to left into one absolute path.
+/// Resolve `paths` from right to left into one path.
 ///
-/// Operands are applied until one is absolute; if none is, `cwd` is the base.
-/// Empty operands are ignored. With no operands, or only an empty one or `.`, a
-/// rooted working directory is returned exactly as supplied.
+/// Operands are applied until one is absolute; if none is, `cwd.current` is the
+/// base. The result is absolute unless that base is not (an empty
+/// `cwd.current`, for example), in which case it is relative, or `.` when
+/// nothing is left. Empty operands are ignored. With no operands, or only an
+/// empty one or `.`, a rooted working directory is returned exactly as supplied.
 ///
 /// # Examples
 ///
@@ -225,6 +227,9 @@ pub fn parse(path: &str) -> ParsedPath<'_> {
 /// assert_eq!(posix::resolve(&["docs", "../notes"], &cwd), "/work/home/notes");
 /// assert_eq!(posix::resolve(&["/a", "b", "/c"], &cwd), "/c");
 /// assert_eq!(posix::resolve(&[], &cwd), "/work/home");
+///
+/// let unanchored = Cwd { current: "", drive_directories: &[] };
+/// assert_eq!(posix::resolve(&[], &unanchored), ".");
 /// ```
 #[must_use]
 pub fn resolve(paths: &[&str], cwd: &Cwd<'_>) -> String {

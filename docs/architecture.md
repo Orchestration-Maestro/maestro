@@ -44,10 +44,11 @@ An authored path, the text a user, setting or file wrote, stays a `String` and
 goes through `maestro-path`; it becomes a `std::path::PathBuf` only at a
 file-system call. The utility offers `join`, `normalize`, `resolve`, `relative`,
 `dirname`, `basename` and `is_absolute` for the `posix` and `win32` flavors, plus
-a POSIX `parse`, with the results of the JavaScript runtime's `path` module. The
-crate root re-exports the flavor of the compile target. Nothing reads the process
-working directory or the environment: `resolve` and `relative` take a `Cwd`
-snapshot from the caller.
+a POSIX `parse`, with the results of the JavaScript runtime's `path` module,
+except where its result is a defect; the recorded cases of the crate's tests mark
+each one. The crate root re-exports the flavor of the compile target. Nothing
+reads the process working directory or the environment: `resolve` and `relative`
+take a `Cwd` snapshot from the caller.
 
 `maestro-path` has no internal dependencies and is the one named exception to
 leaf and exact-set rules. Any crate in the specification table may declare it as

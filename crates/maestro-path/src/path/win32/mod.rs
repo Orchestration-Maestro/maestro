@@ -44,19 +44,10 @@ fn is_namespace(server: &str) -> bool {
     matches!(server, "." | "?")
 }
 
-/// The text before the first colon of `path`, which names a device when reserved.
-///
-/// Without a colon the final character is dropped instead, so `CON.` counts as
-/// the device `CON`. A final character outside the Basic Multilingual Plane
-/// leaves no candidate: `CON😀` is not a device name.
-fn device_candidate(path: &str) -> &str {
-    match path.find(':') {
-        Some(colon) => &path[..colon],
-        None => match path.char_indices().next_back() {
-            Some((last, c)) if c.len_utf16() == 1 => &path[..last],
-            _ => "",
-        },
-    }
+/// The byte offset of the first colon of `path` when the text before it is a
+/// reserved device name.
+fn device_colon(path: &str) -> Option<usize> {
+    path.find(':').filter(|colon| is_reserved(&path[..*colon]))
 }
 
 /// How a path starts: the device kept in front of the normalized tail, where
@@ -66,7 +57,7 @@ struct Prefix<'a> {
     device: Option<Cow<'a, str>>,
     /// Byte offset of the first unnormalized component.
     tail_start: usize,
-    /// Whether the root makes the path independent of the current directory.
+    /// Whether the path starts at a root, so `..` cannot climb above it.
     absolute: bool,
 }
 
@@ -117,9 +108,7 @@ impl<'a> Prefix<'a> {
 
     /// A relative path that starts with a reserved device name and a colon.
     fn reserved_device(path: &'a str) -> Self {
-        let device = path
-            .find(':')
-            .filter(|colon| *colon > 0 && is_reserved(&path[..*colon]));
+        let device = device_colon(path);
         Self {
             device: device.map(|colon| path[..=colon].into()),
             tail_start: device.map_or(0, |colon| colon + 1),
@@ -143,9 +132,9 @@ fn reads_as_drive(path: &str, tail: &str) -> bool {
 /// separator as `\`.
 ///
 /// A drive, UNC or device root is kept in front. A relative path that could
-/// read as a drive or reserved device name after normalization gets a leading
-/// `.\` so it stays relative. A trailing separator is kept; an empty result is
-/// `.`.
+/// read as a drive after normalization, or that starts with a reserved device
+/// name and a colon, gets a leading `.\` so it stays relative. A trailing
+/// separator is kept; an empty result is `.`.
 ///
 /// # Examples
 ///
@@ -194,7 +183,7 @@ pub fn normalize(path: &str) -> String {
         return format!(".\\{tail}");
     }
     let device = prefix.device.as_deref();
-    if is_reserved(device_candidate(path)) {
+    if device_colon(path).is_some() {
         return format!(".\\{}{tail}", device.unwrap_or_default());
     }
     match (device, prefix.absolute) {
@@ -225,10 +214,12 @@ fn collapse_leading_separators(first: &str, joined: String) -> String {
 
 /// Concatenate the non-empty operands with `\` and normalize the result.
 ///
-/// Normalization is skipped when any joined component has a reserved device
-/// name before a colon: the text is kept as written, apart from `/` becoming
-/// `\`. Operands never start a new root, so a later `C:\x` does not discard
-/// what precedes it. No operands, or only empty ones, give `.`.
+/// Normalization is skipped when any backslash-separated component of the
+/// joined text has a reserved device name before its first colon: the text is
+/// kept as written, apart from `/` becoming `\`. A `/` does not separate
+/// components for that test, so `a/CON:x` is normalized. Operands never start a
+/// new root, so a later `C:\x` does not discard what precedes it. No operands,
+/// or only empty ones, give `.`.
 ///
 /// # Examples
 ///
@@ -238,6 +229,7 @@ fn collapse_leading_separators(first: &str, joined: String) -> String {
 /// assert_eq!(win32::join(&["C:\\a", "..", "b"]), "C:\\b");
 /// assert_eq!(win32::join(&["//server", "share"]), "\\\\server\\share\\");
 /// assert_eq!(win32::join(&["C:\\a", "D:\\b"]), "C:\\a\\D:\\b");
+/// assert_eq!(win32::join(&["a/CON:x", "..", "b"]), "a\\b");
 /// ```
 #[must_use]
 pub fn join(paths: &[&str]) -> String {
@@ -250,12 +242,10 @@ pub fn join(paths: &[&str]) -> String {
         return ".".to_owned();
     };
     let joined = collapse_leading_separators(first, operands.join("\\"));
-    let names_device = joined.split(SEP).any(|component| {
-        component
-            .split_once(':')
-            .is_some_and(|(name, _)| is_reserved(name))
-    });
-    if names_device {
+    if joined
+        .split(SEP)
+        .any(|component| device_colon(component).is_some())
+    {
         return joined.replace('/', "\\");
     }
     normalize(&joined)

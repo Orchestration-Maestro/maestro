@@ -205,12 +205,58 @@ fn win32_resolve_uses_supplied_drive_directories() {
 
 #[test]
 fn win32_relative_preserves_destination_spelling() {
-    check("win32_relative_preserves_destination_spelling", 54);
+    check("win32_relative_preserves_destination_spelling", 50);
 }
 
 #[test]
-fn win32_relative_returns_absolute_for_distinct_unc_hosts() {
-    check("win32_relative_returns_absolute_for_distinct_unc_hosts", 5);
+fn win32_relative_returns_absolute_for_distinct_roots() {
+    check("win32_relative_returns_absolute_for_distinct_roots", 9);
+}
+
+#[test]
+fn win32_relative_separates_drive_and_unc_roots_with_equal_components() {
+    let cwd = Cwd {
+        current: "C:\\work",
+        drive_directories: &[],
+    };
+    for (from, to, expected) in [
+        ("C:\\a\\b", "\\\\C:\\a\\b", "\\\\C:\\a\\b"),
+        ("\\\\C:\\a\\b", "C:\\a\\b", "C:\\a\\b"),
+    ] {
+        assert_eq!(win32::relative(from, to, &cwd), expected, "{from:?} {to:?}");
+    }
+}
+
+/// Resolving a relative result from the source gives the destination whenever
+/// both ends are absolute; a drive-relative source would apply its drive
+/// directory a second time.
+#[test]
+fn win32_relative_resolves_back_to_the_destination_for_every_anchored_pair() {
+    let cases: Vec<Value> = fixture()
+        .into_iter()
+        .filter(|case| case["flavor"] == "win32" && case["op"] == "relative")
+        .collect();
+    assert_eq!(cases.len(), 59, "recorded win32 relative cases");
+    let mut anchored = 0;
+    for case in &cases {
+        let inputs = Inputs::of(case);
+        let cwd = inputs.cwd();
+        let from = win32::resolve(&[inputs.args[0]], &cwd);
+        let destination = win32::resolve(&[inputs.args[1]], &cwd);
+        if !(win32::is_absolute(&from) && win32::is_absolute(&destination)) {
+            continue;
+        }
+        anchored += 1;
+        let relative = win32::relative(inputs.args[0], inputs.args[1], &cwd);
+        let rejoined = win32::resolve(&[&from, &relative], &cwd);
+        assert_eq!(
+            rejoined.to_lowercase(),
+            destination.to_lowercase(),
+            "{} {from:?} + {relative:?}",
+            case["id"]
+        );
+    }
+    assert_eq!(anchored, 58, "cases whose both ends are absolute");
 }
 
 /// Fixture rows whose inputs make the two flavors disagree, one per root operation.
@@ -292,6 +338,18 @@ fn win32_normalize_keeps_the_device_namespace_before_reserved_names() {
         ("\\\\.\\COM1:..\\x", "\\\\.\\COM1:\\x"),
         ("\\\\?\\COM1:foo", "\\\\?\\COM1:\\foo"),
         ("\\\\?\\COM1:..\\x", "\\\\?\\COM1:\\x"),
+    ] {
+        assert_eq!(win32::normalize(path), expected, "{path:?}");
+    }
+}
+
+#[test]
+fn win32_normalize_prefixes_only_reserved_names_before_a_colon() {
+    for (path, expected) in [
+        ("CONx", "CONx"),
+        ("CON😀", "CON😀"),
+        ("CON:x", ".\\CON:x"),
+        ("COM1:", ".\\COM1:."),
     ] {
         assert_eq!(win32::normalize(path), expected, "{path:?}");
     }

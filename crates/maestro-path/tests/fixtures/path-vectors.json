@@ -52,7 +52,7 @@
     "context": "cwd/env supplied to unmodified runtime path source in isolated vm; no external npm dependencies",
     "license_text": "// Permission is hereby granted, free of charge, to any person obtaining a\n// copy of this software and associated documentation files (the\n// \"Software\"), to deal in the Software without restriction, including\n// without limitation the rights to use, copy, modify, merge, publish,\n// distribute, sublicense, and/or sell copies of the Software, and to permit\n// persons to whom the Software is furnished to do so, subject to the\n// following conditions:\n//\n// The above copyright notice and this permission notice shall be included\n// in all copies or substantial portions of the Software.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS\n// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN\n// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\n// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR\n// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE\n// USE OR OTHER DEALINGS IN THE SOFTWARE.\n",
     "case_count": 1490,
-    "corrections": "Only cases with reference_expected differ; expected is the required result. Fourteen rows differ: three root-parent parse rows, four cross-server relative rows and seven basename rows whose runtime result kept the trailing separators of a partly matched suffix.",
+    "corrections": "Only cases with reference_expected differ; expected is the required result. Forty-eight rows differ: three root-parent parse rows, four cross-server relative rows, four cross-share relative rows, seven basename rows whose runtime result kept the trailing separators of a partly matched suffix, and thirty Windows normalize rows whose runtime result prefixed a name with no colon (a reserved name plus one more character).",
     "drive_keys": "Windows per-drive keys are ASCII case-insensitive; the input snapshot stores canonical =X: keys.",
     "test_mapping": "test names are functions in crates/maestro-path/tests/path_behavior.rs"
   },
@@ -6245,11 +6245,12 @@
       ],
       "cwd": "/work/home",
       "drives": {},
-      "expected": "..\\baz",
+      "expected": "\\\\foo\\baz\\",
       "origins": [
         "test-path-relative.js:63"
       ],
-      "test": "win32_relative_preserves_destination_spelling"
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
+      "reference_expected": "..\\baz"
     },
     {
       "id": "p0442",
@@ -6261,11 +6262,12 @@
       ],
       "cwd": "/work/home",
       "drives": {},
-      "expected": "..\\baz-quux",
+      "expected": "\\\\foo\\baz-quux\\",
       "origins": [
         "test-path-relative.js:63"
       ],
-      "test": "win32_relative_preserves_destination_spelling"
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
+      "reference_expected": "..\\baz-quux"
     },
     {
       "id": "p0443",
@@ -7205,12 +7207,13 @@
       "args": [
         "COM9."
       ],
-      "expected": ".\\COM9.",
+      "expected": "COM9.",
       "origins": [
         "test-path-win32-normalize-device-names.js:113",
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM9."
     },
     {
       "id": "p0505",
@@ -17990,11 +17993,12 @@
       ],
       "cwd": "C:\\work\\home",
       "drives": {},
-      "expected": "..\\..\\other\\b",
+      "expected": "\\\\host\\other\\b",
       "origins": [
         "boundary:relative"
       ],
-      "test": "win32_relative_preserves_destination_spelling"
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
+      "reference_expected": "..\\..\\other\\b"
     },
     {
       "id": "p1262",
@@ -18042,7 +18046,7 @@
       "origins": [
         "boundary:relative"
       ],
-      "test": "win32_relative_returns_absolute_for_distinct_unc_hosts",
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
       "reference_expected": "..\\..\\..\\bar\\share\\x"
     },
     {
@@ -18059,7 +18063,7 @@
       "origins": [
         "boundary:relative"
       ],
-      "test": "win32_relative_returns_absolute_for_distinct_unc_hosts"
+      "test": "win32_relative_returns_absolute_for_distinct_roots"
     },
     {
       "id": "p1266",
@@ -18071,11 +18075,12 @@
       ],
       "cwd": "C:\\work\\home",
       "drives": {},
-      "expected": "..\\..\\other\\x",
+      "expected": "\\\\foo\\other\\x",
       "origins": [
         "boundary:relative"
       ],
-      "test": "win32_relative_preserves_destination_spelling"
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
+      "reference_expected": "..\\..\\other\\x"
     },
     {
       "id": "p1267",
@@ -18091,7 +18096,7 @@
       "origins": [
         "boundary:unc_unicode_roots"
       ],
-      "test": "win32_relative_returns_absolute_for_distinct_unc_hosts",
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
       "reference_expected": "..\\..\\..\\bar\\share\\İ"
     },
     {
@@ -18108,7 +18113,7 @@
       "origins": [
         "boundary:unc_unicode_roots"
       ],
-      "test": "win32_relative_returns_absolute_for_distinct_unc_hosts",
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
       "reference_expected": "..\\..\\..\\bar\\share\\İ"
     },
     {
@@ -18125,7 +18130,7 @@
       "origins": [
         "boundary:unc_unicode_roots"
       ],
-      "test": "win32_relative_returns_absolute_for_distinct_unc_hosts",
+      "test": "win32_relative_returns_absolute_for_distinct_roots",
       "reference_expected": "..\\..\\..\\İhost\\share\\x"
     },
     {
@@ -18261,11 +18266,12 @@
       "args": [
         "CON."
       ],
-      "expected": ".\\CON.",
+      "expected": "CON.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\CON."
     },
     {
       "id": "p1279",
@@ -18352,11 +18358,12 @@
       "args": [
         "PRN."
       ],
-      "expected": ".\\PRN.",
+      "expected": "PRN.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\PRN."
     },
     {
       "id": "p1286",
@@ -18443,11 +18450,12 @@
       "args": [
         "AUX."
       ],
-      "expected": ".\\AUX.",
+      "expected": "AUX.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\AUX."
     },
     {
       "id": "p1293",
@@ -18534,11 +18542,12 @@
       "args": [
         "NUL."
       ],
-      "expected": ".\\NUL.",
+      "expected": "NUL.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\NUL."
     },
     {
       "id": "p1300",
@@ -18612,11 +18621,12 @@
       "args": [
         "COM1."
       ],
-      "expected": ".\\COM1.",
+      "expected": "COM1.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM1."
     },
     {
       "id": "p1306",
@@ -18703,11 +18713,12 @@
       "args": [
         "COM2."
       ],
-      "expected": ".\\COM2.",
+      "expected": "COM2.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM2."
     },
     {
       "id": "p1313",
@@ -18794,11 +18805,12 @@
       "args": [
         "COM3."
       ],
-      "expected": ".\\COM3.",
+      "expected": "COM3.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM3."
     },
     {
       "id": "p1320",
@@ -18885,11 +18897,12 @@
       "args": [
         "COM4."
       ],
-      "expected": ".\\COM4.",
+      "expected": "COM4.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM4."
     },
     {
       "id": "p1327",
@@ -18976,11 +18989,12 @@
       "args": [
         "COM5."
       ],
-      "expected": ".\\COM5.",
+      "expected": "COM5.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM5."
     },
     {
       "id": "p1334",
@@ -19067,11 +19081,12 @@
       "args": [
         "COM6."
       ],
-      "expected": ".\\COM6.",
+      "expected": "COM6.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM6."
     },
     {
       "id": "p1341",
@@ -19158,11 +19173,12 @@
       "args": [
         "COM7."
       ],
-      "expected": ".\\COM7.",
+      "expected": "COM7.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM7."
     },
     {
       "id": "p1348",
@@ -19249,11 +19265,12 @@
       "args": [
         "COM8."
       ],
-      "expected": ".\\COM8.",
+      "expected": "COM8.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM8."
     },
     {
       "id": "p1355",
@@ -19392,11 +19409,12 @@
       "args": [
         "LPT1."
       ],
-      "expected": ".\\LPT1.",
+      "expected": "LPT1.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT1."
     },
     {
       "id": "p1366",
@@ -19483,11 +19501,12 @@
       "args": [
         "LPT2."
       ],
-      "expected": ".\\LPT2.",
+      "expected": "LPT2.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT2."
     },
     {
       "id": "p1373",
@@ -19574,11 +19593,12 @@
       "args": [
         "LPT3."
       ],
-      "expected": ".\\LPT3.",
+      "expected": "LPT3.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT3."
     },
     {
       "id": "p1380",
@@ -19665,11 +19685,12 @@
       "args": [
         "LPT4."
       ],
-      "expected": ".\\LPT4.",
+      "expected": "LPT4.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT4."
     },
     {
       "id": "p1387",
@@ -19756,11 +19777,12 @@
       "args": [
         "LPT5."
       ],
-      "expected": ".\\LPT5.",
+      "expected": "LPT5.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT5."
     },
     {
       "id": "p1394",
@@ -19847,11 +19869,12 @@
       "args": [
         "LPT6."
       ],
-      "expected": ".\\LPT6.",
+      "expected": "LPT6.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT6."
     },
     {
       "id": "p1401",
@@ -19938,11 +19961,12 @@
       "args": [
         "LPT7."
       ],
-      "expected": ".\\LPT7.",
+      "expected": "LPT7.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT7."
     },
     {
       "id": "p1408",
@@ -20029,11 +20053,12 @@
       "args": [
         "LPT8."
       ],
-      "expected": ".\\LPT8.",
+      "expected": "LPT8.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT8."
     },
     {
       "id": "p1415",
@@ -20107,11 +20132,12 @@
       "args": [
         "LPT9."
       ],
-      "expected": ".\\LPT9.",
+      "expected": "LPT9.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT9."
     },
     {
       "id": "p1421",
@@ -20185,11 +20211,12 @@
       "args": [
         "COM¹."
       ],
-      "expected": ".\\COM¹.",
+      "expected": "COM¹.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM¹."
     },
     {
       "id": "p1427",
@@ -20263,11 +20290,12 @@
       "args": [
         "COM²."
       ],
-      "expected": ".\\COM².",
+      "expected": "COM².",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM²."
     },
     {
       "id": "p1433",
@@ -20341,11 +20369,12 @@
       "args": [
         "COM³."
       ],
-      "expected": ".\\COM³.",
+      "expected": "COM³.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM³."
     },
     {
       "id": "p1439",
@@ -20419,11 +20448,12 @@
       "args": [
         "LPT¹."
       ],
-      "expected": ".\\LPT¹.",
+      "expected": "LPT¹.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT¹."
     },
     {
       "id": "p1445",
@@ -20497,11 +20527,12 @@
       "args": [
         "LPT²."
       ],
-      "expected": ".\\LPT².",
+      "expected": "LPT².",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT²."
     },
     {
       "id": "p1451",
@@ -20575,11 +20606,12 @@
       "args": [
         "LPT³."
       ],
-      "expected": ".\\LPT³.",
+      "expected": "LPT³.",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT³."
     },
     {
       "id": "p1457",
@@ -20692,11 +20724,12 @@
       "args": [
         "COM10"
       ],
-      "expected": ".\\COM10",
+      "expected": "COM10",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\COM10"
     },
     {
       "id": "p1466",
@@ -20861,11 +20894,12 @@
       "args": [
         "LPT10"
       ],
-      "expected": ".\\LPT10",
+      "expected": "LPT10",
       "origins": [
         "boundary:reserved_names"
       ],
-      "test": "win32_normalize_handles_drives_unc_and_reserved_names"
+      "test": "win32_normalize_handles_drives_unc_and_reserved_names",
+      "reference_expected": ".\\LPT10"
     },
     {
       "id": "p1479",

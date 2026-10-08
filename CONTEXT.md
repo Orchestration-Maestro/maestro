@@ -104,7 +104,7 @@ are later scope, not active foundation concepts.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context.
 - **Export:** Session document serialization shared with application operations.
 - **Terminal toolkit:** Terminal components in `maestro-tui` with no internal dependency beyond the foundation utility, without application selectors or framework/highlighting engines.
-- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit.
+- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit and, optionally, the foundation utility.
 - **Grapheme:** A user-perceived character cluster, indivisible when text is wrapped, truncated or sliced; escapes inside it never split it.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
 - **Image protocol:** The terminal's Kitty or iTerm2 inline image transport, distinct from image file format.
