@@ -168,7 +168,8 @@ Shared-workflow changes require one separate issue and clone in maestro-rust-wor
 ## Crates and delivery order
 
 The table declares each crate's one job, allowed internal dependencies and layer.
-An em dash means no internal dependencies.
+An em dash means no internal dependencies apart from the optional foundation
+utility described below.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
@@ -199,7 +200,20 @@ An em dash means no internal dependencies.
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime` | 6 |
 
-The graph contains 26 crates and 62 permitted internal dependency edges; eight crates remain leaves.
+`maestro-path` is the foundation utility for lexical path strings. It sits below
+layer 0, has no internal dependencies, and exposes platform-independent path
+operations. Native crates may depend on it without changing their delivery layer.
+This optional utility edge is ignored when evaluating leaf status and exact
+direct-dependency sets; every other dependency rule, including cycle and internal
+dev-dependency checks, still applies. The guest authoring crate
+(`maestro-extensions-wasm`), component runtime adapter
+(`maestro-extensions-wasmtime`) and terminal scenario harness
+(`maestro-test-terminal`) are excluded from this permission.
+
+The graph contains 27 crates: the 26 table entries plus the foundation utility.
+It permits 85 internal production dependency edges: 62 table edges plus 23
+optional utility edges. Nine crates are leaves when utility edges are ignored,
+including the utility itself. The utility is delivered before its first consumer.
 
 ### Crate order
 
