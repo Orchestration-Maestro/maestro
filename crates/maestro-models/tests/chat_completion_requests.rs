@@ -24,7 +24,10 @@ use chat::{TestResult, context, model, rows};
 use child_process::{child_case, rerun};
 use maestro_models::providers::chat::openai_completions::ResolvedOpenAICompletionsCompat;
 use maestro_models::providers::chat::openai_completions::messages::convert_messages;
-use maestro_models::{ModelCompat, OpenAICompletionsCompat, StopReason, get_model};
+use maestro_models::{
+    Model, ModelCompat, OpenAICompletionsCompat, ProviderResponse, StopReason, StreamOptions,
+    get_model,
+};
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 
@@ -211,8 +214,10 @@ async fn send_numbers(
     let seen: Arc<Mutex<Vec<Value>>> = Arc::default();
     let kept = Arc::clone(&seen);
     common.on_payload = Some(Arc::new(move |payload, _| {
-        kept.lock().map(|mut kept| kept.push(payload)).ok();
-        Box::pin(std::future::ready(Ok(replacement.clone())))
+        kept.lock().map(|mut kept| kept.push(payload.clone())).ok();
+        Box::pin(std::future::ready(Ok(replacement
+            .clone()
+            .unwrap_or(payload))))
     }));
     let outcome = transport::finish(model, history, common).await?;
     assert!(
@@ -263,6 +268,56 @@ fn maestro_chat_preserves_numeric_options() -> TestResult {
     })
 }
 
+/// Send one call whose payload hook turns the payload it receives into the one to send; return
+/// the body that went out.
+async fn send_through_hook(
+    hook: impl Fn(Value) -> Value + Send + Sync + 'static,
+) -> TestResult<Value> {
+    let target = transport::transport(vec![transport::Attempt::success()]);
+    let (model, history, mut common) = transport::call_inputs(&target)?;
+    common.temperature = Some(0.25);
+    common.on_payload = Some(Arc::new(move |payload, _| {
+        Box::pin(std::future::ready(Ok(hook(payload))))
+    }));
+    let outcome = transport::finish(model, history, common).await?;
+    assert!(
+        matches!(outcome.stop_reason, StopReason::Stop),
+        "{:?}",
+        outcome.error
+    );
+    Ok(serde_json::from_slice(&target.first_request()?.1)?)
+}
+
+#[test]
+fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
+    chat::block_on(false, async {
+        let unchanged = send_through_hook(|payload| payload).await?;
+        assert_eq!(unchanged["temperature"], json!(0.25));
+        assert_eq!(unchanged["model"], "model");
+
+        let edited = send_through_hook(|mut payload| {
+            payload["temperature"] = json!(0.75);
+            payload
+        })
+        .await?;
+        let mut expected = unchanged;
+        expected["temperature"] = json!(0.75);
+        assert_eq!(
+            edited, expected,
+            "an edit made in place reaches the request"
+        );
+
+        let replacement = json!({"model": "replaced", "temperature": 0.5});
+        let sent = send_through_hook({
+            let replacement = replacement.clone();
+            move |_| replacement.clone()
+        })
+        .await?;
+        assert_eq!(sent, replacement, "a new payload replaces the original");
+        Ok(())
+    })
+}
+
 #[test]
 fn maestro_chat_selects_reasoning_payloads() -> TestResult {
     chat::block_on(false, async {
@@ -305,14 +360,6 @@ fn maestro_chat_preserves_tool_declarations() -> TestResult {
     })
 }
 
-/// The tool-streaming mark a catalogued z.ai model carries.
-fn tool_stream_mark(model: &maestro_models::Model) -> Option<bool> {
-    match &model.compat {
-        Some(ModelCompat::OpenAICompletions(compat)) => compat.zai_tool_stream,
-        _ => None,
-    }
-}
-
 /// Whether a request for `model` with or without tools asks the provider to stream tool calls.
 async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -> TestResult<bool> {
     let ping = json!({"name": "ping", "description": "Ping tool", "parameters": {
@@ -331,20 +378,6 @@ async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -
 #[test]
 fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
     chat::block_on(false, async {
-        for (id, marked) in [
-            ("glm-5.1", Some(true)),
-            ("glm-4.7", Some(true)),
-            ("glm-5-turbo", Some(true)),
-            ("glm-4.5-air", None),
-        ] {
-            let model = get_model("zai", id).ok_or(id)?;
-            assert_eq!(
-                tool_stream_mark(&model),
-                marked,
-                "{id} is marked in the catalog"
-            );
-        }
-
         let supported = get_model("zai", "glm-5.1").ok_or("glm-5.1")?;
         assert!(
             requests_tool_stream(&supported, true).await?,
@@ -498,12 +531,42 @@ fn maestro_chat_preserves_gateway_authorization() -> TestResult {
     })
 }
 
+/// What the hooks of one call received, in the order they ran.
+#[derive(Default)]
+struct HookRecord {
+    calls: Mutex<Vec<(&'static str, Arc<Model>)>>,
+    payloads: Mutex<Vec<Value>>,
+    responses: Mutex<Vec<ProviderResponse>>,
+}
+
+/// Append to a recorded list.
+fn record<T>(list: &Mutex<Vec<T>>, item: T) {
+    if let Ok(mut list) = list.lock() {
+        list.push(item);
+    }
+}
+
+/// Install hooks that record what they receive and change nothing.
+fn record_hooks(common: &mut StreamOptions) -> Arc<HookRecord> {
+    let seen = Arc::new(HookRecord::default());
+    let on_payload = Arc::clone(&seen);
+    common.on_payload = Some(Arc::new(move |payload, model| {
+        record(&on_payload.calls, ("payload", model));
+        record(&on_payload.payloads, payload.clone());
+        Box::pin(std::future::ready(Ok(payload)))
+    }));
+    let on_response = Arc::clone(&seen);
+    common.on_response = Some(Arc::new(move |response, model| {
+        record(&on_response.calls, ("response", model));
+        record(&on_response.responses, response);
+        Box::pin(std::future::ready(Ok(())))
+    }));
+    seen
+}
+
 #[test]
 fn maestro_chat_observes_callback_boundaries() -> TestResult {
     chat::block_on(true, async {
-        use maestro_models::ProviderResponse;
-        use std::sync::{Arc, Mutex};
-
         assert_rows(FIXTURE, "maestro_chat_observes_callback_boundaries").await?;
 
         let target = transport::transport(vec![
@@ -515,32 +578,19 @@ fn maestro_chat_observes_callback_boundaries() -> TestResult {
             ),
         ]);
         let (model, history, mut common) = transport::call_inputs(&target)?;
-        let log: Arc<Mutex<Vec<String>>> = Arc::default();
-        let payloads: Arc<Mutex<Vec<Value>>> = Arc::default();
-        let responses: Arc<Mutex<Vec<ProviderResponse>>> = Arc::default();
-        let (seen, kept) = (Arc::clone(&log), Arc::clone(&payloads));
-        common.on_payload = Some(Arc::new(move |payload, model| {
-            seen.lock()
-                .map(|mut log| log.push(format!("payload for {}", model.id)))
-                .ok();
-            kept.lock().map(|mut kept| kept.push(payload)).ok();
-            Box::pin(std::future::ready(Ok(None)))
-        }));
-        let (seen, kept) = (Arc::clone(&log), Arc::clone(&responses));
-        common.on_response = Some(Arc::new(move |response, model| {
-            seen.lock()
-                .map(|mut log| log.push(format!("response for {}", model.id)))
-                .ok();
-            kept.lock().map(|mut kept| kept.push(response)).ok();
-            Box::pin(std::future::ready(Ok(())))
-        }));
+        let seen = record_hooks(&mut common);
         transport::finish(model, history, common).await?;
         assert_eq!(target.attempts(), 2, "the first response was retried");
-        assert_eq!(
-            *log.lock().map_err(|e| e.to_string())?,
-            ["payload for model", "response for model"]
+
+        let calls = seen.calls.lock().map_err(|e| e.to_string())?;
+        let order: Vec<_> = calls.iter().map(|(hook, _)| *hook).collect();
+        assert_eq!(order, ["payload", "response"]);
+        assert_eq!(calls[0].1.id, "model");
+        assert!(
+            Arc::ptr_eq(&calls[0].1, &calls[1].1),
+            "both hooks see the one model the request holds"
         );
-        let responses = responses.lock().map_err(|e| e.to_string())?;
+        let responses = seen.responses.lock().map_err(|e| e.to_string())?;
         assert_eq!(responses.len(), 1, "retry intermediates are not reported");
         assert_eq!(responses[0].status.to_bits(), 200.0_f64.to_bits());
         assert_eq!(
@@ -550,7 +600,7 @@ fn maestro_chat_observes_callback_boundaries() -> TestResult {
         let sent = target.requests.lock().map_err(|e| e.to_string())?;
         let body: Value = serde_json::from_slice(&sent[0].body)?;
         assert_eq!(
-            payloads.lock().map_err(|e| e.to_string())?[0],
+            seen.payloads.lock().map_err(|e| e.to_string())?[0],
             body,
             "the hook sees the sent payload"
         );

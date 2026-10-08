@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use super::failure::status_failure;
 use super::runtime::{Raced, race, sleep, unit_random};
-use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, client};
+use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, TextDecoder, client};
 use crate::{Cancellation, StreamOptions};
 
 /// Milliseconds a response may take to start before the attempt times out.
@@ -132,20 +132,22 @@ async fn read_text(
     use futures_util::StreamExt;
 
     let mut body = response.body;
-    let mut bytes = Vec::new();
+    let mut decoder = TextDecoder::default();
+    let mut text = String::new();
     let reading = async {
         while let Some(chunk) = body.next().await {
             match chunk {
-                Ok(chunk) => bytes.extend(chunk),
+                Ok(chunk) => text.push_str(&decoder.decode(&chunk)),
                 Err(error) => return Some(error.to_string()),
             }
         }
+        text.extend(decoder.finish());
         None
     };
     match race(reading, None, signal).await {
         Raced::Cancelled => Err(RequestFailure::aborted()),
         Raced::Done(Some(failure)) => Ok(failure),
-        Raced::Done(None) | Raced::TimedOut => Ok(String::from_utf8_lossy(&bytes).into_owned()),
+        Raced::Done(None) | Raced::TimedOut => Ok(text),
     }
 }
 

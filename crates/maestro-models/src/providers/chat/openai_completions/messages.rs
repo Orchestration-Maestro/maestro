@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
 use crate::arguments::json_parse::whitespace;
-use crate::providers::json_text::{compact_json, is_truthy};
+use crate::providers::json_text::{compact_object, is_truthy};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, JsonObject, Message, Model,
     ModelInput, ThinkingContent, ToolCall, ToolResultMessage, UserBlock, UserContent, UserMessage,
@@ -142,12 +142,14 @@ pub enum ChatCompletionMessageParam {
     },
     /// An assistant turn.
     Assistant {
-        /// Assistant content; `null` when only tool calls are present.
+        /// Assistant content: text or parts when the turn has any, an empty string for tool-only
+        /// turns of endpoints that require an assistant message after tool results, else `null`.
         content: Option<ChatCompletionContent>,
         /// Requested function calls.
         #[serde(skip_serializing_if = "Vec::is_empty")]
         tool_calls: Vec<ChatCompletionMessageToolCall>,
-        /// Reasoning replay fields named by the endpoint.
+        /// Reasoning replay fields: the field that carried earlier reasoning, `reasoning_details`
+        /// and `reasoning_content`, each only where it applies.
         #[serde(flatten)]
         extension_fields: JsonObject,
     },
@@ -241,7 +243,9 @@ fn bridge() -> ChatCompletionMessageParam {
     }
 }
 
-/// Rewrite an identifier into the form the protocol accepts.
+/// An identifier containing `|` is cut there, every character outside `[A-Za-z0-9_-]` becomes
+/// one `_` per UTF-16 unit and the result is limited to 40 units. Any other identifier is kept,
+/// except that the `openai` provider limits it to 40 units at a character boundary.
 fn normalize_tool_call_id(id: &str, provider: &str) -> String {
     if let Some((call_id, _)) = id.split_once('|') {
         return call_id
@@ -296,9 +300,9 @@ fn user_part(block: &UserBlock) -> ChatCompletionContentPart {
 }
 
 /// Build a text part without a cache marker.
-fn text_part(text: &str) -> ChatCompletionContentPart {
+fn text_part(text: impl Into<String>) -> ChatCompletionContentPart {
     ChatCompletionContentPart::Text(ChatCompletionContentPartText {
-        text: text.to_owned(),
+        text: text.into(),
         cache_control: None,
     })
 }
@@ -400,9 +404,8 @@ fn replay_content(
         .map(|t| t.thinking.as_str())
         .collect();
     if !blocks.thinking.is_empty() && compat.has(Capability::RequiresThinkingAsText) {
-        let parts = std::iter::once(reasoning.join("\n\n"))
-            .chain(blocks.texts.iter().map(|text| (*text).to_owned()))
-            .map(|text| text_part(&text))
+        let parts = std::iter::once(text_part(reasoning.join("\n\n")))
+            .chain(blocks.texts.iter().map(|text| text_part(*text)))
             .collect();
         return (Some(ChatCompletionContent::Parts(parts)), fields);
     }
@@ -423,13 +426,11 @@ fn replay_content(
 
 /// Convert a tool call, rendering its arguments as compact JSON text.
 fn wire_tool_call(call: &ToolCall) -> Result<ChatCompletionMessageToolCall, DiagnosticErrorInfo> {
-    let arguments = compact_json(&Value::Object(call.arguments.clone())).map_err(|error| {
-        DiagnosticErrorInfo {
-            name: Some("Error".into()),
-            message: error.to_string(),
-            stack: None,
-            code: None,
-        }
+    let arguments = compact_object(&call.arguments).map_err(|error| DiagnosticErrorInfo {
+        name: Some("Error".into()),
+        message: error.to_string(),
+        stack: None,
+        code: None,
     })?;
     Ok(ChatCompletionMessageToolCall {
         id: call.id.clone(),

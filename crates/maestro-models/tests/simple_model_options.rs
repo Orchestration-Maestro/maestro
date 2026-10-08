@@ -29,7 +29,7 @@ mod tests {
         let payload_calls = Arc::clone(&calls);
         let on_payload: OnPayload = Arc::new(move |value, _| {
             payload_calls.fetch_add(1, Ordering::SeqCst);
-            Box::pin(async move { Ok(Some(value)) })
+            Box::pin(async move { Ok(value) })
         });
         let response_calls = Arc::clone(&calls);
         let on_response: OnResponse = Arc::new(move |_, _| {
@@ -68,12 +68,12 @@ mod tests {
         ));
         signal.abort();
         assert!(base.signal.as_ref().unwrap().is_aborted());
-        let mut cx = Context::from_waker(Waker::noop());
-        let mut payload = base.on_payload.unwrap()(serde_json::json!("kept"), model(8.0));
+        let (mut cx, shared) = (Context::from_waker(Waker::noop()), Arc::new(model(8.0)));
+        let mut payload = base.on_payload.unwrap()(serde_json::json!("kept"), shared.clone());
         assert!(
-            matches!(payload.as_mut().poll(&mut cx), Poll::Ready(Ok(Some(value))) if value == "kept")
+            matches!(payload.as_mut().poll(&mut cx), Poll::Ready(Ok(value)) if value == "kept")
         );
-        let mut response = base.on_response.unwrap()(ProviderResponse::default(), model(8.0));
+        let mut response = base.on_response.unwrap()(ProviderResponse::default(), shared);
         assert!(matches!(
             response.as_mut().poll(&mut cx),
             Poll::Ready(Ok(()))

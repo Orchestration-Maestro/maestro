@@ -35,7 +35,7 @@ struct ToolScratch {
 /// Reduces response chunks into the shared message, announcing each change.
 pub(super) struct Reducer {
     /// Model that was asked, for cost rates and the echoed-model check.
-    model: Model,
+    model: Arc<Model>,
     /// Message shared by every update and the final result.
     output: SharedAssistantMessage,
     /// Receiver of the updates.
@@ -55,12 +55,12 @@ pub(super) struct Reducer {
 impl Reducer {
     /// Start reducing into `output`, announcing changes on `stream`.
     pub(super) fn new(
-        model: &Model,
+        model: &Arc<Model>,
         output: &SharedAssistantMessage,
         stream: &AssistantMessageEventStream,
     ) -> Self {
         Self {
-            model: model.clone(),
+            model: Arc::clone(model),
             output: Arc::clone(output),
             stream: stream.clone(),
             blocks: Vec::new(),
@@ -81,7 +81,9 @@ impl Reducer {
         self.stream.push(event(Arc::clone(&self.output)));
     }
 
-    /// Reduce one decoded chunk; anything that is not an object with choices is ignored.
+    /// Reduce one decoded chunk. A value that is not an object is ignored; an object updates
+    /// the response identity and usage even without choices, and only its first choice is
+    /// reduced further.
     pub(super) fn chunk(&mut self, value: Value) {
         if !value.is_object() {
             return;
@@ -109,7 +111,8 @@ impl Reducer {
         }
     }
 
-    /// Keep the first response identifier and the first model name that differs from the request.
+    /// Keep the first non-empty response identifier and the first non-empty model name that
+    /// differs from the request.
     fn note_identity(&self, chunk: &Chunk) {
         let id = chunk.id.as_deref().filter(|id| !id.is_empty());
         let model = chunk
@@ -225,7 +228,7 @@ impl Reducer {
         position
     }
 
-    /// Append to the text block, opening it first.
+    /// Append to the text block, opening it first when it is not open.
     fn append_text(&mut self, delta: &str) {
         let position = self.text.unwrap_or_else(|| self.open_text());
         self.update(|message| {
@@ -240,7 +243,8 @@ impl Reducer {
         });
     }
 
-    /// Append to the reasoning block, opening it first and naming the field that carried it.
+    /// Append to the reasoning block, opening it first when it is not open and naming the field
+    /// that carried the opening delta.
     fn append_thinking(&mut self, field: &str, delta: &str) {
         let position = self.thinking.unwrap_or_else(|| self.open_thinking(field));
         self.update(|message| {
@@ -279,16 +283,16 @@ impl Reducer {
     fn tool_call(&mut self, call: &ToolCallDelta) {
         let (index, id, name, arguments) = (call.index, call.id(), call.name(), call.arguments());
         let position = self.tool_block(index, id, name);
-        let partial = match self.blocks.get_mut(position) {
+        let parsed = match self.blocks.get_mut(position) {
             Some(Block::Tool(scratch)) => {
                 scratch.partial_args.push_str(arguments.unwrap_or_default());
-                scratch.partial_args.clone()
+                arguments.map(|_| parsed_arguments(&scratch.partial_args))
             }
             _ => return,
         };
         self.update(|message| {
             if let Some(AssistantContent::ToolCall(tool)) = message.content.get_mut(position) {
-                complete_tool(tool, id, name, arguments.map(|_| partial.as_str()));
+                complete_tool(tool, id, name, parsed);
             }
         });
         self.announce(|partial| AssistantMessageEvent::ToolcallDelta {
@@ -391,12 +395,13 @@ impl Ended {
     }
 }
 
-/// Fill in an identifier and name that arrived late and re-parse the arguments received so far.
+/// Fill in an identifier and name that arrived late and replace the arguments when a delta
+/// carried some.
 fn complete_tool(
     tool: &mut ToolCall,
     id: Option<&str>,
     name: Option<&str>,
-    arguments: Option<&str>,
+    arguments: Option<JsonObject>,
 ) {
     if let Some(id) = id.filter(|_| tool.id.is_empty()) {
         tool.id = id.to_owned();
@@ -405,7 +410,7 @@ fn complete_tool(
         tool.name = name.to_owned();
     }
     if let Some(arguments) = arguments {
-        tool.arguments = parsed_arguments(arguments);
+        tool.arguments = arguments;
     }
 }
 

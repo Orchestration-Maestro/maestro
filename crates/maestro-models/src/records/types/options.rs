@@ -2,7 +2,8 @@
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
 use crate::providers::http::Fetch;
 use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize, Serializer};
 /// Represent the accepted reasoning levels, with Off only on model selection.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
@@ -64,7 +65,7 @@ pub struct ThinkingBudgets {
     pub high: Option<f64>,
 }
 /// Select none, short or long cache retention.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CacheRetention {
     /// None.
@@ -153,8 +154,8 @@ pub struct SimpleStreamOptions {
 }
 
 /// Select whether and which tool the model must call.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(from = "ToolChoiceWire", into = "ToolChoiceWire")]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(from = "ToolChoiceWire")]
 pub enum ToolChoice {
     /// Let the model decide.
     Auto,
@@ -170,7 +171,7 @@ pub enum ToolChoice {
 }
 
 /// Serialized tool choice: a mode string or a named function object.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(untagged)]
 enum ToolChoiceWire {
     /// Mode string.
@@ -185,7 +186,7 @@ enum ToolChoiceWire {
 }
 
 /// Mode strings accepted for a tool choice.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum ToolChoiceMode {
     /// Let the model decide.
@@ -197,7 +198,7 @@ enum ToolChoiceMode {
 }
 
 /// Constant `function` discriminator.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum FunctionTag {
     /// The only accepted discriminator.
@@ -205,10 +206,17 @@ enum FunctionTag {
 }
 
 /// Function reference inside a named tool choice.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct FunctionName {
     /// Function name.
     name: String,
+}
+
+/// Borrowed function reference written inside a named tool choice.
+#[derive(Serialize)]
+struct FunctionNameRef<'a> {
+    /// Function name.
+    name: &'a str,
 }
 
 impl From<ToolChoiceWire> for ToolChoice {
@@ -217,23 +225,28 @@ impl From<ToolChoiceWire> for ToolChoice {
             ToolChoiceWire::Mode(ToolChoiceMode::Auto) => Self::Auto,
             ToolChoiceWire::Mode(ToolChoiceMode::None) => Self::None,
             ToolChoiceWire::Mode(ToolChoiceMode::Required) => Self::Required,
-            ToolChoiceWire::Function { function, .. } => Self::Function {
+            ToolChoiceWire::Function {
+                r#type: FunctionTag::Function,
+                function,
+            } => Self::Function {
                 name: function.name,
             },
         }
     }
 }
 
-impl From<ToolChoice> for ToolChoiceWire {
-    fn from(choice: ToolChoice) -> Self {
-        match choice {
-            ToolChoice::Auto => Self::Mode(ToolChoiceMode::Auto),
-            ToolChoice::None => Self::Mode(ToolChoiceMode::None),
-            ToolChoice::Required => Self::Mode(ToolChoiceMode::Required),
-            ToolChoice::Function { name } => Self::Function {
-                r#type: FunctionTag::Function,
-                function: FunctionName { name },
-            },
+impl Serialize for ToolChoice {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Auto => serializer.serialize_str("auto"),
+            Self::None => serializer.serialize_str("none"),
+            Self::Required => serializer.serialize_str("required"),
+            Self::Function { name } => {
+                let mut choice = serializer.serialize_struct("ToolChoice", 2)?;
+                choice.serialize_field("type", "function")?;
+                choice.serialize_field("function", &FunctionNameRef { name })?;
+                choice.end()
+            }
         }
     }
 }

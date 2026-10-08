@@ -188,9 +188,10 @@ impl From<&Model> for ResolvedOpenAICompletionsCompat {
         let families = detect_families(model);
         let has = |family| families.contains(&family);
         let url = model.base_url.as_str();
+        let defaults = OpenAICompletionsCompat::default();
         let overrides = match &model.compat {
-            Some(ModelCompat::OpenAICompletions(overrides)) => overrides.as_ref().clone(),
-            _ => OpenAICompletionsCompat::default(),
+            Some(ModelCompat::OpenAICompletions(overrides)) => overrides.as_ref(),
+            _ => &defaults,
         };
         let router = model.provider == "openrouter";
         let max_tokens_field =
@@ -214,14 +215,14 @@ impl From<&Model> for ResolvedOpenAICompletionsCompat {
             capabilities: CAPABILITIES
                 .into_iter()
                 .filter(|capability| {
-                    overridden(*capability, &overrides)
+                    overridden(*capability, overrides)
                         .unwrap_or_else(|| detected(*capability, &families))
                 })
                 .collect(),
             max_tokens_field: overrides.max_tokens_field.unwrap_or(max_tokens_field),
             thinking_format: overrides.thinking_format.unwrap_or(thinking_format),
-            open_router_routing: overrides.open_router_routing,
-            vercel_gateway_routing: overrides.vercel_gateway_routing,
+            open_router_routing: overrides.open_router_routing.clone(),
+            vercel_gateway_routing: overrides.vercel_gateway_routing.clone(),
             cache_control_format: overrides.cache_control_format.or(cache_control_format),
         }
     }

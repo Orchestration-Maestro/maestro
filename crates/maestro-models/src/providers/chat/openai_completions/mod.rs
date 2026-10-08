@@ -9,11 +9,14 @@ mod request;
 mod sse;
 mod usage;
 
+use std::borrow::Cow;
 use std::sync::{Arc, PoisonError, RwLock};
 
 pub use compat::ResolvedOpenAICompletionsCompat;
 
-use crate::providers::http::{HttpRequest, RequestFailure, endpoint_url, send, spawn_detached};
+use crate::providers::http::{
+    HttpRequest, HttpResponse, RequestFailure, endpoint_url, send, spawn_detached,
+};
 use crate::providers::json_text::compact_json;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
@@ -34,9 +37,11 @@ const ABORTED_TEXT: &str = "Request was aborted";
 pub struct OpenAICompletionsOptions {
     /// Settings common to every protocol.
     pub common: StreamOptions,
-    /// Which tool the model must call, if any.
+    /// Whether the model may call tools, must call one, or must call a named one.
     pub tool_choice: Option<ToolChoice>,
-    /// Requested reasoning effort; absent leaves reasoning at the endpoint's default.
+    /// Requested reasoning effort. A reasoning model asked for none is told to turn reasoning
+    /// off where the endpoint's convention has an explicit switch or the model maps `off`;
+    /// a model that does not reason never receives reasoning fields.
     pub reasoning_effort: Option<ThinkingLevel>,
 }
 
@@ -55,10 +60,16 @@ pub fn stream_openai_completions(
     let output: SharedAssistantMessage = Arc::new(RwLock::new(initial_message(&model)));
     let options = options.unwrap_or_default();
     let signal = options.common.signal.clone();
-    let task = run(model, context, options, stream.clone(), Arc::clone(&output));
+    let task = run(
+        Arc::new(model),
+        context,
+        options,
+        stream.clone(),
+        Arc::clone(&output),
+    );
     if !spawn_detached(task) {
         let failure = RequestFailure::new("Streaming requires a running Tokio runtime.");
-        fail(&stream, &output, signal.as_ref(), &failure);
+        fail(&stream, &output, signal.as_ref(), failure);
     }
     stream
 }
@@ -74,9 +85,10 @@ pub fn stream_simple_openai_completions(
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let api_key = options
         .as_ref()
-        .and_then(|options| options.common.api_key.clone())
+        .and_then(|options| options.common.api_key.as_deref())
         .filter(|key| !key.is_empty())
-        .or_else(|| get_env_api_key(&model.provider))
+        .map(Cow::Borrowed)
+        .or_else(|| get_env_api_key(&model.provider).map(Cow::Owned))
         .ok_or_else(|| DiagnosticErrorInfo {
             name: Some("Error".to_owned()),
             message: format!("No API key for provider: {}", model.provider),
@@ -139,7 +151,7 @@ fn initial_message(model: &Model) -> AssistantMessage {
 
 /// Drive one invocation to its terminal update.
 async fn run(
-    model: Model,
+    model: Arc<Model>,
     context: Context,
     options: OpenAICompletionsOptions,
     stream: AssistantMessageEventStream,
@@ -147,13 +159,14 @@ async fn run(
 ) {
     let outcome = invoke(&model, &context, &options, &stream, &output).await;
     if let Err(failure) = outcome {
-        fail(&stream, &output, options.common.signal.as_ref(), &failure);
+        fail(&stream, &output, options.common.signal.as_ref(), failure);
     }
 }
 
-/// Send the request and reduce the response, ending with a done update.
+/// Send the request and reduce the response into the shared message; a normal end concludes
+/// with a done update.
 async fn invoke(
-    model: &Model,
+    model: &Arc<Model>,
     context: &Context,
     options: &OpenAICompletionsOptions,
     stream: &AssistantMessageEventStream,
@@ -164,10 +177,8 @@ async fn invoke(
     let base_url = invocation.base_url()?;
     let headers = invocation.headers(&api_key);
     let mut payload = invocation.payload()?;
-    if let Some(hook) = &options.common.on_payload
-        && let Some(replacement) = hook(payload.clone(), model.clone()).await?
-    {
-        payload = replacement;
+    if let Some(hook) = &options.common.on_payload {
+        payload = hook(payload, Arc::clone(model)).await?;
     }
     let body = compact_json(&payload).map_err(|error| RequestFailure::new(error.to_string()))?;
     let request = HttpRequest {
@@ -177,19 +188,23 @@ async fn invoke(
         body: body.into_bytes(),
         signal: options.common.signal.clone(),
     };
-    let response = send(request, &options.common).await?;
+    let HttpResponse {
+        status,
+        headers: response_headers,
+        body: response_body,
+    } = send(request, &options.common).await?;
     if let Some(hook) = &options.common.on_response {
         let observed = ProviderResponse {
-            status: f64::from(response.status),
-            headers: response.headers.clone(),
+            status: f64::from(status),
+            headers: response_headers,
         };
-        hook(observed, model.clone()).await?;
+        hook(observed, Arc::clone(model)).await?;
     }
     stream.push(AssistantMessageEvent::Start {
         partial: Arc::clone(output),
     });
     let mut reducer = Reducer::new(model, output, stream);
-    consume(response, options.common.signal.as_ref(), &mut reducer).await?;
+    consume(response_body, options.common.signal.as_ref(), &mut reducer).await?;
     reducer.finish();
     conclude(stream, output, options.common.signal.as_ref())
 }
@@ -237,7 +252,7 @@ fn fail(
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
-    failure: &RequestFailure,
+    failure: RequestFailure,
 ) {
     let (stop_reason, reason) = if signal.is_some_and(Cancellation::is_aborted) {
         (StopReason::Aborted, ErrorReason::Aborted)
@@ -247,7 +262,7 @@ fn fail(
     {
         let mut message = output.write().unwrap_or_else(PoisonError::into_inner);
         message.stop_reason = stop_reason;
-        message.error_message = Some(failure.text());
+        message.error_message = Some(failure.into_text());
     }
     stream.push(AssistantMessageEvent::Error {
         reason,

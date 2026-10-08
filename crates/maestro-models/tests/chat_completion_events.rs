@@ -19,8 +19,9 @@ mod loopback;
 #[path = "support/transport.rs"]
 mod transport;
 
-use std::sync::Arc;
+use std::future::poll_fn;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 use std::time::Duration;
 
@@ -33,6 +34,7 @@ use maestro_models::{
     SharedAssistantMessage, StopReason, StreamOptions, stream_openai_completions,
 };
 use serde_json::{Value, json};
+use tokio::sync::oneshot;
 use transport::{Attempt, call_inputs, drain, transport};
 
 const FIXTURE: &str = include_str!("fixtures/chat_completions/events.json");
@@ -155,6 +157,34 @@ fn chunks_then(
     })
 }
 
+/// The test's side of a body that waits to be released.
+struct Gate {
+    /// Resolves once the body has delivered its first chunks and waits.
+    reached: oneshot::Receiver<()>,
+    /// Lets the body deliver its last chunk.
+    release: oneshot::Sender<()>,
+}
+
+/// An attempt that delivers `head`, tells the gate it was reached, waits for the gate to
+/// release it and then delivers `rest`.
+fn gated(head: Vec<Vec<u8>>, rest: Vec<u8>) -> (Attempt, Gate) {
+    let (reached_by_body, reached) = oneshot::channel();
+    let (release, released_to_body) = oneshot::channel::<()>();
+    let halves = Arc::new(Mutex::new(Some((reached_by_body, released_to_body))));
+    let attempt = chunks_then(head, move || {
+        let halves = halves.lock().ok().and_then(|mut halves| halves.take());
+        let rest = rest.clone();
+        Box::pin(futures_util::stream::once(async move {
+            if let Some((reached, released)) = halves {
+                reached.send(()).ok();
+                released.await.ok();
+            }
+            Ok(rest)
+        }))
+    });
+    (attempt, Gate { reached, release })
+}
+
 /// Start a call over `attempt`, cancellable through `signal`.
 fn start(
     attempt: Attempt,
@@ -186,16 +216,15 @@ fn assert_only_text(message: &AssistantMessage, expected: &str) {
 /// A body that delivers `text` and then stalls until the signal aborts.
 async fn abort_while_the_body_is_pending() -> TestResult {
     let signal = Cancellation::new();
-    let stalled = chunks_then(vec![text_chunk("partial")], || {
-        Box::pin(futures_util::stream::pending())
-    });
+    let (stalled, Gate { reached, release }) = gated(vec![text_chunk("partial")], Vec::new());
     let (stream, _) = start(stalled, &signal)?;
     let trigger = signal.clone();
     tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        reached.await.ok();
         trigger.abort();
     });
     let (labels, message) = drain(&stream).await?;
+    drop(release);
     assert_eq!(
         labels,
         ["start", "text_start", "text_delta", "text_end", "error"]
@@ -237,12 +266,12 @@ async fn abort_as_the_body_ends() -> TestResult {
 
 /// Dropping the reader leaves the request running; its result still arrives.
 async fn dropped_reader_keeps_the_request_running() -> TestResult {
-    let (stream, target) = start(
-        Attempt::slow_body(Duration::from_secs(30)),
-        &Cancellation::new(),
-    )?;
+    let (held, Gate { reached, release }) = gated(Vec::new(), b"data: [DONE]\n\n".to_vec());
+    let (stream, target) = start(held, &Cancellation::new())?;
     let result = stream.result();
+    reached.await?;
     drop(stream);
+    release.send(()).map_err(|()| "the body stopped waiting")?;
     let message = result.await;
     let message = message.read().map_err(|error| error.to_string())?;
     assert!(matches!(message.stop_reason, StopReason::Stop));
@@ -331,34 +360,106 @@ async fn body_fails_midstream() -> TestResult {
     Ok(())
 }
 
-/// A body that is not valid text ends the stream with a decoding failure.
-async fn body_is_not_text() -> TestResult {
-    let garbled = Attempt::streaming(|| {
-        Box::pin(futures_util::stream::iter([
-            Ok(text_chunk("so far")),
-            Ok(vec![0xff, 0xfe, b'\n', b'\n']),
-        ]))
-    });
-    let (stream, _) = start(garbled, &Cancellation::new())?;
-    let (labels, message) = drain(&stream).await?;
-    assert_eq!(labels, ["start", "text_start", "text_delta", "error"]);
-    assert!(matches!(message.stop_reason, StopReason::Error));
-    assert!(
-        message
-            .error_message
-            .as_ref()
-            .is_some_and(|text| !text.is_empty())
-    );
-    assert_only_text(&message, "so far");
-    Ok(())
-}
-
 #[test]
 fn maestro_chat_retains_failure_context() -> TestResult {
     block_on(true, async {
         assert_rows(FIXTURE, "maestro_chat_retains_failure_context").await?;
-        body_fails_midstream().await?;
-        body_is_not_text().await
+        body_fails_midstream().await
+    })
+}
+
+/// The text a call keeps when its body arrives as `chunks`; the call must complete.
+async fn text_of_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
+    let body = chunks_then(chunks, || Box::pin(futures_util::stream::empty()));
+    let (stream, _) = start(body, &Cancellation::new())?;
+    let (labels, message) = drain(&stream).await?;
+    assert_eq!(
+        labels.last().map(String::as_str),
+        Some("done"),
+        "{:?}",
+        message.error_message
+    );
+    match &message.content[..] {
+        [AssistantContent::Text(text)] => Ok(text.text.clone()),
+        other => Err(format!("{other:?}").into()),
+    }
+}
+
+/// One event carrying `content` bytes inside the text delta, after a byte-order mark.
+fn marked_event(content: &[u8]) -> Vec<u8> {
+    let mut body = vec![0xEF, 0xBB, 0xBF];
+    body.extend(br#"data: {"id":"r","model":"model","choices":[{"index":0,"delta":{"content":""#);
+    body.extend(content);
+    body.extend(br#""}}]}"#);
+    body.extend(b"\n\n");
+    body
+}
+
+/// A leading byte-order mark is dropped, invalid bytes become replacement characters and a
+/// character cut by a chunk boundary is completed, wherever the chunks are cut.
+async fn text_is_decoded_whatever_the_chunk_boundaries() -> TestResult {
+    let mut content = "雪a".as_bytes().to_vec();
+    content.extend([0xFF]);
+    content.extend(b"b");
+    content.extend([0xE3, 0x81]);
+    content.extend(b"A");
+    let body = marked_event(&content);
+    let expected = "雪a\u{FFFD}b\u{FFFD}A";
+    assert_eq!(text_of_body(vec![body.clone()]).await?, expected);
+    for cut in 0..=body.len() {
+        let (head, tail) = body.split_at(cut);
+        let chunks = vec![head.to_vec(), tail.to_vec()];
+        assert_eq!(text_of_body(chunks).await?, expected, "cut at {cut}");
+    }
+    Ok(())
+}
+
+/// Bytes that are not text and form a blank line are an unknown field, not a failure.
+async fn undecodable_trailer_is_an_ignored_field() -> TestResult {
+    let chunks = vec![text_chunk("so far"), vec![0xFF, 0xFE, b'\n', b'\n']];
+    assert_eq!(text_of_body(chunks).await?, "so far");
+    Ok(())
+}
+
+/// The failure text of a call whose response has status 400 and a body made of `chunks`.
+async fn failure_of_error_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
+    let rejected = Attempt::streaming_with_status(400, move || {
+        Box::pin(futures_util::stream::iter(
+            chunks.clone().into_iter().map(Ok),
+        ))
+    });
+    let (stream, _) = start(rejected, &Cancellation::new())?;
+    let (_, message) = drain(&stream).await?;
+    message.error_message.ok_or_else(|| "no error text".into())
+}
+
+/// An error body is decoded like an event body: the byte-order mark is dropped, so the JSON
+/// error object is read, and bytes that are not text become replacement characters.
+async fn error_body_is_decoded_as_text() -> TestResult {
+    let mut json = vec![0xEF, 0xBB, 0xBF];
+    json.extend(br#"{"error":{"message":"rejected"}}"#);
+    for cut in 0..=json.len() {
+        let (head, tail) = json.split_at(cut);
+        let failure = failure_of_error_body(vec![head.to_vec(), tail.to_vec()]).await?;
+        assert_eq!(failure, "400 rejected", "cut at {cut}");
+    }
+    let plain = vec![
+        b"no ".to_vec(),
+        vec![0xFF],
+        b" good".to_vec(),
+        vec![0xE3, 0x81],
+    ];
+    let failure = failure_of_error_body(plain).await?;
+    assert_eq!(failure, "400 no \u{FFFD} good\u{FFFD}");
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_decodes_body_text_leniently() -> TestResult {
+    block_on(false, async {
+        text_is_decoded_whatever_the_chunk_boundaries().await?;
+        undecodable_trailer_is_an_ignored_field().await?;
+        error_body_is_decoded_as_text().await
     })
 }
 
@@ -388,66 +489,83 @@ struct WriteProbe {
     locked: AtomicUsize,
 }
 
-impl Wake for WriteProbe {
+/// Wakes the reading task after the probe has checked the message lock.
+struct ProbedWaker {
+    probe: Arc<WriteProbe>,
+    task: Waker,
+}
+
+impl Wake for ProbedWaker {
     fn wake(self: Arc<Self>) {
-        if let Some(message) = self.message.get() {
+        if let Some(message) = self.probe.message.get() {
             let counter = if message.try_write().is_ok() {
-                &self.writable
+                &self.probe.writable
             } else {
-                &self.locked
+                &self.probe.locked
             };
             counter.fetch_add(1, Ordering::Relaxed);
         }
+        self.task.wake_by_ref();
     }
 }
 
-/// An attempt that delivers text, pauses for a second, then ends the stream.
-fn paced_attempt() -> Attempt {
-    Attempt::streaming(|| {
-        let pause = futures_util::stream::once(async {
-            tokio::time::sleep(Duration::from_secs(1)).await;
-            Ok(b"data: [DONE]\n\n".to_vec())
-        });
-        Box::pin(futures_util::stream::iter([Ok(text_chunk("shared"))]).chain(pause))
+/// An attempt that delivers text and holds the end of the stream back until released.
+fn held_back_attempt() -> (Attempt, oneshot::Sender<()>) {
+    let (attempt, Gate { release, .. }) =
+        gated(vec![text_chunk("shared")], b"data: [DONE]\n\n".to_vec());
+    (attempt, release)
+}
+
+/// Wait for the next update, waking the awaiting task through the probe.
+async fn next_probed(
+    stream: &AssistantMessageEventStream,
+    probe: &Arc<WriteProbe>,
+) -> Option<AssistantMessageEvent> {
+    let mut next = Box::pin(stream.next());
+    poll_fn(|task| {
+        let waker = Waker::from(Arc::new(ProbedWaker {
+            probe: Arc::clone(probe),
+            task: task.waker().clone(),
+        }));
+        next.as_mut().poll(&mut Context::from_waker(&waker))
     })
+    .await
 }
 
 /// Read every update through a waker that probes the message lock, setting the stop reason
-/// to an error as soon as text arrives. Returns the handles the updates carried.
+/// to an error as soon as text arrives and then releasing the end of the stream. Returns the
+/// handles the updates carried.
 async fn read_with_probe(
     stream: &AssistantMessageEventStream,
     probe: &Arc<WriteProbe>,
+    release: oneshot::Sender<()>,
 ) -> TestResult<Vec<SharedAssistantMessage>> {
-    let waker = Waker::from(Arc::clone(probe));
-    let mut context = Context::from_waker(&waker);
+    let mut release = Some(release);
     let mut handles = Vec::new();
-    let mut next = Box::pin(stream.next());
-    loop {
-        match next.as_mut().poll(&mut context) {
-            Poll::Pending => tokio::time::sleep(Duration::from_millis(1)).await,
-            Poll::Ready(None) => return Ok(handles),
-            Poll::Ready(Some(event)) => {
-                let shared = handle(&event).clone();
-                probe.message.get_or_init(|| shared.clone());
-                if matches!(event, AssistantMessageEvent::TextDelta { .. }) {
-                    shared
-                        .write()
-                        .map_err(|error| error.to_string())?
-                        .stop_reason = StopReason::Error;
-                }
-                handles.push(shared);
-                next = Box::pin(stream.next());
+    while let Some(event) = next_probed(stream, probe).await {
+        let shared = handle(&event).clone();
+        probe.message.get_or_init(|| shared.clone());
+        if matches!(event, AssistantMessageEvent::TextDelta { .. }) {
+            shared
+                .write()
+                .map_err(|error| error.to_string())?
+                .stop_reason = StopReason::Error;
+            if let Some(release) = release.take() {
+                release.send(()).map_err(|()| "the body stopped waiting")?;
             }
         }
+        handles.push(shared);
     }
+    Ok(handles)
 }
 
 #[test]
 fn maestro_chat_shares_partial_observations() -> TestResult {
     block_on(true, async {
-        let (stream, _) = start(paced_attempt(), &Cancellation::new())?;
+        let (attempt, release) = held_back_attempt();
+        let (stream, _) = start(attempt, &Cancellation::new())?;
         let probe = Arc::new(WriteProbe::default());
-        let handles = read_with_probe(&stream, &probe).await?;
+        let handles = read_with_probe(&stream, &probe, release).await?;
         let result = stream.result().await;
         assert_eq!(handles.len(), 5);
         assert!(handles.iter().all(|shared| Arc::ptr_eq(shared, &result)));
@@ -471,13 +589,16 @@ fn maestro_chat_shares_partial_observations() -> TestResult {
     })
 }
 
-/// Run a paced call whose reader sets the shared message's stop reason and error text when the
-/// first text arrives, returning the update labels and the final message.
+/// Run a call whose reader sets the shared message's stop reason and error text when the first
+/// text arrives and only then lets the stream end, returning the update labels and the final
+/// message.
 async fn finish_after_edit(
     stop_reason: StopReason,
     error_message: &str,
 ) -> TestResult<(Vec<String>, AssistantMessage)> {
-    let (stream, _) = start(paced_attempt(), &Cancellation::new())?;
+    let (attempt, release) = held_back_attempt();
+    let (stream, _) = start(attempt, &Cancellation::new())?;
+    let mut release = Some(release);
     let mut labels = Vec::new();
     while let Some(event) = stream.next().await {
         let label = serde_json::to_value(&event)?["type"]
@@ -488,6 +609,10 @@ async fn finish_after_edit(
             let mut message = handle(&event).write().map_err(|error| error.to_string())?;
             message.stop_reason = stop_reason.clone();
             message.error_message = Some(error_message.to_owned());
+            drop(message);
+            if let Some(release) = release.take() {
+                release.send(()).map_err(|()| "the body stopped waiting")?;
+            }
         }
     }
     let message = stream.result().await;

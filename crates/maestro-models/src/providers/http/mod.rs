@@ -4,6 +4,7 @@ mod client;
 mod failure;
 mod retry;
 mod runtime;
+mod text;
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -17,6 +18,7 @@ use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 pub(crate) use failure::{RequestFailure, endpoint_url, stream_failure};
 pub(crate) use retry::send;
 pub(crate) use runtime::{Raced, race, spawn_detached};
+pub(crate) use text::TextDecoder;
 
 /// One HTTP attempt: method, final URL, ordered lowercase headers and body bytes.
 #[derive(Clone)]
@@ -29,7 +31,8 @@ pub struct HttpRequest {
     pub headers: IndexMap<String, String>,
     /// Request body.
     pub body: Vec<u8>,
-    /// Signal that cancels the attempt.
+    /// Signal the sender races each attempt against; a replacement client may watch it too,
+    /// but the plain default client ignores it.
     pub signal: Option<Cancellation>,
 }
 

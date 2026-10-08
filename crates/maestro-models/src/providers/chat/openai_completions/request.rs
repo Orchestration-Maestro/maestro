@@ -1,5 +1,7 @@
 //! Request construction: endpoint, headers, cache policy and the typed payload.
 
+use std::borrow::Cow;
+
 use indexmap::IndexMap;
 use serde_json::Value;
 
@@ -29,6 +31,8 @@ const SCOPE_HEADERS: [(&str, &str); 2] = [
     ("openai-organization", "OPENAI_ORG_ID"),
     ("openai-project", "OPENAI_PROJECT_ID"),
 ];
+/// Headers that carry the session identifier when the endpoint asks for affinity.
+const AFFINITY_HEADERS: [&str; 3] = ["session_id", "x-client-request-id", "x-session-affinity"];
 /// Endpoint appended to the base URL.
 pub(super) const ENDPOINT_PATH: &str = "/chat/completions";
 
@@ -53,7 +57,7 @@ impl<'a> Invocation<'a> {
         context: &'a Context,
         options: &'a OpenAICompletionsOptions,
     ) -> Self {
-        let retention = options.common.cache_retention.clone().unwrap_or_else(|| {
+        let retention = options.common.cache_retention.unwrap_or_else(|| {
             if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") {
                 CacheRetention::Long
             } else {
@@ -69,19 +73,21 @@ impl<'a> Invocation<'a> {
         }
     }
 
-    /// Choose the explicit key, then the provider's environment key, then `OPENAI_API_KEY`.
+    /// Choose the nonempty explicit key, then the provider's environment key, then
+    /// `OPENAI_API_KEY`.
     ///
     /// # Errors
     /// Fails when no key is available.
-    pub(super) fn api_key(&self) -> Result<String, RequestFailure> {
+    pub(super) fn api_key(&self) -> Result<Cow<'a, str>, RequestFailure> {
         let environment = |name: &str| std::env::var(name).ok().filter(|key| !key.is_empty());
         self.options
             .common
             .api_key
-            .clone()
+            .as_deref()
             .filter(|key| !key.is_empty())
-            .or_else(|| get_env_api_key(&self.model.provider))
-            .or_else(|| environment("OPENAI_API_KEY"))
+            .map(Cow::Borrowed)
+            .or_else(|| get_env_api_key(&self.model.provider).map(Cow::Owned))
+            .or_else(|| environment("OPENAI_API_KEY").map(Cow::Owned))
             .ok_or_else(|| {
                 RequestFailure::new(
                     "OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass it as an argument.",
@@ -93,11 +99,11 @@ impl<'a> Invocation<'a> {
     ///
     /// # Errors
     /// Fails when a placeholder variable is unset.
-    pub(super) fn base_url(&self) -> Result<String, RequestFailure> {
+    pub(super) fn base_url(&self) -> Result<Cow<'a, str>, RequestFailure> {
         if is_cloudflare_provider(&self.model.provider) {
-            Ok(resolve_cloudflare_base_url(self.model)?)
+            Ok(Cow::Owned(resolve_cloudflare_base_url(self.model)?))
         } else {
-            Ok(self.model.base_url.clone())
+            Ok(Cow::Borrowed(&self.model.base_url))
         }
     }
 
@@ -110,47 +116,38 @@ impl<'a> Invocation<'a> {
     }
 
     /// Layer headers from the model, the Copilot gateway, session affinity and the caller over
-    /// the environment's organization and project, then add the generated authorization.
-    /// Names are lowercase; later layers win.
+    /// the environment's organization and project. Names are lowercase; later layers win. The
+    /// generated bearer authorization goes beneath every layer, so any layer replaces it; for
+    /// `cloudflare-ai-gateway` it is sent as `cf-aig-authorization` above every layer.
     pub(super) fn headers(&self, api_key: &str) -> IndexMap<String, String> {
         let mut layered: IndexMap<String, String> = IndexMap::new();
-        let mut layer = |source: &IndexMap<String, String>| {
-            for (name, value) in source {
-                layered.insert(name.to_ascii_lowercase(), value.clone());
-            }
-        };
         if let Some(headers) = &self.model.headers {
-            layer(headers);
+            layer(&mut layered, copied(headers));
         }
         if self.model.provider == "github-copilot" {
             let messages = &self.context.messages;
-            layer(&build_copilot_dynamic_headers(
-                messages,
-                has_copilot_vision_input(messages),
-            ));
+            let dynamic =
+                build_copilot_dynamic_headers(messages, has_copilot_vision_input(messages));
+            layer(&mut layered, dynamic);
         }
         if let Some(session) = self.session_id().filter(|id| !id.is_empty())
             && self.compat.has(Capability::SendSessionAffinityHeaders)
         {
-            layer(
-                &["session_id", "x-client-request-id", "x-session-affinity"]
-                    .map(|name| (name.to_owned(), session.to_owned()))
-                    .into(),
-            );
+            let affinity = AFFINITY_HEADERS.map(|name| (name.to_owned(), session.to_owned()));
+            layer(&mut layered, affinity);
         }
         if let Some(headers) = &self.options.common.headers {
-            layer(headers);
+            layer(&mut layered, copied(headers));
         }
         let bearer = format!("Bearer {api_key}");
-        let gateway = self.model.provider == "cloudflare-ai-gateway";
         let mut wire = IndexMap::from([("accept".to_owned(), "application/json".to_owned())]);
         wire.extend(scope_headers());
-        if !gateway {
-            wire.insert("authorization".to_owned(), bearer.clone());
-        }
-        wire.extend(layered);
-        if gateway {
+        if self.model.provider == "cloudflare-ai-gateway" {
+            wire.extend(layered);
             wire.insert("cf-aig-authorization".to_owned(), bearer);
+        } else {
+            wire.insert("authorization".to_owned(), bearer);
+            wire.extend(layered);
         }
         wire.insert("content-type".to_owned(), "application/json".to_owned());
         wire
@@ -167,7 +164,7 @@ impl<'a> Invocation<'a> {
             apply_cache_markers(&mut messages, tools.as_deref_mut(), &marker);
         }
         let mut payload = Payload {
-            model: self.model.id.clone(),
+            model: &self.model.id,
             messages,
             stream: true,
             tool_stream: tools
@@ -176,7 +173,7 @@ impl<'a> Invocation<'a> {
                 .then_some(true)
                 .filter(|_| self.compat.has(Capability::ZaiToolStream)),
             tools,
-            tool_choice: self.options.tool_choice.clone(),
+            tool_choice: self.options.tool_choice.as_ref(),
             ..Payload::default()
         };
         self.apply_caching(&mut payload);
@@ -187,7 +184,7 @@ impl<'a> Invocation<'a> {
     }
 
     /// Convert tools; an empty list is still required while the history contains tool use.
-    fn tools(&self) -> Option<Vec<ToolParam>> {
+    fn tools(&self) -> Option<Vec<ToolParam<'a>>> {
         let strict = self.compat.has(Capability::SupportsStrictMode);
         match self.context.tools.as_deref() {
             Some(tools) if !tools.is_empty() => Some(
@@ -231,21 +228,19 @@ impl<'a> Invocation<'a> {
     }
 
     /// Set the prompt-cache key and retention.
-    fn apply_caching(&self, payload: &mut Payload) {
+    fn apply_caching<'p>(&'p self, payload: &mut Payload<'p>) {
         let long = matches!(self.retention, CacheRetention::Long)
             && self.compat.has(Capability::SupportsLongCacheRetention);
         let direct = self.model.base_url.contains("api.openai.com")
             && !matches!(self.retention, CacheRetention::None);
         if direct || long {
-            payload
-                .prompt_cache_key
-                .clone_from(&self.options.common.session_id);
+            payload.prompt_cache_key = self.options.common.session_id.as_deref();
         }
         payload.prompt_cache_retention = long.then_some("24h");
     }
 
     /// Set usage reporting, storage, the token limit and temperature.
-    fn apply_limits(&self, payload: &mut Payload) {
+    fn apply_limits(&self, payload: &mut Payload<'_>) {
         let common = &self.options.common;
         if self.compat.has(Capability::SupportsUsageInStreaming) {
             payload.stream_options = Some(IncludeUsage {
@@ -266,7 +261,7 @@ impl<'a> Invocation<'a> {
     }
 
     /// Request or disable reasoning in the endpoint's convention.
-    fn apply_reasoning(&self, payload: &mut Payload) {
+    fn apply_reasoning(&self, payload: &mut Payload<'a>) {
         let model = self.model;
         if !model.reasoning {
             return;
@@ -297,18 +292,14 @@ impl<'a> Invocation<'a> {
                         effort: self.effort_name(level),
                     }),
                     (None, Some(None)) => None,
-                    (None, Some(Some(name))) => Some(Reasoning {
-                        effort: name.clone(),
-                    }),
-                    (None, None) => Some(Reasoning {
-                        effort: "none".to_owned(),
-                    }),
+                    (None, Some(Some(name))) => Some(Reasoning { effort: name }),
+                    (None, None) => Some(Reasoning { effort: "none" }),
                 };
             }
             ThinkingFormat::Openai if self.compat.has(Capability::SupportsReasoningEffort) => {
                 payload.reasoning_effort = match effort {
                     Some(level) => Some(self.effort_name(level)),
-                    None => off.cloned().flatten(),
+                    None => off.and_then(Option::as_deref),
                 };
             }
             ThinkingFormat::Openai => {}
@@ -316,32 +307,45 @@ impl<'a> Invocation<'a> {
     }
 
     /// The provider's name for a reasoning level, or the level itself when unmapped.
-    fn effort_name(&self, level: ThinkingLevel) -> String {
+    fn effort_name(&self, level: ThinkingLevel) -> &'a str {
         self.model
             .thinking_level_map
             .as_ref()
             .and_then(|map| map.get(&ModelThinkingLevel::from(level)))
-            .cloned()
-            .flatten()
-            .unwrap_or_else(|| level_name(level).to_owned())
+            .and_then(Option::as_deref)
+            .unwrap_or_else(|| level_name(level))
     }
 
     /// Forward routing preferences to the gateways that understand them.
-    fn apply_routing(&self, payload: &mut Payload) {
+    fn apply_routing<'p>(&'p self, payload: &mut Payload<'p>) {
         if self.model.base_url.contains("openrouter.ai") {
-            payload
-                .provider
-                .clone_from(&self.compat.open_router_routing);
+            payload.provider = self.compat.open_router_routing.as_ref();
         }
         if self.model.base_url.contains("ai-gateway.vercel.sh")
             && let Some(routing) = &self.compat.vercel_gateway_routing
             && (routing.only.is_some() || routing.order.is_some())
         {
-            payload.provider_options = Some(GatewayOptions {
-                gateway: routing.clone(),
-            });
+            payload.provider_options = Some(GatewayOptions { gateway: routing });
         }
     }
+}
+
+/// Insert headers under lowercase names; a later insertion replaces an earlier one.
+fn layer(
+    layered: &mut IndexMap<String, String>,
+    source: impl IntoIterator<Item = (String, String)>,
+) {
+    for (mut name, value) in source {
+        name.make_ascii_lowercase();
+        layered.insert(name, value);
+    }
+}
+
+/// Copy the entries of a header layer that the model or caller owns.
+fn copied(source: &IndexMap<String, String>) -> impl Iterator<Item = (String, String)> + '_ {
+    source
+        .iter()
+        .map(|(name, value)| (name.clone(), value.clone()))
 }
 
 /// Organization and project headers set from the environment; blank variables send nothing.
@@ -364,10 +368,10 @@ fn level_name(level: ThinkingLevel) -> &'static str {
     }
 }
 
-/// Place cache markers on the instructions, the last tool and the last conversation text.
+/// Place cache markers on the first instruction, the last tool and the last conversation text.
 fn apply_cache_markers(
     messages: &mut [ChatCompletionMessageParam],
-    tools: Option<&mut [ToolParam]>,
+    tools: Option<&mut [ToolParam<'_>]>,
     marker: &OpenAICompatCacheControl,
 ) {
     let instruction = messages.iter_mut().find_map(|message| match message {
@@ -378,7 +382,7 @@ fn apply_cache_markers(
     if let Some(content) = instruction {
         mark_content(content, marker);
     }
-    if let Some(tool) = tools.and_then(<[ToolParam]>::last_mut) {
+    if let Some(tool) = tools.and_then(<[ToolParam<'_>]>::last_mut) {
         tool.cache_control = Some(marker.clone());
     }
     for message in messages.iter_mut().rev() {

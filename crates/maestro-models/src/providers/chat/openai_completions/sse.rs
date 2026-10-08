@@ -10,7 +10,7 @@ use serde_json::Value;
 use super::events::Reducer;
 use crate::Cancellation;
 use crate::providers::http::{
-    FetchError, HttpBody, HttpResponse, Raced, RequestFailure, race, stream_failure,
+    FetchError, HttpBody, Raced, RequestFailure, TextDecoder, race, stream_failure,
 };
 use crate::providers::json_text::is_truthy;
 
@@ -39,17 +39,23 @@ fn terminated(body: HttpBody) -> HttpBody {
 
 /// Read the response body as server-sent events, reducing each chunk until the stream ends.
 ///
+/// The body is decoded as text first (see [`TextDecoder`]), so the event decoder only ever
+/// sees valid text. A sequence still cut when the body ends is dropped: it can only belong to
+/// a last line that no blank line completes.
+///
 /// A cancelled signal ends reading quietly; the caller reports the cancellation. A body that
 /// reports an abort while the signal is unset is a failure.
 ///
 /// # Errors
-/// Fails on a transport or framing error, an undecodable event or an error payload.
+/// Fails on a transport or framing error, an event whose data is not JSON or an error payload.
 pub(super) async fn consume(
-    response: HttpResponse,
+    body: HttpBody,
     signal: Option<&Cancellation>,
     reducer: &mut Reducer,
 ) -> Result<(), RequestFailure> {
-    let mut events = terminated(response.body).eventsource();
+    let mut decoder = TextDecoder::default();
+    let text = terminated(body).map(move |chunk| chunk.map(|bytes| decoder.decode(&bytes)));
+    let mut events = text.eventsource();
     let mut done = false;
     loop {
         let item = match race(events.next(), None, signal).await {

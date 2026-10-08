@@ -1,5 +1,7 @@
 //! Failure text for requests, responses and stream error payloads.
 
+use std::borrow::Cow;
+
 use serde_json::Value;
 use url::Url;
 
@@ -31,10 +33,10 @@ impl RequestFailure {
     }
 
     /// Final text with the upstream explanation on its own line.
-    pub(crate) fn text(&self) -> String {
-        match &self.raw {
+    pub(crate) fn into_text(self) -> String {
+        match self.raw {
             Some(raw) => format!("{}\n{raw}", self.message),
-            None => self.message.clone(),
+            None => self.message,
         }
     }
 }
@@ -54,16 +56,16 @@ fn json_text(value: &Value) -> String {
 fn describe(status: Option<u16>, error: Option<&Value>, body: Option<&str>) -> String {
     let detail = match error.filter(|error| is_truthy(error)) {
         Some(error) => match error.get("message").filter(|message| is_truthy(message)) {
-            Some(Value::String(message)) => Some(message.clone()),
-            Some(message) => Some(json_text(message)),
-            None => Some(json_text(error)),
+            Some(Value::String(message)) => Some(Cow::Borrowed(message.as_str())),
+            Some(message) => Some(Cow::Owned(json_text(message))),
+            None => Some(Cow::Owned(json_text(error))),
         },
-        None => body.filter(|text| !text.is_empty()).map(str::to_owned),
+        None => body.filter(|text| !text.is_empty()).map(Cow::Borrowed),
     };
     match (status.filter(|status| *status != 0), detail) {
         (Some(status), Some(detail)) => format!("{status} {detail}"),
         (Some(status), None) => format!("{status} status code (no body)"),
-        (None, Some(detail)) => detail,
+        (None, Some(detail)) => detail.into_owned(),
         (None, None) => "(no status code or body)".to_owned(),
     }
 }

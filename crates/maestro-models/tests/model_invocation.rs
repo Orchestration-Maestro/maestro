@@ -273,7 +273,7 @@ mod tests {
             transport: Some(Transport::WebsocketCached),
             cache_retention: Some(CacheRetention::Long),
             session_id: Some("session".into()),
-            on_payload: Some(Arc::new(|_, _| Box::pin(async { Ok(None) }))),
+            on_payload: Some(Arc::new(|payload, _| Box::pin(async { Ok(payload) }))),
             on_response: Some(Arc::new(|_, _| Box::pin(async { Ok(()) }))),
             headers: Some([("x".into(), "y".into())].into()),
             timeout_ms: Some(123.0),
@@ -447,18 +447,18 @@ mod tests {
         let response_calls = Arc::clone(calls);
         let on_payload: OnPayload = Arc::new(move |payload, descriptor| {
             payload_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert_eq!(descriptor, model("hooks"));
+            assert_eq!(*descriptor, model("hooks"));
             Box::pin(async move {
                 match payload["mode"].as_str().unwrap() {
-                    "replace" => Ok(Some(serde_json::json!({"stamp":2}))),
+                    "replace" => Ok(serde_json::json!({"stamp":2})),
                     "payload_error" => Err(error("payload failure")),
-                    _ => Ok(None),
+                    _ => Ok(payload),
                 }
             })
         });
         let on_response: OnResponse = Arc::new(move |response, descriptor| {
             response_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert_eq!(descriptor, model("hooks"));
+            assert_eq!(*descriptor, model("hooks"));
             assert_eq!(
                 response.headers.get("x").map(String::as_str),
                 Some("response")
@@ -482,11 +482,11 @@ mod tests {
                 let options = options.unwrap().common;
                 let mode = conversation.system_prompt.unwrap();
                 let payload = serde_json::json!({"mode":mode,"stamp":1});
-                let replacement = ready(options.on_payload.unwrap()(
-                    payload.clone(),
-                    descriptor.clone(),
+                let descriptor = Arc::new(descriptor);
+                let submitted = ready(options.on_payload.unwrap()(
+                    payload,
+                    Arc::clone(&descriptor),
                 ))?;
-                let submitted = replacement.unwrap_or(payload);
                 ready(options.on_response.unwrap()(
                     ProviderResponse {
                         status: if mode == "response_error" {

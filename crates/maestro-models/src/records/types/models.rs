@@ -2,7 +2,7 @@
 use super::{Api, Provider, ThinkingLevelMap};
 use serde::{Deserialize, Serialize};
 /// Select the accepted completion token-limit field.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MaxTokensField {
     /// `MaxCompletionTokens`.
@@ -11,7 +11,7 @@ pub enum MaxTokensField {
     MaxTokens,
 }
 /// Select the six accepted reasoning payload conventions.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ThinkingFormat {
     /// Openai.
@@ -29,7 +29,7 @@ pub enum ThinkingFormat {
     QwenChatTemplate,
 }
 /// Select the supported prompt-cache marker convention.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CacheControlFormat {
     /// Anthropic.

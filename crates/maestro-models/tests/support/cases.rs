@@ -158,11 +158,11 @@ fn hook_failure(message: &str) -> DiagnosticErrorInfo {
 fn payload_hook(case: &Value, log: &Log) -> OnPayload {
     let (log, replacement) = (log.clone(), case.get("replace").cloned());
     let failure = case["payloadError"].as_str().map(str::to_owned);
-    Arc::new(move |_, _| {
+    Arc::new(move |payload, _| {
         log.note("payload");
         let outcome = match &failure {
             Some(message) => Err(hook_failure(message)),
-            None => Ok(replacement.clone()),
+            None => Ok(replacement.clone().unwrap_or(payload)),
         };
         Box::pin(std::future::ready(outcome))
     })

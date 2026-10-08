@@ -272,6 +272,7 @@ impl Registration {
         let outer = AssistantMessageEventStream::new();
         let producer = outer.clone();
         let registration = Arc::clone(self);
+        let model = Arc::new(model);
         let future = Box::pin(async move {
             if let Err(error) = registration
                 .produce(producer.clone(), &model, (context, options, step))
@@ -305,7 +306,7 @@ impl Registration {
     async fn produce(
         &self,
         outer: AssistantMessageEventStream,
-        model: &Model,
+        model: &Arc<Model>,
         invocation: (
             Context,
             Option<FauxResponseOptions>,
@@ -320,7 +321,7 @@ impl Registration {
                     status: 200.0,
                     headers: std::collections::BTreeMap::default(),
                 },
-                model.clone(),
+                Arc::clone(model),
             )
             .await?;
         }
@@ -332,7 +333,7 @@ impl Registration {
                     context.clone(),
                     options.clone(),
                     self.state.clone(),
-                    model.clone(),
+                    Model::clone(model),
                 )
                 .await?
             }

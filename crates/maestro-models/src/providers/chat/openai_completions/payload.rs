@@ -6,18 +6,19 @@ use serde_json::Value;
 use super::messages::{ChatCompletionMessageParam, OpenAICompatCacheControl};
 use crate::{OpenRouterRouting, Tool, ToolChoice, VercelGatewayRouting};
 
-/// The request body.
+/// The request body; the model, tools, tool choice, routing and effort names are borrowed from
+/// the caller's inputs.
 #[derive(Default, Serialize)]
-pub(super) struct Payload {
+pub(super) struct Payload<'a> {
     /// Model identifier.
-    pub(super) model: String,
+    pub(super) model: &'a str,
     /// Converted history.
     pub(super) messages: Vec<ChatCompletionMessageParam>,
     /// Always set: the response is streamed.
     pub(super) stream: bool,
     /// Session key for prompt caching.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) prompt_cache_key: Option<String>,
+    pub(super) prompt_cache_key: Option<&'a str>,
     /// Extended cache lifetime.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) prompt_cache_retention: Option<&'static str>,
@@ -38,13 +39,13 @@ pub(super) struct Payload {
     pub(super) temperature: Option<f64>,
     /// Declared tools.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) tools: Option<Vec<ToolParam>>,
+    pub(super) tools: Option<Vec<ToolParam<'a>>>,
     /// Stream tool arguments.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) tool_stream: Option<bool>,
     /// Forced tool selection.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) tool_choice: Option<ToolChoice>,
+    pub(super) tool_choice: Option<&'a ToolChoice>,
     /// Reasoning switch for Z.ai and Qwen endpoints.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) enable_thinking: Option<bool>,
@@ -56,16 +57,16 @@ pub(super) struct Payload {
     pub(super) thinking: Option<Thinking>,
     /// Reasoning effort.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) reasoning_effort: Option<String>,
+    pub(super) reasoning_effort: Option<&'a str>,
     /// Reasoning object for `OpenRouter`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) reasoning: Option<Reasoning>,
+    pub(super) reasoning: Option<Reasoning<'a>>,
     /// `OpenRouter` routing preferences.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) provider: Option<OpenRouterRouting>,
+    pub(super) provider: Option<&'a OpenRouterRouting>,
     /// Gateway routing preferences.
     #[serde(rename = "providerOptions", skip_serializing_if = "Option::is_none")]
-    pub(super) provider_options: Option<GatewayOptions>,
+    pub(super) provider_options: Option<GatewayOptions<'a>>,
 }
 
 /// The `stream_options` object.
@@ -93,25 +94,25 @@ pub(super) struct Thinking {
 
 /// The `reasoning` object.
 #[derive(Serialize)]
-pub(super) struct Reasoning {
+pub(super) struct Reasoning<'a> {
     /// Effort name.
-    pub(super) effort: String,
+    pub(super) effort: &'a str,
 }
 
 /// The `providerOptions` object.
 #[derive(Serialize)]
-pub(super) struct GatewayOptions {
+pub(super) struct GatewayOptions<'a> {
     /// Gateway routing.
-    pub(super) gateway: VercelGatewayRouting,
+    pub(super) gateway: &'a VercelGatewayRouting,
 }
 
 /// A function tool declaration.
 #[derive(Serialize)]
-pub(super) struct ToolParam {
+pub(super) struct ToolParam<'a> {
     /// Constant `function`.
     r#type: &'static str,
     /// The function.
-    function: FunctionParam,
+    function: FunctionParam<'a>,
     /// Cache marker for the last tool.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) cache_control: Option<OpenAICompatCacheControl>,
@@ -119,27 +120,27 @@ pub(super) struct ToolParam {
 
 /// The function of a tool declaration.
 #[derive(Serialize)]
-struct FunctionParam {
+struct FunctionParam<'a> {
     /// Function name.
-    name: String,
+    name: &'a str,
     /// What the function does.
-    description: String,
+    description: &'a str,
     /// JSON Schema of the arguments.
-    parameters: Value,
+    parameters: &'a Value,
     /// Loose argument checking, for endpoints that accept the field.
     #[serde(skip_serializing_if = "Option::is_none")]
     strict: Option<bool>,
 }
 
-impl ToolParam {
+impl<'a> ToolParam<'a> {
     /// Declare a tool; `strict` adds the loose-checking field.
-    pub(super) fn new(tool: &Tool, strict: bool) -> Self {
+    pub(super) fn new(tool: &'a Tool, strict: bool) -> Self {
         Self {
             r#type: "function",
             function: FunctionParam {
-                name: tool.name.clone(),
-                description: tool.description.clone(),
-                parameters: tool.parameters.clone(),
+                name: &tool.name,
+                description: &tool.description,
+                parameters: &tool.parameters,
                 strict: strict.then_some(false),
             },
             cache_control: None,

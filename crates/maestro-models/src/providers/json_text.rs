@@ -15,6 +15,16 @@ pub(crate) fn compact_json(value: &Value) -> Result<String, serde_json::Error> {
     Ok(text)
 }
 
+/// Serialize an object exactly as [`compact_json`] serializes a value holding it.
+///
+/// # Errors
+/// Returns the serializer failure when a string cannot be written.
+pub(crate) fn compact_object(members: &Map<String, Value>) -> Result<String, serde_json::Error> {
+    let mut text = String::new();
+    write_object(members, &mut text)?;
+    Ok(text)
+}
+
 /// Append one value to the output text.
 fn write_value(value: &Value, text: &mut String) -> Result<(), serde_json::Error> {
     match value {
