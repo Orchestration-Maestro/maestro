@@ -39,6 +39,11 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `panic!`. Unsafe code is forbidden. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Quality-lint allowances are forbidden.
+The protected `redundant_clone` lint rejects unnecessary copies.
+Conventions reject consecutive repeated documentation lines outside fenced code
+and adjacent identical assertion statements in a test block when their arguments
+contain no calls, method calls, macros, assignments or compound assignments.
+Opaque arguments and repetition across functions or files remain review judgement.
 
 ## Documentation
 

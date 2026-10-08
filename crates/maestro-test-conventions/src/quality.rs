@@ -253,6 +253,7 @@ const PROTECTED: &[(&str, &str)] = &[
     ("rust", "forbidden_lint_groups"),
     ("clippy", "pedantic"),
     ("clippy", "missing_docs_in_private_items"),
+    ("clippy", "redundant_clone"),
     ("clippy", "too_many_arguments"),
     ("clippy", "fn_params_excessive_bools"),
     ("clippy", "too_many_lines"),

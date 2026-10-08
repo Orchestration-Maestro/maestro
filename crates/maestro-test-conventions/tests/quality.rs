@@ -29,7 +29,10 @@ fn five_hundred_code_lines_with_doc_comments_pass() {
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.join("crates/tui/src/lib.rs");
-    let mut source = "\t//! Module documentation.\n".repeat(600);
+    let mut source = String::new();
+    for index in 0..600 {
+        writeln!(source, "\t//! Module documentation line {index}.").unwrap();
+    }
     for index in 0..500 {
         writeln!(
             source,
@@ -47,7 +50,10 @@ fn five_hundred_one_code_lines_with_doc_comments_fail() {
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.join("crates/tui/src/lib.rs");
-    let mut source = "  //! Module documentation.\n".repeat(600);
+    let mut source = String::new();
+    for index in 0..600 {
+        writeln!(source, "  //! Module documentation line {index}.").unwrap();
+    }
     for index in 0..501 {
         writeln!(source, "\t/// Item documentation.\nconst P{index}: u8 = 0;").unwrap();
     }
@@ -520,4 +526,20 @@ fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
             .unwrap_err()
             .contains("production lines exceeds 500")
     );
+}
+
+#[test]
+fn redundant_clone_cannot_be_weakened() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace("redundant_clone = \"forbid\"\n", ""),
+    )
+    .unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("redundant_clone must be forbid"), "{error}");
 }
