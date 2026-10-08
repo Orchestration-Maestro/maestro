@@ -91,13 +91,15 @@ are parsed as TOML and must set the boolean `lints.workspace` to `true`.
 The compiler rejects protected-lint allowances, including attributes emitted by
 macros and conditional attributes. Lint-group allowances fail because the
 workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
-Test files are exempt from the 500-line production limit. Files that parse as
-Rust modules exclude a non-blank line only when every non-whitespace character
-belongs to an item carrying `cfg(test)`, using source line and column spans
-regardless of attribute order. Mixed production and test lines count as production.
-Blank lines are excluded. A trailing test item's comment-only suffix is excluded
-only when no production item follows. Other Rust inputs, such as included expressions, count
-all their lines as production. Rust validity belongs to the compiler.
+Test files are exempt from the 500-line production limit. Documentation tokens
+(`///`, `//!`, `/** */`, `/*! */`) are excluded in complete Rust modules and
+included expression fragments alike. Files that parse as Rust modules also
+exclude items carrying `cfg(test)`, using source line and column spans regardless
+of attribute order. A non-blank line counts when any non-whitespace character
+remains outside those exclusions: code sharing a documentation or test line still
+counts. Ordinary comments and string contents count. Blank lines are excluded.
+A trailing test item's comment-only suffix is excluded only when no production
+item follows. Rust validity belongs to the compiler.
 
 ## Commands and failure evidence
 
