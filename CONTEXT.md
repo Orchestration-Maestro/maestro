@@ -11,6 +11,7 @@ From `docs/specs/maestro-port.md`.
 
 - **Provider:** A named source of model descriptors and authentication behavior; a protocol adapter owns invocation and wire conversion.
 - **Model identity:** The combination of provider ID and model ID.
+- **Replay identity:** Provider, API and model ID used to decide whether signed response content is reusable.
 - **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
 - **ModelRegistry:** The owner of the usable local model catalog, local overrides and dynamic provider registrations.
 - **Tool arguments:** The model-supplied argument object, completed from accumulated JSON before execution.

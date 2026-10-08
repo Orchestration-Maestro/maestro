@@ -12,7 +12,9 @@ pub use options::{
     AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, clamp_reasoning,
     is_context_overflow,
 };
+mod projection;
 pub mod records;
+pub use projection::transform_messages;
 
 pub use cancellation::Cancellation;
 pub use catalog::models::{

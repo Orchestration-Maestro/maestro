@@ -100,20 +100,28 @@ pub fn create_assistant_message_diagnostic(
     error: DiagnosticInput<'_>,
     details: Option<super::types::JsonObject>,
 ) -> AssistantMessageDiagnostic {
-    #[cfg(not(target_arch = "wasm32"))]
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or_else(
-            |error| -(error.duration().as_secs_f64() * 1000.0).ceil(),
-            |elapsed| (elapsed.as_secs_f64() * 1000.0).floor(),
-        );
-    #[cfg(target_arch = "wasm32")]
-    let timestamp = js_sys::Date::now();
+    let timestamp = timestamp_now();
     AssistantMessageDiagnostic {
         r#type: kind.to_owned(),
         timestamp,
         error: Some(extract_diagnostic_error(error)),
         details,
+    }
+}
+
+pub(crate) fn timestamp_now() -> f64 {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or_else(
+                |error| -(error.duration().as_secs_f64() * 1000.0).ceil(),
+                |elapsed| (elapsed.as_secs_f64() * 1000.0).floor(),
+            )
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now()
     }
 }
 
