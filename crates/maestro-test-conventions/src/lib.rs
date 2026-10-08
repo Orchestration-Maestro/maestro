@@ -10,7 +10,7 @@ mod comments;
 mod graph;
 /// Source-size and protected-lint checks.
 mod quality;
-/// Repeated documentation and test assertion checks.
+/// Repeated documentation and test source layout checks.
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;

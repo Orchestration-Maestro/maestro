@@ -81,82 +81,13 @@ const TEXT: &str = "/// repeated\n/// repeated";
 }
 
 #[test]
-fn adjacent_identical_assertions_report_both_locations() {
+fn duplicate_assertions_remain_review_judgement() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
     std::fs::write(
-        &path,
+        workspace.root.join("crates/tui/src/lib.rs"),
         "#[test]\nfn sample() {\n assert_eq!(value, 3);\n assert_eq!( value , 3 );\n}\n",
-    )
-    .unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&format!("{}:4:", path.display())), "{error}");
-    assert!(
-        error.contains("repeated assertion; first at line 3"),
-        "{error}"
-    );
-}
-
-#[test]
-fn assertions_after_state_changes_and_in_distinct_blocks_pass() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    std::fs::write(
-        workspace.root.join("crates/tui/src/lib.rs"),
-        r#"
-#[test]
-fn first() {
-    assert_eq!(value, 3);
-    change_state();
-    assert_eq!(value, 3);
-    { assert_eq!(value, 3); }
-    { assert_eq!(value, 3); }
-    assert!(ready);
-    assert!(!ready);
-    assert_eq!(value, "a b");
-    assert_eq!(value, "a  b");
-}
-#[test]
-fn second() { assert_eq!(value, 3); }
-fn helper() {
-    assert_eq!(value, 3);
-    assert_eq!(value, 3);
-}
-"#,
-    )
-    .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-}
-
-#[test]
-fn opaque_assertion_arguments_remain_review_judgement() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    std::fs::write(
-        workspace.root.join("crates/tui/src/lib.rs"),
-        r"
-#[test]
-fn sample() {
-    assert!(iter.next().is_some());
-    assert!(iter.next().is_some());
-    assert!(observe());
-    assert!(observe());
-    assert_eq!(value!(), 1);
-    assert_eq!(value!(), 1);
-    assert_eq!({ value = 1; value }, 1);
-    assert_eq!({ value = 1; value }, 1);
-    assert_eq!({ value += 1; value }, 1);
-    assert_eq!({ value += 1; value }, 1);
-    assert_matches!(value, Some(_) if observe());
-    assert_matches!(value, Some(_) if observe());
-    assert_matches!(value, pattern!());
-    assert_matches!(value, pattern!());
-}
-",
     )
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -173,36 +104,6 @@ fn markdown_list_marker_is_not_trimmed_from_line_documentation() {
     )
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
-}
-
-#[test]
-fn assertion_families_are_checked_in_nested_test_blocks() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    for call in [
-        "assert!(ready)",
-        "assert_ne!(value, 1)",
-        "assert_matches!(value, 1)",
-        "assert_matches!(value, Some(_))",
-        "assert_matches!(value, Ok(binding))",
-        "assert_matches!(value, binding @ Some(_) if ready)",
-        "debug_assert_matches!(value, None)",
-        "std::debug_assert_eq!(value, 1)",
-    ] {
-        std::fs::write(
-            &path,
-            format!("#[test]\nfn sample() {{\n if ready {{\n {call};\n {call};\n }}\n}}\n"),
-        )
-        .unwrap();
-        let error = check_workspace(&workspace.root).unwrap_err();
-        assert!(error.contains(&format!("{}:5:", path.display())), "{error}");
-        assert!(
-            error.contains("repeated assertion; first at line 4"),
-            "{error}"
-        );
-    }
 }
 
 #[test]
@@ -252,95 +153,6 @@ fn markdown_container_code_blocks_are_not_paragraphs() {
 }
 
 #[test]
-fn assertion_attributes_are_part_of_statement_identity() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    std::fs::write(
-        workspace.root.join("crates/tui/src/lib.rs"),
-        "#[test]\nfn sample() { #[cfg(unix)] assert!(ready); #[cfg(not(unix))] assert!(ready); }\n",
-    )
-    .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-}
-
-#[test]
-fn production_methods_and_initializers_are_not_test_blocks() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    std::fs::write(
-        workspace.root.join("crates/tui/src/lib.rs"),
-        r"
-struct X;
-impl X {
-    fn sample() { assert!(ready); assert!(ready); }
-    const VALUE: () = { assert!(ready); assert!(ready); };
-}
-trait Sample {
-    fn sample() { assert!(ready); assert!(ready); }
-    const VALUE: () = { assert!(ready); assert!(ready); };
-}
-const VALUE: () = { assert!(ready); assert!(ready); };
-static OTHER: () = { assert!(ready); assert!(ready); };
-fn initializers() {
-    const LOCAL: () = { assert!(ready); assert!(ready); };
-    static LOCAL_STATIC: () = { assert!(ready); assert!(ready); };
-    let value = const { assert!(ready); assert!(ready); };
-    struct Local;
-    impl Local { const VALUE: () = { assert!(ready); assert!(ready); }; }
-    trait LocalTrait { const VALUE: () = { assert!(ready); assert!(ready); }; }
-}
-",
-    )
-    .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-}
-
-#[test]
-fn assertions_in_test_initializers_and_their_helpers_are_checked() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    let mut failures = Vec::new();
-    for body in [
-        "const CHECK: fn(u8) = { fn helper(v: u8) { assert_eq!(v, 3); assert_eq!(v, 3); } helper }; CHECK(3);",
-        "let value = const { assert!(ready); assert!(ready); };",
-        "const LOCAL: () = { assert!(ready); assert!(ready); };",
-        "static LOCAL: () = { assert!(ready); assert!(ready); };",
-        "struct Local; impl Local { const VALUE: () = { assert!(ready); assert!(ready); }; }",
-        "trait Local { const VALUE: () = { assert!(ready); assert!(ready); }; }",
-    ] {
-        std::fs::write(&path, format!("#[test] fn sample() {{ {body} }}")).unwrap();
-        match check_workspace(&workspace.root) {
-            Err(error) if error.contains("repeated assertion") => {}
-            result => failures.push(format!("missed test initializer: {body}: {result:?}")),
-        }
-    }
-    assert!(failures.is_empty(), "{}", failures.join("\n"));
-}
-
-#[test]
-fn helpers_inside_test_modules_are_selected() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    for source in [
-        "#[cfg(test)] mod tests { mod nested { fn helper() { assert!(ready); assert!(ready); } } }",
-        "#[tokio::test] async fn sample() { assert!(ready); assert!(ready); }",
-    ] {
-        std::fs::write(&path, source).unwrap();
-        assert!(
-            check_workspace(&workspace.root)
-                .unwrap_err()
-                .contains("repeated assertion")
-        );
-    }
-}
-
-#[test]
 fn physical_documentation_lines_cover_tight_lists_and_separators() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
@@ -381,47 +193,6 @@ fn physical_documentation_lines_cover_tight_lists_and_separators() {
         .unwrap();
         if let Err(error) = check_workspace(&workspace.root) {
             failures.push(format!("false rejection across {separator}: {error}"));
-        }
-    }
-    assert!(failures.is_empty(), "{}", failures.join("\n"));
-}
-
-#[test]
-fn test_only_files_select_unannotated_helpers() {
-    let mut failures = Vec::new();
-    for (file, declaration, prefix) in [
-        ("tests.rs", "#[cfg(test)] mod tests;", ""),
-        ("tests/support.rs", "#[cfg(test)] mod tests;", ""),
-        ("helpers.rs", "mod helpers;", "#![cfg(test)]\n"),
-    ] {
-        let workspace = Workspace::new();
-        workspace.member("tui", "maestro-tui", "");
-        workspace.list(&[("maestro-tui", "core")]);
-        let root = workspace.root.join("crates/tui/src");
-        std::fs::write(root.join("lib.rs"), declaration).unwrap();
-        if file == "tests/support.rs" {
-            std::fs::create_dir(root.join("tests")).unwrap();
-            std::fs::write(root.join("tests.rs"), "mod support;").unwrap();
-        }
-        let path = root.join(file);
-        std::fs::write(
-            &path,
-            format!("{prefix}fn helper() {{\n assert!(ready);\n assert!(ready);\n}}\n"),
-        )
-        .unwrap();
-        match check_workspace(&workspace.root) {
-            Ok(()) => failures.push(format!("missed test context: {file}, {prefix:?}")),
-            Err(error) => {
-                let first = 2 + usize::from(!prefix.is_empty());
-                assert!(
-                    error.contains(&format!("{}:{}:", path.display(), first + 1)),
-                    "{error}"
-                );
-                assert!(
-                    error.contains(&format!("repeated assertion; first at line {first}")),
-                    "{error}"
-                );
-            }
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
@@ -470,26 +241,6 @@ fn empty_documentation_lines_open_indented_code_for_both_owners() {
 }
 
 #[test]
-fn integration_test_support_helpers_are_test_context() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/tests/support/mod.rs");
-    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-    std::fs::write(
-        &path,
-        "fn helper() {\n assert!(ready);\n assert!(ready);\n}\n",
-    )
-    .unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
-    assert!(
-        error.contains("repeated assertion; first at line 2"),
-        "{error}"
-    );
-}
-
-#[test]
 fn source_test_only_files_require_recognized_layout() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
@@ -499,86 +250,6 @@ fn source_test_only_files_require_recognized_layout() {
     let error = check_workspace(&workspace.root).unwrap_err();
     assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
     assert!(error.contains("test file convention"), "{error}");
-}
-
-#[test]
-fn awaited_assertion_arguments_and_match_guards_are_opaque() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    for call in [
-        "assert!((&mut event).await)",
-        "assert_matches!((&mut event).await, Some(_))",
-        "assert_matches!(value, Some(_) if (&mut event).await)",
-    ] {
-        std::fs::write(
-            &path,
-            format!("#[test]\nasync fn sample() {{ {call}; {call}; }}\n"),
-        )
-        .unwrap();
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{call}");
-    }
-}
-
-#[test]
-fn nested_test_contexts_are_discovered_in_all_function_kinds() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    let mut failures = Vec::new();
-    for enclosing in [
-        "fn outer() { BODY }",
-        "struct X; impl X { fn outer() { BODY } }",
-        "trait X { fn outer() { BODY } }",
-    ] {
-        let source = enclosing.replace(
-            "BODY",
-            "{ #[cfg(test)] mod tests { fn helper() {\n assert!(ready);\n assert!(ready);\n} } }",
-        );
-        std::fs::write(&path, source).unwrap();
-        match check_workspace(&workspace.root) {
-            Ok(()) => failures.push(format!("missed nested test context: {enclosing}")),
-            Err(error) => {
-                assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
-                assert!(
-                    error.contains("repeated assertion; first at line 2"),
-                    "{error}"
-                );
-            }
-        }
-    }
-    for declaration in ["#[cfg(test)] mod helpers {}", "mod tests {}"] {
-        std::fs::write(&path, format!("fn outer() {{ {declaration} }}")).unwrap();
-        match check_workspace(&workspace.root) {
-            Ok(()) => failures.push(format!("missed nested module convention: {declaration}")),
-            Err(error) => {
-                assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
-                assert!(error.contains("test module convention"), "{error}");
-            }
-        }
-    }
-    assert!(failures.is_empty(), "{}", failures.join("\n"));
-}
-
-#[test]
-fn test_context_is_inherited_by_nested_function_helpers() {
-    let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
-    std::fs::write(
-        &path,
-        "#[test] fn outer() { fn helper() {\n assert!(ready);\n assert!(ready);\n} }",
-    )
-    .unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
-    assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
-    assert!(
-        error.contains("repeated assertion; first at line 2"),
-        "{error}"
-    );
 }
 
 #[test]
@@ -608,4 +279,24 @@ fn initializers_and_signatures_do_not_hide_module_conventions() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn nested_test_module_declarations_follow_layout_conventions() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    for enclosing in [
+        "fn outer() { BODY }",
+        "struct X; impl X { fn outer() { BODY } }",
+        "trait X { fn outer() { BODY } }",
+    ] {
+        for declaration in ["#[cfg(test)] mod helpers {}", "mod tests {}"] {
+            std::fs::write(&path, enclosing.replace("BODY", declaration)).unwrap();
+            let error = check_workspace(&workspace.root).unwrap_err();
+            assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
+            assert!(error.contains("test module convention"), "{error}");
+        }
+    }
 }
