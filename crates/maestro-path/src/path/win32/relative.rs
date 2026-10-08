@@ -6,17 +6,18 @@ use crate::path::Cwd;
 use crate::path::segments::climb_and_descend;
 
 /// Report whether both paths start at the same root: the same drive, the same
-/// UNC share, the same namespace, or none.
+/// UNC share, the same namespace, or none, and both absolute or both not.
 ///
-/// Component text cannot tell a drive from a UNC server, and a parent step
-/// cannot leave a drive, a share or a namespace, so roots compare before
-/// components.
+/// Component text cannot tell a drive from a UNC server, a parent step cannot
+/// leave a drive, a share or a namespace, and `D:foo` is not below `D:\`, so
+/// roots compare before components.
 fn same_root(from: &Location<'_>, to: &Location<'_>) -> bool {
-    match (&from.device, &to.device) {
-        (Some(a), Some(b)) => same_name(a, b),
-        (None, None) => from.absolute == to.absolute,
-        _ => false,
-    }
+    from.absolute == to.absolute
+        && match (&from.device, &to.device) {
+            (Some(a), Some(b)) => same_name(a, b),
+            (None, None) => true,
+            _ => false,
+        }
 }
 
 /// Find the path that leads from `from` to `to`, both resolved against `cwd`,
@@ -25,10 +26,11 @@ fn same_root(from: &Location<'_>, to: &Location<'_>) -> bool {
 /// Both ends are normalized first, so `.` and `..` that come from `cwd` are
 /// folded. Whole components are compared with Unicode lowercase equality and
 /// the destination keeps the spelling it was resolved with. Paths that start
-/// at different roots (another drive, UNC share or device namespace, or a root
-/// of another kind) have no relative path, and neither have two paths without
-/// a drive, share or namespace whose first components differ: the normalized
-/// destination is returned. Equal locations give an empty string.
+/// at different roots (another drive, UNC share or device namespace, a root of
+/// another kind, or an absolute path against a relative one) have no
+/// relative path, and neither have two paths without a drive, share or
+/// namespace whose first components differ: the normalized destination is
+/// returned. Equal locations give an empty string.
 ///
 /// # Examples
 ///
@@ -41,6 +43,9 @@ fn same_root(from: &Location<'_>, to: &Location<'_>) -> bool {
 /// assert_eq!(win32::relative("\\\\one\\share", "\\\\two\\share", &cwd), "\\\\two\\share\\");
 /// assert_eq!(win32::relative("\\\\one\\a\\x", "\\\\one\\b\\x", &cwd), "\\\\one\\b\\x");
 /// assert_eq!(win32::relative("\\\\?\\a\\x", "\\\\?\\b\\y", &cwd), "..\\..\\b\\y");
+///
+/// let share = Cwd { current: "\\\\srv\\share\\work", drive_directories: &[] };
+/// assert_eq!(win32::relative("D:\\foo", "D:foo", &share), "D:foo");
 /// ```
 #[must_use]
 pub fn relative(from: &str, to: &str, cwd: &Cwd<'_>) -> String {

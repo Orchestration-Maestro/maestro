@@ -219,6 +219,14 @@ fn win32_relative_compares_device_namespaces_as_roots() {
 }
 
 #[test]
+fn win32_relative_returns_the_destination_when_anchoring_differs() {
+    check(
+        "win32_relative_returns_the_destination_when_anchoring_differs",
+        11,
+    );
+}
+
+#[test]
 fn win32_relative_separates_drive_and_unc_roots_with_equal_components() {
     let cwd = Cwd {
         current: "C:\\work",
@@ -233,35 +241,43 @@ fn win32_relative_separates_drive_and_unc_roots_with_equal_components() {
 }
 
 /// Resolving a relative result from the source gives the destination whenever
-/// both ends are absolute; a drive-relative source would apply its drive
-/// directory a second time.
+/// both ends are absolute, and the result is the destination itself whenever
+/// only one end is. A source with no anchor is not rejoined: its drive
+/// directory would apply a second time.
 #[test]
-fn win32_relative_resolves_back_to_the_destination_for_every_anchored_pair() {
+fn win32_relative_reaches_the_destination_for_every_pair_with_an_anchored_end() {
     let cases: Vec<Value> = fixture()
         .into_iter()
         .filter(|case| case["flavor"] == "win32" && case["op"] == "relative")
         .collect();
-    assert_eq!(cases.len(), 62, "recorded win32 relative cases");
-    let mut anchored = 0;
+    assert_eq!(cases.len(), 73, "recorded win32 relative cases");
+    let (mut anchored, mut mixed) = (0, 0);
     for case in &cases {
         let inputs = Inputs::of(case);
         let cwd = inputs.cwd();
         let from = win32::resolve(&[inputs.args[0]], &cwd);
         let destination = win32::resolve(&[inputs.args[1]], &cwd);
-        if !(win32::is_absolute(&from) && win32::is_absolute(&destination)) {
-            continue;
-        }
-        anchored += 1;
         let relative = win32::relative(inputs.args[0], inputs.args[1], &cwd);
-        let rejoined = win32::resolve(&[&from, &relative], &cwd);
-        assert_eq!(
-            rejoined.to_lowercase(),
-            destination.to_lowercase(),
-            "{} {from:?} + {relative:?}",
-            case["id"]
-        );
+        match (win32::is_absolute(&from), win32::is_absolute(&destination)) {
+            (true, true) => {
+                anchored += 1;
+                let rejoined = win32::resolve(&[&from, &relative], &cwd);
+                assert_eq!(
+                    rejoined.to_lowercase(),
+                    destination.to_lowercase(),
+                    "{} {from:?} + {relative:?}",
+                    case["id"]
+                );
+            }
+            (false, false) => {}
+            _ => {
+                mixed += 1;
+                assert_eq!(relative, destination, "{} {from:?}", case["id"]);
+            }
+        }
     }
     assert_eq!(anchored, 61, "cases whose both ends are absolute");
+    assert_eq!(mixed, 10, "cases whose ends differ in anchoring");
 }
 
 /// Fixture rows whose inputs make the two flavors disagree, one per root operation.
