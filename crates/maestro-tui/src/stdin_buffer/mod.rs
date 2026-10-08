@@ -17,8 +17,7 @@ const PASTE_END: &str = "\u{1b}[201~";
 /// The settings of a [`StdinBuffer`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct StdinBufferOptions {
-    /// How long an incomplete escape sequence waits for more input before it is released
-    /// as it is.
+    /// The delay used to arm a representable deadline for an incomplete escape sequence.
     pub timeout: Duration,
 }
 
@@ -61,8 +60,8 @@ impl StdinBufferInput<'_> {
 /// An event a [`StdinBuffer`] produces.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StdinBufferEventMap {
-    /// One character, one complete escape sequence, a fragment released by its deadline
-    /// or the empty text of an empty input.
+    /// One character, one complete escape sequence, a fragment released at its deadline
+    /// or immediately before a paste starts, or the empty text of an empty normal input.
     Data(String),
     /// The text of a bracketed paste, without its markers.
     Paste(String),
@@ -111,8 +110,8 @@ impl StdinBuffer {
 
     /// Consumes one input observed at `now` and returns its events in order.
     ///
-    /// It cancels the pending deadline and arms a new one for the fragment that remains,
-    /// if any. It never expires a due deadline itself.
+    /// It cancels the pending deadline and arms a new one when a fragment remains and
+    /// the deadline is representable. It never expires a due deadline itself.
     pub fn process(
         &mut self,
         data: StdinBufferInput<'_>,
@@ -183,8 +182,8 @@ impl StdinBuffer {
         self.clear();
     }
 
-    /// Handles the buffered text once and reports whether text that followed a finished
-    /// or started paste is left to handle.
+    /// Handles the buffered text once and reports whether another consumption pass is
+    /// needed.
     fn consume(&mut self, now: Instant, events: &mut Vec<StdinBufferEventMap>) -> bool {
         match mem::replace(&mut self.mode, Mode::Normal) {
             Mode::Paste(content) => self.continue_paste(content, events),
@@ -192,8 +191,8 @@ impl StdinBuffer {
         }
     }
 
-    /// Frames the buffered input, keeping the incomplete rest and arming its deadline, or
-    /// opens a paste when a start marker is found.
+    /// Frames the buffered input, keeping the incomplete rest and arming its deadline
+    /// when representable, or opens a paste when a start marker is found.
     fn frame_input(&mut self, now: Instant, events: &mut Vec<StdinBufferEventMap>) -> bool {
         let mut text = mem::take(&mut self.buffer);
         if let Some(start) = text.find(PASTE_START) {

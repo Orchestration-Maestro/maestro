@@ -43,9 +43,9 @@ assert_eq!(
 
 `process` and `expire` return the events they produce, in the order their input
 arrived. `Data` holds one character or one complete escape sequence, except for a
-fragment released by `expire` and the empty text an empty input produces. `Paste`
-holds the text between the paste markers, without them. A caller that passes input on
-as raw text puts the markers `ESC [ 200 ~` and `ESC [ 201 ~` back around a pasted
+fragment released by `expire` or immediately before a paste starts, and the empty
+text an empty input produces outside a paste. `Paste` holds the text between the
+paste markers, without them. A caller that passes input on as raw text puts the markers `ESC [ 200 ~` and `ESC [ 201 ~` back around a pasted
 text. Nothing is trimmed or normalized: whitespace, control characters and U+FEFF are
 `Data` like any other character. A character is never split, so an emoji is one
 event.
@@ -56,7 +56,7 @@ A character other than `ESC` is a unit of its own. After `ESC`:
 
 - `[` opens a control sequence ending at the first character from `@` to `~`. After
   `ESC [ <` a mouse report must have three nonempty decimal fields and end at `M` or
-  `m`; a report of any other shape never ends and is released by its deadline. After
+  `m`; an unrecognized report stays buffered under the fragment rules. After
   `ESC [ M` the legacy mouse report ends after three more characters;
 - `]` opens an operating system command, ending at the first bell or `ESC \`;
 - `P` and `_` open a device control string and an application command, each ending
@@ -69,12 +69,12 @@ The next chunk is appended to it and the whole is framed again.
 
 ## Deadlines
 
-A fragment arms a deadline of `StdinBufferOptions::timeout` after the instant given
-to `process`, 10 ms by default. The deadline is `None` when that sum is not an
-`Instant`. Every `process` call cancels the pending deadline and arms a new one when
-a fragment remains, so a fragment expires `timeout` after the last input, even if
-that input was empty. `process` never expires a due deadline itself: the caller
-decides the order by calling `expire` first.
+When representable, a fragment's deadline is `StdinBufferOptions::timeout` after
+the instant given to `process`, 10 ms by default. The deadline is `None` when that
+sum is not an `Instant`. Every `process` call cancels the pending deadline and arms
+a new one when a fragment remains and the deadline is representable, even if that
+input was empty. `process` never expires a due deadline itself: the caller decides
+the order by calling `expire` first.
 
 `expire` does nothing before the deadline. At or after it, it returns the whole
 fragment as one `Data` event and clears the deadline, so a fragment is released at most
@@ -106,9 +106,9 @@ stream first and passes `Text`.
 
 Once `ESC [ 200 ~` is complete, the text after it is held until `ESC [ 201 ~` arrives,
 however the text and the end marker are split across chunks, and has no deadline. A
-start marker split across chunks is a fragment like any other and expires with its
-deadline. The paste ends at the first end marker; a start marker inside it is part of
-the text. A fragment kept before the start marker is delivered as `Data` ahead of the
+start marker split across chunks is a fragment like any other and can be released
+by `expire` at its representable deadline. The paste ends at the first end marker;
+a start marker inside it is part of the text. A fragment kept before the start marker is delivered as `Data` ahead of the
 `Paste`.
 Empty input while a paste is open produces nothing. `get_buffer` and `flush` never
 return the text of a paste in progress, and `clear` discards it.
