@@ -1239,52 +1239,98 @@ fn maestro_chat_transport_is_replaceable() -> TestResult {
     })
 }
 
-/// An error payload whose deepest path crosses `containers` containers; its spaces tell the
+/// An error payload whose `error` value holds `containers` containers; its spaces tell the
 /// written form from the compact one.
 fn deep_error(containers: usize) -> String {
     format!(
         r#"{{"error": {{"x": {}}}}}"#,
-        cases::nested_json(containers - 2)
+        cases::nested_json(containers - 1)
     )
 }
 
 /// The compact text of the `error` member of [`deep_error`].
 fn compact_error(containers: usize) -> String {
-    format!(r#"{{"x":{}}}"#, cases::nested_json(containers - 2))
+    format!(r#"{{"x":{}}}"#, cases::nested_json(containers - 1))
 }
 
-/// An error body nested as deep as JSON text may be is described from its error member; a deeper
-/// one is not JSON, so it is described as the text it is.
-async fn error_bodies_nest_to_the_json_limit() -> TestResult {
+/// Fields the call never reads may nest to any depth: the chunk, error body and streamed error
+/// still deliver the fields that are read, and a field read as another type is absent.
+async fn deep_unread_fields_are_passed_over() -> TestResult {
+    let deep = cases::nested_json(100_000);
+    let chunk = format!(
+        r#"{{"unread":{deep},"choices":[{{"unread":{deep},"delta":{{"unread":{deep},"content":"kept"}}}}]}}"#
+    );
+    assert_eq!(text_of_body(vec![raw_event(&chunk)]).await?, "kept");
+
+    let mistyped = format!(
+        r#"{{"id":{deep},"usage":{deep},"choices":[{{"finish_reason":{deep},"delta":{{"content":{deep},"tool_calls":{deep},"reasoning_details":{deep},"reasoning":"thought"}}}}]}}"#
+    );
+    let message = message_of_body(vec![raw_event(&mistyped)]).await?;
+    assert!(
+        matches!(&message.content[..], [AssistantContent::Thinking(block)] if block.thinking == "thought"),
+        "{:?}",
+        message.content
+    );
+
+    let error = format!(r#"{{"unread":{deep},"message":"rejected"}}"#);
+    let body = format!(r#"{{"unread":{deep},"error":{error}}}"#);
+    let failure = failure_of_error_body(vec![body.into_bytes()]).await?;
+    assert_eq!(failure, "400 rejected");
+    let failure = failure_after_text(&format!(r#"{{"error":{error}}}"#)).await?;
+    assert_eq!(failure, "rejected");
+    Ok(())
+}
+
+#[test]
+fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
+    if child_process::child_case().is_some() {
+        return block_on(true, deep_unread_fields_are_passed_over());
+    }
+    child_process::rerun(
+        "maestro_chat_passes_over_deeply_nested_unread_fields",
+        "nesting",
+        &[],
+    )
+}
+
+/// An error payload is described in full as deep as JSON text may nest; a deeper one is
+/// malformed, so it adds no description.
+async fn error_details_convert_to_the_json_limit() -> TestResult {
     let deepest = cases::DEEPEST_NESTING;
     let failure = failure_of_error_body(vec![deep_error(deepest).into_bytes()]).await?;
     assert_eq!(failure, format!("400 {}", compact_error(deepest)));
+    let failure = failure_after_text(&deep_error(deepest)).await?;
+    assert_eq!(failure, compact_error(deepest));
     for containers in [100_000, deepest + 1] {
-        let body = deep_error(containers);
-        let failure = failure_of_error_body(vec![body.clone().into_bytes()]).await?;
-        assert_eq!(failure, format!("400 {body}"), "{containers} containers");
+        let body = deep_error(containers).into_bytes();
+        let failure = failure_of_error_body(vec![body]).await?;
+        assert_eq!(failure, "400 ", "{containers} containers");
+        let failure = failure_after_text(&deep_error(containers)).await?;
+        assert_eq!(failure, "", "{containers} containers");
     }
     Ok(())
 }
 
 #[test]
-fn maestro_chat_bounds_error_body_nesting() -> TestResult {
+fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
     if child_process::child_case().is_some() {
-        return block_on(true, error_bodies_nest_to_the_json_limit());
+        return block_on(true, error_details_convert_to_the_json_limit());
     }
-    child_process::rerun("maestro_chat_bounds_error_body_nesting", "nesting", &[])
+    child_process::rerun("maestro_chat_bounds_error_detail_nesting", "nesting", &[])
 }
 
-/// A streamed error as deep as JSON text may be is reported from its payload; a deeper chunk is
-/// malformed data that fails the call and keeps the text before it.
-async fn streamed_chunks_nest_to_the_json_limit() -> TestResult {
+/// A streamed signature is kept as deep as JSON text may nest; a deeper one is dropped and the
+/// call still completes.
+async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
     let deepest = cases::DEEPEST_NESTING;
-    let failure = failure_after_text(&deep_error(deepest)).await?;
-    assert_eq!(failure, compact_error(deepest));
-    for containers in [100_000, deepest + 1] {
-        let failure = failure_after_text(&deep_error(containers)).await?;
+    let data = cases::nested_json(deepest - 1);
+    let kept = format!(r#"{{"type":"reasoning.encrypted","id":"a","data":{data}}}"#);
+    assert_eq!(signature_after(&data).await?, Some(kept));
+    for containers in [100_000, deepest] {
+        let data = cases::nested_json(containers);
         assert_eq!(
-            failure, "recursion limit exceeded",
+            signature_after(&data).await?,
+            None,
             "{containers} containers"
         );
     }
@@ -1292,9 +1338,13 @@ async fn streamed_chunks_nest_to_the_json_limit() -> TestResult {
 }
 
 #[test]
-fn maestro_chat_bounds_streamed_chunk_nesting() -> TestResult {
+fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
     if child_process::child_case().is_some() {
-        return block_on(true, streamed_chunks_nest_to_the_json_limit());
+        return block_on(true, streamed_signatures_convert_to_the_json_limit());
     }
-    child_process::rerun("maestro_chat_bounds_streamed_chunk_nesting", "nesting", &[])
+    child_process::rerun(
+        "maestro_chat_bounds_streamed_signature_nesting",
+        "nesting",
+        &[],
+    )
 }

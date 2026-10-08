@@ -86,43 +86,17 @@ fn array_index(key: &str) -> Option<u32> {
         .filter(|index| *index != u32::MAX)
 }
 
-/// Containers a JSON text may nest: the most that the parser's recursion limit of 128 accepts.
+/// Containers a value may nest when [`json_value`] decodes it: the most that the parser's
+/// recursion limit of 128 accepts.
 const MAX_NESTING: usize = 127;
 
-/// Read external JSON text as a raw value. Projecting a raw value into the JSON data model, and
-/// writing or dropping that projection, recurse once per level of nesting, so text nested
-/// deeper than [`MAX_NESTING`] fails here as malformed text does.
+/// Read external JSON text as a raw value. The text may nest to any depth: skipping over
+/// nested containers takes no recursion.
 ///
 /// # Errors
-/// Returns the parser failure for malformed text, or a recursion-limit failure for text
-/// nested too deeply.
+/// Returns the parser failure for malformed text.
 pub(crate) fn raw_json(text: &str) -> Result<&RawValue, serde_json::Error> {
-    let raw: &RawValue = serde_json::from_str(text)?;
-    if exceeds_nesting(text) {
-        return Err(serde::de::Error::custom("recursion limit exceeded"));
-    }
-    Ok(raw)
-}
-
-/// Report whether well-formed JSON text nests containers deeper than [`MAX_NESTING`].
-fn exceeds_nesting(text: &str) -> bool {
-    let (mut depth, mut in_string, mut escaped) = (0_usize, false, false);
-    for byte in text.bytes() {
-        match byte {
-            _ if escaped => escaped = false,
-            b'\\' if in_string => escaped = true,
-            b'"' => in_string = !in_string,
-            b'[' | b'{' if !in_string => {
-                depth += 1;
-                if depth > MAX_NESTING {
-                    return true;
-                }
-            }
-            b']' | b'}' if !in_string => depth = depth.saturating_sub(1),
-            _ => {}
-        }
-    }
-    false
+    serde_json::from_str(text)
 }
 
 /// The members of a JSON object in order; a repeated name keeps its first position and last value.
@@ -163,22 +137,32 @@ pub(crate) fn is_truthy(raw: &RawValue) -> bool {
 }
 
 /// Decode a value into the JSON data model, where every number is a double and an infinity,
-/// which JSON cannot spell, becomes `null`.
+/// which JSON cannot spell, becomes `null`. Decoding recurses once per level, so a value that
+/// nests more than [`MAX_NESTING`] containers fails as malformed text does.
 ///
 /// # Errors
-/// Returns the decoder failure for malformed text.
+/// Returns the decoder failure for malformed text, or a recursion-limit failure for a value
+/// nested too deeply.
 pub(crate) fn json_value(raw: &RawValue) -> Result<Value, serde_json::Error> {
+    decode(raw, MAX_NESTING)
+}
+
+/// Decode a value that may hold `containers` more levels of containers.
+fn decode(raw: &RawValue, containers: usize) -> Result<Value, serde_json::Error> {
     if let Some(number) = raw_number(raw) {
         return Ok(Value::from(number));
     }
     match raw.get().as_bytes().first() {
+        Some(b'[' | b'{') if containers == 0 => {
+            Err(serde::de::Error::custom("recursion limit exceeded"))
+        }
         Some(b'[') => serde_json::from_str::<Vec<&RawValue>>(raw.get())?
             .into_iter()
-            .map(json_value)
+            .map(|item| decode(item, containers - 1))
             .collect(),
         Some(b'{') => serde_json::from_str::<Members<'_>>(raw.get())?
             .into_iter()
-            .map(|(key, member)| Ok((key, json_value(member)?)))
+            .map(|(key, member)| Ok((key, decode(member, containers - 1)?)))
             .collect(),
         _ => serde_json::from_str(raw.get()),
     }
@@ -187,7 +171,7 @@ pub(crate) fn json_value(raw: &RawValue) -> Result<Value, serde_json::Error> {
 /// Serialize a value like [`compact_json`] serializes its [`json_value`].
 ///
 /// # Errors
-/// Returns the failure of decoding or writing.
+/// Returns the failure of decoding, which includes excess nesting, or of writing.
 pub(crate) fn compact_raw(raw: &RawValue) -> Result<String, serde_json::Error> {
     compact_json(&json_value(raw)?)
 }

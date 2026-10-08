@@ -213,10 +213,16 @@ and its message is described the way the client library describes it, numbers be
 range of a double written as `null`. When a provider reports a nonempty
 `error.metadata.raw`, it is appended on a new line. An error body
 is decoded as one text: a leading byte-order mark is dropped, so it does not hide a JSON
-error object, and invalid bytes appear as U+FFFD. JSON text nested more than 127 arrays or
-objects deep is malformed: an event holding it fails the call with `recursion limit
-exceeded`, an error body holding it is described as plain text, and a replayed thought
-signature holding it is dropped.
+error object, and invalid bytes appear as U+FFFD.
+
+JSON text may nest to any depth: data that no field reads passes untouched, so an event or
+an error body with a deeply nested unread member is read as usual, and a deeply nested value
+in a field of the wrong type reads as absent. Two kinds of value are converted in full:
+a thought signature, and the `error` value or `message` that a failure text writes out.
+Each may hold at most 127 nested arrays or objects. A deeper one is malformed: a signature
+holding it is dropped and a failure text writes it as empty text. The client library has
+no such bound; it is a difference the owner approved, which keeps that conversion within a
+fixed recursion depth.
 
 ## Example
 
