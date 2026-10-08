@@ -129,8 +129,8 @@ fn assertions(source: &Source, directory: &Path) -> Result<(), String> {
         source,
         in_src: source.path.starts_with(directory.join("src")),
         error: None,
-        test_module: test_layout || configured,
-        test_function: false,
+        in_test: test_layout || configured,
+        in_initializer: false,
     };
     if let Some(syntax) = &source.syntax {
         visitor.visit_file(syntax);
@@ -145,7 +145,7 @@ fn assertions(source: &Source, directory: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Assertion visitor scoped to blocks inside test functions.
+/// Discover all nested test contexts while checking eligible assertion blocks.
 struct Assertions<'a> {
     /// File used to attach both locations to diagnostics.
     source: &'a Source,
@@ -153,30 +153,29 @@ struct Assertions<'a> {
     in_src: bool,
     /// First convention or repetition violation, if any.
     error: Option<String>,
-    /// Whether the containing module is selected for tests.
-    test_module: bool,
-    /// Whether traversal is inside a selected function.
-    test_function: bool,
+    /// Whether the containing subtree is selected for tests.
+    in_test: bool,
+    /// Whether traversal is inside an excluded initializer context.
+    in_initializer: bool,
 }
 
 impl<'ast> Visit<'ast> for Assertions<'_> {
-    fn visit_expr_const(&mut self, _expression: &'ast syn::ExprConst) {}
+    fn visit_expr_const(&mut self, expression: &'ast syn::ExprConst) {
+        let prior = self.in_initializer;
+        self.in_initializer = true;
+        syn::visit::visit_expr_const(self, expression);
+        self.in_initializer = prior;
+    }
 
     fn visit_item(&mut self, item: &'ast syn::Item) {
-        let active = self.test_function;
-        self.test_function = false;
-        match item {
-            syn::Item::Fn(function) => self.visit_item_fn(function),
-            syn::Item::Mod(module) => self.visit_item_mod(module),
-            syn::Item::Impl(item) => syn::visit::visit_item_impl(self, item),
-            syn::Item::Trait(item) => syn::visit::visit_item_trait(self, item),
-            _ => {}
-        }
-        self.test_function = active;
+        let prior = self.in_initializer;
+        self.in_initializer |= matches!(item, syn::Item::Const(_) | syn::Item::Static(_));
+        syn::visit::visit_item(self, item);
+        self.in_initializer = prior;
     }
 
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
-        let prior = self.test_module;
+        let prior = self.in_test;
         let configured = cfg_test(&item.attrs);
         let named = item.ident == "tests";
         if self.in_src
@@ -191,33 +190,54 @@ impl<'ast> Visit<'ast> for Assertions<'_> {
                 item.ident.span().start().line,
             ));
         }
-        self.test_module |= configured;
+        self.in_test |= configured;
         syn::visit::visit_item_mod(self, item);
-        self.test_module = prior;
+        self.in_test = prior;
     }
 
     fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        self.function(&item.attrs, &item.block);
+        let prior = self.select_function(&item.attrs);
+        syn::visit::visit_item_fn(self, item);
+        self.in_test = prior;
     }
 
     fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        if let syn::ImplItem::Fn(function) = item {
-            self.function(&function.attrs, &function.block);
-        }
+        let prior = self.in_initializer;
+        self.in_initializer |= matches!(item, syn::ImplItem::Const(_));
+        syn::visit::visit_impl_item(self, item);
+        self.in_initializer = prior;
+    }
+
+    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
+        let prior = self.select_function(&item.attrs);
+        syn::visit::visit_impl_item_fn(self, item);
+        self.in_test = prior;
     }
 
     fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        if let syn::TraitItem::Fn(function) = item
-            && let Some(block) = &function.default
-        {
-            self.function(&function.attrs, block);
-        }
+        let prior = self.in_initializer;
+        self.in_initializer |= matches!(item, syn::TraitItem::Const(_));
+        syn::visit::visit_trait_item(self, item);
+        self.in_initializer = prior;
+    }
+
+    fn visit_trait_item_fn(&mut self, item: &'ast syn::TraitItemFn) {
+        let prior = self.select_function(&item.attrs);
+        syn::visit::visit_trait_item_fn(self, item);
+        self.in_test = prior;
     }
 
     fn visit_block(&mut self, block: &'ast syn::Block) {
-        if !self.test_function {
-            return;
+        if self.in_test && !self.in_initializer {
+            self.check_block(block);
         }
+        syn::visit::visit_block(self, block);
+    }
+}
+
+impl Assertions<'_> {
+    /// Compare direct adjacent assertion statements in an eligible block.
+    fn check_block(&mut self, block: &syn::Block) {
         for pair in block.stmts.windows(2) {
             if let (Some((first, first_attrs)), Some((second, second_attrs))) =
                 (assertion(&pair[0]), assertion(&pair[1]))
@@ -242,23 +262,18 @@ impl<'ast> Visit<'ast> for Assertions<'_> {
                 ));
             }
         }
-        syn::visit::visit_block(self, block);
     }
-}
 
-impl Assertions<'_> {
-    /// Enter only functions selected by their test attribute or containing module.
-    fn function(&mut self, attrs: &[syn::Attribute], block: &syn::Block) {
-        let prior = self.test_function;
-        self.test_function = self.test_module
-            || attrs.iter().any(|attr| {
-                attr.path()
-                    .segments
-                    .last()
-                    .is_some_and(|segment| segment.ident == "test")
-            });
-        self.visit_block(block);
-        self.test_function = prior;
+    /// Enable a function's test context, returning its inherited selection.
+    fn select_function(&mut self, attrs: &[syn::Attribute]) -> bool {
+        let prior = self.in_test;
+        self.in_test |= attrs.iter().any(|attr| {
+            attr.path()
+                .segments
+                .last()
+                .is_some_and(|segment| segment.ident == "test")
+        });
+        prior
     }
 }
 

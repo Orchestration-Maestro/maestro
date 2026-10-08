@@ -49,12 +49,16 @@ blocks and owner/style changes do.
 They reject adjacent identical assertion statements (including attributes) in
 test-attributed functions, inline `#[cfg(test)] mod tests` bodies, and whole files
 carrying `#![cfg(test)]`, named `tests.rs`, or beneath a `tests` directory anywhere
-under the crate. Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs`
-or be below a `tests` directory. Modules named `tests` require `#[cfg(test)]`, every
+under the crate. Test context is inherited by nested helpers. All items and blocks
+are traversed, including free functions, impl methods, default trait methods and
+initializers, to discover nested test contexts and validate module declarations.
+Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs` or be below a
+`tests` directory. Modules named `tests` require `#[cfg(test)]`, every
 `#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
 Expression arguments and pattern guards must contain no calls, method calls,
 awaiting, macros, assignments or compound assignments; matching arguments are
-parsed as patterns. Constant/static initializers remain excluded. Opaque arguments and
+parsed as patterns. Assertion checks exclude constant/static initializers,
+including inline const blocks. Opaque arguments and
 repetition across functions or files remain review judgement.
 
 ## Documentation

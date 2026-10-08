@@ -277,7 +277,10 @@ impl X {
     fn sample() { assert!(ready); assert!(ready); }
     const VALUE: () = { assert!(ready); assert!(ready); };
 }
-trait Sample { fn sample() { assert!(ready); assert!(ready); } }
+trait Sample {
+    fn sample() { assert!(ready); assert!(ready); }
+    const VALUE: () = { assert!(ready); assert!(ready); };
+}
 const VALUE: () = { assert!(ready); assert!(ready); };
 static OTHER: () = { assert!(ready); assert!(ready); };
 #[test]
@@ -285,6 +288,9 @@ fn initializers() {
     const LOCAL: () = { assert!(ready); assert!(ready); };
     static LOCAL_STATIC: () = { assert!(ready); assert!(ready); };
     let value = const { assert!(ready); assert!(ready); };
+    struct Local;
+    impl Local { const VALUE: () = { assert!(ready); assert!(ready); }; }
+    trait LocalTrait { const VALUE: () = { assert!(ready); assert!(ready); }; }
 }
 ",
     )
@@ -490,4 +496,93 @@ fn awaited_assertion_arguments_and_match_guards_are_opaque() {
         .unwrap();
         assert_eq!(check_workspace(&workspace.root), Ok(()), "{call}");
     }
+}
+
+#[test]
+fn nested_test_contexts_are_discovered_in_all_function_kinds() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut failures = Vec::new();
+    for enclosing in [
+        "fn outer() { BODY }",
+        "struct X; impl X { fn outer() { BODY } }",
+        "trait X { fn outer() { BODY } }",
+    ] {
+        let source = enclosing.replace(
+            "BODY",
+            "{ #[cfg(test)] mod tests { fn helper() {\n assert!(ready);\n assert!(ready);\n} } }",
+        );
+        std::fs::write(&path, source).unwrap();
+        match check_workspace(&workspace.root) {
+            Ok(()) => failures.push(format!("missed nested test context: {enclosing}")),
+            Err(error) => {
+                assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
+                assert!(
+                    error.contains("repeated assertion; first at line 2"),
+                    "{error}"
+                );
+            }
+        }
+    }
+    for declaration in ["#[cfg(test)] mod helpers {}", "mod tests {}"] {
+        std::fs::write(&path, format!("fn outer() {{ {declaration} }}")).unwrap();
+        match check_workspace(&workspace.root) {
+            Ok(()) => failures.push(format!("missed nested module convention: {declaration}")),
+            Err(error) => {
+                assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
+                assert!(error.contains("test module convention"), "{error}");
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn test_context_is_inherited_by_nested_function_helpers() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    std::fs::write(
+        &path,
+        "#[test] fn outer() { fn helper() {\n assert!(ready);\n assert!(ready);\n} }",
+    )
+    .unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains(&format!("{}:3:", path.display())), "{error}");
+    assert!(
+        error.contains("repeated assertion; first at line 2"),
+        "{error}"
+    );
+}
+
+#[test]
+fn initializers_and_signatures_do_not_hide_module_conventions() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let mut failures = Vec::new();
+    for source in [
+        "const VALUE: () = { mod tests {} };",
+        "static VALUE: () = { mod tests {} };",
+        "struct X; impl X { const VALUE: () = { mod tests {} }; }",
+        "trait X { const VALUE: () = { mod tests {} }; }",
+        "fn outer() { let value = const { mod tests {} }; }",
+        "fn outer(_: [(); { mod tests {} 0 }]) {}",
+        "struct X; impl X { fn outer(_: [(); { mod tests {} 0 }]) {} }",
+        "trait X { fn outer(_: [(); { mod tests {} 0 }]) {} }",
+    ] {
+        std::fs::write(&path, source).unwrap();
+        match check_workspace(&workspace.root) {
+            Ok(()) => failures.push(format!("missed initializer module convention: {source}")),
+            Err(error) => {
+                assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
+                assert!(error.contains("test module convention"), "{error}");
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
