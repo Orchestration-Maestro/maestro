@@ -39,6 +39,18 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `panic!`. Unsafe code is forbidden. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Quality-lint allowances are forbidden.
+The protected `redundant_clone` lint rejects unnecessary copies.
+Conventions reject consecutive repeated nonempty physical documentation lines
+within one contiguous run of same-style line documentation comments. An attribute,
+an ordinary comment or code ends the run. Markdown code blocks, even inside lists
+or block quotes, are ignored. Whitespace is trimmed but list/quote markers remain;
+blank documentation lines are retained and do not reset comparison, while code
+blocks and owner/style changes do.
+Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs` or be below a
+`tests` directory. Modules named `tests` require `#[cfg(test)]`, every
+`#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
+These layout conventions support production line counting.
+Duplicate assertions are a review judgement.
 
 ## Documentation
 
@@ -49,6 +61,9 @@ The changelog is generated from conventional commits at release time.
 Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
+Hand-written documentation uses only `///` and `//!`; generated guest bindings in
+`maestro-extensions-wasm/src/bindings.rs` may use block doc comments. Their line
+documentation is still checked for repetition; block comments end the comparison run.
 
 All Rust comments describe the code, not planning material. Never include
 numbered slices, specs, tasks or tickets, issue/pull-request references,
@@ -224,6 +239,10 @@ syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
 `unicode-ident` is held at 1.0.24 in the lockfile because the lexer asserts
 matching Unicode tables; the hold lifts when `unicode-properties` publishes
 the newer tables.
+
+Documentation parsing uses `pulldown-cmark =0.13.4` with defaults off (MIT).
+Its additional dependencies are `bitflags =2.13.2` and `unicase =2.10.0`
+(MIT OR Apache-2.0).
 
 `maestro-tooling` alone may use `cargo_metadata =0.23.1` with default features
 (MIT). Its dependency closure uses MIT OR Apache-2.0 (camino, cargo-platform,

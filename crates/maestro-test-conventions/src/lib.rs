@@ -10,6 +10,8 @@ mod comments;
 mod graph;
 /// Source-size and protected-lint checks.
 mod quality;
+/// Repeated documentation and test source layout checks.
+mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
 
@@ -32,5 +34,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     let members = source::load(&metadata)?;
     boundaries::check(&members)?;
     comments::check(&members)?;
+    repetition::check(&members)?;
     quality::check(root, &members)
 }

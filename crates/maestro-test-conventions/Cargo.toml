@@ -14,5 +14,7 @@ ra-ap-rustc_lexer = "=0.176.0"
 serde = { version = "=1.0.229", features = ["derive"] }
 proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
 
+pulldown-cmark = { version = "=0.13.4", default-features = false }
+
 [lints]
 workspace = true

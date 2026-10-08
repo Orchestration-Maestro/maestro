@@ -108,3 +108,23 @@ pub(crate) fn comments(source: &str) -> Vec<(usize, &str)> {
     }
     comments
 }
+
+/// Recognize an item explicitly gated by the test configuration.
+pub(crate) fn cfg_test(attributes: &[syn::Attribute]) -> bool {
+    attributes.iter().any(|attribute| {
+        attribute.path().is_ident("cfg")
+            && attribute
+                .parse_args::<syn::Path>()
+                .is_ok_and(|path| path.is_ident("test"))
+    })
+}
+
+/// Recognize test source by its file name or a containing tests directory.
+pub(crate) fn test_layout(path: &Path, directory: &Path) -> bool {
+    path.file_name().is_some_and(|name| name == "tests.rs")
+        || path.strip_prefix(directory).is_ok_and(|relative| {
+            relative
+                .parent()
+                .is_some_and(|parent| parent.components().any(|part| part.as_os_str() == "tests"))
+        })
+}

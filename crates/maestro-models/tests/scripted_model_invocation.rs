@@ -1210,10 +1210,7 @@ mod tests {
         first.unregister();
         first.unregister();
         assert_eq!(
-            stream(selected.clone(), context("hi"), None)
-                .err()
-                .unwrap()
-                .message,
+            stream(selected, context("hi"), None).err().unwrap().message,
             format!("No API provider registered for api: {api}")
         );
         let second = register_faux_provider(RegisterFauxProviderOptions {

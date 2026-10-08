@@ -86,6 +86,12 @@ scratch workspaces, not certified as delivered capabilities.
 
 ## Quality checks
 
+Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
+Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
+Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
+Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or be below a `tests` directory. A module named `tests` must carry `#[cfg(test)]`, every `#[cfg(test)]` module must be named `tests`, and test module declarations cannot carry `#[path]`. These layout conventions support production line counting; module declarations are validated throughout the syntax tree.
+Duplicate assertions are a review judgement.
+
 The root manifest must forbid every protected quality lint; member manifests
 are parsed as TOML and must set the boolean `lints.workspace` to `true`.
 The compiler rejects protected-lint allowances, including attributes emitted by

@@ -29,7 +29,10 @@ fn five_hundred_code_lines_with_doc_comments_pass() {
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.join("crates/tui/src/lib.rs");
-    let mut source = "\t//! Module documentation.\n".repeat(600);
+    let mut source = String::new();
+    for index in 0..600 {
+        writeln!(source, "\t//! Module documentation line {index}.").unwrap();
+    }
     for index in 0..500 {
         writeln!(
             source,
@@ -47,7 +50,10 @@ fn five_hundred_one_code_lines_with_doc_comments_fail() {
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.join("crates/tui/src/lib.rs");
-    let mut source = "  //! Module documentation.\n".repeat(600);
+    let mut source = String::new();
+    for index in 0..600 {
+        writeln!(source, "  //! Module documentation line {index}.").unwrap();
+    }
     for index in 0..501 {
         writeln!(source, "\t/// Item documentation.\nconst P{index}: u8 = 0;").unwrap();
     }
@@ -121,7 +127,7 @@ fn multiple_trailing_test_modules_do_not_count() {
     std::fs::write(
         &path,
         format!(
-            "{}#[cfg(test)]\nmod first {{\n{}}}\n#[cfg(test)]\nmod second {{}}\n",
+            "{}#[cfg(test)]\n#[cfg(unix)]\nmod tests {{\n{}}}\n#[cfg(test)]\n#[cfg(not(unix))]\nmod tests {{}}\n",
             "// Technical.\n".repeat(500),
             "// Technical.\n".repeat(501)
         ),
@@ -163,8 +169,8 @@ fn test_modules_with_extra_attributes_do_not_count_as_production() {
     let root = workspace.root.join("crates/tui/src");
     std::fs::write(root.join("tests.rs"), "").unwrap();
     for attributes in [
-        "#[cfg(test)]\n#[path = \"tests.rs\"]\n",
-        "#[path = \"tests.rs\"]\n#[cfg(test)]\n",
+        "#[cfg(test)]\n#[cfg(unix)]\n",
+        "#[cfg(unix)]\n#[cfg(test)]\n",
     ] {
         std::fs::write(
             root.join("lib.rs"),
@@ -428,11 +434,11 @@ fn documentation_markers_in_literals_and_ordinary_comments_count() {
 }
 
 #[test]
-fn block_documentation_excludes_only_documentation_characters() {
+fn generated_block_documentation_excludes_only_documentation_characters() {
     let workspace = Workspace::new();
-    workspace.member("tui", "maestro-tui", "");
-    workspace.list(&[("maestro-tui", "core")]);
-    let path = workspace.root.join("crates/tui/src/lib.rs");
+    workspace.member("guest", "maestro-extensions-wasm", "");
+    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    let path = workspace.root.join("crates/guest/src/bindings.rs");
     let mut source = "/*!\n Module documentation.\n */\n".to_owned();
     for index in 0..500 {
         writeln!(
@@ -465,7 +471,7 @@ fn included_expressions_exclude_documentation_at_the_line_limit() {
     for index in 0..497 {
         writeln!(source, "/// Item documentation.\nconst P{index}: u8 = 0;").unwrap();
     }
-    source.push_str("/** Return documentation. */\n1_u8\n}\n");
+    source.push_str("/// Return documentation.\n1_u8\n}\n");
     std::fs::write(&fragment, &source).unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
     source.push_str("// Technical.\n");
@@ -520,4 +526,20 @@ fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
             .unwrap_err()
             .contains("production lines exceeds 500")
     );
+}
+
+#[test]
+fn redundant_clone_cannot_be_weakened() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace("redundant_clone = \"forbid\"\n", ""),
+    )
+    .unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("redundant_clone must be forbid"), "{error}");
 }

@@ -6,6 +6,60 @@ use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
 #[test]
+fn block_documentation_is_rejected_with_file_and_line() {
+    let workspace = Workspace::new();
+    workspace.member("models", "maestro-models", "");
+    workspace.list(&[("maestro-models", "core")]);
+    let path = workspace.root.join("crates/models/src/lib.rs");
+    for source in ["\n/** Item. */\npub struct Item;\n", "\n/*! Crate. */\n"] {
+        std::fs::write(&path, source).unwrap();
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert_eq!(
+            error,
+            format!("{}:2: block documentation: use /// or //!", path.display())
+        );
+    }
+}
+
+#[test]
+fn only_generated_guest_bindings_allow_block_documentation() {
+    let workspace = Workspace::new();
+    workspace.member("guest", "maestro-extensions-wasm", "");
+    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    let root = workspace.root.join("crates/guest/src");
+    let bindings = root.join("bindings.rs");
+    std::fs::write(
+        &bindings,
+        "//! Crate.\n/*! Crate. */\n//! Crate.\n/// Item.\n/** Item. */\n/// Item.\npub struct Item;",
+    )
+    .unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    let manual = root.join("manual.rs");
+    std::fs::write(&manual, "/** Item. */\npub struct Item;").unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert_eq!(
+        error,
+        format!(
+            "{}:1: block documentation: use /// or //!",
+            manual.display()
+        )
+    );
+    std::fs::remove_file(manual).unwrap();
+    workspace.member("models", "maestro-models", "");
+    workspace.list(&[
+        ("maestro-extensions-wasm", "core"),
+        ("maestro-models", "core"),
+    ]);
+    let other = workspace.root.join("crates/models/src/bindings.rs");
+    std::fs::write(&other, "/*! Crate. */").unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert_eq!(
+        error,
+        format!("{}:1: block documentation: use /// or //!", other.display())
+    );
+}
+
+#[test]
 fn numbered_planning_comments_are_rejected_with_file_and_line() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
