@@ -1,0 +1,947 @@
+[
+  {
+    "id": "empty:\"\"",
+    "input": "",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"a:b\"",
+    "input": "a:b",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"雪/🚦\"",
+    "input": "雪/🚦",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"﻿\"",
+    "input": "﻿",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"\"",
+    "input": "",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"__proto__\"",
+    "input": "__proto__",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"constructor\"",
+    "input": "constructor",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"error\"",
+    "input": "error",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"newListener\"",
+    "input": "newListener",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "empty:\"removeListener\"",
+    "input": "removeListener",
+    "expected": "inert",
+    "test": "empty_channels_are_inert"
+  },
+  {
+    "id": "payload:\"\"",
+    "input": {
+      "channel": "",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"a:b\"",
+    "input": {
+      "channel": "a:b",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"雪/🚦\"",
+    "input": {
+      "channel": "雪/🚦",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"﻿\"",
+    "input": {
+      "channel": "﻿",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"\"",
+    "input": {
+      "channel": "",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"__proto__\"",
+    "input": {
+      "channel": "__proto__",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"constructor\"",
+    "input": {
+      "channel": "constructor",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"error\"",
+    "input": {
+      "channel": "error",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"newListener\"",
+    "input": {
+      "channel": "newListener",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "payload:\"removeListener\"",
+    "input": {
+      "channel": "removeListener",
+      "data": {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    },
+    "expected": [
+      {
+        "2": "two",
+        "10": "ten",
+        "z": [
+          null,
+          false,
+          0,
+          ""
+        ],
+        "a": {
+          "x": "雪"
+        }
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "duplicates",
+    "expected": [
+      1,
+      1,
+      2
+    ]
+  },
+  {
+    "id": "channels-clear",
+    "expected": [
+      [
+        "x",
+        1
+      ],
+      [
+        "y",
+        2
+      ],
+      [
+        "new",
+        4
+      ]
+    ]
+  },
+  {
+    "id": "snapshot-add",
+    "expected": [
+      "a1",
+      "b1",
+      "a2",
+      "b2",
+      "c2"
+    ]
+  },
+  {
+    "id": "snapshot-remove",
+    "expected": [
+      "a1",
+      "b1",
+      "a2"
+    ]
+  },
+  {
+    "id": "snapshot-clear",
+    "expected": [
+      "a1",
+      "b1"
+    ]
+  },
+  {
+    "id": "single-snapshot",
+    "expected": [
+      "a1",
+      "b2"
+    ]
+  },
+  {
+    "id": "nested-snapshot",
+    "expected": [
+      "a1",
+      "a2",
+      "c2",
+      "b1"
+    ]
+  },
+  {
+    "id": "ready-tails",
+    "expected": [
+      "a:prefix",
+      "b:prefix",
+      "emit:return",
+      "a:tail",
+      "b:tail"
+    ]
+  },
+  {
+    "id": "pending-tail",
+    "expected": [
+      "prefix",
+      "emit:return",
+      "tail",
+      "emitter:resumed"
+    ]
+  },
+  {
+    "id": "retention-unsubscribe",
+    "expected": [
+      "prefix",
+      "unsubscribe",
+      [
+        "tail",
+        false
+      ]
+    ]
+  },
+  {
+    "id": "retention-clear",
+    "expected": [
+      "prefix",
+      "clear",
+      [
+        "tail",
+        false
+      ]
+    ]
+  },
+  {
+    "id": "retention-abort",
+    "expected": [
+      "prefix",
+      "abort",
+      [
+        "tail",
+        true
+      ]
+    ]
+  },
+  {
+    "id": "prefix-error",
+    "expected": {
+      "trace": [
+        "bad",
+        "healthy",
+        "return"
+      ],
+      "errors": [
+        "Event handler error (x): prefix failure\n"
+      ]
+    },
+    "test": "listener_errors_are_attributed_without_stopping_delivery"
+  },
+  {
+    "id": "tail-error",
+    "expected": {
+      "trace": [
+        "bad:prefix",
+        "healthy",
+        "return"
+      ],
+      "errors": [
+        "Event handler error (x): tail failure\n"
+      ]
+    }
+  },
+  {
+    "id": "tail-emit",
+    "expected": [
+      "outer:prefix",
+      "return",
+      "inner:prefix",
+      "outer:tail"
+    ]
+  },
+  {
+    "id": "reentry",
+    "expected": [
+      "a:start",
+      "a:end",
+      "b:start",
+      "b:end",
+      "a:back",
+      "return"
+    ]
+  },
+  {
+    "id": "magic-metadata",
+    "expected": []
+  },
+  {
+    "id": "repeat-error",
+    "expected": {
+      "trace": [
+        "attempt",
+        "healthy",
+        "attempt",
+        "healthy"
+      ],
+      "errors": [
+        "Event handler error (x): instance a trapped\n",
+        "Event handler error (x): instance a trapped\n"
+      ]
+    }
+  },
+  {
+    "id": "unbounded",
+    "input": 16,
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "callback-return",
+    "expected": [
+      "body:start",
+      "same",
+      "body:end",
+      "foreign",
+      "release"
+    ]
+  },
+  {
+    "id": "deferred-snapshot",
+    "expected": [
+      "start",
+      "end",
+      "foreign:1",
+      "new:2"
+    ]
+  },
+  {
+    "id": "each-return",
+    "expected": [
+      "dispose:start",
+      "dispose:end",
+      "foreign",
+      "release",
+      "factory:start",
+      "factory:end",
+      "foreign",
+      "installed"
+    ]
+  },
+  {
+    "id": "overlap",
+    "expected": [
+      "a:prefix",
+      "b:prefix",
+      [
+        "a:tail",
+        false
+      ],
+      "a:done",
+      [
+        "b:tail",
+        true
+      ],
+      "b:done"
+    ]
+  },
+  {
+    "id": "count:0",
+    "input": 0,
+    "expected": [],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "count:1",
+    "input": 1,
+    "expected": [
+      0
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "count:10",
+    "input": 10,
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "count:11",
+    "input": 11,
+    "expected": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "test": "all_subscribers_are_delivered_without_a_warning_threshold"
+  },
+  {
+    "id": "same-nested",
+    "expected": [
+      "start",
+      "same",
+      "end"
+    ]
+  },
+  {
+    "id": "callback-error",
+    "expected": {
+      "trace": [
+        "foreign"
+      ],
+      "errors": [
+        "Event handler error (outer): prefix failure\n"
+      ]
+    }
+  },
+  {
+    "id": "root:null",
+    "input": {
+      "channel": "payload",
+      "data": null
+    },
+    "expected": [
+      null
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:false",
+    "input": {
+      "channel": "payload",
+      "data": false
+    },
+    "expected": [
+      false
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:true",
+    "input": {
+      "channel": "payload",
+      "data": true
+    },
+    "expected": [
+      true
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:0",
+    "input": {
+      "channel": "payload",
+      "data": 0
+    },
+    "expected": [
+      0
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:-1",
+    "input": {
+      "channel": "payload",
+      "data": -1
+    },
+    "expected": [
+      -1
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:1.25",
+    "input": {
+      "channel": "payload",
+      "data": 1.25
+    },
+    "expected": [
+      1.25
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:\"\"",
+    "input": {
+      "channel": "payload",
+      "data": ""
+    },
+    "expected": [
+      ""
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:[null,false,\"雪\"]",
+    "input": {
+      "channel": "payload",
+      "data": [
+        null,
+        false,
+        "雪"
+      ]
+    },
+    "expected": [
+      [
+        null,
+        false,
+        "雪"
+      ]
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "root:{\"missing\":false,\"present\":null}",
+    "input": {
+      "channel": "payload",
+      "data": {
+        "missing": false,
+        "present": null
+      }
+    },
+    "expected": [
+      {
+        "missing": false,
+        "present": null
+      }
+    ],
+    "test": "channels_preserve_payload_values_and_order"
+  },
+  {
+    "id": "pending-before-ready",
+    "expected": [
+      "a:prefix",
+      "b:prefix",
+      "return",
+      "b:tail",
+      "a:tail"
+    ]
+  },
+  {
+    "id": "nested-scopes",
+    "expected": [
+      "outer:start",
+      "inner:start",
+      "inner:end",
+      "foreign:inner",
+      "outer:end",
+      "foreign:outer",
+      "return"
+    ]
+  },
+  {
+    "id": "ignored-unsubscribe",
+    "expected": [
+      "first",
+      "second",
+      "after-clear"
+    ]
+  },
+  {
+    "id": "diagnostic:\"\"",
+    "input": {
+      "channel": "",
+      "cause": "empty"
+    },
+    "expected": {
+      "errors": [
+        "Event handler error (): empty\n"
+      ]
+    },
+    "test": "listener_errors_are_attributed_without_stopping_delivery"
+  },
+  {
+    "id": "diagnostic:\"雪/🚦\"",
+    "input": {
+      "channel": "雪/🚦",
+      "cause": "line one\nline two"
+    },
+    "expected": {
+      "errors": [
+        "Event handler error (雪/🚦): line one\nline two\n"
+      ]
+    },
+    "test": "listener_errors_are_attributed_without_stopping_delivery"
+  },
+  {
+    "id": "nested-tails:same-ready",
+    "expected": [
+      "a:start",
+      "b:start",
+      "a:back",
+      "b:end",
+      "a:end",
+      "return",
+      "a:back:tail",
+      "b:tail",
+      "a:tail"
+    ]
+  },
+  {
+    "id": "nested-tails:foreign-ready",
+    "expected": [
+      "a:start",
+      "a:end",
+      "b:start",
+      "b:end",
+      "a:back",
+      "return",
+      "a:back:tail",
+      "b:tail",
+      "a:tail"
+    ]
+  },
+  {
+    "id": "nested-tails:foreign-pending",
+    "expected": [
+      "a:start",
+      "a:end",
+      "b:start",
+      "b:end",
+      "a:back",
+      "return",
+      "a:tail",
+      "a:back:tail",
+      "b:tail"
+    ]
+  }
+]
