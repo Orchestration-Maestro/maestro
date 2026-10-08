@@ -62,7 +62,7 @@ pub fn load_skills_from_dir(
     options: LoadSkillsFromDirOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    with_process_context(operations, |ctx| {
+    with_process_context(operations, |ctx, _| {
         discovery::scan(options.dir, options.cwd, ctx, options.source, operations)
     })
 }
@@ -157,7 +157,9 @@ pub fn load_skills(
     options: LoadSkillsOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    with_process_context(operations, |ctx| load_skills_in(options, ctx, operations))
+    with_process_context(operations, |ctx, _| {
+        load_skills_in(options, ctx, operations)
+    })
 }
 /// Load defaults and explicit paths.
 ///

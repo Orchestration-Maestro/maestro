@@ -1,23 +1,9 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
 use super::operations::{ResourceOperations, with_process_context};
-use maestro_path::{Cwd, SEP, dirname, resolve};
-use std::{
-    borrow::Cow,
-    io,
-    path::{Path, PathBuf},
-};
-
-/// Link expansions one resolution may need on Linux, its `MAXSYMLINKS` (see `path_resolution(7)`).
-#[cfg(target_os = "linux")]
-const MAX_LINK_EXPANSIONS: usize = 40;
-/// Reparse points one resolution may need on Windows.
-#[cfg(windows)]
-const MAX_LINK_EXPANSIONS: usize = 63;
-/// Link expansions one resolution may need on macOS and the BSDs: their
-/// `MAXSYMLINKS` in `sys/param.h`.
-#[cfg(not(any(target_os = "linux", windows)))]
-const MAX_LINK_EXPANSIONS: usize = 32;
+use maestro_path::{Cwd, SEP, dirname, is_absolute, resolve};
+use std::path::{Path, PathBuf};
+use std::{borrow::Cow, collections::HashMap, io};
 
 /// Resolve `path` against the process working directory, then follow its links.
 ///
@@ -27,38 +13,42 @@ const MAX_LINK_EXPANSIONS: usize = 32;
 /// restarts from the root until no component is a link. Components that are not
 /// links keep their authored spelling and case, and a Windows link target that
 /// names a drive or share loses its verbatim prefix. On Windows a drive-relative
-/// path continues from the drive directory `operations` reports. The walk ends
-/// like the platform's own path resolution: it fails once it needs more link
-/// expansions than the platform allows, so links that fold back into each other
-/// do not loop forever. A relative path is inspected from `.`, so an unreadable
-/// working directory fails it.
+/// path continues from the drive directory `operations` reports. A link may be
+/// expanded any number of times, as in `loop/loop/x` with `loop` linked to its
+/// own directory, except that expanding it again while everything that followed
+/// it at its previous expansion still ends the path after it cannot progress, so
+/// the walk fails instead of looping forever. A path that is still relative after
+/// the lexical resolution needs the working directory, so it fails when
+/// `operations` cannot read it; an absolute path does not.
 ///
 /// # Errors
-/// Returns the cause of the first failed observation: a path that is not UTF-8,
-/// a component that cannot be inspected, a link whose target is missing or loops,
-/// a walk that needs more link expansions than the platform allows, or a link
-/// that cannot be read.
+/// Returns the first failure: a path that is not UTF-8, a relative path whose
+/// working directory cannot be read (the kind of that error), a component that
+/// cannot be inspected, a link whose target is missing or loops, a link whose
+/// expansion cannot progress, or a link that cannot be read.
 pub(super) fn real_path(path: &Path, operations: &dyn ResourceOperations) -> io::Result<PathBuf> {
     let path = path.to_str().ok_or(io::ErrorKind::InvalidInput)?;
-    with_process_context(operations, |ctx| follow_links(path, ctx))
-}
-
-/// Fold `path` lexically, then expand its links until none remains.
-fn follow_links(path: &str, ctx: &Cwd<'_>) -> io::Result<PathBuf> {
-    let mut resolved = resolve(&[path], ctx);
-    for _ in 0..=MAX_LINK_EXPANSIONS {
-        match expand_first_link(&resolved, ctx)? {
-            Some(expanded) => resolved = expanded,
-            None => return Ok(PathBuf::from(resolved)),
+    with_process_context(operations, |ctx, unreadable| {
+        let mut resolved = resolve(&[path], ctx);
+        if let Some(kind) = unreadable.filter(|_| !is_absolute(&resolved)) {
+            return Err(kind.into());
         }
-    }
-    Err(io::Error::other("too many levels of symbolic links"))
+        let mut seen = Seen::new();
+        while let Some(next) = expand_first_link(&resolved, ctx, &mut seen)? {
+            resolved = next;
+        }
+        Ok(PathBuf::from(resolved))
+    })
 }
 
-/// Replace the first link component of a resolved path by its target.
+/// The components after each link location when it was last expanded.
+type Seen = HashMap<String, String>;
+
+/// Replace the first link component of an absolute resolved path by its target.
 ///
-/// Returns `None` when no component is a link.
-fn expand_first_link(path: &str, ctx: &Cwd<'_>) -> io::Result<Option<String>> {
+/// Returns `None` when no component is a link. Fails when that link was expanded
+/// before and everything that followed it then still ends the path after it.
+fn expand_first_link(path: &str, ctx: &Cwd<'_>, seen: &mut Seen) -> io::Result<Option<String>> {
     let root = root_len(path);
     std::fs::symlink_metadata(&path[..root])?;
     let mut parent_end = root;
@@ -70,6 +60,11 @@ fn expand_first_link(path: &str, ctx: &Cwd<'_>) -> io::Result<Option<String>> {
         let link = &path[..end];
         if std::fs::symlink_metadata(link)?.is_symlink() {
             std::fs::metadata(link)?;
+            let rest = path[end..].trim_start_matches(SEP);
+            let before = seen.insert(link.to_owned(), rest.to_owned());
+            if before.is_some_and(|before| Path::new(rest).ends_with(before)) {
+                return Err(io::Error::other("symbolic link expansion cannot progress"));
+            }
             let target = std::fs::read_link(link)?.to_string_lossy().into_owned();
             let target = if cfg!(windows) {
                 plain_link_target(&target)
@@ -77,7 +72,6 @@ fn expand_first_link(path: &str, ctx: &Cwd<'_>) -> io::Result<Option<String>> {
                 Cow::Borrowed(target.as_str())
             };
             let linked = resolve(&[&path[..parent_end], &target], ctx);
-            let rest = path[end..].trim_start_matches(SEP);
             return Ok(Some(resolve(&[&linked, rest], ctx)));
         }
         parent_end = end;
@@ -85,7 +79,8 @@ fn expand_first_link(path: &str, ctx: &Cwd<'_>) -> io::Result<Option<String>> {
     Ok(None)
 }
 
-/// Byte length of a resolved path's root: the fixed point of `dirname`.
+/// Byte length of an absolute resolved path's root: the fixed point of `dirname`,
+/// which is a leading part of the path.
 fn root_len(path: &str) -> usize {
     let mut root = path.to_owned();
     loop {

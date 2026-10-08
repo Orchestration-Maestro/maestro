@@ -273,18 +273,33 @@ fn maestro_paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths()
     );
 }
 
-/// Expand a link to its own directory each time the path passes through it.
+/// Expand a link to its own directory once for every time the path passes through it.
 #[cfg(unix)]
 #[test]
 fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
     let dir = support::Directory::new();
     let file = dir.file("d/x", "hello");
     std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
+    for traversals in [2, 40, 41, 100] {
+        let path = format!("{}/d/{}x", text(&dir.0), "loop/".repeat(traversals));
+        assert_eq!(
+            canonicalize_path(&path, &NativeResourceOperations),
+            text(&file),
+            "{traversals} traversals"
+        );
+    }
+}
+
+/// Compare the remainder after a repeated link by whole components, not by trailing text.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_text() {
+    let dir = support::Directory::new();
+    let file = dir.file("d/ax", "hello");
+    std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
+    std::os::unix::fs::symlink("loop/ax", dir.0.join("d/x")).unwrap();
     assert_eq!(
-        canonicalize_path(
-            text(&dir.0.join("d/loop/loop/x")),
-            &NativeResourceOperations
-        ),
+        canonicalize_path(text(&dir.0.join("d/loop/x")), &NativeResourceOperations),
         text(&file)
     );
 }

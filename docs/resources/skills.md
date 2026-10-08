@@ -65,11 +65,14 @@ lexically, resolving a relative path against the process working directory, so
 `link/..` names the directory holding `link`. It then replaces each link by its
 target, read relative to the link's directory; other components keep their
 authored spelling and case, and a Windows link target that names a drive or share
-loses its verbatim prefix. When a component cannot be inspected, a link target is
-missing, a link loops or the walk needs more link expansions than the platform
-allows (40 on Linux, 32 on macOS and the BSDs, 63 on Windows), exact authored
-strings are the identity keys, so distinct absolute spellings can produce name
-collisions.
+loses its verbatim prefix. A link may be expanded any number of times:
+`loop/loop/x`, with `loop` linked to its own directory, resolves however often
+`loop` repeats. The exception is a link met again while everything that followed
+it at its previous expansion still ends the path after it; that repeat cannot
+progress. When a component cannot be inspected, a link target is missing, a link
+loops, a link's expansion cannot progress or a relative path needs a working
+directory that cannot be read, exact authored strings are the identity keys, so
+distinct absolute spellings can produce name collisions.
 Ordinary diagnostics precede all collisions.
 With defaults disabled, explicit paths equal to a resolved user or project skills
 root, or beginning with that root plus its separator, receive that scope, with user
@@ -120,9 +123,11 @@ access is separate: the adapter receives each scanned directory as authored and
 each project or explicit path as the loader computed it, so `cwd` never
 relocates an authored path it reads. The process directories the adapter reports
 complete only what those operands leave open, and alone resolve native real
-paths and the user and project roots that classify explicit paths. Each scan
-shares one case-insensitive ignore matcher. Its root and candidates are resolved
-from that working directory; rule prefixes use their lexical relative paths.
+paths and the user and project roots that classify explicit paths. A working
+directory the adapter cannot read anchors nothing: a path that no operand or
+drive directory anchors stays relative, or on Windows rooted without a drive.
+Each scan shares one case-insensitive ignore matcher. Its root and candidates are
+resolved from `cwd`; rule prefixes use their lexical relative paths.
 Rules are appended in
 `.gitignore`, `.ignore`, `.fdignore` order with directory prefixes and compiled
 when rules change. Later rules may reopen files, but child negation cannot reopen

@@ -20,8 +20,10 @@ fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
         canonicalize_path(text(&alias.join("skill.md")), &NativeResourceOperations),
         text(&file)
     );
-    assert_eq!(
-        canonicalize_path("alias/skill.md", &NativeResourceOperations),
-        "alias/skill.md"
-    );
+    for relative in ["alias/skill.md", "é.md", "é/ü.md"] {
+        assert_eq!(
+            canonicalize_path(relative, &NativeResourceOperations),
+            relative
+        );
+    }
 }

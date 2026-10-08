@@ -1,7 +1,7 @@
 //! Process-directory context shared by every path resolution.
 
 use super::operations::with_process_context;
-#[cfg(windows)]
+#[cfg(not(target_arch = "wasm32"))]
 use super::real_path::real_path;
 use super::{LoadSkillsOptions, ResourceEntry, ResourceFileType, ResourceOperations, load_skills};
 use maestro_path::win32;
@@ -13,8 +13,8 @@ use std::{
 
 /// Adapter with fixed process directories over a filesystem holding at most one file.
 struct Process {
-    /// The process working directory.
-    current: String,
+    /// The process working directory, or none when it cannot be read.
+    current: Option<String>,
     /// The current directory of each drive.
     drives: Vec<(char, String)>,
     /// The only file that exists, with its text.
@@ -57,7 +57,9 @@ impl ResourceOperations for Process {
         Err(io::ErrorKind::NotFound.into())
     }
     fn current_directory(&self) -> io::Result<String> {
-        Ok(self.current.clone())
+        self.current
+            .clone()
+            .ok_or_else(|| io::ErrorKind::PermissionDenied.into())
     }
     fn drive_directories(&self) -> Vec<(char, String)> {
         self.drives.clone()
@@ -67,7 +69,7 @@ impl ResourceOperations for Process {
 /// Report `current` and `entries` as the process directories of an empty filesystem.
 fn process(current: &str, entries: &[(char, &str)]) -> Process {
     Process {
-        current: current.to_owned(),
+        current: Some(current.to_owned()),
         drives: entries
             .iter()
             .map(|(letter, directory)| (*letter, (*directory).to_owned()))
@@ -116,6 +118,29 @@ fn explicit_path_beneath_a_relative_cwd_continues_from_the_process_directory() {
     );
 }
 
+/// An unreadable process directory matters only to a path that no operand anchors.
+#[cfg(not(windows))]
+#[test]
+fn explicit_paths_need_the_process_directory_only_beneath_a_relative_cwd() {
+    let mut adapter = process("/process", &[]);
+    adapter.current = None;
+    for (cwd, located) in [("work", "work/notes.md"), ("/work", "/work/notes.md")] {
+        let result = load(&adapter, (cwd, "/agent"), &["notes.md"], false);
+        assert_eq!(result.diagnostics[0].path.as_deref(), Some(located));
+    }
+}
+
+/// A relative path fails with the working-directory error kind; an absolute path does not.
+#[cfg(unix)]
+#[test]
+fn real_path_needs_the_working_directory_only_for_a_relative_path() {
+    let mut adapter = process("/process", &[]);
+    adapter.current = None;
+    let error = real_path(Path::new("é.md"), &adapter).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+    assert_eq!(real_path(Path::new("/"), &adapter).unwrap(), Path::new("/"));
+}
+
 /// The project defaults directory is the caller directory joined with the configuration name.
 #[cfg(not(windows))]
 #[test]
@@ -156,7 +181,7 @@ fn resolution_context_continues_other_drives_from_their_reported_directories() {
         r"C:\Users\me",
         &[('C', r"C:\Users\me"), ('D', r"D:\skills")],
     );
-    with_process_context(&adapter, |context| {
+    with_process_context(&adapter, |context, _| {
         assert_eq!(context.current, r"C:\Users\me");
         assert_eq!(
             win32::resolve(&[r"C:\work", r"C:notes.md"], context),
@@ -173,7 +198,7 @@ fn resolution_context_continues_other_drives_from_their_reported_directories() {
 #[test]
 fn resolution_context_falls_back_to_the_drive_root_without_an_entry() {
     let adapter = process(r"C:\Users\me", &[('C', r"C:\Users\me")]);
-    with_process_context(&adapter, |context| {
+    with_process_context(&adapter, |context, _| {
         assert_eq!(
             win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], context),
             r"D:\calendar\SKILL.md"

@@ -51,8 +51,8 @@ pub trait ResourceOperations {
     /// Resolve a real path.
     ///
     /// Native operations fold `.` and `..` lexically, replace each link
-    /// component by its target and fail once a walk needs more link expansions
-    /// than the platform allows.
+    /// component by its target and fail when a link's expansion cannot
+    /// progress or the path needs a working directory that cannot be read.
     ///
     /// # Errors
     /// Returns the I/O cause of the failed resolution.
@@ -78,23 +78,27 @@ pub trait ResourceOperations {
 ///
 /// This is the only place a `Cwd` is built. The context holds process state
 /// only: a caller's working directory is an operand of each resolution, and the
-/// context supplies what its operands leave open. A working directory that cannot
-/// be read is empty: a path then resolves to an absolute path only when its
-/// operands or a drive directory anchor it.
+/// context supplies what its operands leave open. A working directory that
+/// cannot be read counts as absent, as an empty directory does for
+/// `maestro_path`, so a path that no operand or drive directory anchors stays
+/// unanchored: relative, or on Windows rooted without a drive. `operation` also
+/// receives the kind of that failure, so a caller that needs an absolute path
+/// can fail with it.
 pub(super) fn with_process_context<R>(
     operations: &dyn ResourceOperations,
-    operation: impl FnOnce(&Cwd<'_>) -> R,
+    operation: impl FnOnce(&Cwd<'_>, Option<io::ErrorKind>) -> R,
 ) -> R {
-    let current = operations.current_directory().unwrap_or_default();
+    let current = operations.current_directory();
     let entries = operations.drive_directories();
     let drives: Vec<(char, &str)> = entries
         .iter()
         .map(|(letter, directory)| (*letter, directory.as_str()))
         .collect();
-    operation(&Cwd {
-        current: &current,
+    let cwd = Cwd {
+        current: current.as_deref().unwrap_or(""),
         drive_directories: &drives,
-    })
+    };
+    operation(&cwd, current.as_ref().err().map(io::Error::kind))
 }
 
 /// Standard native filesystem operations.
