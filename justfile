@@ -166,3 +166,9 @@ run-source-windows *args:
 # Compile the real browser entry when its owner has supplied it.
 check-browser-smoke:
     cargo run --quiet --locked -p maestro-tooling --bin development -- check-browser-smoke
+
+# Build the example extension component and run the callback prototype checks.
+extension-callbacks-prototype:
+    rustup target add wasm32-wasip2
+    cargo build --manifest-path prototypes/extension-callbacks/Cargo.toml --locked -p extension-example-component --target wasm32-wasip2
+    cargo test --manifest-path prototypes/extension-callbacks/Cargo.toml --locked --workspace

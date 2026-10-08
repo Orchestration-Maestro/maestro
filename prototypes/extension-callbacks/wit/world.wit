@@ -1,0 +1,8 @@
+package maestro:extension@0.1.0;
+
+/// The one world an authored extension component targets.
+world extension {
+    import types;
+    import host;
+    export guest;
+}

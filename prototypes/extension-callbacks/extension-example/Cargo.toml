@@ -1,0 +1,17 @@
+[package]
+name = "extension-example"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Author function run through both the component adapter and the controlled adapter."
+
+[lints]
+workspace = true
+
+[dependencies]
+maestro-extensions-wasm = { path = "../sdk" }
+serde_json.workspace = true
+
+[dev-dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "macros", "sync"] }

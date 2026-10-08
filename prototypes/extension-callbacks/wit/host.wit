@@ -1,0 +1,16 @@
+package maestro:extension@0.1.0;
+
+/// Registration and ordinary actions the host provides to the extension.
+interface host {
+    use types.{callback, tool-metadata};
+
+    register-tool: func(
+        metadata: tool-metadata,
+        prepare-arguments: option<borrow<callback>>,
+        execute: borrow<callback>,
+    ) -> result<_, string>;
+    on-input: func(handler: borrow<callback>) -> result<_, string>;
+    register-command: func(name: string, handler: borrow<callback>) -> result<_, string>;
+    register-message-renderer: func(custom-type: string, renderer: borrow<callback>) -> result<_, string>;
+    append-entry: func(custom-type: string, data: option<string>) -> result<_, string>;
+}

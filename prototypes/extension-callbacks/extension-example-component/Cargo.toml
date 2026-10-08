@@ -1,0 +1,17 @@
+[package]
+name = "extension-example-component"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The example extension built as a native-async component."
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+maestro-extensions-wasm = { path = "../sdk" }
+extension-example = { path = "../extension-example" }

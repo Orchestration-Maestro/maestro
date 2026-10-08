@@ -1,0 +1,12 @@
+[package]
+name = "exported-resource-registration"
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "A guest-exported resource cannot be handed to an import that expects the same resource."
+
+[workspace]
+
+[dependencies]
+wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "std"] }

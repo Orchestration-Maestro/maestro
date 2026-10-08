@@ -1,0 +1,34 @@
+package maestro:extension@0.1.0;
+
+/// Callbacks the host invokes on the extension.
+interface guest {
+    use types.{
+        callback, abort-signal, tool-update, context, command-context,
+        replaced-session-context, input-event, input-outcome, tool-result,
+        custom-message,
+    };
+
+    /// A component the host asks to draw itself.
+    resource component {
+        render: func(width: u32) -> list<string>;
+        invalidate: func();
+    }
+
+    /// Runs the extension factory; returns when it has completed.
+    start: async func() -> result<_, string>;
+    /// Drops the closure behind a registered callback and its identity.
+    release: func(handler: borrow<callback>);
+    invoke-input: async func(handler: borrow<callback>, event: input-event, ctx: context) -> input-outcome;
+    prepare-arguments: func(handler: borrow<callback>, raw: string) -> result<string, string>;
+    invoke-tool: async func(
+        handler: borrow<callback>,
+        call-id: string,
+        params: string,
+        signal: option<abort-signal>,
+        update: option<tool-update>,
+        ctx: context,
+    ) -> result<tool-result, string>;
+    invoke-command: async func(handler: borrow<callback>, args: string, ctx: command-context) -> result<_, string>;
+    invoke-with-session: async func(handler: borrow<callback>, ctx: replaced-session-context) -> result<_, string>;
+    invoke-renderer: func(handler: borrow<callback>, message: custom-message, expanded: bool) -> result<option<component>, string>;
+}

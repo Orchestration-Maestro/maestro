@@ -1,0 +1,22 @@
+[package]
+name = "extension-host-probe"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Test-only host that instantiates the example component."
+
+[[test]]
+name = "component_host"
+path = "tests/component_host.rs"
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+wasmtime = { version = "=49.0.2", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async"] }
+wasmtime-wasi = { version = "=49.0.2", default-features = false, features = ["p2"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "macros", "sync"] }
+wit-component = { version = "=0.259.0", default-features = false }
+wasmparser = { version = "=0.259.0", default-features = false, features = ["std", "component-model"] }
+wit-parser = { version = "=0.259.0", default-features = false, features = ["std", "decoding"] }
