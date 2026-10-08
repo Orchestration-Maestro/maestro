@@ -11,12 +11,12 @@ A recognized escape is a CSI sequence (`ESC [` up to and including the first `m`
 including the first BEL or `ESC \`). Any other text, including an escape with no
 terminator, is visible text. A recognized escape takes no cells.
 
-- A CSI sequence that contains `ESC [`, digits and semicolons, and `m` is a style
-  escape; when it contains several such parts, the leftmost sets the style.
+- A CSI sequence that ends in `m` is a style escape when only digits and semicolons
+  lie between its last `ESC [` and that `m`; they are its parameters.
 - An OSC 8 string (`ESC ] 8 ; params ; uri`) opens a hyperlink, or closes the open
   one when `uri` is empty.
-- Every other recognized escape is metadata, such as a prompt marker or the cursor
-  marker; it never changes the style.
+- Every other recognized escape is metadata, such as a prompt marker, the cursor
+  marker or an erase sequence.
 
 A style escape applies its parameters one by one, left to right. `0`, and an empty
 list, reset attributes and colours but leave the hyperlink open. `1` to `5`, `7`, `8`

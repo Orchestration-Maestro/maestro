@@ -83,7 +83,8 @@ fn string_escape_length(body: &str) -> Option<usize> {
     })
 }
 
-/// Parameters of the leftmost `ESC [ digits-and-semicolons m` inside a CSI escape.
+/// Digits and semicolons between the last `ESC [` of a CSI escape and its final `m`; `None`
+/// when the escape does not end in `m` or anything else lies between them.
 fn sgr_params(code: &str) -> Option<&str> {
     let inner = code.strip_suffix('m')?;
     inner.match_indices("\x1b[").find_map(|(index, _)| {

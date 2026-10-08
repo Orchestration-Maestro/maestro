@@ -337,7 +337,8 @@ fn sgr_continuations_keep_canonical_attributes_and_color_spelling() {
     }
 }
 
-/// A malformed CSI that ends in `m` takes the style of the leftmost complete SGR inside it.
+/// A CSI that ends in `m` sets the style from the parameters between its last `ESC [` and
+/// that `m`, whatever text precedes them inside the sequence.
 #[test]
 fn style_follows_the_sgr_nested_in_a_malformed_csi() {
     let cases: &[(&str, &[&str])] = &[
