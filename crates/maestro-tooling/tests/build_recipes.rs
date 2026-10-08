@@ -529,23 +529,7 @@ fn maestro_watch_stops_its_children_on_panic() {
         let _child = child;
         panic!("controlled panic after starting the watch");
     }));
-    let disconnected = loop {
-        match receive.recv_timeout(std::time::Duration::from_secs(10)) {
-            Ok(_) => {}
-            Err(error) => break error == std::sync::mpsc::RecvTimeoutError::Disconnected,
-        }
-    };
-    // Rescue descendants when checking an incomplete cleanup implementation.
-    if !disconnected {
-        Command::new("kill")
-            .args(["-KILL", "--", &format!("-{group}")])
-            .status()
-            .unwrap();
-    }
-    drop(receive);
-    for thread in threads {
-        thread.join().unwrap();
-    }
+    let disconnected = close_watch_output(group, receive, threads);
     assert!(panic.is_err());
     assert!(
         disconnected,
@@ -588,7 +572,10 @@ fn maestro_watch_profiles_are_isolated_before_group_start() {
         let produced = scratch.is_dir().then(|| profile_snapshot(&scratch));
         let group = child.0.id();
         drop(child);
-        close_profile_output(group, &receive, threads);
+        assert!(
+            close_watch_output(group, receive, threads),
+            "profile fixture retained its output after cleanup"
+        );
         assert_eq!(
             profile_snapshot(&merge),
             control,
@@ -637,7 +624,10 @@ fn maestro_watch_profile_isolation_survives_panic_cleanup() {
         let _child = child;
         panic!("controlled panic after profile child exit");
     }));
-    close_profile_output(group, &receive, threads);
+    assert!(
+        close_watch_output(group, receive, threads),
+        "profile fixture retained its output after cleanup"
+    );
     assert!(panic.is_err());
     assert_eq!(
         profile_snapshot(&merge),
@@ -706,13 +696,13 @@ fn profile_snapshot(directory: &Path) -> Vec<(std::ffi::OsString, Vec<u8>)> {
     files
 }
 
-/// Closes the controlled producer set before checking that merge inputs remain unchanged.
+/// Drains output, rescues lingering descendants and joins readers, returning whether output closed.
 #[cfg(unix)]
-fn close_profile_output(
+fn close_watch_output(
     group: u32,
-    receive: &std::sync::mpsc::Receiver<String>,
+    receive: std::sync::mpsc::Receiver<String>,
     threads: [std::thread::JoinHandle<()>; 1],
-) {
+) -> bool {
     let disconnected = loop {
         match receive.recv_timeout(std::time::Duration::from_secs(10)) {
             Ok(_) => {}
@@ -725,13 +715,11 @@ fn close_profile_output(
             .status()
             .unwrap();
     }
+    drop(receive);
     for thread in threads {
         thread.join().unwrap();
     }
-    assert!(
-        disconnected,
-        "profile fixture retained its output after cleanup"
-    );
+    disconnected
 }
 
 #[cfg(unix)]
