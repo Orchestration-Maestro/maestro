@@ -60,6 +60,9 @@ The checker supports object, array, string, number and composition constraints,
 offline schema resources, anchors, recursive and dynamic references, and evaluated
 property/item tracking. Both tuple forms can occur in one schema. References are
 never fetched; unknown resources and non-progressing cycles reject normally.
+Every string `$id`, including a fragment-only identifier, becomes the reference
+base for its subtree. Array pointer segments use exact unsigned index names:
+`0` and `1` resolve, while `+0`, `+1` and `01` do not.
 Known string formats are asserted, unknown format names remain annotations, and
 string lengths count extended grapheme clusters.
 

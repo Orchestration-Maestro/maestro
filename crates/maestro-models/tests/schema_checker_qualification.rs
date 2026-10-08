@@ -943,3 +943,37 @@ fn maestro_accepts_dependent_schemas_and_active_contains_maximum() {
     )
     .unwrap();
 }
+
+#[test]
+fn maestro_resolves_pointers_inside_fragment_id_scopes() {
+    for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
+        let schema = json!({"$defs":{"n":{"$id":"#num","$defs":{"v":{"type":"number"}},keyword:"#/$defs/v"}},"properties":{"n":{"$ref":"#num"}}});
+        let accepted = json!({"n":1}).as_object().unwrap().clone();
+        assert_eq!(check_object(schema.clone(), accepted.clone()), Ok(accepted));
+        assert_eq!(
+            check_object(schema, json!({"n":"x"}).as_object().unwrap().clone()).unwrap_err(),
+            "Validation failed for tool \"check\":\n  - n: must be number\n\nReceived arguments:\n{\n  \"n\": \"x\"\n}"
+        );
+    }
+}
+
+#[test]
+fn maestro_requires_exact_array_pointer_indexes() {
+    for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
+        for (index, tuple) in [
+            ("0", json!([{"type":"number"}, false])),
+            ("1", json!([false, {"type":"number"}])),
+        ] {
+            let schema = json!({"$defs":{"tuple":tuple},"properties":{"n":{keyword:format!("#/$defs/tuple/{index}")}}});
+            let accepted = json!({"n":1}).as_object().unwrap().clone();
+            assert_eq!(check_object(schema, accepted.clone()), Ok(accepted));
+        }
+        for index in ["+0", "+1", "%2B0", "%2B1", "01", "-0"] {
+            let schema = json!({"$defs":{"tuple":[{"type":"number"},{"type":"number"}]},"properties":{"n":{keyword:format!("#/$defs/tuple/{index}")}}});
+            assert_eq!(
+                check_object(schema, json!({"n":1}).as_object().unwrap().clone()).unwrap_err(),
+                "Validation failed for tool \"check\":\n  - n: schema is false\n\nReceived arguments:\n{\n  \"n\": 1\n}"
+            );
+        }
+    }
+}

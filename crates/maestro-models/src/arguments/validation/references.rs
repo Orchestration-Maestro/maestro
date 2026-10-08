@@ -46,17 +46,22 @@ fn target<'a>(
     let base = scopes
         .iter()
         .rev()
-        .find(|schema| is_resource(schema))
+        .find(|schema| schema.get("$id").and_then(Value::as_str).is_some())
         .copied()
         .unwrap_or(root);
-    let base_uri = resource_uri(root, base)?;
+    let base_uri = scopes
+        .iter()
+        .filter_map(|schema| schema.get("$id").and_then(Value::as_str))
+        .try_fold(Url::parse("http://unknown/").ok()?, |uri, id| {
+            uri.join(id).ok()
+        })?;
     if keyword == "$recursiveRef" && base.get("$recursiveAnchor") == Some(&Value::Bool(true)) {
         let anchor = scopes
             .iter()
             .find(|schema| schema.get("$recursiveAnchor") == Some(&Value::Bool(true)))
             .copied()?;
-        let uri = resource_uri(root, anchor)?;
-        return resolve(anchor, reference, &uri, uri.clone());
+        let uri = root_uri(anchor)?;
+        return resolve(anchor, reference, &uri, &uri);
     }
     let schema = if reference.starts_with('#') || keyword == "$recursiveRef" {
         base
@@ -68,7 +73,7 @@ fn target<'a>(
     } else {
         root_uri(root)?
     };
-    let target = resolve(schema, reference, &base_uri, schema_uri)?;
+    let target = resolve(schema, reference, &base_uri, &schema_uri)?;
     if keyword == "$dynamicRef"
         && !reference.split('#').nth(1).is_some_and(|fragment| {
             percent_decode_str(fragment)
@@ -78,7 +83,7 @@ fn target<'a>(
         && let Some(name) = target.get("$dynamicAnchor").and_then(Value::as_str)
     {
         for scope in scopes {
-            if is_resource(scope)
+            if scope.get("$id").and_then(Value::as_str).is_some()
                 && let Some(anchor) = resource_anchor(scope, name)
             {
                 return Some(anchor);
@@ -95,7 +100,7 @@ fn target<'a>(
 fn resource_anchor<'a>(root: &'a Value, name: &str) -> Option<&'a Value> {
     let mut pending = vec![root];
     while let Some(schema) = pending.pop() {
-        if !std::ptr::eq(schema, root) && is_resource(schema) {
+        if !std::ptr::eq(schema, root) && schema.get("$id").and_then(Value::as_str).is_some() {
             continue;
         }
         if schema.get("$dynamicAnchor").and_then(Value::as_str) == Some(name) {
@@ -113,41 +118,33 @@ fn resource_anchor<'a>(root: &'a Value, name: &str) -> Option<&'a Value> {
     None
 }
 
-/// Search resolved resource identities, fragment aliases and anchors.
+/// Search resolved identifiers, pointers and anchors.
 fn resolve<'a>(
     root: &'a Value,
     reference: &str,
     base_uri: &Url,
-    root_uri: Url,
+    root_uri: &Url,
 ) -> Option<&'a Value> {
     let target = base_uri.join(reference).ok()?;
-    let mut identity = target.clone();
-    identity.set_fragment(None);
+    let identity = target.as_str().split('#').next()?;
     let fragment = percent_decode_str(target.fragment().unwrap_or(""))
         .decode_utf8()
         .ok()?;
-    let mut pending = vec![(root, root_uri)];
+    let mut pending = vec![(root, root_uri.clone())];
     let mut result = None;
     while let Some((schema, inherited)) = pending.pop() {
         let uri = inherited_uri(schema, root, inherited)?;
-        let mut resource_identity = uri.clone();
-        resource_identity.set_fragment(None);
-        if resource_identity == identity {
-            if schema
-                .get("$id")
-                .and_then(Value::as_str)
-                .is_some_and(|id| id.starts_with('#'))
-                && uri == target
+        if uri.as_str().split('#').next()? == identity {
+            let id = schema.get("$id").and_then(Value::as_str);
+            let base = std::ptr::eq(schema, root) || id.is_some();
+            if (id.is_some_and(|id| id.starts_with('#')) && uri == target)
+                || (fragment.is_empty() && base)
             {
                 result = Some(schema);
                 continue;
             }
-            if fragment.is_empty() && (std::ptr::eq(schema, root) || is_resource(schema)) {
-                result = Some(schema);
-                continue;
-            }
             if fragment.starts_with('/')
-                && (std::ptr::eq(schema, root) || is_resource(schema))
+                && base
                 && let Some(target) = pointer(schema, &fragment)
             {
                 result = Some(target);
@@ -191,7 +188,9 @@ fn pointer<'a>(root: &'a Value, fragment: &str) -> Option<&'a Value> {
         value = match value {
             Value::Object(object) => object.get(&key)?,
             Value::Array(array) => {
-                if key != "0" && key.starts_with('0') {
+                if !key.bytes().all(|byte| byte.is_ascii_digit())
+                    || (key != "0" && key.starts_with('0'))
+                {
                     return None;
                 }
                 array.get(key.parse::<usize>().ok()?)?
@@ -218,7 +217,7 @@ pub(super) fn scope_identity<'a>(root: &'a Value, scopes: &[&'a Value]) -> Scope
     let resource = scopes
         .iter()
         .rev()
-        .find(|schema| is_resource(schema))
+        .find(|schema| schema.get("$id").and_then(Value::as_str).is_some())
         .copied()
         .unwrap_or(root);
     let recursive = scopes
@@ -240,35 +239,13 @@ pub(super) fn scope_identity<'a>(root: &'a Value, scopes: &[&'a Value]) -> Scope
     }
 }
 
-/// Find a schema location's resolved URI through inherited resources.
-fn resource_uri(root: &Value, resource: &Value) -> Option<Url> {
-    let mut pending = vec![(root, root_uri(root)?)];
-    while let Some((schema, inherited)) = pending.pop() {
-        let uri = inherited_uri(schema, root, inherited)?;
-        if std::ptr::eq(schema, resource) {
-            return Some(uri);
-        }
-        match schema {
-            Value::Object(object) => pending.extend(
-                super::diagnostics::entries(object)
-                    .into_iter()
-                    .map(|(_, schema)| (schema, uri.clone())),
-            ),
-            Value::Array(array) => {
-                pending.extend(array.iter().map(|schema| (schema, uri.clone())));
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
 /// Resolve the root identifier against the offline default base.
 fn root_uri(root: &Value) -> Option<Url> {
     let default = Url::parse("http://unknown/").ok()?;
-    root.get("$id")
-        .and_then(Value::as_str)
-        .map_or_else(|| Some(default.clone()), |id| default.join(id).ok())
+    match root.get("$id").and_then(Value::as_str) {
+        Some(id) => default.join(id).ok(),
+        None => Some(default),
+    }
 }
 
 /// Carry the enclosing URI unless a child declares its own identifier.
@@ -276,17 +253,9 @@ fn inherited_uri(schema: &Value, root: &Value, inherited: Url) -> Option<Url> {
     if std::ptr::eq(schema, root) {
         Some(inherited)
     } else {
-        schema
-            .get("$id")
-            .and_then(Value::as_str)
-            .map_or_else(|| Some(inherited.clone()), |id| inherited.join(id).ok())
+        match schema.get("$id").and_then(Value::as_str) {
+            Some(id) => inherited.join(id).ok(),
+            None => Some(inherited),
+        }
     }
-}
-
-/// Distinguish a resource boundary from a fragment-only alias.
-fn is_resource(schema: &Value) -> bool {
-    schema
-        .get("$id")
-        .and_then(Value::as_str)
-        .is_some_and(|id| !id.starts_with('#'))
 }

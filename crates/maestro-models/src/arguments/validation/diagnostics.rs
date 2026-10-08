@@ -12,10 +12,10 @@ use serde_json::{
 };
 
 /// Serialize original arguments with canonical keys and binary64 number spelling.
-pub(super) fn pretty(value: &Value) -> Result<String, serde_json::Error> {
+pub(super) fn pretty(value: &Map<String, Value>) -> Result<String, serde_json::Error> {
     let mut serializer =
         serde_json::Serializer::with_formatter(Vec::new(), NumberFormatter(PrettyFormatter::new()));
-    Canonical(value).serialize(&mut serializer)?;
+    CanonicalObject(value).serialize(&mut serializer)?;
     String::from_utf8(serializer.into_inner())
         .map_err(|error| serde_json::Error::io(io::Error::new(io::ErrorKind::InvalidData, error)))
 }
@@ -52,6 +52,20 @@ fn index(key: &str) -> Option<u32> {
     (index < u32::MAX && index.to_string() == key).then_some(index)
 }
 
+/// Borrowed object serialization with canonical entry ordering.
+struct CanonicalObject<'a>(&'a Map<String, Value>);
+
+impl Serialize for CanonicalObject<'_> {
+    /// Serialize object entries without owning a copy of the arguments.
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (key, value) in entries(self.0) {
+            map.serialize_entry(key, &Canonical(value))?;
+        }
+        map.end()
+    }
+}
+
 /// Serialization view applying canonical policies recursively.
 struct Canonical<'a>(&'a Value);
 
@@ -59,13 +73,7 @@ impl Serialize for Canonical<'_> {
     /// Serialize nested values through the canonical key and number policies.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self.0 {
-            Value::Object(object) => {
-                let mut map = serializer.serialize_map(Some(object.len()))?;
-                for (key, value) in entries(object) {
-                    map.serialize_entry(key, &Canonical(value))?;
-                }
-                map.end()
-            }
+            Value::Object(object) => CanonicalObject(object).serialize(serializer),
             Value::Array(array) => {
                 let mut sequence = serializer.serialize_seq(Some(array.len()))?;
                 for value in array {

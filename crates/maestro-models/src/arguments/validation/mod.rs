@@ -50,8 +50,7 @@ pub fn validate_tool_arguments(
         "Validation failed for tool \"{}\":\n{}\n\nReceived arguments:\n{}",
         tool_call.name,
         errors.join("\n"),
-        diagnostics::pretty(&Value::Object(tool_call.arguments.clone()))
-            .map_err(|error| diagnostic(error.to_string()))?
+        diagnostics::pretty(&tool_call.arguments).map_err(|error| diagnostic(error.to_string()))?
     )))
 }
 
