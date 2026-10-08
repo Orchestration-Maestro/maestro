@@ -180,8 +180,10 @@ pub(super) struct Sequence {
 }
 
 impl Sequence {
-    /// Reads a complete report; an invalid or oversized number, a zero modifier field and
-    /// an unnamed tilde number reject it.
+    /// Reads a complete report. A code point, shifted or base field that is not a Unicode
+    /// scalar value, a tilde number that names no navigation key and a modifier field of
+    /// zero reject it, as does any of those numbers that does not fit in 32 bits. The event
+    /// field is never read as a number, so it cannot reject a report.
     pub(super) fn parse(data: &str) -> Option<Self> {
         let report = Report::scan(data)?;
         let modifier = report.modifier.map_or(Some(1), decimal)?.checked_sub(1)?;
@@ -239,8 +241,8 @@ pub(super) struct ModifyOtherKeys {
 }
 
 impl ModifyOtherKeys {
-    /// Reads `CSI 27 ; modifier ; code ~`; an invalid or oversized number and a zero modifier
-    /// field reject it.
+    /// Reads `CSI 27 ; modifier ; code ~`. A code that is not a Unicode scalar value and a
+    /// modifier field of zero reject it, as does either number that does not fit in 32 bits.
     pub(super) fn parse(data: &str) -> Option<Self> {
         let (modifier, key) = data
             .strip_prefix("\x1b[27;")?

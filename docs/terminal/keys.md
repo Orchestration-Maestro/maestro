@@ -10,7 +10,7 @@ named there. The crate root re-exports everything below except `decode_printable
 
 A key identifier names one key and the modifiers held with it: `ctrl+c`, `shift+tab`,
 `alt+enter`, `escape`, `f5`. The modifiers are `shift`, `ctrl`, `alt` and `super`, joined
-by `+` before the key in any order and in any ASCII case. The keys are:
+by `+` before the key in any order and in any letter case. The keys are:
 
 - `escape` (also `esc`), `enter` (also `return`), `tab`, `space`, `backspace`;
 - `delete`, `insert`, `clear`, `home`, `end`, `pageUp`, `pageDown`;
@@ -21,7 +21,9 @@ by `+` before the key in any order and in any ASCII case. The keys are:
 The identifier `+` and any identifier ending in `++` name the plus key, so `+` and
 `ctrl++` name plus without and with ctrl. An identifier ending in a single `+` after a
 word, such as `ctrl+`, has no key and never matches. Words before the key that are not
-modifiers are ignored. Any other text names no key and never matches.
+modifiers are ignored. Letters are lowercased as Unicode defines it, so a capital that
+lowercases to an ASCII letter, such as the Kelvin sign U+212A for `k`, names that letter.
+Any other text names no key and never matches.
 
 `KeyId` is a `String`; `Key` spells the supported identifiers as constants
 (`Key::ESCAPE`, `Key::PAGE_UP`, `Key::SLASH`) and builds modified ones in the order
@@ -41,8 +43,8 @@ modifiers `id` names. One key can arrive in several encodings; these are recogni
 subject to the exceptions in the rules and the legacy ambiguities below:
 
 - legacy bytes and sequences: control bytes for ctrl and a letter or symbol, `ESC`
-  before a key for alt, and the CSI, SS3, double-bracket and rxvt forms of the
-  navigation and function keys;
+  before a key for alt, the CSI, SS3, double-bracket and rxvt forms of the navigation
+  and function keys, `CSI Z` for `shift+tab` and `SS3 M` for numpad `enter`;
 - the enhanced protocol: `CSI code[:[shifted][:base]] [; modifier] [:event] u`, arrow
   and home/end reports `CSI 1 ; modifier [:event] A` (also `B`, `C`, `D`, `H`, `F`), and
   tilde reports `CSI number [; modifier] [:event] ~`;
@@ -120,16 +122,21 @@ terminal does.
   carriage return are `shift+enter` instead; otherwise `ESC` plus carriage return is
   `alt+enter`.
 - `ESC` before a lowercase letter, a digit or a space is alt with that key, and `ESC`
-  before control byte 1 to 26, other than backspace (8) and carriage return (13), is
-  ctrl and alt with the lowercase letter; both are recognized only while the enhanced
-  protocol is inactive. `ESC` before byte 27, 28, 29 or 31 is ctrl and alt with `[`,
-  `\`, `]` or `-`: it is named so in both states and matched only while inactive. `ESC`
-  before `b`, `f`, `n` or `p` is also alt with left, right, down or up in both states,
-  while `ESC B` and `ESC F` are alt with left and right only while inactive.
+  before control byte 1 to 26 is ctrl and alt with the lowercase letter; both are
+  recognized only while the enhanced protocol is inactive. Bytes 8 and 13 are the
+  exceptions: `ESC` before backspace (8) is `alt+backspace` in both states and `ESC`
+  before carriage return (13) is `alt+enter` as above, yet while the protocol is
+  inactive they also match `ctrl+alt+h` and `ctrl+alt+m`. `ESC` before byte 27, 28, 29
+  or 31 is ctrl and alt with `[`, `\`, `]` or `-`: it is named so in both states and
+  matched only while inactive, and byte 31 also matches `ctrl+alt+_`. `ESC` before `b`,
+  `f`, `n` or `p` is also alt with left, right, down or up in both states, while `ESC B`
+  and `ESC F` are alt with left and right only while inactive.
 - Control bytes 1 to 26 name ctrl and the lowercase letter, except tab (9), linefeed
-  (10), carriage return (13) and the backspace byte above. Bytes 28, 29 and 31 are
-  `ctrl+\`, `ctrl+]` and `ctrl+-`, and byte 31 also matches `ctrl+_`. Raw uppercase
-  letters name themselves, and a raw capital matches `shift+` the letter.
+  (10), carriage return (13) and the backspace byte above. Tab, linefeed and carriage
+  return keep their own names but also match `ctrl+i`, `ctrl+j` and `ctrl+m`, and `ESC`
+  alone, named `escape`, also matches `ctrl+[`. Bytes 28, 29 and 31 are `ctrl+\`,
+  `ctrl+]` and `ctrl+-`, and byte 31 also matches `ctrl+_`. Raw uppercase letters name
+  themselves, and a raw capital matches `shift+` the letter.
 - Numeric home and end (`CSI 1 ~`, `CSI 4 ~`) are `home` and `end`; modified forms of
   them are not recognized.
 - A plain `tab` or `enter` in the modifyOtherKeys form is not matched, though it parses.

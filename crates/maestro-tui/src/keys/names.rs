@@ -279,14 +279,15 @@ pub(super) struct Identifier {
 }
 
 impl Identifier {
-    /// Parses an identifier, ignoring ASCII case.
+    /// Parses an identifier, lowercasing it as Unicode defines, so a capital such as the
+    /// Kelvin sign names the ASCII letter it lowercases to.
     ///
     /// The key is the text after the last `+`, except that `+` alone and an identifier
     /// ending in `++` name the plus key. An identifier ending in a single `+` after a word
     /// has an empty key and names nothing. Words before the key that are not modifier names
     /// are ignored.
     pub(super) fn parse(id: &str) -> Option<Self> {
-        let id = id.to_ascii_lowercase();
+        let id = id.to_lowercase();
         let (prefix, key) = if id == "+" {
             ("", "+")
         } else if let Some(prefix) = id.strip_suffix("++") {

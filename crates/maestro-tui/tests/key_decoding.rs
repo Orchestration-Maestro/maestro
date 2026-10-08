@@ -541,6 +541,7 @@ fn maestro_keys_match_modifyotherkeys_backspace_variants() {
         ("\x1b[27;1;127~", "backspace"),
         ("\x1b[27;5;127~", "ctrl+backspace"),
         ("\x1b[27;3;127~", "alt+backspace"),
+        ("\x1b[27;2;127~", "shift+backspace"),
     ]);
 }
 
@@ -830,6 +831,15 @@ fn identifier_aliases_case_and_modifier_order_match() {
 }
 
 #[test]
+fn identifier_case_folding_lowercases_non_ascii_letters_like_unicode() {
+    let _protocol = ProtocolGuard::new(false);
+    // U+212A KELVIN SIGN is a capital that lowercases to the ASCII letter `k`.
+    assert_key("\x0b", "ctrl+\u{212a}");
+    assert_key("k", "\u{212a}");
+    assert_not_key("\x0c", "ctrl+\u{212a}");
+}
+
+#[test]
 fn windows_backspace_uses_each_environment_truth_value() -> io::Result<()> {
     for session in [None, Some(""), Some("session")] {
         let session_ctrl = session == Some("session");
@@ -931,6 +941,8 @@ fn numeric_fields_and_unicode_scalars_never_wrap_or_alias() {
         ("\x1b[57343u", None),
         ("\x1b[1114112u", None),
         (huge_code.as_str(), None),
+        ("\x1b[4294967395u", None),
+        ("\x1b[27;5;4294967395~", None),
         ("\x1b[99;4294967301u", None),
         ("\x1b[99;4294967297u", None),
         ("\x1b[27;4294967297;99~", None),

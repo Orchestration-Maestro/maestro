@@ -120,7 +120,7 @@ impl<'a> Input<'a> {
         }
     }
 
-    /// Whether the input is the space bar held with exactly `modifier`.
+    /// Whether the input is a raw encoding of the space bar held with exactly `modifier`.
     fn matches_space(&self, modifier: u32) -> bool {
         let legacy_control = !self.kitty
             && ((modifier == CTRL && self.data == "\0")
@@ -128,7 +128,8 @@ impl<'a> Input<'a> {
         legacy_control || (modifier == 0 && self.data == " ")
     }
 
-    /// Whether the input is enter held with exactly `modifier`.
+    /// Whether the input is a raw encoding or the numpad report of enter held with exactly
+    /// `modifier`.
     fn matches_enter(&self, modifier: u32) -> bool {
         let data = self.data;
         let keypad = self.enhanced(Code::Char(KEYPAD_ENTER), modifier);
@@ -141,7 +142,7 @@ impl<'a> Input<'a> {
             }
     }
 
-    /// Whether the input is backspace held with exactly `modifier`.
+    /// Whether the input is a raw encoding of backspace held with exactly `modifier`.
     fn matches_backspace(&self, modifier: u32) -> bool {
         match modifier {
             ALT => matches!(self.data, "\x1b\x7f" | "\x1b\x08"),
@@ -157,7 +158,8 @@ impl<'a> Input<'a> {
             || (modifier != 0 && self.other_printable(key, modifier))
     }
 
-    /// Whether the input is the legacy control-byte form of `key` held with `modifier`.
+    /// Whether the input is a raw encoding of `key` held with exactly `modifier`: the key
+    /// itself, a raw capital, a control byte or an escape-prefixed form.
     fn matches_char_control(&self, key: char, modifier: u32) -> bool {
         let sole = |text: &str| {
             let mut chars = text.chars();
