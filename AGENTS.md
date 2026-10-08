@@ -239,3 +239,13 @@ Browser scheduling uses js-sys `=0.3.106`, wasm-bindgen `=0.2.129` and
 wasm-bindgen-futures `=0.4.79` with defaults; getrandom `=0.4.3` enables
 `wasm_js`. Compact serde_json `=1.0.151` retains `preserve_order`. These
 MIT/Apache-2.0 libraries add no internal crate edge or public runtime API.
+
+## Approved toolkit libraries
+
+`maestro-tui` alone may use `unicode-segmentation =1.13.3` and
+`unicode-width =0.2.2` (both with defaults off) for grapheme boundaries and
+scalar cell widths, and `regress =0.12.0` (defaults `backend-pikevm` and `std`,
+plus `prohibit-unsafe`) for the Unicode property expressions of its width policy.
+All three are MIT OR Apache-2.0. The only added transitive dependency is
+`memchr =2.8.3` (Unlicense OR MIT; `alloc` and `std`). No type of these libraries
+appears in a public interface.
