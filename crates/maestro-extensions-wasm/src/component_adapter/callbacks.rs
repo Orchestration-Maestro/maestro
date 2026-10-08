@@ -2,8 +2,7 @@
 //! callback resource that announces each of them.
 //!
 //! Author code and destructors never run while the table is borrowed: entries leave the
-//! table first and drop afterwards, so a destructor or callback may register, release or
-//! look up other entries.
+//! table first and drop afterwards, so a destructor may register another entry.
 
 use std::any::Any;
 use std::cell::RefCell;
@@ -139,10 +138,10 @@ impl<I: Imports> Identity<I> {
     }
 }
 
-/// An operation-scoped callback. The call that runs a one-shot closure consumes it, so what
-/// the closure captured drops when the continuation finishes. The identity lasts until the
-/// operation ends: its table entry is released then, which also drops a closure the host
-/// never ran, and the owner handle drops right after.
+/// An operation-scoped callback. The host calls the one-shot closure once: captures it keeps
+/// drop when that call returns; captures moved into the returned future drop when the future
+/// completes. The identity lasts until the operation ends: its table entry is released then,
+/// which also drops a closure the host never ran, and the owner handle drops right after.
 pub(super) struct Scoped<I: Imports> {
     /// The owner handle created by the host.
     pub(super) handle: I::Callback,
@@ -171,7 +170,7 @@ impl<I: Imports> Drop for Scoped<I> {
     }
 }
 
-/// Inserts an entry; a replaced entry drops after the table borrow ended.
+/// Inserts an entry.
 fn insert(id: u32, entry: Entry) {
     let replaced = TABLE.with_borrow_mut(|table| table.insert(id, entry));
     drop(replaced);

@@ -1,8 +1,8 @@
 //! The author extension shared by the example component and the tests.
 //!
 //! It is written only against the author facade, so the same code runs as a component and
-//! under the controlled adapter. Every registered closure captures a [`Released`] guard that
-//! reports through the host when the closure is dropped.
+//! under the controlled adapter. Closures with a [`Released`] guard report through the host
+//! when that guard is dropped.
 use std::cell::RefCell;
 use std::rc::Rc;
 

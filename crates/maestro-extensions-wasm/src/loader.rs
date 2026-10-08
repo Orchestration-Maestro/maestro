@@ -10,7 +10,7 @@ use crate::types::{ExtensionAPI, ExtensionFuture};
 /// An extension factory: registers callbacks through the API it receives.
 pub type ExtensionFactory = Box<dyn FnOnce(ExtensionAPI) -> ExtensionFuture<'static, ()>>;
 
-/// An extension the host activates once. Activation is the host's: it calls the `start`
+/// An extension the host activates. Activation is the host's: it calls the `start`
 /// export, which runs [`Extension::load`] and resolves when that has completed. Each
 /// registration reaches the host through its imports as `load` makes it.
 pub trait Extension {

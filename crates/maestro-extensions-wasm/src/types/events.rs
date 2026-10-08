@@ -1,9 +1,10 @@
 //! Author-facing events and results over the generated wire unions.
 //!
 //! Each event export returns the event as the handler left it together with the handler's
-//! decision, so an edit survives a returned error. A cancellation signal travels to the
-//! guest beside its event and is never handed back. Only the events that hold such a
-//! capability differ from the wire; every other payload is the generated record itself.
+//! decision, unless the handler replaced it with another kind, in which case no event is
+//! returned. An edit of the same kind survives a returned error. A cancellation signal
+//! travels to the guest beside its event and is never handed back. Only the events that hold
+//! such a capability differ from the wire; every other payload is the generated record itself.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -25,7 +26,7 @@ use crate::bindings::maestro::extension::events::{
 pub struct SessionBeforeCompactEvent {
     /// The generated event data.
     pub data: SessionBeforeCompactEventData,
-    /// Cancels the compaction when the user aborts it.
+    /// Reports whether the host cancelled the compaction.
     pub signal: AbortSignal,
 }
 
@@ -59,7 +60,7 @@ pub enum ExtensionEvent {
     Input(InputEvent),
 }
 
-/// A result a handler returns, matching the event it handled.
+/// A handler's verdict or replacement.
 #[derive(Debug)]
 pub enum ExtensionEventResult {
     /// Verdict or replacement of a compaction handler.
@@ -70,7 +71,8 @@ pub enum ExtensionEventResult {
 
 /// A registered event handler. It receives the event mutably and answers with an optional
 /// result; the adapter returns the event as the handler left it, whether the handler
-/// answered or failed.
+/// answered or failed, unless it replaced the event with another kind, leaving no event
+/// to return.
 pub type ExtensionHandler = Rc<
     dyn for<'a> Fn(
         &'a mut ExtensionEvent,

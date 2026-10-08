@@ -32,8 +32,8 @@ of the example links an empty library, so only the `wasm32` build produces a com
 
 ## Register
 
-A factory may finish immediately or after awaiting. Each registration reaches the host
-through its imports at the moment the factory makes it, so the host has seen it before the
+Each registration reaches the host through its imports at the moment the factory makes it,
+so the host has seen it before the
 factory's next statement runs. Whether and when the host treats the extension as active is
 the host's decision; the `start` export resolves when the factory's future completes. `on`
 forwards each handler under its event name, including names the host does not define, and
@@ -60,9 +60,10 @@ An `AbortSignal` is a capability, not a snapshot: keep it past the callback and 
 `aborted()` later.
 
 The component returns the event as the handler left it together with the handler's decision,
-whether the handler answered or failed, so a host can reuse an event a failed handler edited.
-Signals travel to the guest and are never returned. A handler that replaces its event with an
-event of another kind leaves no edit to return, and the host receives no event.
+whether the handler answered or failed, unless the handler replaced it with another kind.
+An edit of the same kind survives a returned error. A replacement with another kind leaves
+no edit to return, and the host receives no event. Signals travel to the guest and are never
+returned.
 
 ## Contexts and sessions
 
@@ -72,9 +73,10 @@ context has neither method, which the rustdoc examples check at compile time.
 
 `new_session` takes a `with_session` continuation. The host runs it against a
 `ReplacedSessionContext` bound to the replacement session while the operation is pending. The
-continuation runs once and what it captured drops when it finishes; the identity the host
-announced for it lasts until the operation ends, and a continuation the host never ran is
-released then. The facade forwards the host's answers: after the operation, `cwd` on the
+host calls the continuation closure once. Captures the closure keeps drop when that call
+returns; captures moved into the returned future drop when the future completes. The identity
+the host announced for it lasts until the operation ends, and a continuation the host never
+ran is released then. The facade forwards the host's answers: after the operation, `cwd` on the
 context that started it returns whatever the host reports, which the test host makes a
 stale-context message, while the replacement context keeps working. Errors are the plain text
 the host supplies, so an author can catch one and continue.

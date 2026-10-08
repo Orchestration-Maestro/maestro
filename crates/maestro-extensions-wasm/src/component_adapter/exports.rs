@@ -72,7 +72,7 @@ impl<I: Imports> Exports<I> {
     }
 
     /// Delivers a compaction that is about to happen; returns the event as the handler left it
-    /// with the handler's decision.
+    /// with the handler's decision, or no event if the handler replaced it with another kind.
     pub(crate) async fn invoke_session_before_compact(
         &self,
         handler: u32,
@@ -96,7 +96,7 @@ impl<I: Imports> Exports<I> {
     }
 
     /// Delivers a user input; returns the event as the handler left it with the handler's
-    /// decision.
+    /// decision, or no event if the handler replaced it with another kind.
     pub(crate) async fn invoke_input(
         &self,
         handler: u32,

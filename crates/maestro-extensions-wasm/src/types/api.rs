@@ -33,8 +33,7 @@ port! {
         fn on(event: &str, handler: ExtensionHandler) -> ();
         /// Registers a command; nothing is retained when the host rejects it.
         fn register_command(name: &str, options: CommandOptions) -> ();
-        /// Appends a custom entry to the session for state persistence; absent data is
-        /// distinct from JSON `null`.
+        /// Forwards a custom entry to the host's session.
         fn append_entry(custom_type: &str, data: Option<Value>) -> ();
     }
 }
