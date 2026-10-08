@@ -1,3 +1,0 @@
-# Format: username capability
-# capability: issue = issues only; pr = issues and pull requests.
-# Approval becomes effective when the approval pull request merges.

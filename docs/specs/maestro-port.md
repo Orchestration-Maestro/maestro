@@ -148,7 +148,9 @@ Browser smoke covers Firefox/Safari, real touch/IME and real HiDPI devicePixelCo
 
 ## R12 — Documentation, examples, repository tooling and release
 
-Development commands (offline test launcher, source launchers, commit hook, asset copying, browser smoke check) and contribution gates live in `maestro-tooling`, which is never shipped, has wiring-only binaries and exposes its library to integration tests.
+Development commands (offline test launcher, source launchers, commit hook, asset copying, browser smoke check) live in `maestro-tooling`, which is never shipped, has wiring-only binaries and exposes its library to integration tests.
+
+Maestro does not auto-close issues or pull requests from new contributors; there is no contributor gate.
 
 Deliver current offline API/usage/model/session/settings/tools/extensions/package/terminal/browser/platform/RPC documentation, every executable SDK/extension/demo example and all fixtures/assets. Examples remain examples: an optional subagent, permission guard, sandbox or planner does not make that capability built-in. Port example functionality into Rust component guests and qualify author builds; do not load legacy source examples. Executable code controls behavior and wire acceptance; correct stale documentation and examples to the delivered behavior, listing each correction once. Do not invent historical Maestro releases.
 
@@ -159,7 +161,7 @@ Default tests run on Linux with deterministic fake providers/clock/terminal/brow
 
 CI must be equal or stronger step by step. Install rg and fd and require real-binary search tests, not just fakes. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Keep strict Clippy, public rustdoc, conventions, full action-SHA pins and merge-queue validation. The full suite includes terminal tests.
 
-Define the caller-driven wasm32-unknown-unknown build gate in foundation tooling and activate it for the model library at its first re-port; every later browser-used crate opts in when created. The first real web application slice builds its actual wasm application and a working embedding example immediately. Full browser application/example builds remain required thereafter; cargo check, native-only compilation and empty examples do not qualify. Release builds cover darwin arm64/x64, linux x64/arm64 and windows x64, with matching notes/assets and contributor/issue gates.
+Define the caller-driven wasm32-unknown-unknown build gate in foundation tooling and activate it for the model library at its first re-port; every later browser-used crate opts in when created. The first real web application slice builds its actual wasm application and a working embedding example immediately. Full browser application/example builds remain required thereafter; cargo check, native-only compilation and empty examples do not qualify. Release builds cover darwin arm64/x64, linux x64/arm64 and windows x64, with matching notes/assets.
 
 Shared-workflow changes require one separate issue and clone in maestro-rust-workflows. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Its initial real-tool and wasm-job release plus caller/ruleset re-pin precede foundation/models acceptance; the caller later supplies its real browser build and its own tag-triggered release workflow; the shared companion supplies only generic configurable checks. Keep the application lane out of that repository. Every mapped CI step needs observed evidence before final qualification; a plan or skipped job is not proof of delivered parity.
 

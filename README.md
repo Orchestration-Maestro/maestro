@@ -74,5 +74,4 @@ vocabulary.
 - [Identity guide and brand pack](docs/identity.md)
 - [Foundation specification](docs/specs/maestro-port.md)
 - [Architecture checks](docs/architecture.md)
-- [Repository policy](docs/repository_policy.md)
 - [Contributor workflow](docs/agents/issue-tracker.md)

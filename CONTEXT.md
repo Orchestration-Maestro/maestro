@@ -109,8 +109,3 @@ are later scope, not active foundation concepts.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
-
-## Repository contributions
-
-- **Contributor capability:** A recognized `issue` or `pr` entry in the approved-contributor list; `issue` permits issues, while `pr` permits issues and pull requests.
-- **Effective approval:** A contributor capability present on the trusted default branch after its protected approval pull request merges; a pending request is not effective approval.
