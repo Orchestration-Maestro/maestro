@@ -51,11 +51,17 @@ configuration paths instead resolve against `cwd`; an absolute configuration
 directory replaces the working-directory prefix.
 Authored path fields and loader inputs are strings; only filesystem calls use
 native paths. Already-absolute explicit file spelling is preserved, including
-repeated separators and dot components. Canonical
-aliases of retained files are silently deduplicated; duplicate names keep the
+repeated separators and dot components. Aliases of
+retained files are silently deduplicated by real path; duplicate names keep the
 first discovery. Only winning paths are remembered, so repeated losing paths
-produce repeated collisions. When canonicalization fails, exact authored strings
-are the identity keys, so distinct absolute spellings can produce name collisions.
+produce repeated collisions. A native real path first folds `.` and `..`
+lexically, resolving a relative path against the process working directory, so
+`link/..` names the directory holding `link`. It then replaces each link by its
+target, read relative to the link's directory; other components keep their
+authored spelling and case, and a Windows link target that names a drive or share
+loses its verbatim prefix. When a component cannot be inspected, a link target is
+missing or a link loops, exact authored strings are the identity keys, so
+distinct absolute spellings can produce name collisions.
 Ordinary diagnostics precede all collisions.
 With defaults disabled, explicit paths equal to a resolved user or project skills
 root, or beginning with that root plus its separator, receive that scope, with user

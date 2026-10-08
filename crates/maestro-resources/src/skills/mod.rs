@@ -4,6 +4,8 @@ mod operations;
 mod prompt;
 pub use prompt::format_skills_for_prompt;
 mod discovery;
+#[cfg(not(target_arch = "wasm32"))]
+mod real_path;
 mod validation;
 use crate::{
     ResourceDiagnostic, SourceInfo, SourceScope, SyntheticSourceOptions,

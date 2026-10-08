@@ -49,8 +49,11 @@ pub trait ResourceOperations {
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType>;
     /// Resolve a real path.
     ///
+    /// Native operations fold `.` and `..` lexically, then replace each link
+    /// component by its target.
+    ///
     /// # Errors
-    /// Returns the canonicalization I/O cause.
+    /// Returns the I/O cause of the failed resolution.
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
 }
 
@@ -81,7 +84,7 @@ impl ResourceOperations for NativeResourceOperations {
         Ok(file_type(std::fs::metadata(path)?.file_type()))
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        std::fs::canonicalize(path)
+        super::real_path::real_path(path)
     }
 }
 

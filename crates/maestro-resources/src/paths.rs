@@ -1,4 +1,4 @@
-//! Resource path classification and canonicalization fallback.
+//! Resource path classification and real-path fallback.
 
 use crate::{frontmatter::text_whitespace, skills::ResourceOperations};
 use std::path::Path;
@@ -11,7 +11,7 @@ pub fn is_local_path(value: &str) -> bool {
         .any(|prefix| value.starts_with(prefix))
 }
 
-/// Return a canonical path or retain the original spelling on failure.
+/// Return the real path or retain the original spelling when resolving it fails.
 pub fn canonicalize_path(path: &str, operations: &dyn ResourceOperations) -> String {
     operations.canonicalize(Path::new(path)).map_or_else(
         |_| path.to_owned(),

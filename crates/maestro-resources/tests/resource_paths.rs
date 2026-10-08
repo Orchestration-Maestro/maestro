@@ -134,7 +134,7 @@ fn maestro_source_info_defaults_only_synthetic_fields() {
     }
 }
 
-/// Return the native canonical path of an existing file.
+/// Return an existing file's resolved path in its authored spelling.
 #[test]
 fn maestro_paths_canonicalize_existing_files() {
     let dir = support::Directory::new();
@@ -144,6 +144,75 @@ fn maestro_paths_canonicalize_existing_files() {
     assert_ne!(path.as_os_str(), file.as_os_str());
     assert_eq!(
         canonicalize_path(text(&path), &NativeResourceOperations),
-        text(&std::fs::canonicalize(file).unwrap())
+        text(&file)
     );
+}
+
+/// Collapse `..` against the preceding text, before any link or existence check.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_collapse_dot_dot_before_inspecting_components() {
+    let dir = support::Directory::new();
+    let file = dir.file("skill.md", "outer");
+    let _ = dir.file("deep/inner/skill.md", "inner");
+    let _ = dir.file("deep/skill.md", "linked parent");
+    std::os::unix::fs::symlink(dir.0.join("deep/inner"), dir.0.join("link")).unwrap();
+    for detour in ["link", "missing"] {
+        let path = dir.0.join(detour).join("../skill.md");
+        assert_eq!(
+            canonicalize_path(text(&path), &NativeResourceOperations),
+            text(&file),
+            "{detour}"
+        );
+    }
+}
+
+/// Replace a link in any component, repeatedly, by its target text.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_follow_links_in_middle_components() {
+    let dir = support::Directory::new();
+    let file = dir.file("target/skill.md", "hello");
+    std::fs::create_dir(dir.0.join("nested")).unwrap();
+    let hop = dir.0.join("hop");
+    let alias = dir.0.join("nested/alias");
+    std::os::unix::fs::symlink(dir.0.join("target"), &hop).unwrap();
+    std::os::unix::fs::symlink(&hop, &alias).unwrap();
+    for linked in [hop, alias] {
+        assert_eq!(
+            canonicalize_path(text(&linked.join("skill.md")), &NativeResourceOperations),
+            text(&file)
+        );
+    }
+}
+
+/// Resolve a relative link target against the directory holding the link.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_resolve_relative_link_targets_against_their_parent() {
+    let dir = support::Directory::new();
+    let file = dir.file("target/skill.md", "hello");
+    std::fs::create_dir(dir.0.join("nested")).unwrap();
+    let alias = dir.0.join("nested/alias");
+    std::os::unix::fs::symlink("../target/./skill.md", &alias).unwrap();
+    assert_eq!(
+        canonicalize_path(text(&alias), &NativeResourceOperations),
+        text(&file)
+    );
+}
+
+/// Keep the input when a link loops or a component is not a directory.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
+    let dir = support::Directory::new();
+    let file = dir.file("target/skill.md", "hello");
+    std::os::unix::fs::symlink(dir.0.join("loop-b"), dir.0.join("loop-a")).unwrap();
+    std::os::unix::fs::symlink(dir.0.join("loop-a"), dir.0.join("loop-b")).unwrap();
+    for path in [dir.0.join("loop-a/skill.md"), file.join("child")] {
+        assert_eq!(
+            canonicalize_path(text(&path), &NativeResourceOperations),
+            text(&path)
+        );
+    }
 }
