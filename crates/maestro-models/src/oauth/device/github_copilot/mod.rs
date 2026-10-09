@@ -138,7 +138,7 @@ impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
     }
     fn refresh_token(
         &self,
-        mut credentials: OAuthCredentials,
+        credentials: OAuthCredentials,
         fetch: Option<Fetch>,
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         let domain = enterprise_domain(&credentials).map(|domain| domain.map(str::to_owned));
@@ -149,8 +149,10 @@ impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
                 fetch.unwrap_or_else(default_fetch),
             )
             .await?;
-            if let Some(domain) = credentials.extra.remove("enterpriseUrl") {
-                refreshed.extra.insert("enterpriseUrl".into(), domain);
+            if credentials.extra.get("enterpriseUrl") == Some(&serde_json::Value::Null) {
+                refreshed
+                    .extra
+                    .insert("enterpriseUrl".into(), serde_json::Value::Null);
             }
             Ok(refreshed)
         })
