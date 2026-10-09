@@ -115,12 +115,9 @@ unsupported and `Some(text)` with the markers expanded otherwise, so `get_text` 
 the fallback. `EditorCallbacks` holds the submit, change and border-colour
 callbacks; all start absent and the editor calls them.
 
-An `AutocompleteProvider` suggests items for lines and a cursor. Cursor columns are
-UTF-8 byte offsets within a line, never cell or character counts, in requests and in
-the `CompletionResult` that applying an item returns. The request borrows the
-caller's cancellation signal, whose type the provider chooses, so the toolkit
-depends on no cancellation implementation. No suggestions (`None`), an empty list
-and a non-empty list are three different answers, and a provider that has no view on
-file completion returns `None` where another may return `Some(false)`.
-`SlashCommand::get_argument_completions` is an optional function that returns a
-future, which may be ready at once or suspend.
+An `AutocompleteProvider` suggests items for lines and a UTF-8 byte cursor, borrowing
+a caller-supplied signal. Suggestions and optional command argument callbacks return
+fallible futures. `None`, an empty list and a nonempty list remain distinct contract
+results; a provider without an opinion on explicit file completion returns `None`.
+See [completion](completion.md) for the command and direct-path provider, its host
+operations and shared fuzzy ranking.

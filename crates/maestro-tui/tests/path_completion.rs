@@ -1,0 +1,2282 @@
+//! Direct path completion through controlled operations.
+/// Shared controlled completion fixtures.
+pub mod fixtures {
+    pub mod completion;
+    pub mod completion_native;
+    pub mod futures;
+}
+use fixtures::completion::{
+    ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
+    run_applications, run_suggestions,
+};
+use maestro_tui::autocomplete::{CursorPosition, DirectoryEntryKind};
+use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
+
+#[test]
+fn prefix_classes_select_the_correct_directory() {
+    run_suggestions(PREFIX_CLASSES_SELECT_THE_CORRECT_DIRECTORY_CASES);
+}
+
+#[test]
+fn filesystem_failures_keep_the_source_catch_boundary() {
+    run_suggestions(FILESYSTEM_FAILURES_KEEP_THE_SOURCE_CATCH_BOUNDARY_CASES);
+}
+
+#[test]
+fn home_is_read_only_when_the_prefix_requires_it() {
+    run_suggestions(HOME_IS_READ_ONLY_WHEN_THE_PREFIX_REQUIRES_IT_CASES);
+}
+
+#[test]
+fn native_names_keep_case_quote_and_separator_semantics() {
+    run_suggestions(NATIVE_NAMES_KEEP_CASE_QUOTE_AND_SEPARATOR_SEMANTICS_CASES);
+}
+
+#[test]
+fn completion_continues_inside_quoted_nested_paths()
+-> Result<(), maestro_tui::autocomplete::CompletionError> {
+    use fixtures::completion_native::Tree;
+    use fixtures::futures::block_on;
+    use maestro_tui::autocomplete::{CompletionOptions, NativeAutocompleteOperations};
+    let tree = Tree::new()?;
+    tree.directory("my folder")?;
+    tree.file("my folder/test.txt")?;
+    tree.file("my folder/other.txt")?;
+    let provider = CombinedAutocompleteProvider::new(
+        vec![],
+        tree.authored(),
+        NativeAutocompleteOperations::default(),
+    );
+    let lines = ["\"my folder/\"".to_owned()];
+    let found = block_on(provider.get_suggestions(
+        &lines,
+        CursorPosition {
+            line: 0,
+            col: lines[0].len() - 1,
+        },
+        CompletionOptions {
+            signal: &(),
+            force: Some(true),
+        },
+    ))?
+    .expect("quoted directory has candidates");
+    assert_eq!(found.prefix, "\"my folder/");
+    assert_eq!(
+        found.items,
+        [
+            item("\"my folder/other.txt\"", "other.txt", None),
+            item("\"my folder/test.txt\"", "test.txt", None),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn quoted_directories_rank_before_files() {
+    run_suggestions(QUOTED_DIRECTORIES_RANK_BEFORE_FILES_CASES);
+}
+
+#[test]
+fn application_preserves_suffix_and_byte_cursor() {
+    run_applications(APPLICATION_PRESERVES_SUFFIX_AND_BYTE_CURSOR_CASES);
+}
+
+#[test]
+fn absolute_candidates_do_not_gain_command_punctuation() {
+    run_applications(ABSOLUTE_CANDIDATES_DO_NOT_GAIN_COMMAND_PUNCTUATION_CASES);
+}
+
+#[test]
+fn quoted_absolute_suggestions_insert_as_paths() {
+    use maestro_tui::autocomplete::CompletionOptions;
+    for (input, force) in [("/", Some(true)), ("/a", Some(true)), ("  /a", None)] {
+        for (kind, value, label, offset) in [
+            (DirectoryEntryKind::Other, "\"/a b\"", "a b", 6),
+            (DirectoryEntryKind::Directory, "\"/a b/\"", "a b/", 6),
+        ] {
+            let provider = CombinedAutocompleteProvider::new(
+                vec![],
+                "/work".into(),
+                Files {
+                    entries: vec![("a b", kind)],
+                    ..Files::default()
+                },
+            );
+            let lines = [input.to_owned()];
+            let cursor = CursorPosition {
+                line: 0,
+                col: input.len(),
+            };
+            let suggestions = fixtures::futures::block_on(provider.get_suggestions(
+                &lines,
+                cursor,
+                CompletionOptions {
+                    signal: &std::cell::Cell::new(false),
+                    force,
+                },
+            ))
+            .expect("query succeeds")
+            .expect("absolute candidate");
+            assert_eq!(suggestions.items, [item(value, label, None)]);
+            let applied = provider.apply_completion(
+                &lines,
+                cursor,
+                &suggestions.items[0],
+                &suggestions.prefix,
+            );
+            let leading = if input.starts_with(' ') { "  " } else { "" };
+            assert_eq!(applied.lines, [format!("{leading}{value}")], "{input}");
+            assert_eq!(
+                (applied.cursor_line, applied.cursor_col),
+                (0, leading.len() + offset)
+            );
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn native_completion_preserves_literal_backslash_identity() {
+    use fixtures::completion_native::Tree;
+    use maestro_tui::autocomplete::{CompletionOptions, NativeAutocompleteOperations};
+    let tree = Tree::new().expect("temporary directory created");
+    tree.file("a\\b").expect("literal backslash file created");
+    tree.directory("a").expect("decoy directory created");
+    tree.file("a/b").expect("nested decoy created");
+    std::fs::write(tree.0.join("a\\b"), b"literal").expect("literal contents written");
+    std::fs::write(tree.0.join("a/b"), b"nested").expect("decoy contents written");
+    let provider = CombinedAutocompleteProvider::new(
+        vec![],
+        tree.authored(),
+        NativeAutocompleteOperations::default(),
+    );
+    let lines = ["./a".to_owned()];
+    let cursor = CursorPosition { line: 0, col: 3 };
+    let suggestions = fixtures::futures::block_on(provider.get_suggestions(
+        &lines,
+        cursor,
+        CompletionOptions {
+            signal: &(),
+            force: None,
+        },
+    ))
+    .expect("query succeeds")
+    .expect("native candidates");
+    assert_eq!(
+        suggestions.items,
+        [item("./a/", "a/", None), item("./a\\b", "a\\b", None)]
+    );
+    let applied =
+        provider.apply_completion(&lines, cursor, &suggestions.items[1], &suggestions.prefix);
+    assert_eq!(applied.lines, ["./a\\b"]);
+    assert_eq!((applied.cursor_line, applied.cursor_col), (0, 5));
+    assert_eq!(
+        std::fs::read(tree.0.join(&applied.lines[0])).expect("inserted path exists"),
+        b"literal"
+    );
+}
+
+#[test]
+fn direct_path_operations_are_replaceable() {
+    use fixtures::completion_native::Tree;
+    use maestro_tui::autocomplete::{
+        AutocompleteOperations, CompletionOptions, NativeAutocompleteOperations,
+    };
+    /// Run the same generic request using either host adapter.
+    fn query<O: AutocompleteOperations<Signal = S>, S: ?Sized>(
+        operations: O,
+        base: String,
+        signal: &S,
+    ) -> Result<maestro_tui::AutocompleteSuggestions, maestro_tui::autocomplete::CompletionError>
+    {
+        let provider = CombinedAutocompleteProvider::new(vec![], base, operations);
+        let lines = ["./al".into()];
+        Ok(fixtures::futures::block_on(provider.get_suggestions(
+            &lines,
+            CursorPosition { line: 0, col: 4 },
+            CompletionOptions {
+                signal,
+                force: None,
+            },
+        ))?
+        .ok_or("expected candidates")?)
+    }
+    let tree = Tree::new().expect("temporary directory created");
+    tree.file("alpha.txt").expect("fixture entry created");
+    tree.file("decoy").expect("fixture entry created");
+    let controlled = Files {
+        entries: vec![
+            ("alpha.txt", DirectoryEntryKind::Other),
+            ("decoy", DirectoryEntryKind::Other),
+        ],
+        ..Files::default()
+    };
+    let memory =
+        query(controlled, "/work".into(), &std::cell::Cell::new(false)).expect("memory candidates");
+    let native = query(
+        NativeAutocompleteOperations::default(),
+        tree.authored(),
+        &(),
+    )
+    .expect("native candidates");
+    assert_eq!(memory, native);
+    assert_eq!(native.prefix, "./al");
+    assert_eq!(native.items, [item("./alpha.txt", "alpha.txt", None)]);
+}
+
+/// Controlled inputs and complete public outputs for quoted directories rank before files.
+const QUOTED_DIRECTORIES_RANK_BEFORE_FILES_CASES: &[SuggestionCase] = &[
+    SuggestionCase {
+        id: "sort_quoted_dirs",
+        lines: &["\""],
+        line: 0,
+        col: 1,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("a.txt", DirectoryEntryKind::Other),
+                ("z dir", DirectoryEntryKind::Directory),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "\"",
+            &[("\"z dir/\"", "z dir/", None), ("\"a.txt\"", "a.txt", None)],
+        ),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "sort_mixed_dirs",
+        lines: &[""],
+        line: 0,
+        col: 0,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("a.txt", DirectoryEntryKind::Other),
+                ("z dir", DirectoryEntryKind::Directory),
+                ("y", DirectoryEntryKind::Directory),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "",
+            &[
+                ("y/", "y/", None),
+                ("\"z dir/\"", "z dir/", None),
+                ("a.txt", "a.txt", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "sort_locale",
+        lines: &[""],
+        line: 0,
+        col: 0,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("\u{e4}", DirectoryEntryKind::Other),
+                ("z", DirectoryEntryKind::Other),
+                ("a", DirectoryEntryKind::Other),
+                ("A", DirectoryEntryKind::Other),
+                ("\u{e5}", DirectoryEntryKind::Other),
+                ("a2", DirectoryEntryKind::Other),
+                ("a10", DirectoryEntryKind::Other),
+                ("\u{e9}", DirectoryEntryKind::Other),
+                ("e\u{301}", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "",
+            &[
+                ("a", "a", None),
+                ("A", "A", None),
+                ("\u{e5}", "\u{e5}", None),
+                ("\u{e4}", "\u{e4}", None),
+                ("a10", "a10", None),
+                ("a2", "a2", None),
+                ("\u{e9}", "\u{e9}", None),
+                ("e\u{301}", "e\u{301}", None),
+                ("z", "z", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/work"]],
+    },
+];
+
+/// Controlled inputs and complete public outputs for native names keep case quote and separator semantics.
+const NATIVE_NAMES_KEEP_CASE_QUOTE_AND_SEPARATOR_SEMANTICS_CASES: &[SuggestionCase] = &[
+    SuggestionCase {
+        id: "names_case_a",
+        lines: &["a"],
+        line: 0,
+        col: 1,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("Alpha", DirectoryEntryKind::Other),
+                ("alpha", DirectoryEntryKind::Other),
+                ("ALPHA", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("alpha", "alpha", None),
+                ("Alpha", "Alpha", None),
+                ("ALPHA", "ALPHA", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "names_unicode_i\u{307}",
+        lines: &["i\u{307}"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("\u{130}tem", DirectoryEntryKind::Other),
+                ("\u{39f}\u{3a3}", DirectoryEntryKind::Other),
+                ("\u{3bf}\u{3c2}", DirectoryEntryKind::Other),
+                ("\u{e9}", DirectoryEntryKind::Other),
+                ("e\u{301}", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("i\u{307}", &[("\u{130}tem", "\u{130}tem", None)]),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "names_unicode_\u{3bf}\u{3c2}",
+        lines: &["\u{3bf}\u{3c2}"],
+        line: 0,
+        col: 4,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("\u{130}tem", DirectoryEntryKind::Other),
+                ("\u{39f}\u{3a3}", DirectoryEntryKind::Other),
+                ("\u{3bf}\u{3c2}", DirectoryEntryKind::Other),
+                ("\u{e9}", DirectoryEntryKind::Other),
+                ("e\u{301}", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "\u{3bf}\u{3c2}",
+            &[
+                ("\u{3bf}\u{3c2}", "\u{3bf}\u{3c2}", None),
+                ("\u{39f}\u{3a3}", "\u{39f}\u{3a3}", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "names_unicode_\u{e9}",
+        lines: &["\u{e9}"],
+        line: 0,
+        col: 2,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("\u{130}tem", DirectoryEntryKind::Other),
+                ("\u{39f}\u{3a3}", DirectoryEntryKind::Other),
+                ("\u{3bf}\u{3c2}", DirectoryEntryKind::Other),
+                ("\u{e9}", DirectoryEntryKind::Other),
+                ("e\u{301}", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("\u{e9}", &[("\u{e9}", "\u{e9}", None)]),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "names_spaces_",
+        lines: &[""],
+        line: 0,
+        col: 0,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("file a", DirectoryEntryKind::Other),
+                ("tab\u{9}file", DirectoryEntryKind::Other),
+                ("line\u{a}file", DirectoryEntryKind::Other),
+                ("a\"b", DirectoryEntryKind::Other),
+                ("a\\b", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "",
+            &[
+                ("a\"b", "a\"b", None),
+                (if cfg!(windows) { "a/b" } else { "a\\b" }, "a\\b", None),
+                ("\"file a\"", "file a", None),
+                ("line\u{a}file", "line\u{a}file", None),
+                ("tab\u{9}file", "tab\u{9}file", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/work"]],
+    },
+];
+
+/// Controlled inputs and complete public outputs for home is read only when the prefix requires it.
+const HOME_IS_READ_ONLY_WHEN_THE_PREFIX_REQUIRES_IT_CASES: &[SuggestionCase] = &[
+    SuggestionCase {
+        id: "path_home_error",
+        lines: &["~/"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[],
+            stat: &[],
+            read_error: false,
+            home_error: true,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["home"]],
+    },
+    SuggestionCase {
+        id: "path_home_avoided",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: true,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "./",
+            &[
+                ("\"./a folder/\"", "a folder/", None),
+                ("./Alpha/", "Alpha/", None),
+                ("./zeta/", "zeta/", None),
+                ("./.hidden", ".hidden", None),
+                ("./abroken", "abroken", None),
+                ("./alink", "alink", None),
+                ("./alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work/"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+];
+
+/// Controlled inputs and complete public outputs for filesystem failures keep the source catch boundary.
+const FILESYSTEM_FAILURES_KEEP_THE_SOURCE_CATCH_BOUNDARY_CASES: &[SuggestionCase] = &[
+    SuggestionCase {
+        id: "path_read_error",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[],
+            stat: &[],
+            read_error: true,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work/"]],
+    },
+    SuggestionCase {
+        id: "path_stat_false",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[("link", DirectoryEntryKind::SymbolicLink)],
+            stat: &[("/work/link", "file")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("./", &[("./link", "link", None)]),
+        calls: &[&["read_dir", "/work/"], &["is_directory", "/work/link"]],
+    },
+    SuggestionCase {
+        id: "path_stat_error",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[("link", DirectoryEntryKind::SymbolicLink)],
+            stat: &[("/work/link", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("./", &[("./link", "link", None)]),
+        calls: &[&["read_dir", "/work/"], &["is_directory", "/work/link"]],
+    },
+    SuggestionCase {
+        id: "path_compare_error",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("b", DirectoryEntryKind::Other),
+                ("a", DirectoryEntryKind::Other),
+            ],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: true,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work/"]],
+    },
+    SuggestionCase {
+        id: "path_empty",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work/"]],
+    },
+];
+
+/// Controlled inputs and complete public outputs for prefix classes select the correct directory.
+const PREFIX_CLASSES_SELECT_THE_CORRECT_DIRECTORY_CASES: &[SuggestionCase] = &[
+    SuggestionCase {
+        id: "path_empty_natural",
+        lines: &[""],
+        line: 0,
+        col: 0,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_empty_forced",
+        lines: &[""],
+        line: 0,
+        col: 0,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("zeta/", "zeta/", None),
+                (".hidden", ".hidden", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_bare",
+        lines: &["a"],
+        line: 0,
+        col: 1,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_forced",
+        lines: &["a"],
+        line: 0,
+        col: 1,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_dot",
+        lines: &["."],
+        line: 0,
+        col: 1,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(".", &[(".hidden", ".hidden", None)]),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "path_dot_slash",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "./",
+            &[
+                ("\"./a folder/\"", "a folder/", None),
+                ("./alink/", "alink/", None),
+                ("./Alpha/", "Alpha/", None),
+                ("./zeta/", "zeta/", None),
+                ("./.hidden", ".hidden", None),
+                ("./abroken", "abroken", None),
+                ("./alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work/"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_dot_name",
+        lines: &["./al"],
+        line: 0,
+        col: 4,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "./al",
+            &[
+                ("./alink/", "alink/", None),
+                ("./Alpha/", "Alpha/", None),
+                ("./alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/work"], &["is_directory", "/work/alink"]],
+    },
+    SuggestionCase {
+        id: "path_dot_dir",
+        lines: &["./Alpha/"],
+        line: 0,
+        col: 8,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "./Alpha/",
+            &[
+                ("\"./Alpha/a folder/\"", "a folder/", None),
+                ("./Alpha/Alpha/", "Alpha/", None),
+                ("./Alpha/zeta/", "zeta/", None),
+                ("./Alpha/.hidden", ".hidden", None),
+                ("./Alpha/abroken", "abroken", None),
+                ("./Alpha/alink", "alink", None),
+                ("./Alpha/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work/Alpha/"],
+            &["is_directory", "/work/Alpha/alink"],
+            &["is_directory", "/work/Alpha/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_parent",
+        lines: &["../"],
+        line: 0,
+        col: 3,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "../",
+            &[
+                ("\"../a folder/\"", "a folder/", None),
+                ("../Alpha/", "Alpha/", None),
+                ("../zeta/", "zeta/", None),
+                ("../.hidden", ".hidden", None),
+                ("../abroken", "abroken", None),
+                ("../alink", "alink", None),
+                ("../alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/"],
+            &["is_directory", "/alink"],
+            &["is_directory", "/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_parent_name",
+        lines: &["../al"],
+        line: 0,
+        col: 5,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "../al",
+            &[
+                ("../Alpha/", "Alpha/", None),
+                ("../alink", "alink", None),
+                ("../alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/"], &["is_directory", "/alink"]],
+    },
+    SuggestionCase {
+        id: "path_tilde_bare",
+        lines: &["~"],
+        line: 0,
+        col: 1,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_tilde_forced",
+        lines: &["~"],
+        line: 0,
+        col: 1,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "~",
+            &[
+                ("\"~/a folder/\"", "a folder/", None),
+                ("~/Alpha/", "Alpha/", None),
+                ("~/zeta/", "zeta/", None),
+                ("~/.hidden", ".hidden", None),
+                ("~/abroken", "abroken", None),
+                ("~/alink", "alink", None),
+                ("~/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["home"],
+            &["read_dir", "/home/test"],
+            &["is_directory", "/home/test/alink"],
+            &["is_directory", "/home/test/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_home",
+        lines: &["~/"],
+        line: 0,
+        col: 2,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "~/",
+            &[
+                ("\"~/a folder/\"", "a folder/", None),
+                ("~/Alpha/", "Alpha/", None),
+                ("~/zeta/", "zeta/", None),
+                ("~/.hidden", ".hidden", None),
+                ("~/abroken", "abroken", None),
+                ("~/alink", "alink", None),
+                ("~/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["home"],
+            &["read_dir", "/home/test/"],
+            &["is_directory", "/home/test/alink"],
+            &["is_directory", "/home/test/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_home_file",
+        lines: &["~/al"],
+        line: 0,
+        col: 4,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "~/al",
+            &[
+                ("~/Alpha/", "Alpha/", None),
+                ("~/alink", "alink", None),
+                ("~/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["home"],
+            &["read_dir", "/home/test"],
+            &["is_directory", "/home/test/alink"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_home_deep",
+        lines: &["~/docs/al"],
+        line: 0,
+        col: 9,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "~/docs/al",
+            &[
+                ("~/docs/Alpha/", "Alpha/", None),
+                ("~/docs/alink", "alink", None),
+                ("~/docs/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["home"],
+            &["read_dir", "/home/test/docs"],
+            &["is_directory", "/home/test/docs/alink"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_other_tilde",
+        lines: &["~user"],
+        line: 0,
+        col: 5,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "."]],
+    },
+    SuggestionCase {
+        id: "path_root",
+        lines: &["/"],
+        line: 0,
+        col: 1,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "/",
+            &[
+                ("\"/a folder/\"", "a folder/", None),
+                ("/Alpha/", "Alpha/", None),
+                ("/zeta/", "zeta/", None),
+                ("/.hidden", ".hidden", None),
+                ("/abroken", "abroken", None),
+                ("/alink", "alink", None),
+                ("/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/"],
+            &["is_directory", "/alink"],
+            &["is_directory", "/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_root_file",
+        lines: &["/al"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "/al",
+            &[
+                ("/Alpha/", "Alpha/", None),
+                ("/alink", "alink", None),
+                ("/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/"], &["is_directory", "/alink"]],
+    },
+    SuggestionCase {
+        id: "path_absolute",
+        lines: &["/docs/al"],
+        line: 0,
+        col: 8,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "/docs/al",
+            &[
+                ("/docs/Alpha/", "Alpha/", None),
+                ("/docs/alink", "alink", None),
+                ("/docs/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[&["read_dir", "/docs"], &["is_directory", "/docs/alink"]],
+    },
+    SuggestionCase {
+        id: "path_slash_arg",
+        lines: &["/cmd /"],
+        line: 0,
+        col: 6,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "/",
+            &[
+                ("\"/a folder/\"", "a folder/", None),
+                ("/Alpha/", "Alpha/", None),
+                ("/zeta/", "zeta/", None),
+                ("/.hidden", ".hidden", None),
+                ("/abroken", "abroken", None),
+                ("/alink", "alink", None),
+                ("/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/"],
+            &["is_directory", "/alink"],
+            &["is_directory", "/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_hey_slash",
+        lines: &["hey /"],
+        line: 0,
+        col: 5,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "/",
+            &[
+                ("\"/a folder/\"", "a folder/", None),
+                ("/Alpha/", "Alpha/", None),
+                ("/zeta/", "zeta/", None),
+                ("/.hidden", ".hidden", None),
+                ("/abroken", "abroken", None),
+                ("/alink", "alink", None),
+                ("/alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/"],
+            &["is_directory", "/alink"],
+            &["is_directory", "/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_quoted",
+        lines: &["\"a"],
+        line: 0,
+        col: 2,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "\"a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("\"alink/\"", "alink/", None),
+                ("\"Alpha/\"", "Alpha/", None),
+                ("\"abroken\"", "abroken", None),
+                ("\"alpha.txt\"", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_quoted_at",
+        lines: &["@\"a"],
+        line: 0,
+        col: 3,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_quoted_midtoken",
+        lines: &["word\"a"],
+        line: 0,
+        col: 6,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_quoted_space",
+        lines: &["say \"a f"],
+        line: 0,
+        col: 8,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("\"a f", &[("\"a folder/\"", "a folder/", None)]),
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "path_quoted_equals",
+        lines: &["x=\"a"],
+        line: 0,
+        col: 4,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "\"a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("\"alink/\"", "alink/", None),
+                ("\"Alpha/\"", "Alpha/", None),
+                ("\"abroken\"", "abroken", None),
+                ("\"alpha.txt\"", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_closed_quote",
+        lines: &["\"a\""],
+        line: 0,
+        col: 3,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_two_quotes",
+        lines: &["\"closed\" \"a"],
+        line: 0,
+        col: 11,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "\"a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("\"alink/\"", "alink/", None),
+                ("\"Alpha/\"", "Alpha/", None),
+                ("\"abroken\"", "abroken", None),
+                ("\"alpha.txt\"", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_apostrophe",
+        lines: &["x'a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_tab",
+        lines: &["x\u{9}a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_equals",
+        lines: &["x=a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_doublequote",
+        lines: &["x\"a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_space",
+        lines: &["x a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "a",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_after_space",
+        lines: &["x "],
+        line: 0,
+        col: 2,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items(
+            "",
+            &[
+                ("\"a folder/\"", "a folder/", None),
+                ("alink/", "alink/", None),
+                ("Alpha/", "Alpha/", None),
+                ("zeta/", "zeta/", None),
+                (".hidden", ".hidden", None),
+                ("abroken", "abroken", None),
+                ("alpha.txt", "alpha.txt", None),
+            ],
+        ),
+        calls: &[
+            &["read_dir", "/work"],
+            &["is_directory", "/work/alink"],
+            &["is_directory", "/work/abroken"],
+        ],
+    },
+    SuggestionCase {
+        id: "path_after_tab",
+        lines: &["x\u{9}"],
+        line: 0,
+        col: 2,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_after_equals",
+        lines: &["x="],
+        line: 0,
+        col: 2,
+        force: Some(false),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_newline",
+        lines: &["x\u{a}a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "path_nbsp",
+        lines: &["x\u{a0}a"],
+        line: 0,
+        col: 4,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "path_backslash",
+        lines: &["src\\al"],
+        line: 0,
+        col: 6,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "path_at",
+        lines: &["@a"],
+        line: 0,
+        col: 2,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_at_embedded",
+        lines: &["a@a"],
+        line: 0,
+        col: 3,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/work"]],
+    },
+    SuggestionCase {
+        id: "path_at_equals",
+        lines: &["x=@a"],
+        line: 0,
+        col: 4,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[
+                ("alpha.txt", DirectoryEntryKind::Other),
+                ("Alpha", DirectoryEntryKind::Directory),
+                ("a folder", DirectoryEntryKind::Directory),
+                ("alink", DirectoryEntryKind::SymbolicLink),
+                ("abroken", DirectoryEntryKind::SymbolicLink),
+                (".hidden", DirectoryEntryKind::Other),
+                ("zeta", DirectoryEntryKind::Directory),
+            ],
+            stat: &[("/work/alink", "directory"), ("/work/abroken", "error")],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[],
+    },
+    SuggestionCase {
+        id: "path_leading_space_absolute",
+        lines: &[" /al"],
+        line: 0,
+        col: 4,
+        force: None,
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[("alpha.txt", DirectoryEntryKind::Other)],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("/al", &[("/alpha.txt", "alpha.txt", None)]),
+        calls: &[&["read_dir", "/"]],
+    },
+    SuggestionCase {
+        id: "path_preaborted",
+        lines: &["./"],
+        line: 0,
+        col: 2,
+        force: None,
+        aborted: true,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[("file.txt", DirectoryEntryKind::Other)],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("./", &[("./file.txt", "file.txt", None)]),
+        calls: &[&["read_dir", "/work/"]],
+    },
+    SuggestionCase {
+        id: "path_forced_upper_root",
+        lines: &["/A"],
+        line: 0,
+        col: 2,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[("Apple", DirectoryEntryKind::Other)],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::Items("/A", &[("/Apple", "Apple", None)]),
+        calls: &[&["read_dir", "/"]],
+    },
+    SuggestionCase {
+        id: "path_forced_model_no_file",
+        lines: &["/model"],
+        line: 0,
+        col: 6,
+        force: Some(true),
+        aborted: false,
+        commands: CommandInput::Empty,
+        files: FileInput {
+            entries: &[("not-model", DirectoryEntryKind::Other)],
+            stat: &[],
+            read_error: false,
+            home_error: false,
+            compare_error: false,
+        },
+        expected: Expected::None,
+        calls: &[&["read_dir", "/"]],
+    },
+];
+
+/// Insertion inputs with complete edited lines and byte cursor outputs.
+const ABSOLUTE_CANDIDATES_DO_NOT_GAIN_COMMAND_PUNCTUATION_CASES: &[ApplicationCase] = &[
+    (
+        "apply_absolute",
+        &["before", "/al", "after"],
+        CursorPosition { line: 1, col: 3 },
+        "/al",
+        ("/alpha.txt", "alpha.txt", None),
+        &["before", "/alpha.txt", "after"],
+        1,
+        10,
+    ),
+    (
+        "apply_root",
+        &["before", "/", "after"],
+        CursorPosition { line: 1, col: 1 },
+        "/",
+        ("/alpha.txt", "alpha.txt", None),
+        &["before", "/alpha.txt", "after"],
+        1,
+        10,
+    ),
+];
+
+/// Insertion inputs with complete edited lines and byte cursor outputs.
+const APPLICATION_PRESERVES_SUFFIX_AND_BYTE_CURSOR_CASES: &[ApplicationCase] = &[
+    (
+        "apply_command",
+        &["before", "/heTAIL", "after"],
+        CursorPosition { line: 1, col: 3 },
+        "/he",
+        ("help", "help", None),
+        &["before", "/help TAIL", "after"],
+        1,
+        6,
+    ),
+    (
+        "apply_whitespace_command",
+        &["before", " \u{feff}/he", "after"],
+        CursorPosition { line: 1, col: 7 },
+        "/he",
+        ("help", "help", None),
+        &["before", " \u{feff}/help ", "after"],
+        1,
+        10,
+    ),
+    (
+        "apply_nel_command",
+        &["before", "\u{85}/he", "after"],
+        CursorPosition { line: 1, col: 5 },
+        "/he",
+        ("help", "help", None),
+        &["before", "\u{85}help", "after"],
+        1,
+        6,
+    ),
+    (
+        "apply_direct",
+        &["before", "./alTAIL", "after"],
+        CursorPosition { line: 1, col: 4 },
+        "./al",
+        ("./alpha.txt", "alpha.txt", None),
+        &["before", "./alpha.txtTAIL", "after"],
+        1,
+        11,
+    ),
+    (
+        "apply_arg",
+        &["before", "/load aTAIL", "after"],
+        CursorPosition { line: 1, col: 7 },
+        "a",
+        ("chosen", "chosen", None),
+        &["before", "/load chosenTAIL", "after"],
+        1,
+        12,
+    ),
+    (
+        "apply_at_file",
+        &["before", "@al", "after"],
+        CursorPosition { line: 1, col: 3 },
+        "@al",
+        ("@alpha.txt", "alpha.txt", None),
+        &["before", "@alpha.txt ", "after"],
+        1,
+        11,
+    ),
+    (
+        "apply_at_dir",
+        &["before", "@al", "after"],
+        CursorPosition { line: 1, col: 3 },
+        "@al",
+        ("@Alpha/", "Alpha/", None),
+        &["before", "@Alpha/", "after"],
+        1,
+        7,
+    ),
+    (
+        "apply_quoted_file",
+        &["before", "\"a\" tail", "after"],
+        CursorPosition { line: 1, col: 2 },
+        "\"a",
+        ("\"a file\"", "a file", None),
+        &["before", "\"a file\" tail", "after"],
+        1,
+        8,
+    ),
+    (
+        "apply_quoted_dir",
+        &["before", "\"a\" tail", "after"],
+        CursorPosition { line: 1, col: 2 },
+        "\"a",
+        ("\"a dir/\"", "a dir/", None),
+        &["before", "\"a dir/\" tail", "after"],
+        1,
+        7,
+    ),
+    (
+        "apply_at_quoted_file",
+        &["before", "@\"a\" tail", "after"],
+        CursorPosition { line: 1, col: 3 },
+        "@\"a",
+        ("@\"a file\"", "a file", None),
+        &["before", "@\"a file\"  tail", "after"],
+        1,
+        10,
+    ),
+    (
+        "apply_at_quoted_dir",
+        &["before", "@\"a\" tail", "after"],
+        CursorPosition { line: 1, col: 3 },
+        "@\"a",
+        ("@\"a dir/\"", "a dir/", None),
+        &["before", "@\"a dir/\" tail", "after"],
+        1,
+        8,
+    ),
+    (
+        "apply_no_closing",
+        &["before", "\"aTAIL", "after"],
+        CursorPosition { line: 1, col: 2 },
+        "\"a",
+        ("\"a file\"", "a file", None),
+        &["before", "\"a file\"TAIL", "after"],
+        1,
+        8,
+    ),
+    (
+        "apply_item_no_quote",
+        &["before", "\"a\"TAIL", "after"],
+        CursorPosition { line: 1, col: 2 },
+        "\"a",
+        ("a", "a", None),
+        &["before", "a\"TAIL", "after"],
+        1,
+        1,
+    ),
+    (
+        "apply_emoji",
+        &["before", "\u{1f600} ./aTAIL", "after"],
+        CursorPosition { line: 1, col: 8 },
+        "./a",
+        ("./\u{3b1}.txt", "\u{3b1}.txt", None),
+        &["before", "\u{1f600} ./\u{3b1}.txtTAIL", "after"],
+        1,
+        13,
+    ),
+];

@@ -432,12 +432,15 @@ fn suggestions_len(
     cursor: CursorPosition,
     signal: &Cell<bool>,
     force: Option<bool>,
-) -> Option<usize> {
+) -> Result<Option<usize>, maestro_tui::autocomplete::CompletionError> {
     let options = CompletionOptions { signal, force };
-    block_on(CommandProvider.get_suggestions(lines, cursor, options)).map(|found| found.items.len())
+    Ok(
+        block_on(CommandProvider.get_suggestions(lines, cursor, options))?
+            .map(|found| found.items.len()),
+    )
 }
 
-fn assert_command_provider() {
+fn assert_command_provider() -> Result<(), maestro_tui::autocomplete::CompletionError> {
     let lines = vec!["\u{e9} /he".to_owned()];
     let cursor = CursorPosition {
         line: 0,
@@ -453,7 +456,7 @@ fn assert_command_provider() {
         signal: &flag,
         force: None,
     };
-    let found = block_on(CommandProvider.get_suggestions(&lines, cursor, options));
+    let found = block_on(CommandProvider.get_suggestions(&lines, cursor, options))?;
     assert_eq!(
         found.as_ref().map(|found| found.prefix.as_str()),
         Some("/he")
@@ -464,11 +467,14 @@ fn assert_command_provider() {
         .map(|chosen| chosen.value.as_str())
         .collect();
     assert_eq!(values, ["/help", "/hello"]);
-    assert_eq!(suggestions_len(&lines, cursor, &flag, Some(true)), Some(3));
-    assert_eq!(suggestions_len(&lines, cursor, &flag, Some(false)), Some(2));
+    assert_eq!(suggestions_len(&lines, cursor, &flag, Some(true))?, Some(3));
+    assert_eq!(
+        suggestions_len(&lines, cursor, &flag, Some(false))?,
+        Some(2)
+    );
     flag.set(true);
     assert_eq!(
-        suggestions_len(&lines, cursor, &flag, None),
+        suggestions_len(&lines, cursor, &flag, None)?,
         None,
         "raising the signal cancels the request"
     );
@@ -494,9 +500,10 @@ fn assert_command_provider() {
         CountingProvider.should_trigger_file_completion(&lines, cursor),
         None
     );
+    Ok(())
 }
 
-fn assert_counting_provider() {
+fn assert_counting_provider() -> Result<(), maestro_tui::autocomplete::CompletionError> {
     let seen = RefCell::new(String::new());
     for (text, expected) in [("", None), ("none", Some(0)), ("some", Some(1))] {
         let lines = vec![text.to_owned()];
@@ -509,20 +516,21 @@ fn assert_counting_provider() {
             CursorPosition { line: 0, col: 0 },
             options,
         ));
-        assert_eq!(result.map(|found| found.items.len()), expected, "{text:?}");
+        assert_eq!(result?.map(|found| found.items.len()), expected, "{text:?}");
     }
     assert_eq!(*seen.borrow(), "seen;seen;seen;");
+    Ok(())
 }
 
-fn assert_slash_commands() {
+fn assert_slash_commands() -> Result<(), maestro_tui::autocomplete::CompletionError> {
     let ready: ArgumentCompletions = Rc::new(|prefix| {
         let prefix = prefix.to_owned();
-        Box::pin(async move { Some(vec![item(&format!("{prefix}one"))]) })
+        Box::pin(async move { Ok(Some(vec![item(&format!("{prefix}one"))])) })
     });
     let suspended: ArgumentCompletions = Rc::new(|_| {
         Box::pin(async {
             YieldOnce(false).await;
-            None
+            Ok(None)
         })
     });
     let command = |name: &str, completions| SlashCommand {
@@ -536,22 +544,26 @@ fn assert_slash_commands() {
         command("later", Some(suspended)),
         command("plain", None),
     ];
-    let outcomes: Vec<_> = commands
+    let outcomes = commands
         .iter()
         .map(|each| {
             each.get_argument_completions
                 .as_ref()
-                .map(|complete| block_on(complete("a")).map(|found| found.len()))
+                .map(|complete| block_on(complete("a")).map(|found| found.map(|found| found.len())))
+                .transpose()
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(outcomes, [Some(Some(1)), Some(None), None]);
+    Ok(())
 }
 
 #[test]
-fn completion_contracts_keep_signals_results_and_byte_cursors() {
-    assert_command_provider();
-    assert_counting_provider();
-    assert_slash_commands();
+fn completion_contracts_keep_signals_results_and_byte_cursors()
+-> Result<(), maestro_tui::autocomplete::CompletionError> {
+    assert_command_provider()?;
+    assert_counting_provider()?;
+    assert_slash_commands()?;
+    Ok(())
 }
 
 /// A log shared with a callback.
