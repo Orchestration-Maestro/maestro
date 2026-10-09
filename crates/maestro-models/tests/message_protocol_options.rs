@@ -252,3 +252,75 @@ const TEST_NAMES: [&str; 20] = [
     "messages_forward_simple_callbacks",
     "messages_preserve_callback_failures",
 ];
+
+/// Read a subscription call from a closed scripted response through the public stream.
+async fn subscription_name_result(members: &str) -> chat::TestResult<messages::Run> {
+    use serde_json::json;
+    let opening = format!(
+        "event: content_block_start\ndata: {{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{{\"type\":\"tool_use\",\"id\":\"tool\",{members},\"input\":{{}}}}}}\n\n"
+    );
+    messages::run_case(&messages::Case {
+        context: json!({"messages":[],"tools":[{"name":"�CuStOm","description":"replacement character","parameters":{"type":"object"}}]}),
+        options: json!({"apiKey":"sk-ant-oat-name"}),
+        chunks: Some(vec![messages::Chunk::Text(opening + messages::STOP)]),
+        ..Default::default()
+    }).await
+}
+
+#[test]
+fn messages_report_native_subscription_name_error() -> chat::TestResult {
+    chat::block_on(false, async {
+        let run = subscription_name_result(r#""name":"\ud800""#).await?;
+        assert!(
+            run.result["errorMessage"]
+                .as_str()
+                .ok_or("missing error")?
+                .contains("unexpected end of hex escape")
+        );
+        assert_eq!(
+            run.events
+                .iter()
+                .map(|event| event["type"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["start", "error"]
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn messages_restore_replacement_character_subscription_name() -> chat::TestResult {
+    chat::block_on(false, async {
+        let run = subscription_name_result(r#""name":"\ufffdCUSTOM""#).await?;
+        assert_eq!(run.result["content"][0]["name"], "�CuStOm");
+        assert_eq!(
+            run.events
+                .iter()
+                .map(|event| event["type"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["start", "toolcall_start", "done"]
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn messages_report_native_error_for_last_duplicate_subscription_name() -> chat::TestResult {
+    chat::block_on(false, async {
+        let run = subscription_name_result(r#""name":"Read","name":"\ud800""#).await?;
+        assert!(
+            run.result["errorMessage"]
+                .as_str()
+                .ok_or("missing error")?
+                .contains("unexpected end of hex escape")
+        );
+        assert_eq!(
+            run.events
+                .iter()
+                .map(|event| event["type"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["start", "error"]
+        );
+        Ok(())
+    })
+}

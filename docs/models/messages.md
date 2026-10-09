@@ -45,7 +45,8 @@ prompt. Matching tool declarations, replayed calls and named selections use cano
 names. Incoming lowercase matches use the first declared spelling. Matching uses Unicode
 lowercasing, not case folding or whitespace trimming; unknown names remain unchanged.
 With nonempty declarations, a missing or non-string incoming subscription tool name ends the
-stream with an error before opening that block.
+stream with an error before opening that block. A JSON string that cannot be decoded into a
+Rust string ends the stream with the native decoder error at the same read site.
 
 `AnthropicOptions::client` replaces the key, the endpoint and the HTTP transport with one
 function from the payload and an `AnthropicRequestOptions` to an `HttpResponse`. The client

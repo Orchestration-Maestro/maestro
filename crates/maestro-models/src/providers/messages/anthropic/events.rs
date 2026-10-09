@@ -194,17 +194,24 @@ impl<'a> Reducer<'a> {
                     thinking(REDACTED_TEXT.to_owned(), data, Some(true)),
                     thinking_start,
                 ),
-                OpenedBlock::ToolUse(mut call) => {
-                    if let Some(tools) = self.tools.filter(|tools| !tools.is_empty()) {
-                        let name = call
-                            .name
-                            .take()
+                OpenedBlock::ToolUse(call) => {
+                    let decoded = call
+                        .name
+                        .as_deref()
+                        .filter(|raw| raw.get().starts_with('"'))
+                        .map(|raw| serde_json::from_str::<String>(raw.get()))
+                        .transpose();
+                    let name = if let Some(tools) = self.tools.filter(|tools| !tools.is_empty()) {
+                        let name = decoded
+                            .map_err(|error| RequestFailure::new(error.to_string()))?
                             .ok_or_else(|| RequestFailure::new("Tool name must be a string"))?;
-                        call.name = Some(super::tool_names::inbound(name, tools));
-                    }
+                        super::tool_names::inbound(name, tools)
+                    } else {
+                        decoded.ok().flatten().unwrap_or_default()
+                    };
                     (
                         Kind::Tool(None),
-                        tool_call(call),
+                        tool_call(call, name),
                         |content_index, partial| AssistantMessageEvent::ToolcallStart {
                             content_index,
                             partial,
@@ -377,7 +384,7 @@ fn thinking(text: String, signature: Option<String>, redacted: Option<bool>) -> 
 
 /// Build the tool call a block opens: its initial arguments are those it carries when they
 /// are an object that fits the conversion bound, otherwise none.
-fn tool_call(call: ToolUse) -> AssistantContent {
+fn tool_call(call: ToolUse, name: String) -> AssistantContent {
     let arguments = call
         .input
         .as_deref()
@@ -389,7 +396,7 @@ fn tool_call(call: ToolUse) -> AssistantContent {
         .unwrap_or_default();
     AssistantContent::ToolCall(ToolCall {
         id: call.id.unwrap_or_default(),
-        name: call.name.unwrap_or_default(),
+        name,
         arguments,
         thought_signature: None,
     })

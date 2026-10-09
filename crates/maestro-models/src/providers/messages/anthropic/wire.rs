@@ -218,9 +218,9 @@ pub(super) struct ToolUse {
     /// Tool call identifier.
     #[serde(default, deserialize_with = "lenient")]
     pub(super) id: Option<String>,
-    /// Tool name.
+    /// Tool name as written, decoded where restoration reads it.
     #[serde(default, deserialize_with = "lenient")]
-    pub(super) name: Option<String>,
+    pub(super) name: Option<Box<RawValue>>,
     /// Arguments the tool call opens with, as written.
     #[serde(default, deserialize_with = "lenient")]
     pub(super) input: Option<Box<RawValue>>,
