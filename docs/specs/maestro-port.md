@@ -176,14 +176,15 @@ dependencies apart from the optional foundation utility described below.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
+| `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | — | 0 |
-| `maestro-models` | supply model invocations | — | 0 |
+| `maestro-models` | supply model invocations | `maestro-cancellation` | 0 |
 | `maestro-resources` | discover instruction resources | — | 0 |
 | `maestro-settings` | own accepted preferences | — | 0 |
 | `maestro-storage` | access transcript bytes | — | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
-| `maestro-tui` | render terminal components | — | 0 |
+| `maestro-tui` | render terminal components | `maestro-cancellation` | 0 |
 | `maestro-agent` | run an agent | `maestro-models` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources` | 1 |
@@ -211,12 +212,16 @@ direct-dependency sets; every other dependency rule, including cycle and interna
 dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`) and terminal scenario harness
-(`maestro-test-terminal`) are excluded from this permission.
+(`maestro-test-terminal`) and cancellation leaf (`maestro-cancellation`) are
+excluded from this permission.
 
-The graph contains 27 crates: the 26 table entries plus the foundation utility.
-It permits 85 internal production dependency edges: 62 table edges plus 23
-optional utility edges. Nine crates are leaves when utility edges are ignored,
+The graph contains 28 crates: the 27 table entries plus the foundation utility.
+It permits 87 internal production dependency edges: 64 table edges plus 23
+optional utility edges. Eight crates are leaves when utility edges are ignored,
 including the utility itself. The utility is delivered before its first consumer.
+
+`maestro-cancellation` owns cooperative cancellation below layer 0, with no
+internal dependencies. Only models and the terminal toolkit may depend on it.
 
 ### Shared-record amendment
 
@@ -235,8 +240,8 @@ the guest still cannot depend on models or resources, the runtime adapter still
 targets extensions only, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its three consumers.
 
-The destination graph has 28 crates, 65 table edges plus 23 optional utility
-edges (88 production edges), and seven leaves when utility edges are ignored.
+The destination graph has 29 crates, 67 table edges plus 23 optional utility
+edges (90 production edges), and seven leaves when utility edges are ignored.
 The extraction must update `workspace-crates.json`, graph policy, utility
 exclusions and architecture tests together. Tests cover ordinary, renamed,
 optional, target and build declarations for the three allowed edges and reject

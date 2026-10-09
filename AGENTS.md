@@ -95,8 +95,11 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
   crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness may not. Keep authored paths as strings and convert
-  to `PathBuf` only at I/O.
+  terminal scenario harness and cancellation leaf may not. Keep authored paths as
+  strings and convert to `PathBuf` only at I/O.
+- `maestro-cancellation` owns cooperative cancellation below layer 0, with no
+  internal dependencies. Only models and the toolkit may depend directly on it.
+  It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.
 - `maestro-request` owns model-request records below layer 0: model, message,
   content, usage, stream and diagnostic data, plus `SourceInfo` and `Skill`.
   Only models, resources and guest authoring may depend on it; it has no internal

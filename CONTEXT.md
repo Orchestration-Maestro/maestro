@@ -33,7 +33,7 @@ From `docs/specs/maestro-port.md`.
 - **Attempt:** One try at fulfilling a request; failed assistant attempts remain in raw history but are omitted from retry projection.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.
-- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects.
+- **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects. The shared signal belongs to `maestro-cancellation`; only models and the terminal toolkit may depend on this leaf with no internal dependencies.
 - **Scripted simulator:** An opt-in protocol adapter with queued responses, builders, chunking, pacing, usage/cache simulation and request-observing factories.
 
 - **Requested thinking:** The application's supplied effort choice.
@@ -107,7 +107,7 @@ are later scope, not active foundation concepts.
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context.
 - **Export:** Session document serialization shared with application operations.
-- **Terminal toolkit:** Terminal components in `maestro-tui` with no internal dependency beyond the foundation utility, without application selectors or framework/highlighting engines.
+- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation and the optional foundation utility, without application selectors or framework/highlighting engines.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
 - **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, environment queries and log files.

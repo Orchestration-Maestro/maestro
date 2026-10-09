@@ -1,0 +1,516 @@
+[
+  {
+    "data": "\u001b",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u0003",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "x",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\n",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b\u001b",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[A",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27u",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[27;1u",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[27;2u",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27;5u",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27;1:2u",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[27;1:3u",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[99;5u",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[99;1u",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[99;6u",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27;5;99~",
+    "active": false,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[200~\u001b[201~",
+    "active": false,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0007",
+    "active": false,
+    "keys": "ctrl+g",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "g",
+    "active": false,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0003",
+    "active": false,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": false,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[103;5u",
+    "active": false,
+    "keys": "ctrl+g",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[103;6u",
+    "active": false,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001bx",
+    "active": false,
+    "keys": "alt+x",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "x",
+    "active": false,
+    "keys": "alt+x",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[120;3u",
+    "active": false,
+    "keys": "alt+x",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[120;1u",
+    "active": false,
+    "keys": "alt+x",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": false,
+    "keys": [],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0003",
+    "active": false,
+    "keys": [],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0007",
+    "active": false,
+    "keys": [],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": false,
+    "keys": [
+      "escape",
+      "ctrl+g"
+    ],
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u0007",
+    "active": false,
+    "keys": [
+      "escape",
+      "ctrl+g"
+    ],
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u0003",
+    "active": false,
+    "keys": [
+      "escape",
+      "ctrl+g"
+    ],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": false,
+    "keys": [
+      "escape",
+      "escape"
+    ],
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u0003",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "x",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\n",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b\u001b",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[A",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27u",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[27;1u",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[27;2u",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27;5u",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27;1:2u",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[27;1:3u",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[99;5u",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[99;1u",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[99;6u",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[27;5;99~",
+    "active": true,
+    "keys": null,
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[200~\u001b[201~",
+    "active": true,
+    "keys": null,
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0007",
+    "active": true,
+    "keys": "ctrl+g",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "g",
+    "active": true,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0003",
+    "active": true,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": true,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[103;5u",
+    "active": true,
+    "keys": "ctrl+g",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[103;6u",
+    "active": true,
+    "keys": "ctrl+g",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001bx",
+    "active": true,
+    "keys": "alt+x",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "x",
+    "active": true,
+    "keys": "alt+x",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b[120;3u",
+    "active": true,
+    "keys": "alt+x",
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u001b[120;1u",
+    "active": true,
+    "keys": "alt+x",
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": true,
+    "keys": [],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0003",
+    "active": true,
+    "keys": [],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u0007",
+    "active": true,
+    "keys": [],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": true,
+    "keys": [
+      "escape",
+      "ctrl+g"
+    ],
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u0007",
+    "active": true,
+    "keys": [
+      "escape",
+      "ctrl+g"
+    ],
+    "aborted": true,
+    "callbacks": 1
+  },
+  {
+    "data": "\u0003",
+    "active": true,
+    "keys": [
+      "escape",
+      "ctrl+g"
+    ],
+    "aborted": false,
+    "callbacks": 0
+  },
+  {
+    "data": "\u001b",
+    "active": true,
+    "keys": [
+      "escape",
+      "escape"
+    ],
+    "aborted": true,
+    "callbacks": 1
+  }
+]

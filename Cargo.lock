@@ -1359,6 +1359,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dae608c151f68243f2b000364e1f7b186d9c29845f7d2d85bd31b9ad77ad552b"
 
 [[package]]
+name = "maestro-cancellation"
+version = "0.1.0"
+dependencies = [
+ "tokio",
+]
+
+[[package]]
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
@@ -1395,6 +1402,7 @@ dependencies = [
  "idna",
  "indexmap",
  "js-sys",
+ "maestro-cancellation",
  "num-bigint",
  "num-traits",
  "percent-encoding",
@@ -1485,6 +1493,7 @@ dependencies = [
  "getrandom 0.4.3",
  "icu_collator",
  "icu_locale_core",
+ "maestro-cancellation",
  "maestro-path",
  "rand",
  "regress",
