@@ -11,7 +11,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-cancellation", &[]),
     ("maestro-request", &[]),
     ("maestro-extensions-wasm", &["maestro-request"]),
-    ("maestro-models", &["maestro-cancellation", "maestro-request"]),
+    (
+        "maestro-models",
+        &["maestro-cancellation", "maestro-request"],
+    ),
     ("maestro-resources", &["maestro-request"]),
     ("maestro-settings", &[]),
     ("maestro-storage", &[]),

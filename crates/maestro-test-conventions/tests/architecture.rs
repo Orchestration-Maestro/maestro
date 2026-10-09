@@ -461,7 +461,7 @@ fn forbidden_direct_edges_are_rejected() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 28);
+    assert_eq!(support::policy::POLICY.len(), 29);
     assert_eq!(
         support::policy::POLICY
             .iter()
