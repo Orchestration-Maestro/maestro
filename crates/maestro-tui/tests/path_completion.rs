@@ -6,7 +6,8 @@ pub mod fixtures {
     pub mod futures;
 }
 use fixtures::completion::{
-    CommandInput, Expected, FileInput, Files, SuggestionCase, item, run_suggestions,
+    ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
+    run_applications, run_suggestions,
 };
 use maestro_tui::autocomplete::{CursorPosition, DirectoryEntryKind};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
@@ -32,48 +33,57 @@ fn native_names_keep_case_quote_and_separator_semantics() {
 }
 
 #[test]
+fn completion_continues_inside_quoted_nested_paths()
+-> Result<(), maestro_tui::autocomplete::CompletionError> {
+    use fixtures::completion_native::Tree;
+    use fixtures::futures::block_on;
+    use maestro_tui::autocomplete::{CompletionOptions, NativeAutocompleteOperations};
+    let tree = Tree::new()?;
+    tree.directory("my folder")?;
+    tree.file("my folder/test.txt")?;
+    tree.file("my folder/other.txt")?;
+    let provider = CombinedAutocompleteProvider::new(
+        vec![],
+        tree.authored(),
+        NativeAutocompleteOperations::default(),
+    );
+    let lines = ["\"my folder/\"".to_owned()];
+    let found = block_on(provider.get_suggestions(
+        &lines,
+        CursorPosition {
+            line: 0,
+            col: lines[0].len() - 1,
+        },
+        CompletionOptions {
+            signal: &(),
+            force: Some(true),
+        },
+    ))?
+    .expect("quoted directory has candidates");
+    assert_eq!(found.prefix, "\"my folder/");
+    assert_eq!(
+        found.items,
+        [
+            item("\"my folder/other.txt\"", "other.txt", None),
+            item("\"my folder/test.txt\"", "test.txt", None),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn quoted_directories_rank_before_files() {
     run_suggestions(QUOTED_DIRECTORIES_RANK_BEFORE_FILES_CASES);
 }
 
 #[test]
 fn application_preserves_suffix_and_byte_cursor() {
-    for (id, input, cursor, prefix, chosen, expected, line, col) in
-        APPLICATION_PRESERVES_SUFFIX_AND_BYTE_CURSOR_CASES
-            .iter()
-            .copied()
-    {
-        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), Files::default());
-        let input: Vec<_> = input.iter().map(|s| (*s).to_owned()).collect();
-        let applied =
-            provider.apply_completion(&input, cursor, &item(chosen.0, chosen.1, chosen.2), prefix);
-        assert_eq!(applied.lines, expected, "{id}");
-        assert_eq!(
-            (applied.cursor_line, applied.cursor_col),
-            (line, col),
-            "{id}"
-        );
-    }
+    run_applications(APPLICATION_PRESERVES_SUFFIX_AND_BYTE_CURSOR_CASES);
 }
 
 #[test]
 fn absolute_candidates_do_not_gain_command_punctuation() {
-    for (id, input, cursor, prefix, chosen, expected, line, col) in
-        ABSOLUTE_CANDIDATES_DO_NOT_GAIN_COMMAND_PUNCTUATION_CASES
-            .iter()
-            .copied()
-    {
-        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), Files::default());
-        let input: Vec<_> = input.iter().map(|s| (*s).to_owned()).collect();
-        let applied =
-            provider.apply_completion(&input, cursor, &item(chosen.0, chosen.1, chosen.2), prefix);
-        assert_eq!(applied.lines, expected, "{id}");
-        assert_eq!(
-            (applied.cursor_line, applied.cursor_col),
-            (line, col),
-            "{id}"
-        );
-    }
+    run_applications(ABSOLUTE_CANDIDATES_DO_NOT_GAIN_COMMAND_PUNCTUATION_CASES);
 }
 
 #[test]
@@ -2270,15 +2280,3 @@ const APPLICATION_PRESERVES_SUFFIX_AND_BYTE_CURSOR_CASES: &[ApplicationCase] = &
         13,
     ),
 ];
-
-/// An insertion query with all of its observed output fields.
-type ApplicationCase = (
-    &'static str,
-    &'static [&'static str],
-    CursorPosition,
-    &'static str,
-    (&'static str, &'static str, Option<&'static str>),
-    &'static [&'static str],
-    usize,
-    usize,
-);

@@ -563,12 +563,6 @@ fn completion_contracts_keep_signals_results_and_byte_cursors()
     assert_command_provider()?;
     assert_counting_provider()?;
     assert_slash_commands()?;
-    let failed: ArgumentCompletions =
-        Rc::new(|_| Box::pin(async { Err(std::io::Error::other("command failed").into()) }));
-    assert_eq!(
-        block_on(failed("error")).unwrap_err().to_string(),
-        "command failed"
-    );
     Ok(())
 }
 

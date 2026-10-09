@@ -5,6 +5,7 @@ use std::cmp::Ordering;
 use std::io;
 use std::rc::Rc;
 
+use maestro_tui::autocomplete::CursorPosition;
 use maestro_tui::autocomplete::NativeAutocompleteOperations;
 use maestro_tui::autocomplete::{
     ArgumentCompletions, AutocompleteOperations, Command, DirectoryEntry, DirectoryEntryKind,
@@ -108,7 +109,7 @@ pub fn callback(name: &str, kind: &str, trace: &Trace) -> ArgumentCompletions {
                     Some("returned unchanged"),
                 )])),
                 "empty" => Ok(Some(vec![])),
-                "reject" | "throw" => Err(io::Error::other("argument failure").into()),
+                "reject" => Err(io::Error::other("argument failure").into()),
                 _ => Ok(None),
             }
         })
@@ -196,7 +197,6 @@ pub fn commands(trace: &Trace) -> Vec<Command> {
         slash("empty", None, None, Some(callback("empty", "empty", trace))),
         slash("invalid", None, None, None),
         slash("fail", None, None, Some(callback("fail", "reject", trace))),
-        slash("throw", None, None, Some(callback("throw", "throw", trace))),
         slash("dup", None, None, Some(callback("dup", "echo", trace))),
         slash("dup", None, None, Some(callback("dup", "none", trace))),
     ]
@@ -274,4 +274,36 @@ pub enum CommandInput {
     Empty,
     /// A command with an empty name.
     EmptyName,
+}
+
+/// An insertion query with all of its observed output fields.
+pub type ApplicationCase = (
+    &'static str,
+    &'static [&'static str],
+    CursorPosition,
+    &'static str,
+    (&'static str, &'static str, Option<&'static str>),
+    &'static [&'static str],
+    usize,
+    usize,
+);
+
+/// Observe insertion text and byte cursor through the public provider.
+///
+/// # Panics
+/// Panics when the inserted text or cursor differs.
+pub fn run_applications(cases: &[ApplicationCase]) {
+    use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
+    for (id, input, cursor, prefix, chosen, expected, line, col) in cases.iter().copied() {
+        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), Files::default());
+        let input: Vec<_> = input.iter().map(|s| (*s).to_owned()).collect();
+        let applied =
+            provider.apply_completion(&input, cursor, &item(chosen.0, chosen.1, chosen.2), prefix);
+        assert_eq!(applied.lines, expected, "{id}");
+        assert_eq!(
+            (applied.cursor_line, applied.cursor_col),
+            (line, col),
+            "{id}"
+        );
+    }
 }

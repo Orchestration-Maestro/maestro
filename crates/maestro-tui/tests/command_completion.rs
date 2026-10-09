@@ -5,7 +5,8 @@ pub mod fixtures {
     pub mod futures;
 }
 use fixtures::completion::{
-    CommandInput, Expected, FileInput, Files, SuggestionCase, item, run_suggestions,
+    ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
+    run_applications, run_suggestions,
 };
 use maestro_tui::autocomplete::{CursorPosition, DirectoryEntryKind};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
@@ -72,22 +73,7 @@ fn argument_futures_propagate_failure_without_filesystem_fallback() {
 
 #[test]
 fn command_values_starting_with_slash_are_inserted_as_paths() {
-    for (id, input, cursor, prefix, chosen, expected, line, col) in
-        COMMAND_VALUES_STARTING_WITH_SLASH_ARE_INSERTED_AS_PATHS_CASES
-            .iter()
-            .copied()
-    {
-        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), Files::default());
-        let input: Vec<_> = input.iter().map(|s| (*s).to_owned()).collect();
-        let applied =
-            provider.apply_completion(&input, cursor, &item(chosen.0, chosen.1, chosen.2), prefix);
-        assert_eq!(applied.lines, expected, "{id}");
-        assert_eq!(
-            (applied.cursor_line, applied.cursor_col),
-            (line, col),
-            "{id}"
-        );
-    }
+    run_applications(COMMAND_VALUES_STARTING_WITH_SLASH_ARE_INSERTED_AS_PATHS_CASES);
 }
 
 /// Await an explicit callback-entered/release boundary on the same request.
@@ -150,8 +136,8 @@ fn argument_results_wait_for_the_callback_completion() {
 }
 
 /// Controlled inputs and complete public outputs for argument futures propagate failure without filesystem fallback.
-const ARGUMENT_FUTURES_PROPAGATE_FAILURE_WITHOUT_FILESYSTEM_FALLBACK_CASES: &[SuggestionCase] = &[
-    SuggestionCase {
+const ARGUMENT_FUTURES_PROPAGATE_FAILURE_WITHOUT_FILESYSTEM_FALLBACK_CASES: &[SuggestionCase] =
+    &[SuggestionCase {
         id: "cmd_reject",
         lines: &["/fail x"],
         line: 0,
@@ -168,26 +154,7 @@ const ARGUMENT_FUTURES_PROPAGATE_FAILURE_WITHOUT_FILESYSTEM_FALLBACK_CASES: &[Su
         },
         expected: Expected::Error("argument failure"),
         calls: &[&["arguments", "fail", "x"]],
-    },
-    SuggestionCase {
-        id: "cmd_throw",
-        lines: &["/throw x"],
-        line: 0,
-        col: 8,
-        force: None,
-        aborted: false,
-        commands: CommandInput::Standard,
-        files: FileInput {
-            entries: &[],
-            stat: &[],
-            read_error: false,
-            home_error: false,
-            compare_error: false,
-        },
-        expected: Expected::Error("argument failure"),
-        calls: &[&["arguments", "throw", "x"]],
-    },
-];
+    }];
 
 /// Controlled inputs and complete public outputs for force bypasses slash commands.
 const FORCE_BYPASSES_SLASH_COMMANDS_CASES: &[SuggestionCase] = &[SuggestionCase {
@@ -286,7 +253,6 @@ const COMMANDS_ROUTE_AND_PRESERVE_ARGUMENT_RESULTS_CASES: &[SuggestionCase] = &[
                 ("empty", "empty", None),
                 ("invalid", "invalid", None),
                 ("fail", "fail", None),
-                ("throw", "throw", None),
                 ("dup", "dup", None),
                 ("dup", "dup", None),
             ],
@@ -576,18 +542,6 @@ const COMMAND_VALUES_STARTING_WITH_SLASH_ARE_INSERTED_AS_PATHS_CASES: &[Applicat
     0,
     5,
 )];
-
-/// An insertion query with all of its observed output fields.
-type ApplicationCase = (
-    &'static str,
-    &'static [&'static str],
-    CursorPosition,
-    &'static str,
-    (&'static str, &'static str, Option<&'static str>),
-    &'static [&'static str],
-    usize,
-    usize,
-);
 
 /// Create a callback whose completion is owned by the release barrier.
 fn deferred_callback(
