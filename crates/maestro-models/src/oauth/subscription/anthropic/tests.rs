@@ -394,6 +394,24 @@ fn callback_routes_preserve_status_and_escaped_text() {
         }
         assert_eq!(actual.accepted.is_some(), status == 200);
     }
+    run(async {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        let server = super::native::bind("good".into()).await.unwrap();
+        for (target, expected) in [("http://[", 400), ("//[", 500)] {
+            let mut peer = tokio::net::TcpStream::connect("127.0.0.1:53692")
+                .await
+                .unwrap();
+            let request =
+                format!("GET {target} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+            write_native(&mut peer, request.as_bytes()).await;
+            assert!(
+                native_response(&mut peer)
+                    .await
+                    .starts_with(&format!("HTTP/1.1 {expected}"))
+            );
+        }
+        server.close().await;
+    });
 }
 /// Convert diagnostic markers into their exact supplied doubles.
 fn code(input: CodeInput) -> DiagnosticCode {
@@ -439,6 +457,33 @@ fn oauth_errors_print_only_supplied_details() {
     for DiagnosticCase { input, expected } in corpus().diagnostics {
         assert_eq!(diagnostic(input).details(), expected);
     }
+    run(async {
+        for mode in [Mode::Exchange, Mode::Refresh] {
+            let fetch: Fetch = Arc::new(|_| {
+                Box::pin(std::future::ready(Err(FetchError::Connection(
+                    DiagnosticErrorInfo {
+                        name: Some("Wire".into()),
+                        message: "wire failed".into(),
+                        code: Some(DiagnosticCode::Text("ECONNRESET".into())),
+                        stack: Some("supplied trace".into()),
+                    },
+                ))))
+            });
+            let error = operation(mode, "code".into(), fetch).await.unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .ends_with("details=Wire: wire failed; code=ECONNRESET; stack=supplied trace")
+            );
+            let cause = error.cause.unwrap();
+            assert!(
+                matches!(cause.diagnostic.code, Some(DiagnosticCode::Text(ref code)) if code == "ECONNRESET")
+            );
+            assert_eq!(cause.diagnostic.stack.as_deref(), Some("supplied trace"));
+            assert!(cause.errno.is_none());
+            assert!(cause.cause.is_none());
+        }
+    });
 }
 #[test]
 fn token_requests_keep_field_order() {
@@ -835,17 +880,35 @@ fn login_callbacks_run_in_source_order_and_fail_cleanly() {
 #[test]
 fn listener_failure_reaches_pending_login() {
     run(async {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
         let callbacks = Interaction::new(None, "unused", "");
-        let server = listener();
-        let wait = server.wait.clone();
+        let release = crate::EventStream::new(|()| true, |()| ());
+        let failure = release.clone();
+        let server = super::native::bind_with(
+            "verifier".into(),
+            |_| None,
+            move |_| {
+                let failure = failure.clone();
+                Box::pin(async move {
+                    failure.result().await;
+                    Err(std::io::Error::from_raw_os_error(5))
+                })
+            },
+        )
+        .await
+        .unwrap();
         let stopped = server.stopped.clone();
         let mut login = Box::pin(super::login(callbacks, success_fetch(), pkce(), server));
         assert!(login.as_mut().now_or_never().is_none());
-        wait.push(super::native::CallbackOutcome::Failed(OAuthError::message(
-            "listener failed",
-        )));
-        assert_eq!(login.await.unwrap_err().to_string(), "listener failed");
+        release.push(());
+        let error = login.await.unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            std::io::Error::from_raw_os_error(5).to_string()
+        );
+        assert!(matches!(error.errno, Some(DiagnosticCode::Number(5.0))));
         assert!(stopped.result().now_or_never().is_some());
+        let _released = native_probe("127.0.0.1");
     });
 }
 #[test]
@@ -890,26 +953,59 @@ fn subscription_ignores_signal_and_selector() {
 }
 #[test]
 fn callback_host_changes_bind_only() {
-    for (input, expected) in [
-        (None, "127.0.0.1"),
-        (Some(""), "127.0.0.1"),
-        (Some("127.0.0.2"), "127.0.0.2"),
-        (Some(" "), " "),
-    ] {
-        assert_eq!(
-            super::native::callback_host(input.map(str::to_owned)),
-            expected
-        );
-        let info = super::auth_info(&pkce());
-        let url = url::Url::parse(&info.url).unwrap();
-        assert_eq!(
-            url.query_pairs()
-                .find(|(key, _)| key == "redirect_uri")
-                .unwrap()
-                .1,
-            "http://localhost:53692/callback"
-        );
-    }
+    run(async {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        for (input, expected) in [
+            (None, "127.0.0.1"),
+            (Some(""), "127.0.0.1"),
+            (Some("127.0.0.2"), "127.0.0.2"),
+            (Some(" "), " "),
+        ] {
+            assert_eq!(
+                super::native::callback_host(input.map(str::to_owned)),
+                expected
+            );
+            let info = super::auth_info(&pkce());
+            let url = url::Url::parse(&info.url).unwrap();
+            assert_eq!(
+                url.query_pairs()
+                    .find(|(key, _)| key == "redirect_uri")
+                    .unwrap()
+                    .1,
+                "http://localhost:53692/callback"
+            );
+            let result = super::native::bind_with(
+                "verifier".into(),
+                |key| {
+                    assert_eq!(key, "MAESTRO_OAUTH_CALLBACK_HOST");
+                    input.map(str::to_owned)
+                },
+                |listener| Box::pin(listener.accept()),
+            )
+            .await;
+            if expected == " " {
+                assert!(result.is_err());
+                continue;
+            }
+            let server = result.unwrap();
+            let address = format!("{expected}:53692");
+            let mut peer = tokio::net::TcpStream::connect(address).await.unwrap();
+            write_native(
+                &mut peer,
+                b"GET /callback?code=bound&state=verifier HTTP/1.1\r\nHost: localhost\r\n\r\n",
+            )
+            .await;
+            let super::native::CallbackOutcome::Accepted(fields) =
+                server.wait.next().await.unwrap()
+            else {
+                panic!("bound callback");
+            };
+            assert_eq!(fields.code.as_deref(), Some("bound"));
+            server.close().await;
+            drop(peer);
+            let _released = native_probe(expected);
+        }
+    });
 }
 #[test]
 fn pkce_failure_prevents_binding() {
@@ -945,19 +1041,22 @@ fn manual_code_and_callback_have_controlled_winners() {
             let completed = crate::EventStream::new(|()| true, |()| ());
             let witness = completed.clone();
             let callbacks = Interaction::new(None, "unused", "");
-            *callbacks.manual.lock().unwrap() = Some(Box::pin(async move {
-                let value = input.next().await.unwrap();
-                witness.push(());
-                Ok(value)
-            }));
+            *callbacks.manual.lock().unwrap() = Some(Box::pin(
+                async move { Ok(input.next().await.unwrap()) }.map(move |result| {
+                    witness.push(());
+                    result
+                }),
+            ));
             let server = listener();
             let wait = server.wait.clone();
             let chosen = crate::EventStream::new(|_: &String| true, Clone::clone);
             let observed = chosen.clone();
+            let release = crate::EventStream::new(|()| true, |()| ());
+            let headers = release.clone();
             let fetch: Fetch = Arc::new(move |request| {
                 let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
                 observed.push(body["code"].as_str().unwrap().into());
-                success_fetch()(request)
+                Box::pin(released_headers(headers.clone(), request, false))
             });
             let mut login = Box::pin(super::login(callbacks, fetch, pkce(), server));
             assert!(login.as_mut().now_or_never().is_none());
@@ -970,7 +1069,7 @@ fn manual_code_and_callback_have_controlled_winners() {
                 }
                 _ => producer.push("manual-code".into()),
             }
-            assert_eq!(login.await.unwrap().access, "access");
+            let login = tokio::spawn(login);
             assert_eq!(
                 chosen.result().await,
                 if winner == "callback" {
@@ -984,6 +1083,9 @@ fn manual_code_and_callback_have_controlled_winners() {
                 producer.push("late".into());
             }
             completed.result().await;
+            assert!(!login.is_finished());
+            release.push(());
+            assert_eq!(login.await.unwrap().unwrap().access, "access");
         }
     });
 }
@@ -996,25 +1098,35 @@ fn manual_failure_propagates_and_late_input_cannot_replace_code() {
             let completed = crate::EventStream::new(|()| true, |()| ());
             let witness = completed.clone();
             let callbacks = Interaction::new(None, "unused", "");
-            *callbacks.manual.lock().unwrap() = Some(Box::pin(async move {
-                let failure = input.next().await.unwrap();
-                witness.push(());
-                manual_answer(failure)
-            }));
+            *callbacks.manual.lock().unwrap() = Some(Box::pin(
+                async move { manual_answer(input.next().await.unwrap()) }.map(move |result| {
+                    witness.push(());
+                    result
+                }),
+            ));
             let server = listener();
             let wait = server.wait.clone();
-            let fetch: Fetch = Arc::new(|request| {
-                let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-                assert_eq!(body["code"], "selected");
-                success_fetch()(request)
+            let entered = crate::EventStream::new(|_: &crate::HttpRequest| true, Clone::clone);
+            let request = entered.clone();
+            let release = crate::EventStream::new(|()| true, |()| ());
+            let headers = release.clone();
+            let fetch: Fetch = Arc::new(move |actual| {
+                request.push(actual.clone());
+                Box::pin(released_headers(headers.clone(), actual, false))
             });
             let mut login = Box::pin(super::login(callbacks, fetch, pkce(), server));
             assert!(login.as_mut().now_or_never().is_none());
             accept(&wait, "selected");
-            let result = login.await.unwrap();
+            let login = tokio::spawn(login);
+            let request = entered.result().await;
             producer.push(late_failure);
             completed.result().await;
-            assert_eq!(result.access, "access");
+            assert!(!login.is_finished());
+            let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+            assert_eq!(body["code"], "selected");
+            assert_eq!(body["state"], "verifier");
+            release.push(());
+            assert_eq!(login.await.unwrap().unwrap().access, "access");
         }
         let callbacks = Interaction::new(
             Some(Err(OAuthError::message("manual failed"))),
@@ -1034,35 +1146,60 @@ fn manual_failure_propagates_and_late_input_cannot_replace_code() {
 #[test]
 fn listener_stops_after_exchange_starts() {
     run(async {
-        for token_failure in [false, true] {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        for (token_failure, body_pending) in [(false, false), (true, false), (false, true)] {
             let callbacks = Interaction::new(Some(Ok("manual".into())), "unused", "");
-            let server = listener();
+            let server = super::native::bind("verifier".into()).await.unwrap();
             let stopped = server.stopped.clone();
             let release = crate::EventStream::new(|()| true, |()| ());
             let entered = crate::EventStream::new(|()| true, |()| ());
             let headers = release.clone();
             let exchange_entered = entered.clone();
+            let body_entered = crate::EventStream::new(|()| true, |()| ());
+            let body_witness = body_entered.clone();
             let stop_witness = stopped.clone();
             let fetch: Fetch = Arc::new(move |request| {
                 assert!(stop_witness.result().now_or_never().is_none());
                 exchange_entered.push(());
                 let headers = headers.clone();
-                Box::pin(released_headers(headers, request, token_failure))
+                Box::pin(held_token(
+                    headers,
+                    request,
+                    token_failure,
+                    body_pending.then(|| body_witness.clone()),
+                ))
             });
             let login = tokio::spawn(super::login(callbacks, fetch, pkce(), server));
             entered.result().await;
             stopped.result().await;
+            if body_pending {
+                body_entered.result().await;
+            }
             assert!(!login.is_finished());
+            let released = native_probe("127.0.0.1");
+            drop(released);
             release.push(());
             assert_eq!(login.await.unwrap().is_err(), token_failure);
         }
-        let server = listener();
+        let server = super::native::bind("verifier".into()).await.unwrap();
         let stopped = server.stopped.clone();
         let callbacks = Interaction::new(None, "unused", "");
         let mut login = Box::pin(super::login(callbacks, success_fetch(), pkce(), server));
         assert!(login.as_mut().now_or_never().is_none());
         drop(login);
         stopped.result().await;
+        let released = native_probe("127.0.0.1");
+        drop(released);
+        let server = super::native::bind("verifier".into()).await.unwrap();
+        let callbacks = Interaction::new(None, "unused", "auth");
+        assert_eq!(
+            super::login(callbacks, success_fetch(), pkce(), server)
+                .await
+                .unwrap_err()
+                .to_string(),
+            "auth failed"
+        );
+        let _released = native_probe("127.0.0.1");
     });
 }
 #[test]
@@ -1209,4 +1346,80 @@ async fn released_headers(
     } else {
         success_fetch()(request).await
     }
+}
+
+/// Serialize cases that bind the native callback port.
+static NATIVE_PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
+
+/// Observe real accepting socket release with the adapter's address reuse policy.
+fn native_probe(host: &str) -> tokio::net::TcpListener {
+    let socket = tokio::net::TcpSocket::new_v4().unwrap();
+    #[cfg(unix)]
+    socket.set_reuseaddr(true).unwrap();
+    socket
+        .bind(format!("{host}:53692").parse().unwrap())
+        .unwrap();
+    socket.listen(128).unwrap()
+}
+
+/// Send a complete native request using readiness rather than sleeps.
+async fn write_native(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
+    while !bytes.is_empty() {
+        peer.writable().await.unwrap();
+        match peer.try_write(bytes) {
+            Ok(count) => bytes = &bytes[count..],
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error) => panic!("{error}"),
+        }
+    }
+}
+
+/// Read native response bytes or the peer's orderly EOF.
+async fn read_native(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
+    loop {
+        peer.readable().await.unwrap();
+        match peer.try_read(bytes) {
+            Ok(count) => return count,
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error) => panic!("{error}"),
+        }
+    }
+}
+
+/// Read the response set closed by the native peer's EOF.
+async fn native_response(peer: &mut tokio::net::TcpStream) -> String {
+    let mut response = Vec::new();
+    loop {
+        let mut bytes = [0; 1024];
+        let count = read_native(peer, &mut bytes).await;
+        if count == 0 {
+            break;
+        }
+        response.extend_from_slice(&bytes[..count]);
+    }
+    String::from_utf8(response).unwrap()
+}
+
+/// Hold either headers or the body of this one token operation behind its release gate.
+async fn held_token(
+    release: crate::EventStream<(), ()>,
+    request: crate::HttpRequest,
+    failure: bool,
+    body_entered: Option<crate::EventStream<(), ()>>,
+) -> Result<HttpResponse, FetchError> {
+    let Some(body_entered) = body_entered else {
+        return released_headers(release, request, failure).await;
+    };
+    Ok(HttpResponse {
+        status: 200,
+        headers: BTreeMap::new(),
+        body: Box::pin(futures_util::stream::once(async move {
+            body_entered.push(());
+            release.result().await;
+            Ok(
+                br#"{"access_token":"access","refresh_token":"refresh","expires_in":3600}"#
+                    .to_vec(),
+            )
+        })),
+    })
 }

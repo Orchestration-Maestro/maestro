@@ -59,31 +59,70 @@ pub(super) fn callback_host(value: Option<String>) -> String {
 /// Bind the native accepting listener and publish failures to its active wait.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) async fn bind(state: String) -> Result<CallbackServer, OAuthError> {
-    let host = callback_host(std::env::var("MAESTRO_OAUTH_CALLBACK_HOST").ok());
+    bind_with(state, |key| std::env::var(key).ok(), native_accept).await
+}
+
+/// One borrowing native accept step, replaceable at the effect boundary.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) type Accept<'a> = std::pin::Pin<
+    Box<
+        dyn std::future::Future<
+                Output = std::io::Result<(tokio::net::TcpStream, std::net::SocketAddr)>,
+            > + Send
+            + 'a,
+    >,
+>;
+
+/// Accept a real native peer without transferring listener ownership.
+#[cfg(not(target_arch = "wasm32"))]
+fn native_accept(listener: &tokio::net::TcpListener) -> Accept<'_> {
+    Box::pin(listener.accept())
+}
+
+/// Bind with caller-provided environment lookup and an owning accept loop.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) async fn bind_with(
+    state: String,
+    environment: impl FnOnce(&str) -> Option<String>,
+    accept: impl for<'a> Fn(&'a tokio::net::TcpListener) -> Accept<'a> + Send + 'static,
+) -> Result<CallbackServer, OAuthError> {
+    let host = callback_host(environment("MAESTRO_OAUTH_CALLBACK_HOST"));
     let listener = bind_host(&host).await?;
+    Ok(listen(listener, state, accept))
+}
+
+/// Own the accepting socket until stop or an accept failure is published.
+#[cfg(not(target_arch = "wasm32"))]
+fn listen(
+    listener: tokio::net::TcpListener,
+    state: String,
+    accept: impl for<'a> Fn(&'a tokio::net::TcpListener) -> Accept<'a> + Send + 'static,
+) -> CallbackServer {
     let server = CallbackServer::new();
     let wait = server.wait.clone();
     let stop = server.stop.clone();
     let stopped = server.stopped.clone();
+    let (shutdown, peers) = tokio::sync::watch::channel(());
     tokio::spawn(async move {
         loop {
             let crate::providers::http::Raced::Done(accepted) =
-                crate::providers::http::race(listener.accept(), None, Some(&stop)).await
+                crate::providers::http::race(accept(&listener), None, Some(&stop)).await
             else {
                 break;
             };
             match accepted {
-                Ok((stream, _)) => serve(stream, state.clone(), wait.clone()),
+                Ok((stream, _)) => serve(stream, state.clone(), wait.clone(), peers.clone()),
                 Err(error) => {
                     wait.push(CallbackOutcome::Failed(io_error(&error)));
                     break;
                 }
             }
         }
+        shutdown.send_replace(());
         drop(listener);
         stopped.push(());
     });
-    Ok(server)
+    server
 }
 
 /// Bind the configured host, enabling address reuse on Unix.
@@ -134,7 +173,12 @@ fn io_error(error: &std::io::Error) -> OAuthError {
 
 /// Serve an admitted peer independently so committed responses can finish after listener stop.
 #[cfg(not(target_arch = "wasm32"))]
-fn serve(stream: tokio::net::TcpStream, state: String, wait: EventStream<CallbackOutcome, ()>) {
+fn serve(
+    stream: tokio::net::TcpStream,
+    state: String,
+    wait: EventStream<CallbackOutcome, ()>,
+    mut shutdown: tokio::sync::watch::Receiver<()>,
+) {
     use http_body_util::Full;
     use hyper::{
         Request, Response,
@@ -157,9 +201,16 @@ fn serve(stream: tokio::net::TcpStream, state: String, wait: EventStream<Callbac
             );
             async move { Ok::<_, Infallible>(outgoing) }
         });
-        hyper::server::conn::http1::Builder::new()
-            .serve_connection(hyper_util::rt::TokioIo::new(stream), service)
-            .await
-            .ok();
+        let connection = hyper::server::conn::http1::Builder::new()
+            .serve_connection(hyper_util::rt::TokioIo::new(stream), service);
+        tokio::pin!(connection);
+        if matches!(
+            futures_util::future::select(Box::pin(shutdown.changed()), connection.as_mut()).await,
+            futures_util::future::Either::Right(_)
+        ) {
+            return;
+        }
+        connection.as_mut().graceful_shutdown();
+        connection.await.ok();
     });
 }

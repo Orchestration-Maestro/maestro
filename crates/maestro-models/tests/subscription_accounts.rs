@@ -125,7 +125,7 @@ fn subscription_manual_login_uses_localhost_redirect() {
 /// Callback-only interaction starts real loopback requests after receiving state.
 struct Callback {
     /// Owned peer producer, observed after login returns.
-    peer: maestro_models::EventStream<tokio::task::JoinHandle<()>, ()>,
+    peer: maestro_models::EventStream<tokio::task::JoinHandle<tokio::net::TcpStream>, ()>,
 }
 impl maestro_models::OAuthLoginCallbacks for Callback {
     fn on_auth(
@@ -158,21 +158,19 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
                     .unwrap()
                     .contains("Error: &lt;script&gt;&amp;&quot;&#39;")
             );
-            let accepted = client
-                .get(format!(
-                    "http://127.0.0.1:53692/callback?code=callback-code&state={state}"
-                ))
-                .send()
+            let mut connection = tokio::net::TcpStream::connect("127.0.0.1:53692")
                 .await
                 .unwrap();
-            assert_eq!(accepted.status(), 200);
+            let accepted = raw_callback(
+                &mut connection,
+                &format!("/callback?code=callback-code&state={state}"),
+            )
+            .await;
+            assert!(accepted.starts_with("HTTP/1.1 200"));
             assert!(
-                accepted
-                    .text()
-                    .await
-                    .unwrap()
-                    .contains("Anthropic authentication completed. You can close this window.")
+                accepted.contains("Anthropic authentication completed. You can close this window.")
             );
+            connection
         });
         self.peer.push(peer);
         Ok(())
@@ -195,7 +193,11 @@ fn subscription_callback_login_rejects_then_accepts() {
         });
         let callbacks = Arc::new(Callback { peer: maestro_models::EventStream::new(|_| false, |_| ()) });
         let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch)).await.unwrap();
-        callbacks.peer.next().await.unwrap().await.unwrap();
+        let mut peer = callbacks.peer.next().await.unwrap().await.unwrap();
+        // The completed response established admission on this same keep-alive peer.
+        write_peer(&mut peer, b"GET /callback?code=fresh&state=wrong HTTP/1.1\r\nHost: localhost\r\n\r\n").await;
+        let mut byte = [0];
+        assert_eq!(read_peer(&mut peer, &mut byte).await, 0, "stopped listener served a fresh request");
         assert_eq!(result.access, "callback-access");
     });
 }
@@ -358,5 +360,59 @@ fn serve_token_peer(listener: &std::net::TcpListener) {
     .unwrap();
     for byte in body {
         connection.write_all(&[*byte]).unwrap();
+    }
+}
+
+/// Write a complete request without relying on buffering helpers.
+async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
+    while !bytes.is_empty() {
+        peer.writable().await.unwrap();
+        match peer.try_write(bytes) {
+            Ok(count) => bytes = &bytes[count..],
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => return,
+            Err(error) => panic!("{error}"),
+        }
+    }
+}
+/// Read peer bytes after readiness, including the shutdown EOF.
+async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
+    loop {
+        peer.readable().await.unwrap();
+        match peer.try_read(bytes) {
+            Ok(count) => return count,
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error) => panic!("{error}"),
+        }
+    }
+}
+/// Read one complete HTTP response while keeping the admitted connection open.
+async fn raw_callback(peer: &mut tokio::net::TcpStream, target: &str) -> String {
+    write_peer(
+        peer,
+        format!("GET {target} HTTP/1.1\r\nHost: localhost\r\n\r\n").as_bytes(),
+    )
+    .await;
+    let mut response = Vec::new();
+    loop {
+        let mut byte = [0];
+        assert_eq!(read_peer(peer, &mut byte).await, 1);
+        response.push(byte[0]);
+        if let Some(end) = response.windows(4).position(|window| window == b"\r\n\r\n") {
+            let headers = std::str::from_utf8(&response[..end]).unwrap();
+            let length: usize = headers
+                .lines()
+                .find_map(|line| {
+                    line.to_ascii_lowercase()
+                        .strip_prefix("content-length: ")
+                        .map(str::to_owned)
+                })
+                .unwrap()
+                .parse()
+                .unwrap();
+            if response.len() == end + 4 + length {
+                return String::from_utf8(response).unwrap();
+            }
+        }
     }
 }

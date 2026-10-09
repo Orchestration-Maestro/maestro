@@ -66,17 +66,19 @@ Rejected callback requests leave the same wait available for later success.
 Manual input continues independently if a callback selects the code first.
 
 Login binds a native listener at `127.0.0.1:53692`; a nonempty
-`MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. Another process
-holding port 53692 makes login return a native binding error before interaction
-callbacks run. The redirect remains
+`MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. A binding that
+conflicts with the configured address makes login return a native binding error
+before interaction callbacks run. The redirect remains
 `http://localhost:53692/callback`. A browser binding attempt returns
 `Anthropic OAuth requires a native callback listener`; importing the library,
 PKCE, pages and refresh do not require that listener. Interaction is supplied by
 library callbacks: this library does not open a browser or provide a UI.
 
 Token exchange is started before listener shutdown. Login observes accepting
-listener shutdown before returning a result, but does not wait for every
-admitted peer to drain. Dropping the login future requests shutdown.
+listener shutdown before returning a result. Shutdown closes idle admitted
+connections and disables keep-alive while allowing in-flight responses to finish;
+login does not wait for every admitted peer to drain. Dropping the login future
+requests shutdown.
 
 `refresh_anthropic_token(refresh_token: String, fetch: Option<Fetch>)` returns
 `BoxFuture<Result<OAuthCredentials, OAuthError>>`. Each token operation invokes
@@ -98,6 +100,7 @@ with a fallible transformation.
 
 `OAuthError` retains boxed `DiagnosticErrorInfo`, optional supplied/native
 `errno` and an optional wrapped `cause`. Display prints its message;
-`Error::source` exposes the wrapped cause. Token error context uses supplied
-error names, codes, errno, nested causes and nonempty supplied stack text.
-Native errors retain native messages; no engine stack is manufactured.
+`Error::source` exposes the wrapped cause. Token error context uses
+`OAuthError`'s supplied-field formatting for Fetch diagnostics, which carry name,
+message, code and stack but not errno or nested sources. Native binding errors
+retain native messages and available errno; no engine stack is manufactured.
