@@ -24,7 +24,7 @@ fn maestro_response_sessions_normalize_terminal_events() {
         .unwrap();
     runtime.block_on(async {
         let rows: Vec<EventCase> =
-            serde_json::from_str(include_str!("fixtures/events.json")).unwrap();
+            super::fixture_rows(include_str!("fixtures/events.json"), &["events"]).unwrap();
         for row in rows {
             let bytes: Vec<u8> = event_bytes(&row.events);
             let mut source = Source::new(Box::pin(stream::iter([Ok(bytes)])), None);
@@ -41,8 +41,9 @@ fn maestro_response_sessions_normalize_terminal_events() {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct StatusCase {
-    /// Original status, null also represents an absent selection.
-    status: Value,
+    /// Authored status, keeping explicit null separate from omission.
+    #[serde(default, deserialize_with = "super::requests::present")]
+    status: Option<Value>,
     /// Admitted spelling or omission.
     expected: Option<String>,
 }
@@ -50,13 +51,16 @@ struct StatusCase {
 #[test]
 fn maestro_response_sessions_normalize_terminal_status() {
     let rows: Vec<StatusCase> =
-        serde_json::from_str(include_str!("fixtures/statuses.json")).unwrap();
-    assert_eq!(super::super::events::normalize_codex_status(None), None);
+        super::fixture_rows(include_str!("fixtures/statuses.json"), &["status"]).unwrap();
     for row in rows {
-        let text = row.status.to_string();
-        let raw = crate::providers::json_text::raw_json(&text).unwrap();
+        let text = row.status.as_ref().map(Value::to_string);
+        let raw = text
+            .as_deref()
+            .map(crate::providers::json_text::raw_json)
+            .transpose()
+            .unwrap();
         assert_eq!(
-            super::super::events::normalize_codex_status(Some(raw)),
+            super::super::events::normalize_codex_status(raw),
             row.expected
         );
     }
@@ -71,6 +75,7 @@ struct ApiCase {
     /// Selected records on success.
     expected: Option<Vec<Value>>,
     /// Original API diagnostic on failure.
+    #[serde(deserialize_with = "super::consumed")]
     error: Option<crate::DiagnosticErrorInfo>,
 }
 
@@ -82,7 +87,7 @@ fn maestro_response_sessions_preserve_api_error_identity() {
         .unwrap();
     runtime.block_on(async {
         let rows: Vec<ApiCase> =
-            serde_json::from_str(include_str!("fixtures/api-errors.json")).unwrap();
+            super::fixture_rows(include_str!("fixtures/api-errors.json"), &["events"]).unwrap();
         for row in rows {
             assert_api_case(row).await;
         }
@@ -129,7 +134,7 @@ fn maestro_response_sessions_run_http_lifecycle() {
         .unwrap();
     runtime.block_on(async {
         let rows: Vec<LifecycleCase> =
-            serde_json::from_str(include_str!("fixtures/lifecycle.json")).unwrap();
+            super::fixture_rows(include_str!("fixtures/lifecycle.json"), &["scenario"]).unwrap();
         for row in rows {
             assert_lifecycle(row).await;
         }
@@ -292,7 +297,7 @@ struct FrameCase {
 
 /// Compare recorded frame selection without reimplementing the provider's text policy.
 async fn assert_frames(text: &str) {
-    let rows: Vec<FrameCase> = serde_json::from_str(text).unwrap();
+    let rows: Vec<FrameCase> = super::fixture_rows(text, &["chunks"]).unwrap();
     for row in rows {
         let mut source = Source::new(Box::pin(stream::iter(row.chunks.into_iter().map(Ok))), None);
         let mut selected = Vec::new();
@@ -1284,5 +1289,21 @@ fn select_preparation_stage(
             "bad name".to_owned(),
             "later failure".to_owned(),
         )]));
+    }
+}
+
+#[test]
+fn maestro_response_sessions_fixtures_read_every_field() {
+    super::requests::audit_fixture_inputs().unwrap();
+    super::fixture_rows::<EventCase>(include_str!("fixtures/events.json"), &["events"]).unwrap();
+    super::fixture_rows::<StatusCase>(include_str!("fixtures/statuses.json"), &["status"]).unwrap();
+    super::fixture_rows::<ApiCase>(include_str!("fixtures/api-errors.json"), &["events"]).unwrap();
+    super::fixture_rows::<LifecycleCase>(include_str!("fixtures/lifecycle.json"), &["scenario"])
+        .unwrap();
+    for text in [
+        include_str!("fixtures/framing.json"),
+        include_str!("fixtures/data.json"),
+    ] {
+        super::fixture_rows::<FrameCase>(text, &["chunks"]).unwrap();
     }
 }

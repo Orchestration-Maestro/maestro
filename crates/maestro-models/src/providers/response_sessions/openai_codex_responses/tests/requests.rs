@@ -16,7 +16,7 @@ struct AccountCase {
 #[test]
 fn maestro_response_sessions_extract_account_claim() {
     let rows: Vec<AccountCase> =
-        serde_json::from_str(include_str!("fixtures/account.json")).unwrap();
+        super::fixture_rows(include_str!("fixtures/account.json"), &["token"]).unwrap();
     for row in rows {
         match row.account {
             Some(account) => assert_eq!(extract_account_id(&row.token).unwrap(), account),
@@ -32,9 +32,16 @@ fn maestro_response_sessions_extract_account_claim() {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct BodyCase {
-    /// Supplied descriptor.
+    /// Named consumers sharing this one full query.
+    cases: Vec<String>,
+    /// Supplied descriptor changes.
+    #[serde(deserialize_with = "descriptor")]
     model: crate::Model,
-    /// Conversation.
+    /// Conversation, or the unchanged controlled context.
+    #[serde(
+        default = "super::controlled_context",
+        deserialize_with = "conversation"
+    )]
     context: crate::Context,
     /// Selected common request settings.
     options: RequestOptions,
@@ -49,8 +56,7 @@ fn maestro_response_sessions_build_request_defaults() {
         .build()
         .unwrap();
     runtime.block_on(async {
-        let rows: Vec<BodyCase> =
-            serde_json::from_str(include_str!("fixtures/defaults.json")).unwrap();
+        let rows = body_cases("defaults").unwrap();
         for row in rows {
             let options = row.options.into();
             let prepared = super::super::request::prepare_request(
@@ -100,7 +106,7 @@ struct RequestOptions {
 }
 
 /// Preserve an explicitly present null in fixture selections.
-fn present<'de, D: serde::Deserializer<'de>>(
+pub(super) fn present<'de, D: serde::Deserializer<'de>>(
     decoder: D,
 ) -> Result<Option<serde_json::Value>, D::Error> {
     serde_json::Value::deserialize(decoder).map(Some)
@@ -161,10 +167,7 @@ fn maestro_response_sessions_select_text_verbosity() {
         .build()
         .unwrap();
     runtime.block_on(async {
-        let row: BodyCase =
-            serde_json::from_str::<Vec<BodyCase>>(include_str!("fixtures/defaults.json"))
-                .unwrap()
-                .remove(0);
+        let row: BodyCase = body_cases("defaults").unwrap().remove(0);
         let model = std::sync::Arc::new(row.model);
         let mut options: super::super::OpenAICodexResponsesOptions = row.options.into();
         for (verbosity, expected) in [
@@ -200,7 +203,7 @@ struct EndpointCase {
 #[test]
 fn maestro_response_sessions_resolve_sse_endpoint() {
     let rows: Vec<EndpointCase> =
-        serde_json::from_str(include_str!("fixtures/endpoints.json")).unwrap();
+        super::fixture_rows(include_str!("fixtures/endpoints.json"), &["base"]).unwrap();
     for row in rows {
         assert_eq!(
             super::super::request::resolve_codex_url(row.base.as_deref().unwrap_or_default()),
@@ -241,17 +244,14 @@ struct HeaderCase {
 #[test]
 fn maestro_response_sessions_apply_sse_headers() {
     let rows: Vec<HeaderCase> =
-        serde_json::from_str(include_str!("fixtures/headers.json")).unwrap();
+        super::fixture_rows(include_str!("fixtures/headers.json"), &["input"]).unwrap();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
     runtime.block_on(async {
         for row in rows {
-            let base: BodyCase =
-                serde_json::from_str::<Vec<BodyCase>>(include_str!("fixtures/defaults.json"))
-                    .unwrap()
-                    .remove(0);
+            let base: BodyCase = body_cases("defaults").unwrap().remove(0);
             let mut model = base.model;
             model.headers = Some(row.input.init);
             let options = super::super::OpenAICodexResponsesOptions {
@@ -284,8 +284,7 @@ fn maestro_response_sessions_convert_history_and_tools() {
         .build()
         .unwrap();
     runtime.block_on(async {
-        let rows: Vec<BodyCase> =
-            serde_json::from_str(include_str!("fixtures/history.json")).unwrap();
+        let rows = body_cases("history").unwrap();
         for row in rows {
             let options = row.options.into();
             let prepared = super::super::request::prepare_request(
@@ -306,7 +305,7 @@ fn maestro_response_sessions_convert_history_and_tools() {
 
 /// Assert complete wire documents from the independent request corpus.
 async fn assert_bodies(text: &str) {
-    let rows: Vec<BodyCase> = serde_json::from_str(text).unwrap();
+    let rows = body_cases(text).unwrap();
     for row in rows {
         let options = row.options.into();
         let prepared = super::super::request::prepare_request(
@@ -330,7 +329,7 @@ fn maestro_response_sessions_map_reasoning_from_descriptor() {
         .enable_all()
         .build()
         .unwrap();
-    runtime.block_on(assert_bodies(include_str!("fixtures/reasoning.json")));
+    runtime.block_on(assert_bodies("reasoning"));
 }
 
 #[test]
@@ -339,7 +338,7 @@ fn maestro_response_sessions_keep_raw_minimal_without_mapping() {
         .enable_all()
         .build()
         .unwrap();
-    runtime.block_on(assert_bodies(include_str!("fixtures/minimal.json")));
+    runtime.block_on(assert_bodies("minimal"));
 }
 
 #[test]
@@ -348,7 +347,7 @@ fn maestro_response_sessions_default_reasoning_summary() {
         .enable_all()
         .build()
         .unwrap();
-    runtime.block_on(assert_bodies(include_str!("fixtures/summary.json")));
+    runtime.block_on(assert_bodies("summary"));
 }
 
 /// Status/body classification observed at the request setup boundary.
@@ -365,7 +364,8 @@ struct RetryCase {
 
 #[test]
 fn maestro_response_sessions_distinguish_http_failures() {
-    let rows: Vec<RetryCase> = serde_json::from_str(include_str!("fixtures/retries.json")).unwrap();
+    let rows: Vec<RetryCase> =
+        super::fixture_rows(include_str!("fixtures/retries.json"), &["status", "text"]).unwrap();
     for row in rows {
         assert_eq!(
             super::super::http::is_retryable_error(row.status, &row.text).unwrap(),
@@ -405,7 +405,11 @@ struct ErrorTexts {
 
 #[test]
 fn maestro_response_sessions_render_friendly_http_errors() {
-    let rows: Vec<ErrorCase> = serde_json::from_str(include_str!("fixtures/errors.json")).unwrap();
+    let rows: Vec<ErrorCase> = super::fixture_rows(
+        include_str!("fixtures/errors.json"),
+        &["status", "raw", "statusText", "now"],
+    )
+    .unwrap();
     for row in rows {
         let actual = super::super::http::parse_error_response(
             row.status,
@@ -440,7 +444,11 @@ struct TierCase {
 
 #[test]
 fn maestro_response_sessions_resolve_echoed_tier() {
-    let rows: Vec<TierCase> = serde_json::from_str(include_str!("fixtures/tiers.json")).unwrap();
+    let rows: Vec<TierCase> = super::fixture_rows(
+        include_str!("fixtures/tiers.json"),
+        &["response", "request"],
+    )
+    .unwrap();
     for row in rows {
         assert_eq!(
             super::super::events::resolve_codex_service_tier(
@@ -461,14 +469,20 @@ struct PriceCase {
     /// Requested pricing tier.
     tier: Option<String>,
     /// Complete input costs.
+    #[serde(deserialize_with = "super::consumed")]
     cost: crate::UsageCost,
     /// Independently recorded resulting costs.
+    #[serde(deserialize_with = "super::consumed")]
     expected: crate::UsageCost,
 }
 
 #[test]
 fn maestro_response_sessions_price_all_cost_categories() {
-    let rows: Vec<PriceCase> = serde_json::from_str(include_str!("fixtures/prices.json")).unwrap();
+    let rows: Vec<PriceCase> = super::fixture_rows(
+        include_str!("fixtures/prices.json"),
+        &["id", "tier", "cost"],
+    )
+    .unwrap();
     for row in rows {
         let mut usage = crate::Usage {
             cost: row.cost,
@@ -553,4 +567,99 @@ async fn assert_invalid_header(name: &str, value: &str, replaced: bool, expected
         error.diagnostic().message
     );
     assert_eq!(payloads.load(Ordering::SeqCst), 1);
+}
+
+/// Only changing descriptor fields are recorded; unchanged fields come from one typed fixture.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct DescriptorInput {
+    /// Model identity when different from the baseline.
+    id: Option<String>,
+    /// Capability flag when different from the baseline.
+    reasoning: Option<bool>,
+    /// Descriptor effort mapping, including an empty map.
+    thinking_level_map: Option<crate::ThinkingLevelMap>,
+}
+
+/// Reject unused descriptor fields before applying the recorded changes.
+fn descriptor<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<crate::Model, D::Error> {
+    let input = DescriptorInput::deserialize(decoder)?;
+    let mut model = super::controlled_model();
+    if let Some(id) = input.id {
+        model.id = id;
+    }
+    if let Some(reasoning) = input.reasoning {
+        model.reasoning = reasoning;
+    }
+    model.thinking_level_map = input.thinking_level_map;
+    Ok(model)
+}
+
+/// Decode the conversation and require every authored member to survive the typed input.
+fn conversation<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<crate::Context, D::Error> {
+    super::consumed(decoder)
+}
+
+/// Load one unique full-query corpus, then let each named witness select its associations.
+fn body_cases(case: &str) -> Result<Vec<BodyCase>, serde_json::Error> {
+    let text = include_str!("fixtures/requests.json");
+    let rows: Vec<BodyCase> = serde_json::from_str(text)?;
+    unique_body_queries(text, &rows)?;
+    for row in &rows {
+        let mut names = std::collections::HashSet::new();
+        if row.cases.is_empty()
+            || row.cases.iter().any(|name| {
+                !matches!(
+                    name.as_str(),
+                    "defaults" | "history" | "reasoning" | "minimal" | "summary"
+                ) || !names.insert(name)
+            })
+        {
+            return Err(<serde_json::Error as serde::de::Error>::custom(
+                "unconsumed or repeated fixture association",
+            ));
+        }
+    }
+    Ok(rows
+        .into_iter()
+        .filter(|row| row.cases.iter().any(|name| name == case))
+        .collect())
+}
+
+/// Exercise each request corpus's real load boundary without repeating transformation assertions.
+pub(super) fn audit_fixture_inputs() -> Result<(), serde_json::Error> {
+    body_cases("defaults")?;
+    super::fixture_rows::<AccountCase>(include_str!("fixtures/account.json"), &["token"])?;
+    super::fixture_rows::<EndpointCase>(include_str!("fixtures/endpoints.json"), &["base"])?;
+    super::fixture_rows::<HeaderCase>(include_str!("fixtures/headers.json"), &["input"])?;
+    super::fixture_rows::<RetryCase>(include_str!("fixtures/retries.json"), &["status", "text"])?;
+    super::fixture_rows::<ErrorCase>(
+        include_str!("fixtures/errors.json"),
+        &["status", "raw", "statusText", "now"],
+    )?;
+    super::fixture_rows::<TierCase>(
+        include_str!("fixtures/tiers.json"),
+        &["response", "request"],
+    )?;
+    super::fixture_rows::<PriceCase>(
+        include_str!("fixtures/prices.json"),
+        &["id", "tier", "cost"],
+    )?;
+    Ok(())
+}
+
+/// Compare full operation inputs after expanding the compact descriptor/context fields.
+fn unique_body_queries(text: &str, rows: &[BodyCase]) -> Result<(), serde_json::Error> {
+    use serde::de::Error as _;
+    let authored: Vec<serde_json::Value> = serde_json::from_str(text)?;
+    let mut queries = std::collections::HashSet::new();
+    for (row, input) in rows.iter().zip(authored) {
+        let query = serde_json::json!({"model": &row.model, "context": &row.context, "options": input["options"]});
+        let key =
+            crate::providers::json_text::compact_json(&query).map_err(serde_json::Error::custom)?;
+        if !queries.insert(key) {
+            return Err(serde_json::Error::custom("duplicate fixture query"));
+        }
+    }
+    Ok(())
 }
