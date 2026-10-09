@@ -350,3 +350,78 @@ fn maestro_response_sessions_default_reasoning_summary() {
         .unwrap();
     runtime.block_on(assert_bodies(include_str!("fixtures/summary.json")));
 }
+
+/// Status/body classification observed at the request setup boundary.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RetryCase {
+    /// HTTP status.
+    status: u16,
+    /// Raw body text.
+    text: String,
+    /// Retry classification.
+    expected: bool,
+}
+
+#[test]
+fn maestro_response_sessions_distinguish_http_failures() {
+    let rows: Vec<RetryCase> = serde_json::from_str(include_str!("fixtures/retries.json")).unwrap();
+    for row in rows {
+        assert_eq!(
+            super::super::http::is_retryable_error(row.status, &row.text).unwrap(),
+            row.expected,
+            "{} {:?}",
+            row.status,
+            row.text
+        );
+    }
+}
+
+/// Error body with a controlled clock and expected friendly selection.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ErrorCase {
+    /// HTTP status.
+    status: u16,
+    /// Whole raw envelope.
+    raw: String,
+    /// Transport status text.
+    status_text: String,
+    /// Fixed clock milliseconds.
+    now: f64,
+    /// Both selected texts, including optional friendly text.
+    expected: ErrorTexts,
+}
+
+/// The two authored error renderings.
+#[derive(Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ErrorTexts {
+    /// Server message or raw/status fallback.
+    message: String,
+    /// Usage-specific friendly form.
+    friendly_message: Option<String>,
+}
+
+#[test]
+fn maestro_response_sessions_render_friendly_http_errors() {
+    let rows: Vec<ErrorCase> = serde_json::from_str(include_str!("fixtures/errors.json")).unwrap();
+    for row in rows {
+        let actual = super::super::http::parse_error_response(
+            row.status,
+            &row.raw,
+            &row.status_text,
+            || row.now,
+        );
+        assert_eq!(
+            ErrorTexts {
+                message: actual.message,
+                friendly_message: actual.friendly_message
+            },
+            row.expected,
+            "{} {:?}",
+            row.status,
+            row.raw
+        );
+    }
+}

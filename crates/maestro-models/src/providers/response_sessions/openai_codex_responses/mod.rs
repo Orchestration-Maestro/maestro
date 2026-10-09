@@ -1,6 +1,7 @@
 //! Internal response-session request preparation.
 
 mod headers;
+mod http;
 mod request;
 
 #[cfg(test)]
