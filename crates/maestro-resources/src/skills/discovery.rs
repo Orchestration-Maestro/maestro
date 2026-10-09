@@ -1,8 +1,9 @@
 //! Ordered directory traversal of instruction entry files.
+use super::operations::ProcessContext;
 use super::{LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations, load_file};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
-use maestro_path::{Cwd, SEP, dirname, join, relative, resolve};
-use std::path::Path;
+use maestro_path::{SEP, dirname, join};
+use std::{io, path::Path};
 
 /// Shared scan-local observations and ignore-rule state.
 struct Discovery<'a> {
@@ -11,7 +12,7 @@ struct Discovery<'a> {
     /// Caller working directory, the first operand of every matcher coordinate.
     base: &'a str,
     /// Process directories completing what `base` leaves open.
-    ctx: Cwd<'a>,
+    ctx: ProcessContext<'a>,
     /// Source label for every discovery.
     source: &'a str,
     /// Replaceable filesystem adapter.
@@ -22,44 +23,64 @@ struct Discovery<'a> {
     matcher: Gitignore,
 }
 /// Scan nested directories, preferring each directory's entry file.
+///
+/// A directory that does not exist yields no skills. For one that does, the
+/// scan root needs the process working directory when `base` and `dir` leave
+/// it open.
+///
+/// # Errors
+/// Returns the working-directory error when the scan root needs it and it
+/// cannot be read.
 pub(super) fn scan(
     dir: &str,
     base: &str,
-    ctx: &Cwd<'_>,
+    ctx: ProcessContext<'_>,
     source: &str,
     operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
-    let root = resolve(&[base, dir], ctx);
+) -> io::Result<LoadSkillsResult> {
+    if !operations.exists(Path::new(dir)) {
+        return Ok(LoadSkillsResult::default());
+    }
+    let root = ctx.resolve(&[base, dir])?;
     let mut builder = GitignoreBuilder::new(&root);
     let _ = builder.case_insensitive(true);
     let mut scan = Discovery {
         root,
         base,
-        ctx: *ctx,
+        ctx,
         source,
         operations,
         builder,
         matcher: Gitignore::empty(),
     };
-    scan.visit(dir, true)
+    scan.visit_existing(dir, true)
 }
 impl Discovery<'_> {
     /// Traverse in adapter order, stopping after an attempted root entry.
-    fn visit(&mut self, dir: &str, include_root_files: bool) -> LoadSkillsResult {
-        let mut result = LoadSkillsResult::default();
-        if !self.operations.exists(Path::new(dir)) {
-            return result;
+    fn visit(&mut self, dir: &str, include_root_files: bool) -> io::Result<LoadSkillsResult> {
+        if self.operations.exists(Path::new(dir)) {
+            self.visit_existing(dir, include_root_files)
+        } else {
+            Ok(LoadSkillsResult::default())
         }
-        self.add_rules(dir);
+    }
+    /// Traverse the existing directory `dir`.
+    fn visit_existing(
+        &mut self,
+        dir: &str,
+        include_root_files: bool,
+    ) -> io::Result<LoadSkillsResult> {
+        let mut result = LoadSkillsResult::default();
+        self.add_rules(dir)?;
         let Ok(entries) = self.operations.read_dir(Path::new(dir)) else {
-            return result;
+            return Ok(result);
         };
         for entry in entries.iter().filter(|e| e.name == "SKILL.md") {
             let path = join(&[dir, &entry.name.to_string_lossy()]);
             if observed_type(entry, &path, self.operations) == Some(ResourceFileType::File)
-                && !self.ignored(&path, false)
+                && !self.ignored(&path, false)?
             {
-                return load_file(&path, self.source, self.operations);
+                return Ok(load_file(&path, self.source, self.operations));
             }
         }
         for entry in entries {
@@ -68,11 +89,13 @@ impl Discovery<'_> {
             }
             let path = join(&[dir, &entry.name.to_string_lossy()]);
             let kind = observed_type(&entry, &path, self.operations);
-            if self.ignored(&path, kind == Some(ResourceFileType::Directory)) {
+            if self.ignored(&path, kind == Some(ResourceFileType::Directory))? {
                 continue;
             }
             match kind {
-                Some(ResourceFileType::Directory) => append(&mut result, self.visit(&path, false)),
+                Some(ResourceFileType::Directory) => {
+                    append(&mut result, self.visit(&path, false)?);
+                }
                 Some(ResourceFileType::File)
                     if include_root_files && entry.name.to_string_lossy().ends_with(".md") =>
                 {
@@ -81,25 +104,25 @@ impl Discovery<'_> {
                 _ => {}
             }
         }
-        result
+        Ok(result)
     }
     /// Check excluded ancestors before a candidate's own negations.
-    fn ignored(&self, path: &str, is_dir: bool) -> bool {
-        let candidate = resolve(&[self.base, path], &self.ctx);
-        let candidate = relative(&self.root, &candidate, &self.ctx);
+    fn ignored(&self, path: &str, is_dir: bool) -> io::Result<bool> {
+        let candidate = self.ctx.resolve(&[self.base, path])?;
+        let candidate = self.ctx.relative(&self.root, &candidate);
         let mut parent = dirname(&candidate);
         while parent != "." {
             if self.matcher.matched(&parent, true).is_ignore() {
-                return true;
+                return Ok(true);
             }
             parent = dirname(&parent);
         }
-        self.matcher.matched(&candidate, is_dir).is_ignore()
+        Ok(self.matcher.matched(&candidate, is_dir).is_ignore())
     }
     /// Append authored directory-prefixed rules in ignore-file order.
-    fn add_rules(&mut self, dir: &str) {
-        let located = resolve(&[self.base, dir], &self.ctx);
-        let prefix = relative(&self.root, &located, &self.ctx).replace(SEP, "/");
+    fn add_rules(&mut self, dir: &str) -> io::Result<()> {
+        let located = self.ctx.resolve(&[self.base, dir])?;
+        let prefix = self.ctx.relative(&self.root, &located).replace(SEP, "/");
         let prefix = if prefix.is_empty() {
             prefix
         } else {
@@ -125,6 +148,7 @@ impl Discovery<'_> {
         if changed && let Ok(matcher) = self.builder.build() {
             self.matcher = matcher;
         }
+        Ok(())
     }
 }
 /// Prefix an authored ignore pattern without turning escaped punctuation into operators.

@@ -7,7 +7,7 @@ mod relative;
 mod resolve;
 
 pub use relative::relative;
-pub use resolve::resolve;
+pub use resolve::{resolve, try_resolve};
 
 use super::Root;
 use super::segments::{base_name, reduce};

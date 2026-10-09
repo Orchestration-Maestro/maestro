@@ -290,7 +290,7 @@ fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
     }
 }
 
-/// Compare the remainder after a repeated link by whole components, not by trailing text.
+/// Follow a repeated link when what follows it later merely ends with the text that followed it earlier.
 #[cfg(unix)]
 #[test]
 fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_text() {
@@ -298,6 +298,20 @@ fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_t
     let file = dir.file("d/ax", "hello");
     std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
     std::os::unix::fs::symlink("loop/ax", dir.0.join("d/x")).unwrap();
+    assert_eq!(
+        canonicalize_path(text(&dir.0.join("d/loop/x")), &NativeResourceOperations),
+        text(&file)
+    );
+}
+
+/// Follow a repeated link when a link in between brings back components the walk has already read.
+#[cfg(unix)]
+#[test]
+fn maestro_paths_follow_a_link_whose_expansion_brings_back_components_already_read() {
+    let dir = support::Directory::new();
+    let file = dir.file("d/a/x", "hello");
+    std::os::unix::fs::symlink(".", dir.0.join("d/loop")).unwrap();
+    std::os::unix::fs::symlink("loop/a/x", dir.0.join("d/x")).unwrap();
     assert_eq!(
         canonicalize_path(text(&dir.0.join("d/loop/x")), &NativeResourceOperations),
         text(&file)

@@ -13,11 +13,14 @@
 
 mod path;
 
-pub use path::{Cwd, posix, win32};
+pub use path::{Cwd, CwdUnavailable, posix, win32};
 
 #[cfg(not(windows))]
 pub use path::posix::{
     ParsedPath, SEP, basename, dirname, is_absolute, join, normalize, parse, relative, resolve,
+    try_resolve,
 };
 #[cfg(windows)]
-pub use path::win32::{SEP, basename, dirname, is_absolute, join, normalize, relative, resolve};
+pub use path::win32::{
+    SEP, basename, dirname, is_absolute, join, normalize, relative, resolve, try_resolve,
+};

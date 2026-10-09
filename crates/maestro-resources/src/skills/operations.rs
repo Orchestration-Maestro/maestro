@@ -1,6 +1,6 @@
 //! Replaceable supplied-path filesystem observations.
 
-use maestro_path::Cwd;
+use maestro_path::{Cwd, relative, resolve, try_resolve};
 use std::{
     ffi::OsString,
     io,
@@ -50,16 +50,20 @@ pub trait ResourceOperations {
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType>;
     /// Resolve a real path.
     ///
-    /// Native operations fold `.` and `..` lexically, replace each link
-    /// component by its target and fail when a link's expansion cannot
-    /// progress or the path needs a working directory that cannot be read.
+    /// Native operations fold `.` and `..` lexically and replace each link
+    /// component by its target until none remains. They fail when a component
+    /// cannot be inspected, a link's target is missing or loops, a link is
+    /// expanded again before the walk has read any component of what followed
+    /// it at its previous expansion, or the path needs a working directory
+    /// that cannot be read.
     ///
     /// # Errors
     /// Returns the I/O cause of the failed resolution.
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
     /// Observe the process working directory.
     ///
-    /// Resolution continues from it when no operand anchors a path.
+    /// Resolution continues from it when no operand anchors a path. A
+    /// resolution that needs it while this fails fails with the same error kind.
     ///
     /// # Errors
     /// Returns the I/O cause when the directory cannot be read.
@@ -74,19 +78,54 @@ pub trait ResourceOperations {
     fn drive_directories(&self) -> Vec<(char, String)>;
 }
 
-/// Run `operation` with the adapter's process directories as the resolution context.
+/// The adapter's process directories, which every path resolution continues from.
 ///
-/// This is the only place a `Cwd` is built. The context holds process state
-/// only: a caller's working directory is an operand of each resolution, and the
-/// context supplies what its operands leave open. A working directory that
-/// cannot be read counts as absent, as an empty directory does for
-/// `maestro_path`, so a path that no operand or drive directory anchors stays
-/// unanchored: relative, or on Windows rooted without a drive. `operation` also
-/// receives the kind of that failure, so a caller that needs an absolute path
-/// can fail with it.
+/// The working directory is kept as the adapter reported it, including a failure
+/// to read it. A resolution whose operands leave a part open that only that
+/// directory supplies fails with the failure's kind; one the operands anchor, or
+/// that a drive directory completes, does not read it. A caller's working
+/// directory is an operand of each resolution.
+#[derive(Clone, Copy)]
+pub(super) struct ProcessContext<'a> {
+    /// The working directory, or the kind of the error that reading it returned.
+    pub(super) current: Result<&'a str, io::ErrorKind>,
+    /// The current directory of each drive.
+    pub(super) drives: &'a [(char, &'a str)],
+}
+
+impl<'a> ProcessContext<'a> {
+    /// The snapshot that continues from `current`.
+    fn cwd(&self, current: &'a str) -> Cwd<'a> {
+        Cwd {
+            current,
+            drive_directories: self.drives,
+        }
+    }
+
+    /// Resolve `paths` from right to left, reading the working directory only if they leave a part open.
+    ///
+    /// # Errors
+    /// Returns the kind of the working directory's error when it was needed and unreadable.
+    pub(super) fn resolve(&self, paths: &[&str]) -> io::Result<String> {
+        match self.current {
+            Ok(current) => Ok(resolve(paths, &self.cwd(current))),
+            Err(kind) => try_resolve(paths, self.drives).map_err(|_| kind.into()),
+        }
+    }
+
+    /// The path from `from` to `to`, which are already resolved.
+    ///
+    /// Neither end is relative, so the working directory is not read; `from`
+    /// fills the snapshot that `maestro_path::relative` takes.
+    pub(super) fn relative(&self, from: &str, to: &str) -> String {
+        relative(from, to, &self.cwd(from))
+    }
+}
+
+/// Run `operation` with the adapter's process directories as the resolution context.
 pub(super) fn with_process_context<R>(
     operations: &dyn ResourceOperations,
-    operation: impl FnOnce(&Cwd<'_>, Option<io::ErrorKind>) -> R,
+    operation: impl FnOnce(ProcessContext<'_>) -> R,
 ) -> R {
     let current = operations.current_directory();
     let entries = operations.drive_directories();
@@ -94,11 +133,10 @@ pub(super) fn with_process_context<R>(
         .iter()
         .map(|(letter, directory)| (*letter, directory.as_str()))
         .collect();
-    let cwd = Cwd {
-        current: current.as_deref().unwrap_or(""),
-        drive_directories: &drives,
-    };
-    operation(&cwd, current.as_ref().err().map(io::Error::kind))
+    operation(ProcessContext {
+        current: current.as_deref().map_err(io::Error::kind),
+        drives: &drives,
+    })
 }
 
 /// Standard native filesystem operations.

@@ -1,17 +1,20 @@
 //! Process-directory context shared by every path resolution.
 
-use super::operations::with_process_context;
+use super::operations::{ProcessContext, with_process_context};
 #[cfg(not(target_arch = "wasm32"))]
 use super::real_path::real_path;
-use super::{LoadSkillsOptions, ResourceEntry, ResourceFileType, ResourceOperations, load_skills};
-use maestro_path::win32;
+use super::{
+    LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations,
+    load_skills,
+};
+use maestro_path::{Cwd, win32};
 use std::{
     cell::RefCell,
     io,
     path::{Path, PathBuf},
 };
 
-/// Adapter with fixed process directories over a filesystem holding at most one file.
+/// Adapter with fixed process directories over a filesystem holding at most one file and one empty directory.
 struct Process {
     /// The process working directory, or none when it cannot be read.
     current: Option<String>,
@@ -19,11 +22,19 @@ struct Process {
     drives: Vec<(char, String)>,
     /// The only file that exists, with its text.
     file: Option<(String, String)>,
+    /// The only directory that exists; it is empty.
+    directory: Option<String>,
     /// Every path `exists` was asked about, in order.
     asked: RefCell<Vec<PathBuf>>,
 }
 
 impl Process {
+    /// Whether `path` is the one directory.
+    fn is_directory(&self, path: &Path) -> bool {
+        self.directory
+            .as_ref()
+            .is_some_and(|directory| Path::new(directory) == path)
+    }
     /// Whether `path` is the one file.
     fn holds(&self, path: &Path) -> bool {
         self.file
@@ -35,10 +46,14 @@ impl Process {
 impl ResourceOperations for Process {
     fn exists(&self, path: &Path) -> bool {
         self.asked.borrow_mut().push(path.to_owned());
-        self.holds(path)
+        self.holds(path) || self.is_directory(path)
     }
-    fn read_dir(&self, _: &Path) -> io::Result<Vec<ResourceEntry>> {
-        Err(io::ErrorKind::NotFound.into())
+    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
+        if self.is_directory(path) {
+            Ok(Vec::new())
+        } else {
+            Err(io::ErrorKind::NotFound.into())
+        }
     }
     fn read_file(&self, _: &Path) -> io::Result<String> {
         self.file
@@ -75,6 +90,7 @@ fn process(current: &str, entries: &[(char, &str)]) -> Process {
             .map(|(letter, directory)| (*letter, (*directory).to_owned()))
             .collect(),
         file: None,
+        directory: None,
         asked: RefCell::default(),
     }
 }
@@ -85,7 +101,7 @@ fn load(
     (cwd, agent_dir): (&str, &str),
     skill_paths: &[&str],
     include_defaults: bool,
-) -> super::LoadSkillsResult {
+) -> io::Result<LoadSkillsResult> {
     load_skills(
         LoadSkillsOptions {
             cwd,
@@ -111,23 +127,90 @@ fn explicit_path_beneath_a_relative_cwd_continues_from_the_process_directory() {
         ("work", "/agent"),
         &["notes.md"],
         false,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
         Some("/process/work/notes.md")
     );
 }
 
-/// An unreadable process directory matters only to a path that no operand anchors.
+/// An unreadable process directory fails the loader for a relative caller directory and not for an anchored one.
 #[cfg(not(windows))]
 #[test]
 fn explicit_paths_need_the_process_directory_only_beneath_a_relative_cwd() {
     let mut adapter = process("/process", &[]);
     adapter.current = None;
-    for (cwd, located) in [("work", "work/notes.md"), ("/work", "/work/notes.md")] {
-        let result = load(&adapter, (cwd, "/agent"), &["notes.md"], false);
-        assert_eq!(result.diagnostics[0].path.as_deref(), Some(located));
+    for (paths, include_defaults) in [
+        (&["notes.md"][..], false),
+        (&["/abs/notes.md"], false),
+        (&[], true),
+    ] {
+        let error = load(&adapter, ("work", "/agent"), paths, include_defaults).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied, "{paths:?}");
     }
+    let result = load(&adapter, ("/work", "/agent"), &["notes.md"], false).unwrap();
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some("/work/notes.md")
+    );
+}
+
+/// A user root that needs the unreadable process directory turns the classification of an existing path into its warning.
+#[cfg(not(windows))]
+#[test]
+fn scope_classification_needing_the_unreadable_process_directory_warns_for_that_path() {
+    let mut adapter = process("/process", &[]);
+    adapter.current = None;
+    adapter.file = Some((
+        "/work/notes.md".into(),
+        "---\ndescription: Notes\n---".into(),
+    ));
+    let result = load(
+        &adapter,
+        ("/work", "agent"),
+        &["notes.md", "gone.md"],
+        false,
+    )
+    .unwrap();
+    assert!(result.skills.is_empty());
+    let found: Vec<_> = result
+        .diagnostics
+        .iter()
+        .map(|d| (d.path.as_deref(), d.message.as_str()))
+        .collect();
+    let denied = io::Error::from(io::ErrorKind::PermissionDenied).to_string();
+    assert_eq!(
+        found,
+        [
+            (Some("/work/notes.md"), denied.as_str()),
+            (Some("/work/gone.md"), "skill path does not exist")
+        ]
+    );
+}
+
+/// Directory loading reads the process directory only for an existing root that nothing anchors.
+#[cfg(not(windows))]
+#[test]
+fn directory_loading_needs_the_process_directory_only_for_an_existing_unanchored_root() {
+    use super::{LoadSkillsFromDirOptions, load_skills_from_dir};
+    let mut adapter = process("/process", &[]);
+    adapter.current = None;
+    adapter.directory = Some("skills".into());
+    let scan = |cwd, dir| {
+        load_skills_from_dir(
+            LoadSkillsFromDirOptions {
+                cwd,
+                dir,
+                source: "path",
+            },
+            &adapter,
+        )
+    };
+    let error = scan("work", "skills").unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+    assert!(scan("work", "missing").unwrap().skills.is_empty());
+    assert!(scan("/work", "skills").unwrap().skills.is_empty());
 }
 
 /// A relative path fails with the working-directory error kind; an absolute path does not.
@@ -146,7 +229,7 @@ fn real_path_needs_the_working_directory_only_for_a_relative_path() {
 #[test]
 fn project_defaults_beneath_a_relative_cwd_continue_from_the_process_directory() {
     let adapter = process("/process", &[]);
-    let _ = load(&adapter, ("work", "/agent"), &[], true);
+    let _ = load(&adapter, ("work", "/agent"), &[], true).unwrap();
     assert_eq!(
         *adapter.asked.borrow(),
         [
@@ -170,8 +253,17 @@ fn relative_user_root_continues_from_the_process_directory_not_the_cwd() {
         ("/work", "agent"),
         &["/process/agent/skills/calendar.md"],
         false,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills[0].source_info.scope, crate::SourceScope::User);
+}
+
+/// The snapshot a readable context holds.
+fn cwd_of(context: ProcessContext<'_>) -> Cwd<'_> {
+    Cwd {
+        current: context.current.unwrap(),
+        drive_directories: context.drives,
+    }
 }
 
 /// The caller directory wins on its own drive; another drive continues from its own entry.
@@ -181,14 +273,15 @@ fn resolution_context_continues_other_drives_from_their_reported_directories() {
         r"C:\Users\me",
         &[('C', r"C:\Users\me"), ('D', r"D:\skills")],
     );
-    with_process_context(&adapter, |context, _| {
-        assert_eq!(context.current, r"C:\Users\me");
+    with_process_context(&adapter, |context| {
+        let cwd = cwd_of(context);
+        assert_eq!(cwd.current, r"C:\Users\me");
         assert_eq!(
-            win32::resolve(&[r"C:\work", r"C:notes.md"], context),
+            win32::resolve(&[r"C:\work", r"C:notes.md"], &cwd),
             r"C:\work\notes.md"
         );
         assert_eq!(
-            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], context),
+            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], &cwd),
             r"D:\skills\calendar\SKILL.md"
         );
     });
@@ -198,9 +291,9 @@ fn resolution_context_continues_other_drives_from_their_reported_directories() {
 #[test]
 fn resolution_context_falls_back_to_the_drive_root_without_an_entry() {
     let adapter = process(r"C:\Users\me", &[('C', r"C:\Users\me")]);
-    with_process_context(&adapter, |context, _| {
+    with_process_context(&adapter, |context| {
         assert_eq!(
-            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], context),
+            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], &cwd_of(context)),
             r"D:\calendar\SKILL.md"
         );
     });
@@ -233,7 +326,7 @@ fn native_drive_directories_come_from_equals_prefixed_variables() {
 #[test]
 fn explicit_skill_path_on_the_cwd_drive_continues_from_the_cwd() {
     let adapter = process(r"C:\Users\me", &[('C', r"C:\Users\me")]);
-    let result = load(&adapter, (r"C:\work", r"C:\agent"), &["C:notes.md"], false);
+    let result = load(&adapter, (r"C:\work", r"C:\agent"), &["C:notes.md"], false).unwrap();
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
         Some(r"C:\work\notes.md")
@@ -250,7 +343,8 @@ fn explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root() {
         (r"C:\work", r"C:\agent"),
         &[r"D:calendar\SKILL.md"],
         false,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
         Some(r"D:\calendar\SKILL.md")
@@ -267,7 +361,8 @@ fn explicit_skill_path_on_another_drive_continues_from_the_drive_directory() {
         (r"C:\work", r"C:\agent"),
         &[r"D:calendar\SKILL.md"],
         false,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
         Some(r"D:\skills\calendar\SKILL.md")

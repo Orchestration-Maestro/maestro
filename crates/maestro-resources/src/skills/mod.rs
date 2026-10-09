@@ -11,12 +11,12 @@ use crate::{
     ResourceDiagnostic, SourceInfo, SourceScope, SyntheticSourceOptions,
     create_synthetic_source_info, parse_frontmatter,
 };
-use maestro_path::{Cwd, SEP, basename, dirname, is_absolute, join, resolve};
+use maestro_path::{SEP, basename, dirname, is_absolute, join};
 #[cfg(not(target_arch = "wasm32"))]
 pub use operations::NativeResourceOperations;
-use operations::with_process_context;
+use operations::{ProcessContext, with_process_context};
 pub use operations::{ResourceEntry, ResourceFileType, ResourceOperations};
-use std::path::Path;
+use std::{io, path::Path};
 pub use validation::SkillFrontmatter;
 
 /// A described instruction file with its provenance.
@@ -57,12 +57,19 @@ pub struct LoadSkillsFromDirOptions<'a> {
     pub source: &'a str,
 }
 /// Load instruction resources using the supplied filesystem observations.
-#[must_use]
+///
+/// A directory that does not exist yields no skills. A directory that exists
+/// is located by resolving `dir` with `cwd` as the first operand.
+///
+/// # Errors
+/// Returns the adapter's working-directory error kind when that resolution
+/// leaves the path unanchored and the adapter cannot read the process working
+/// directory.
 pub fn load_skills_from_dir(
     options: LoadSkillsFromDirOptions<'_>,
     operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
-    with_process_context(operations, |ctx, _| {
+) -> io::Result<LoadSkillsResult> {
+    with_process_context(operations, |ctx| {
         discovery::scan(options.dir, options.cwd, ctx, options.source, operations)
     })
 }
@@ -152,28 +159,35 @@ pub struct LoadSkillsOptions<'a> {
     pub include_defaults: bool,
 }
 /// Load defaults before explicit paths, retaining first names and canonical files.
-#[must_use]
+///
+/// With defaults disabled, an existing explicit path under the user or project
+/// skills root takes that scope; when resolving the user root needs the
+/// unreadable process working directory, that path gets a warning instead.
+///
+/// # Errors
+/// Returns the adapter's working-directory error kind when resolving the
+/// project configuration directory, or a relative explicit path, against `cwd`
+/// leaves the path unanchored and the adapter cannot read the process working
+/// directory.
 pub fn load_skills(
     options: LoadSkillsOptions<'_>,
     operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
-    with_process_context(operations, |ctx, _| {
-        load_skills_in(options, ctx, operations)
-    })
+) -> io::Result<LoadSkillsResult> {
+    with_process_context(operations, |ctx| load_skills_in(options, ctx, operations))
 }
 /// Load defaults and explicit paths.
 ///
 /// The caller's working directory anchors the project and relative explicit paths.
 fn load_skills_in(
     options: LoadSkillsOptions<'_>,
-    ctx: &Cwd<'_>,
+    ctx: ProcessContext<'_>,
     operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
+) -> io::Result<LoadSkillsResult> {
     let mut result = LoadSkillsResult::default();
     let mut collisions = Vec::new();
     let mut paths = std::collections::HashSet::new();
     let user_skills = join(&[options.agent_dir, "skills"]);
-    let project_skills = resolve(&[options.cwd, options.config_dir_name, "skills"], ctx);
+    let project_skills = ctx.resolve(&[options.cwd, options.config_dir_name, "skills"])?;
     if options.include_defaults {
         for (path, source) in [(&user_skills, "user"), (&project_skills, "project")] {
             add_skills(
@@ -181,10 +195,18 @@ fn load_skills_in(
                 &mut collisions,
                 &mut paths,
                 operations,
-                discovery::scan(path, options.cwd, ctx, source, operations),
+                discovery::scan(path, options.cwd, ctx, source, operations)?,
             );
         }
     }
+    let source_of = |path: &str| {
+        for (root, label) in [(&user_skills, "user"), (&project_skills, "project")] {
+            if !options.include_defaults && is_under_path(path, root, ctx)? {
+                return Ok(label);
+            }
+        }
+        Ok("path")
+    };
     for path in options.skill_paths {
         let path = path.trim_matches(crate::frontmatter::text_whitespace);
         let path = if let Some(suffix) = path.strip_prefix('~') {
@@ -192,26 +214,19 @@ fn load_skills_in(
         } else if is_absolute(path) {
             path.to_owned()
         } else {
-            resolve(&[options.cwd, path], ctx)
+            ctx.resolve(&[options.cwd, path])?
         };
-        let source = if !options.include_defaults && is_under_path(&path, &user_skills, ctx) {
-            "user"
-        } else if !options.include_defaults && is_under_path(&path, &project_skills, ctx) {
-            "project"
-        } else {
-            "path"
-        };
-        let loaded = explicit_path(&path, (options.cwd, ctx), source, operations);
+        let loaded = explicit_path(&path, (options.cwd, ctx), &source_of, operations)?;
         add_skills(&mut result, &mut collisions, &mut paths, operations, loaded);
     }
     result.diagnostics.extend(collisions);
-    result
+    Ok(result)
 }
 /// Compare preserved target spelling against a root resolved from the process
 /// directories, on a separator boundary.
-fn is_under_path(target: &str, root: &str, ctx: &Cwd<'_>) -> bool {
-    let root = resolve(&[root], ctx);
-    target == root || target.starts_with(&format!("{}{SEP}", root.trim_end_matches(SEP)))
+fn is_under_path(target: &str, root: &str, ctx: ProcessContext<'_>) -> io::Result<bool> {
+    let root = ctx.resolve(&[root])?;
+    Ok(target == root || target.starts_with(&format!("{}{SEP}", root.trim_end_matches(SEP))))
 }
 /// Merge discoveries, retaining the first name and delaying collision messages.
 fn add_skills(
@@ -252,23 +267,32 @@ fn add_skills(
     }
 }
 /// Dispatch a supplied path, keeping missing, wrong-kind and native errors distinct.
+///
+/// A path that exists is classified by `source_of` after its metadata is read.
+/// A classification that fails becomes that path's warning.
+///
+/// # Errors
+/// Returns the working-directory error of a scan of the path's directory.
 fn explicit_path(
     path: &str,
-    (cwd, ctx): (&str, &Cwd<'_>),
-    source: &str,
+    (cwd, ctx): (&str, ProcessContext<'_>),
+    source_of: &dyn Fn(&str) -> io::Result<&'static str>,
     operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
+) -> io::Result<LoadSkillsResult> {
     let error = if operations.exists(Path::new(path)) {
-        match operations.metadata(Path::new(path)) {
-            Ok(ResourceFileType::Directory) => {
+        let classified = operations
+            .metadata(Path::new(path))
+            .and_then(|kind| source_of(path).map(|source| (kind, source)));
+        match classified {
+            Ok((ResourceFileType::Directory, source)) => {
                 return discovery::scan(path, cwd, ctx, source, operations);
             }
-            Ok(ResourceFileType::File)
+            Ok((ResourceFileType::File, source))
                 if path
                     .rsplit_once('.')
                     .is_some_and(|(_, extension)| extension == "md") =>
             {
-                return load_file(path, source, operations);
+                return Ok(load_file(path, source, operations));
             }
             Ok(_) => "skill path is not a markdown file".into(),
             Err(cause) => cause.to_string(),
@@ -276,10 +300,10 @@ fn explicit_path(
     } else {
         "skill path does not exist".into()
     };
-    LoadSkillsResult {
+    Ok(LoadSkillsResult {
         skills: Vec::new(),
         diagnostics: vec![ResourceDiagnostic::warning(path, error)],
-    }
+    })
 }
 #[cfg(test)]
 mod tests;

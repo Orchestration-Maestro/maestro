@@ -1,7 +1,7 @@
 //! POSIX flavor: `/` is the only separator and every comparison is exact.
 
-use super::Cwd;
 use super::segments::{base_name, climb_and_descend, reduce};
+use super::{Cwd, CwdUnavailable};
 
 /// The path separator.
 pub const SEP: char = '/';
@@ -236,19 +236,56 @@ pub fn resolve(paths: &[&str], cwd: &Cwd<'_>) -> String {
     if is_absolute(cwd.current) && matches!(paths, [] | ["" | "."]) {
         return cwd.current.to_owned();
     }
-    let mut operands = Vec::new();
-    let mut absolute = false;
-    for path in paths.iter().rev().filter(|path| !path.is_empty()) {
-        operands.push(*path);
-        if is_absolute(path) {
-            absolute = true;
-            break;
-        }
-    }
+    let (mut operands, mut absolute) = operands_to_root(paths);
     if !absolute {
         operands.push(cwd.current);
         absolute = is_absolute(cwd.current);
     }
+    spell(&operands, absolute)
+}
+
+/// Resolve `paths` from right to left when there is no working directory.
+///
+/// It gives the result [`resolve`] gives, and fails where [`resolve`] would have
+/// read `cwd.current`: when no operand is rooted. `drive_directories` gives the
+/// call the shape of the Windows flavor's and is ignored.
+///
+/// # Errors
+/// Returns [`CwdUnavailable`] when the working directory would be read.
+///
+/// # Examples
+///
+/// ```
+/// use maestro_path::{CwdUnavailable, posix};
+///
+/// assert_eq!(posix::try_resolve(&["/a", "b", "../c"], &[]), Ok("/a/c".to_owned()));
+/// assert_eq!(posix::try_resolve(&["b"], &[]), Err(CwdUnavailable));
+/// ```
+pub fn try_resolve(
+    paths: &[&str],
+    _drive_directories: &[(char, &str)],
+) -> Result<String, CwdUnavailable> {
+    match operands_to_root(paths) {
+        (operands, true) => Ok(spell(&operands, true)),
+        (_, false) => Err(CwdUnavailable),
+    }
+}
+
+/// The non-empty operands from the last backwards, ending at the first that is
+/// rooted, and whether one was.
+fn operands_to_root<'a>(paths: &[&'a str]) -> (Vec<&'a str>, bool) {
+    let mut operands = Vec::new();
+    for path in paths.iter().rev().filter(|path| !path.is_empty()) {
+        operands.push(*path);
+        if is_absolute(path) {
+            return (operands, true);
+        }
+    }
+    (operands, false)
+}
+
+/// Join `operands`, which are last-first, into one normalized path.
+fn spell(operands: &[&str], absolute: bool) -> String {
     let resolved = reduce(
         operands.iter().rev().flat_map(|path| path.split(SEP)),
         !absolute,

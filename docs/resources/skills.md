@@ -25,7 +25,7 @@ let loaded = load_skills(LoadSkillsOptions {
     config_dir_name: ".maestro",
     skill_paths: &paths,
     include_defaults: false,
-}, &NativeResourceOperations);
+}, &NativeResourceOperations)?;
 assert!(loaded.diagnostics.is_empty());
 assert_eq!(loaded.skills.len(), 1);
 assert!(format_skills_for_prompt(&loaded.skills).contains("<name>calendar</name>"));
@@ -49,8 +49,17 @@ Windows a drive-relative path on the drive of an absolute `cwd`, such as
 `C:item.md`, continues from `cwd`; on another drive, such as `D:item.md`, it
 continues from the directory the adapter reports for that drive, or from the
 drive root when none is reported and the process working directory is on another
-drive. `~`, `~/suffix` and `~suffix` expand against supplied `home`, including
-repeated slashes after the tilde. Joined
+drive. The adapter's working directory is read only where the operands leave a
+path unanchored: a relative path or, on Windows, a path rooted without a drive or
+relative to a drive with no reported directory. When the adapter cannot read it,
+`load_skills` fails with that error's kind if resolving the project configuration
+directory or an explicit path leaves it unanchored, for example beneath a
+relative `cwd`; an absolute `cwd` on POSIX loads as usual. `load_skills_from_dir`
+fails the same way for an existing scan directory that `cwd` and `dir` leave
+unanchored, while a missing directory yields no skills first. A user skills root
+that needs the unreadable directory makes the classification of an existing
+explicit path that path's warning. `~`, `~/suffix` and `~suffix` expand against
+supplied `home`, including repeated slashes after the tilde. Joined
 user configuration and scanned child paths concatenate their parts before lexical
 normalization; later rooted parts do not replace the earlier root. Project
 configuration paths instead resolve against `cwd`; an absolute configuration
@@ -63,16 +72,17 @@ first discovery. Only winning paths are remembered, so repeated losing paths
 produce repeated collisions. A native real path first folds `.` and `..`
 lexically, resolving a relative path against the process working directory, so
 `link/..` names the directory holding `link`. It then replaces each link by its
-target, read relative to the link's directory; other components keep their
-authored spelling and case, and a Windows link target that names a drive or share
-loses its verbatim prefix. A link may be expanded any number of times:
-`loop/loop/x`, with `loop` linked to its own directory, resolves however often
-`loop` repeats. The exception is a link met again while everything that followed
-it at its previous expansion still ends the path after it; that repeat cannot
-progress. When a component cannot be inspected, a link target is missing, a link
-loops, a link's expansion cannot progress or a relative path needs a working
-directory that cannot be read, exact authored strings are the identity keys, so
-distinct absolute spellings can produce name collisions.
+target, read relative to the link's directory, and scans again from the root;
+other components keep their authored spelling and case, and a Windows link
+target that names a drive or share loses its verbatim prefix. A link may be
+expanded any number of times: `loop/loop/x`, with `loop` linked to its own
+directory, resolves however often `loop` repeats. The walk fails when a link is
+expanded again before the scan has read any component of what followed it at its
+previous expansion, because the steps in between would repeat forever. When a
+component cannot be inspected, a link target is missing, a link loops, a link
+expands without the scan reaching what followed it or a relative path needs a
+working directory that cannot be read, exact authored strings are the identity
+keys, so distinct absolute spellings can produce name collisions.
 Ordinary diagnostics precede all collisions.
 With defaults disabled, explicit paths equal to a resolved user or project skills
 root, or beginning with that root plus its separator, receive that scope, with user
@@ -124,8 +134,9 @@ each project or explicit path as the loader computed it, so `cwd` never
 relocates an authored path it reads. The process directories the adapter reports
 complete only what those operands leave open, and alone resolve native real
 paths and the user and project roots that classify explicit paths. A working
-directory the adapter cannot read anchors nothing: a path that no operand or
-drive directory anchors stays relative, or on Windows rooted without a drive.
+directory the adapter cannot read is never replaced by an empty one: a resolution
+that needs it fails with that error's kind, and one that the operands or a drive
+directory anchor does not read it.
 Each scan shares one case-insensitive ignore matcher. Its root and candidates are
 resolved from `cwd`; rule prefixes use their lexical relative paths.
 Rules are appended in

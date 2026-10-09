@@ -24,7 +24,8 @@ fn maestro_skills_load_valid_metadata_and_source() {
             source: "user",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills.len(), 1);
     let skill = &result.skills[0];
@@ -58,7 +59,8 @@ fn maestro_skills_warn_on_parent_mismatch() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(
@@ -92,7 +94,8 @@ fn maestro_skills_keep_name_warning_order() {
             source: "custom",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(
         result
@@ -132,7 +135,8 @@ fn maestro_skills_keep_name_warning_order() {
                 source: "path",
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.diagnostics.len(), expected, "{name}");
     }
 }
@@ -155,7 +159,8 @@ fn maestro_skills_validate_description_before_name() {
                 source: "path",
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert!(result.skills.is_empty());
         assert_eq!(result.diagnostics[0].message, "description is required");
         if header.is_empty() {
@@ -183,7 +188,8 @@ fn maestro_skills_validate_description_before_name() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills[0].description, "\u{85}");
     assert!(result.diagnostics.is_empty());
 }
@@ -206,7 +212,8 @@ fn maestro_skills_keep_overlong_descriptions() {
                     source: "path",
                 },
                 &NativeResourceOperations,
-            );
+            )
+            .unwrap();
             assert_eq!(result.skills[0].description, description);
             assert_eq!(
                 result
@@ -243,7 +250,8 @@ fn maestro_skills_reject_nonstring_metadata_fields() {
                     source: "path",
                 },
                 &NativeResourceOperations,
-            );
+            )
+            .unwrap();
             assert!(result.skills.is_empty());
             assert_eq!(result.diagnostics.len(), 1);
             assert_eq!(
@@ -262,7 +270,8 @@ fn maestro_skills_reject_nonstring_metadata_fields() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(
         result.diagnostics[0].message,
@@ -290,7 +299,8 @@ fn maestro_skills_ignore_unrelated_metadata() {
             source: "custom",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills[0].source_info.source, "custom");
@@ -326,7 +336,8 @@ fn maestro_skills_find_nested_entry_files() {
             source: "project",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, file);
     assert_eq!(result.skills[0].source_info.scope, SourceScope::Project);
@@ -346,7 +357,8 @@ fn maestro_skills_prefer_the_root_candidate() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, file);
     assert!(result.diagnostics.is_empty());
@@ -379,7 +391,8 @@ fn maestro_skills_root_failure_stops_descent() {
                 source: "path",
             },
             &ops,
-        );
+        )
+        .unwrap();
         assert!(result.skills.is_empty());
         assert_eq!(result.diagnostics.len(), 1);
         assert_eq!(
@@ -420,7 +433,8 @@ fn maestro_skills_skip_nonfile_or_ignored_root_candidates() {
                 source: "path",
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills.len(), 1, "{branch}");
         assert_eq!(result.skills[0].file_path, child, "{branch}");
         assert!(result.diagnostics.is_empty());
@@ -442,7 +456,8 @@ fn maestro_skills_preserve_multiline_descriptions() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills[0].description, "First line\nSecond line\n");
     assert!(result.diagnostics.is_empty());
 }
@@ -458,7 +473,8 @@ fn maestro_skills_return_empty_for_missing_directories() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert!(result.skills.is_empty());
     assert!(result.diagnostics.is_empty());
 }
@@ -479,7 +495,8 @@ fn maestro_skills_use_basename_when_name_is_absent() {
                 source: "path",
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills[0].name, "parent");
         assert!(result.diagnostics.is_empty());
     }
@@ -501,7 +518,8 @@ fn maestro_skills_disable_only_explicit_boolean_true() {
                 source: "path",
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills[0].disable_model_invocation, flag == "true");
         assert!(result.diagnostics.is_empty());
     }
@@ -523,7 +541,8 @@ fn maestro_skills_empty_or_hidden_lists_have_no_prompt() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(
         maestro_resources::format_skills_for_prompt(&result.skills),
         ""
@@ -542,7 +561,8 @@ fn maestro_skills_render_exact_prompt_instructions() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     let expected = format!(
         "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>parent</name>\n    <description>Useful</description>\n    <location>{}</location>\n  </skill>\n</available_skills>",
         file.display()
@@ -565,7 +585,8 @@ fn maestro_skills_escape_every_xml_field() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     let skill = &mut result.skills[0];
     skill.name = "&<>\"'😀&amp;".into();
     skill.description = "&<>\"'😀&amp;".into();
@@ -594,6 +615,7 @@ fn maestro_skills_preserve_prompt_order() {
                 },
                 &NativeResourceOperations,
             )
+            .unwrap()
             .skills,
         );
     }
@@ -625,6 +647,7 @@ fn maestro_skills_filter_hidden_prompt_members() {
                 },
                 &NativeResourceOperations,
             )
+            .unwrap()
             .skills,
         );
     }
@@ -651,7 +674,8 @@ fn maestro_skills_accept_explicit_files_and_directories() {
             include_defaults: false,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result
             .skills
@@ -698,7 +722,8 @@ fn maestro_skills_report_explicit_path_failures() {
             include_defaults: false,
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert!(result.skills.is_empty());
     let mut expected = vec![
         ("skill path does not exist", missing),
@@ -751,7 +776,8 @@ fn maestro_skills_expand_all_home_path_forms() {
                 include_defaults: false,
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills.len(), 1);
         assert_eq!(result.skills[0].file_path.as_str(), support::text(&target));
         assert!(result.diagnostics.is_empty());
@@ -767,7 +793,8 @@ fn maestro_skills_expand_all_home_path_forms() {
             include_defaults: false,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert!(result.skills.is_empty());
     assert_eq!(
         result.diagnostics[0].path.as_deref(),
@@ -786,7 +813,8 @@ fn maestro_skills_load_the_complete_fixture_tree() {
             source: "fixture",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     let mut names = result
         .skills
         .iter()
@@ -829,7 +857,8 @@ fn maestro_skills_keep_first_discovered_name() {
             include_defaults: false,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     let winner = paths[0].join("SKILL.md");
     let loser = paths[1].join("SKILL.md");
@@ -886,7 +915,8 @@ fn maestro_skills_load_defaults_before_explicit_paths() {
             include_defaults: true,
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result
             .skills
@@ -927,7 +957,8 @@ fn maestro_skills_classify_explicit_source_scopes() {
                 include_defaults: false,
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills[0].source_info.scope, scope);
         assert_eq!(result.skills[0].source_info.source, "local");
         assert_eq!(result.skills[0].source_info.path, file);
@@ -947,7 +978,8 @@ fn maestro_skills_classify_explicit_source_scopes() {
             include_defaults: false,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills[0].source_info.scope, SourceScope::User);
 }
 
@@ -971,7 +1003,7 @@ fn maestro_skills_deduplicate_paths_before_names() {
         skill_paths: &authored_paths,
         include_defaults: false,
     };
-    let result = maestro_resources::load_skills(options(), &NativeResourceOperations);
+    let result = maestro_resources::load_skills(options(), &NativeResourceOperations).unwrap();
     assert_eq!(result.skills.len(), 1);
     #[cfg(unix)]
     assert!(result.diagnostics.is_empty());
@@ -979,7 +1011,7 @@ fn maestro_skills_deduplicate_paths_before_names() {
         failures: vec![("canonicalize", file), ("canonicalize", alias.clone())],
         order: vec![],
     };
-    let result = maestro_resources::load_skills(options(), &ops);
+    let result = maestro_resources::load_skills(options(), &ops).unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(
@@ -1006,7 +1038,8 @@ fn maestro_skills_repeat_collisions_for_losing_paths() {
             include_defaults: false,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.diagnostics.len(), 3);
     assert_eq!(result.diagnostics[0].message, "skill path does not exist");
@@ -1049,7 +1082,8 @@ fn maestro_skills_limit_loose_markdown_to_the_scan_root() {
             source: "path",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result
             .skills
@@ -1079,7 +1113,8 @@ fn maestro_skills_follow_native_links_and_skip_broken_links() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 2);
     assert!(
         result
@@ -1116,7 +1151,8 @@ fn maestro_skills_apply_all_ignore_files_in_order() {
             source: "path",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result
             .skills
@@ -1147,7 +1183,8 @@ fn maestro_skills_scope_nested_ignore_rules() {
             source: "path",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert!(result.diagnostics.is_empty());
@@ -1158,7 +1195,8 @@ fn maestro_skills_scope_nested_ignore_rules() {
             source: "path",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
 }
@@ -1190,7 +1228,8 @@ fn maestro_skills_preserve_escaped_exclamation_rules() {
             source: "path",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result
             .skills
@@ -1221,7 +1260,8 @@ fn maestro_skills_respect_excluded_parent_directories() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert!(result.diagnostics.is_empty());
@@ -1241,7 +1281,8 @@ fn maestro_skills_ignore_invalid_rules_without_panicking() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert!(result.diagnostics.is_empty());
@@ -1253,7 +1294,8 @@ fn maestro_skills_ignore_invalid_rules_without_panicking() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 2);
     assert!(result.diagnostics.is_empty());
 }
@@ -1287,7 +1329,8 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
             source: "path",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
     assert_eq!(result.diagnostics.len(), 1);
@@ -1304,7 +1347,8 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills[0].description, "Replaced \u{fffd} byte");
 }
 
@@ -1329,7 +1373,8 @@ fn maestro_skills_share_native_and_controlled_operations() {
                 source: "custom",
             },
             operations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills.len(), 2);
         assert!(result.diagnostics.is_empty());
         assert!(
@@ -1353,7 +1398,8 @@ fn maestro_skills_share_native_and_controlled_operations() {
             source: "custom",
         },
         &ops,
-    );
+    )
+    .unwrap();
     assert_eq!(
         result
             .skills
@@ -1386,7 +1432,8 @@ fn maestro_skills_keep_authored_collision_keys() {
             include_defaults: false,
         },
         &support::Unresolvable,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.diagnostics.len(), 1);
     let collision = result.diagnostics[0].collision.as_ref().unwrap();
@@ -1410,7 +1457,8 @@ fn maestro_skills_use_literal_dot_root_names() {
                 source: "path",
             },
             &ops,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills.len(), 1);
         let skill = &result.skills[0];
         assert_eq!(skill.name, root);
@@ -1440,7 +1488,8 @@ fn maestro_skills_resolve_authored_project_roots() {
             include_defaults: true,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path.as_str(), support::text(&file));
     assert_eq!(result.skills[0].source_info.scope, SourceScope::Project);
@@ -1480,7 +1529,8 @@ fn maestro_skills_classify_skipped_default_children_as_temporary() {
                 include_defaults,
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills.len(), if include_defaults { 5 } else { 3 });
         for (file, disabled_scope) in [
             (&user, SourceScope::User),
@@ -1523,7 +1573,8 @@ fn maestro_skills_preserve_authored_dot_basename_and_provenance() {
             include_defaults: false,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].name, ".");
     assert_eq!(
@@ -1565,7 +1616,8 @@ fn maestro_skills_keep_repeated_separator_paths_temporary() {
                 include_defaults: false,
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert_eq!(result.skills.len(), 1);
         assert_eq!(
             result.skills[0].source_info.scope,
@@ -1595,7 +1647,8 @@ fn maestro_skills_resolve_ignore_coordinates_for_dot_roots() {
             source: "path",
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, keep);
@@ -1621,7 +1674,8 @@ fn maestro_skills_resolve_absolute_project_configuration() {
             include_defaults: true,
         },
         &NativeResourceOperations,
-    );
+    )
+    .unwrap();
     assert!(result.diagnostics.is_empty());
     assert_eq!(result.skills.len(), 1);
     assert_eq!(result.skills[0].file_path, support::text(&file));
@@ -1652,7 +1706,8 @@ fn maestro_skills_classify_exact_default_roots() {
                 include_defaults: false,
             },
             &NativeResourceOperations,
-        );
+        )
+        .unwrap();
         assert!(result.diagnostics.is_empty());
         assert_eq!(result.skills.len(), 1);
         assert_eq!(result.skills[0].source_info.scope, scope);
