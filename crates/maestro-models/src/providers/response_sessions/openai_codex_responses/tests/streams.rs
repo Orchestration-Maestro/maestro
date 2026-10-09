@@ -790,3 +790,77 @@ async fn assert_cancelled_retry_wait() {
     );
     assert!(events.next().now_or_never().is_none());
 }
+
+#[test]
+fn maestro_response_sessions_reduce_shared_content() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let bytes = event_bytes(&[
+            serde_json::json!({"type":"response.output_item.added","item":{"type":"reasoning","summary":[]}}),
+            serde_json::json!({"type":"response.reasoning_text.delta","delta":"provisional thinking"}),
+            serde_json::json!({"type":"response.output_item.done","item":{"type":"reasoning","summary":[{"type":"summary_text","text":"final thinking"}]}}),
+            serde_json::json!({"type":"response.output_item.added","item":{"type":"message","content":[{"type":"output_text"}]}}),
+            serde_json::json!({"type":"response.output_text.delta","delta":"provisional text"}),
+            serde_json::json!({"type":"response.output_item.done","item":{"type":"message","id":"msg_final","content":[{"type":"output_text","text":"final text"}]}}),
+            serde_json::json!({"type":"response.output_item.added","item":{"type":"function_call","id":"fc_item","call_id":"call_one","name":"lookup","arguments":""}}),
+            serde_json::json!({"type":"response.function_call_arguments.delta","delta":"{\"lookup\":17}"}),
+            serde_json::json!({"type":"response.output_item.done","item":{"type":"function_call","arguments":"{\"lookup\":99}"}}),
+            serde_json::json!({"type":"response.completed","response":{"id":"r_final","status":"completed","usage":{"input_tokens":100,"output_tokens":20,"total_tokens":120,"input_tokens_details":{"cached_tokens":40}}}}),
+        ]);
+        let (result, output, events) = invoke_body(Box::pin(stream::iter([Ok(bytes)])), None).await;
+        result.unwrap();
+        assert_reduced_content(&output);
+        let mut kinds = Vec::new();
+        while let Some(Some(event)) = events.next().now_or_never() {
+            let (kind, partial) = partial_event(&event);
+            assert!(std::sync::Arc::ptr_eq(partial, &output));
+            kinds.push(kind);
+        }
+        assert_eq!(kinds, ["start", "thinking_start", "thinking_delta", "thinking_end", "text_start", "text_delta", "text_end", "toolcall_start", "toolcall_delta", "toolcall_end"]);
+    });
+}
+
+/// Inspect canonical output after provisional content was replaced and scratch discarded.
+fn assert_reduced_content(output: &crate::SharedAssistantMessage) {
+    let output = output.read().unwrap();
+    let content = serde_json::to_value(&output.content).unwrap();
+    assert_eq!(content[0]["thinking"], "final thinking");
+    assert_eq!(content[1]["text"], "final text");
+    assert_eq!(
+        content[2],
+        serde_json::json!({"type":"toolCall","id":"call_one|fc_item","name":"lookup","arguments":{"lookup":17}})
+    );
+    assert_eq!(output.response_id.as_deref(), Some("r_final"));
+    assert_eq!(output.stop_reason, crate::StopReason::ToolUse);
+    let usage = serde_json::to_value(&output.usage).unwrap();
+    assert_eq!(
+        usage,
+        serde_json::json!({"input":60.0,"output":20.0,"cacheRead":40.0,"cacheWrite":0.0,"totalTokens":120.0,
+        "cost":{"input":0.000_059_999_999_999_999_995,"output":0.000_039_999_999_999_999_996,"cacheRead":0.00012,"cacheWrite":0.0,"total":0.000_219_999_999_999_999_98}})
+    );
+}
+
+/// Borrow each published content event's supplied partial handle.
+fn partial_event(
+    event: &crate::AssistantMessageEvent,
+) -> (&'static str, &crate::SharedAssistantMessage) {
+    use crate::AssistantMessageEvent as Event;
+    match event {
+        Event::Start { partial } => ("start", partial),
+        Event::ThinkingStart { partial, .. } => ("thinking_start", partial),
+        Event::ThinkingDelta { partial, .. } => ("thinking_delta", partial),
+        Event::ThinkingEnd { partial, .. } => ("thinking_end", partial),
+        Event::TextStart { partial, .. } => ("text_start", partial),
+        Event::TextDelta { partial, .. } => ("text_delta", partial),
+        Event::TextEnd { partial, .. } => ("text_end", partial),
+        Event::ToolcallStart { partial, .. } => ("toolcall_start", partial),
+        Event::ToolcallDelta { partial, .. } => ("toolcall_delta", partial),
+        Event::ToolcallEnd { partial, .. } => ("toolcall_end", partial),
+        Event::Done { .. } | Event::Error { .. } => {
+            panic!("internal invocation published a final outcome")
+        }
+    }
+}
