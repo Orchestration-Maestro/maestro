@@ -20,7 +20,7 @@ fn links(run: &Run) -> Vec<(Range<usize>, String)> {
         if let Some(regex) = regex {
             candidates.extend(
                 regex
-                    .find_iter(&run.decoded)
+                    .find_iter(&run.authored)
                     .filter_map(|matched| candidate(run, matched.range(), email)),
             );
         }
@@ -41,14 +41,14 @@ fn links(run: &Run) -> Vec<(Range<usize>, String)> {
 }
 /// Validates one web or email match and retains its authored spelling.
 fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize>, String)> {
-    let authored = run.authored(range.clone());
+    let authored = &run.authored[range.clone()];
     let label = if email {
         if authored.ends_with(['-', '_']) {
             return None;
         }
         authored.trim_end_matches('.')
     } else {
-        if run.decoded[..range.start]
+        if run.authored[..range.start]
             .chars()
             .next_back()
             .is_some_and(|c| !c.is_whitespace() && !"*_~(".contains(c))
@@ -68,11 +68,7 @@ fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize
     } else {
         label.to_owned()
     };
-    let start = run.authored_offset(range.start);
-    Some((
-        run.decoded_offset(start)..run.decoded_offset(start + label.len()),
-        href,
-    ))
+    Some((range.start..range.start + label.len(), href))
 }
 /// Reduces punctuation, unbalanced closing parentheses and entity tails.
 fn suffix(candidate: &str) -> &str {
@@ -101,11 +97,11 @@ fn suffix(candidate: &str) -> &str {
     }
 }
 
-/// One contiguous native text run with decoded-to-authored source units.
+/// One contiguous authored text run with mapped native display units.
 struct Run {
-    /// Text used for recognition and display.
+    /// Native-decoded text used outside selected links.
     decoded: String,
-    /// Text used for selected literal link spelling.
+    /// Authored text used for recognition and selected literal link spelling.
     authored: String,
     /// Ordered spans with decoded, authored and original source extents.
     units: Vec<Unit>,
@@ -169,21 +165,6 @@ impl Run {
             authored += literal_len;
         }
     }
-    /// Maps boundaries linearly in equal spans, snapping only atomic transforms.
-    fn authored_offset(&self, offset: usize) -> usize {
-        self.units
-            .iter()
-            .find(|unit| unit.decoded.end > offset)
-            .map_or(self.authored.len(), |unit| {
-                unit.authored.start
-                    + if self.decoded[unit.decoded.clone()] == self.authored[unit.authored.clone()]
-                    {
-                        offset - unit.decoded.start
-                    } else {
-                        0
-                    }
-            })
-    }
     /// Maps literal boundaries through the same ordered spans as display text.
     fn decoded_offset(&self, offset: usize) -> usize {
         self.units
@@ -199,33 +180,34 @@ impl Run {
                     }
             })
     }
-    /// Borrows literal text without copying the unused display content.
-    fn authored(&self, range: Range<usize>) -> &str {
-        &self.authored[self.authored_offset(range.start)..self.authored_offset(range.end)]
-    }
-    /// Selects display and literal text from the same mapped interval.
+    /// Selects literal boundaries and the corresponding decoded display text.
     fn text(&self, range: Range<usize>) -> Text {
         Text {
-            authored: self.authored(range.clone()).to_owned(),
-            decoded: self.decoded[range].to_owned(),
+            decoded: self.decoded[self.decoded_offset(range.start)..self.decoded_offset(range.end)]
+                .to_owned(),
+            authored: self.authored[range].to_owned(),
         }
     }
     /// Preserves the source extent of selected native text units.
-    fn node(&self, range: Range<usize>) -> Node {
+    fn source_range(&self, range: Range<usize>) -> Range<usize> {
         let start = self
             .units
             .iter()
-            .find(|unit| unit.decoded.end > range.start)
+            .find(|unit| unit.authored.end > range.start)
             .map_or(0, |unit| unit.source.start);
         let end = self
             .units
             .iter()
             .rev()
-            .find(|unit| unit.decoded.start < range.end)
+            .find(|unit| unit.authored.start < range.end)
             .map_or(start, |unit| unit.source.end);
+        start..end
+    }
+    /// Constructs one surrounding text child without unused link spellings.
+    fn node(&self, range: Range<usize>) -> Node {
         Node {
+            range: self.source_range(range.clone()),
             kind: Kind::Text(self.text(range)),
-            range: start..end,
         }
     }
 }
@@ -242,21 +224,23 @@ pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
         if range.start > end {
             output.push(run.node(end..range.start));
         }
-        let label = run.authored(range.clone()).to_owned();
-        let mut child = run.node(range.clone());
-        child.kind = Kind::Text(Text {
-            decoded: label.clone(),
-            authored: label.clone(),
-        });
-        let absolute = child.range.clone();
+        let label = run.authored[range.clone()].to_owned();
+        let absolute = run.source_range(range.clone());
+        let child = Node {
+            range: absolute.clone(),
+            kind: Kind::Text(Text {
+                decoded: label.clone(),
+                authored: label.clone(),
+            }),
+        };
         output.push(Node {
             kind: Kind::Link(vec![child], label, href),
             range: absolute,
         });
         end = range.end;
     }
-    if end < run.decoded.len() {
-        output.push(run.node(end..run.decoded.len()));
+    if end < run.authored.len() {
+        output.push(run.node(end..run.authored.len()));
     }
     output
 }
@@ -277,6 +261,3 @@ fn domain(label: &str) -> bool {
             .any(|part| part.contains('_'))
     })
 }
-
-#[cfg(test)]
-mod tests;

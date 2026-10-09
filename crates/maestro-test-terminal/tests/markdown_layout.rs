@@ -570,7 +570,7 @@ fn markdown_www_requires_a_period_after_the_prefix() {
 }
 
 #[test]
-fn markdown_quote_continuation_autolinks_use_decoded_text() {
+fn markdown_quote_continuation_autolinks_exclude_container_prefix() {
     let terminal = TerminalImage::new(|_| None, || 1);
     let mut capabilities = terminal.get_capabilities();
     capabilities.hyperlinks = true;
@@ -779,4 +779,22 @@ fn assert_mixed_escape_link(input: &str, expected: &str) {
     let rows = component.render(80);
     assert_eq!(rows.len(), 1, "{input}");
     assert_eq!(rows[0].trim_end(), expected, "{input}");
+}
+
+#[test]
+fn markdown_autolinks_keep_internal_authored_entities() {
+    for target in ["https://example.com/a&lt;b", "https://example.com/a&nbsp;b"] {
+        assert_mixed_escape_link(target, &maestro_tui::hyperlink(target, target));
+    }
+}
+
+#[test]
+fn markdown_autolinks_do_not_recognize_decoded_email_separators() {
+    for (input, display) in [
+        ("a&#64;example.com", "a@example.com"),
+        (r"a\@example.com", "a@example.com"),
+        ("user&commat;example.com", "user@example.com"),
+    ] {
+        assert_mixed_escape_link(input, display);
+    }
 }
