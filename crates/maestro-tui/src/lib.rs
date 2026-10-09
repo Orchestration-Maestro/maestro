@@ -3,6 +3,7 @@
 pub mod autocomplete;
 pub mod components;
 pub mod editor_component;
+pub mod fuzzy;
 pub mod images;
 pub mod keybindings;
 pub mod keys;
@@ -14,7 +15,8 @@ pub mod tui;
 pub mod undo_stack;
 
 pub use autocomplete::{
-    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, SlashCommand,
+    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
+    SlashCommand,
 };
 pub use components::{
     Box, Image, ImageOptions, ImageTheme, Input, Loader, LoaderIndicatorOptions, Spacer, Text,
@@ -50,3 +52,5 @@ pub use keybindings::{
     Keybinding, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
     KeybindingsConfig, KeybindingsManager, TUI_KEYBINDINGS, get_keybindings, set_keybindings,
 };
+
+pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};

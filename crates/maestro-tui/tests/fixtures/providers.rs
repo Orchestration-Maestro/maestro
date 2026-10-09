@@ -4,7 +4,9 @@ use std::cell::{Cell, RefCell};
 use std::future::Future;
 use std::pin::Pin;
 
-use maestro_tui::autocomplete::{CompletionOptions, CompletionResult, CursorPosition};
+use maestro_tui::autocomplete::{
+    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
+};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions};
 
 use super::futures::YieldOnce;
@@ -29,11 +31,12 @@ impl AutocompleteProvider for CommandProvider {
         lines: &'a [String],
         cursor: CursorPosition,
         options: CompletionOptions<'a, Self::Signal>,
-    ) -> Pin<Box<dyn Future<Output = Option<AutocompleteSuggestions>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AutocompleteSuggestions>, CompletionError>> + 'a>>
+    {
         Box::pin(async move {
             YieldOnce(false).await;
             if options.signal.get() {
-                return None;
+                return Ok(None);
             }
             let before = &lines[cursor.line][..cursor.col];
             let prefix = before.rsplit(' ').next().unwrap_or_default();
@@ -45,10 +48,10 @@ impl AutocompleteProvider for CommandProvider {
             if options.force == Some(true) {
                 items.push(item("/forced"));
             }
-            Some(AutocompleteSuggestions {
+            Ok(Some(AutocompleteSuggestions {
                 items,
                 prefix: prefix.to_owned(),
-            })
+            }))
         })
     }
 
@@ -90,10 +93,11 @@ impl AutocompleteProvider for CountingProvider {
         lines: &'a [String],
         _cursor: CursorPosition,
         options: CompletionOptions<'a, Self::Signal>,
-    ) -> Pin<Box<dyn Future<Output = Option<AutocompleteSuggestions>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AutocompleteSuggestions>, CompletionError>> + 'a>>
+    {
         Box::pin(async move {
             options.signal.borrow_mut().push_str("seen;");
-            match lines.first().map(String::as_str) {
+            Ok(match lines.first().map(String::as_str) {
                 Some("") | None => None,
                 Some("none") => Some(AutocompleteSuggestions {
                     items: Vec::new(),
@@ -103,7 +107,7 @@ impl AutocompleteProvider for CountingProvider {
                     items: vec![item(text)],
                     prefix: text.into(),
                 }),
-            }
+            })
         })
     }
 
