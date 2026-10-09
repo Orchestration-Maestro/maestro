@@ -114,6 +114,8 @@ duplicate keys, spacing, exponents and any nesting depth reach the handler as au
 replacement `null` is text and differs from returning no result; `details` text `null` differs
 from `details` null.
 
+The event's `type` tag must be a JSON string, not a single-property object.
+
 The export decodes the document before it enters the handler. The event, the `preparation` and
 each element of `images` are read from JSON objects only; a positional array is refused. Malformed
 JSON, a record that is not an object, an unknown `type` or word, a missing required property, a

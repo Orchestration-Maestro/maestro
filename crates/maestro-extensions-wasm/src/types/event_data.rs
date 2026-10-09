@@ -14,7 +14,7 @@ use super::object;
 
 /// The `type` tag of an event document.
 #[derive(Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(variant_identifier, rename_all = "snake_case")]
 enum Kind {
     /// Resources are being discovered.
     ResourcesDiscover,

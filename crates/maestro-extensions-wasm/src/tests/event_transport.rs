@@ -311,6 +311,10 @@ fn wrong_properties() -> Vec<Refusal> {
             at(&document(kind), word, Some(json!("unknown"))),
         );
     }
+    add(
+        "an object-valued kind".to_owned(),
+        json!({ "type": { "input": null }, "text": "x", "source": "rpc" }),
+    );
     found
 }
 
