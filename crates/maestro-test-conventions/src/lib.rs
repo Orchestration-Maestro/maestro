@@ -28,6 +28,12 @@ mod source;
 /// for metadata. Emits no output. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
 ///
+/// The canonical workspace `serde_json` entry must name `serde_json` and explicitly
+/// enable `float_roundtrip`. Normal member declarations, including aliases, targets
+/// and optional entries, must inherit an entry enabling it. Dev/build declarations
+/// are outside member inheritance enforcement and cannot supply the required
+/// workspace feature; test feature unification can hide missing normal precision.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.

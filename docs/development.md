@@ -19,6 +19,13 @@ formats, runs Clippy, builds strict public documentation and verifies workspace
 conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`, `build`
 and `check`; it never publishes. `clean` removes Cargo outputs, not source files.
 
+The conventions check requires `workspace.dependencies.serde_json` to name
+`serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
+including aliases, targets and optional entries, must inherit a workspace entry
+that enables it. Dev/build declarations are outside member inheritance enforcement
+and do not supply the required workspace feature; test feature unification can
+otherwise hide missing normal precision.
+
 ## Extension components
 
 ```sh
