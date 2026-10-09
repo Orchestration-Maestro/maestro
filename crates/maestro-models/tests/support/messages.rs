@@ -257,6 +257,16 @@ pub struct Feed {
     pub chunks: mpsc::UnboundedSender<Vec<u8>>,
     /// Resolves when the reader drops the body.
     pub released: oneshot::Receiver<()>,
+    /// Receives one signal each time the reader starts a read with no chunk waiting.
+    waiting: mpsc::UnboundedReceiver<()>,
+}
+
+impl Feed {
+    /// Wait until the reader is blocked on a read of the body, with no chunk queued for it.
+    pub async fn read_pending(&mut self) -> TestResult {
+        self.waiting.recv().await.ok_or("the body was dropped")?;
+        Ok(())
+    }
 }
 
 /// Tells the test that the reader dropped the body.
@@ -274,14 +284,28 @@ impl Drop for Release {
 pub fn feed() -> (Feed, HttpBody) {
     let (chunks, receiver) = mpsc::unbounded_channel();
     let (release, released) = oneshot::channel();
+    let (waiting_sender, waiting) = mpsc::unbounded_channel();
     let body = futures_util::stream::unfold(
         (receiver, Release(Some(release))),
-        |(mut receiver, release)| async move {
-            let chunk = receiver.recv().await?;
-            Some((Ok(chunk), (receiver, release)))
+        move |(mut receiver, release)| {
+            let waiting = waiting_sender.clone();
+            async move {
+                if receiver.is_empty() {
+                    waiting.send(()).ok();
+                }
+                let chunk = receiver.recv().await?;
+                Some((Ok(chunk), (receiver, release)))
+            }
         },
     );
-    (Feed { chunks, released }, Box::pin(body))
+    (
+        Feed {
+            chunks,
+            released,
+            waiting,
+        },
+        Box::pin(body),
+    )
 }
 
 /// A client that answers once with a successful response holding `body`.

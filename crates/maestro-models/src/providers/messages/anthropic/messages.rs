@@ -284,8 +284,9 @@ fn assistant_message(assistant: &AssistantMessage) -> Option<WireMessage> {
     })
 }
 
-/// Convert one block of an assistant turn. Blank text and reasoning are dropped; reasoning
-/// without a signature becomes plain text; redacted reasoning keeps its opaque payload.
+/// Convert one block of an assistant turn. Blank text and blank unredacted reasoning are
+/// dropped; unredacted reasoning without a nonblank signature becomes plain text; redacted
+/// reasoning is kept whatever its text, with its opaque payload.
 fn assistant_block(block: &AssistantContent) -> Option<Block> {
     match block {
         AssistantContent::Text(text) => has_text(&text.text).then(|| Block::text(&text.text)),

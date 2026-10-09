@@ -642,12 +642,13 @@ async fn preaborted_signal_ends_before_reading() -> TestResult {
 /// stop, ends the call with usage and content kept.
 async fn pending_injected_read_still_contributes(rest: &[Value]) -> TestResult {
     let signal = Cancellation::new();
-    let (stream, feed) = start_fed(Some(signal.clone()))?;
+    let (stream, mut feed) = start_fed(Some(signal.clone()))?;
     feed_events(&feed, &[message_start(), text_start()])?;
     next_matching(&stream, |event| {
         matches!(event, AssistantMessageEvent::TextStart { .. })
     })
     .await?;
+    within(feed.read_pending()).await??;
     signal.abort();
     feed_events(&feed, rest)?;
     let (kinds, message) = drain(&stream).await?;
@@ -690,7 +691,7 @@ fn transport_options(
 /// call ends it during setup with the sender's own text.
 async fn transport_cancellation_covers_setup_and_body() -> TestResult {
     let signal = Cancellation::new();
-    let (feed, body) = messages::feed();
+    let (mut feed, body) = messages::feed();
     let options = transport_options(signal.clone(), Some(body))?;
     let stream = stream_anthropic(
         messages::model(&json!({}))?,
@@ -701,6 +702,7 @@ async fn transport_cancellation_covers_setup_and_body() -> TestResult {
         matches!(event, AssistantMessageEvent::Start { .. })
     })
     .await?;
+    within(feed.read_pending()).await??;
     signal.abort();
     let (kinds, message) = drain(&stream).await?;
     assert_eq!(kinds, ["error"]);

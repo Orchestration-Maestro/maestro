@@ -97,7 +97,9 @@ pub(super) fn status_failure(status: u16, body: &str) -> RequestFailure {
 }
 
 /// Describe a non-success HTTP response by its whole parsed body: the body's own `message`
-/// when it holds one, otherwise the body as compact JSON, otherwise the body text.
+/// when it is truthy, otherwise the body as compact JSON; a body that is not JSON, or is `null`,
+/// `false`, zero or an empty JSON string, is described by its text, or as bodiless when that is
+/// empty.
 pub(crate) fn envelope_failure(status: u16, body: &str) -> RequestFailure {
     let parsed = raw_json(body).ok().filter(|parsed| is_truthy(parsed));
     match parsed {

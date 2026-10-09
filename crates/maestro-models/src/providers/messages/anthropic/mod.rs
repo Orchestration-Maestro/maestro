@@ -73,10 +73,11 @@ pub type AnthropicClient = Arc<
 /// returned stream is dropped.
 ///
 /// Every failure the call detects, including a missing key, ends the stream with an error
-/// update. On native targets the call must run inside a Tokio runtime with the time driver
-/// enabled, and with the I/O driver when the default HTTP client is used. A runtime without a
-/// driver the request needs is not detected: Tokio panics inside the request work and the
-/// stream never ends.
+/// update. On native targets the call must run inside a Tokio runtime. A request through the
+/// shared HTTP sender needs its time driver, and the default HTTP client its I/O driver; an
+/// injected client reads the body without timers and needs neither. A runtime without a driver
+/// the request needs is not detected: Tokio panics inside the request work and the stream never
+/// ends.
 #[must_use]
 pub fn stream_anthropic(
     model: Model,

@@ -26,13 +26,15 @@ mod messages;
 #[path = "support/transport.rs"]
 mod transport;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use chat::{TestResult, block_on};
 use child_process::child_case;
+use futures_util::FutureExt;
 use maestro_models::{
-    AnthropicClient, AnthropicOptions, AnthropicRequestOptions, Cancellation, HttpResponse,
-    OnPayload, OnResponse, stream_anthropic,
+    AnthropicClient, AnthropicOptions, AnthropicRequestOptions, AssistantMessageEvent,
+    AssistantMessageEventStream, Cancellation, HttpResponse, OnPayload, OnResponse,
+    stream_anthropic,
 };
 use serde_json::{Value, json};
 use transport::{Attempt, transport};
@@ -268,13 +270,40 @@ fn messages_keep_auth_failure_in_stream() -> TestResult {
     Ok(())
 }
 
-/// Labels of what happened, in order.
-type Order = Arc<Mutex<Vec<String>>>;
+/// Labels of what happened, in order, and the call whose updates a callback can already see.
+#[derive(Default)]
+struct Steps {
+    /// The labels so far.
+    labels: Mutex<Vec<String>>,
+    /// The stream of the call under test, set before the call can run.
+    stream: OnceLock<AssistantMessageEventStream>,
+}
 
-/// Record a step.
-fn note(order: &Order, label: impl Into<String>) {
-    if let Ok(mut steps) = order.lock() {
-        steps.push(label.into());
+/// The steps of one call, shared with its callbacks.
+type Order = Arc<Steps>;
+
+/// The kind of an update, as its serialized `type`.
+fn kind_of(event: &AssistantMessageEvent) -> String {
+    serde_json::to_value(event)
+        .ok()
+        .and_then(|value| value["type"].as_str().map(str::to_owned))
+        .unwrap_or_default()
+}
+
+impl Steps {
+    /// Record a step, preceded by the kind of every update the call had announced by then.
+    fn note(&self, label: impl Into<String>) {
+        let announced: Vec<String> = self
+            .stream
+            .get()
+            .into_iter()
+            .flat_map(|stream| std::iter::from_fn(move || stream.next().now_or_never().flatten()))
+            .map(|event| kind_of(&event))
+            .collect();
+        if let Ok(mut labels) = self.labels.lock() {
+            labels.extend(announced);
+            labels.push(label.into());
+        }
     }
 }
 
@@ -307,7 +336,7 @@ struct Hooked {
 fn answering_client(order: &Order, sent: &Arc<Mutex<Option<Value>>>) -> AnthropicClient {
     let (order, sent) = (Arc::clone(order), Arc::clone(sent));
     Arc::new(move |payload, _| {
-        note(&order, "client");
+        order.note("client");
         if let Ok(mut kept) = sent.lock() {
             *kept = Some(payload);
         }
@@ -323,7 +352,7 @@ fn answering_client(order: &Order, sent: &Arc<Mutex<Option<Value>>>) -> Anthropi
 fn payload_hook(order: &Order, action: Payload) -> OnPayload {
     let order = Arc::clone(order);
     Arc::new(move |mut payload, _| {
-        note(&order, "payload");
+        order.note("payload");
         let outcome = match &action {
             Payload::Keep => Ok(payload),
             Payload::Edit => {
@@ -347,7 +376,7 @@ fn response_hook(order: &Order, failure: Option<&'static str>) -> OnResponse {
             .get("x-custom")
             .cloned()
             .unwrap_or_default();
-        note(&order, format!("onResponse:{}:{custom}", response.status));
+        order.note(format!("onResponse:{}:{custom}", response.status));
         Box::pin(std::future::ready(match failure {
             Some(message) => Err(messages::diagnostic(message)),
             None => Ok(()),
@@ -371,11 +400,20 @@ async fn hooked_call(
     let model = messages::model(&json!({"baseUrl": "not a URL"}))?;
     let context = messages::context(&json!({"messages": []}))?;
     let stream = stream_anthropic(model, context, Some(options));
+    order
+        .stream
+        .set(stream.clone())
+        .map_err(|_| "the call is observed once")?;
+    stream.result().await;
     let (events, result) = messages::collect(&stream).await?;
     for event in &events {
-        note(&order, event["type"].as_str().unwrap_or_default());
+        order.note(event["type"].as_str().unwrap_or_default());
     }
-    let order = order.lock().map_err(|error| error.to_string())?.clone();
+    let order = order
+        .labels
+        .lock()
+        .map_err(|error| error.to_string())?
+        .clone();
     let sent = sent.lock().map_err(|error| error.to_string())?.clone();
     Ok(Hooked {
         order,
@@ -486,6 +524,16 @@ async fn injected_call(
 
 #[test]
 fn messages_inject_client_without_auth() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .build()?
+        .block_on(async {
+            let (_, result) = injected_call(|_| {}).await?;
+            assert_eq!(
+                result["stopReason"], "stop",
+                "an injected client needs neither the time nor the I/O driver"
+            );
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })?;
     block_on(false, async {
         let (calls, result) = injected_call(|_| {}).await?;
         assert_eq!(
