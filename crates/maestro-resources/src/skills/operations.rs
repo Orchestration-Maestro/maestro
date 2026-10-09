@@ -94,7 +94,7 @@ pub trait ResourceOperations {
 /// supplies fails with the failure's kind; one the operands anchor, or that a
 /// drive directory completes, does not depend on it. A caller's working
 /// directory is an operand of each resolution.
-pub(super) struct ProcessContext<'a> {
+pub(crate) struct ProcessContext<'a> {
     /// The adapter observed on first need.
     operations: &'a dyn ResourceOperations,
     /// The working directory, or the kind of the error that reading it returned.
@@ -105,7 +105,7 @@ pub(super) struct ProcessContext<'a> {
 
 impl<'a> ProcessContext<'a> {
     /// A context that has not yet asked `operations` for anything.
-    pub(super) fn new(operations: &'a dyn ResourceOperations) -> Self {
+    pub(crate) fn new(operations: &'a dyn ResourceOperations) -> Self {
         Self {
             operations,
             current: OnceCell::new(),
@@ -137,7 +137,7 @@ impl<'a> ProcessContext<'a> {
     ///
     /// # Errors
     /// Returns the kind of the working directory's error when it was needed and unreadable.
-    pub(super) fn resolve(&self, paths: &[&str]) -> io::Result<String> {
+    pub(crate) fn resolve(&self, paths: &[&str]) -> io::Result<String> {
         try_resolve(paths, &[]).or_else(|_| {
             self.observe(|current, drives| match current {
                 Ok(current) => Ok(resolve(
