@@ -24,10 +24,10 @@ omission, explicit null and named values. Pricing uses the echoed tier unless
 it is absent or null, then the requested tier. Flex scales cost by 0.5; priority
 uses 2.5 for exactly `gpt-5.5` and 2 for other models.
 
-Payload hooks may replace the request with any JSON value; the endpoint receives
-that value unchanged. Response hooks complete before Start and streamed body
-processing. If a payload hook disables streaming, the response body is consumed
-before the response hook;
+Payload hooks may replace the request with any non-null JSON value; the endpoint
+receives that value unchanged. A null replacement fails before transport.
+Response hooks complete before Start and streamed body processing. If a payload
+hook disables streaming, the response body is consumed before the response hook;
 a non-event response cannot feed the event reducer.
 Transport, metadata and maximum retry-delay preferences are unused here. The
 endpoint uses the shared [HTTP transport](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport)

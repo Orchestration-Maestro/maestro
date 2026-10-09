@@ -175,7 +175,7 @@ fn responses_errors_do_not_append_chat_metadata() -> chat::TestResult {
 fn responses_edited_stream_controls_processing_and_failure_order() -> chat::TestResult {
     chat::block_on(false, async {
         let null = endpoint::run_case(&serde_json::json!({"hook":"null"})).await?;
-        assert_eq!(null["requests"][0]["body"], serde_json::Value::Null);
+        assert_eq!(null["requests"], serde_json::json!([]));
         assert_eq!(null["hooks"], serde_json::json!(["payload"]));
         assert_eq!(
             null["events"],
