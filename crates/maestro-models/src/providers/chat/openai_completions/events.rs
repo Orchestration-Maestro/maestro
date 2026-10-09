@@ -3,16 +3,14 @@
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
-use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::chunk::{Chunk, Delta, RawUsage, StreamIndex, ToolCallDelta};
 use super::usage::parse_usage;
-use crate::providers::json_text::{compact_raw, is_truthy, member};
+use crate::providers::json_text::{compact_raw, is_truthy, member, parsed_arguments};
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
     JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall,
-    parse_streaming_json,
 };
 
 /// Parse state of one content block that is not part of the message itself.
@@ -402,13 +400,5 @@ fn complete_tool(
     }
     if let Some(arguments) = arguments {
         tool.arguments = arguments;
-    }
-}
-
-/// Parse streamed argument text into an object; anything else becomes empty.
-pub(super) fn parsed_arguments(partial: &str) -> JsonObject {
-    match parse_streaming_json(Some(partial)) {
-        Value::Object(arguments) => arguments,
-        _ => JsonObject::new(),
     }
 }

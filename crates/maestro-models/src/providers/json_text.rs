@@ -9,6 +9,8 @@ use serde::{Deserialize, Deserializer};
 use serde_json::value::RawValue;
 use serde_json::{Map, Number, Value};
 
+use crate::{JsonObject, parse_streaming_json};
+
 /// Serialize without whitespace, keys in canonical order, numbers as ECMAScript prints them.
 ///
 /// Keys that are canonical array indices come first in ascending numeric order, then
@@ -163,6 +165,19 @@ where
     T: DeserializeOwned,
 {
     try_object_record(<&RawValue>::deserialize(deserializer)?).map_err(D::Error::custom)
+}
+
+/// Parse streamed argument text into the object of a tool call; any other value becomes empty.
+pub(crate) fn parsed_arguments(partial: &str) -> JsonObject {
+    match parse_streaming_json(Some(partial)) {
+        Value::Object(arguments) => arguments,
+        _ => JsonObject::new(),
+    }
+}
+
+/// A reported count where an absent or zero report means zero; negative zero becomes zero.
+pub(crate) fn or_zero(count: Option<f64>) -> f64 {
+    count.filter(|count| *count != 0.0).unwrap_or(0.0)
 }
 
 /// The value of an object member, the last one when the name repeats; `None` when `raw` is not
