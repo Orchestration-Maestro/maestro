@@ -324,6 +324,17 @@ pub fn client_for(body: HttpBody) -> AnthropicClient {
     })
 }
 
+/// A client that answers with the given status and a body that only ends the stream.
+pub fn status_client(status: u16) -> AnthropicClient {
+    Arc::new(move |_, _| {
+        Box::pin(std::future::ready(Ok(HttpResponse {
+            status,
+            headers: BTreeMap::new(),
+            body: body(&[Chunk::Text(STOP.to_owned())]),
+        })))
+    })
+}
+
 /// A failure that carries `message` as an error of the given name.
 pub fn diagnostic(message: &str) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {

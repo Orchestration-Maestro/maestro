@@ -33,7 +33,7 @@ use child_process::child_case;
 use futures_util::FutureExt;
 use maestro_models::{
     AnthropicClient, AnthropicOptions, AnthropicRequestOptions, AssistantMessageEvent,
-    AssistantMessageEventStream, Cancellation, HttpResponse, OnPayload, OnResponse,
+    AssistantMessageEventStream, Cancellation, HttpResponse, Model, OnPayload, OnResponse,
     stream_anthropic,
 };
 use serde_json::{Value, json};
@@ -208,12 +208,47 @@ fn messages_project_tool_schemas() -> TestResult {
     )
 }
 
+/// The payload members follow one order in the body text.
+async fn payload_members_are_written_in_order() -> TestResult {
+    let case = messages::Case {
+        context: json!({
+            "systemPrompt": "system",
+            "messages": [{"role": "user", "content": "ask"}],
+            "tools": [{"name": "lookup", "description": "Find", "parameters": {}}]
+        }),
+        options: json!({"temperature": 0, "metadata": {"user_id": "id"}, "toolChoice": "auto"}),
+        ..messages::Case::default()
+    };
+    let run = messages::run_case(&case).await?;
+    let text = run.requests[0]["text"].as_str().ok_or("body text")?;
+    let body: serde_json::Map<String, Value> = serde_json::from_str(text)?;
+    let order: Vec<&str> = body.keys().map(String::as_str).collect();
+    assert_eq!(
+        order,
+        [
+            "model",
+            "messages",
+            "max_tokens",
+            "stream",
+            "system",
+            "temperature",
+            "tools",
+            "metadata",
+            "tool_choice"
+        ]
+    );
+    Ok(())
+}
+
 #[test]
 fn messages_apply_metadata_and_tool_choice() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_apply_metadata_and_tool_choice"),
-    )
+    block_on(false, async {
+        messages::assert_rows(FIXTURE, "messages_apply_metadata_and_tool_choice").await?;
+        if child_case().as_deref() == Some("*") {
+            payload_members_are_written_in_order().await?;
+        }
+        Ok(())
+    })
 }
 
 #[test]
@@ -258,12 +293,50 @@ fn call_outside_a_runtime_ends_in_error() -> TestResult {
     Ok(())
 }
 
+/// The payload hook runs before the authentication check that fails the call, and no request is
+/// sent.
+async fn payload_hook_precedes_authentication_failure() -> TestResult {
+    let order = Order::default();
+    let case = messages::Case {
+        options: json!({"apiKey": ""}),
+        ..messages::Case::default()
+    };
+    let requests = messages::Requests::default();
+    let mut options = messages::options(&case)?;
+    options.common.fetch = Some(messages::scripted_fetch(&case, &requests));
+    options.common.on_payload = Some(payload_hook(&order, Payload::Keep));
+    let stream = stream_anthropic(
+        messages::model(&json!({}))?,
+        messages::context(&Value::Null)?,
+        Some(options),
+    );
+    let (_, result) = messages::collect(&stream).await?;
+    let labels = order.labels.lock().map_err(|error| error.to_string())?;
+    assert_eq!(*labels, ["payload"]);
+    assert!(
+        result["errorMessage"]
+            .as_str()
+            .is_some_and(|text| text.starts_with("Could not resolve authentication method")),
+        "{result}"
+    );
+    assert!(
+        requests
+            .lock()
+            .map_err(|error| error.to_string())?
+            .is_empty()
+    );
+    Ok(())
+}
+
 #[test]
 fn messages_keep_auth_failure_in_stream() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_keep_auth_failure_in_stream"),
-    )?;
+    block_on(false, async {
+        messages::assert_rows(FIXTURE, "messages_keep_auth_failure_in_stream").await?;
+        if child_case().as_deref() == Some("*") {
+            payload_hook_precedes_authentication_failure().await?;
+        }
+        Ok(())
+    })?;
     if child_case().is_none() {
         call_outside_a_runtime_ends_in_error()?;
     }
@@ -277,6 +350,8 @@ struct Steps {
     labels: Mutex<Vec<String>>,
     /// The stream of the call under test, set before the call can run.
     stream: OnceLock<AssistantMessageEventStream>,
+    /// The models the hooks received.
+    models: Mutex<Vec<Arc<Model>>>,
 }
 
 /// The steps of one call, shared with its callbacks.
@@ -326,6 +401,8 @@ enum Payload {
 struct Hooked {
     /// Hook, client and update labels in the order they happened.
     order: Vec<String>,
+    /// The models the payload and response hooks received.
+    models: Vec<Arc<Model>>,
     /// The payload the client received, if it was called.
     sent: Option<Value>,
     /// The final message without its timestamp.
@@ -348,11 +425,19 @@ fn answering_client(order: &Order, sent: &Arc<Mutex<Option<Value>>>) -> Anthropi
     })
 }
 
+/// Keep the model a hook received.
+fn keep_model(order: &Order, model: Arc<Model>) {
+    if let Ok(mut models) = order.models.lock() {
+        models.push(model);
+    }
+}
+
 /// A payload hook that notes its call and applies `action`.
 fn payload_hook(order: &Order, action: Payload) -> OnPayload {
     let order = Arc::clone(order);
-    Arc::new(move |mut payload, _| {
+    Arc::new(move |mut payload, model| {
         order.note("payload");
+        keep_model(&order, model);
         let outcome = match &action {
             Payload::Keep => Ok(payload),
             Payload::Edit => {
@@ -370,7 +455,8 @@ fn payload_hook(order: &Order, action: Payload) -> OnPayload {
 /// A response hook that notes the status and a header it saw and may fail.
 fn response_hook(order: &Order, failure: Option<&'static str>) -> OnResponse {
     let order = Arc::clone(order);
-    Arc::new(move |response, _| {
+    Arc::new(move |response, model| {
+        keep_model(&order, model);
         let custom = response
             .headers
             .get("x-custom")
@@ -409,6 +495,11 @@ async fn hooked_call(
     for event in &events {
         order.note(event["type"].as_str().unwrap_or_default());
     }
+    let models = order
+        .models
+        .lock()
+        .map_err(|error| error.to_string())?
+        .clone();
     let order = order
         .labels
         .lock()
@@ -417,6 +508,7 @@ async fn hooked_call(
     let sent = sent.lock().map_err(|error| error.to_string())?.clone();
     Ok(Hooked {
         order,
+        models,
         sent,
         result,
     })
@@ -451,6 +543,10 @@ fn messages_keep_callback_order_and_replacement() -> TestResult {
         for (action, expected) in cases {
             let call = hooked_call(action, None).await?;
             assert_eq!(call.order, steps);
+            assert!(
+                matches!(&call.models[..], [first, second] if Arc::ptr_eq(first, second) && first.id == "claude-sonnet-4-5"),
+                "both hooks receive the one model of the request"
+            );
             assert_eq!(
                 call.sent.map(json::canonical),
                 Some(json::canonical(expected))
@@ -522,18 +618,41 @@ async fn injected_call(
     Ok((calls, result))
 }
 
-#[test]
-fn messages_inject_client_without_auth() -> TestResult {
+/// An injected client needs neither the time nor the I/O driver of the runtime.
+fn injected_call_runs_without_drivers() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .build()?
         .block_on(async {
             let (_, result) = injected_call(|_| {}).await?;
-            assert_eq!(
-                result["stopReason"], "stop",
-                "an injected client needs neither the time nor the I/O driver"
-            );
-            Ok::<(), Box<dyn std::error::Error>>(())
-        })?;
+            assert_eq!(result["stopReason"], "stop");
+            Ok(())
+        })
+}
+
+/// A client's response is read as an event stream whatever its status, and a failure it reports
+/// ends the call with its message as it is.
+async fn client_owns_status_and_failures() -> TestResult {
+    for status in [201, 404, 500] {
+        let (_, result) = injected_call(|options| {
+            options.client = Some(messages::status_client(status));
+        })
+        .await?;
+        assert_eq!(result["stopReason"], "stop", "status {status}");
+    }
+    for message in ["", "retained detail"] {
+        let (_, result) = injected_call(|options| {
+            options.client = Some(messages::failing_client(message));
+        })
+        .await?;
+        assert_eq!(result["errorMessage"], message);
+        assert_eq!(result["stopReason"], "error");
+    }
+    Ok(())
+}
+
+#[test]
+fn messages_inject_client_without_auth() -> TestResult {
+    injected_call_runs_without_drivers()?;
     block_on(false, async {
         let (calls, result) = injected_call(|_| {}).await?;
         assert_eq!(
@@ -565,15 +684,7 @@ fn messages_inject_client_without_auth() -> TestResult {
             assert_eq!(settings.max_retries, value);
             assert_eq!(settings.signal.is_some(), value.is_some());
         }
-        for message in ["", "retained detail"] {
-            let (_, result) = injected_call(|options| {
-                options.client = Some(messages::failing_client(message));
-            })
-            .await?;
-            assert_eq!(result["errorMessage"], message);
-            assert_eq!(result["stopReason"], "error");
-        }
-        Ok(())
+        client_owns_status_and_failures().await
     })
 }
 
