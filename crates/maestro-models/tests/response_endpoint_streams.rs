@@ -36,6 +36,16 @@ fn responses_price_echoed_tier_before_requested_tier() -> chat::TestResult {
 fn responses_run_hooks_before_body_and_propagate_failures() -> chat::TestResult {
     chat::block_on(false, async {
         endpoint::assert_rows("responses_run_hooks_before_body_and_propagate_failures").await?;
+        for entry in ["raw", "simple"] {
+            let replacement =
+                endpoint::run_case(&serde_json::json!({"entry":entry,"hook":"replace"})).await?;
+            assert_eq!(
+                replacement["requests"][0]["body"],
+                serde_json::json!({"stream":true,"marker":"replacement"})
+            );
+            assert!(replacement["requests"][0]["body"].get("model").is_none());
+            assert!(replacement["requests"][0]["body"].get("input").is_none());
+        }
         let failed =
             endpoint::run_case(&serde_json::json!({"hook":"response_failure","cancel":"response"}))
                 .await?;
@@ -165,7 +175,7 @@ fn responses_errors_do_not_append_chat_metadata() -> chat::TestResult {
 fn responses_edited_stream_controls_processing_and_failure_order() -> chat::TestResult {
     chat::block_on(false, async {
         let null = endpoint::run_case(&serde_json::json!({"hook":"null"})).await?;
-        assert_eq!(null["requests"], serde_json::json!([]));
+        assert_eq!(null["requests"][0]["body"], serde_json::Value::Null);
         assert_eq!(null["hooks"], serde_json::json!(["payload"]));
         assert_eq!(
             null["events"],
@@ -261,4 +271,64 @@ async fn error_message(status: u16, error: &str) -> chat::TestResult<String> {
         .as_str()
         .ok_or("error")?
         .to_owned())
+}
+
+#[test]
+fn responses_forward_array_payload_unchanged() -> chat::TestResult {
+    chat::block_on(false, async {
+        let actual = endpoint::run_case(&serde_json::json!({"hook":"array","status":400,"body":"{\"error\":{\"message\":\"array rejected\"}}"})).await?;
+        assert_eq!(
+            actual["requests"][0]["body"],
+            serde_json::json!(["replacement", {"retained":true}])
+        );
+        assert_eq!(actual["result"]["errorMessage"], "400 array rejected");
+        Ok(())
+    })
+}
+
+#[test]
+fn responses_keep_body_failure_text_when_aborted() -> chat::TestResult {
+    chat::block_on(false, async {
+        for entry in ["raw", "simple"] {
+            let actual =
+                endpoint::run_case(&serde_json::json!({"entry":entry,"cancel":"body_failure"}))
+                    .await?;
+            assert_eq!(actual["result"]["stopReason"], "aborted");
+            assert_eq!(actual["result"]["errorMessage"], "body failed");
+            assert_eq!(
+                actual["events"],
+                serde_json::json!([{"type":"start"},{"type":"error","reason":"aborted"}])
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn responses_trim_media_type_with_script_whitespace() -> chat::TestResult {
+    chat::block_on(false, async {
+        for (content_type, response_hook) in [
+            ("application/example+json\u{0085}", false),
+            ("\u{feff}application/example+json\u{feff}", true),
+        ] {
+            let actual = endpoint::run_case(&serde_json::json!({
+                "hook":"nonstream","contentType":content_type,"body":"{}"
+            }))
+            .await?;
+            if response_hook {
+                assert_eq!(actual["hooks"][1][0], "response");
+            } else {
+                assert_eq!(actual["hooks"], serde_json::json!(["payload"]));
+                assert_eq!(
+                    actual["result"]["errorMessage"],
+                    "Response body is not an object"
+                );
+                assert_eq!(
+                    actual["events"],
+                    serde_json::json!([{"type":"error","reason":"error"}])
+                );
+            }
+        }
+        Ok(())
+    })
 }

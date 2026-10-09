@@ -342,10 +342,7 @@ impl Request<'_> {
         if let Some(hook) = &self.options.common.on_payload {
             payload = hook(payload, Arc::clone(self.model)).await?;
         }
-        let payload_object = payload
-            .as_object()
-            .ok_or_else(|| RequestFailure::new("Response payload must be an object"))?;
-        let streaming = payload_object.get("stream").is_some_and(source::streaming);
+        let streaming = payload.get("stream").is_some_and(source::streaming);
         let request = HttpRequest {
             method: "POST".to_owned(),
             url: endpoint_url(&base_url, "/responses")?,

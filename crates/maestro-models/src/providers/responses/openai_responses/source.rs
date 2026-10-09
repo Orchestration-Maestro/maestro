@@ -1,12 +1,13 @@
 //! Endpoint response preparation and event framing.
 
 use super::diagnostic;
+use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{
     HttpBody, HttpResponse, Raced, RequestFailure, ServerSentEvent, SseMessages, decode_utf8, race,
     sdk_stream_failure,
 };
 use crate::providers::json_text::{is_truthy, member, raw_json};
-use crate::{Cancellation, DiagnosticErrorInfo, ProviderResponse};
+use crate::{Cancellation, DiagnosticErrorInfo, FetchError, ProviderResponse};
 use futures_util::StreamExt;
 use std::collections::VecDeque;
 
@@ -69,7 +70,7 @@ impl Source {
                     self.ended = true;
                     self.messages.finish()
                 }
-                Raced::Done(Some(Err(_)))
+                Raced::Done(Some(Err(FetchError::Aborted)))
                     if self.signal.as_ref().is_some_and(Cancellation::is_aborted) =>
                 {
                     return Some(Err(diagnostic("Request was aborted")));
@@ -129,7 +130,7 @@ pub(super) async fn prepare(
         .headers
         .get("content-type")
         .and_then(|s| s.split(';').next())
-        .map(str::trim);
+        .map(|s| s.trim_matches(whitespace));
     let json = media_type.is_some_and(|s| s.contains("application/json") || s.ends_with("+json"));
     if json
         && observation

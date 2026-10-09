@@ -93,6 +93,7 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
         case["chunked"] == true,
     );
     let body_abort = case["cancel"] == "body";
+    let body_failure = case["cancel"] == "body_failure";
     let ordered = case["hook"] == "order";
     let content_type = case["contentType"]
         .as_str()
@@ -111,7 +112,10 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
         sent.lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(captured);
-        let chunks = if body_abort {
+        let chunks = if body_failure {
+            signal.abort();
+            vec![Err(FetchError::Connection(failure("body failed")))]
+        } else if body_abort {
             signal.abort();
             vec![Err(FetchError::Aborted)]
         } else if fragmented {
@@ -154,14 +158,12 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         let result = match hook.as_str() {
             "payload_failure" => Err(failure("payload failed")),
             "null" => Ok(Value::Null),
+            "array" => Ok(json!(["replacement", {"retained":true} ])),
             "nonstream" => {
                 payload["stream"] = json!(false);
                 Ok(payload)
             }
-            "replace" => {
-                payload["marker"] = json!("replacement");
-                Ok(payload)
-            }
+            "replace" => Ok(json!({"stream":true,"marker":"replacement"})),
             "mutate" => {
                 payload["marker"] = json!("mutated");
                 Ok(payload)

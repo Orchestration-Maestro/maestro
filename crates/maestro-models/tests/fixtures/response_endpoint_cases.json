@@ -32904,27 +32904,7 @@
             "content-type": "application/json"
           },
           "body": {
-            "model": "gpt-5.4",
-            "input": [
-              {
-                "role": "developer",
-                "content": "instruction"
-              },
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "input_text",
-                    "text": "query"
-                  }
-                ]
-              }
-            ],
             "stream": true,
-            "store": false,
-            "reasoning": {
-              "effort": "none"
-            },
             "marker": "replacement"
           }
         }
@@ -33203,28 +33183,7 @@
             "content-type": "application/json"
           },
           "body": {
-            "model": "gpt-5.4",
-            "input": [
-              {
-                "role": "developer",
-                "content": "instruction"
-              },
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "input_text",
-                    "text": "query"
-                  }
-                ]
-              }
-            ],
             "stream": true,
-            "store": false,
-            "max_output_tokens": 32000,
-            "reasoning": {
-              "effort": "none"
-            },
             "marker": "replacement"
           }
         }
