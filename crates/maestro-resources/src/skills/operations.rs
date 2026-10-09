@@ -63,12 +63,14 @@ pub trait ResourceOperations {
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
     /// Observe the process working directory.
     ///
-    /// Resolution continues from it when no operand anchors a path. A loader
-    /// call or native real-path resolution asks at most once, at the first
-    /// resolution whose operands leave a part open, together with
+    /// Resolution continues from it when no operand anchors a path. Each
+    /// lexical-resolution context asks at most once, at its first resolution
+    /// whose operands leave a part open, together with
     /// [`drive_directories`](Self::drive_directories), and keeps the outcome, a
-    /// failure included, for the rest of that call. A resolution that needs it
-    /// while this fails fails with the same error kind.
+    /// failure included, for the rest of that context. A loader call has one
+    /// context; native [`canonicalize`](Self::canonicalize) starts its own for
+    /// each path it resolves, so one loader call can ask more than once. A
+    /// resolution that needs it while this fails fails with the same error kind.
     ///
     /// # Errors
     /// Returns the I/O cause when the directory cannot be read.

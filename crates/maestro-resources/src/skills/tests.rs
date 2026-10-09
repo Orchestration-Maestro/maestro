@@ -125,7 +125,7 @@ fn process(current: &str, entries: &[(char, &str)]) -> Process {
 
 /// Load `skill_paths` for caller directory `cwd`, with `agent_dir` as the user configuration.
 fn load(
-    adapter: &Process,
+    adapter: &dyn ResourceOperations,
     (cwd, agent_dir): (&str, &str),
     skill_paths: &[&str],
     include_defaults: bool,
@@ -380,6 +380,70 @@ fn loading_asks_the_adapter_once_for_all_open_paths() {
     assert_eq!(
         *adapter.observed.borrow(),
         ["current_directory", "drive_directories"]
+    );
+}
+
+/// Adapter whose real-path resolution is the native link walk, observing the process directories through its `Process`.
+#[cfg(unix)]
+struct NativeRealPath<'a>(&'a Process);
+
+#[cfg(unix)]
+impl ResourceOperations for NativeRealPath<'_> {
+    fn exists(&self, path: &Path) -> bool {
+        self.0.exists(path)
+    }
+    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
+        self.0.read_dir(path)
+    }
+    fn read_file(&self, path: &Path) -> io::Result<String> {
+        self.0.read_file(path)
+    }
+    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        self.0.metadata(path)
+    }
+    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        real_path(path, self)
+    }
+    fn current_directory(&self) -> io::Result<String> {
+        self.0.current_directory()
+    }
+    fn drive_directories(&self) -> Vec<(char, String)> {
+        self.0.drive_directories()
+    }
+}
+
+/// Scanning beneath an anchored caller directory observes nothing; each relative skill file's own real-path resolution observes once.
+#[cfg(unix)]
+#[test]
+fn real_path_resolution_observes_the_process_directories_once_per_relative_file() {
+    use ResourceFileType::{Directory, File};
+    let process_directory =
+        std::env::temp_dir().join(format!("maestro-observation-scope-{}", std::process::id()));
+    let tree = || {
+        let mut adapter = process(process_directory.to_str().unwrap(), &[])
+            .with_directory("agent/skills", &[("a", Directory), ("b", Directory)]);
+        for name in ["a", "b"] {
+            let skill = format!("agent/skills/{name}/SKILL.md");
+            adapter = adapter
+                .with_directory(&format!("agent/skills/{name}"), &[("SKILL.md", File)])
+                .with_file(&skill, SKILL);
+            let file = process_directory.join(&skill);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, SKILL).unwrap();
+        }
+        adapter
+    };
+    let scanned = tree();
+    let loaded = load(&scanned, ("/work", "agent"), &[], true);
+    let resolved = tree();
+    let canonicalized = load(&NativeRealPath(&resolved), ("/work", "agent"), &[], true);
+    std::fs::remove_dir_all(&process_directory).unwrap();
+    assert_eq!(loaded.unwrap().skills.len(), 2);
+    assert!(scanned.observed.borrow().is_empty());
+    assert_eq!(canonicalized.unwrap().skills.len(), 2);
+    assert_eq!(
+        *resolved.observed.borrow(),
+        ["current_directory", "drive_directories"].repeat(2)
     );
 }
 
