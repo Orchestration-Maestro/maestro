@@ -1,5 +1,6 @@
 //! Word boundaries with original byte ranges.
 use crate::visible_width;
+use std::collections::HashSet;
 /// Emitted text and its half-open range in the original line.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TextChunk {
@@ -104,9 +105,10 @@ fn groups<'a>(atoms: &'a [Atom], supplied: Option<&[(usize, &str)]>) -> Vec<&'a 
     if parts.is_empty() {
         return Vec::new();
     }
+    let starts: HashSet<usize> = parts.iter().map(|&(at, _)| at).collect();
     let mut boundaries = vec![0];
     for (index, atom) in atoms.iter().enumerate().skip(1) {
-        if parts.iter().any(|&(at, _)| at == atom.start) {
+        if starts.contains(&atom.start) {
             boundaries.push(index);
         }
     }
