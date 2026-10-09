@@ -14,7 +14,7 @@ use crate::{
 use maestro_path::{SEP, basename, dirname, is_absolute, join};
 #[cfg(not(target_arch = "wasm32"))]
 pub use operations::NativeResourceOperations;
-use operations::{ProcessContext, with_process_context};
+use operations::ProcessContext;
 pub use operations::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::{io, path::Path};
 pub use validation::SkillFrontmatter;
@@ -46,10 +46,10 @@ pub struct LoadSkillsResult {
 /// A supplied directory and its source label.
 #[derive(Clone, Copy)]
 pub struct LoadSkillsFromDirOptions<'a> {
-    /// The working directory the scan's relative paths are located under.
+    /// The caller's working directory.
     ///
-    /// It is the first operand of every coordinate the ignore matcher compares;
-    /// the adapter reads the scanned paths as given.
+    /// It is the first operand of each resolution that makes an entry's path
+    /// relative to `dir`; the adapter reads the scanned paths as given.
     pub cwd: &'a str,
     /// Directory to scan.
     pub dir: &'a str,
@@ -58,20 +58,20 @@ pub struct LoadSkillsFromDirOptions<'a> {
 }
 /// Load instruction resources using the supplied filesystem observations.
 ///
-/// A directory that does not exist yields no skills. A directory that exists
-/// is located by resolving `dir` with `cwd` as the first operand.
-///
-/// # Errors
-/// Returns the adapter's working-directory error kind when that resolution
-/// leaves the path unanchored and the adapter cannot read the process working
-/// directory.
+/// A directory that does not exist yields no skills. Each entry's path is made
+/// relative to `dir` with `cwd` as the first operand of both resolutions, except
+/// that `dir` itself is empty without resolving; hidden, `node_modules` and
+/// broken-link entries are skipped before they are located. The adapter's
+/// process directories are asked for at the first resolution that `cwd` and
+/// `dir` leave open, and only then. A directory whose entries cannot be located
+/// because that read fails ends with the skills gathered before the failure, so
+/// loading a directory never fails.
 pub fn load_skills_from_dir(
     options: LoadSkillsFromDirOptions<'_>,
     operations: &dyn ResourceOperations,
-) -> io::Result<LoadSkillsResult> {
-    with_process_context(operations, |ctx| {
-        discovery::scan(options.dir, options.cwd, ctx, options.source, operations)
-    })
+) -> LoadSkillsResult {
+    let ctx = ProcessContext::new(operations);
+    discovery::scan(options.dir, options.cwd, &ctx, options.source, operations)
 }
 /// Load one file, retaining its native failure cause as a warning.
 fn load_file(path: &str, source: &str, operations: &dyn ResourceOperations) -> LoadSkillsResult {
@@ -160,6 +160,9 @@ pub struct LoadSkillsOptions<'a> {
 }
 /// Load defaults before explicit paths, retaining first names and canonical files.
 ///
+/// The adapter's process directories are asked for at most once, at the first
+/// resolution whose operands leave a part open; its `canonicalize` is separate.
+///
 /// With defaults disabled, an existing explicit path under the user or project
 /// skills root takes that scope; when resolving the user root needs the
 /// unreadable process working directory, that path gets a warning instead.
@@ -173,14 +176,14 @@ pub fn load_skills(
     options: LoadSkillsOptions<'_>,
     operations: &dyn ResourceOperations,
 ) -> io::Result<LoadSkillsResult> {
-    with_process_context(operations, |ctx| load_skills_in(options, ctx, operations))
+    load_skills_in(options, &ProcessContext::new(operations), operations)
 }
 /// Load defaults and explicit paths.
 ///
 /// The caller's working directory anchors the project and relative explicit paths.
 fn load_skills_in(
     options: LoadSkillsOptions<'_>,
-    ctx: ProcessContext<'_>,
+    ctx: &ProcessContext<'_>,
     operations: &dyn ResourceOperations,
 ) -> io::Result<LoadSkillsResult> {
     let mut result = LoadSkillsResult::default();
@@ -195,7 +198,7 @@ fn load_skills_in(
                 &mut collisions,
                 &mut paths,
                 operations,
-                discovery::scan(path, options.cwd, ctx, source, operations)?,
+                discovery::scan(path, options.cwd, ctx, source, operations),
             );
         }
     }
@@ -216,7 +219,7 @@ fn load_skills_in(
         } else {
             ctx.resolve(&[options.cwd, path])?
         };
-        let loaded = explicit_path(&path, (options.cwd, ctx), &source_of, operations)?;
+        let loaded = explicit_path(&path, (options.cwd, ctx), &source_of, operations);
         add_skills(&mut result, &mut collisions, &mut paths, operations, loaded);
     }
     result.diagnostics.extend(collisions);
@@ -224,7 +227,7 @@ fn load_skills_in(
 }
 /// Compare preserved target spelling against a root resolved from the process
 /// directories, on a separator boundary.
-fn is_under_path(target: &str, root: &str, ctx: ProcessContext<'_>) -> io::Result<bool> {
+fn is_under_path(target: &str, root: &str, ctx: &ProcessContext<'_>) -> io::Result<bool> {
     let root = ctx.resolve(&[root])?;
     Ok(target == root || target.starts_with(&format!("{}{SEP}", root.trim_end_matches(SEP))))
 }
@@ -270,15 +273,12 @@ fn add_skills(
 ///
 /// A path that exists is classified by `source_of` after its metadata is read.
 /// A classification that fails becomes that path's warning.
-///
-/// # Errors
-/// Returns the working-directory error of a scan of the path's directory.
 fn explicit_path(
     path: &str,
-    (cwd, ctx): (&str, ProcessContext<'_>),
+    (cwd, ctx): (&str, &ProcessContext<'_>),
     source_of: &dyn Fn(&str) -> io::Result<&'static str>,
     operations: &dyn ResourceOperations,
-) -> io::Result<LoadSkillsResult> {
+) -> LoadSkillsResult {
     let error = if operations.exists(Path::new(path)) {
         let classified = operations
             .metadata(Path::new(path))
@@ -292,7 +292,7 @@ fn explicit_path(
                     .rsplit_once('.')
                     .is_some_and(|(_, extension)| extension == "md") =>
             {
-                return Ok(load_file(path, source, operations));
+                return load_file(path, source, operations);
             }
             Ok(_) => "skill path is not a markdown file".into(),
             Err(cause) => cause.to_string(),
@@ -300,10 +300,10 @@ fn explicit_path(
     } else {
         "skill path does not exist".into()
     };
-    Ok(LoadSkillsResult {
+    LoadSkillsResult {
         skills: Vec::new(),
         diagnostics: vec![ResourceDiagnostic::warning(path, error)],
-    })
+    }
 }
 #[cfg(test)]
 mod tests;

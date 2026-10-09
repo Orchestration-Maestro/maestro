@@ -2,17 +2,17 @@
 use super::operations::ProcessContext;
 use super::{LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations, load_file};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
-use maestro_path::{SEP, dirname, join};
+use maestro_path::{Cwd, SEP, dirname, join};
 use std::{io, path::Path};
 
 /// Shared scan-local observations and ignore-rule state.
 struct Discovery<'a> {
-    /// Containing scan root for authored rule prefixes.
-    root: String,
-    /// Caller working directory, the first operand of every matcher coordinate.
+    /// The authored scan directory, which every candidate path is made relative to.
+    root: &'a str,
+    /// Caller working directory, the first operand of every resolution.
     base: &'a str,
     /// Process directories completing what `base` leaves open.
-    ctx: ProcessContext<'a>,
+    ctx: &'a ProcessContext<'a>,
     /// Source label for every discovery.
     source: &'a str,
     /// Replaceable filesystem adapter.
@@ -24,28 +24,24 @@ struct Discovery<'a> {
 }
 /// Scan nested directories, preferring each directory's entry file.
 ///
-/// A directory that does not exist yields no skills. For one that does, the
-/// scan root needs the process working directory when `base` and `dir` leave
-/// it open.
-///
-/// # Errors
-/// Returns the working-directory error when the scan root needs it and it
-/// cannot be read.
+/// A directory that does not exist yields no skills. A path is made relative to
+/// `dir` with `base` as the first operand of both resolutions, except that `dir`
+/// itself is empty without resolving; the process directories are asked for only
+/// when such a resolution leaves a part open. A directory whose entries cannot be
+/// located because that read fails ends with the skills gathered before the
+/// failure, and the scan never fails.
 pub(super) fn scan(
     dir: &str,
     base: &str,
-    ctx: ProcessContext<'_>,
+    ctx: &ProcessContext<'_>,
     source: &str,
     operations: &dyn ResourceOperations,
-) -> io::Result<LoadSkillsResult> {
-    if !operations.exists(Path::new(dir)) {
-        return Ok(LoadSkillsResult::default());
-    }
-    let root = ctx.resolve(&[base, dir])?;
-    let mut builder = GitignoreBuilder::new(&root);
+) -> LoadSkillsResult {
+    // Candidates are root-relative, so a root of `.` keeps the matcher from stripping a prefix.
+    let mut builder = GitignoreBuilder::new(".");
     let _ = builder.case_insensitive(true);
     let mut scan = Discovery {
-        root,
+        root: dir,
         base,
         ctx,
         source,
@@ -53,63 +49,94 @@ pub(super) fn scan(
         builder,
         matcher: Gitignore::empty(),
     };
-    scan.visit_existing(dir, true)
+    // The root's own relative path is empty without any resolution, so its rules cannot fail.
+    scan.visit(dir, true).unwrap_or_default()
 }
 impl Discovery<'_> {
-    /// Traverse in adapter order, stopping after an attempted root entry.
+    /// Traverse the directory `dir` in adapter order, stopping after an attempted root entry.
+    ///
+    /// # Errors
+    /// Returns the failure to locate `dir` beneath the scan root, which the
+    /// calling directory ends with.
     fn visit(&mut self, dir: &str, include_root_files: bool) -> io::Result<LoadSkillsResult> {
+        let mut result = LoadSkillsResult::default();
         if self.operations.exists(Path::new(dir)) {
-            self.visit_existing(dir, include_root_files)
-        } else {
-            Ok(LoadSkillsResult::default())
+            self.add_rules(dir)?;
+            // A failure below ends this directory with what was gathered.
+            let _ = self.read_entries(dir, include_root_files, &mut result);
         }
+        Ok(result)
     }
-    /// Traverse the existing directory `dir`.
-    fn visit_existing(
+    /// Load the entry file, or else every entry, of the existing directory `dir`.
+    fn read_entries(
         &mut self,
         dir: &str,
         include_root_files: bool,
-    ) -> io::Result<LoadSkillsResult> {
-        let mut result = LoadSkillsResult::default();
-        self.add_rules(dir)?;
-        let Ok(entries) = self.operations.read_dir(Path::new(dir)) else {
-            return Ok(result);
-        };
+        result: &mut LoadSkillsResult,
+    ) -> io::Result<()> {
+        let entries = self.operations.read_dir(Path::new(dir))?;
         for entry in entries.iter().filter(|e| e.name == "SKILL.md") {
-            let path = join(&[dir, &entry.name.to_string_lossy()]);
-            if observed_type(entry, &path, self.operations) == Some(ResourceFileType::File)
-                && !self.ignored(&path, false)?
-            {
-                return Ok(load_file(&path, self.source, self.operations));
+            if let Some((path, ResourceFileType::File)) = self.candidate(dir, entry)? {
+                append(result, load_file(&path, self.source, self.operations));
+                return Ok(());
             }
         }
-        for entry in entries {
-            if entry.name.to_string_lossy().starts_with('.') || entry.name == "node_modules" {
+        for entry in &entries {
+            let name = entry.name.to_string_lossy();
+            if name.starts_with('.') || entry.name == "node_modules" {
                 continue;
             }
-            let path = join(&[dir, &entry.name.to_string_lossy()]);
-            let kind = observed_type(&entry, &path, self.operations);
-            if self.ignored(&path, kind == Some(ResourceFileType::Directory))? {
-                continue;
-            }
-            match kind {
-                Some(ResourceFileType::Directory) => {
-                    append(&mut result, self.visit(&path, false)?);
+            match self.candidate(dir, entry)? {
+                Some((path, ResourceFileType::Directory)) => {
+                    append(result, self.visit(&path, false)?);
                 }
-                Some(ResourceFileType::File)
-                    if include_root_files && entry.name.to_string_lossy().ends_with(".md") =>
+                Some((path, ResourceFileType::File))
+                    if include_root_files && name.ends_with(".md") =>
                 {
-                    append(&mut result, load_file(&path, self.source, self.operations));
+                    append(result, load_file(&path, self.source, self.operations));
                 }
                 _ => {}
             }
         }
-        Ok(result)
+        Ok(())
+    }
+    /// The path and kind of `entry` in `dir`, unless it is a broken link or ignored.
+    fn candidate(
+        &self,
+        dir: &str,
+        entry: &ResourceEntry,
+    ) -> io::Result<Option<(String, ResourceFileType)>> {
+        let path = join(&[dir, &entry.name.to_string_lossy()]);
+        let Some(kind) = observed_type(entry, &path, self.operations) else {
+            return Ok(None);
+        };
+        let ignored = self.ignored(&path, kind == ResourceFileType::Directory)?;
+        Ok((!ignored).then_some((path, kind)))
+    }
+    /// The path from the scan root to `to`, resolving only when they differ.
+    ///
+    /// Identical spellings give an empty path without any resolution. Otherwise
+    /// both are resolved with `base` as the first operand.
+    ///
+    /// # Errors
+    /// Returns the working-directory error when a resolution needs it and it
+    /// cannot be read.
+    fn relative(&self, to: &str) -> io::Result<String> {
+        if self.root == to {
+            return Ok(String::new());
+        }
+        let from = self.ctx.resolve(&[self.base, self.root])?;
+        let to = self.ctx.resolve(&[self.base, to])?;
+        // Both ends continue from the same base, which cancels in their difference.
+        let shared_base = Cwd {
+            current: &from,
+            drive_directories: &[],
+        };
+        Ok(maestro_path::relative(&from, &to, &shared_base))
     }
     /// Check excluded ancestors before a candidate's own negations.
     fn ignored(&self, path: &str, is_dir: bool) -> io::Result<bool> {
-        let candidate = self.ctx.resolve(&[self.base, path])?;
-        let candidate = self.ctx.relative(&self.root, &candidate);
+        let candidate = self.relative(path)?;
         let mut parent = dirname(&candidate);
         while parent != "." {
             if self.matcher.matched(&parent, true).is_ignore() {
@@ -121,8 +148,7 @@ impl Discovery<'_> {
     }
     /// Append authored directory-prefixed rules in ignore-file order.
     fn add_rules(&mut self, dir: &str) -> io::Result<()> {
-        let located = self.ctx.resolve(&[self.base, dir])?;
-        let prefix = self.ctx.relative(&self.root, &located).replace(SEP, "/");
+        let prefix = self.relative(dir)?.replace(SEP, "/");
         let prefix = if prefix.is_empty() {
             prefix
         } else {

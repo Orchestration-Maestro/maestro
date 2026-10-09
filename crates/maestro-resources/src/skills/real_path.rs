@@ -1,6 +1,6 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
-use super::operations::{ProcessContext, ResourceOperations, with_process_context};
+use super::operations::{ProcessContext, ResourceOperations};
 use maestro_path::{SEP, dirname};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -31,14 +31,13 @@ use std::{borrow::Cow, io};
 /// component of what followed its previous expansion.
 pub(super) fn real_path(path: &Path, operations: &dyn ResourceOperations) -> io::Result<PathBuf> {
     let path = path.to_str().ok_or(io::ErrorKind::InvalidInput)?;
-    with_process_context(operations, |ctx| {
-        let mut resolved = ctx.resolve(&[path])?;
-        let mut walk = Walk::default();
-        while let Some(next) = walk.expand_first_link(&resolved, ctx)? {
-            resolved = next;
-        }
-        Ok(PathBuf::from(resolved))
-    })
+    let ctx = ProcessContext::new(operations);
+    let mut resolved = ctx.resolve(&[path])?;
+    let mut walk = Walk::default();
+    while let Some(next) = walk.expand_first_link(&resolved, &ctx)? {
+        resolved = next;
+    }
+    Ok(PathBuf::from(resolved))
 }
 
 /// What the walk remembers across restarts.
@@ -61,7 +60,7 @@ impl Walk {
     fn expand_first_link(
         &mut self,
         path: &str,
-        ctx: ProcessContext<'_>,
+        ctx: &ProcessContext<'_>,
     ) -> io::Result<Option<String>> {
         let root = root_len(path);
         if cfg!(windows) {
@@ -99,7 +98,7 @@ impl Walk {
         &mut self,
         path: &str,
         (parent_end, end): (usize, usize),
-        ctx: ProcessContext<'_>,
+        ctx: &ProcessContext<'_>,
     ) -> io::Result<String> {
         let link = &path[..end];
         std::fs::metadata(link)?;

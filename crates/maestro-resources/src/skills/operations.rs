@@ -1,7 +1,8 @@
 //! Replaceable supplied-path filesystem observations.
 
-use maestro_path::{Cwd, relative, resolve, try_resolve};
+use maestro_path::{Cwd, resolve, try_resolve};
 use std::{
+    cell::OnceCell,
     ffi::OsString,
     io,
     path::{Path, PathBuf},
@@ -62,8 +63,12 @@ pub trait ResourceOperations {
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
     /// Observe the process working directory.
     ///
-    /// Resolution continues from it when no operand anchors a path. A
-    /// resolution that needs it while this fails fails with the same error kind.
+    /// Resolution continues from it when no operand anchors a path. A loader
+    /// call or native real-path resolution asks at most once, at the first
+    /// resolution whose operands leave a part open, together with
+    /// [`drive_directories`](Self::drive_directories), and keeps the outcome, a
+    /// failure included, for the rest of that call. A resolution that needs it
+    /// while this fails fails with the same error kind.
     ///
     /// # Errors
     /// Returns the I/O cause when the directory cannot be read.
@@ -78,65 +83,72 @@ pub trait ResourceOperations {
     fn drive_directories(&self) -> Vec<(char, String)>;
 }
 
-/// The adapter's process directories, which every path resolution continues from.
+/// The adapter's process directories, which a path resolution continues from when its operands leave a part open.
 ///
-/// The working directory is kept as the adapter reported it, including a failure
-/// to read it. A resolution whose operands leave a part open that only that
-/// directory supplies fails with the failure's kind; one the operands anchor, or
-/// that a drive directory completes, does not read it. A caller's working
+/// The adapter is asked for them once, at the first resolution whose operands
+/// leave a part open, and every later resolution of the same load reuses what
+/// that observation returned, a failure to read the working directory included.
+/// A resolution whose operands leave open a part that only that directory
+/// supplies fails with the failure's kind; one the operands anchor, or that a
+/// drive directory completes, does not depend on it. A caller's working
 /// directory is an operand of each resolution.
-#[derive(Clone, Copy)]
 pub(super) struct ProcessContext<'a> {
+    /// The adapter observed on first need.
+    operations: &'a dyn ResourceOperations,
     /// The working directory, or the kind of the error that reading it returned.
-    pub(super) current: Result<&'a str, io::ErrorKind>,
+    current: OnceCell<Result<String, io::ErrorKind>>,
     /// The current directory of each drive.
-    pub(super) drives: &'a [(char, &'a str)],
+    drives: OnceCell<Vec<(char, String)>>,
 }
 
 impl<'a> ProcessContext<'a> {
-    /// The snapshot that continues from `current`.
-    fn cwd(&self, current: &'a str) -> Cwd<'a> {
-        Cwd {
-            current,
-            drive_directories: self.drives,
+    /// A context that has not yet asked `operations` for anything.
+    pub(super) fn new(operations: &'a dyn ResourceOperations) -> Self {
+        Self {
+            operations,
+            current: OnceCell::new(),
+            drives: OnceCell::new(),
         }
     }
 
-    /// Resolve `paths` from right to left, reading the working directory only if they leave a part open.
+    /// Hand `use_directories` the working directory and drive directories, asking the adapter the first time.
+    pub(super) fn observe<R>(
+        &self,
+        use_directories: impl FnOnce(Result<&str, io::ErrorKind>, &[(char, &str)]) -> R,
+    ) -> R {
+        let current = self.current.get_or_init(|| {
+            self.operations
+                .current_directory()
+                .map_err(|error| error.kind())
+        });
+        let drives = self
+            .drives
+            .get_or_init(|| self.operations.drive_directories());
+        let drives: Vec<(char, &str)> = drives
+            .iter()
+            .map(|(letter, directory)| (*letter, directory.as_str()))
+            .collect();
+        use_directories(current.as_deref().map_err(|kind| *kind), &drives)
+    }
+
+    /// Resolve `paths` from right to left, asking the adapter for its directories only if they leave a part open.
     ///
     /// # Errors
     /// Returns the kind of the working directory's error when it was needed and unreadable.
     pub(super) fn resolve(&self, paths: &[&str]) -> io::Result<String> {
-        match self.current {
-            Ok(current) => Ok(resolve(paths, &self.cwd(current))),
-            Err(kind) => try_resolve(paths, self.drives).map_err(|_| kind.into()),
-        }
+        try_resolve(paths, &[]).or_else(|_| {
+            self.observe(|current, drives| match current {
+                Ok(current) => Ok(resolve(
+                    paths,
+                    &Cwd {
+                        current,
+                        drive_directories: drives,
+                    },
+                )),
+                Err(kind) => try_resolve(paths, drives).map_err(|_| kind.into()),
+            })
+        })
     }
-
-    /// The path from `from` to `to`, which are already resolved.
-    ///
-    /// Neither end is relative, so the working directory is not read; `from`
-    /// fills the snapshot that `maestro_path::relative` takes.
-    pub(super) fn relative(&self, from: &str, to: &str) -> String {
-        relative(from, to, &self.cwd(from))
-    }
-}
-
-/// Run `operation` with the adapter's process directories as the resolution context.
-pub(super) fn with_process_context<R>(
-    operations: &dyn ResourceOperations,
-    operation: impl FnOnce(ProcessContext<'_>) -> R,
-) -> R {
-    let current = operations.current_directory();
-    let entries = operations.drive_directories();
-    let drives: Vec<(char, &str)> = entries
-        .iter()
-        .map(|(letter, directory)| (*letter, directory.as_str()))
-        .collect();
-    operation(ProcessContext {
-        current: current.as_deref().map_err(io::Error::kind),
-        drives: &drives,
-    })
 }
 
 /// Standard native filesystem operations.

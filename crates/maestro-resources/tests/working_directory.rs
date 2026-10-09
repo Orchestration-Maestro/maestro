@@ -60,7 +60,7 @@ fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
             &NativeResourceOperations,
         )
     };
-    assert!(scan("work", "skills").unwrap().skills.is_empty());
-    let loaded = scan("work", text(&dir.0.join("skills"))).unwrap();
+    assert!(scan("work", "skills").skills.is_empty());
+    let loaded = scan("work", text(&dir.0.join("skills")));
     assert_eq!(loaded.skills[0].file_path, text(&skill));
 }

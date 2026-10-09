@@ -49,17 +49,25 @@ Windows a drive-relative path on the drive of an absolute `cwd`, such as
 `C:item.md`, continues from `cwd`; on another drive, such as `D:item.md`, it
 continues from the directory the adapter reports for that drive, or from the
 drive root when none is reported and the process working directory is on another
-drive. The adapter's working directory is read only where the operands leave a
-path unanchored: a relative path or, on Windows, a path rooted without a drive or
-relative to a drive with no reported directory. When the adapter cannot read it,
-`load_skills` fails with that error's kind if resolving the project configuration
-directory or an explicit path leaves it unanchored, for example beneath a
-relative `cwd`; an absolute `cwd` on POSIX loads as usual. `load_skills_from_dir`
-fails the same way for an existing scan directory that `cwd` and `dir` leave
-unanchored, while a missing directory yields no skills first. A user skills root
-that needs the unreadable directory makes the classification of an existing
-explicit path that path's warning. `~`, `~/suffix` and `~suffix` expand against
-supplied `home`, including repeated slashes after the tilde. Joined
+drive. The loader asks the adapter for its working directory and drive
+directories lazily, at most once per call, at the first resolution whose operands
+leave a part open: a relative path or, on Windows, a path rooted without a drive
+or relative to a drive. A call whose paths are all anchored never asks, and the
+first outcome, a failure included, serves the rest of the call; the adapter's own
+`canonicalize` is a separate operation. When the adapter cannot read the
+working directory, `load_skills` fails with that error's kind if resolving the
+project configuration directory or an explicit path needs it, for example beneath
+a relative `cwd`; an absolute `cwd` on POSIX loads as usual.
+`load_skills_from_dir` never fails for it: a scan makes each entry's path
+relative to its directory with `cwd` as the first operand of both resolutions,
+except that the directory itself is empty without resolving, and entries it
+skips (hidden, `node_modules`, broken links) are not located. A directory
+whose entries are open paths while the adapter cannot read the working directory
+ends with the skills gathered before the failure, and `load_skills` goes on with
+its other roots. A
+user skills root that needs the unreadable directory makes the classification of
+an existing explicit path that path's warning. `~`, `~/suffix` and `~suffix`
+expand against supplied `home`, including repeated slashes after the tilde. Joined
 user configuration and scanned child paths concatenate their parts before lexical
 normalization; later rooted parts do not replace the earlier root. Project
 configuration paths instead resolve against `cwd`; an absolute configuration
@@ -128,17 +136,19 @@ own adapter.
 
 Both loaders take an explicit `cwd`. It is the first operand of each lexical
 resolution against the caller: the project configuration directory, relative
-explicit paths and the coordinates a scan's ignore matcher compares. Filesystem
-access is separate: the adapter receives each scanned directory as authored and
+explicit paths and the paths a scan makes relative to its directory for its
+ignore matcher. Filesystem access is separate: the adapter receives each scanned directory as authored and
 each project or explicit path as the loader computed it, so `cwd` never
 relocates an authored path it reads. The process directories the adapter reports
 complete only what those operands leave open, and alone resolve native real
 paths and the user and project roots that classify explicit paths. A working
 directory the adapter cannot read is never replaced by an empty one: a resolution
-that needs it fails with that error's kind, and one that the operands or a drive
-directory anchor does not read it.
-Each scan shares one case-insensitive ignore matcher. Its root and candidates are
-resolved from `cwd`; rule prefixes use their lexical relative paths.
+that needs it fails with that error's kind, which a scan turns into the end of the
+affected directory, and one that the operands or a drive directory anchor does
+not need it.
+Each scan shares one case-insensitive ignore matcher. Its candidates and rule
+prefixes are paths relative to the scan directory, so a rule matches the same
+paths whatever the scan directory is called.
 Rules are appended in
 `.gitignore`, `.ignore`, `.fdignore` order with directory prefixes and compiled
 when rules change. Later rules may reopen files, but child negation cannot reopen
