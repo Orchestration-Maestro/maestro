@@ -149,7 +149,7 @@ impl State {
         drop(replaced);
     }
 
-    /// Builds content in spinner-then-message callback order, then requests rendering.
+    /// Builds content, styling non-verbatim frames before the message, then requests rendering.
     fn update_display(&self) {
         let frames = Rc::clone(&self.frames.borrow());
         let frame = frames.get(self.index.get()).map_or("", String::as_str);

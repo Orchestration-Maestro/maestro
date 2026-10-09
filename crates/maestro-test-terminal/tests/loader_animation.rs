@@ -511,7 +511,7 @@ fn reentry_calls(from_spinner: bool, action: Action) -> &'static [(&'static str,
         (_, Action::Stop | Action::Invalidate) => &[("spinner", "⠙"), ("message", "old")],
     }
 }
-/// Observations after the pending continuation has completed.
+/// Observations after advancing controlled time, including a cancelled continuation.
 fn following_reentry(widget: &Loader, calls: &Calls, action: Action) {
     match action {
         Action::Stop => {
