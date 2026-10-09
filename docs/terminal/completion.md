@@ -90,6 +90,13 @@ The caller supplies the optional search executable to the constructor. An absent
 empty executable disables attachment suggestions. Native operations use
 `Cancellation` as their signal and run that executable directly, with null stdin
 and captured stdout/stderr; stderr is consumed without display.
+Polling a native attachment search requires an entered Tokio runtime with I/O
+enabled; without it, process spawning or pipe registration can panic rather than
+return a caught search error. Other completion operations do not require this
+runtime. The runnable example in
+[`NativeAutocompleteOperations`](../../crates/maestro-tui/src/autocomplete/operations.rs)
+drives an attachment request with `Builder::new_current_thread().enable_io()` and
+`block_on`; callers supply the runtime, not a new runtime per request.
 
 A directory before the last native separator scopes the search when metadata
 identifies it as a directory. Failed metadata falls back to unscoped search; a
@@ -102,8 +109,9 @@ filename whitespace and Unix backslashes, excluding exact `.git` components.
 Nonempty queries rank by whole-string lowercase basename equality, basename
 prefix, basename substring, then path substring; matching directories receive a
 bonus. Empty queries keep process order. Stable score ties retain duplicates and
-only the first 20 ranked candidates are returned. Attachment host failures and
-observed cancellation return no suggestions. Native cancellation checks child
+only the first 20 ranked candidates are returned. Attachment host I/O errors and
+observed cancellation return no suggestions; runtime panics are not caught.
+Native cancellation checks child
 status, then kills and waits when the child remains running; status or kill
 failures return I/O errors to the provider.
 

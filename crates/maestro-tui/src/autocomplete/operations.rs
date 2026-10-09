@@ -61,6 +61,42 @@ pub trait AutocompleteOperations {
 }
 
 /// Native filesystem effects with a lazily retained locale collator.
+///
+/// Polling an attachment search requires an entered Tokio runtime with I/O
+/// enabled. Without it, native process spawning or pipe registration can panic;
+/// the provider's caught-error path handles I/O errors, not runtime panics.
+/// Other completion operations do not require a runtime.
+///
+/// ```
+/// use maestro_cancellation::Cancellation;
+/// use maestro_tui::autocomplete::{
+///     CompletionOptions, CursorPosition, NativeAutocompleteOperations,
+/// };
+/// use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
+///
+/// let runtime = tokio::runtime::Builder::new_current_thread()
+///     .enable_io()
+///     .build()?;
+/// runtime.block_on(async {
+///     let provider = CombinedAutocompleteProvider::new(
+///         vec![], ".".into(), Some("fd".into()),
+///         NativeAutocompleteOperations::default(),
+///     );
+///     let lines = vec!["@".into()];
+///     let signal = Cancellation::new();
+///     let suggestions = provider.get_suggestions(
+///         &lines,
+///         CursorPosition { line: 0, col: 1 },
+///         CompletionOptions { signal: &signal, force: None },
+///     ).await?;
+///     // An unavailable executable yields no attachment suggestions.
+///     if let Some(suggestions) = suggestions {
+///         assert!(!suggestions.items.is_empty());
+///     }
+///     Ok::<(), Box<dyn std::error::Error>>(())
+/// })?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativeAutocompleteOperations<E = fn(&str) -> Option<String>> {
     /// Locale environment reader, independent of home lookup.
@@ -118,6 +154,10 @@ impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocomplet
         signal.is_aborted()
     }
 
+    /// Run native search within the caller's entered, I/O-enabled Tokio runtime.
+    ///
+    /// # Panics
+    /// Can panic when polled without an entered Tokio runtime with I/O enabled.
     fn run_fd<'a>(
         &'a self,
         executable: &'a str,

@@ -2960,117 +2960,117 @@
     "group": "attachment_search_limits_results_after_stable_ranking"
   },
   {
-    "text": "@",
-    "col": 1,
+    "text": "@needle",
+    "col": 7,
     "base": "/work",
     "executable": "/tool/fd",
     "chunks": [
-      "f000\u0000f001\u0000f002\u0000f003\u0000f004\u0000f005\u0000f006\u0000f007\u0000f008\u0000f009\u0000f010\u0000f011\u0000f012\u0000f013\u0000f014\u0000f015\u0000f016\u0000f017\u0000f018\u0000f019\u0000f020\u0000"
+      "unmatched000\u0000needle-prefix000\u0000needle-prefix001\u0000needle-prefix002\u0000needle-prefix003\u0000needle-prefix004\u0000needle-prefix005\u0000needle-prefix006\u0000needle-prefix007\u0000needle-prefix008\u0000needle-prefix009\u0000needle-prefix010\u0000needle-prefix011\u0000needle-prefix012\u0000needle-prefix013\u0000needle-prefix014\u0000needle-prefix015\u0000needle-prefix016\u0000needle-prefix017\u0000needle-prefix018\u0000needle\u0000"
     ],
     "result": {
       "items": [
         {
-          "value": "@f000",
-          "label": "f000",
-          "description": "f000"
+          "value": "@needle",
+          "label": "needle",
+          "description": "needle"
         },
         {
-          "value": "@f001",
-          "label": "f001",
-          "description": "f001"
+          "value": "@needle-prefix000",
+          "label": "needle-prefix000",
+          "description": "needle-prefix000"
         },
         {
-          "value": "@f002",
-          "label": "f002",
-          "description": "f002"
+          "value": "@needle-prefix001",
+          "label": "needle-prefix001",
+          "description": "needle-prefix001"
         },
         {
-          "value": "@f003",
-          "label": "f003",
-          "description": "f003"
+          "value": "@needle-prefix002",
+          "label": "needle-prefix002",
+          "description": "needle-prefix002"
         },
         {
-          "value": "@f004",
-          "label": "f004",
-          "description": "f004"
+          "value": "@needle-prefix003",
+          "label": "needle-prefix003",
+          "description": "needle-prefix003"
         },
         {
-          "value": "@f005",
-          "label": "f005",
-          "description": "f005"
+          "value": "@needle-prefix004",
+          "label": "needle-prefix004",
+          "description": "needle-prefix004"
         },
         {
-          "value": "@f006",
-          "label": "f006",
-          "description": "f006"
+          "value": "@needle-prefix005",
+          "label": "needle-prefix005",
+          "description": "needle-prefix005"
         },
         {
-          "value": "@f007",
-          "label": "f007",
-          "description": "f007"
+          "value": "@needle-prefix006",
+          "label": "needle-prefix006",
+          "description": "needle-prefix006"
         },
         {
-          "value": "@f008",
-          "label": "f008",
-          "description": "f008"
+          "value": "@needle-prefix007",
+          "label": "needle-prefix007",
+          "description": "needle-prefix007"
         },
         {
-          "value": "@f009",
-          "label": "f009",
-          "description": "f009"
+          "value": "@needle-prefix008",
+          "label": "needle-prefix008",
+          "description": "needle-prefix008"
         },
         {
-          "value": "@f010",
-          "label": "f010",
-          "description": "f010"
+          "value": "@needle-prefix009",
+          "label": "needle-prefix009",
+          "description": "needle-prefix009"
         },
         {
-          "value": "@f011",
-          "label": "f011",
-          "description": "f011"
+          "value": "@needle-prefix010",
+          "label": "needle-prefix010",
+          "description": "needle-prefix010"
         },
         {
-          "value": "@f012",
-          "label": "f012",
-          "description": "f012"
+          "value": "@needle-prefix011",
+          "label": "needle-prefix011",
+          "description": "needle-prefix011"
         },
         {
-          "value": "@f013",
-          "label": "f013",
-          "description": "f013"
+          "value": "@needle-prefix012",
+          "label": "needle-prefix012",
+          "description": "needle-prefix012"
         },
         {
-          "value": "@f014",
-          "label": "f014",
-          "description": "f014"
+          "value": "@needle-prefix013",
+          "label": "needle-prefix013",
+          "description": "needle-prefix013"
         },
         {
-          "value": "@f015",
-          "label": "f015",
-          "description": "f015"
+          "value": "@needle-prefix014",
+          "label": "needle-prefix014",
+          "description": "needle-prefix014"
         },
         {
-          "value": "@f016",
-          "label": "f016",
-          "description": "f016"
+          "value": "@needle-prefix015",
+          "label": "needle-prefix015",
+          "description": "needle-prefix015"
         },
         {
-          "value": "@f017",
-          "label": "f017",
-          "description": "f017"
+          "value": "@needle-prefix016",
+          "label": "needle-prefix016",
+          "description": "needle-prefix016"
         },
         {
-          "value": "@f018",
-          "label": "f018",
-          "description": "f018"
+          "value": "@needle-prefix017",
+          "label": "needle-prefix017",
+          "description": "needle-prefix017"
         },
         {
-          "value": "@f019",
-          "label": "f019",
-          "description": "f019"
+          "value": "@needle-prefix018",
+          "label": "needle-prefix018",
+          "description": "needle-prefix018"
         }
       ],
-      "prefix": "@"
+      "prefix": "@needle"
     },
     "calls": [
       [
@@ -3094,124 +3094,127 @@
         "--exclude",
         ".git/*",
         "--exclude",
-        ".git/**"
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "needle"
       ]
     ],
     "id": "limit_21",
     "group": "attachment_search_limits_results_after_stable_ranking"
   },
   {
-    "text": "@",
-    "col": 1,
+    "text": "@needle",
+    "col": 7,
     "base": "/work",
     "executable": "/tool/fd",
     "chunks": [
-      "f000\u0000f001\u0000f002\u0000f003\u0000f004\u0000f005\u0000f006\u0000f007\u0000f008\u0000f009\u0000f010\u0000f011\u0000f012\u0000f013\u0000f014\u0000f015\u0000f016\u0000f017\u0000f018\u0000f019\u0000f020\u0000f021\u0000f022\u0000f023\u0000f024\u0000f025\u0000f026\u0000f027\u0000f028\u0000f029\u0000f030\u0000f031\u0000f032\u0000f033\u0000f034\u0000f035\u0000f036\u0000f037\u0000f038\u0000f039\u0000f040\u0000f041\u0000f042\u0000f043\u0000f044\u0000f045\u0000f046\u0000f047\u0000f048\u0000f049\u0000f050\u0000f051\u0000f052\u0000f053\u0000f054\u0000f055\u0000f056\u0000f057\u0000f058\u0000f059\u0000f060\u0000f061\u0000f062\u0000f063\u0000f064\u0000f065\u0000f066\u0000f067\u0000f068\u0000f069\u0000f070\u0000f071\u0000f072\u0000f073\u0000f074\u0000f075\u0000f076\u0000f077\u0000f078\u0000f079\u0000f080\u0000f081\u0000f082\u0000f083\u0000f084\u0000f085\u0000f086\u0000f087\u0000f088\u0000f089\u0000f090\u0000f091\u0000f092\u0000f093\u0000f094\u0000f095\u0000f096\u0000f097\u0000f098\u0000f099\u0000"
+      "unmatched000\u0000unmatched001\u0000unmatched002\u0000unmatched003\u0000unmatched004\u0000unmatched005\u0000unmatched006\u0000unmatched007\u0000unmatched008\u0000unmatched009\u0000unmatched010\u0000unmatched011\u0000unmatched012\u0000unmatched013\u0000unmatched014\u0000unmatched015\u0000unmatched016\u0000unmatched017\u0000unmatched018\u0000unmatched019\u0000unmatched020\u0000unmatched021\u0000unmatched022\u0000unmatched023\u0000unmatched024\u0000unmatched025\u0000unmatched026\u0000unmatched027\u0000unmatched028\u0000unmatched029\u0000unmatched030\u0000unmatched031\u0000unmatched032\u0000unmatched033\u0000unmatched034\u0000unmatched035\u0000unmatched036\u0000unmatched037\u0000unmatched038\u0000unmatched039\u0000unmatched040\u0000unmatched041\u0000unmatched042\u0000unmatched043\u0000unmatched044\u0000unmatched045\u0000unmatched046\u0000unmatched047\u0000unmatched048\u0000unmatched049\u0000unmatched050\u0000unmatched051\u0000unmatched052\u0000unmatched053\u0000unmatched054\u0000unmatched055\u0000unmatched056\u0000unmatched057\u0000unmatched058\u0000unmatched059\u0000unmatched060\u0000unmatched061\u0000unmatched062\u0000unmatched063\u0000unmatched064\u0000unmatched065\u0000unmatched066\u0000unmatched067\u0000unmatched068\u0000unmatched069\u0000unmatched070\u0000unmatched071\u0000unmatched072\u0000unmatched073\u0000unmatched074\u0000unmatched075\u0000unmatched076\u0000unmatched077\u0000unmatched078\u0000needle-prefix000\u0000needle-prefix001\u0000needle-prefix002\u0000needle-prefix003\u0000needle-prefix004\u0000needle-prefix005\u0000needle-prefix006\u0000needle-prefix007\u0000needle-prefix008\u0000needle-prefix009\u0000needle-prefix010\u0000needle-prefix011\u0000needle-prefix012\u0000needle-prefix013\u0000needle-prefix014\u0000needle-prefix015\u0000needle-prefix016\u0000needle-prefix017\u0000needle-prefix018\u0000needle-prefix019\u0000needle\u0000"
     ],
     "result": {
       "items": [
         {
-          "value": "@f000",
-          "label": "f000",
-          "description": "f000"
+          "value": "@needle",
+          "label": "needle",
+          "description": "needle"
         },
         {
-          "value": "@f001",
-          "label": "f001",
-          "description": "f001"
+          "value": "@needle-prefix000",
+          "label": "needle-prefix000",
+          "description": "needle-prefix000"
         },
         {
-          "value": "@f002",
-          "label": "f002",
-          "description": "f002"
+          "value": "@needle-prefix001",
+          "label": "needle-prefix001",
+          "description": "needle-prefix001"
         },
         {
-          "value": "@f003",
-          "label": "f003",
-          "description": "f003"
+          "value": "@needle-prefix002",
+          "label": "needle-prefix002",
+          "description": "needle-prefix002"
         },
         {
-          "value": "@f004",
-          "label": "f004",
-          "description": "f004"
+          "value": "@needle-prefix003",
+          "label": "needle-prefix003",
+          "description": "needle-prefix003"
         },
         {
-          "value": "@f005",
-          "label": "f005",
-          "description": "f005"
+          "value": "@needle-prefix004",
+          "label": "needle-prefix004",
+          "description": "needle-prefix004"
         },
         {
-          "value": "@f006",
-          "label": "f006",
-          "description": "f006"
+          "value": "@needle-prefix005",
+          "label": "needle-prefix005",
+          "description": "needle-prefix005"
         },
         {
-          "value": "@f007",
-          "label": "f007",
-          "description": "f007"
+          "value": "@needle-prefix006",
+          "label": "needle-prefix006",
+          "description": "needle-prefix006"
         },
         {
-          "value": "@f008",
-          "label": "f008",
-          "description": "f008"
+          "value": "@needle-prefix007",
+          "label": "needle-prefix007",
+          "description": "needle-prefix007"
         },
         {
-          "value": "@f009",
-          "label": "f009",
-          "description": "f009"
+          "value": "@needle-prefix008",
+          "label": "needle-prefix008",
+          "description": "needle-prefix008"
         },
         {
-          "value": "@f010",
-          "label": "f010",
-          "description": "f010"
+          "value": "@needle-prefix009",
+          "label": "needle-prefix009",
+          "description": "needle-prefix009"
         },
         {
-          "value": "@f011",
-          "label": "f011",
-          "description": "f011"
+          "value": "@needle-prefix010",
+          "label": "needle-prefix010",
+          "description": "needle-prefix010"
         },
         {
-          "value": "@f012",
-          "label": "f012",
-          "description": "f012"
+          "value": "@needle-prefix011",
+          "label": "needle-prefix011",
+          "description": "needle-prefix011"
         },
         {
-          "value": "@f013",
-          "label": "f013",
-          "description": "f013"
+          "value": "@needle-prefix012",
+          "label": "needle-prefix012",
+          "description": "needle-prefix012"
         },
         {
-          "value": "@f014",
-          "label": "f014",
-          "description": "f014"
+          "value": "@needle-prefix013",
+          "label": "needle-prefix013",
+          "description": "needle-prefix013"
         },
         {
-          "value": "@f015",
-          "label": "f015",
-          "description": "f015"
+          "value": "@needle-prefix014",
+          "label": "needle-prefix014",
+          "description": "needle-prefix014"
         },
         {
-          "value": "@f016",
-          "label": "f016",
-          "description": "f016"
+          "value": "@needle-prefix015",
+          "label": "needle-prefix015",
+          "description": "needle-prefix015"
         },
         {
-          "value": "@f017",
-          "label": "f017",
-          "description": "f017"
+          "value": "@needle-prefix016",
+          "label": "needle-prefix016",
+          "description": "needle-prefix016"
         },
         {
-          "value": "@f018",
-          "label": "f018",
-          "description": "f018"
+          "value": "@needle-prefix017",
+          "label": "needle-prefix017",
+          "description": "needle-prefix017"
         },
         {
-          "value": "@f019",
-          "label": "f019",
-          "description": "f019"
+          "value": "@needle-prefix018",
+          "label": "needle-prefix018",
+          "description": "needle-prefix018"
         }
       ],
-      "prefix": "@"
+      "prefix": "@needle"
     },
     "calls": [
       [
@@ -3235,124 +3238,127 @@
         "--exclude",
         ".git/*",
         "--exclude",
-        ".git/**"
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "needle"
       ]
     ],
     "id": "limit_100",
     "group": "attachment_search_limits_results_after_stable_ranking"
   },
   {
-    "text": "@",
-    "col": 1,
+    "text": "@needle",
+    "col": 7,
     "base": "/work",
     "executable": "/tool/fd",
     "chunks": [
-      "f000\u0000f001\u0000f002\u0000f003\u0000f004\u0000f005\u0000f006\u0000f007\u0000f008\u0000f009\u0000f010\u0000f011\u0000f012\u0000f013\u0000f014\u0000f015\u0000f016\u0000f017\u0000f018\u0000f019\u0000f020\u0000f021\u0000f022\u0000f023\u0000f024\u0000f025\u0000f026\u0000f027\u0000f028\u0000f029\u0000f030\u0000f031\u0000f032\u0000f033\u0000f034\u0000f035\u0000f036\u0000f037\u0000f038\u0000f039\u0000f040\u0000f041\u0000f042\u0000f043\u0000f044\u0000f045\u0000f046\u0000f047\u0000f048\u0000f049\u0000f050\u0000f051\u0000f052\u0000f053\u0000f054\u0000f055\u0000f056\u0000f057\u0000f058\u0000f059\u0000f060\u0000f061\u0000f062\u0000f063\u0000f064\u0000f065\u0000f066\u0000f067\u0000f068\u0000f069\u0000f070\u0000f071\u0000f072\u0000f073\u0000f074\u0000f075\u0000f076\u0000f077\u0000f078\u0000f079\u0000f080\u0000f081\u0000f082\u0000f083\u0000f084\u0000f085\u0000f086\u0000f087\u0000f088\u0000f089\u0000f090\u0000f091\u0000f092\u0000f093\u0000f094\u0000f095\u0000f096\u0000f097\u0000f098\u0000f099\u0000f100\u0000"
+      "unmatched000\u0000unmatched001\u0000unmatched002\u0000unmatched003\u0000unmatched004\u0000unmatched005\u0000unmatched006\u0000unmatched007\u0000unmatched008\u0000unmatched009\u0000unmatched010\u0000unmatched011\u0000unmatched012\u0000unmatched013\u0000unmatched014\u0000unmatched015\u0000unmatched016\u0000unmatched017\u0000unmatched018\u0000unmatched019\u0000unmatched020\u0000unmatched021\u0000unmatched022\u0000unmatched023\u0000unmatched024\u0000unmatched025\u0000unmatched026\u0000unmatched027\u0000unmatched028\u0000unmatched029\u0000unmatched030\u0000unmatched031\u0000unmatched032\u0000unmatched033\u0000unmatched034\u0000unmatched035\u0000unmatched036\u0000unmatched037\u0000unmatched038\u0000unmatched039\u0000unmatched040\u0000unmatched041\u0000unmatched042\u0000unmatched043\u0000unmatched044\u0000unmatched045\u0000unmatched046\u0000unmatched047\u0000unmatched048\u0000unmatched049\u0000unmatched050\u0000unmatched051\u0000unmatched052\u0000unmatched053\u0000unmatched054\u0000unmatched055\u0000unmatched056\u0000unmatched057\u0000unmatched058\u0000unmatched059\u0000unmatched060\u0000unmatched061\u0000unmatched062\u0000unmatched063\u0000unmatched064\u0000unmatched065\u0000unmatched066\u0000unmatched067\u0000unmatched068\u0000unmatched069\u0000unmatched070\u0000unmatched071\u0000unmatched072\u0000unmatched073\u0000unmatched074\u0000unmatched075\u0000unmatched076\u0000unmatched077\u0000unmatched078\u0000unmatched079\u0000needle-prefix000\u0000needle-prefix001\u0000needle-prefix002\u0000needle-prefix003\u0000needle-prefix004\u0000needle-prefix005\u0000needle-prefix006\u0000needle-prefix007\u0000needle-prefix008\u0000needle-prefix009\u0000needle-prefix010\u0000needle-prefix011\u0000needle-prefix012\u0000needle-prefix013\u0000needle-prefix014\u0000needle-prefix015\u0000needle-prefix016\u0000needle-prefix017\u0000needle-prefix018\u0000needle-prefix019\u0000needle\u0000"
     ],
     "result": {
       "items": [
         {
-          "value": "@f000",
-          "label": "f000",
-          "description": "f000"
+          "value": "@needle",
+          "label": "needle",
+          "description": "needle"
         },
         {
-          "value": "@f001",
-          "label": "f001",
-          "description": "f001"
+          "value": "@needle-prefix000",
+          "label": "needle-prefix000",
+          "description": "needle-prefix000"
         },
         {
-          "value": "@f002",
-          "label": "f002",
-          "description": "f002"
+          "value": "@needle-prefix001",
+          "label": "needle-prefix001",
+          "description": "needle-prefix001"
         },
         {
-          "value": "@f003",
-          "label": "f003",
-          "description": "f003"
+          "value": "@needle-prefix002",
+          "label": "needle-prefix002",
+          "description": "needle-prefix002"
         },
         {
-          "value": "@f004",
-          "label": "f004",
-          "description": "f004"
+          "value": "@needle-prefix003",
+          "label": "needle-prefix003",
+          "description": "needle-prefix003"
         },
         {
-          "value": "@f005",
-          "label": "f005",
-          "description": "f005"
+          "value": "@needle-prefix004",
+          "label": "needle-prefix004",
+          "description": "needle-prefix004"
         },
         {
-          "value": "@f006",
-          "label": "f006",
-          "description": "f006"
+          "value": "@needle-prefix005",
+          "label": "needle-prefix005",
+          "description": "needle-prefix005"
         },
         {
-          "value": "@f007",
-          "label": "f007",
-          "description": "f007"
+          "value": "@needle-prefix006",
+          "label": "needle-prefix006",
+          "description": "needle-prefix006"
         },
         {
-          "value": "@f008",
-          "label": "f008",
-          "description": "f008"
+          "value": "@needle-prefix007",
+          "label": "needle-prefix007",
+          "description": "needle-prefix007"
         },
         {
-          "value": "@f009",
-          "label": "f009",
-          "description": "f009"
+          "value": "@needle-prefix008",
+          "label": "needle-prefix008",
+          "description": "needle-prefix008"
         },
         {
-          "value": "@f010",
-          "label": "f010",
-          "description": "f010"
+          "value": "@needle-prefix009",
+          "label": "needle-prefix009",
+          "description": "needle-prefix009"
         },
         {
-          "value": "@f011",
-          "label": "f011",
-          "description": "f011"
+          "value": "@needle-prefix010",
+          "label": "needle-prefix010",
+          "description": "needle-prefix010"
         },
         {
-          "value": "@f012",
-          "label": "f012",
-          "description": "f012"
+          "value": "@needle-prefix011",
+          "label": "needle-prefix011",
+          "description": "needle-prefix011"
         },
         {
-          "value": "@f013",
-          "label": "f013",
-          "description": "f013"
+          "value": "@needle-prefix012",
+          "label": "needle-prefix012",
+          "description": "needle-prefix012"
         },
         {
-          "value": "@f014",
-          "label": "f014",
-          "description": "f014"
+          "value": "@needle-prefix013",
+          "label": "needle-prefix013",
+          "description": "needle-prefix013"
         },
         {
-          "value": "@f015",
-          "label": "f015",
-          "description": "f015"
+          "value": "@needle-prefix014",
+          "label": "needle-prefix014",
+          "description": "needle-prefix014"
         },
         {
-          "value": "@f016",
-          "label": "f016",
-          "description": "f016"
+          "value": "@needle-prefix015",
+          "label": "needle-prefix015",
+          "description": "needle-prefix015"
         },
         {
-          "value": "@f017",
-          "label": "f017",
-          "description": "f017"
+          "value": "@needle-prefix016",
+          "label": "needle-prefix016",
+          "description": "needle-prefix016"
         },
         {
-          "value": "@f018",
-          "label": "f018",
-          "description": "f018"
+          "value": "@needle-prefix017",
+          "label": "needle-prefix017",
+          "description": "needle-prefix017"
         },
         {
-          "value": "@f019",
-          "label": "f019",
-          "description": "f019"
+          "value": "@needle-prefix018",
+          "label": "needle-prefix018",
+          "description": "needle-prefix018"
         }
       ],
-      "prefix": "@"
+      "prefix": "@needle"
     },
     "calls": [
       [
@@ -3376,7 +3382,10 @@
         "--exclude",
         ".git/*",
         "--exclude",
-        ".git/**"
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "needle"
       ]
     ],
     "id": "limit_101",
