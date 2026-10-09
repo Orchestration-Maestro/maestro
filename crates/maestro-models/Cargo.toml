@@ -40,7 +40,11 @@ wasm-bindgen-futures = "=0.4.79"
 getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "time"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "time", "net"] }
+
+hyper = { version = "=1.11.1", default-features = false, features = ["server", "http1"] }
+hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }
+http-body-util = { version = "=0.1.5", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "=1.53.2", features = ["rt", "time", "test-util"] }

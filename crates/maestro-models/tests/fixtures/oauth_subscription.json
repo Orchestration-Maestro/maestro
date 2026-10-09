@@ -1,0 +1,1860 @@
+{
+  "precedence": [
+    {
+      "input": "",
+      "expected": {}
+    },
+    {
+      "input": "\t\r\n",
+      "expected": {}
+    },
+    {
+      "input": "code",
+      "expected": {
+        "code": "code"
+      }
+    },
+    {
+      "input": " code ",
+      "expected": {
+        "code": "code"
+      }
+    },
+    {
+      "input": "code#state",
+      "expected": {
+        "code": "code",
+        "state": "state"
+      }
+    },
+    {
+      "input": "code#state#ignored",
+      "expected": {
+        "code": "code",
+        "state": "state"
+      }
+    },
+    {
+      "input": "#state",
+      "expected": {
+        "code": "",
+        "state": "state"
+      }
+    },
+    {
+      "input": "code#",
+      "expected": {
+        "code": "code",
+        "state": ""
+      }
+    },
+    {
+      "input": "a##b",
+      "expected": {
+        "code": "a",
+        "state": ""
+      }
+    },
+    {
+      "input": "CODE=a&state=s",
+      "expected": {
+        "code": "CODE=a&state=s"
+      }
+    },
+    {
+      "input": "state=s",
+      "expected": {
+        "code": "state=s"
+      }
+    },
+    {
+      "input": "https://x/cb?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/cb?code=a&code=b&state=s&state=t",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/cb#code=a&state=s",
+      "expected": {}
+    },
+    {
+      "input": "https://x/cb?code=&state=",
+      "expected": {
+        "code": "",
+        "state": ""
+      }
+    },
+    {
+      "input": "https://x/cb?state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/",
+      "expected": {}
+    },
+    {
+      "input": "mailto:code#state",
+      "expected": {}
+    },
+    {
+      "input": "http://[bad]?code=a&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=a#state=s",
+      "expected": {
+        "code": "code=a",
+        "state": "state=s"
+      }
+    },
+    {
+      "input": "a#b?code=c",
+      "expected": {
+        "code": "a",
+        "state": "b?code=c"
+      }
+    },
+    {
+      "input": "﻿https://x/?code=a&state=s﻿",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/?%63ode=decoded&state=s",
+      "expected": {
+        "code": "decoded",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/?code=a\nb&state=s",
+      "expected": {
+        "code": "ab",
+        "state": "s"
+      }
+    }
+  ],
+  "whitespace": [
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": "\tedge\t",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\t",
+      "expected": {}
+    },
+    {
+      "input": "\nedge\n",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\n",
+      "expected": {}
+    },
+    {
+      "input": "\u000bedge\u000b",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\u000b",
+      "expected": {}
+    },
+    {
+      "input": "\fedge\f",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\f",
+      "expected": {}
+    },
+    {
+      "input": "\redge\r",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\r",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": "　edge　",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "　",
+      "expected": {}
+    },
+    {
+      "input": "﻿edge﻿",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "﻿",
+      "expected": {}
+    },
+    {
+      "input": "edge",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "",
+      "expected": {
+        "code": ""
+      }
+    },
+    {
+      "input": "᠎edge᠎",
+      "expected": {
+        "code": "᠎edge᠎"
+      }
+    },
+    {
+      "input": "᠎",
+      "expected": {
+        "code": "᠎"
+      }
+    },
+    {
+      "input": "​edge​",
+      "expected": {
+        "code": "​edge​"
+      }
+    },
+    {
+      "input": "​",
+      "expected": {
+        "code": "​"
+      }
+    },
+    {
+      "input": "⁠edge⁠",
+      "expected": {
+        "code": "⁠edge⁠"
+      }
+    },
+    {
+      "input": "⁠",
+      "expected": {
+        "code": "⁠"
+      }
+    }
+  ],
+  "query": [
+    {
+      "input": "code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "xcode=a&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "state=s&code=a",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=a&code=b&state=x&state=y",
+      "expected": {
+        "code": "a",
+        "state": "x"
+      }
+    },
+    {
+      "input": "code=&code=b&state=&state=y",
+      "expected": {
+        "code": "",
+        "state": ""
+      }
+    },
+    {
+      "input": "code=a+b&state=s%2Bz",
+      "expected": {
+        "code": "a b",
+        "state": "s+z"
+      }
+    },
+    {
+      "input": "code=%E2%9C%93&state=%F0%9F%98%80",
+      "expected": {
+        "code": "✓",
+        "state": "😀"
+      }
+    },
+    {
+      "input": "code=%ZZ&state=%FF",
+      "expected": {
+        "code": "%ZZ",
+        "state": "�"
+      }
+    },
+    {
+      "input": "code=a=b&state=s",
+      "expected": {
+        "code": "a=b",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=%00&state=s",
+      "expected": {
+        "code": "\u0000",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=a;state=s",
+      "expected": {
+        "code": "a;state=s"
+      }
+    },
+    {
+      "input": "data:text/plain,abc?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=0&state=0",
+      "expected": {
+        "code": "0",
+        "state": "0"
+      }
+    },
+    {
+      "input": "//x/cb?code=a&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "?state=x&code=c",
+      "expected": {
+        "code": "c",
+        "state": "x"
+      }
+    },
+    {
+      "input": "http:\\x\\?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "input": {
+        "name": "Error",
+        "message": "boom"
+      },
+      "expected": "Error: boom"
+    },
+    {
+      "input": {
+        "name": "Custom",
+        "message": "failed",
+        "code": "ECONNRESET",
+        "errno": 0
+      },
+      "expected": "Custom: failed; code=ECONNRESET; errno=0"
+    },
+    {
+      "input": {
+        "name": "",
+        "message": "",
+        "code": "",
+        "errno": -2
+      },
+      "expected": ": ; errno=-2"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "numeric",
+        "code": 0,
+        "errno": 0
+      },
+      "expected": "Error: numeric; errno=0"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "numeric",
+        "code": "0",
+        "errno": {
+          "number": "-0"
+        }
+      },
+      "expected": "Error: numeric; code=0; errno=0"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "numeric",
+        "code": "BIG",
+        "errno": 1e+21
+      },
+      "expected": "Error: numeric; code=BIG; errno=1e+21"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "numeric",
+        "code": "TINY",
+        "errno": 1e-07
+      },
+      "expected": "Error: numeric; code=TINY; errno=1e-7"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "outer",
+        "code": "TOP",
+        "errno": 7,
+        "stack": "supplied outer",
+        "cause": {
+          "name": "Inner",
+          "message": "inside",
+          "code": "INNER",
+          "stack": "supplied inner"
+        }
+      },
+      "expected": "Error: outer; code=TOP; errno=7; cause=Inner: inside; code=INNER; stack=supplied inner; stack=supplied outer"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "empty stack",
+        "stack": ""
+      },
+      "expected": "Error: empty stack"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "string errno",
+        "errno": "E_NATIVE"
+      },
+      "expected": "Error: string errno; errno=E_NATIVE"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "nonfinite",
+        "code": {
+          "number": "NaN"
+        },
+        "errno": {
+          "number": "NaN"
+        }
+      },
+      "expected": "Error: nonfinite; errno=NaN"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "nonfinite",
+        "code": {
+          "number": "Infinity"
+        },
+        "errno": {
+          "number": "Infinity"
+        }
+      },
+      "expected": "Error: nonfinite; code=Infinity; errno=Infinity"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "nonfinite",
+        "code": {
+          "number": "-Infinity"
+        },
+        "errno": {
+          "number": "-Infinity"
+        }
+      },
+      "expected": "Error: nonfinite; code=-Infinity; errno=-Infinity"
+    },
+    {
+      "input": {
+        "name": "Error",
+        "message": "cause text",
+        "cause": "cause literal"
+      },
+      "expected": "Error: cause text; cause=cause literal"
+    },
+    {
+      "input": "literal",
+      "expected": "literal"
+    }
+  ],
+  "routes": [
+    {
+      "path": "",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Callback route not found."
+    },
+    {
+      "path": "/",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Callback route not found."
+    },
+    {
+      "path": "/wrong?code=c&state=good",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Callback route not found."
+    },
+    {
+      "path": "/callback/",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Callback route not found."
+    },
+    {
+      "path": "/CALLBACK",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Callback route not found."
+    },
+    {
+      "path": "/callback?error=access_denied&code=c&state=good",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication did not complete.",
+      "details": "Error: access_denied"
+    },
+    {
+      "path": "/callback?error=%3Cscript%3E%26%22%27",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication did not complete.",
+      "details": "Error: &lt;script&gt;&amp;&quot;&#39;"
+    },
+    {
+      "path": "/callback?code=c",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Missing code or state parameter."
+    },
+    {
+      "path": "/callback?state=good",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Missing code or state parameter."
+    },
+    {
+      "path": "/callback?code=&state=good",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Missing code or state parameter."
+    },
+    {
+      "path": "/callback?code=c&state=",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Missing code or state parameter."
+    },
+    {
+      "path": "/callback?code=c&state=bad",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "State mismatch."
+    },
+    {
+      "path": "/callback?code=&code=c&state=good",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Missing code or state parameter."
+    },
+    {
+      "path": "/callback?code=c&state=bad&state=good",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "State mismatch."
+    },
+    {
+      "path": "/callback?code=c&state=&state=good",
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Missing code or state parameter."
+    },
+    {
+      "path": "http://[",
+      "status": 500,
+      "contentType": "text/plain; charset=utf-8",
+      "body": "Internal error"
+    },
+    {
+      "path": "//[",
+      "status": 500,
+      "contentType": "text/plain; charset=utf-8",
+      "body": "Internal error"
+    },
+    {
+      "path": "/callback?error=&code=a&code=b&state=good",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    },
+    {
+      "path": "/callback?code=second&state=good",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    },
+    {
+      "path": "/x/../callback?code=c&state=good",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    },
+    {
+      "path": "http://elsewhere/callback?code=c&state=good",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    },
+    {
+      "path": "//elsewhere/callback?code=c&state=good",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    },
+    {
+      "path": "/call%62ack?code=c&state=good",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Callback route not found."
+    },
+    {
+      "path": "/callback?code=c&state=good&state=bad",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    },
+    {
+      "path": "/callback?code=%00&state=good",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "message": "Anthropic authentication completed. You can close this window."
+    }
+  ],
+  "tokens": [
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"access\",\"refresh_token\":\"refresh\",\"expires_in\":3600}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "refresh",
+          "access": "access",
+          "expires": 1700003300123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"\",\"refresh_token\":\"\",\"expires_in\":0}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "",
+          "access": "",
+          "expires": 1699999700123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":-2.5}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999697623
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":0.125,\"scope\":\"ignored\",\"extra\":3}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999700248
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "null",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "42",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "true",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "\"text\"",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "[]",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\"}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":1,\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":null,\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":false,\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":[],\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":\"1\"}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":null}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":[]}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1.7976931348623157e308}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1e400}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "not json",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1} trailing",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":-0}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999700123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1e-400}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999700123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":9007199254740993}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 9007200954740692000
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":7,\"access_token\":\"last\",\"refresh_token\":null,\"refresh_token\":\"r\",\"expires_in\":\"bad\",\"expires_in\":2}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "last",
+          "expires": 1699999702123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"first\",\"access_token\":7,\"refresh_token\":\"r\",\"expires_in\":2}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1,\"extra\":1e400,\"other\":\"\\ud800\"}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1,\"extra\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"\\ud800\",\"access_token\":\"last\",\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "last",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"\\ud800\",\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1,\"\\ud800\":0}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"access\",\"refresh_token\":\"refresh\",\"expires_in\":3600}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "refresh",
+          "access": "access",
+          "expires": 1700003300123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"\",\"refresh_token\":\"\",\"expires_in\":0}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "",
+          "access": "",
+          "expires": 1699999700123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":-2.5}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999697623
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":0.125,\"scope\":\"ignored\",\"extra\":3}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999700248
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "null",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "42",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "true",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "\"text\"",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "[]",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\"}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":1,\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":null,\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":false,\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":[],\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":\"1\"}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":null}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":[]}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1.7976931348623157e308}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1e400}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "not json",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1} trailing",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":-0}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999700123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1e-400}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999700123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":9007199254740993}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 9007200954740692000
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":7,\"access_token\":\"last\",\"refresh_token\":null,\"refresh_token\":\"r\",\"expires_in\":\"bad\",\"expires_in\":2}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "last",
+          "expires": 1699999702123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"first\",\"access_token\":7,\"refresh_token\":\"r\",\"expires_in\":2}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1,\"extra\":1e400,\"other\":\"\\ud800\"}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1,\"extra\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"\\ud800\",\"access_token\":\"last\",\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "last",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"\\ud800\",\"refresh_token\":\"r\",\"expires_in\":1}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1,\"\\ud800\":0}",
+      "status": 200,
+      "clock": 1700000000123,
+      "expected": {
+        "credentials": {
+          "refresh": "r",
+          "access": "a",
+          "expires": 1699999701123
+        }
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{}",
+      "status": 201,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "",
+      "status": 204,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "exchange",
+      "body": "",
+      "status": 205,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "exchange",
+      "body": "{}",
+      "status": 299,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "exchange",
+      "body": "denied",
+      "status": 300,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 300
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "denied",
+      "status": 401,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 401
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "denied",
+      "status": 429,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 429
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "denied",
+      "status": 500,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 500
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "{}",
+      "status": 201,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "",
+      "status": 204,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "refresh",
+      "body": "",
+      "status": 205,
+      "clock": 1700000000123,
+      "expected": "invalid_json"
+    },
+    {
+      "mode": "refresh",
+      "body": "{}",
+      "status": 299,
+      "clock": 1700000000123,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "denied",
+      "status": 300,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 300
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "denied",
+      "status": 401,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 401
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "denied",
+      "status": 429,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 429
+      }
+    },
+    {
+      "mode": "refresh",
+      "body": "denied",
+      "status": 500,
+      "clock": 1700000000123,
+      "expected": {
+        "http_status": 500
+      }
+    },
+    {
+      "mode": "exchange",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1e305}",
+      "status": 200,
+      "clock": 1.7976931348623157e+308,
+      "expected": "invalid_token"
+    },
+    {
+      "mode": "refresh",
+      "body": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1e305}",
+      "status": 200,
+      "clock": 1.7976931348623157e+308,
+      "expected": "invalid_token"
+    }
+  ],
+  "requests": [
+    {
+      "mode": "exchange",
+      "input": "quote\" slash\\ newline\n plus+ / space 😀",
+      "request": {
+        "url": "https://platform.claude.com/v1/oauth/token",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        "body": "{\"grant_type\":\"authorization_code\",\"client_id\":\"9d1c250a-e61b-44d9-88ed-5944d1962f5e\",\"code\":\"quote\\\" slash\\\\ newline\\n plus+ / space 😀\",\"state\":\"quote\\\" slash\\\\ newline\\n plus+ / space 😀\",\"redirect_uri\":\"http://localhost:53692/callback\",\"code_verifier\":\"quote\\\" slash\\\\ newline\\n plus+ / space 😀\"}"
+      },
+      "result": {
+        "refresh": "r",
+        "access": "a",
+        "expires": 1699999711123
+      }
+    },
+    {
+      "mode": "refresh",
+      "input": "quote\" slash\\ newline\n plus+ / space 😀",
+      "request": {
+        "url": "https://platform.claude.com/v1/oauth/token",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        "body": "{\"grant_type\":\"refresh_token\",\"client_id\":\"9d1c250a-e61b-44d9-88ed-5944d1962f5e\",\"refresh_token\":\"quote\\\" slash\\\\ newline\\n plus+ / space 😀\"}"
+      },
+      "result": {
+        "refresh": "r",
+        "access": "a",
+        "expires": 1699999711123
+      }
+    }
+  ],
+  "response_text": [
+    {
+      "bytes": [],
+      "expected": ""
+    },
+    {
+      "bytes": [
+        228,
+        184,
+        150,
+        231,
+        149,
+        140,
+        32,
+        240,
+        159,
+        152,
+        128
+      ],
+      "expected": "世界 😀"
+    },
+    {
+      "bytes": [
+        239,
+        187,
+        191,
+        123,
+        34,
+        97,
+        99,
+        99,
+        101,
+        115,
+        115,
+        95,
+        116,
+        111,
+        107,
+        101,
+        110,
+        34,
+        58,
+        34,
+        97,
+        34,
+        44,
+        34,
+        114,
+        101,
+        102,
+        114,
+        101,
+        115,
+        104,
+        95,
+        116,
+        111,
+        107,
+        101,
+        110,
+        34,
+        58,
+        34,
+        114,
+        34,
+        44,
+        34,
+        101,
+        120,
+        112,
+        105,
+        114,
+        101,
+        115,
+        95,
+        105,
+        110,
+        34,
+        58,
+        49,
+        125
+      ],
+      "expected": "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1}"
+    },
+    {
+      "bytes": [
+        239,
+        187,
+        191,
+        239,
+        187,
+        191,
+        123,
+        125
+      ],
+      "expected": "﻿{}"
+    },
+    {
+      "bytes": [
+        123,
+        34,
+        97,
+        99,
+        99,
+        101,
+        115,
+        115,
+        95,
+        116,
+        111,
+        107,
+        101,
+        110,
+        34,
+        58,
+        34,
+        255,
+        34,
+        44,
+        34,
+        114,
+        101,
+        102,
+        114,
+        101,
+        115,
+        104,
+        95,
+        116,
+        111,
+        107,
+        101,
+        110,
+        34,
+        58,
+        34,
+        114,
+        34,
+        44,
+        34,
+        101,
+        120,
+        112,
+        105,
+        114,
+        101,
+        115,
+        95,
+        105,
+        110,
+        34,
+        58,
+        49,
+        125
+      ],
+      "expected": "{\"access_token\":\"�\",\"refresh_token\":\"r\",\"expires_in\":1}"
+    },
+    {
+      "bytes": [
+        226,
+        130
+      ],
+      "expected": "�"
+    },
+    {
+      "bytes": [
+        237,
+        160,
+        128
+      ],
+      "expected": "���"
+    }
+  ]
+}
