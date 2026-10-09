@@ -189,10 +189,13 @@ Check external API types and documentation rather than guessing. Prefer
 ordinary top-level imports and clear Rust types. Ask before removing intentional functionality; dependency errors do not justify downgrading behavior. Keep
 configurable keybindings with registered defaults, never hard-coded checks.
 The generated catalog belongs to its generator: change generation inputs or
-logic, never edit generated model records directly.
+logic, never edit generated model records directly. Its owning module declaration
+skips rustfmt so generated source stays byte-for-byte as emitted.
 Native developer feed APIs are explicit operations separate from runtime catalog
 lookup; they return descriptors without registering models or writing catalog files.
-See [catalog feed acquisition](docs/models/generation.md).
+Explicit `just models-generate`, `models-build` and workspace `build` acquire
+feeds; ordinary Cargo builds, checks, tests and watches remain offline. See
+[catalog generation](docs/models/generation.md).
 
 For issue/PR comments, write the complete text to a temporary file, use
 `gh issue comment --body-file` or `gh pr comment --body-file`, and Preview
