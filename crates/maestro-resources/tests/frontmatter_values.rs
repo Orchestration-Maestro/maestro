@@ -1,4 +1,6 @@
-use maestro_resources::{FrontmatterValue, parse_frontmatter, strip_frontmatter};
+use maestro_resources::{
+    FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, strip_frontmatter,
+};
 
 /// Keep literal scalar newlines separate from body trimming.
 #[test]
@@ -441,4 +443,346 @@ fn maestro_frontmatter_resolves_schema_scalar_spellings() {
             "{yaml}"
         );
     }
+}
+
+/// Expected single-description metadata with the unmodified fixture body.
+fn description(text: &str) -> ParsedFrontmatter {
+    ParsedFrontmatter {
+        frontmatter: FrontmatterValue::Mapping(vec![(
+            "description".into(),
+            FrontmatterValue::String(text.into()),
+        )]),
+        body: "Body".into(),
+    }
+}
+
+/// Adjacent escapes span supplementary boundaries without altering surrounding text.
+#[test]
+fn paired_escapes_decode_scalar_boundaries() {
+    for (input, expected) in [
+        (
+            "---\ndescription: \"\\uD83C\\uDF89\"\n---\nBody",
+            Ok(description("\u{1f389}")),
+        ),
+        (
+            "---\ndescription: \"\\uD800\\uDC00\"\n---\nBody",
+            Ok(description("\u{10000}")),
+        ),
+        (
+            "---\ndescription: \"\\uDBFF\\uDFFF\"\n---\nBody",
+            Ok(description("\u{10ffff}")),
+        ),
+        (
+            "---\ndescription: \"\\uDBFF\\uDC00\"\n---\nBody",
+            Ok(description("\u{10fc00}")),
+        ),
+        (
+            "---\ndescription: \"\\uD800\\uDFFF\"\n---\nBody",
+            Ok(description("\u{103ff}")),
+        ),
+        (
+            "---\ndescription: \"pre\\ud83C\\uDf89post\"\n---\nBody",
+            Ok(description("pre\u{1f389}post")),
+        ),
+        (
+            "---\ndescription: \"\\uD83C\\uDF89\\uD834\\uDD1E\"\n---\nBody",
+            Ok(description("\u{1f389}\u{1d11e}")),
+        ),
+        (
+            "---\n\"\\uD83C\\uDF89\"\n---\nBody",
+            Ok(ParsedFrontmatter {
+                frontmatter: FrontmatterValue::String("\u{1f389}".into()),
+                body: "Body".into(),
+            }),
+        ),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Two complete escapes advance markers to subsequent tokens and errors.
+#[test]
+fn paired_escapes_preserve_scanner_position() {
+    for (input, expected) in [
+        ("---\ndescription: \"\\uD83C\\uDF89\"\nafter: retained\n---\nBody", Ok(ParsedFrontmatter { frontmatter: FrontmatterValue::Mapping(vec![("description".into(), FrontmatterValue::String("\u{1f389}".into())), ("after".into(), FrontmatterValue::String("retained".into()))]), body: "Body".into() })),
+        ("---\n[\"\\uD83C\\uDF89\", next, {key: \"\\uD834\\uDD1E\"}]\n---\nBody", Ok(ParsedFrontmatter { frontmatter: FrontmatterValue::Sequence(vec![FrontmatterValue::String("\u{1f389}".into()), FrontmatterValue::String("next".into()), FrontmatterValue::Mapping(vec![("key".into(), FrontmatterValue::String("\u{1d11e}".into()))])]), body: "Body".into() })),
+        ("---\ndescription: \"\\uD83C\\uDF89\\n\\u0041\"\n---\nBody", Ok(description("\u{1f389}\nA"))),
+        ("---\ndescription: \"\\uD83C\\uDF89\"\nafter: \"\\q\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found unknown escape character at byte 35 line 2 column 8".into(), line: Some(2), column: Some(8) })),
+        ("---\ndescription: \"\\uD83C\\uDF89\" invalid\n---\nBody", Err(FrontmatterError { message: "invalid trailing content after double-quoted scalar at byte 28 line 1 column 29".into(), line: Some(1), column: Some(29) })),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Decoded keys retain equality, insertion order and collection-key discard behavior.
+#[test]
+fn paired_escapes_preserve_mapping_identity() {
+    for (input, expected) in [
+        (
+            "---\nextra: {\"\\uD83C\\uDF89\": [\"\\uD834\\uDD1E\", \"literal\"]}\n---\nBody",
+            Ok(ParsedFrontmatter {
+                frontmatter: FrontmatterValue::Mapping(vec![(
+                    "extra".into(),
+                    FrontmatterValue::Mapping(vec![(
+                        "\u{1f389}".into(),
+                        FrontmatterValue::Sequence(vec![
+                            FrontmatterValue::String("\u{1d11e}".into()),
+                            FrontmatterValue::String("literal".into()),
+                        ]),
+                    )]),
+                )]),
+                body: "Body".into(),
+            }),
+        ),
+        (
+            "---\n\"\\uD83C\\uDF89\": first\n\"\\\\uD83C\\\\uDF89\": second\n\"other\": third\n---\nBody",
+            Ok(ParsedFrontmatter {
+                frontmatter: FrontmatterValue::Mapping(vec![
+                    ("\u{1f389}".into(), FrontmatterValue::String("first".into())),
+                    (
+                        "\\uD83C\\uDF89".into(),
+                        FrontmatterValue::String("second".into()),
+                    ),
+                    ("other".into(), FrontmatterValue::String("third".into())),
+                ]),
+                body: "Body".into(),
+            }),
+        ),
+        (
+            "---\n\"\\uD83C\\uDF89\": first\n\"\u{1f389}\": second\n---\nBody",
+            Err(FrontmatterError {
+                message: "Duplicated key in mapping".into(),
+                line: None,
+                column: None,
+            }),
+        ),
+        (
+            "---\n\"\u{1f389}\": first\n\"\\uD83C\\uDF89\": second\n---\nBody",
+            Err(FrontmatterError {
+                message: "Duplicated key in mapping".into(),
+                line: None,
+                column: None,
+            }),
+        ),
+        (
+            "---\n? [\"\\uD83C\\uDF89\"]\n: dropped\ndescription: retained\n---\nBody",
+            Ok(description("retained")),
+        ),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Explicit scalar tags and completed aliases retain the decoded character.
+#[test]
+fn paired_escapes_resolve_tags_and_aliases() {
+    for (input, expected) in [
+        (
+            "---\ndescription: &a \"\\uD83C\\uDF89\"\nextra: *a\n---\nBody",
+            Ok(ParsedFrontmatter {
+                frontmatter: FrontmatterValue::Mapping(vec![
+                    (
+                        "description".into(),
+                        FrontmatterValue::String("\u{1f389}".into()),
+                    ),
+                    ("extra".into(), FrontmatterValue::String("\u{1f389}".into())),
+                ]),
+                body: "Body".into(),
+            }),
+        ),
+        (
+            "---\ndescription: !!str \"\\uD83C\\uDF89\"\n---\nBody",
+            Ok(description("\u{1f389}")),
+        ),
+        (
+            "---\ndescription: !!int \"\\uD83C\\uDF89\"\n---\nBody",
+            Ok(description("\u{1f389}")),
+        ),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Only double-quoted scalar escape dispatch interprets paired backslashes.
+#[test]
+fn escape_scanning_respects_quoting_and_literal_text() {
+    for (input, expected) in [
+        (
+            "---\ndescription: '\\uD83C\\uDF89'\n---\nBody",
+            Ok(description("\\uD83C\\uDF89")),
+        ),
+        (
+            "---\ndescription: \\uD83C\\uDF89\n---\nBody",
+            Ok(description("\\uD83C\\uDF89")),
+        ),
+        (
+            "---\ndescription: |\n  \\uD83C\\uDF89\n---\nBody",
+            Ok(description("\\uD83C\\uDF89\n")),
+        ),
+        (
+            "---\ndescription: >\n  \\uD83C\\uDF89\n---\nBody",
+            Ok(description("\\uD83C\\uDF89\n")),
+        ),
+        (
+            "---\ndescription: ok # \"\\uD800\"\n---\nBody",
+            Ok(description("ok")),
+        ),
+        (
+            "---\ndescription: \"\\\\uD83C\\\\uDF89\"\n---\nBody",
+            Ok(description("\\uD83C\\uDF89")),
+        ),
+        (
+            "---\ndescription: \"\\\"\\uD83C\\uDF89\"\n---\nBody",
+            Ok(description("\"\u{1f389}")),
+        ),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Valid short, BMP and eight-digit escapes keep their original scalar values.
+#[test]
+fn ordinary_scalar_escapes_keep_their_values() {
+    for (input, expected) in [
+        (
+            "---\ndescription: \"\\uD7FF\\uE000\\uFFFF\\u0000\"\n---\nBody",
+            Ok(description("\u{d7ff}\u{e000}\u{ffff}\0")),
+        ),
+        (
+            "---\ndescription: \"\\U0001F389\"\n---\nBody",
+            Ok(description("\u{1f389}")),
+        ),
+        (
+            "---\ndescription: \"\\U00010000\\U0010FFFF\"\n---\nBody",
+            Ok(description("\u{10000}\u{10ffff}")),
+        ),
+        (
+            "---\ndescription: \"\\x00\\x41\\xFF\"\n---\nBody",
+            Ok(description("\0A\u{ff}")),
+        ),
+        (
+            "---\ndescription: \"\\0\\a\\b\\t\\n\\v\\f\\r\\e\\ \\\"\\/\\\\\\N\\_\\L\\P\"\n---\nBody",
+            Ok(ParsedFrontmatter {
+                frontmatter: FrontmatterValue::Mapping(vec![(
+                    "description".into(),
+                    FrontmatterValue::String(
+                        "\0\u{7}\u{8}\t\n\u{b}\u{c}\r\u{1b} \"/\\\u{85}\u{a0}\u{2028}\u{2029}"
+                            .into(),
+                    ),
+                )]),
+                body: "Body".into(),
+            }),
+        ),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Unpaired and separated surrogate escapes keep exact native diagnostics.
+#[test]
+fn invalid_surrogates_keep_native_errors() {
+    for (input, expected) in [
+        ("---\ndescription: \"\\uD800\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uDBFF\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uDC00\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uDFFF\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uDF89\\uD83C\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD800\\uDBFF\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD800\\uDBFFsuffix\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD800\\uE000\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD800\\u0041\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C \\uDF89\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\n  \\uDF89\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\\n  \\uDF89\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\\\uDF89\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\U0000DF89\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\U0000D83C\\uDF89\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\uDF89\\uD800\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: ok\nextra: \"\\uD800\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 23 line 2 column 8".into(), line: Some(2), column: Some(8) })),
+        ("---\ndescription: ok\n\"\\uD800\": ignored\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 16 line 2 column 1".into(), line: Some(2), column: Some(1) })),
+        ("---\n? [\"\\uD800\"]\n: discarded\ndescription: kept\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 3 line 1 column 4".into(), line: Some(1), column: Some(4) })),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Malformed numeric escapes preserve native error precedence and coordinates.
+#[test]
+fn malformed_escapes_keep_native_errors() {
+    for (input, expected) in [
+        ("---\ndescription: \"\\uGGGG\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, did not find expected hexadecimal number at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\uGGGG\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, did not find expected hexadecimal number at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\uDF8\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\uD83C\\u\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\U00110000\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+        ("---\ndescription: \"\\q\"\n---\nBody", Err(FrontmatterError { message: "while parsing a quoted scalar, found unknown escape character at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) })),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Duplicate keys, incomplete collections and cyclic aliases keep native errors.
+#[test]
+fn frontmatter_structure_errors_keep_native_errors() {
+    for (input, expected) in [
+        (
+            "---\ndescription: a\ndescription: b\n---\nBody",
+            Err(FrontmatterError {
+                message: "Duplicated key in mapping".into(),
+                line: None,
+                column: None,
+            }),
+        ),
+        (
+            "---\nfoo: [bar\n---\nBody",
+            Err(FrontmatterError {
+                message:
+                    "while parsing a flow sequence, expected ',' or ']' at byte 9 line 2 column 1"
+                        .into(),
+                line: Some(2),
+                column: Some(1),
+            }),
+        ),
+        (
+            "---\ndescription: ok\nextra: &a {self: *a}\n---\nBody",
+            Err(FrontmatterError {
+                message: "Unresolved YAML alias".into(),
+                line: None,
+                column: None,
+            }),
+        ),
+    ] {
+        assert_eq!(parse_frontmatter(input), expected, "{input}");
+    }
+}
+
+/// Body-only extraction still validates metadata and uses existing whitespace rules.
+#[test]
+fn strip_frontmatter_validates_pair_escapes() {
+    for (input, body) in [
+        (
+            "---\ndescription: \"\\uD83C\\uDF89\"\n---\n\u{feff} Body \u{feff}",
+            "Body",
+        ),
+        (
+            "---\ndescription: \"\\uD83C\\uDF89\"\n---\n\u{85}Body\u{85}",
+            "\u{85}Body\u{85}",
+        ),
+        (
+            "---\r\ndescription: \"\\uD83C\\uDF89\"\r\n---\r\nBody\r\nnext",
+            "Body\nnext",
+        ),
+        (
+            "description: \"\\uD800\"\nBody",
+            "description: \"\\uD800\"\nBody",
+        ),
+        (
+            "---\ndescription: \"\\uD800\"\nBody",
+            "---\ndescription: \"\\uD800\"\nBody",
+        ),
+    ] {
+        assert_eq!(strip_frontmatter(input).unwrap(), body, "{input}");
+    }
+    assert_eq!(strip_frontmatter("---\ndescription: \"\\uD800\"\n---\nBody").unwrap_err(), FrontmatterError { message: "while parsing a quoted scalar, found invalid Unicode character escape code at byte 13 line 1 column 14".into(), line: Some(1), column: Some(14) });
 }

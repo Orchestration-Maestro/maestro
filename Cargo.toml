@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/*"]
+exclude = ["vendor/yaml-rust2"]
 resolver = "3"
 
 [workspace.dependencies]
@@ -32,3 +33,6 @@ excessive_nesting = "forbid"
 unwrap_used = "forbid"
 expect_used = "forbid"
 panic = "forbid"
+
+[patch.crates-io]
+yaml-rust2 = { path = "vendor/yaml-rust2" }

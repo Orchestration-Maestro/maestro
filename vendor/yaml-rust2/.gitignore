@@ -1,0 +1,6 @@
+*.swp
+/perf.*
+/target
+/coverage.sh
+/doc
+/pages
