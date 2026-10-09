@@ -256,9 +256,9 @@ fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() ->
         .err()
         .ok_or("raw nested member is unread")?;
     assert!(failure.to_string().contains("unread members"), "{failure}");
-    let call = json!({"type":"toolCall","id":"undefined|undefined","name":"lookup","arguments":{}});
+    let call = json!({"type":"toolCall","id":"c|i","name":"lookup","arguments":{}});
     let mut call_row = json!({"events":[
-        {"type":"response.output_item.added","item":{"type":"function_call","name":"lookup","arguments":"{}"}},
+        {"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":"{}"}},
         {"type":"response.output_item.done","item":{"type":"function_call"}},
         {"type":"response.completed"}
     ],"expected":{"result":{"content":[call],"stopReason":"toolUse"},"events":[

@@ -32,11 +32,10 @@ and defaults `strict` to false; an explicit absent strict value sends null.
 ## Event reduction
 
 `process_responses_stream` selects an event branch before decoding its members.
-Unknown events and mismatched deltas leave unused fields unread. Concatenated
-values use string rendering, while selected typed assignments reject values the
-record cannot represent. Missing or null required containers and malformed
-consumed strings return native diagnostics. An initial message's last content part is inspected
-only when a matching delta needs its kind.
+Unknown events and mismatched deltas leave unused fields unread. Missing or null
+required containers and malformed consumed strings return native diagnostics. An
+initial message's last content part is inspected only when a matching delta needs
+its kind.
 
 Text, thinking and tool-call updates share the supplied output handle. Every
 opened block retains its index even if a caller appends another block. Final
@@ -59,9 +58,11 @@ usage is published before status selection, including when that selection fails.
 Only a stop outcome is upgraded to tool use when a call exists.
 
 Direct errors render `Error Code {code}: {message}`. Failed responses prefer a
-truthy error, then a truthy incomplete reason, otherwise no-details text. Objects
-render as `[object Object]` without reading their members; arrays are joined
-iteratively with commas and empty null entries.
+truthy error, then a truthy incomplete reason, otherwise no-details text. Selected
+SDK string fields, including deltas, call identity, error details and final text
+parts, reject nonstrings or missing required values with native typed-read errors.
+The read occurs only when its branch uses the value; already published content
+survives a later malformed field. Raw truthiness still selects source defaults.
 
 The reducer consumes to source EOF, propagating later failures even after
 completion. EOF without a completed or incomplete event returns

@@ -5,9 +5,7 @@ use std::sync::{Arc, PoisonError};
 
 use serde_json::value::RawValue;
 
-use super::wire::{
-    appended, arguments, field, joined, kind, last, required, signature, spelled, string,
-};
+use super::wire::{appended, arguments, field, joined, kind, last, required, signature, string};
 use super::{OpenAIResponsesStreamOptions, failure, native};
 use crate::providers::json_text::{
     compact_raw, is_truthy, member, or_zero, parsed_arguments, raw_json, raw_number,
@@ -230,8 +228,8 @@ impl<'a> Reducer<'a> {
             "error" => {
                 return Err(failure(format!(
                     "Error Code {}: {}",
-                    spelled(member(raw, "code"))?,
-                    spelled(member(raw, "message"))?
+                    string(member(raw, "code"))?,
+                    string(member(raw, "message"))?
                 )));
             }
             "response.failed" => return Err(failed_error(member(raw, "response"))?),
@@ -288,11 +286,11 @@ impl<'a> Reducer<'a> {
             }
             (Current::Reasoning(_, summary), "response.reasoning_summary_text.delta") => {
                 if last(summary.as_deref())?.is_some_and(is_truthy) {
-                    self.append(&spelled(member(raw, "delta"))?);
+                    self.append(&string(member(raw, "delta"))?);
                 }
             }
             (Current::Reasoning(_, _), "response.reasoning_text.delta") => {
-                self.append(&spelled(member(raw, "delta"))?);
+                self.append(&string(member(raw, "delta"))?);
             }
             (Current::Message(_, content), "response.content_part.added") => {
                 let part = required(member(raw, "part"))?;
@@ -313,7 +311,7 @@ impl<'a> Reducer<'a> {
                 if let Some(part) = last(content.as_deref())?
                     && kind(part, "type")? == expected
                 {
-                    self.append(&spelled(member(raw, "delta"))?);
+                    self.append(&string(member(raw, "delta"))?);
                 }
             }
             (
@@ -469,7 +467,7 @@ fn argument_update(
     event_kind: &str,
 ) -> Result<(JsonObject, Option<String>), DiagnosticErrorInfo> {
     let delta = if event_kind == "response.function_call_arguments.delta" {
-        let delta = spelled(member(raw, "delta"))?;
+        let delta = string(member(raw, "delta"))?;
         scratch.push_str(&delta);
         Some(delta)
     } else {
@@ -489,8 +487,8 @@ fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErr
     Ok(ToolCall {
         id: format!(
             "{}|{}",
-            spelled(member(raw, "call_id"))?,
-            spelled(member(raw, "id"))?
+            string(member(raw, "call_id"))?,
+            string(member(raw, "id"))?
         ),
         name: string(member(raw, "name"))?,
         arguments,
@@ -503,19 +501,12 @@ fn stop_reason(status: Option<&RawValue>) -> Result<StopReason, DiagnosticErrorI
     let Some(status) = status.filter(|raw| is_truthy(raw)) else {
         return Ok(StopReason::Stop);
     };
-    let recognized = if status.get().starts_with('"') {
-        spelled(Some(status))?
-    } else {
-        String::new()
-    };
+    let recognized = string(Some(status))?;
     match recognized.as_str() {
         "completed" | "in_progress" | "queued" => Ok(StopReason::Stop),
         "incomplete" => Ok(StopReason::Length),
         "failed" | "cancelled" => Ok(StopReason::Error),
-        _ => Err(failure(format!(
-            "Unhandled stop reason: {}",
-            spelled(Some(status))?
-        ))),
+        _ => Err(failure(format!("Unhandled stop reason: {recognized}"))),
     }
 }
 
@@ -529,15 +520,15 @@ fn failed_error(response: Option<&RawValue>) -> Result<DiagnosticErrorInfo, Diag
         let message = member(error, "message").filter(|raw| is_truthy(raw));
         format!(
             "{}: {}",
-            code.map_or_else(|| Ok("unknown".to_owned()), |raw| spelled(Some(raw)))?,
-            message.map_or_else(|| Ok("no message".to_owned()), |raw| spelled(Some(raw)))?
+            code.map_or_else(|| Ok("unknown".to_owned()), |raw| string(Some(raw)))?,
+            message.map_or_else(|| Ok("no message".to_owned()), |raw| string(Some(raw)))?
         )
     } else if let Some(reason) = response
         .and_then(|raw| member(raw, "incomplete_details"))
         .and_then(|raw| member(raw, "reason"))
         .filter(|raw| is_truthy(raw))
     {
-        format!("incomplete: {}", spelled(Some(reason))?)
+        format!("incomplete: {}", string(Some(reason))?)
     } else {
         "Unknown error (no error details in response)".to_owned()
     };

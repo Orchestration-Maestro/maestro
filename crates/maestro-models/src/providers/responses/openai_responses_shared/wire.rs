@@ -5,7 +5,7 @@ use serde_json::value::RawValue;
 
 use super::native;
 use crate::DiagnosticErrorInfo;
-use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json, raw_number};
+use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json};
 
 /// Decode a selected typed member; missing members are absent and invalid types fail.
 pub(super) fn field<T: DeserializeOwned>(
@@ -32,12 +32,12 @@ pub(super) fn required(raw: Option<&RawValue>) -> Result<&RawValue, DiagnosticEr
 /// Recognize string discriminators without coercing other values into a kind.
 pub(super) fn kind(raw: &RawValue, name: &str) -> Result<String, DiagnosticErrorInfo> {
     match member(raw, name).filter(|value| value.get().starts_with('"')) {
-        Some(value) => spelled(Some(value)),
+        Some(value) => string(Some(value)),
         None => Ok(String::new()),
     }
 }
 
-/// Decode a required string at a typed assignment boundary.
+/// Decode a required string at its selected read site.
 pub(super) fn string(raw: Option<&RawValue>) -> Result<String, DiagnosticErrorInfo> {
     serde_json::from_str(raw.map_or("null", RawValue::get)).map_err(|error| native(&error))
 }
@@ -90,8 +90,7 @@ pub(super) fn joined(
             } else {
                 "text"
             };
-            let value = member(part, key).filter(|raw| raw.get() != "null");
-            value.map_or_else(|| Ok(String::new()), |raw| spelled(Some(raw)))
+            string(member(part, key))
         })
         .collect::<Result<Vec<_>, _>>()
         .map(|parts| parts.join(if message { "" } else { "\n\n" }))
@@ -112,43 +111,4 @@ pub(super) fn signature(raw: &RawValue) -> Result<String, DiagnosticErrorInfo> {
     }
     payload.push('}');
     compact_raw(raw_json(&payload).map_err(|error| native(&error))?).map_err(|error| native(&error))
-}
-
-/// Render diagnostic values, leaving object interiors opaque and expanding arrays iteratively.
-pub(super) fn spelled(raw: Option<&RawValue>) -> Result<String, DiagnosticErrorInfo> {
-    let Some(raw) = raw else {
-        return Ok("undefined".to_owned());
-    };
-    let mut pending = vec![Some(raw)];
-    let mut output = String::new();
-    while let Some(next) = pending.pop() {
-        let Some(value) = next else {
-            output.push(',');
-            continue;
-        };
-        match value.get().as_bytes().first() {
-            Some(b'{') => output.push_str("[object Object]"),
-            Some(b'[') => {
-                let children: Vec<&RawValue> =
-                    serde_json::from_str(value.get()).map_err(|error| native(&error))?;
-                pending.extend(children.into_iter().enumerate().rev().flat_map(
-                    |(index, child)| {
-                        let value = (child.get() != "null").then_some(Some(child));
-                        value.into_iter().chain((index > 0).then_some(None))
-                    },
-                ));
-            }
-            Some(b'"') => output.push_str(
-                &serde_json::from_str::<String>(value.get()).map_err(|error| native(&error))?,
-            ),
-            _ => {
-                if let Some(number) = raw_number(value) {
-                    output.push_str(ryu_js::Buffer::new().format(number));
-                } else {
-                    output.push_str(value.get());
-                }
-            }
-        }
-    }
-    Ok(output)
 }
