@@ -76,3 +76,19 @@ fn corpus(name: &str, count: usize) {
     }
     assert_eq!(selected, count);
 }
+
+mod request_payload;
+
+mod request_corpus;
+
+mod request_options;
+
+mod request_transport;
+
+mod request_sending;
+
+mod request_diagnostics;
+
+mod request_lifetime;
+
+mod request_fixture;
