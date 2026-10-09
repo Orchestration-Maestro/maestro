@@ -16,7 +16,7 @@ impl Renderer<'_> {
                 Kind::CodeBlock(text, info) => rows.extend(self.code_block(text, info.as_deref())),
                 Kind::HtmlBlock(text) => rows.push(self.style(
                     text.trim_matches(crate::text::utils::is_whitespace_scalar),
-                    Style::Default,
+                    style,
                 )),
                 Kind::Quote(children, _) => rows.extend(self.quote(children, width)),
                 Kind::Rule => rows.push((self.theme.hr)(&"─".repeat(width.min(80)))),

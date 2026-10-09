@@ -3570,7 +3570,7 @@
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
-      "profile": "ansi",
+      "profile": "quote-magenta",
       "hyperlinks": false,
       "indent": null,
       "lines": [
@@ -3585,7 +3585,7 @@
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
-      "profile": "ansi",
+      "profile": "quote-cyan",
       "hyperlinks": false,
       "indent": null,
       "lines": [
@@ -3632,7 +3632,7 @@
       "width": 25,
       "padding_x": 0,
       "padding_y": 0,
-      "profile": "ansi",
+      "profile": "quote-yellow",
       "hyperlinks": false,
       "indent": null,
       "lines": [

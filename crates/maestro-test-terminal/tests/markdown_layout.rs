@@ -568,3 +568,148 @@ fn markdown_www_requires_a_period_after_the_prefix() {
     );
     assert_eq!(component.render(48), [expected]);
 }
+
+#[test]
+fn markdown_quote_continuation_autolinks_use_decoded_text() {
+    let terminal = TerminalImage::new(|_| None, || 1);
+    let mut capabilities = terminal.get_capabilities();
+    capabilities.hyperlinks = true;
+    terminal.set_capabilities(capabilities);
+    let component = Markdown::new(
+        "> intro\n>https://example.com".to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        terminal,
+    );
+    assert_eq!(
+        component.render(21),
+        [
+            format!("│ intro{}", " ".repeat(14)),
+            format!(
+                "│ {}",
+                maestro_tui::hyperlink("https://example.com", "https://example.com")
+            ),
+        ]
+    );
+}
+
+#[test]
+fn markdown_list_heading_fallback_retains_authored_bracket_escapes() {
+    for text in [r"- # \[x\]", "- \\[x\\]\n  ==="] {
+        let component = Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        assert_eq!(component.render(7), [r"- \[x\]"], "{text}");
+    }
+}
+
+#[test]
+fn markdown_consumed_definitions_do_not_create_blank_rows() {
+    for (text, expected) in [
+        ("[u]: /target\n[u]", vec!["u (/target)"]),
+        ("[u]: /target\n", vec![""]),
+    ] {
+        let component = Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        assert_eq!(component.render(11), expected, "{text:?}");
+        assert_eq!(component.render(11), expected, "cached {text:?}");
+    }
+}
+
+#[test]
+fn markdown_rejected_web_candidates_leave_emails_eligible() {
+    for (input, expected) in [
+        (
+            "www.user@example.com",
+            maestro_tui::hyperlink("www.user@example.com", "mailto:www.user@example.com"),
+        ),
+        (
+            "https://localhost/a@example.com",
+            format!(
+                "https://localhost/{}",
+                maestro_tui::hyperlink("a@example.com", "mailto:a@example.com")
+            ),
+        ),
+    ] {
+        let terminal = TerminalImage::new(|_| None, || 1);
+        let mut capabilities = terminal.get_capabilities();
+        capabilities.hyperlinks = true;
+        terminal.set_capabilities(capabilities);
+        let component = Markdown::new(
+            input.to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            terminal,
+        );
+        assert_eq!(component.render(input.len()), [expected], "{input}");
+    }
+}
+
+#[test]
+fn markdown_autolink_suffix_rules_repeat_until_stable() {
+    for (input, tail) in [
+        ("https://example.com/a.)", ".)"),
+        ("https://example.com/a.&unknown;)", ".&unknown;)"),
+    ] {
+        let terminal = TerminalImage::new(|_| None, || 1);
+        let mut capabilities = terminal.get_capabilities();
+        capabilities.hyperlinks = true;
+        terminal.set_capabilities(capabilities);
+        let component = Markdown::new(
+            input.to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            terminal,
+        );
+        assert_eq!(
+            component.render(input.len()),
+            [format!(
+                "{}{tail}",
+                maestro_tui::hyperlink("https://example.com/a", "https://example.com/a")
+            )],
+            "{input}"
+        );
+    }
+}
+
+#[test]
+fn markdown_duplicate_definitions_are_consumed_without_gaps() {
+    let component = Markdown::new(
+        "[u]: /a\n[u]: /b\n[u]".to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        TerminalImage::new(|_| None, || 1),
+    );
+    assert_eq!(component.render(6), ["u (/a)"]);
+}

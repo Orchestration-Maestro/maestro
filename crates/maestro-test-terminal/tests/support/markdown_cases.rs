@@ -121,36 +121,66 @@ pub fn cases(name: &str) {
             MarkdownOptions {
                 padding_x: case.padding_x,
                 padding_y: case.padding_y,
-                default_text_style: if case.profile == "thinking" {
-                    Some(maestro_tui::DefaultTextStyle {
-                        color: Some(Box::new(|s| paint(s, &[(90, 39)]))),
-                        decorations: vec![maestro_tui::TextDecoration::Italic],
-                        ..maestro_tui::DefaultTextStyle::default()
-                    })
-                } else if case.profile == "default-style" {
-                    Some(maestro_tui::DefaultTextStyle {
-                        color: Some(Box::new(|s| format!("\x1b[90m{s}\x1b[39m"))),
-                        bg_color: Some(Box::new(|s| format!("\x1b[44m{s}\x1b[49m"))),
-                        decorations: vec![
-                            maestro_tui::TextDecoration::Bold,
-                            maestro_tui::TextDecoration::Italic,
-                            maestro_tui::TextDecoration::Strikethrough,
-                            maestro_tui::TextDecoration::Underline,
-                        ],
-                    })
-                } else {
-                    None
-                },
+                default_text_style: default_style(&case.profile),
             },
             std::rc::Rc::new(theme),
             terminal,
         );
+        let rows = component.render(case.width);
+        let suppressed = match case.profile.as_str() {
+            "quote-magenta" => Some("\x1b[35m"),
+            "quote-cyan" => Some("\x1b[36m"),
+            "quote-yellow" => Some("\x1b[33m"),
+            _ => None,
+        };
+        if let Some(color) = suppressed {
+            assert!(
+                rows.iter().all(|row| !row.contains(color)),
+                "{name}: base foreground leaked"
+            );
+        }
         assert_eq!(
-            component.render(case.width),
-            case.lines,
+            rows, case.lines,
             "{name}: {:?}, width {}",
-            case.text,
-            case.width
+            case.text, case.width
         );
+    }
+}
+
+/// Supplies the base style carried by a recorded callback profile.
+fn default_style(profile: &str) -> Option<maestro_tui::DefaultTextStyle> {
+    if profile == "thinking" {
+        Some(maestro_tui::DefaultTextStyle {
+            color: Some(Box::new(|s| paint(s, &[(90, 39)]))),
+            decorations: vec![maestro_tui::TextDecoration::Italic],
+            ..maestro_tui::DefaultTextStyle::default()
+        })
+    } else if profile == "default-style" {
+        Some(maestro_tui::DefaultTextStyle {
+            color: Some(Box::new(|s| format!("\x1b[90m{s}\x1b[39m"))),
+            bg_color: Some(Box::new(|s| format!("\x1b[44m{s}\x1b[49m"))),
+            decorations: vec![
+                maestro_tui::TextDecoration::Bold,
+                maestro_tui::TextDecoration::Italic,
+                maestro_tui::TextDecoration::Strikethrough,
+                maestro_tui::TextDecoration::Underline,
+            ],
+        })
+    } else {
+        let code = match profile {
+            "quote-magenta" => Some(35),
+            "quote-cyan" => Some(36),
+            "quote-yellow" => Some(33),
+            _ => None,
+        };
+        code.map(|code| maestro_tui::DefaultTextStyle {
+            color: Some(Box::new(move |s| paint(s, &[(code, 39)]))),
+            decorations: if code == 33 {
+                vec![maestro_tui::TextDecoration::Italic]
+            } else {
+                vec![]
+            },
+            ..maestro_tui::DefaultTextStyle::default()
+        })
     }
 }

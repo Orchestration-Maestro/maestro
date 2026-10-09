@@ -1,139 +1,237 @@
-//! Extended URL and email recognition on authored text runs.
-use super::parse::{Kind, Node};
+//! Extended URL and email recognition on mapped native text runs.
+use super::parse::{Kind, Node, Text};
 use regress::Regex;
 use std::{ops::Range, sync::LazyLock};
 
-/// URL/www/email candidates from the published extended-link grammar.
-static CANDIDATES: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::new(r"(?:https?://|www\.)[^\s<]+|[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+")
-        .ok()
-});
+/// Web candidates, validated before reserving any text.
+static WEB: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?:https?://|www\.)[^\s<]+").ok());
+/// Email candidates scanned independently of rejected web spans.
+static EMAIL: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+").ok());
 /// Domain labels permit Unicode letters and numbers.
 static DOMAIN: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+", "u").ok());
 
-/// Selects eligible literal link spans without decoding their contents.
-fn links(raw: &str) -> Vec<(Range<usize>, String)> {
-    let Some(regex) = CANDIDATES.as_ref() else {
-        return Vec::new();
-    };
-    regex
-        .find_iter(raw)
-        .filter_map(|matched| {
-            let start = matched.range().start;
-            let candidate = &raw[matched.range()];
-            let email = !candidate.starts_with("http://")
-                && !candidate.starts_with("https://")
-                && !candidate.starts_with("www.");
-            let label = if email {
-                if candidate.ends_with(['-', '_']) {
-                    return None;
-                }
-                candidate.trim_end_matches('.')
+/// Selects valid candidates before excluding overlaps with accepted links.
+fn links(run: &Run) -> Vec<(Range<usize>, String)> {
+    let mut candidates = Vec::new();
+    for (regex, email) in [(WEB.as_ref(), false), (EMAIL.as_ref(), true)] {
+        if let Some(regex) = regex {
+            candidates.extend(
+                regex
+                    .find_iter(&run.decoded)
+                    .filter_map(|matched| candidate(run, matched.range(), email)),
+            );
+        }
+    }
+    candidates.sort_by_key(|(range, _)| range.start);
+    let mut end = 0;
+    candidates
+        .into_iter()
+        .filter(|(range, _)| {
+            if range.start < end {
+                false
             } else {
-                if raw[..start]
-                    .chars()
-                    .next_back()
-                    .is_some_and(|c| !c.is_whitespace() && !"*_~(".contains(c))
-                {
-                    return None;
-                }
-                let mut label =
-                    candidate.trim_end_matches(['?', '!', '.', ',', ':', '*', '_', '~']);
-                let opens = label.matches('(').count();
-                let mut closes = label.matches(')').count();
-                while label.ends_with(')') && closes > opens {
-                    label = &label[..label.len() - 1];
-                    closes -= 1;
-                }
-                if label.ends_with(';')
-                    && let Some((head, tail)) = label.rsplit_once('&')
-                    && tail[..tail.len() - 1]
-                        .chars()
-                        .all(|c| c.is_ascii_alphanumeric())
-                    && tail.len() > 1
-                {
-                    label = head;
-                }
-                if !domain(label) {
-                    return None;
-                }
-                label
-            };
-            let href = if email {
-                format!("mailto:{label}")
-            } else if label.starts_with("www.") {
-                format!("http://{label}")
-            } else {
-                label.to_owned()
-            };
-            Some((start..start + label.len(), href))
+                end = range.end;
+                true
+            }
         })
         .collect()
 }
-
-/// Replaces links within one original run while retaining decoded non-link parts.
-pub(super) fn extend(parts: Vec<Node>, source: &str) -> Vec<Node> {
-    let (Some(first), Some(last)) = (parts.first(), parts.last()) else {
-        return parts;
+/// Validates one web or email match and retains its authored spelling.
+fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize>, String)> {
+    let authored = run.authored(range.clone());
+    let label = if email {
+        if authored.ends_with(['-', '_']) {
+            return None;
+        }
+        authored.trim_end_matches('.')
+    } else {
+        if run.decoded[..range.start]
+            .chars()
+            .next_back()
+            .is_some_and(|c| !c.is_whitespace() && !"*_~(".contains(c))
+        {
+            return None;
+        }
+        let label = suffix(authored);
+        if !domain(label) {
+            return None;
+        }
+        label
     };
-    let extent = first.range.start..last.range.end;
-    let raw = &source[extent.clone()];
+    let href = if email {
+        format!("mailto:{label}")
+    } else if label.starts_with("www.") {
+        format!("http://{label}")
+    } else {
+        label.to_owned()
+    };
+    let start = run.authored_offset(range.start);
+    Some((range.start..run.decoded_offset(start + label.len()), href))
+}
+/// Reduces punctuation, unbalanced closing parentheses and entity tails.
+fn suffix(candidate: &str) -> &str {
+    let mut label = candidate;
+    loop {
+        let previous = label.len();
+        label = label.trim_end_matches(['?', '!', '.', ',', ':', '*', '_', '~']);
+        let opens = label.matches('(').count();
+        let mut closes = label.matches(')').count();
+        while label.ends_with(')') && closes > opens {
+            label = &label[..label.len() - 1];
+            closes -= 1;
+        }
+        if label.ends_with(';')
+            && let Some((head, tail)) = label.rsplit_once('&')
+            && tail[..tail.len() - 1]
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric())
+            && tail.len() > 1
+        {
+            label = head;
+        }
+        if label.len() == previous {
+            return label;
+        }
+    }
+}
+
+/// One contiguous native text run with decoded-to-authored source units.
+struct Run {
+    /// Text used for recognition and display.
+    decoded: String,
+    /// Text used for selected literal link spelling.
+    authored: String,
+    /// Original text nodes and their decoded and authored buffer extents.
+    units: Vec<Unit>,
+}
+/// Buffer extents and source provenance of one native text unit.
+struct Unit {
+    /// Original normalized source extent.
+    source: Range<usize>,
+    /// Decoded buffer extent.
+    decoded: Range<usize>,
+    /// Authored buffer extent.
+    authored: Range<usize>,
+}
+impl Run {
+    /// Builds ordered buffers without container source bytes.
+    fn new(parts: Vec<Node>) -> Self {
+        let mut run = Self {
+            decoded: String::new(),
+            authored: String::new(),
+            units: Vec::new(),
+        };
+        for part in parts {
+            if let Kind::Text(text) = &part.kind {
+                let decoded = run.decoded.len();
+                let authored = run.authored.len();
+                run.decoded.push_str(&text.decoded);
+                run.authored.push_str(&text.authored);
+                run.units.push(Unit {
+                    source: part.range,
+                    decoded: decoded..run.decoded.len(),
+                    authored: authored..run.authored.len(),
+                });
+            }
+        }
+        run
+    }
+    /// Maps a decoded boundary to its authored unit, preserving atomic entities.
+    fn authored_offset(&self, offset: usize) -> usize {
+        self.units
+            .iter()
+            .find(|unit| unit.decoded.end > offset)
+            .map_or(self.authored.len(), |unit| {
+                let decoded = &unit.decoded;
+                let authored = &unit.authored;
+                authored.start
+                    + if self.decoded[decoded.clone()] == self.authored[authored.clone()] {
+                        offset - decoded.start
+                    } else {
+                        0
+                    }
+            })
+    }
+    /// Maps a selected authored boundary back to native display text.
+    fn decoded_offset(&self, offset: usize) -> usize {
+        self.units
+            .iter()
+            .find(|unit| unit.authored.end > offset)
+            .map_or(self.decoded.len(), |unit| {
+                let decoded = &unit.decoded;
+                let authored = &unit.authored;
+                decoded.start
+                    + if self.decoded[decoded.clone()] == self.authored[authored.clone()] {
+                        offset - authored.start
+                    } else {
+                        0
+                    }
+            })
+    }
+    /// Borrows literal text without copying the unused display content.
+    fn authored(&self, range: Range<usize>) -> &str {
+        &self.authored[self.authored_offset(range.start)..self.authored_offset(range.end)]
+    }
+    /// Selects display and literal text from the same mapped interval.
+    fn text(&self, range: Range<usize>) -> Text {
+        Text {
+            authored: self.authored(range.clone()).to_owned(),
+            decoded: self.decoded[range].to_owned(),
+        }
+    }
+    /// Preserves the source extent of selected native text units.
+    fn node(&self, range: Range<usize>) -> Node {
+        let start = self
+            .units
+            .iter()
+            .find(|unit| unit.decoded.end > range.start)
+            .map_or(0, |unit| unit.source.start);
+        let end = self
+            .units
+            .iter()
+            .rev()
+            .find(|unit| unit.decoded.start < range.end)
+            .map_or(start, |unit| unit.source.end);
+        Node {
+            kind: Kind::Text(self.text(range)),
+            range: start..end,
+        }
+    }
+}
+
+/// Replaces accepted links while preserving native-decoded surrounding text.
+pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
+    if parts.is_empty() {
+        return parts;
+    }
+    let run = Run::new(parts);
     let mut output = Vec::new();
     let mut end = 0;
-    for (range, href) in links(raw) {
+    for (range, href) in links(&run) {
         if range.start > end {
-            output.push(text(
-                &parts,
-                source,
-                extent.start + end..extent.start + range.start,
-            ));
+            output.push(run.node(end..range.start));
         }
-        let label = raw[range.clone()].to_owned();
-        let absolute = extent.start + range.start..extent.start + range.end;
-        let child = Node {
-            kind: Kind::Text(label.clone()),
-            range: absolute.clone(),
-        };
+        let label = run.authored(range.clone()).to_owned();
+        let mut child = run.node(range.clone());
+        child.kind = Kind::Text(Text {
+            decoded: label.clone(),
+            authored: label.clone(),
+        });
+        let absolute = child.range.clone();
         output.push(Node {
             kind: Kind::Link(vec![child], label, href),
             range: absolute,
         });
         end = range.end;
     }
-    if end == 0 {
-        return vec![text(&parts, source, extent)];
-    }
-    if end < raw.len() {
-        output.push(text(&parts, source, extent.start + end..extent.end));
+    if end < run.decoded.len() {
+        output.push(run.node(end..run.decoded.len()));
     }
     output
 }
-/// Decodes the selected non-link interval through its original native text parts.
-fn text(parts: &[Node], source: &str, range: Range<usize>) -> Node {
-    let decoded: String = parts
-        .iter()
-        .filter_map(|part| {
-            let Kind::Text(value) = &part.kind else {
-                return None;
-            };
-            let start = range.start.max(part.range.start);
-            let end = range.end.min(part.range.end);
-            if start >= end {
-                None
-            } else if source[part.range.clone()] == *value {
-                Some(source[start..end].to_owned())
-            } else {
-                Some(value.clone())
-            }
-        })
-        .collect();
-    Node {
-        kind: Kind::Text(decoded),
-        range,
-    }
-}
-
 /// Checks domain labels and the final two underscore-free segments.
 fn domain(label: &str) -> bool {
     let Some(regex) = DOMAIN.as_ref() else {

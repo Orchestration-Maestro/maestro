@@ -50,8 +50,15 @@ impl Renderer<'_> {
         let mut result = String::new();
         for node in nodes {
             let (text, restore) = match &node.kind {
-                Kind::Text(text)
-                | Kind::Html(text)
+                Kind::Text(text) => (
+                    text.decoded
+                        .split('\n')
+                        .map(|part| self.style(part, style))
+                        .collect::<Vec<_>>()
+                        .join("\n"),
+                    false,
+                ),
+                Kind::Html(text)
                 | Kind::HtmlBlock(text)
                 | Kind::Image(text)
                 | Kind::Heading(_, _, text)

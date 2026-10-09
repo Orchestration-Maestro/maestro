@@ -30,7 +30,7 @@ pub(super) enum Kind {
     /// Quote children and authored content without quote markers.
     Quote(Vec<Node>, String),
     /// Decoded text.
-    Text(String),
+    Text(Text),
     /// Code text and optional full fence information.
     CodeBlock(String, Option<String>),
     /// Styled children, authored label and renderer-facing destination.
@@ -47,6 +47,13 @@ pub(super) enum Kind {
     Code(String),
     /// A visible line break.
     Break,
+}
+/// One native text unit with separate display and authored spellings.
+pub(super) struct Text {
+    /// Native-decoded display content.
+    pub decoded: String,
+    /// Authored content with enclosing continuation prefixes removed.
+    pub authored: String,
 }
 /// Authored source and the native containers enclosing the current events.
 struct Source<'a> {
@@ -113,11 +120,11 @@ pub(super) fn parse(text: &str) -> Vec<Node> {
         .replace("\r\n", "\n")
         .replace('\r', "\n")
         .replace('\0', "\u{fffd}");
-    let mut events = Parser::new_ext(
+    let parser = Parser::new_ext(
         &source,
         Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS,
-    )
-    .into_offset_iter();
+    );
+    let mut events = parser.into_offset_iter();
     gaps(
         children(
             &mut events,
@@ -127,7 +134,10 @@ pub(super) fn parse(text: &str) -> Vec<Node> {
             },
             false,
         ),
-        &source,
+        &Source {
+            text: &source,
+            frame: None,
+        },
         0..source.len(),
     )
 }
@@ -138,32 +148,53 @@ fn children<'a>(
     blocked: bool,
 ) -> Vec<Node> {
     let mut nodes = Vec::new();
-    while let Some((event, range)) = events.next() {
+    while let Some((event, mut range)) = events.next() {
         let kind = match event {
             Event::Start(tag) => container(tag, events, source, blocked, &range),
             Event::Html(text) | Event::InlineHtml(text) => Kind::Html(text.into_string()),
             Event::Rule => Kind::Rule,
-            Event::Text(text) => Kind::Text(text.into_string()),
+            Event::Text(text) => {
+                if text
+                    .as_bytes()
+                    .first()
+                    .is_some_and(u8::is_ascii_punctuation)
+                    && source.text[..range.start]
+                        .bytes()
+                        .rev()
+                        .take_while(|byte| *byte == b'\\')
+                        .count()
+                        % 2
+                        == 1
+                {
+                    range.start -= 1;
+                }
+                Kind::Text(Text {
+                    decoded: text.into_string(),
+                    authored: source.authored(range.clone()),
+                })
+            }
             Event::Code(text) => Kind::Code(text.into_string()),
-            Event::SoftBreak => Kind::Text("\n".to_owned()),
+            Event::SoftBreak => Kind::Text(Text {
+                decoded: "\n".to_owned(),
+                authored: "\n".to_owned(),
+            }),
             Event::HardBreak => Kind::Break,
             Event::End(_) => break,
             _ => continue,
         };
         nodes.push(Node { kind, range });
     }
-    if blocked {
-        nodes
-    } else {
-        runs(nodes, source.text)
-    }
+    if blocked { nodes } else { runs(nodes) }
 }
 /// Retains blank source gaps around top-level blocks.
-fn gaps(nodes: Vec<Node>, source: &str, extent: Range<usize>) -> Vec<Node> {
+fn gaps(nodes: Vec<Node>, source: &Source<'_>, extent: Range<usize>) -> Vec<Node> {
+    if nodes.is_empty() {
+        return nodes;
+    }
     let mut result = Vec::new();
     let mut end = extent.start;
     for node in nodes {
-        if source[end..node.range.start].contains('\n') {
+        if blank_gap(source, end..node.range.start) {
             result.push(Node {
                 kind: Kind::Gap,
                 range: end..node.range.start,
@@ -171,18 +202,26 @@ fn gaps(nodes: Vec<Node>, source: &str, extent: Range<usize>) -> Vec<Node> {
         }
         end = node.range.end;
         if matches!(node.kind, Kind::List(..)) {
-            let trimmed = source[node.range.clone()].trim_end_matches(['\n', ' ', '\t']);
+            let trimmed = source.text[node.range.clone()].trim_end_matches(['\n', ' ', '\t']);
             end = (node.range.start + trimmed.len() + 1).min(end);
         }
         result.push(node);
     }
-    if source[end..extent.end].contains('\n') {
+    if blank_gap(source, end..extent.end) {
         result.push(Node {
             kind: Kind::Gap,
             range: end..extent.end,
         });
     }
     result
+}
+
+/// Classifies uncovered native lines after removing their enclosing prefixes.
+fn blank_gap(source: &Source<'_>, range: Range<usize>) -> bool {
+    source.text[range].split_inclusive('\n').any(|line| {
+        let authored = source.frame.map_or(line, |frame| frame.strip(line));
+        authored.ends_with('\n') && authored.chars().all(char::is_whitespace)
+    })
 }
 
 /// Retrieves authored labels using native delimiters or heading child bounds.
@@ -199,25 +238,27 @@ fn label(nodes: &[Node], source: &Source<'_>, range: &Range<usize>, opener: usiz
         }
         start
     };
-    source
-        .authored(start..last.range.end)
-        .replace("\\[", "[")
-        .replace("\\]", "]")
+    let authored = source.authored(start..last.range.end);
+    if opener == 0 {
+        authored
+    } else {
+        authored.replace("\\[", "[").replace("\\]", "]")
+    }
 }
 
 /// Scans only contiguous eligible text children of the same container.
-fn runs(nodes: Vec<Node>, source: &str) -> Vec<Node> {
+fn runs(nodes: Vec<Node>) -> Vec<Node> {
     let mut result = Vec::new();
     let mut parts = Vec::new();
     for node in nodes {
         if matches!(node.kind, Kind::Text(_)) {
             parts.push(node);
         } else {
-            result.extend(super::autolinks::extend(std::mem::take(&mut parts), source));
+            result.extend(super::autolinks::extend(std::mem::take(&mut parts)));
             result.push(node);
         }
     }
-    result.extend(super::autolinks::extend(parts, source));
+    result.extend(super::autolinks::extend(parts));
     result
 }
 
@@ -292,7 +333,7 @@ fn quote<'a>(
         .map_or(range.start..range.start, |(first, last)| {
             first.range.start..last.range.end
         });
-    let children = gaps(children, source.text, extent);
+    let children = gaps(children, &nested, extent);
     let authored = source
         .authored(range.clone())
         .lines()
@@ -340,7 +381,7 @@ fn code_block<'a>(
     let text: String = children(events, source, true)
         .into_iter()
         .filter_map(|node| match node.kind {
-            Kind::Text(text) => Some(text),
+            Kind::Text(text) => Some(text.decoded),
             _ => None,
         })
         .collect();

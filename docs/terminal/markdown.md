@@ -5,7 +5,8 @@ through supplied `MarkdownTheme` callbacks. Inline formatting includes emphasis,
 strong text, strikethrough, code and links. The native `CommonMark` parser owns the
 grammar; bare HTTP/HTTPS, www and email links use the extended-link rules. A www
 link requires a period in the domain after its prefix. HTML is literal text,
-including inside lists. Images display authored label markup without enclosing
+including inside lists; quoted HTML suppresses the message foreground, like other
+quote text. Images display authored label markup without enclosing
 quote/list prefixes, unescaping brackets but retaining other escapes.
 Table layout is not provided.
 

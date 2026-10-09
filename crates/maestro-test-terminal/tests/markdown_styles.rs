@@ -626,3 +626,16 @@ fn markdown_list_html_callbacks_receive_untrimmed_lines() {
     assert_eq!(rows[0], "- <div>x</div>      ");
     assert_eq!(*calls.borrow(), ["\0", "<div>x</div>  ", ""]);
 }
+
+#[test]
+fn markdown_quoted_html_suppresses_message_foreground() {
+    let mut theme = markdown::plain();
+    theme.quote = Box::new(|text| markdown::paint(text, &[(36, 39)]));
+    let style = DefaultTextStyle {
+        color: Some(Box::new(|text| markdown::paint(text, &[(35, 39)]))),
+        ..DefaultTextStyle::default()
+    };
+    let rows = component("> <div>x</div>", theme, Some(style)).render(14);
+    assert_eq!(rows, ["│ \x1b[36m<div>x</div>\x1b[39m"]);
+    assert!(!rows[0].contains("\x1b[35m"));
+}
