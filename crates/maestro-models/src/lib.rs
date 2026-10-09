@@ -60,6 +60,10 @@ pub mod providers;
 pub use providers::faux::*;
 
 pub mod oauth;
+pub use oauth::device::github_copilot::{
+    GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
+    normalize_domain, refresh_github_copilot_token,
+};
 pub use oauth::oauth_page::{oauth_error_html, oauth_success_html};
 pub use oauth::pkce::{Pkce, generate_pkce};
 pub use oauth::responses::openai_codex::{

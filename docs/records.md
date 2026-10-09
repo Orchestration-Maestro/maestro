@@ -32,7 +32,7 @@ The [response-event guide](https://github.com/Orchestration-Maestro/maestro/blob
 describes the internal history/tool converter and response-event reducer.
 
 The [OAuth authorization guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
-covers data records, secure proof keys, escaped callback pages and subscription
+covers data records, secure proof keys, escaped callback pages, device, subscription
 and response-account login and refresh.
 
 The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/messages.md)

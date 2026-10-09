@@ -84,6 +84,15 @@ impl From<crate::DiagnosticErrorInfo> for OAuthError {
     }
 }
 
+impl From<crate::FetchError> for OAuthError {
+    fn from(error: crate::FetchError) -> Self {
+        match error {
+            crate::FetchError::Connection(diagnostic) => diagnostic.into(),
+            other => Self::message(other.to_string()),
+        }
+    }
+}
+
 impl std::fmt::Display for OAuthError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str(&self.diagnostic.message)
