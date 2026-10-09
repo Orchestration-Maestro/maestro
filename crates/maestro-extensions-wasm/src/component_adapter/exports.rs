@@ -95,7 +95,7 @@ impl<I: Imports> Exports<I> {
     ///
     /// # Errors
     /// Returns the decoder's message when the document is not an event, and the message of
-    /// the attachment when a compaction arrives without its signal; the handler has not run.
+    /// the attachment when a before-compaction or before-tree event has no signal; the handler has not run.
     pub(crate) async fn invoke_event(
         &self,
         handler: u32,

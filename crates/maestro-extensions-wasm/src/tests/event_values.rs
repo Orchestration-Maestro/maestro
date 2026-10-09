@@ -286,12 +286,12 @@ async fn compaction_properties(driver: &mut impl Driver) -> Result<(), String> {
         product::<3>(&strings()).into_iter().enumerate()
     {
         let preparation = with(
-            json!({ "firstKeptEntryId": "keep", "isSplitTurn": index % 2 == 0, "tokensBefore": 1.5 }),
+            json!({ "firstKeptEntryId": "keep", "isSplitTurn": index % 2 == 0, "tokensBefore": 1.5, "messagesToSummarize": [], "turnPrefixMessages": [], "fileOps": {"read":[],"written":[],"edited":[]}, "settings":{"enabled":true,"reserveTokens":1.0,"keepRecentTokens":2.0} }),
             "previousSummary",
             &summary,
         );
         let event = with(
-            json!({ "type": "session_before_compact", "preparation": preparation }),
+            json!({ "type": "session_before_compact", "branchEntries": [], "preparation": preparation }),
             "customInstructions",
             &instructions,
         );
@@ -319,8 +319,8 @@ async fn opaque_details(driver: &mut impl Driver) -> Result<(), String> {
 /// A cancellation flag with a replacement compaction: missing, null, empty and populated.
 async fn compaction_results(driver: &mut impl Driver) -> Result<(), String> {
     let event = json!({
-        "type": "session_before_compact",
-        "preparation": { "firstKeptEntryId": "keep", "isSplitTurn": false, "tokensBefore": 0.0 },
+        "type": "session_before_compact", "branchEntries": [],
+        "preparation": { "firstKeptEntryId": "keep", "isSplitTurn": false, "tokensBefore": 0.0, "messagesToSummarize": [], "turnPrefixMessages": [], "fileOps": {"read":[],"written":[],"edited":[]}, "settings":{"enabled":true,"reserveTokens":1.0,"keepRecentTokens":2.0} },
     });
     let empty = json!({ "summary": "", "firstKeptEntryId": "", "tokensBefore": 0.0 });
     let populated = json!({
@@ -399,10 +399,10 @@ async fn status_back(driver: &mut impl Driver, bits: u64, headers: &Value) -> Re
 async fn tokens_back(driver: &mut impl Driver, bits: u64) -> Result<[u64; 2], String> {
     let number = number_of(bits);
     let preparation = json!({
-        "firstKeptEntryId": LITERAL, "isSplitTurn": true, "tokensBefore": number, "previousSummary": "",
+        "firstKeptEntryId": LITERAL, "isSplitTurn": true, "tokensBefore": number, "previousSummary": "", "messagesToSummarize": [], "turnPrefixMessages": [], "fileOps": {"read":[],"written":[],"edited":[]}, "settings":{"enabled":true,"reserveTokens":1.0,"keepRecentTokens":2.0},
     });
     let event = json!({
-        "type": "session_before_compact", "preparation": preparation, "customInstructions": LITERAL,
+        "type": "session_before_compact", "branchEntries": [], "preparation": preparation, "customInstructions": LITERAL,
     });
     let compaction = json!({
         "summary": LITERAL, "firstKeptEntryId": "keep", "tokensBefore": number, "details": null,

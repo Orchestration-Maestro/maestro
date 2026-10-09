@@ -16,6 +16,9 @@ use super::events::{
 };
 use super::object;
 use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
+use super::session_events::{
+    SessionBeforeTreeEvent, SessionBeforeTreeEventData, SessionCompactEvent, SessionTreeEvent,
+};
 use super::tool_events::{
     ToolExecutionEndEvent, ToolExecutionStartEvent, ToolExecutionUpdateEvent,
 };
@@ -65,6 +68,12 @@ enum Kind {
     SessionBeforeFork,
     /// A compaction is about to happen.
     SessionBeforeCompact,
+    /// A compaction entry was persisted.
+    SessionCompact,
+    /// Tree navigation is about to occur.
+    SessionBeforeTree,
+    /// Tree navigation completed.
+    SessionTree,
     /// A runtime is shutting down.
     SessionShutdown,
     /// A provider request is about to be sent.
@@ -127,7 +136,13 @@ pub(crate) enum EventData {
     /// The session is about to fork.
     SessionBeforeFork(SessionBeforeForkEvent),
     /// A compaction is about to happen.
-    SessionBeforeCompact(SessionBeforeCompactEventData),
+    SessionBeforeCompact(Box<SessionBeforeCompactEventData>),
+    /// A compaction entry was persisted.
+    SessionCompact(SessionCompactEvent),
+    /// Resource-free tree navigation preparation.
+    SessionBeforeTree(SessionBeforeTreeEventData),
+    /// Tree navigation completed.
+    SessionTree(SessionTreeEvent),
     /// A runtime is shutting down.
     SessionShutdown(SessionShutdownEvent),
     /// A provider request is about to be sent.
@@ -172,6 +187,9 @@ impl EventData {
             Kind::SessionBeforeSwitch => Self::SessionBeforeSwitch(object::from_str(text)?),
             Kind::SessionBeforeFork => Self::SessionBeforeFork(object::from_str(text)?),
             Kind::SessionBeforeCompact => Self::SessionBeforeCompact(object::from_str(text)?),
+            Kind::SessionCompact => Self::SessionCompact(object::from_str(text)?),
+            Kind::SessionBeforeTree => Self::SessionBeforeTree(object::from_str(text)?),
+            Kind::SessionTree => Self::SessionTree(object::from_str(text)?),
             Kind::SessionShutdown => Self::SessionShutdown(object::from_str(text)?),
             Kind::BeforeProviderRequest => Self::BeforeProviderRequest(object::from_str(text)?),
             Kind::AfterProviderResponse => Self::AfterProviderResponse(object::from_str(text)?),
@@ -179,11 +197,11 @@ impl EventData {
         })
     }
 
-    /// The author's event for this data. The signal joins a compaction; every other kind
-    /// drops it.
+    /// The author's event for this data. The signal joins a before-compaction or
+    /// before-tree event; every other kind drops it.
     ///
     /// # Errors
-    /// Returns an error when a compaction has no signal.
+    /// Returns an error when a before-compaction or before-tree event has no signal.
     pub(crate) fn attach(self, signal: Option<AbortSignal>) -> Result<ExtensionEvent, String> {
         Ok(match self {
             Self::ModelSelect(event) => ExtensionEvent::ModelSelect(event),
@@ -213,11 +231,22 @@ impl EventData {
             }
             Self::SessionBeforeCompact(data) => {
                 let signal = signal.ok_or("missing compaction signal")?;
-                ExtensionEvent::Session(SessionEvent::BeforeCompact(SessionBeforeCompactEvent {
-                    data,
+                ExtensionEvent::Session(SessionEvent::BeforeCompact(Box::new(
+                    SessionBeforeCompactEvent {
+                        data: *data,
+                        signal,
+                    },
+                )))
+            }
+            Self::SessionCompact(event) => ExtensionEvent::Session(SessionEvent::Compact(event)),
+            Self::SessionBeforeTree(data) => {
+                let signal = signal.ok_or("missing tree signal")?;
+                ExtensionEvent::Session(SessionEvent::BeforeTree(SessionBeforeTreeEvent {
+                    preparation: data.preparation,
                     signal,
                 }))
             }
+            Self::SessionTree(event) => ExtensionEvent::Session(SessionEvent::Tree(event)),
             Self::SessionShutdown(event) => ExtensionEvent::Session(SessionEvent::Shutdown(event)),
             Self::BeforeProviderRequest(event) => ExtensionEvent::BeforeProviderRequest(event),
             Self::AfterProviderResponse(event) => ExtensionEvent::AfterProviderResponse(event),
@@ -227,7 +256,7 @@ impl EventData {
 }
 
 impl From<ExtensionEvent> for EventData {
-    /// The data of an event; a compaction's signal is dropped.
+    /// The data of an event; an owned cancellation signal is dropped.
     fn from(event: ExtensionEvent) -> Self {
         match event {
             ExtensionEvent::ModelSelect(event) => Self::ModelSelect(event),
@@ -259,8 +288,15 @@ impl From<ExtensionEvent> for EventData {
                 Self::SessionBeforeFork(event)
             }
             ExtensionEvent::Session(SessionEvent::BeforeCompact(event)) => {
-                Self::SessionBeforeCompact(event.data)
+                Self::SessionBeforeCompact(Box::new(event.data))
             }
+            ExtensionEvent::Session(SessionEvent::Compact(event)) => Self::SessionCompact(event),
+            ExtensionEvent::Session(SessionEvent::BeforeTree(event)) => {
+                Self::SessionBeforeTree(SessionBeforeTreeEventData {
+                    preparation: event.preparation,
+                })
+            }
+            ExtensionEvent::Session(SessionEvent::Tree(event)) => Self::SessionTree(event),
             ExtensionEvent::Session(SessionEvent::Shutdown(event)) => Self::SessionShutdown(event),
             ExtensionEvent::BeforeProviderRequest(event) => Self::BeforeProviderRequest(event),
             ExtensionEvent::AfterProviderResponse(event) => Self::AfterProviderResponse(event),

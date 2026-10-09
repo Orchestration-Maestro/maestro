@@ -117,7 +117,8 @@ pub trait Driver {
         let handler = self.identity(name)?;
         let event = serde_json::json!({
             "type": "session_before_compact",
-            "preparation": { "firstKeptEntryId": "e2", "isSplitTurn": false, "tokensBefore": 1234.0 },
+            "branchEntries": [],
+            "preparation": { "firstKeptEntryId": "e2", "isSplitTurn": false, "tokensBefore": 1234.0, "messagesToSummarize": [], "turnPrefixMessages": [], "fileOps": {"read":[],"written":[],"edited":[]}, "settings":{"enabled":true,"reserveTokens":1.0,"keepRecentTokens":2.0} },
         });
         self.deliver(handler, &event.to_string(), "/work", Some(signal))
             .await
