@@ -145,11 +145,11 @@ pub(crate) fn is_truthy(raw: &RawValue) -> bool {
 /// through retained values beyond [`MAX_NESTING`] containers fails as malformed text does.
 /// Exactly representable integral doubles use integer storage where in range, except
 /// negative zero, whose sign is retained. Compact number spelling is unchanged.
-/// Object member names that are not valid UTF-8 are ignored before decoding their values.
+/// Every surviving object member is retained; a name that cannot be held in a Rust string fails decoding.
 ///
 /// # Errors
-/// Returns the decoder failure for malformed text, or a recursion-limit failure for a value
-/// nested too deeply.
+/// Returns the decoder failure for malformed text or an unrepresentable member name,
+/// or a recursion-limit failure for a value nested too deeply.
 pub(crate) fn json_value(raw: &RawValue) -> Result<Value, serde_json::Error> {
     decode(raw, MAX_NESTING)
 }
@@ -169,8 +169,10 @@ fn decode(raw: &RawValue, containers: usize) -> Result<Value, serde_json::Error>
             .collect(),
         Some(b'{') => serde_json::from_str::<Members<'_>>(raw.get())?
             .into_iter()
-            .filter_map(|(key, member)| String::from_utf8(key.0).ok().map(|key| (key, member)))
-            .map(|(key, member)| Ok((key, decode(member, containers - 1)?)))
+            .map(|(key, member)| {
+                let key = String::from_utf8(key.0).map_err(serde::de::Error::custom)?;
+                Ok((key, decode(member, containers - 1)?))
+            })
             .collect(),
         _ => serde_json::from_str(raw.get()),
     }
