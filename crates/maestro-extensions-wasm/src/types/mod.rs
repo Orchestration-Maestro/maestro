@@ -5,16 +5,19 @@
     clippy::excessive_nesting
 )]
 
+mod agent_events;
 mod api;
 mod context;
 #[cfg(any(test, target_arch = "wasm32"))]
 mod event_data;
 mod events;
 mod extension_result;
-pub(crate) mod number;
-mod object;
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) mod finite;
+pub(crate) mod object;
 mod presence;
 
+pub use agent_events::*;
 pub use api::{CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost};
 pub use context::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,

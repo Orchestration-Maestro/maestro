@@ -6,7 +6,9 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
-The extension domain may depend directly on resources for shared source information. Resources remain a leaf apart from the shared path utility edge; this permission does not allow the reverse dependency or internal dev-dependencies.
+The extension domain may depend directly on resources. Models, resources and guest
+authoring may depend on the shared request-record owner, `maestro-request`, which
+has no workspace dependencies. No reverse dependency or internal dev edge is permitted.
 
 `workspace-crates.json` lists actual workspace members with string-valued classes.
 The binary composition root, conventions checker, terminal scenario harness and
@@ -16,8 +18,8 @@ no internal dependencies apart from the optional utility. Classes are not numeri
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
-Seven leaves in the specification table have no internal dependencies; the
-foundation utility `maestro-path` is an eighth. Other crates may use a subset of
+Six leaves in the specification table have no internal dependencies; the
+foundation utility `maestro-path` is a seventh. Other crates may use a subset of
 their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
@@ -64,10 +66,10 @@ working directory with no drive entries yields `D:b`, not `..\b`.
 leaf and exact-set rules. Any crate in the specification table may declare it as
 a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
-adapter, the terminal scenario harness and the cancellation leaf. The edge is
-ignored when checking a crate's complete direct set or leaf status, so the graph
-holds 28 crates and 87
-permitted edges: 64 table edges plus 23 utility edges. Dev-dependencies on the
+adapter, shared request owner, cancellation leaf and the terminal scenario
+harness. The edge is ignored when checking a crate's complete direct set or leaf
+status, so the graph holds 29 crates and 90 permitted edges: 67 table edges plus
+23 utility edges. Dev-dependencies on the
 utility, dependencies from the utility, and cycles are rejected like any other
 internal edge.
 

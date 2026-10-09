@@ -1,6 +1,6 @@
 //! Typed conversation messages and their tagged content.
 use super::{Api, JsonObject, Provider};
-use crate::records::diagnostics::AssistantMessageDiagnostic;
+use crate::diagnostics::AssistantMessageDiagnostic;
 use serde::{Deserialize, Serialize};
 /// Represent version-one text signature metadata and its optional phase.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

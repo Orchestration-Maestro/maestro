@@ -287,6 +287,10 @@ struct Directive {
     mark: bool,
     /// Replace the event with the event this document describes.
     replace_with: Option<Value>,
+    /// Bits to assign to a numeric event field.
+    number_bits: Option<String>,
+    /// Number bits to put in a returned compaction.
+    result_number_bits: Option<String>,
     /// How the handler ends.
     ending: Ending,
 }
@@ -361,6 +365,9 @@ impl Probe {
         let directive: Directive = serde_json::from_str(&ctx.cwd()?)
             .map_err(|error| format!("unreadable directive: {error}"))?;
         self.keep(&directive.retain, event, &ctx);
+        if let Some(bits) = directive.number_bits.as_deref() {
+            write_number(event, bits)?;
+        }
         if directive.wait {
             let command = self.captured.borrow().clone();
             command
@@ -376,6 +383,18 @@ impl Probe {
         }
         if directive.report {
             self.report()?;
+        }
+        if let Some(bits) = directive.result_number_bits {
+            let mut value =
+                json!({"compaction":{"summary":"s","firstKeptEntryId":"e","tokensBefore":0.0}});
+            let mut result = reply("session_before_compact", value.take())?;
+            if let ExtensionEventResult::SessionBeforeCompact(compact) = &mut result
+                && let Presence::Present(compaction) = &mut compact.compaction
+            {
+                compaction.tokens_before =
+                    f64::from_bits(u64::from_str_radix(&bits, 16).map_err(|e| e.to_string())?);
+            }
+            return Ok(Some(result));
         }
         match directive.ending {
             Ending::Silently => Ok(None),
@@ -422,6 +441,14 @@ impl Probe {
 fn mark(event: &mut ExtensionEvent) {
     let changed = || "changed".to_owned();
     match event {
+        ExtensionEvent::Context(event) => event.messages.reverse(),
+        ExtensionEvent::AgentEnd(event) => event.messages.reverse(),
+        ExtensionEvent::BeforeAgentStart(event) => event.prompt = changed(),
+        ExtensionEvent::AgentStart(_) => {}
+        ExtensionEvent::TurnStart(event) => event.turn_index = 99.0,
+        ExtensionEvent::TurnEnd(event) => event.turn_index = 99.0,
+        ExtensionEvent::MessageStart(event) => mark_message(&mut event.message),
+        ExtensionEvent::MessageEnd(event) => mark_message(&mut event.message),
         ExtensionEvent::ResourcesDiscover(discover) => discover.cwd = changed(),
         ExtensionEvent::Session(SessionEvent::Start(start)) => {
             start.previous_session_file = Presence::Present(changed());
@@ -448,6 +475,16 @@ fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
     let tag = document["type"].as_str().unwrap_or_default().to_owned();
     let unreadable = |error: serde_json::Error| format!("unreadable event: {error}");
     Ok(match tag.as_str() {
+        "context" => ExtensionEvent::Context(from_value(document).map_err(unreadable)?),
+        "before_agent_start" => {
+            ExtensionEvent::BeforeAgentStart(from_value(document).map_err(unreadable)?)
+        }
+        "agent_start" => ExtensionEvent::AgentStart(from_value(document).map_err(unreadable)?),
+        "agent_end" => ExtensionEvent::AgentEnd(from_value(document).map_err(unreadable)?),
+        "turn_start" => ExtensionEvent::TurnStart(from_value(document).map_err(unreadable)?),
+        "turn_end" => ExtensionEvent::TurnEnd(from_value(document).map_err(unreadable)?),
+        "message_start" => ExtensionEvent::MessageStart(from_value(document).map_err(unreadable)?),
+        "message_end" => ExtensionEvent::MessageEnd(from_value(document).map_err(unreadable)?),
         "resources_discover" => {
             ExtensionEvent::ResourcesDiscover(from_value(document).map_err(unreadable)?)
         }
@@ -502,4 +539,37 @@ fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
         "input" => ExtensionEventResult::Input(from_value(value).map_err(unreadable)?),
         other => return Err(format!("unknown result family {other:?}")),
     })
+}
+
+/// Writes a number as an extension would, without a JSON conversion first.
+fn write_number(event: &mut ExtensionEvent, bits: &str) -> Result<(), String> {
+    let bits = u64::from_str_radix(bits, 16).map_err(|e| e.to_string())?;
+    let value = f64::from_bits(bits);
+    match event {
+        ExtensionEvent::Context(context) => {
+            let Some(maestro_extensions_wasm::AgentMessage::Message(message)) =
+                context.messages.first_mut()
+            else {
+                return Err("missing user message".to_owned());
+            };
+            let maestro_extensions_wasm::Message::User(user) = message.as_mut() else {
+                return Err("not a user message".to_owned());
+            };
+            user.timestamp = value;
+        }
+        ExtensionEvent::TurnStart(turn) => turn.timestamp = value,
+        _ => return Err("unsupported number edit".to_owned()),
+    }
+    Ok(())
+}
+
+/// Assigns a timestamp through each delivered model role.
+fn mark_message(message: &mut maestro_extensions_wasm::AgentMessage) {
+    if let maestro_extensions_wasm::AgentMessage::Message(message) = message {
+        match message.as_mut() {
+            maestro_extensions_wasm::Message::User(user) => user.timestamp = 99.0,
+            maestro_extensions_wasm::Message::Assistant(assistant) => assistant.timestamp = 99.0,
+            maestro_extensions_wasm::Message::ToolResult(tool) => tool.timestamp = 99.0,
+        }
+    }
 }

@@ -3,7 +3,7 @@
 //! Rust records define the payloads once. An event crosses the component boundary as one JSON
 //! document tagged with its kind: the flat `EventData` holds the serializable payload of each
 //! kind, and the owned host resources an event may carry travel beside it and are attached to
-//! the author's event. Optional properties are [`Presence`] values.
+//! the author's event. Unshared optional properties use [`Presence`]; shared records keep their own serialization.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -15,12 +15,16 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Deserializer, Serialize, de::IntoDeserializer};
 
+use super::agent_events::{
+    AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, ContextEvent, MessageEndEvent,
+    MessageStartEvent, TurnEndEvent, TurnStartEvent,
+};
 use super::context::{AbortSignal, ExtensionContext};
 use super::extension_result::ExtensionFuture;
+use super::object;
 use super::presence::Presence;
-use super::{number, object};
+use crate::ImageContent;
 use crate::compaction::{CompactionPreparation, CompactionResult};
-use crate::models::ImageContent;
 
 /// Reads a string, then deserializes `T` from it.
 ///
@@ -199,9 +203,7 @@ pub type BeforeProviderRequestEventResult = String;
 /// A provider answered.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AfterProviderResponseEvent {
-    /// The response status. It is an editable number, not a validated HTTP status; a
-    /// nonfinite value is carried by its bits.
-    #[serde(with = "number")]
+    /// The response status is an editable number, not a validated HTTP status.
     pub status: f64,
     /// Header names and values in the order the host listed them, uninterpreted.
     pub headers: Vec<(String, String)>,
@@ -323,6 +325,23 @@ pub enum SessionEvent {
 /// An event delivered to handlers, in the shape authors write against.
 #[derive(Debug)]
 pub enum ExtensionEvent {
+    /// Context notification.
+    Context(Box<ContextEvent>),
+    /// `BeforeAgentStart` notification.
+    BeforeAgentStart(Box<BeforeAgentStartEvent>),
+    /// `AgentStart` notification.
+    AgentStart(AgentStartEvent),
+    /// `AgentEnd` notification.
+    AgentEnd(Box<AgentEndEvent>),
+    /// `TurnStart` notification.
+    TurnStart(TurnStartEvent),
+    /// `TurnEnd` notification.
+    TurnEnd(Box<TurnEndEvent>),
+    /// `MessageStart` notification.
+    MessageStart(Box<MessageStartEvent>),
+    /// `MessageEnd` notification.
+    MessageEnd(Box<MessageEndEvent>),
+
     /// Resources are being discovered.
     ResourcesDiscover(ResourcesDiscoverEvent),
     /// A session event.

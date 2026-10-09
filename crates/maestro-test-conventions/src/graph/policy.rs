@@ -9,9 +9,13 @@ pub(crate) struct Rule {
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-path", &[]),
     ("maestro-cancellation", &[]),
-    ("maestro-extensions-wasm", &[]),
-    ("maestro-models", &["maestro-cancellation"]),
-    ("maestro-resources", &[]),
+    ("maestro-request", &[]),
+    ("maestro-extensions-wasm", &["maestro-request"]),
+    (
+        "maestro-models",
+        &["maestro-cancellation", "maestro-request"],
+    ),
+    ("maestro-resources", &["maestro-request"]),
     ("maestro-settings", &[]),
     ("maestro-storage", &[]),
     ("maestro-test-conventions", &[]),
@@ -128,6 +132,7 @@ pub(crate) fn uses_utility(name: &str) -> bool {
         && !matches!(
             name,
             "maestro-cancellation"
+                | "maestro-request"
                 | "maestro-extensions-wasm"
                 | "maestro-extensions-wasmtime"
                 | "maestro-test-terminal"

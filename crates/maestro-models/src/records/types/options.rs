@@ -1,52 +1,10 @@
 //! Invocation settings with retained adapter hooks.
+use super::ThinkingLevel;
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
 use crate::providers::http::Fetch;
 use indexmap::IndexMap;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
-/// Represent the accepted reasoning levels, with Off only on model selection.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "lowercase")]
-pub enum ThinkingLevel {
-    /// Minimal.
-    Minimal,
-    /// Low.
-    Low,
-    /// Medium.
-    Medium,
-    /// High.
-    High,
-    /// Xhigh.
-    Xhigh,
-}
-/// Represent the accepted reasoning levels, with Off only on model selection.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "lowercase")]
-pub enum ModelThinkingLevel {
-    /// Off.
-    Off,
-    /// Minimal.
-    Minimal,
-    /// Low.
-    Low,
-    /// Medium.
-    Medium,
-    /// High.
-    High,
-    /// Xhigh.
-    Xhigh,
-}
-impl From<ThinkingLevel> for ModelThinkingLevel {
-    fn from(level: ThinkingLevel) -> Self {
-        match level {
-            ThinkingLevel::Minimal => Self::Minimal,
-            ThinkingLevel::Low => Self::Low,
-            ThinkingLevel::Medium => Self::Medium,
-            ThinkingLevel::High => Self::High,
-            ThinkingLevel::Xhigh => Self::Xhigh,
-        }
-    }
-}
 /// Carry optional per-level token budgets.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]

@@ -1377,6 +1377,8 @@ dependencies = [
 name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
+ "maestro-request",
  "serde",
  "serde_json",
  "tokio",
@@ -1403,6 +1405,7 @@ dependencies = [
  "indexmap",
  "js-sys",
  "maestro-cancellation",
+ "maestro-request",
  "num-bigint",
  "num-traits",
  "percent-encoding",
@@ -1429,11 +1432,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-request"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-resources"
 version = "0.1.0"
 dependencies = [
  "ignore",
  "maestro-path",
+ "maestro-request",
  "num-bigint",
  "num-traits",
  "ryu-js",

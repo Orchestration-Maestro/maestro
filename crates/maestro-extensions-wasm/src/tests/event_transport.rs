@@ -111,7 +111,14 @@ fn maestro_missing_properties_do_not_become_null() -> Result<(), String> {
 const AUTHORED_FAILURE: &str = "authored failure Ω";
 
 /// The field of each kind that the probe handler edits.
-const MARKED: [(&str, &str); 9] = [
+const MARKED: [(&str, &str); 16] = [
+    ("context", "messages"),
+    ("agent_end", "messages"),
+    ("before_agent_start", "prompt"),
+    ("turn_start", "turnIndex"),
+    ("turn_end", "turnIndex"),
+    ("message_start", "message"),
+    ("message_end", "message"),
     ("resources_discover", "cwd"),
     ("session_start", "previousSessionFile"),
     ("session_before_switch", "targetSessionFile"),
@@ -126,11 +133,13 @@ const MARKED: [(&str, &str); 9] = [
 /// The document with its marked field edited the way the probe handler edits it.
 fn edited(document: &Value, field: &str) -> Value {
     let mut edited = document.clone();
-    edited[field] = if field == "status" {
-        json!(201.0)
-    } else {
-        json!("changed")
-    };
+    match field {
+        "messages" => edited[field].as_array_mut().unwrap().reverse(),
+        "message" => edited[field]["timestamp"] = json!(99.0),
+        "turnIndex" => edited[field] = json!(99.0),
+        "status" => edited[field] = json!(201.0),
+        _ => edited[field] = json!("changed"),
+    }
     edited
 }
 
@@ -214,7 +223,23 @@ fn maestro_event_edits_survive_errors_and_kind_changes() -> Result<(), String> {
 }
 
 /// The properties each kind cannot do without.
-const REQUIRED: [(&str, &[&str]); 9] = [
+const REQUIRED: [(&str, &[&str]); 17] = [
+    ("context", &["messages"]),
+    ("agent_end", &["messages"]),
+    (
+        "before_agent_start",
+        &[
+            "prompt",
+            "systemPrompt",
+            "systemPromptOptions",
+            "systemPromptOptions.cwd",
+        ],
+    ),
+    ("agent_start", &[]),
+    ("turn_start", &["turnIndex", "timestamp"]),
+    ("turn_end", &["turnIndex", "message", "toolResults"]),
+    ("message_start", &["message"]),
+    ("message_end", &["message"]),
     ("resources_discover", &["cwd", "reason"]),
     ("session_start", &["reason"]),
     ("session_before_switch", &["reason"]),
@@ -354,15 +379,21 @@ fn wrong_records() -> Vec<Refusal> {
     let mut found = Vec::new();
     let mut add = |label: String, document: Value| found.push((label, document.to_string()));
     for (what, image) in [
-        ("without data", json!({ "mimeType": "image/png" })),
-        ("without mimeType", json!({ "data": "AA==" })),
+        (
+            "without data",
+            json!({ "type": "image", "mimeType": "image/png" }),
+        ),
+        (
+            "without mimeType",
+            json!({ "type": "image", "data": "AA==" }),
+        ),
         (
             "with data of the wrong type",
-            json!({ "data": {}, "mimeType": "image/png" }),
+            json!({ "type": "image", "data": {}, "mimeType": "image/png" }),
         ),
         (
             "with mimeType of the wrong type",
-            json!({ "data": "AA==", "mimeType": {} }),
+            json!({ "type": "image", "data": "AA==", "mimeType": {} }),
         ),
     ] {
         let input = at(&document("input"), "images", Some(json!([image])));
@@ -508,7 +539,7 @@ fn nested() -> Value {
 /// The valid document of `kind` and the same document with the unknown property `top` on the
 /// event and `inner` on the nested record of the kinds that have one.
 fn with_unknown(kind: &str, top: &Value, inner: &Value) -> (Value, Value) {
-    let image = json!([{ "data": "AA==", "mimeType": "image/png" }]);
+    let image = json!([{ "type": "image", "data": "AA==", "mimeType": "image/png" }]);
     let event = match kind {
         "input" => at(&document(kind), "images", Some(image)),
         _ => document(kind),
