@@ -77,8 +77,13 @@ mod tests;
 
 mod wire;
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "request preparation awaits its invocation caller")
-)]
 mod request;
+
+mod stream;
+pub use stream::{stream_mistral, stream_simple_mistral};
+
+mod chunk;
+mod events;
+mod sse;
+
+mod content;
