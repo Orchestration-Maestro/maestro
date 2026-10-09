@@ -718,3 +718,75 @@ async fn invoke_body(
         super::super::http::invoke_sse(&prepared, &model, &options, &output, &events).await;
     (result, output, events)
 }
+
+#[test]
+fn maestro_response_sessions_release_retry_waits() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        assert_cancelled_retry_wait().await;
+        let signal = crate::Cancellation::new();
+        let bytes = event_bytes(&[
+            serde_json::json!({"type":"response.completed","response":{"status":"completed"}}),
+        ]);
+        let (result, output, events) =
+            invoke_body(Box::pin(stream::iter([Ok(bytes)])), Some(signal.clone())).await;
+        result.unwrap();
+        signal.abort();
+        assert_eq!(output.read().unwrap().stop_reason, crate::StopReason::Stop);
+        assert!(matches!(
+            events.next().await,
+            Some(crate::AssistantMessageEvent::Start { .. })
+        ));
+        assert!(events.next().now_or_never().is_none());
+    });
+}
+
+/// Explicit polling closes each setup decision before cancelling the second scoped wait.
+async fn assert_cancelled_retry_wait() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let (model, context, mut options) = super::invocation();
+    let signal = crate::Cancellation::new();
+    options.common.signal = Some(signal.clone());
+    let calls = Arc::new(AtomicUsize::new(0));
+    let observed = Arc::clone(&calls);
+    options.common.fetch = Some(Arc::new(move |_| {
+        observed.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async {
+            Err(crate::FetchError::Connection(
+                super::super::request::diagnostic("retry setup"),
+            ))
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    let future = super::super::http::invoke_sse(&prepared, &model, &options, &output, &events);
+    futures_util::pin_mut!(future);
+    assert!(future.as_mut().now_or_never().is_none());
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    tokio::time::advance(std::time::Duration::from_millis(1000)).await;
+    assert!(future.as_mut().now_or_never().is_none());
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+    signal.abort();
+    let error = future.await.unwrap_err();
+    assert_eq!(error.diagnostic().message, "Request was aborted");
+    tokio::time::advance(std::time::Duration::from_secs(10)).await;
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        2,
+        "settled producer must not create another attempt"
+    );
+    assert!(events.next().now_or_never().is_none());
+}
