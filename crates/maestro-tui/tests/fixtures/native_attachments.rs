@@ -1,6 +1,8 @@
 //! Native attachment trees, consumer fixtures and controlled children.
 #![cfg(test)]
-use super::{attachments, completion_native::Tree};
+#[cfg(unix)]
+use super::attachments;
+use super::completion_native::Tree;
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider};
@@ -73,6 +75,7 @@ pub(crate) fn entries(tree: &Tree, names: &[&str]) {
 }
 
 /// A real search consumer query with all returned fields retained.
+#[cfg(unix)]
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeCase {
@@ -91,6 +94,7 @@ struct NativeCase {
     applications: Vec<attachments::Application>,
 }
 /// Compare real process results against recorded consumer observations.
+#[cfg(unix)]
 pub(crate) async fn native_cases(group: &str) {
     let cases: Vec<NativeCase> =
         serde_json::from_str(include_str!("native_attachments.json")).unwrap();

@@ -9,9 +9,9 @@ pub mod fixtures {
     pub mod native_attachments;
 }
 use fixtures::completion_native::Tree;
-use fixtures::native_attachments::{
-    child_script, entries, executable, native_cases, paths, query, runtime,
-};
+#[cfg(unix)]
+use fixtures::native_attachments::{child_script, native_cases};
+use fixtures::native_attachments::{entries, executable, paths, query, runtime};
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};

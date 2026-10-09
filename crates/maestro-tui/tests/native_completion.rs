@@ -122,12 +122,14 @@ fn native_directories_follow_links_without_filtering_hidden_entries() {
 }
 
 /// Direct-native query expectations, including all candidate fields.
+#[cfg(unix)]
 type NativePath = (
     &'static str,
     Option<(&'static str, &'static [(&'static str, &'static str)])>,
 );
 
 /// Original native input order and corrected directory classification.
+#[cfg(unix)]
 const NATIVE_PATHS: &[NativePath] = &[
     (
         "./",
