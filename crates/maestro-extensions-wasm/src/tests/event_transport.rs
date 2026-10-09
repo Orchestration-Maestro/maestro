@@ -245,13 +245,43 @@ const OPTIONAL: [(&str, &str); 6] = [
 ];
 
 /// The properties that hold one of a fixed set of words.
-const WORDS: [(&str, &str); 6] = [
-    ("resources_discover", "reason"),
-    ("session_start", "reason"),
-    ("session_before_switch", "reason"),
-    ("session_before_fork", "position"),
-    ("session_shutdown", "reason"),
-    ("input", "source"),
+const WORDS: [(&str, &str, &[&str], &str); 6] = [
+    (
+        "resources_discover",
+        "reason",
+        &["startup", "reload"],
+        "new",
+    ),
+    (
+        "session_start",
+        "reason",
+        &["startup", "reload", "new", "resume", "fork"],
+        "quit",
+    ),
+    (
+        "session_before_switch",
+        "reason",
+        &["new", "resume"],
+        "startup",
+    ),
+    (
+        "session_before_fork",
+        "position",
+        &["before", "at"],
+        "after",
+    ),
+    (
+        "session_shutdown",
+        "reason",
+        &["quit", "reload", "new", "resume", "fork"],
+        "startup",
+    ),
+    (
+        "input",
+        "source",
+        &["interactive", "rpc", "extension"],
+        "user",
+    ),
 ];
 
 /// The document with the property at the dotted `path` replaced by `value` or removed.
@@ -305,7 +335,7 @@ fn wrong_properties() -> Vec<Refusal> {
         "an unknown kind".to_owned(),
         at(&document("input"), "type", Some(json!("session_unknown"))),
     );
-    for (kind, word) in WORDS {
+    for (kind, word, _, _) in WORDS {
         add(
             format!("{kind} with an unknown {word}"),
             at(&document(kind), word, Some(json!("unknown"))),
@@ -373,6 +403,42 @@ fn wrong_records() -> Vec<Refusal> {
     found
 }
 
+/// Non-string values and undeclared words are not event-field literals.
+fn wrong_literals() -> Vec<Refusal> {
+    let mut found = Vec::new();
+    for (kind, field, words, foreign) in WORDS {
+        let first = words[0];
+        let values = [
+            Value::Null,
+            json!(false),
+            json!(true),
+            json!(0),
+            json!(1.5),
+            json!([]),
+            json!([first]),
+            json!({ first: "payload" }),
+            json!(""),
+            json!(first.to_uppercase()),
+            json!(format!(" {first}")),
+            json!(format!("{first} ")),
+            json!(format!("\u{feff}{first}")),
+            json!(format!("\u{85}{first}")),
+            json!(foreign),
+        ];
+        for value in values {
+            let label = format!("{kind}.{field} rejects {value}");
+            let event = at(&document(kind), field, Some(value));
+            found.push((label, event.to_string()));
+        }
+        for word in words {
+            let value = json!({ *word: null });
+            let event = at(&document(kind), field, Some(value));
+            found.push((format!("{kind}.{field} object {word}"), event.to_string()));
+        }
+    }
+    found
+}
+
 /// Every document the decoder must refuse, labelled.
 fn undecodable() -> Vec<Refusal> {
     ["", "{", "[]", "null", "42", r#"{"type":"input""#]
@@ -380,6 +446,7 @@ fn undecodable() -> Vec<Refusal> {
         .map(|text| (format!("text {text:?}"), text.to_owned()))
         .chain(wrong_properties())
         .chain(wrong_records())
+        .chain(wrong_literals())
         .collect()
 }
 
@@ -408,6 +475,7 @@ async fn decode_phases(driver: &mut impl Driver) -> Result<(), String> {
     for (label, text) in undecodable() {
         let signal = Some(driver.lend_signal(false)?);
         let delivery = driver.deliver(probe, &text, "{}", signal).await;
+        assert!(delivery.is_err(), "{label}");
         assert_eq!(delivery, Err(decoder_error(&text)?), "{label}");
     }
     let compact = document("session_before_compact").to_string();
@@ -548,6 +616,37 @@ async fn decode_and_unknown(driver: &mut impl Driver) -> Result<(), String> {
 fn maestro_event_failures_keep_decode_callback_and_encoding_phases() -> Result<(), String> {
     encoding_failures_stay_apart();
     on_both_adapters!(decode_and_unknown)
+}
+
+/// Escaped JSON characters select the same exact word and serialize back as strings.
+async fn escaped_literals(driver: &mut impl Driver) -> Result<(), String> {
+    let probe = driver.identity("event probe")?;
+    for (kind, field, words, _) in WORDS {
+        for word in words {
+            let event = at(&document(kind), field, Some(json!(word)));
+            let first = u32::from(word.as_bytes()[0]);
+            let plain = format!("\"{field}\":\"{word}\"");
+            let escaped = format!("\"{field}\":\"\\u{first:04x}{}\"", &word[1..]);
+            let text = event.to_string().replace(&plain, &escaped);
+            assert_ne!(
+                text,
+                event.to_string(),
+                "the raw delivery contains an escape"
+            );
+            let delivery = driver.deliver(probe, &text, "{}", None).await?;
+            assert_eq!(
+                Answer::of(delivery)?,
+                Answer::returned(&event, None),
+                "{kind}.{field} escaped {word}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_event_literal_escapes_decode_without_rewriting_words() -> Result<(), String> {
+    on_both_adapters!(escaped_literals)
 }
 
 /// One way a delivery can end, and the delivery that takes it.
