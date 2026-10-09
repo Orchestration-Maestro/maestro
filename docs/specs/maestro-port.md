@@ -78,7 +78,9 @@ The protocol requires: revise the WIT/SDK for recoverable errors, owned persiste
 
 Extension events: an event emitted from inside a synchronous callback (an event-bus listener, or a footer, widget, header, editor or component builder) reaches listeners in other extensions right after that callback returns. Every other ordering follows the reference behavior.
 
-Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest has no internal dependencies; the runtime adapter depends only toward the domain and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
+Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest's only allowed internal dependency is maestro-request, the shared owner of model-request records. The runtime adapter depends only toward the domain and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
+
+Event payloads and results cross the existing generic native-async export as plain JSON beside their typed capability envelope. Use the shared records' existing serde_json representation, not duplicate guest models or a second serializer format. Finite floating-point numbers roundtrip exactly, including signed zero. Ordinary host serialization turns nonfinite numbers into null; this does not promise that null decodes into a required number. An extension writing Infinity or NaN receives a clear error before its edited event or result is encoded. This explicit error is the accepted difference from retaining the nonfinite value until serialization. No bit-encoded numbers, numeric transport wrappers or compatibility decoder are permitted. Shared records retain their existing optional-field semantics without added Presence wrappers; unshared event fields still preserve their meaningful missing/null distinctions. Preserve separate event-edit and callback-result outcomes when either fails.
 
 Use Wasmtime/wasmtime-wasi 49.0.2 and the Rust SDK bindings for one WebAssembly component system. The application extension world uses WASI 0.3 native async, with WASI 0.2 interfaces needed by Rust standard-library basics. Support an authoring language when its toolchain emits the required component contract. Rust is the initial qualified authoring path; JavaScript/TypeScript authoring is unavailable until its tooling supports that contract. Do not add a polling workaround, a separate legacy source loader, a second host or an out-of-process extension protocol. Runtime JIT is allowed; install/use never invokes Rust/Cargo compilation.
 
@@ -167,9 +169,10 @@ Shared-workflow changes require one separate issue and clone in maestro-rust-wor
 
 ## Crates and delivery order
 
-The table declares each crate's one job, allowed internal dependencies and layer.
-An em dash means no internal dependencies apart from the optional foundation
-utility described below.
+The table declares the currently enforced crate graph. The authoritative
+shared-record amendment below changes its destination graph; extraction updates
+this table and its conventions checks together. An em dash means no internal
+dependencies apart from the optional foundation utility described below.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
@@ -214,6 +217,33 @@ The graph contains 27 crates: the 26 table entries plus the foundation utility.
 It permits 85 internal production dependency edges: 62 table edges plus 23
 optional utility edges. Nine crates are leaves when utility edges are ignored,
 including the utility itself. The utility is delivered before its first consumer.
+
+### Shared-record amendment
+
+`maestro-request` defines model-request records: model descriptors, messages,
+content, usage, stream events and diagnostics, plus `SourceInfo` and `Skill` for
+instruction inputs. It owns the declarations and their serialization. Existing
+models and resources public paths re-export their moved records. Provider
+invocation, scheduling, clock-dependent diagnostics, resource discovery and
+provenance construction stay with their existing owners; this is not a general
+shared-types container.
+
+The crate is core, sits below layer 0 and depends on no workspace crate, including
+`maestro-path`. Only `maestro-models`, `maestro-resources` and
+`maestro-extensions-wasm` may depend on it. No other graph permission changes:
+the guest still cannot depend on models or resources, the runtime adapter still
+targets extensions only, and no internal dev edge is added. Existing delivery
+layers stay unchanged; the shared owner precedes its three consumers.
+
+The destination graph has 28 crates, 65 table edges plus 23 optional utility
+edges (88 production edges), and seven leaves when utility edges are ignored.
+The extraction must update `workspace-crates.json`, graph policy, utility
+exclusions and architecture tests together. Tests cover ordinary, renamed,
+optional, target and build declarations for the three allowed edges and reject
+all other edges, including request-to-path and internal dev dependencies.
+Move this amendment into the enforced table and surrounding ownership text when
+the extraction lands, removing this temporary subsection rather than retaining
+two descriptions of the graph.
 
 ### Crate order
 
