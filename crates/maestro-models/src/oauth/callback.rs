@@ -1,4 +1,5 @@
 //! Shared authorization input recognition and callback response records.
+use crate::oauth::authorization_whitespace;
 use serde::Deserialize;
 use url::Url;
 
@@ -10,11 +11,6 @@ pub(super) struct AuthorizationCode {
     pub code: Option<String>,
     /// State, when supplied.
     pub state: Option<String>,
-}
-
-/// Trim the authorization whitespace set without stripping other format characters.
-fn authorization_whitespace(character: char) -> bool {
-    matches!(character, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
 }
 
 /// Recognize a URL before hash, raw query or bare code text.

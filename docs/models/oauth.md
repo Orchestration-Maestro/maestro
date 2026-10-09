@@ -3,7 +3,8 @@
 `maestro-models` exports OAuth records, `generate_pkce`, `oauth_success_html` and
 `oauth_error_html`, callback/provider contracts, Anthropic subscription login
 and refresh, and response-account `login_openai_codex`,
-`refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`.
+`refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`,
+and GitHub Copilot device login and refresh.
 
 `OAuthCredentials` carries token strings, an expiry number in Unix epoch
 milliseconds and flattened provider extension fields. It does not validate
@@ -176,5 +177,85 @@ let fetch: Fetch = Arc::new(|_| Box::pin(async {
 let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 let credentials = runtime.block_on(refresh_openai_codex_token("old".into(), Some(fetch)))?;
 assert_eq!(credentials.extra["accountId"], "acct_123");
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+## Device accounts
+
+`login_github_copilot(callbacks, fetch)` prompts for an optional enterprise
+URL/domain, then publishes the device response's verification URI and code.
+`normalize_domain` trims authorization whitespace and returns a parsed hostname;
+valid hostless URLs return an empty hostname. Login rejects a nonblank input
+without a nonempty hostname and otherwise uses `github.com` for blank input.
+
+Polling waits before every request. Its initial interval is the larger of one
+second and the floored server interval in milliseconds, with a 1.2 safety
+multiplier. Pending and unknown responses continue polling; slow-down selects a
+positive supplied interval or adds five seconds, then uses a 1.4 multiplier.
+The multiplied interval is rounded upward; each wait is bounded by the
+remaining server lifetime. A poll
+admitted before expiry still runs after its wait: success or a server error can
+win at expiry. Timeout after a slow-down response includes clock-sync guidance.
+Nonfinite consumed or derived timing values and unrepresentable selected waits
+return the device-fields error; a negative remaining wait becomes zero.
+
+The login signal is checked after prompting, at entered poll iterations and
+while waiting, not during Fetch calls. Completed waits release their cancellation
+observers. A callback failure stops its phase. After token exchange, login emits
+`Enabling models...` and waits for concurrent policy attempts for every current
+catalog model of this provider; individual HTTP and transport policy failures
+are ignored and policy bodies are not read.
+
+`refresh_github_copilot_token(refresh_token, enterprise_domain, fetch)` returns
+service credentials with `expires_at * 1000 - 300000` as the expiry. Empty tokens
+and finite zero, negative or fractional expiry are accepted; nonfinite expiry
+is rejected. A supplied enterprise string is used verbatim and retained,
+including an empty string. Login and refresh do not store credentials or start
+a callback listener. Requests use one selected Fetch without retries or an
+additional deadline; see the [transport guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport) for the shared adapter.
+
+`get_github_copilot_base_url(token, enterprise_domain)` uses the first nonempty
+`proxy-ep=` substring in a token, replacing only its leading `proxy.` with
+`api.`. Without it, a nonempty enterprise operand selects
+`https://copilot-api.{domain}`; otherwise the standard account endpoint is used.
+The helper does not parse or normalize the supplied endpoint text.
+
+`GITHUB_COPILOT_OAUTH_PROVIDER` reports `github-copilot` and `GitHub Copilot`,
+borrows the access key and delegates login and refresh. Its model modifier
+normalizes enterprise metadata and changes only matching-provider base URLs,
+preserving descriptor order and other fields. Provider metadata absent or null
+means no domain; other non-string values return a native decoding error before
+refresh effects or model modification. These exports are also available through
+`oauth::device::github_copilot` and `oauth`.
+
+### Controlled refresh example
+
+```rust
+use maestro_models::{Fetch, HttpResponse, refresh_github_copilot_token};
+use std::sync::Arc;
+
+let fetch: Fetch = Arc::new(|request| {
+    assert_eq!(request.method, "GET");
+    assert_eq!(request.headers["authorization"], "Bearer supplied-refresh");
+    Box::pin(async {
+        Ok(HttpResponse {
+            status: 200,
+            status_text: String::new(),
+            headers: Default::default(),
+            body: Box::pin(futures_util::stream::iter([Ok(
+                br#"{"token":"controlled-access","expires_at":1234}"#.to_vec(),
+            )])),
+        })
+    })
+});
+# async fn example(fetch: Fetch) -> Result<(), maestro_models::OAuthError> {
+let credentials = refresh_github_copilot_token(
+    "supplied-refresh".into(), None, Some(fetch),
+).await?;
+assert_eq!(credentials.access, "controlled-access");
+assert_eq!(credentials.expires, 934000.0);
+# Ok(())
+# }
+# tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(example(fetch))?;
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
