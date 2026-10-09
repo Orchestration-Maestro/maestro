@@ -1102,8 +1102,10 @@ fn maestro_responses_events_reject_ambiguous_call_identity() -> TestResult {
                 json!({"type":"response.completed"}).to_string(),
             ])?),
         )?;
+        let error = run.outcome.unwrap_err();
+        assert_eq!(error.name, None);
         assert_eq!(
-            run.outcome.unwrap_err().message,
+            error.message,
             "call_id contains the item identity separator"
         );
         assert!(run.message.content.is_empty());
