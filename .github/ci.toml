@@ -1,4 +1,4 @@
-wasm_crates = ["maestro-cancellation", "maestro-credentials", "maestro-extensions", "maestro-models", "maestro-request", "maestro-resources", "maestro-settings", "maestro-tui"]
+wasm_crates = ["maestro-cancellation", "maestro-credentials", "maestro-extensions", "maestro-models", "maestro-packages", "maestro-request", "maestro-resources", "maestro-settings", "maestro-tui"]
 test_tools = true
 spelling_words = ["ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "mone", "meight"]
 check_targets = [

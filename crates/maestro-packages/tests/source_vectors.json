@@ -1,0 +1,106 @@
+[
+  {
+    "input": "npm:pkg",
+    "expected": "/work/project/.maestro/npm/node_modules/pkg"
+  },
+  {
+    "input": "npm: pkg@latest ",
+    "expected": "/work/project/.maestro/npm/node_modules/pkg"
+  },
+  {
+    "input": "npm:@scope/pkg@1.2.3",
+    "expected": "/work/project/.maestro/npm/node_modules/@scope/pkg"
+  },
+  {
+    "input": "npm:@scope/pkg@^1",
+    "expected": "/work/project/.maestro/npm/node_modules/@scope/pkg"
+  },
+  {
+    "input": "npm:pkg@>=1 <2",
+    "expected": "/work/project/.maestro/npm/node_modules/pkg"
+  },
+  {
+    "input": "npm:pkg@",
+    "expected": "/work/project/.maestro/npm/node_modules/pkg@"
+  },
+  {
+    "input": "npm:@scope/pkg@",
+    "expected": "/work/project/.maestro/npm/node_modules/@scope/pkg@"
+  },
+  {
+    "input": "npm:",
+    "expected": "/work/project/.maestro/npm/node_modules"
+  },
+  {
+    "input": "npm:@@bad",
+    "expected": "/work/project/.maestro/npm/node_modules/@@bad"
+  },
+  {
+    "input": "npm:pkg@a@b",
+    "expected": "/work/project/.maestro/npm/node_modules/pkg"
+  },
+  {
+    "input": "npm:a/b/c",
+    "expected": "/work/project/.maestro/npm/node_modules/a/b/c"
+  },
+  {
+    "input": "npm:pkg@\nnext",
+    "expected": "/work/project/.maestro/npm/node_modules/pkg@\nnext"
+  },
+  {
+    "input": " npm:pkg ",
+    "expected": "/work/project/.maestro/npm:pkg"
+  },
+  {
+    "input": "NPM:pkg",
+    "expected": "/work/project/.maestro/NPM:pkg"
+  },
+  {
+    "input": "github:u/r",
+    "expected": "/work/project/.maestro/github:u/r"
+  },
+  {
+    "input": "./https://github.com/u/r",
+    "expected": "/work/project/.maestro/https:/github.com/u/r"
+  },
+  {
+    "input": "../pkg",
+    "expected": "/work/project/pkg"
+  },
+  {
+    "input": "~",
+    "expected": "/home/fake"
+  },
+  {
+    "input": "~/pkg",
+    "expected": "/home/fake/pkg"
+  },
+  {
+    "input": "~name",
+    "expected": "/home/fake/name"
+  },
+  {
+    "input": "/abs/pkg",
+    "expected": "/abs/pkg"
+  },
+  {
+    "input": "git@github.com:u/r",
+    "expected": "/work/project/.maestro/git@github.com:u/r"
+  },
+  {
+    "input": "github.com/u/r",
+    "expected": "/work/project/.maestro/github.com/u/r"
+  },
+  {
+    "input": "https://github.com/u/r@v1",
+    "expected": "/work/project/.maestro/git/github.com/u/r"
+  },
+  {
+    "input": "SSH://git@github.com/u/r",
+    "expected": "/work/project/.maestro/SSH:/git@github.com/u/r"
+  },
+  {
+    "input": "git://github.com/u/r",
+    "expected": "/work/project/.maestro/git/github.com/u/r"
+  }
+]

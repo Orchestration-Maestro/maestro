@@ -1,0 +1,188 @@
+[
+  {
+    "commands": [
+      [
+        "mise",
+        "exec",
+        "node@20",
+        "--",
+        "npm"
+      ],
+      [
+        "mise",
+        "exec",
+        "node@20",
+        "--",
+        "npm"
+      ],
+      [
+        "mise",
+        "exec",
+        "node@22",
+        "--",
+        "npm"
+      ],
+      [
+        "other",
+        "exec",
+        "node@22",
+        "--",
+        "npm"
+      ]
+    ],
+    "outputs": [
+      "/roots/20",
+      "/roots/22",
+      "/roots/other"
+    ],
+    "expected": [
+      "/roots/20/pkg",
+      "/roots/20/pkg",
+      "/roots/22/pkg",
+      "/roots/other/pkg"
+    ],
+    "calls": [
+      [
+        "mise",
+        [
+          "exec",
+          "node@20",
+          "--",
+          "npm",
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "mise",
+        [
+          "exec",
+          "node@22",
+          "--",
+          "npm",
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "other",
+        [
+          "exec",
+          "node@22",
+          "--",
+          "npm",
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "commands": [
+      [
+        "npm"
+      ],
+      [
+        "npm"
+      ]
+    ],
+    "outputs": [
+      "",
+      "/nonempty"
+    ],
+    "expected": [
+      "pkg",
+      "/nonempty/pkg"
+    ],
+    "calls": [
+      [
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "commands": [
+      [
+        "first"
+      ],
+      [
+        "other"
+      ],
+      [
+        "first"
+      ]
+    ],
+    "outputs": [
+      "/first",
+      "",
+      "/fresh-first"
+    ],
+    "expected": [
+      "/first/pkg",
+      "pkg",
+      "/fresh-first/pkg"
+    ],
+    "calls": [
+      [
+        "first",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "other",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "first",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "commands": [
+      [
+        "bun"
+      ],
+      [
+        "bun"
+      ]
+    ],
+    "outputs": [
+      "",
+      "/unused"
+    ],
+    "expected": [
+      "install/global/node_modules/pkg",
+      "install/global/node_modules/pkg"
+    ],
+    "calls": [
+      [
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ]
+    ]
+  }
+]
