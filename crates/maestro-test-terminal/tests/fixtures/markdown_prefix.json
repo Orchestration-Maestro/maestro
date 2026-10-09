@@ -1,0 +1,23 @@
+[
+  {
+    "mode": "missing",
+    "lines": [
+      "a \u001b[1mb\u001b[22m \u001b[33mc\u001b[39m \u001b[9mde\u001b[29m                                ",
+      "f                                       "
+    ]
+  },
+  {
+    "mode": "repeated",
+    "lines": [
+      "\u001b[90m\u001b[90ma \u001b[39m\u001b[1m\u001b[90m\u001b[90mb\u001b[39m\u001b[22m\u001b[90m\u001b[90m\u001b[90m\u001b[90m \u001b[39m\u001b[33mc\u001b[39m\u001b[90m\u001b[90m\u001b[90m\u001b[90m \u001b[39m\u001b[9m\u001b[90m\u001b[90mde\u001b[39m\u001b[29m\u001b[90m\u001b[90m\u001b[90m\u001b[90m\u001b[39m                                ",
+      "\u001b[90m\u001b[90mf\u001b[39m                                       "
+    ]
+  },
+  {
+    "mode": "reset",
+    "lines": [
+      "\u001b[90ma \u001b[0m\u001b[1m\u001b[90mb\u001b[0m\u001b[22m\u001b[90m\u001b[90m \u001b[0m\u001b[33mc\u001b[39m\u001b[90m\u001b[90m \u001b[0m\u001b[9m\u001b[90mde\u001b[0m\u001b[29m\u001b[90m\u001b[90m\u001b[0m                                ",
+      "\u001b[90mf\u001b[0m                                       "
+    ]
+  }
+]

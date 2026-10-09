@@ -111,4 +111,10 @@ impl VirtualTerminal {
         let cell = parser.screen().cell(dimension(row), dimension(column));
         cell.is_some_and(vt100::Cell::italic)
     }
+    /// Whether the visible cell is underlined.
+    pub fn is_underlined(&self, row: usize, column: usize) -> bool {
+        let parser = self.parser.borrow();
+        let cell = parser.screen().cell(dimension(row), dimension(column));
+        cell.is_some_and(vt100::Cell::underline)
+    }
 }

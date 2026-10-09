@@ -1,0 +1,460 @@
+//! Markdown layout through the public component interface.
+#[path = "support/markdown_cases.rs"]
+mod markdown;
+use maestro_tui::{Component, DefaultTextStyle, Markdown, MarkdownOptions, TerminalImage};
+use std::rc::Rc;
+
+#[test]
+fn markdown_empty_and_whitespace_use_ecmascript_set() {
+    for text in ["", " \t\r\n", "\u{feff}", "\u{a0}", "\u{2028}", "\u{2029}"] {
+        let component = Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                padding_x: 2,
+                padding_y: 1,
+                default_text_style: Some(DefaultTextStyle::default()),
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        assert!(component.render(9).is_empty(), "{text:?}");
+    }
+    let component = Markdown::new(
+        "\u{85}".to_owned(),
+        MarkdownOptions {
+            padding_x: 2,
+            padding_y: 1,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        TerminalImage::new(|_| None, || 1),
+    );
+    assert_eq!(
+        component.render(9),
+        ["         ", "  \u{85}       ", "         "]
+    );
+}
+
+#[test]
+fn markdown_padding_and_tabs_preserve_content() {
+    let rows: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/markdown_padding.json")).unwrap();
+    for row in rows.as_array().unwrap() {
+        let component = Markdown::new(
+            row["text"].as_str().unwrap().to_owned(),
+            MarkdownOptions {
+                padding_x: row["padding_x"].as_u64().unwrap().try_into().unwrap(),
+                padding_y: row["padding_y"].as_u64().unwrap().try_into().unwrap(),
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        let expected: Vec<String> = serde_json::from_value(row["lines"].clone()).unwrap();
+        assert_eq!(
+            component.render(row["width"].as_u64().unwrap().try_into().unwrap()),
+            expected,
+            "{}",
+            row["text"]
+        );
+    }
+}
+
+#[test]
+fn markdown_heading_levels_and_setext_keep_prefix_policy() {
+    markdown::cases("markdown_heading_levels_and_setext_keep_prefix_policy");
+}
+
+#[test]
+fn markdown_block_spacing_uses_next_block_and_explicit_gaps() {
+    markdown::cases("markdown_block_spacing_uses_next_block_and_explicit_gaps");
+}
+
+#[test]
+fn markdown_code_preserves_full_info_and_indentation() {
+    markdown::cases("markdown_code_preserves_full_info_and_indentation");
+}
+
+#[test]
+fn markdown_code_indent_is_exact_and_optional() {
+    markdown::cases("markdown_code_indent_is_exact_and_optional");
+}
+
+#[test]
+fn markdown_rule_width_caps_at_eighty() {
+    markdown::cases("markdown_rule_width_caps_at_eighty");
+}
+
+#[test]
+fn markdown_html_is_literal_with_block_trim() {
+    markdown::cases("markdown_html_is_literal_with_block_trim");
+}
+
+#[test]
+fn markdown_images_keep_authored_alt_markup() {
+    markdown::cases("markdown_images_keep_authored_alt_markup");
+}
+
+#[test]
+fn markdown_strike_uses_native_delimiters() {
+    markdown::cases("markdown_strike_uses_native_delimiters");
+}
+
+#[test]
+fn markdown_link_labels_and_targets_preserve_spelling() {
+    markdown::cases("markdown_link_labels_and_targets_preserve_spelling");
+}
+
+#[test]
+fn markdown_link_capability_selects_osc8_for_all_kinds() {
+    markdown::cases("markdown_link_capability_selects_osc8_for_all_kinds");
+}
+
+#[test]
+fn markdown_bare_link_recognition_preserves_punctuation() {
+    markdown::cases("markdown_bare_link_recognition_preserves_punctuation");
+}
+
+#[test]
+fn markdown_nested_links_follow_commonmark() {
+    markdown::cases("markdown_nested_links_follow_commonmark");
+}
+
+#[test]
+fn markdown_reference_keys_use_commonmark_casefold() {
+    markdown::cases("markdown_reference_keys_use_commonmark_casefold");
+}
+
+#[test]
+fn markdown_ordered_list_interruption_and_starts() {
+    markdown::cases("markdown_ordered_list_interruption_and_starts");
+}
+
+#[test]
+fn markdown_list_loose_empty_and_lazy_continuations() {
+    markdown::cases("markdown_list_loose_empty_and_lazy_continuations");
+}
+
+#[test]
+fn markdown_nested_list_indentation_is_theme_independent() {
+    markdown::cases("markdown_nested_list_indentation_is_theme_independent");
+    for theme in [markdown::plain(), markdown::ansi()] {
+        let terminal = support::virtual_terminal::VirtualTerminal::new(40, 8);
+        let runtime = support::manual_runtime::ManualRuntime::new();
+        let tui = maestro_tui::TUI::new(
+            terminal.handle(),
+            runtime.handle(),
+            TerminalImage::new(|_| None, || 1),
+            None,
+        );
+        let widget = Rc::new(Markdown::new(
+            "- parent\n  - child\n    - grandchild".to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(theme),
+            TerminalImage::new(|_| None, || 1),
+        ));
+        tui.add_child(widget);
+        tui.start().unwrap();
+        runtime.settle().unwrap();
+        assert_eq!(
+            &terminal.viewport()[..3],
+            ["- parent", "  - child", "    - grandchild"]
+        );
+        tui.stop().unwrap();
+    }
+}
+
+#[test]
+fn markdown_quotes_keep_context_blank_and_recursive_blocks() {
+    markdown::cases("markdown_quotes_keep_context_blank_and_recursive_blocks");
+}
+
+#[test]
+fn markdown_wide_graphemes_wrap_without_splitting() {
+    markdown::cases("markdown_wide_graphemes_wrap_without_splitting");
+}
+
+#[test]
+fn markdown_narrow_lists_preserve_wrapped_rows() {
+    markdown::cases("markdown_narrow_lists_preserve_wrapped_rows");
+    for (width, last) in [(1, "z"), (2, "zz"), (3, "z"), (5, "xyzz")] {
+        let terminal = support::virtual_terminal::VirtualTerminal::new(width, 20);
+        let runtime = support::manual_runtime::ManualRuntime::new();
+        let tui = maestro_tui::TUI::new(
+            terminal.handle(),
+            runtime.handle(),
+            TerminalImage::new(|_| None, || 1),
+            None,
+        );
+        let widget = Rc::new(Markdown::new(
+            "- xyzz".to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        ));
+        let rows = widget.render(width);
+        tui.add_child(widget);
+        tui.start().unwrap();
+        runtime.settle().unwrap();
+        assert_eq!(terminal.viewport()[rows.len() - 1], last);
+        tui.stop().unwrap();
+    }
+}
+
+#[test]
+fn markdown_authored_label_ranges_keep_markup() {
+    markdown::cases("markdown_authored_label_ranges_keep_markup");
+}
+
+#[test]
+fn markdown_nested_blocks_preserve_blank_ownership() {
+    markdown::cases("markdown_nested_blocks_preserve_blank_ownership");
+}
+
+#[test]
+fn markdown_native_entity_and_escape_contexts() {
+    markdown::cases("markdown_native_entity_and_escape_contexts");
+}
+
+#[test]
+fn markdown_autolink_scheme_and_domain_boundaries() {
+    markdown::cases("markdown_autolink_scheme_and_domain_boundaries");
+}
+
+#[test]
+fn markdown_autolink_tail_boundaries() {
+    markdown::cases("markdown_autolink_tail_boundaries");
+}
+
+#[test]
+fn markdown_autolinks_respect_inline_framing() {
+    markdown::cases("markdown_autolinks_respect_inline_framing");
+}
+
+#[test]
+fn markdown_extended_autolinks_match_standard_examples() {
+    markdown::cases("markdown_extended_autolinks_match_standard_examples");
+}
+
+#[test]
+fn maestro_markdown_render_simple_nested_list() {
+    markdown::cases("maestro_markdown_render_simple_nested_list");
+}
+
+#[test]
+fn maestro_markdown_render_deeply_nested_list() {
+    markdown::cases("maestro_markdown_render_deeply_nested_list");
+}
+
+#[test]
+fn maestro_markdown_render_ordered_nested_list() {
+    markdown::cases("maestro_markdown_render_ordered_nested_list");
+}
+
+#[test]
+fn maestro_markdown_render_mixed_ordered_and_unordered_nested_lists() {
+    markdown::cases("maestro_markdown_render_mixed_ordered_and_unordered_nested_lists");
+}
+
+#[test]
+fn maestro_markdown_maintain_numbering_when_code_blocks_are_not_indented_llm_output() {
+    markdown::cases(
+        "maestro_markdown_maintain_numbering_when_code_blocks_are_not_indented_llm_output",
+    );
+}
+
+#[test]
+fn maestro_markdown_have_only_one_blank_line_between_code_block_and_following_paragraph() {
+    markdown::cases(
+        "maestro_markdown_have_only_one_blank_line_between_code_block_and_following_paragraph",
+    );
+}
+
+#[test]
+fn maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line() {
+    markdown::cases(
+        "maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line",
+    );
+}
+
+#[test]
+fn maestro_markdown_not_add_a_trailing_blank_line_when_code_block_is_the_last_rendered_block() {
+    markdown::cases(
+        "maestro_markdown_not_add_a_trailing_blank_line_when_code_block_is_the_last_rendered_block",
+    );
+}
+
+#[test]
+fn maestro_markdown_have_only_one_blank_line_between_divider_and_following_paragraph() {
+    markdown::cases(
+        "maestro_markdown_have_only_one_blank_line_between_divider_and_following_paragraph",
+    );
+}
+
+#[test]
+fn maestro_markdown_not_add_a_trailing_blank_line_when_divider_is_the_last_rendered_block() {
+    markdown::cases(
+        "maestro_markdown_not_add_a_trailing_blank_line_when_divider_is_the_last_rendered_block",
+    );
+}
+
+#[test]
+fn maestro_markdown_have_only_one_blank_line_between_heading_and_following_paragraph() {
+    markdown::cases(
+        "maestro_markdown_have_only_one_blank_line_between_heading_and_following_paragraph",
+    );
+}
+
+#[test]
+fn maestro_markdown_not_add_a_trailing_blank_line_when_heading_is_the_last_rendered_block() {
+    markdown::cases(
+        "maestro_markdown_not_add_a_trailing_blank_line_when_heading_is_the_last_rendered_block",
+    );
+}
+
+#[test]
+fn maestro_markdown_have_only_one_blank_line_between_blockquote_and_following_paragraph() {
+    markdown::cases(
+        "maestro_markdown_have_only_one_blank_line_between_blockquote_and_following_paragraph",
+    );
+}
+
+#[test]
+fn maestro_markdown_not_add_a_trailing_blank_line_when_blockquote_is_the_last_rendered_block() {
+    markdown::cases(
+        "maestro_markdown_not_add_a_trailing_blank_line_when_blockquote_is_the_last_rendered_block",
+    );
+}
+
+#[test]
+fn maestro_markdown_render_list_content_inside_blockquotes() {
+    markdown::cases("maestro_markdown_render_list_content_inside_blockquotes");
+}
+
+#[test]
+fn maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line() {
+    markdown::cases(
+        "maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line",
+    );
+}
+
+#[test]
+fn maestro_markdown_render_text_as_strikethrough() {
+    markdown::cases("maestro_markdown_render_text_as_strikethrough");
+}
+
+#[test]
+fn maestro_markdown_not_duplicate_url_for_autolinked_emails() {
+    markdown::cases("maestro_markdown_not_duplicate_url_for_autolinked_emails");
+}
+
+#[test]
+fn maestro_markdown_not_duplicate_url_for_bare_urls() {
+    markdown::cases("maestro_markdown_not_duplicate_url_for_bare_urls");
+}
+
+#[test]
+fn maestro_markdown_show_url_in_parentheses_when_hyperlinks_are_not_supported() {
+    markdown::cases("maestro_markdown_show_url_in_parentheses_when_hyperlinks_are_not_supported");
+}
+
+#[test]
+fn maestro_markdown_show_mailto_url_in_parentheses_when_hyperlinks_are_not_supported() {
+    markdown::cases(
+        "maestro_markdown_show_mailto_url_in_parentheses_when_hyperlinks_are_not_supported",
+    );
+}
+
+#[test]
+fn maestro_markdown_emit_osc_8_hyperlink_sequence_when_terminal_supports_hyperlinks() {
+    markdown::cases(
+        "maestro_markdown_emit_osc_8_hyperlink_sequence_when_terminal_supports_hyperlinks",
+    );
+}
+
+#[test]
+fn maestro_markdown_use_osc_8_for_mailto_links_when_terminal_supports_hyperlinks() {
+    markdown::cases(
+        "maestro_markdown_use_osc_8_for_mailto_links_when_terminal_supports_hyperlinks",
+    );
+}
+
+#[test]
+fn maestro_markdown_use_osc_8_for_bare_urls_when_terminal_supports_hyperlinks() {
+    markdown::cases("maestro_markdown_use_osc_8_for_bare_urls_when_terminal_supports_hyperlinks");
+}
+
+#[test]
+fn maestro_markdown_render_content_with_html_like_tags_as_text() {
+    markdown::cases("maestro_markdown_render_content_with_html_like_tags_as_text");
+}
+
+#[test]
+fn maestro_markdown_render_html_tags_in_code_blocks_correctly() {
+    markdown::cases("maestro_markdown_render_html_tags_in_code_blocks_correctly");
+}
+
+#[test]
+fn markdown_quotes_keep_explicit_gap_before_lists() {
+    let component = Markdown::new(
+        "> paragraph\n>\n> - item".to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        TerminalImage::new(|_| None, || 1),
+    );
+    assert_eq!(
+        component.render(20),
+        [
+            "│ paragraph         ",
+            "│                   ",
+            "│ - item            "
+        ]
+    );
+}
+
+#[allow(
+    dead_code,
+    reason = "Screen support is shared by several test targets."
+)]
+mod support {
+    pub mod manual_runtime;
+    pub mod recording_terminal;
+    pub mod virtual_terminal;
+}
+
+#[test]
+fn markdown_http_prefixed_email_locals_use_mailto_hyperlinks() {
+    let images = TerminalImage::new(|_| None, || 1);
+    images.set_capabilities(maestro_tui::TerminalCapabilities {
+        hyperlinks: true,
+        ..Default::default()
+    });
+    let widget = Markdown::new(
+        "httpuser@example.com https@example.com".to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        images,
+    );
+    assert_eq!(
+        widget.render(40),
+        [
+            "\x1b]8;;mailto:httpuser@example.com\x1b\\httpuser@example.com\x1b]8;;\x1b\\ \x1b]8;;mailto:https@example.com\x1b\\https@example.com\x1b]8;;\x1b\\  "
+        ]
+    );
+}

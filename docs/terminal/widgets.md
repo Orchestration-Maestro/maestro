@@ -340,3 +340,8 @@ let settings = SettingsList::new(
 settings.handle_input(" ");
 assert_eq!(settings.render(80)[0], "→ Color  on");
 ```
+
+## Markdown
+
+[`Markdown`](markdown.md) renders styled blocks with supplied theme and
+highlighting callbacks, padding and retained rows.
