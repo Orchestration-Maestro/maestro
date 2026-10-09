@@ -325,8 +325,7 @@
     "names": [
       "top/dir/file.txt"
     ],
-    "result": null,
-    "applications": []
+    "result": null
   },
   {
     "id": "unix_backslash",

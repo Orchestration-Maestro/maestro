@@ -59,6 +59,57 @@ fn native_attachment_search_finds_nested_and_scoped_matches() {
     });
 }
 
+#[test]
+fn native_attachment_search_selects_full_path_fallbacks() {
+    runtime().block_on(async {
+        let selective = Tree::new().unwrap();
+        entries(
+            &selective,
+            &[
+                "packages/tui/src/autocomplete.rs",
+                "packages/ai/src/autocomplete.rs",
+                "src/components/Button.rs",
+                "src/utils/helpers.rs",
+            ],
+        );
+        for (text, expected) in [
+            ("@tui/src/auto", "packages/tui/src/autocomplete.rs"),
+            ("@components/", "src/components/Button.rs"),
+        ] {
+            assert_eq!(
+                paths(query(&selective.authored(), text).await, text),
+                [expected],
+                "{text}"
+            );
+        }
+    });
+}
+
+#[test]
+fn native_attachment_search_recurses_below_external_scope() {
+    runtime().block_on(async {
+        let tree = Tree::new().unwrap();
+        let sibling = Tree::new().unwrap();
+        entries(
+            &sibling,
+            &[
+                "nested/deeper/also-alpha.txt",
+                "nested/alpha.txt",
+                "nested/deeper/zzz.txt",
+            ],
+        );
+        let relative = format!("../{}/", sibling.0.file_name().unwrap().to_str().unwrap());
+        let text = format!("@{relative}alpha");
+        assert_eq!(
+            paths(query(&tree.authored(), &text).await, &text),
+            [
+                format!("{relative}nested/alpha.txt"),
+                format!("{relative}nested/deeper/also-alpha.txt")
+            ]
+        );
+    });
+}
+
 #[cfg(unix)]
 #[test]
 fn native_attachment_search_respects_ignores_and_follows_links() {
@@ -107,6 +158,17 @@ fn native_attachment_search_respects_ignores_and_follows_links() {
             paths(query(&tree.authored(), "@linked-dir").await, "@linked-dir"),
             ["linked-dir/"]
         );
+        assert_eq!(
+            paths(query(&tree.authored(), "@external").await, "@external"),
+            ["linked-dir/nested/external.txt"]
+        );
+        assert_eq!(
+            paths(
+                query(&tree.authored(), "@linked-file").await,
+                "@linked-file"
+            ),
+            ["linked-file.txt"]
+        );
     });
 }
 
@@ -115,11 +177,33 @@ fn native_attachment_search_preserves_quoted_insertion() {
     runtime().block_on(async {
         let tree = Tree::new().unwrap();
         entries(&tree, &["my folder/alpha.txt", "my folder/other.txt"]);
+        assert_eq!(
+            paths(query(&tree.authored(), "@my").await, "@my"),
+            ["my folder/"]
+        );
         let provider = CombinedAutocompleteProvider::new(
             vec![],
             tree.authored(),
             Some(executable()),
             NativeAutocompleteOperations::default(),
+        );
+        let directory_lines = ["@\"my folder/\"".into()];
+        let directory_result = provider
+            .get_suggestions(
+                &directory_lines,
+                CursorPosition { line: 0, col: 12 },
+                CompletionOptions {
+                    signal: &Cancellation::new(),
+                    force: None,
+                },
+            )
+            .await
+            .unwrap();
+        let mut directory_paths = paths(directory_result, "@\"my folder/");
+        directory_paths.sort();
+        assert_eq!(
+            directory_paths,
+            ["my folder/alpha.txt", "my folder/other.txt"]
         );
         let lines = ["say @\"my folder/a\" tail".into()];
         let cursor = CursorPosition { line: 0, col: 17 };

@@ -55,7 +55,7 @@ pub(super) async fn suggest<O: AutocompleteOperations>(
         .collect();
     Ok(super::commands::nonempty(items, prefix))
 }
-/// Literal basename search operands with explicit option termination.
+/// Add literal basename or escaped full-path operands only for nonempty queries.
 fn arguments(base: &str, query: &str) -> Vec<String> {
     let mut args = [
         "--print0",
@@ -91,13 +91,13 @@ fn arguments(base: &str, query: &str) -> Vec<String> {
     args
 }
 
-/// A reached directory scope and its unchanged authored prefix.
+/// A reached directory scope and its native-separator-converted display prefix.
 struct Scope {
     /// Native directory operand.
     base: String,
     /// Basename query.
     query: String,
-    /// Authored display directory.
+    /// Display directory after native separator conversion.
     display: String,
 }
 /// Resolve only the directory before the final display separator.
@@ -200,7 +200,7 @@ fn score(path: &str, query: &str) -> u16 {
             0
         }
 }
-/// Project the selected path without normalizing authored display spelling.
+/// Prepend the captured display directory and quote the selected path when needed.
 fn project(path: &str, display: &str, quoted: bool) -> AutocompleteItem {
     let directory = path.ends_with('/');
     let path = path.strip_suffix('/').unwrap_or(path);

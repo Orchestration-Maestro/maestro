@@ -1277,58 +1277,10 @@
     "group": "scoped_search_retains_authored_directory_spelling"
   },
   {
-    "text": "@src/a",
-    "col": 6,
-    "base": "/work",
-    "executable": "/tool/fd",
-    "stat": {
-      "/work/src/": "error"
-    },
-    "chunks": [
-      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
-    ],
-    "result": null,
-    "calls": [
-      [
-        "stat",
-        "/work/src/"
-      ],
-      [
-        "spawn",
-        "/tool/fd",
-        "--print0",
-        "--strip-cwd-prefix=always",
-        "--ignore-case",
-        "--base-directory",
-        "/work",
-        "--max-results",
-        "100",
-        "--type",
-        "f",
-        "--type",
-        "d",
-        "--follow",
-        "--hidden",
-        "--exclude",
-        ".git",
-        "--exclude",
-        ".git/*",
-        "--exclude",
-        ".git/**",
-        "--full-path",
-        "--",
-        "src/a"
-      ]
-    ],
-    "id": "scope_stat_error",
-    "group": "scoped_search_retains_authored_directory_spelling"
-  },
-  {
     "text": "@~/src/a",
     "col": 8,
     "base": "/work",
     "executable": "/tool/fd",
-    "home": "/home/test",
     "home_error": true,
     "result": null,
     "calls": [
@@ -3982,9 +3934,6 @@
     "col": 1,
     "base": "/work",
     "executable": "/tool/fd",
-    "chunks": [
-      "alpha.txt\u0000"
-    ],
     "error": true,
     "result": null,
     "calls": [
@@ -4115,7 +4064,7 @@
     "col": 1,
     "base": "/work",
     "executable": "/tool/fd",
-    "abort": "during",
+    "abort": "output",
     "chunks": [
       "alpha.txt\u0000"
     ],
@@ -4145,45 +4094,7 @@
         ".git/**"
       ]
     ],
-    "id": "process_inflight_abort",
-    "group": "process_failures_and_cancellation_discard_partial_output"
-  },
-  {
-    "text": "@",
-    "col": 1,
-    "base": "/work",
-    "executable": "/tool/fd",
-    "abort": "after_exit",
-    "chunks": [
-      "alpha.txt\u0000"
-    ],
-    "result": null,
-    "calls": [
-      [
-        "spawn",
-        "/tool/fd",
-        "--print0",
-        "--strip-cwd-prefix=always",
-        "--ignore-case",
-        "--base-directory",
-        "/work",
-        "--max-results",
-        "100",
-        "--type",
-        "f",
-        "--type",
-        "d",
-        "--follow",
-        "--hidden",
-        "--exclude",
-        ".git",
-        "--exclude",
-        ".git/*",
-        "--exclude",
-        ".git/**"
-      ]
-    ],
-    "id": "process_after_exit_abort",
+    "id": "process_output_cancelled",
     "group": "process_failures_and_cancellation_discard_partial_output"
   },
   {

@@ -133,7 +133,11 @@ fn display_path(raw: &str, name: &str) -> String {
     } else {
         name.to_owned()
     };
-    to_display_path(&path)
+    if cfg!(windows) {
+        path.replace('\\', "/")
+    } else {
+        path
+    }
 }
 
 /// Retained directory classification before display quoting.
@@ -254,10 +258,10 @@ pub(super) fn apply(
 }
 
 /// Convert native separators for display without changing Unix filename data.
-pub(super) fn to_display_path(path: &str) -> String {
+pub(super) fn to_display_path(path: &str) -> std::borrow::Cow<'_, str> {
     if cfg!(windows) {
-        path.replace('\\', "/")
+        std::borrow::Cow::Owned(path.replace('\\', "/"))
     } else {
-        path.to_owned()
+        std::borrow::Cow::Borrowed(path)
     }
 }

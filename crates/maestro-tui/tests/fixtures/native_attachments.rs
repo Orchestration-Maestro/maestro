@@ -87,6 +87,7 @@ struct NativeCase {
     /// Complete suggestion output.
     result: Option<attachments::Suggestions>,
     /// Complete insertion output for every selected candidate.
+    #[serde(default)]
     applications: Vec<attachments::Application>,
 }
 /// Compare real process results against recorded consumer observations.

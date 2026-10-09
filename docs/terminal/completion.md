@@ -94,7 +94,7 @@ and captured stdout/stderr; stderr is consumed without display.
 A directory before the last native separator scopes the search when metadata
 identifies it as a directory. Failed metadata falls back to unscoped search; a
 failed home lookup ends the attachment request. Display prefixes retain authored
-spelling. The search executable receives literal basename queries or escaped
+spelling after native separators are converted for display. The search executable receives literal basename queries or escaped
 full-path queries, includes hidden files and directories, follows links and applies
 its ignore rules. It is asked for 100 results; NUL-delimited records preserve
 filename whitespace and Unix backslashes, excluding exact `.git` components.

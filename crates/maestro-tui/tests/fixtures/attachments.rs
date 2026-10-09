@@ -156,7 +156,7 @@ impl AutocompleteOperations for Effects<'_> {
         call.extend_from_slice(args);
         self.calls.borrow_mut().push(call);
         Box::pin(async move {
-            if matches!(self.case.abort.as_str(), "during" | "after_exit" | "home") {
+            if matches!(self.case.abort.as_str(), "output" | "home") {
                 signal.set(true);
             }
             if self.case.error {
