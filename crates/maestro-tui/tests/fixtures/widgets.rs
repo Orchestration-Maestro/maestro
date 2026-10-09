@@ -1,10 +1,10 @@
-//! Controlled components and an overlay handle for the component contracts.
+//! Controlled components for the component contracts.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_tui::tui::InputHandler;
-use maestro_tui::{CURSOR_MARKER, Component, FocusFlag, Focusable, OverlayHandle};
+use maestro_tui::{CURSOR_MARKER, Component, FocusFlag, Focusable};
 
 /// Names of the components invalidated so far, in invalidation order.
 pub type InvalidationTrace = Rc<RefCell<Vec<&'static str>>>;
@@ -77,48 +77,5 @@ impl InputHandler for Field {
 impl Focusable for Field {
     fn focus_flag(&self) -> &FocusFlag {
         &self.focus
-    }
-}
-
-/// Records the operations an overlay manager would perform.
-#[derive(Default)]
-pub struct Handle {
-    /// Whether the overlay is temporarily hidden.
-    pub hidden: bool,
-    /// Whether the overlay has focus.
-    pub focused: bool,
-    /// Whether the overlay was removed.
-    pub removed: bool,
-    /// Operations in the order they were requested.
-    pub log: Vec<&'static str>,
-}
-
-impl OverlayHandle for Handle {
-    fn hide(&mut self) {
-        self.removed = true;
-        self.log.push("hide");
-    }
-
-    fn set_hidden(&mut self, hidden: bool) {
-        self.hidden = hidden;
-        self.log.push("set_hidden");
-    }
-
-    fn is_hidden(&self) -> bool {
-        self.hidden
-    }
-
-    fn focus(&mut self) {
-        self.focused = true;
-        self.log.push("focus");
-    }
-
-    fn unfocus(&mut self) {
-        self.focused = false;
-        self.log.push("unfocus");
-    }
-
-    fn is_focused(&self) -> bool {
-        self.focused
     }
 }

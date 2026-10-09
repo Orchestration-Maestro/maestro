@@ -1,12 +1,15 @@
-//! Component capabilities, overlay records, the ordered container and the retained frame writer.
+//! Component capabilities, retained overlays, the ordered container and the frame writer.
 #![doc = include_str!("../../../../docs/terminal/rendering.md")]
+#![doc = include_str!("../../../../docs/terminal/overlays.md")]
 
 mod component;
 mod container;
 mod diagnostics;
 mod drawing;
+mod geometry;
 mod input;
 mod overlay_types;
+mod overlays;
 mod runtime;
 mod schedule;
 mod screen;
@@ -56,6 +59,10 @@ struct Shared {
     schedule: RefCell<Schedule>,
     /// Listeners, focus and the debug callback.
     input: RefCell<Input>,
+    /// Retained entries in creation order.
+    overlays: RefCell<Vec<Rc<overlays::Entry>>>,
+    /// Counter for visual focus order.
+    focus_order: Cell<usize>,
     /// Whether the hardware cursor is shown where a component asks for it.
     show_hardware_cursor: Cell<bool>,
     /// Whether shrinking content clears the screen.
@@ -87,6 +94,8 @@ impl TUI {
                 screen: RefCell::new(Screen::default()),
                 schedule: RefCell::new(Schedule::default()),
                 input: RefCell::new(Input::default()),
+                overlays: RefCell::default(),
+                focus_order: Cell::new(0),
                 show_hardware_cursor: Cell::new(show_hardware_cursor),
                 clear_on_shrink: Cell::new(clear_on_shrink),
             }),
@@ -191,8 +200,12 @@ impl TUI {
     /// visits. A child added to the array is reached only if the walk gets to its position,
     /// a removal at or before the walk's position makes it skip the next child, and
     /// clearing the writer or assigning another array starts one the walk does not see.
+    /// After base children, the live overlay stack is walked, including hidden entries.
     pub fn invalidate(&self) {
         self.shared.container.invalidate();
+        for entry in (0..).map_while(|index| self.overlay_at(index)) {
+            entry.capture.component.invalidate();
+        }
     }
 
     /// Starts the terminal, hides the cursor, asks image terminals for their cell size and

@@ -6,6 +6,7 @@ use std::rc::Rc;
 use crate::images::terminal_image::CellDimensions;
 use crate::keys::{is_key_release, matches_key};
 
+use super::overlays::Focus;
 use super::{Component, ComponentHandle, FocusFlag, Focusable, TUI};
 
 /// What an input listener decided about one chunk of input.
@@ -37,7 +38,7 @@ pub(super) struct Input {
     /// How many dispatches are walking `listeners`.
     dispatching: usize,
     /// The component that receives input.
-    focused: Option<ComponentHandle>,
+    pub(super) focused: Focus,
     /// Called when the debug key is pressed.
     on_debug: Option<Rc<dyn Fn()>>,
 }
@@ -142,14 +143,31 @@ impl TUI {
     /// one gains it, and a frame is not requested. A component that cannot hold focus is
     /// not flagged.
     pub fn set_focus(&self, component: Option<ComponentHandle>) {
-        let previous = self.shared.input.borrow_mut().focused.take();
-        if let Some(flag) = previous.as_deref().and_then(focus_flag) {
+        let capture = self
+            .shared
+            .overlays
+            .borrow()
+            .iter()
+            .find(|entry| {
+                component
+                    .as_ref()
+                    .is_some_and(|focus| Rc::ptr_eq(focus, &entry.capture.component))
+            })
+            .map(|entry| Rc::clone(&entry.capture));
+        self.commit_focus(capture.map_or(Focus::Base(component), Focus::Captured));
+    }
+
+    /// Commits every focus change through the same flag and recipient assignment.
+    pub(super) fn commit_focus(&self, focus: Focus) {
+        let previous = std::mem::take(&mut self.shared.input.borrow_mut().focused);
+        if let Some(flag) = previous.component().map(AsRef::as_ref).and_then(focus_flag) {
             flag.set(false);
         }
+        let component = focus.component().cloned();
+        self.shared.input.borrow_mut().focused = focus;
         if let Some(flag) = component.as_deref().and_then(focus_flag) {
             flag.set(true);
         }
-        self.shared.input.borrow_mut().focused = component;
     }
 
     /// Sets the callback that runs when the debug key is pressed, replacing any earlier one.
@@ -215,6 +233,7 @@ impl TUI {
                 return;
             }
         }
+        self.repair_overlay_focus();
         self.forward_to_focus(&data);
     }
 
@@ -274,7 +293,7 @@ impl TUI {
     /// Gives `data` to the focused component when it takes input, dropping key releases it
     /// did not ask for, then requests a frame.
     fn forward_to_focus(&self, data: &str) {
-        let focused = self.shared.input.borrow().focused.clone();
+        let focused = self.shared.input.borrow().focused.component().cloned();
         let Some(focused) = focused else {
             return;
         };

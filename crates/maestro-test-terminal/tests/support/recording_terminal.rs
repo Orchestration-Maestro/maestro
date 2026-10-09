@@ -31,6 +31,8 @@ struct State {
     on_input: Option<InputCallback>,
     /// Receiver of resize notices while started.
     on_resize: Option<ResizeCallback>,
+    /// Controlled failure for cursor hiding.
+    hide_error: Option<io::ErrorKind>,
     /// Observer of every recorded byte string.
     tap: Option<Tap>,
 }
@@ -54,6 +56,7 @@ impl RecordingTerminal {
                 on_input: None,
                 on_resize: None,
                 tap: None,
+                hide_error: None,
             })),
         }
     }
@@ -71,6 +74,11 @@ impl RecordingTerminal {
     /// Writes and cursor visibility escapes in the order requested.
     pub fn writes(&self) -> Vec<String> {
         self.state.borrow().writes.clone()
+    }
+
+    /// Makes cursor hiding fail with the supplied kind, or restores success.
+    pub fn set_hide_error(&self, kind: Option<io::ErrorKind>) {
+        self.state.borrow_mut().hide_error = kind;
     }
 
     /// Forgets the writes recorded so far.
@@ -204,6 +212,9 @@ impl Terminal for RecordingTerminal {
     }
 
     fn hide_cursor(&mut self) -> io::Result<()> {
+        if let Some(kind) = self.state.borrow().hide_error {
+            return Err(io::Error::new(kind, "cursor failure"));
+        }
         self.record("\x1b[?25l");
         Ok(())
     }

@@ -1,5 +1,6 @@
-//! Placement and control records for overlays; resolving them belongs to the renderer.
+//! Placement options and public controls for retained overlays.
 
+use std::io;
 use std::rc::Rc;
 
 /// Point of the viewport an overlay is anchored to.
@@ -25,25 +26,25 @@ pub enum OverlayAnchor {
     RightCenter,
 }
 
-/// Margin per viewport edge; an absent side has no margin.
+/// Margin per viewport edge; absent and negative sides resolve to zero.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct OverlayMargin {
-    /// Cells kept free at the top.
-    pub top: Option<usize>,
-    /// Cells kept free at the right.
-    pub right: Option<usize>,
-    /// Cells kept free at the bottom.
-    pub bottom: Option<usize>,
-    /// Cells kept free at the left.
-    pub left: Option<usize>,
+    /// Signed margin at the top.
+    pub top: Option<isize>,
+    /// Signed margin at the right.
+    pub right: Option<isize>,
+    /// Signed margin at the bottom.
+    pub bottom: Option<isize>,
+    /// Signed margin at the left.
+    pub left: Option<isize>,
 }
 
 /// A size in cells or a percentage of the viewport such as `"50%"`, kept as written.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SizeValue {
     /// Absolute cells.
-    Cells(usize),
-    /// Percentage text; this crate does not parse or resolve it.
+    Cells(isize),
+    /// Percentage text resolved against the relevant viewport span.
     Percentage(String),
 }
 
@@ -51,7 +52,7 @@ pub enum SizeValue {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OverlayMarginValue {
     /// The same margin on all four sides.
-    Uniform(usize),
+    Uniform(isize),
     /// Individual margins.
     Sides(OverlayMargin),
 }
@@ -62,10 +63,10 @@ pub struct OverlayOptions {
     /// Width in cells or as a percentage of the viewport width.
     pub width: Option<SizeValue>,
     /// Minimum width in cells.
-    pub min_width: Option<usize>,
+    pub min_width: Option<isize>,
     /// Maximum height in rows or as a percentage of the viewport height.
     pub max_height: Option<SizeValue>,
-    /// Anchor point; the renderer chooses the default.
+    /// Anchor point; absent means center.
     pub anchor: Option<OverlayAnchor>,
     /// Horizontal offset from the anchor; positive moves right.
     pub offset_x: Option<isize>,
@@ -75,7 +76,7 @@ pub struct OverlayOptions {
     pub row: Option<SizeValue>,
     /// Column position in cells or as a percentage.
     pub col: Option<SizeValue>,
-    /// Margin kept from the viewport edges.
+    /// Margins used to resolve available space and placement.
     pub margin: Option<OverlayMarginValue>,
     /// Decides from the viewport width and height whether the overlay shows.
     pub visible: Option<Rc<dyn Fn(usize, usize) -> bool>>,
@@ -86,20 +87,23 @@ pub struct OverlayOptions {
 /// Control over a shown overlay.
 pub trait OverlayHandle {
     /// Removes the overlay for good.
-    fn hide(&mut self);
+    ///
+    /// # Errors
+    /// Returns cursor-hiding errors after removal and any applicable focus restoration.
+    fn hide(&mut self) -> io::Result<()>;
 
-    /// Hides or shows the overlay temporarily.
+    /// Changes temporary hiding. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     fn set_hidden(&mut self, hidden: bool);
 
     /// Whether the overlay is temporarily hidden.
     fn is_hidden(&self) -> bool;
 
-    /// Gives the overlay focus and brings it to the front.
+    /// Requests focus and visual raising. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     fn focus(&mut self);
 
-    /// Returns focus to the previous target.
+    /// Yields component focus. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     fn unfocus(&mut self);
 
-    /// Whether the overlay has focus.
+    /// Whether the component identity currently owns focus, even after detachment.
     fn is_focused(&self) -> bool;
 }

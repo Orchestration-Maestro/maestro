@@ -44,6 +44,8 @@ pub struct Probe {
     pub invalidated: Cell<usize>,
     /// How many times it rendered.
     pub renders: Cell<usize>,
+    /// Widths requested in render order.
+    pub widths: RefCell<Vec<usize>>,
     /// Called at the start of each render.
     on_render: RefCell<Option<RenderHook>>,
     /// Called with each chunk of input the component receives.
@@ -64,6 +66,7 @@ impl Probe {
             emits_marker: Cell::new(false),
             invalidated: Cell::new(0),
             renders: Cell::new(0),
+            widths: RefCell::default(),
             on_render: RefCell::default(),
             on_input: RefCell::default(),
             on_invalidate: RefCell::default(),
@@ -99,7 +102,8 @@ impl Probe {
 }
 
 impl Component for Probe {
-    fn render(&self, _width: usize) -> Vec<String> {
+    fn render(&self, width: usize) -> Vec<String> {
+        self.widths.borrow_mut().push(width);
         self.renders.set(self.renders.get() + 1);
         let on_render = self.on_render.borrow().clone();
         if let Some(on_render) = on_render {

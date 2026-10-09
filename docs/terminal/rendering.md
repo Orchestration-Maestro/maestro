@@ -136,7 +136,7 @@ terminal. Image lines are written untouched.
    the last row of the new content. A frame with no rows erases row zero as well.
 4. **Full redraws.** The screen and scrollback are cleared and every line is drawn
    again when the width changes, when the height changes (unless the mobile-height
-   exception applies, which keeps the scrollback), when clear-on-shrink is on and the
+   exception applies, which keeps the scrollback), when clear-on-shrink is on, the overlay stack is empty and the
    frame is shorter than the most rows ever drawn, when erasing rows would scroll the
    viewport up, when a changed row has scrolled out of the viewport and when a redraw
    is forced.
@@ -149,7 +149,12 @@ the position being rendered shifts the later children back, so the next one is s
 Clearing the writer or assigning another array during the frame starts a new array; the
 frame keeps rendering the old one to its end and renders nothing added to the new one.
 `invalidate` walks the array the same way, and a container does the same with its own
-children.
+children. The writer then invalidates the live overlay stack, including hidden
+entries; see [retained overlays](overlays.md) for its lifecycle.
+
+Visible overlays are composed after base rendering and before cursor-marker
+extraction. A nonempty stack pads the buffer to at least terminal height, even
+when every overlay is hidden.
 
 `full_redraws` counts the full redraws begun. The logical end of the content and the
 row the terminal cursor is on are tracked separately, because placing the hardware
@@ -194,7 +199,8 @@ including the immediate one a forced request queued, and forgets any request, so
    including a bare escape, negative or fractional numbers, a trailing newline or a
    fragment, is ordinary input.
 3. The debug key, `shift+ctrl+d`, when `set_on_debug` installed a callback.
-4. The focused component, if it can take input. Key-release events are dropped
+4. [Overlay input repair](overlays.md#focus-and-controls) runs before key-release
+   filtering. The resulting focused component, if it can take input. Key-release events are dropped
    unless it asks for them with `wants_key_release`. A frame is requested after
    each delivery.
 
@@ -210,7 +216,8 @@ order, before it returns. A running component that is one of them is invalidated
 are the ones still to render in that frame that the walk reaches, which lose their cached
 rendering before they render. A child is invalidated once per visit, so a child listed
 twice is invalidated twice when no edit during the walk changes the array. A focused
-component that is not among the children is not invalidated.
+component that is neither among the children nor in the overlay stack is not
+invalidated.
 
 The cell size is only requested at startup when the terminal supports images.
 
