@@ -275,9 +275,9 @@ fn messages_keep_http_error_envelopes() -> TestResult {
     )
 }
 
-/// Both selected error-detail branches leave empty text when conversion exceeds its bound.
+/// Both selected error-detail branches report the native conversion failure above the bound.
 #[test]
-fn messages_keep_empty_error_detail_at_conversion_boundary() -> TestResult {
+fn messages_report_error_detail_conversion_failure() -> TestResult {
     block_on(false, async {
         let nested = format!("{}0{}", "[".repeat(128), "]".repeat(128));
         for body in [format!(r#"{{"message":{nested}}}"#), nested] {
@@ -287,7 +287,10 @@ fn messages_keep_empty_error_detail_at_conversion_boundary() -> TestResult {
                 ..messages::Case::default()
             };
             let run = messages::run_case(&case).await?;
-            assert_eq!(run.result["errorMessage"], json!("400 "));
+            assert_eq!(
+                run.result["errorMessage"],
+                json!("recursion limit exceeded")
+            );
             assert_eq!(run.result["stopReason"], json!("error"));
         }
         Ok(())

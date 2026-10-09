@@ -1,3 +1,6 @@
+use maestro_models::providers::responses::openai_responses::{
+    stream_openai_responses, stream_simple_openai_responses,
+};
 use maestro_models::{
     OPENAI_CODEX_OAUTH_PROVIDER, complete, get_model, login_openai_codex,
     refresh_openai_codex_token,
@@ -8,6 +11,9 @@ fn main() {
     std::hint::black_box((
         model,
         complete,
+        stream_openai_responses,
+        stream_simple_openai_responses,
+        maestro_models::OpenAIResponsesOptions::default(),
         login_openai_codex,
         OPENAI_CODEX_OAUTH_PROVIDER,
     ));

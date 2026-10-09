@@ -1,10 +1,4 @@
-//! Internal response conversion and event reduction; endpoint adapters supply production callers.
+//! Response endpoint invocation with shared conversion and event reduction.
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the standard endpoint provider is its first caller"
-    )
-)]
+pub mod openai_responses;
 pub(crate) mod openai_responses_shared;

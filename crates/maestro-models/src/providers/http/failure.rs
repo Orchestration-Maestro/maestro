@@ -45,33 +45,35 @@ impl From<DiagnosticErrorInfo> for RequestFailure {
     }
 }
 
-/// Render a value as compact JSON text.
-fn json_text(value: &RawValue) -> String {
-    compact_raw(value).unwrap_or_default()
-}
-
 /// Read a JSON string value as its text.
 fn string_text(value: &RawValue) -> Option<String> {
     serde_json::from_str(value.get()).ok()
 }
 
 /// Build the failure text from a status, a provider `error` payload and plain body text.
-fn describe(status: Option<u16>, error: Option<&RawValue>, body: Option<&str>) -> String {
+fn describe(
+    status: Option<u16>,
+    error: Option<&RawValue>,
+    body: Option<&str>,
+) -> Result<String, serde_json::Error> {
     let detail = match error.filter(|error| is_truthy(error)) {
         Some(error) => Some(
             match member(error, "message").filter(|message| is_truthy(message)) {
-                Some(message) => string_text(message).unwrap_or_else(|| json_text(message)),
-                None => json_text(error),
+                Some(message) if message.get().starts_with('"') => {
+                    serde_json::from_str(message.get())?
+                }
+                Some(message) => compact_raw(message)?,
+                None => compact_raw(error)?,
             },
         ),
         None => body.filter(|text| !text.is_empty()).map(str::to_owned),
     };
-    match (status.filter(|status| *status != 0), detail) {
+    Ok(match (status.filter(|status| *status != 0), detail) {
         (Some(status), Some(detail)) => format!("{status} {detail}"),
         (Some(status), None) => format!("{status} status code (no body)"),
         (None, Some(detail)) => detail,
         (None, None) => "(no status code or body)".to_owned(),
-    }
+    })
 }
 
 /// Wrap a provider `error` payload with the upstream explanation it carries.
@@ -81,9 +83,9 @@ fn failure(status: Option<u16>, error: Option<&RawValue>, body: Option<&str>) ->
         .and_then(|metadata| member(metadata, "raw"))
         .and_then(string_text)
         .filter(|raw| !raw.is_empty());
-    RequestFailure {
-        message: describe(status, error, body),
-        raw,
+    match describe(status, error, body) {
+        Ok(message) => RequestFailure { message, raw },
+        Err(error) => RequestFailure::new(error.to_string()),
     }
 }
 
@@ -98,14 +100,33 @@ pub(super) fn status_failure(status: u16, body: &str) -> RequestFailure {
 
 /// Describe a non-success HTTP response using its truthy parsed body's truthy `message`,
 /// otherwise that body; non-truthy or unparsed bodies use their original text, or are bodiless
-/// when empty. Selected JSON details use string text or [`compact_raw`], with empty detail
-/// if that conversion fails.
+/// when empty. Selected JSON details use string text or escaped JSON; rendering failures
+/// retain their native diagnostic.
 pub(crate) fn envelope_failure(status: u16, body: &str) -> RequestFailure {
     let parsed = raw_json(body).ok().filter(|parsed| is_truthy(parsed));
     match parsed {
-        Some(parsed) => RequestFailure::new(describe(Some(status), Some(parsed), None)),
-        None => RequestFailure::new(describe(Some(status), None, Some(body))),
+        Some(parsed) => rendered_failure(describe(Some(status), Some(parsed), None)),
+        None => rendered_failure(describe(Some(status), None, Some(body))),
     }
+}
+
+/// Describe a non-success SDK response without chat-specific metadata decoration.
+pub(crate) fn sdk_status_failure(status: u16, body: &str) -> RequestFailure {
+    let parsed = raw_json(body).ok().filter(|parsed| is_truthy(parsed));
+    rendered_failure(match parsed {
+        Some(parsed) => describe(Some(status), member(parsed, "error"), None),
+        None => describe(Some(status), None, Some(body)),
+    })
+}
+
+/// Describe a streamed SDK error without chat-specific metadata decoration.
+pub(crate) fn sdk_stream_failure(error: &RawValue) -> Result<RequestFailure, serde_json::Error> {
+    describe(None, Some(error), None).map(RequestFailure::new)
+}
+
+/// Keep a rendering failure as the native diagnostic rather than an empty detail.
+fn rendered_failure(result: Result<String, serde_json::Error>) -> RequestFailure {
+    RequestFailure::new(result.unwrap_or_else(|error| error.to_string()))
 }
 
 /// Describe an error payload carried inside a successful event stream.

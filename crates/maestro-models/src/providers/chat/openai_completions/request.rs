@@ -58,13 +58,7 @@ impl<'a> Invocation<'a> {
         context: &'a Context,
         options: &'a OpenAICompletionsOptions,
     ) -> Self {
-        let retention = options.common.cache_retention.unwrap_or_else(|| {
-            if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") {
-                CacheRetention::Long
-            } else {
-                CacheRetention::Short
-            }
-        });
+        let retention = resolve_cache_retention(options.common.cache_retention);
         Self {
             model,
             context,
@@ -332,7 +326,7 @@ impl<'a> Invocation<'a> {
 }
 
 /// Insert headers under lowercase names; a later insertion replaces an earlier one.
-fn layer(
+pub(crate) fn layer(
     layered: &mut IndexMap<String, String>,
     source: impl IntoIterator<Item = (String, String)>,
 ) {
@@ -343,7 +337,9 @@ fn layer(
 }
 
 /// Copy the entries of a header layer that the model or caller owns.
-fn copied(source: &IndexMap<String, String>) -> impl Iterator<Item = (String, String)> + '_ {
+pub(crate) fn copied(
+    source: &IndexMap<String, String>,
+) -> impl Iterator<Item = (String, String)> + '_ {
     source
         .iter()
         .map(|(name, value)| (name.clone(), value.clone()))
@@ -351,7 +347,7 @@ fn copied(source: &IndexMap<String, String>) -> impl Iterator<Item = (String, St
 
 /// Organization and project headers set from the environment, trimmed of script whitespace; a
 /// variable that is set but blank sends an empty header.
-fn scope_headers() -> impl Iterator<Item = (String, String)> {
+pub(crate) fn scope_headers() -> impl Iterator<Item = (String, String)> {
     SCOPE_HEADERS.into_iter().filter_map(|(header, variable)| {
         let value = std::env::var(variable).ok()?;
         Some((header.to_owned(), value.trim_matches(whitespace).to_owned()))
@@ -359,7 +355,7 @@ fn scope_headers() -> impl Iterator<Item = (String, String)> {
 }
 
 /// Lowercase wire name of a reasoning level.
-fn level_name(level: ThinkingLevel) -> &'static str {
+pub(crate) fn level_name(level: ThinkingLevel) -> &'static str {
     match level {
         ThinkingLevel::Minimal => "minimal",
         ThinkingLevel::Low => "low",
@@ -421,5 +417,16 @@ fn mark_content(content: &mut ChatCompletionContent, marker: &OpenAICompatCacheC
             })
             .map(|text| text.cache_control = Some(marker.clone()))
             .is_some(),
+    }
+}
+
+/// Resolve an explicit retention choice before the environment default.
+pub(crate) fn resolve_cache_retention(explicit: Option<CacheRetention>) -> CacheRetention {
+    match explicit {
+        Some(retention) => retention,
+        None if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") => {
+            CacheRetention::Long
+        }
+        None => CacheRetention::Short,
     }
 }

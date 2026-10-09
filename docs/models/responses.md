@@ -1,7 +1,70 @@
-# Internal response conversion
+# Response endpoints
 
-The response module is crate-internal, with no package-root exports. It compiles
-alongside the providers; endpoint adapters will supply its production callers.
+The standard endpoint is available under
+`providers::responses::openai_responses`; `OpenAIResponsesOptions` is also exported
+at the package root. Conversion and event reduction remain crate-internal.
+
+## Standard invocation
+
+`stream_openai_responses` reports setup failures through its stream.
+`stream_simple_openai_responses` rejects a missing provider key before creating
+a stream, then uses the shared simple budget and reasoning selection. Raw calls
+also fall back to `OPENAI_API_KEY` after explicit and provider keys.
+
+Cache retention selects an explicit option, otherwise the exact `long` value of
+`MAESTRO_CACHE_RETENTION`, otherwise short. Long retention is sent only when the
+model compatibility permits it. Disabling `sendSessionIdHeader` leaves generated
+`x-client-request-id` enabled for a nonempty cache session. Cache none suppresses
+generated affinity and the prompt key, not explicitly supplied headers.
+
+Reasoning options select effort and summary for reasoning models; requested
+reasoning includes encrypted content for replay. Summary alone selects literal
+medium effort, without consulting the model's effort mapping. Service tier options distinguish
+omission, explicit null and named values. Pricing uses the echoed tier unless
+it is absent or null, then the requested tier. Flex scales cost by 0.5; priority
+uses 2.5 for exactly `gpt-5.5` and 2 for other models.
+
+Payload hooks may replace the request with any non-null JSON value. Replacements
+use the shared [compact JSON conversion](arguments.md#streamed-arguments).
+A null replacement fails before transport.
+Response hooks complete before Start and streamed body processing. If a payload
+hook disables streaming, the response body is consumed before the response hook;
+a non-event response cannot feed the event reducer.
+Transport, metadata and maximum retry-delay preferences are unused here. The
+endpoint uses the shared [HTTP transport](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport)
+and the conversion and reduction described below.
+
+### Controlled example
+
+Run inside a native Tokio runtime, or a browser executor. This replacement
+transport returns a finite response without contacting an external service.
+
+```rust,no_run
+use std::sync::Arc;
+use maestro_models::{Context, Fetch, HttpResponse, OpenAIResponsesOptions, StreamOptions, get_model};
+use maestro_models::providers::responses::openai_responses::stream_openai_responses;
+
+async fn controlled() {
+    let fetch: Fetch = Arc::new(|_| {
+        let body = b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec();
+        Box::pin(std::future::ready(Ok(HttpResponse {
+            status: 200, status_text: String::new(), headers: Default::default(),
+            body: Box::pin(futures_util::stream::iter([Ok(body)])),
+        })))
+    });
+    let model = get_model("openai", "gpt-5.4").unwrap();
+    let context = Context { system_prompt: None, messages: vec![], tools: None };
+    let stream = stream_openai_responses(model, context, Some(OpenAIResponsesOptions {
+        common: StreamOptions { api_key: Some("controlled-key".into()), fetch: Some(fetch), ..Default::default() },
+        ..Default::default()
+    }));
+    let message = stream.result().await;
+    assert!(message.read().is_ok());
+}
+```
+
+## Internal response conversion
+
 Its three operations convert history, convert tool declarations and reduce
 already-framed response event text. They open no connection.
 
@@ -75,5 +138,5 @@ survives a later malformed field. Raw truthiness still selects source defaults.
 The reducer consumes to source EOF, propagating later failures even after
 completion. EOF without a completed or incomplete event returns
 `Response stream ended before a terminal event`. It publishes content updates
-only; the caller owns final outcome events and stream termination. Public
-invocation examples belong to the endpoint adapters.
+only; the caller owns final outcome events and stream termination. Standard
+invocation uses this reducer and supplies the final outcome events.
