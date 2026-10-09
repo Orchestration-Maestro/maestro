@@ -94,8 +94,16 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
-  crate, the component runtime adapter and the terminal scenario harness may not.
-  Keep authored paths as strings and convert to `PathBuf` only at I/O.
+  crate, the component runtime adapter, the shared request-record crate and the
+  terminal scenario harness may not. Keep authored paths as strings and convert
+  to `PathBuf` only at I/O.
+- `maestro-request` owns model-request records below layer 0: model, message,
+  content, usage, stream and diagnostic data, plus `SourceInfo` and `Skill`.
+  Only models, resources and guest authoring may depend on it; it has no internal
+  dependencies. Keep existing models/resources public paths as re-exports.
+  Provider/runtime operations and resource discovery stay in their owners.
+  The spec's shared-record amendment governs extraction; update the enforced
+  table, inventory, graph policy and architecture tests together with the code.
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
 
@@ -136,6 +144,14 @@ The models crate reads server-sent events with its own reader, so no event-strea
 library is a dependency.
 
 Keep one current format for everything. No compatibility code.
+
+Extension event payloads and results use plain JSON with serde_json semantics.
+Finite numbers roundtrip exactly, including signed zero; ordinary host
+serialization maps nonfinite numbers to null. Reject an extension-written
+Infinity or NaN with a clear error before encoding the edited event or result.
+Use shared records directly, without bit-encoded numbers, numeric transport
+wrappers or added Presence wrappers. Preserve existing shared optional-field
+semantics and the missing/null distinctions of unshared event fields.
 
 ## Public text
 
@@ -290,8 +306,8 @@ Apache-2.0, respectively. Discovery uses `ignore =0.4.23` with defaults off for
 compiled ignore rules. Authored path operations use the shared `maestro-path`
 utility. Radix scalar resolution uses `num-bigint =0.4.8` and
 `num-traits =0.2.19` with defaults (MIT OR Apache-2.0) for arbitrary-width integers
-and correctly rounded floating-point conversion. Resources remain a leaf apart
-from the permitted shared path utility edge.
+and correctly rounded floating-point conversion. Resources may depend internally
+only on the shared request-record owner and the shared path utility.
 
 ## Approved scripted-model libraries
 
