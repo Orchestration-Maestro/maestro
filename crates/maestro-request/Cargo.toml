@@ -7,7 +7,7 @@ repository.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["rc"] }
-serde_json = { workspace = true, features = ["raw_value"] }
+serde_json.workspace = true
 indexmap = { version = "=2.14.2", features = ["serde"] }
 
 [lints]

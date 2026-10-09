@@ -112,9 +112,9 @@ impl EventData {
     /// owning record decoder.
     ///
     /// # Errors
-    /// Returns an error when the text is malformed, is not a JSON object, has a missing or
-    /// unknown tag, or holds a record that is not an object, lacks a required property or
-    /// mistypes a property.
+    /// Returns an error when the text is not a JSON object with a recognized string tag,
+    /// or when the selected payload's decoder fails. Shared records use their Serde derives
+    /// without additional input-shape validation.
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
         let Tag { kind } = object::from_str(text)?;
         Ok(match kind {

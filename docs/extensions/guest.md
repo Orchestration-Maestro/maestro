@@ -77,9 +77,9 @@ The five session events are variants of `SessionEvent`. `images` is a list of `d
 them; nothing trims, folds, sorts or combines them.
 
 The agent payloads use shared user, assistant and tool-result messages. Unknown roles
-use `CustomAgentMessages` with a role and opaque `data` string; malformed known roles
-are rejected rather than treated as custom data. Application-defined bash, custom and
-summary roles are not delivered yet.
+use `CustomAgentMessages` with a role and opaque `data` string. Known model roles decode
+through the shared records' Serde derives; a decoding failure does not fall back to custom
+data. Application-defined bash, custom and summary roles are not delivered yet.
 
 `BuildSystemPromptOptions` carries `cwd` and optional `customPrompt`, `selectedTools`,
 `toolSnippets`, `promptGuidelines`, `appendSystemPrompt`, `contextFiles` and `skills`.
@@ -110,7 +110,7 @@ the delivery is refused.
 ## How an event travels
 
 The guest exports one asynchronous function, `invoke-event`, for every event. The host passes
-the callback, the event as one JSON document whose `type` names the kind, and the resources
+the callback, the event as one host-encoded JSON document whose `type` names the kind, and the resources
 the event needs: a context, and for a compaction its signal. A signal that comes with any other
 event is dropped. Resources never appear in the document.
 
@@ -141,13 +141,15 @@ of resource discovery, session start, session switch and session shutdown, the f
 and the input source accept only their declared JSON string literals in event records, not
 object variants. They still serialize as lowercase strings.
 
-The export decodes the document before it enters the handler. The event, the `preparation` and
-each element of `images` are read from JSON objects only; a positional array is refused. Malformed
-JSON, a record that is not an object, an unknown `type` or word, a missing required property, a
-mistyped property (optional ones included), and a compaction without its signal make the export
-fail with an error message; the handler is not entered. The outer tag reader skips other properties, and each payload uses its owning
-record decoder. Shared records retain their native parser and union behavior. A callback identity that is unknown, or registered for a
-command, does not fail the export: the outcome reports the lookup message as the decision.
+The export decodes the host-encoded document before it enters the handler. The outer event,
+`preparation` and input-image list elements are read from JSON objects. The outer tag reader
+skips other properties, and each payload uses its owning record decoder. Shared records decode
+through the same Serde derives used by the host, including their native record and union
+admission; there is no additional validation of foreign input shapes or tolerance of
+unrepresentable unread members. A decoding failure or a compaction without its signal makes
+the export fail with an error message before handler entry. A callback identity that is unknown,
+or registered for a command, does not fail the export: the outcome reports the lookup message
+as the decision.
 
 The outcome has two independent parts. `event` is the event as the handler left it, whether
 it returned or failed, and is absent only when the handler replaced it with an event of another

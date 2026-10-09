@@ -1,9 +1,8 @@
 //! Records read from JSON objects only.
 //!
 //! A derived record also accepts a JSON array and reads its elements as the properties in
-//! declaration order. The documents an extension receives name their properties, so the event
-//! and its nested records are read from the map of a JSON object here, and a positional array is
-//! refused.
+//! declaration order. This reader requires a JSON object for the record it wraps; nested
+//! values use that record's field decoders.
 
 use std::fmt;
 use std::marker::PhantomData;
