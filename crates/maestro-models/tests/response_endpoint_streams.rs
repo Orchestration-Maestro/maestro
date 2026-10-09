@@ -324,44 +324,19 @@ fn responses_trim_media_type_with_script_whitespace() -> chat::TestResult {
 }
 
 #[test]
-fn responses_omit_falsy_payload_body_and_generated_headers() -> chat::TestResult {
+fn responses_send_false_payload_as_json() -> chat::TestResult {
     chat::block_on(false, async {
         for entry in ["raw", "simple"] {
-            for payload in serde_json::from_str::<Vec<serde_json::Value>>(r#"[false,0,-0.0,""]"#)? {
-                assert_falsy_payload_headers(entry, &payload).await?;
-            }
+            let case = serde_json::json!({
+                "entry":entry,"hook":"scalar","payload":false
+            });
+            let actual = endpoint::run_case(&case).await?;
+            assert_eq!(actual["requests"][0]["wire"], serde_json::json!(b"false"));
+            assert_eq!(
+                actual["requests"][0]["headers"]["content-type"],
+                "application/json"
+            );
         }
         Ok(())
     })
-}
-
-/// Check omitted wire bytes with absent or explicitly supplied body headers.
-async fn assert_falsy_payload_headers(
-    entry: &str,
-    payload: &serde_json::Value,
-) -> chat::TestResult {
-    for explicit in [false, true] {
-        let mut case = serde_json::json!({
-            "entry":entry,"hook":"scalar","payload":payload
-        });
-        if explicit {
-            case["options"] = serde_json::json!({"headers":{
-                "Content-Type":"application/explicit","X-Explicit":"retained"
-            }});
-        }
-        let actual = endpoint::run_case(&case).await?;
-        assert_eq!(
-            actual["requests"][0]["wire"],
-            serde_json::json!([]),
-            "{case}"
-        );
-        let headers = &actual["requests"][0]["headers"];
-        if explicit {
-            assert_eq!(headers["content-type"], "application/explicit");
-            assert_eq!(headers["x-explicit"], "retained");
-        } else {
-            assert!(headers.get("content-type").is_none(), "{case}");
-        }
-    }
-    Ok(())
 }

@@ -344,15 +344,11 @@ impl Request<'_> {
         if payload.is_null() {
             return Err(RequestFailure::new("Response payload must not be null"));
         }
-        let streaming = payload.get("stream").is_some_and(source::truthy);
-        let body = if source::truthy(&payload) {
-            headers.insert("content-type".to_owned(), "application/json".to_owned());
-            compact_json(&payload)
-                .map_err(|e| RequestFailure::new(e.to_string()))?
-                .into_bytes()
-        } else {
-            Vec::new()
-        };
+        let streaming = payload.get("stream").is_some_and(source::streaming);
+        headers.insert("content-type".to_owned(), "application/json".to_owned());
+        let body = compact_json(&payload)
+            .map_err(|e| RequestFailure::new(e.to_string()))?
+            .into_bytes();
         let request = HttpRequest {
             method: "POST".to_owned(),
             url: endpoint_url(&base_url, "/responses")?,

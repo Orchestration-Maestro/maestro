@@ -24,9 +24,8 @@ omission, explicit null and named values. Pricing uses the echoed tier unless
 it is absent or null, then the requested tier. Flex scales cost by 0.5; priority
 uses 2.5 for exactly `gpt-5.5` and 2 for other models.
 
-Payload hooks may replace the request with any non-null JSON value. Root `false`,
-`0`, negative zero and `""` send no body or generated body headers; explicit headers
-are retained. Other replacements use the shared [compact JSON conversion](arguments.md#streamed-arguments).
+Payload hooks may replace the request with any non-null JSON value. Replacements
+use the shared [compact JSON conversion](arguments.md#streamed-arguments).
 A null replacement fails before transport.
 Response hooks complete before Start and streamed body processing. If a payload
 hook disables streaming, the response body is consumed before the response hook;
