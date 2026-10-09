@@ -36,7 +36,7 @@ struct Observation {
     cursor: Cursor,
     events: Vec<(String, String)>,
     requests: Option<usize>,
-    padding: Option<usize>,
+    padding: Option<f64>,
     maximum: Option<usize>,
     result: Option<Vec<String>>,
     widths: Option<Vec<usize>>,
@@ -209,7 +209,11 @@ impl Replay {
             assert_eq!(self.requests, requests, "{id} requests");
         }
         if let Some(padding) = expected.padding {
-            assert_eq!(self.editor.get_padding_x(), padding, "{id} padding");
+            assert_eq!(
+                self.editor.get_padding_x().to_bits(),
+                padding.to_bits(),
+                "{id} padding"
+            );
         }
         if let Some(maximum) = expected.maximum {
             assert_eq!(

@@ -83,3 +83,33 @@ fn editor_submit_trims_clears_before_callbacks() {
 fn editor_typing_chunk_whitespace_is_not_normalized() {
     support::run("editor_typing_chunk_whitespace_is_not_normalized");
 }
+
+#[test]
+fn editor_large_finite_padding_retains_authored_values() {
+    use maestro_tui::{Component, Editor, EditorOptions};
+    let _guard = support::globals();
+    let (tui, _, runtime) = support::host(24);
+    let editor = Editor::new(
+        &tui,
+        support::theme(),
+        EditorOptions {
+            padding_x: Some(1e20),
+            ..EditorOptions::default()
+        },
+    );
+    assert_eq!(
+        serde_json::to_value(editor.get_padding_x()).unwrap(),
+        serde_json::json!(1e20)
+    );
+    assert_eq!(runtime.pending(), 0);
+    editor.set_padding_x(2e20);
+    assert_eq!(runtime.pending(), 1);
+    assert_eq!(
+        serde_json::to_value(editor.get_padding_x()).unwrap(),
+        serde_json::json!(2e20)
+    );
+    runtime.settle().unwrap();
+    editor.set_padding_x(2e20);
+    assert_eq!(runtime.pending(), 0);
+    assert_eq!(editor.render(5), ["─────", "  \x1b[7m \x1b[0m  ", "─────"]);
+}

@@ -2,6 +2,7 @@
 use super::{Editor, word_wrap_line};
 use crate::components::cursor::display_cursor;
 use crate::{CURSOR_MARKER, get_segmenter, truncate_to_width, visible_width};
+use std::borrow::Cow;
 /// A rendered logical chunk with an optional local byte cursor.
 struct LayoutLine {
     /// Original text selected by wrapping.
@@ -12,7 +13,7 @@ struct LayoutLine {
 impl Editor {
     /// Composes border styling before reading the buffer for layout.
     pub(super) fn draw(&self, width: usize) -> Vec<String> {
-        let padding = self.padding.get().min(width.saturating_sub(1) / 2);
+        let padding = super::normalize(self.padding.get(), 0, width.saturating_sub(1) / 2, 0);
         let content = width.saturating_sub(2 * padding).max(1);
         let layout_width = content.saturating_sub(usize::from(padding == 0)).max(1);
         let horizontal = (self.border_color())("─");
@@ -80,14 +81,14 @@ impl Editor {
         if width == 0 {
             return String::new();
         }
-        let mut text = crate::text::expand_tabs(&line.text).into_owned();
+        let mut text = crate::text::expand_tabs(&line.text);
         let budget = width - padding;
         if let Some(cursor) = line.cursor {
             let cursor = display_cursor(&line.text, cursor);
             let mapped = crate::text::expand_tabs(&line.text[..cursor]).len();
-            text = decorate(&text, mapped, budget, self.focus.get());
+            text = Cow::Owned(decorate(&text, mapped, budget, self.focus.get()));
         } else if visible_width(&text) > budget {
-            text = crate::slice_by_column(&text, 0, budget, true);
+            text = Cow::Owned(crate::slice_by_column(&text, 0, budget, true));
         }
         let cells = visible_width(&text);
         format!(

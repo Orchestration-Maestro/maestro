@@ -25,8 +25,13 @@ before change notification, then reads the current submit callback. Callbacks
 may synchronously edit or replace callbacks; retained callable aliases survive
 replacement. Disabled submission leaves text untouched.
 
+Finite side padding is floored and clamped at zero, retained without an upper
+bound, and bounded to the available cells only during rendering. Nonfinite
+padding uses zero.
+
 Rendering wraps at word boundaries and keeps a scrolling viewport sized from
-live terminal rows. At positive wrapping widths, an indivisible overwide grapheme stays intact;
+live terminal rows. At positive wrapping widths, recognized escapes remain intact,
+including inside oversized supplied segments. An indivisible overwide grapheme stays intact;
 a narrow viewport clips only display text. Width zero emits empty rows without
 a cursor marker. Both scroll labels are clipped before border styling. Caller
 styling may add visible text. Display tabs expand outside recognized escapes;

@@ -83,3 +83,59 @@ fn wrap_marker_spelling_controls_word_breaks() {
 fn wrap_oversized_grapheme_terminates() {
     run("wrap_oversized_grapheme_terminates");
 }
+
+#[test]
+fn wrap_keeps_escape_payloads_intact_at_narrow_widths() {
+    for escape in ["\x1b[31m", "\x1b]0;x\ty\x07"] {
+        let line = format!("a{escape}bc");
+        let expected = vec![
+            (format!("a{escape}"), 0, 1 + escape.len()),
+            ("b".to_owned(), 1 + escape.len(), 2 + escape.len()),
+            ("c".to_owned(), 2 + escape.len(), 3 + escape.len()),
+        ];
+        let supplied = [(0, line.as_str())];
+        for segments in [None, Some(supplied.as_slice())] {
+            let chunks = word_wrap_line(&line, 1, segments);
+            assert_eq!(
+                chunks
+                    .into_iter()
+                    .map(|part| (part.text, part.start_index, part.end_index))
+                    .collect::<Vec<_>>(),
+                expected
+            );
+        }
+    }
+}
+
+#[test]
+fn wrap_supplied_whitespace_excludes_only_escape_payloads() {
+    for (line, parts, expected) in [
+        (
+            "a\x1b]0;x\ty\x07bcd",
+            vec!["a\x1b]0;x\ty\x07", "b", "cd"],
+            vec!["a\x1b]0;x\ty\x07b", "cd"],
+        ),
+        (
+            "a\x1b[31m bcd",
+            vec!["a", "\x1b[31m ", "b", "c", "d"],
+            vec!["a\x1b[31m ", "bcd"],
+        ),
+    ] {
+        let mut offset = 0;
+        let supplied = parts
+            .into_iter()
+            .map(|text| {
+                let at = offset;
+                offset += text.len();
+                (at, text)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            word_wrap_line(line, 3, Some(&supplied))
+                .into_iter()
+                .map(|part| part.text)
+                .collect::<Vec<_>>(),
+            expected
+        );
+    }
+}

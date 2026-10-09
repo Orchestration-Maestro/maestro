@@ -113,3 +113,25 @@ fn editor_border_callback_is_live_before_layout() {
     assert_eq!(editor.get_text(), "new");
     drop(held);
 }
+
+#[test]
+fn editor_narrow_rows_preserve_escape_payloads() {
+    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    let _guard = support::globals();
+    for escape in ["\x1b[31m", "\x1b]0;x\ty\x07"] {
+        let (tui, _, _) = support::host(24);
+        let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+        editor.handle_input(&format!("a{escape}bc"));
+        assert_eq!(
+            editor.render(2),
+            [
+                "──".to_owned(),
+                format!("a{escape} "),
+                "b ".to_owned(),
+                "c\x1b[7m \x1b[0m".to_owned(),
+                "──".to_owned()
+            ]
+        );
+        assert_eq!(editor.get_text(), format!("a{escape}bc"));
+    }
+}

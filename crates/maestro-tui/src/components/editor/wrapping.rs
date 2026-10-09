@@ -11,7 +11,7 @@ pub struct TextChunk {
     pub end_index: usize,
 }
 /// Wraps text with original byte ranges; empty input or zero width yields one empty chunk.
-/// At positive widths, an indivisible overwide grapheme stays intact.
+/// At positive widths, recognized escapes and indivisible overwide graphemes stay intact.
 #[must_use]
 pub fn word_wrap_line(
     line: &str,
@@ -24,13 +24,7 @@ pub fn word_wrap_line(
     if visible_width(line) <= max_width {
         return vec![chunk(line, 0, line.len())];
     }
-    let owned;
-    let segments = if let Some(segments) = pre_segmented {
-        segments
-    } else {
-        owned = crate::get_segmenter(line).collect::<Vec<_>>();
-        &owned
-    };
+    let segments = escape_safe_segments(line, pre_segmented);
     let mut scan = Wrap::default();
     for (index, &(at, text)) in segments.iter().enumerate() {
         let cells = visible_width(text);
@@ -51,15 +45,66 @@ pub fn word_wrap_line(
         }
         scan.width += cells;
         if !marker(text)
-            && crate::is_whitespace_char(text)
+            && visible_whitespace(text)
             && let Some(&(next, following)) = segments.get(index + 1)
-            && (marker(following) || !crate::is_whitespace_char(following))
+            && (marker(following) || !visible_whitespace(following))
         {
             scan.opportunity = Some((next, scan.width));
         }
     }
     scan.chunks.push(chunk(line, scan.start, line.len()));
     scan.chunks
+}
+/// Keeps supplied boundaries except those inside recognized escapes.
+/// Without supplied segments, grapheme boundaries frame the visible text.
+fn escape_safe_segments<'a>(
+    line: &'a str,
+    supplied: Option<&[(usize, &str)]>,
+) -> Vec<(usize, &'a str)> {
+    let endings = crate::text::Endings::of(line);
+    let mut escapes = Vec::new();
+    let mut end = 0;
+    for (at, _) in line.char_indices() {
+        if at >= end
+            && let Some(code) = endings.recognize(line, at)
+        {
+            end = at + code.len();
+            escapes.push(at..end);
+        }
+    }
+    let mut boundaries = supplied.map_or_else(
+        || {
+            crate::get_segmenter(line)
+                .map(|(at, _)| at)
+                .collect::<Vec<_>>()
+        },
+        |parts| parts.iter().map(|&(at, _)| at).collect(),
+    );
+    boundaries.retain(|&at| {
+        let index = escapes.partition_point(|range| range.end <= at);
+        escapes.get(index).is_none_or(|range| at <= range.start)
+    });
+    boundaries.push(line.len());
+    boundaries
+        .windows(2)
+        .map(|pair| (pair[0], &line[pair[0]..pair[1]]))
+        .collect()
+}
+/// Classifies whitespace outside recognized escape payloads.
+fn visible_whitespace(text: &str) -> bool {
+    let endings = crate::text::Endings::of(text);
+    let mut end = 0;
+    for (at, scalar) in text.char_indices() {
+        if at < end {
+            continue;
+        }
+        if let Some(code) = endings.recognize(text, at) {
+            end = at + code.len();
+        } else if crate::text::utils::is_whitespace_scalar(scalar) {
+            return true;
+        }
+    }
+    false
 }
 /// Current chunk and latest viable word boundary.
 #[derive(Default)]

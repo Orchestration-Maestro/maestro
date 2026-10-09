@@ -53,7 +53,7 @@ pub struct Editor {
     /// Submission gate.
     disabled: Cell<bool>,
     /// Requested side padding.
-    padding: Cell<usize>,
+    padding: Cell<f64>,
     /// Completion-list maximum.
     maximum: Cell<usize>,
     /// First visible layout line.
@@ -99,12 +99,7 @@ impl Editor {
             change: RefCell::default(),
             submit: RefCell::default(),
             disabled: Cell::new(false),
-            padding: Cell::new(normalize(
-                options.padding_x.unwrap_or(0.0),
-                0,
-                usize::MAX,
-                0,
-            )),
+            padding: Cell::new(normalize_padding(options.padding_x.unwrap_or(0.0))),
             maximum: Cell::new(normalize(
                 options.autocomplete_max_visible.unwrap_or(5.0),
                 3,
@@ -116,13 +111,13 @@ impl Editor {
     }
     /// Returns the requested horizontal padding.
     #[must_use]
-    pub fn get_padding_x(&self) -> usize {
+    pub fn get_padding_x(&self) -> f64 {
         self.padding.get()
     }
     /// Changes padding and requests a frame only when the normalized value changes.
     pub fn set_padding_x(&self, padding: f64) {
-        let value = normalize(padding, 0, usize::MAX, 0);
-        if self.padding.replace(value) != value {
+        let value = normalize_padding(padding);
+        if self.padding.replace(value).partial_cmp(&value) != Some(std::cmp::Ordering::Equal) {
             (self.request)();
         }
     }
@@ -198,6 +193,14 @@ impl Editor {
             let text = self.get_text();
             callback(&text);
         }
+    }
+}
+/// Retains finite authored padding without a native cell-count bound.
+fn normalize_padding(value: f64) -> f64 {
+    if value.is_finite() {
+        value.floor().max(0.0)
+    } else {
+        0.0
     }
 }
 /// Floors and saturates finite native counts; nonfinite values use the fallback.
