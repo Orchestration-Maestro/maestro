@@ -17,7 +17,7 @@ use tokio::time::{Instant, sleep_until};
 use super::Shared;
 use super::string_decoder::Utf8Stream;
 
-/// How many bytes one read takes.
+/// The most bytes one read takes.
 const READ_SIZE: usize = 4096;
 
 /// Where the bytes of standard input come from.

@@ -41,22 +41,28 @@ struct Session {
     resizes: Resizes,
 }
 
-/// Starts a terminal that records everything it delivers.
-fn start(rig: &Rig) -> Session {
-    let (inputs, resizes) = (Inputs::default(), Resizes::default());
-    let mut terminal = ProcessTerminal::new(rig.local());
-    terminal
-        .start(inputs.callback(), resizes.callback())
-        .unwrap();
+/// A terminal that has not been started, with recorders for what it will deliver.
+fn unstarted(rig: &Rig) -> Session {
     Session {
-        terminal,
-        inputs,
-        resizes,
+        terminal: ProcessTerminal::new(rig.local()),
+        inputs: Inputs::default(),
+        resizes: Resizes::default(),
     }
 }
 
-/// Checks the raw-mode settings the terminal applies: no line editing, echo, signal keys or
-/// input translation, output post-processing on, one-byte reads.
+/// Starts a terminal that records everything it delivers.
+fn start(rig: &Rig) -> Session {
+    let mut session = unstarted(rig);
+    session
+        .terminal
+        .start(session.inputs.callback(), session.resizes.callback())
+        .unwrap();
+    session
+}
+
+/// Checks the raw-mode settings the terminal applies: line editing, echo, signal keys and the
+/// input flags named below cleared, output post-processing on, reads that return as soon as
+/// one byte is available.
 fn assert_raw(attributes: &Termios) {
     let line_modes = LocalModes::ICANON | LocalModes::ECHO | LocalModes::ISIG | LocalModes::IEXTEN;
     let translations = InputModes::IGNBRK
@@ -216,6 +222,44 @@ fn native_stop_restores_saved_attributes_and_flags_over_changes_made_meanwhile()
 }
 
 #[test]
+fn native_start_after_a_failed_start_saves_standard_input_afresh() {
+    for replacing in [false, true] {
+        isolated!(usize::from(replacing), &[], || {
+            let rig = Rig::paused();
+            let _input = pty_input();
+            let _output = pipe_output();
+            let cooked = (stdin_attributes(), stdin_flags());
+            rig.run(async {
+                let mut session = if replacing {
+                    start(&rig)
+                } else {
+                    unstarted(&rig)
+                };
+                let limit = DescriptorLimit::reached();
+                let failed = session
+                    .terminal
+                    .start(session.inputs.callback(), session.resizes.callback());
+                drop(limit);
+                assert!(failed.is_err());
+                assert_eq!((stdin_attributes(), stdin_flags()), cooked);
+                let mut changed = attributes(stdin());
+                changed.local_modes.insert(LocalModes::ECHOK);
+                tcsetattr(stdin(), OptionalActions::Now, &changed).unwrap();
+                fcntl_setfl(stdin(), stdin_flags() | OFlags::APPEND).unwrap();
+                let changed = (stdin_attributes(), stdin_flags());
+                assert_ne!(changed, cooked);
+                session
+                    .terminal
+                    .start(session.inputs.callback(), session.resizes.callback())
+                    .unwrap();
+                session.terminal.stop().unwrap();
+                assert_eq!((stdin_attributes(), stdin_flags()), changed);
+            });
+        });
+    }
+}
+
+#[test]
 fn native_accepts_input_without_a_raw_mode_method() {
     isolated!(&[], || {
         let rig = Rig::paused();
@@ -267,6 +311,26 @@ fn native_decodes_every_utf8_split_before_buffering() {
                 assert_eq!(session.inputs.all(), expected, "{cuts:?}");
                 session.terminal.stop().unwrap();
             }
+        });
+    });
+}
+
+#[test]
+fn native_delivers_a_burst_longer_than_one_read() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _output = pipe_output();
+        rig.run(async {
+            let feed = pipe_input();
+            let mut session = start(&rig);
+            let mut burst = "a".repeat(4094).into_bytes();
+            burst.extend_from_slice("\u{1f389}b".as_bytes());
+            feed.send(&burst);
+            session.inputs.delivered(4096).await;
+            let mut expected = vec!["a".to_owned(); 4094];
+            expected.extend(["\u{1f389}".to_owned(), "b".to_owned()]);
+            assert_eq!(session.inputs.all(), expected);
+            session.terminal.stop().unwrap();
         });
     });
 }
@@ -863,28 +927,68 @@ fn native_drain_cannot_reenable_keyboard_modes() {
 }
 
 #[test]
-fn native_drain_keeps_an_unfinished_character_paste_and_sequence() {
+fn native_drain_keeps_an_unfinished_character_and_paste() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            let unfinished: [(&[u8], &[u8], &str); 3] = [
+            let unfinished: [(&[u8], &[u8], &str); 2] = [
                 (&[240, 159], &[142, 137], "\u{1f389}"),
                 (b"\x1b[200~ab", b"cd\x1b[201~", "\x1b[200~abcd\x1b[201~"),
-                (b"\x1b[", b"A", "\x1b[A"),
             ];
+            let minute = Some(Duration::from_secs(60));
             for (before, after, delivered) in unfinished {
                 feed.send(before);
                 consumed().await;
-                let (max, idle) = (Duration::ZERO, Duration::ZERO);
-                let drain = session.terminal.drain_input(Some(max), Some(idle));
-                drain.await.unwrap();
+                session.terminal.drain_input(minute, minute).await.unwrap();
                 feed.send(after);
                 consumed().await;
                 let seen = session.inputs.all();
                 assert_eq!(seen.last().map(String::as_str), Some(delivered));
             }
+            session.terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_drain_leaves_a_sequence_to_its_own_buffer_deadline() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output);
+            let (max, idle) = (Duration::from_millis(5), Duration::from_millis(50));
+            feed.send(b"\x1b[");
+            consumed().await;
+            session
+                .terminal
+                .drain_input(Some(max), Some(idle))
+                .await
+                .unwrap();
+            feed.send(b"A");
+            consumed().await;
+            assert_eq!(session.inputs.all(), ["\x1b[A"]);
+
+            feed.send(b"\x1b[");
+            consumed().await;
+            session.terminal.drain_input(None, None).await.unwrap();
+            feed.send(b"A");
+            consumed().await;
+            assert_eq!(session.inputs.all(), ["\x1b[A", "A"]);
+
+            feed.send(b"\x1b[");
+            consumed().await;
+            session
+                .terminal
+                .drain_input(Some(max), Some(idle))
+                .await
+                .unwrap();
+            assert_eq!(session.inputs.count(), 2);
+            elapse(5).await;
+            session.inputs.delivered(3).await;
+            assert_eq!(session.inputs.all()[2], "\x1b[");
             session.terminal.stop().unwrap();
         });
     });

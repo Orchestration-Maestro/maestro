@@ -87,9 +87,10 @@ impl Drop for Acquired {
     }
 }
 
-/// `original` in raw mode: no echo, line editing, signal keys or input translation, one-byte
-/// reads, and output post-processing with newline-to-CR-LF mapping on so a bare newline
-/// written to the device returns the carriage.
+/// `original` in raw mode: no echo, line editing, signal keys, break, parity, strip, newline,
+/// carriage-return or start/stop-key handling on input, reads that return as soon as one byte
+/// is available, and output post-processing with newline-to-CR-LF mapping on so a bare
+/// newline written to the device returns the carriage.
 fn raw(original: &Termios) -> Termios {
     let mut raw = original.clone();
     raw.make_raw();
@@ -110,10 +111,11 @@ impl ProcessTerminal {
             })
     }
 
-    /// Starts an input generation, replacing the live one and keeping its original
-    /// standard-input state. Outside a runtime it fails first and changes nothing. Any later
-    /// failure leaves the terminal stopped with standard input restored, after the paste and
-    /// keyboard modes a replaced generation had enabled are written off.
+    /// Starts an input generation, replacing the live one and keeping the standard-input state
+    /// the live one acquired. Outside a runtime it fails first and changes nothing. Any later
+    /// failure ends the acquisition: the terminal is left stopped with standard input
+    /// restored, after the paste and keyboard modes a replaced generation had enabled are
+    /// written off, so the next start saves standard input afresh.
     pub(super) fn begin(
         &mut self,
         on_input: InputCallback,
@@ -259,8 +261,11 @@ impl ProcessTerminal {
     /// Stops delivering input and disables the keyboard modes now, then waits until no decoded
     /// text has arrived for `idle` or `max` has passed, and delivers input again. Dropping the
     /// returned future early delivers input again at once. Keyboard replies received from
-    /// now on never enable a mode for this generation. Framing state is kept, so an
-    /// unfinished character, paste or escape sequence is completed by later input.
+    /// now on never enable a mode for this generation. Framing state is not reset: an
+    /// unfinished character or paste stays pending however long the drain lasts, and an
+    /// unfinished escape sequence is released at its buffer deadline, which runs during the
+    /// drain, so it is discarded when the drain outlasts it and otherwise stays pending for
+    /// later input or its deadline.
     pub(super) fn drain(
         &mut self,
         max: Option<Duration>,

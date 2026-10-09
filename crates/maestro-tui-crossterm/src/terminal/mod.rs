@@ -42,7 +42,8 @@ pub struct ProcessTerminal {
     log: Option<PathBuf>,
     /// The state its tasks share with it.
     shared: Rc<Shared>,
-    /// The live input task and the standard-input state it changed, from `start` to `stop`.
+    /// The live input task and the standard-input state it changed, while the terminal is
+    /// started.
     running: Option<Running>,
     /// The keepalive task of an active progress indicator.
     progress: Option<JoinHandle<()>>,
