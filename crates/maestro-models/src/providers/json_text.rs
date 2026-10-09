@@ -251,6 +251,7 @@ pub(crate) struct EntryKey(
 );
 impl EntryKey {
     /// Decode WTF-8 with one replacement character per surviving surrogate unit.
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn text(&self) -> String {
         let mut remaining = self.0.as_slice();
         let mut output = String::new();
