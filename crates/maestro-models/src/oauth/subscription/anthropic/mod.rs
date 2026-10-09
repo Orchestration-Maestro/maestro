@@ -1,7 +1,7 @@
 //! Anthropic subscription authorization with caller-owned interaction.
 mod callback;
 mod exchange;
-mod native;
+use crate::oauth::native;
 #[cfg(test)]
 mod tests;
 
@@ -35,7 +35,7 @@ pub fn login_anthropic(
         callbacks,
         fetch.unwrap_or_else(crate::default_fetch),
         crate::generate_pkce,
-        native::bind,
+        callback::bind,
     ))
 }
 

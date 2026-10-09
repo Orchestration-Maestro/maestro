@@ -1,8 +1,9 @@
 # OAuth authorization
 
 `maestro-models` exports OAuth records, `generate_pkce`, `oauth_success_html` and
-`oauth_error_html`, subscription callback/provider contracts and Anthropic
-subscription login and refresh.
+`oauth_error_html`, callback/provider contracts, Anthropic subscription login
+and refresh, and response-account `login_openai_codex`,
+`refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`.
 
 `OAuthCredentials` carries token strings, an expiry number in Unix epoch
 milliseconds and flattened provider extension fields. It does not validate
@@ -104,3 +105,76 @@ with a fallible transformation.
 `OAuthError`'s supplied-field formatting for Fetch diagnostics, which carry name,
 message, code and stack but not errno or nested sources. Native binding errors
 retain native messages and available errno; no engine stack is manufactured.
+
+
+## Response accounts
+
+`login_openai_codex(callbacks: OAuthCallbacks, originator: Option<String>,
+fetch: Option<Fetch>)` returns `BoxFuture<Result<OAuthCredentials, OAuthError>>`.
+It generates PKCE followed by an independent 16-byte hexadecimal state. The
+originator defaults to `maestro`; explicit empty text is retained.
+
+The native listener binds port 1455, with the binding-host setting described
+above and redirect `http://localhost:1455/auth/callback`. While waiting for a callback, native
+binding or listener failure permits manual/prompt fallback; browser serving
+returns `Response-account OAuth is only available in native environments`.
+Pasted input uses the shared recognition described under Subscription accounts.
+Nonempty mismatching pasted state fails with `State mismatch`; absent or empty
+pasted state is accepted. Callback requests instead require exact matching
+state before accepting a nonempty code.
+
+Authorization notification precedes concurrent manual input. Settled manual
+errors are checked before selecting an available callback code; losing manual
+work continues independently. Progress, selector and callback signal are not
+consulted. The listener remains owned through token processing and account
+extraction; explicit completion observes accepting-listener shutdown, while
+abandoning the future requests it. Admitted-peer shutdown uses the shared
+listener policy described above.
+
+`refresh_openai_codex_token(refresh_token: String, fetch: Option<Fetch>)` returns
+`BoxFuture<Result<OAuthCredentials, OAuthError>>` without serving a callback.
+Each reached token operation sends one ordered form POST through the selected Fetch, without
+adding a deadline, retry or cancellation signal. See
+[`default_fetch`](https://docs.rs/maestro-models/latest/maestro_models/fn.default_fetch.html)
+for the default transport's platform policy. Neither operation persists credentials.
+
+Token validation requires nonempty access/refresh strings and finite numeric
+duration and expiry. Expiry is the completion clock plus `expires_in * 1000`,
+without a buffer. Successful credentials carry only the selected tokens,
+expiry and `extra["accountId"]`: a nonempty string extracted from the access
+payload, not signature or issuer verification. Missing account metadata fails
+with `Failed to extract accountId from token`. Refresh transport/decoding
+failures receive one refresh-error context; authored token failures and account
+extraction failures retain their own messages. Refresh writes no token-failure
+messages to stderr.
+
+`OPENAI_CODEX_OAUTH_PROVIDER` delegates these operations with the default
+originator, borrows the access key and inherits the unchanged model modifier.
+
+### Controlled refresh example
+
+This example supplies its response without contacting an account service:
+
+```rust
+use maestro_models::{Fetch, HttpResponse, refresh_openai_codex_token};
+use std::{collections::BTreeMap, sync::Arc};
+
+let fetch: Fetch = Arc::new(|_| Box::pin(async {
+    use base64::Engine as _;
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .encode(br#"{"https://api.openai.com/auth":{"chatgpt_account_id":"acct_123"}}"#);
+    let body = format!(
+        r#"{{"access_token":"h.{payload}.s","refresh_token":"rotated","expires_in":3600}}"#
+    );
+    Ok(HttpResponse {
+        status: 200,
+        status_text: String::new(),
+        headers: BTreeMap::new(),
+        body: Box::pin(futures_util::stream::iter([Ok(body.into_bytes())])),
+    })
+}));
+let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+let credentials = runtime.block_on(refresh_openai_codex_token("old".into(), Some(fetch)))?;
+assert_eq!(credentials.extra["accountId"], "acct_123");
+# Ok::<(), Box<dyn std::error::Error>>(())
+```

@@ -146,6 +146,176 @@
         "code": "ab",
         "state": "s"
       }
+    },
+    {
+      "input": " \t\n",
+      "expected": {}
+    },
+    {
+      "input": "plain",
+      "expected": {
+        "code": "plain"
+      }
+    },
+    {
+      "input": "plain#state#ignored",
+      "expected": {
+        "code": "plain",
+        "state": "state"
+      }
+    },
+    {
+      "input": "plain#",
+      "expected": {
+        "code": "plain",
+        "state": ""
+      }
+    },
+    {
+      "input": "?code=a+%2B&state=s",
+      "expected": {
+        "code": "a +",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=first&code=second&state=s&state=t",
+      "expected": {
+        "code": "first",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=&code=second&state=",
+      "expected": {
+        "code": "",
+        "state": ""
+      }
+    },
+    {
+      "input": "xcode=a",
+      "expected": {}
+    },
+    {
+      "input": "CODE=a",
+      "expected": {
+        "code": "CODE=a"
+      }
+    },
+    {
+      "input": "relative/path?code=x",
+      "expected": {}
+    },
+    {
+      "input": "https://example.test/p?code=x&state=y#z",
+      "expected": {
+        "code": "x",
+        "state": "y"
+      }
+    },
+    {
+      "input": "https://example.test/#code=x",
+      "expected": {}
+    },
+    {
+      "input": "mailto:user@example.test?code=x",
+      "expected": {
+        "code": "x"
+      }
+    },
+    {
+      "input": "urn:a?code=x&state=s",
+      "expected": {
+        "code": "x",
+        "state": "s"
+      }
+    },
+    {
+      "input": "http://[",
+      "expected": {
+        "code": "http://["
+      }
+    },
+    {
+      "input": "a#code=x&state=s",
+      "expected": {
+        "code": "a",
+        "state": "code=x&state=s"
+      }
+    },
+    {
+      "input": "a:b#state",
+      "expected": {}
+    },
+    {
+      "input": "%63ode=A&state=S",
+      "expected": {
+        "code": "%63ode=A&state=S"
+      }
+    },
+    {
+      "input": "code=%00%FF%ED%A0%80%ZZ%2&state=x+y",
+      "expected": {
+        "code": "\u0000����%ZZ%2",
+        "state": "x y"
+      }
+    },
+    {
+      "input": "code=a=b;c&state=",
+      "expected": {
+        "code": "a=b;c",
+        "state": ""
+      }
+    },
+    {
+      "input": "?code=x&state=s",
+      "expected": {
+        "code": "x",
+        "state": "s"
+      }
+    },
+    {
+      "input": "??code=x&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": " code=x\t&state=y ",
+      "expected": {
+        "code": "x\t",
+        "state": "y"
+      }
+    },
+    {
+      "input": "https://x/?code=&code=z&state=s",
+      "expected": {
+        "code": "",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/?code=x&state=&state=s",
+      "expected": {
+        "code": "x",
+        "state": ""
+      }
+    },
+    {
+      "input": "file:///tmp?code=x",
+      "expected": {
+        "code": "x"
+      }
+    },
+    {
+      "input": "//host/path?code=x",
+      "expected": {}
+    },
+    {
+      "input": "https:\\example.test\\a?code=x",
+      "expected": {
+        "code": "x"
+      }
     }
   ],
   "whitespace": [
