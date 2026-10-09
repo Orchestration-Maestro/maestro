@@ -195,11 +195,10 @@ fn production_cycles_are_rejected() {
 fn leaf_internal_dependencies_are_rejected() {
     for (leaf, class) in [
         ("maestro-path", "core"),
-        ("maestro-models", "core"),
+        ("maestro-cancellation", "core"),
         ("maestro-storage", "core"),
         ("maestro-resources", "core"),
         ("maestro-settings", "core"),
-        ("maestro-tui", "core"),
         ("maestro-extensions-wasm", "core"),
         ("maestro-test-conventions", "dedicated"),
     ] {
@@ -454,13 +453,13 @@ fn forbidden_direct_edges_are_rejected() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 27);
+    assert_eq!(support::policy::POLICY.len(), 28);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        62
+        64
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -487,6 +486,7 @@ const DECLARATIONS: &[(&str, &str)] = &[
 
 /// Crates that may not declare the foundation utility.
 const UTILITY_EXCLUDED: &[&str] = &[
+    "maestro-cancellation",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-test-terminal",
@@ -534,9 +534,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 27);
+    assert_eq!(rows.len(), 28);
     assert_eq!(consumers.len(), 23);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 9);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 8);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }

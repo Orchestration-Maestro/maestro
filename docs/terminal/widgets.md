@@ -227,3 +227,35 @@ fn show_status(tui: TUI) {
     loader.stop();
 }
 ```
+
+## `CancellableLoader`
+
+`CancellableLoader::new(loader)` composes a [Loader](#loader) with a shared
+cancellation signal. `loader()` exposes the embedded owner for animation and
+message operations; rendering and invalidation delegate to it.
+
+A matching current `tui.select.cancel` binding (Escape or Ctrl+C by default)
+aborts the signal before calling the installed `on_abort` callback, if any.
+Each matching input calls the current callback again; removing it does not
+prevent cancellation. `signal()` borrows the retained signal for explicit
+cloning, and `aborted()` reads its state. See
+[`maestro-cancellation`](../../crates/maestro-cancellation/README.md) for signal
+observation. `dispose()` stops the embedded loader without aborting its signal.
+
+```rust
+use std::rc::Rc;
+use maestro_tui::{CancellableLoader, Loader, TUI};
+
+fn show_cancellable_status(tui: TUI) {
+    let loader = Loader::new(
+        tui.clone(), Rc::new(str::to_owned), Rc::new(str::to_owned),
+        Some("Working...".into()), None,
+    );
+    let widget = Rc::new(CancellableLoader::new(loader));
+    let signal = widget.signal().clone();
+    widget.set_on_abort(Some(Rc::new(move || assert!(signal.is_aborted()))));
+    tui.add_child(widget.clone());
+    tui.set_focus(Some(widget.clone()));
+    widget.dispose();
+}
+```

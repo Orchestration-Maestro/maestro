@@ -6,7 +6,9 @@ mod image;
 mod input;
 pub use input::Input;
 
+mod cancellable_loader;
 mod loader;
+pub use cancellable_loader::CancellableLoader;
 mod spacer;
 mod text;
 mod truncated_text;

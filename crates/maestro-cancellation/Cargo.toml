@@ -1,0 +1,12 @@
+[package]
+name = "maestro-cancellation"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
+
+[lints]
+workspace = true

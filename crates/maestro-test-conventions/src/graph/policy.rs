@@ -8,14 +8,15 @@ pub(crate) struct Rule {
 /// Scoped crate names paired with their permitted direct dependencies.
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-path", &[]),
+    ("maestro-cancellation", &[]),
     ("maestro-extensions-wasm", &[]),
-    ("maestro-models", &[]),
+    ("maestro-models", &["maestro-cancellation"]),
     ("maestro-resources", &[]),
     ("maestro-settings", &[]),
     ("maestro-storage", &[]),
     ("maestro-test-conventions", &[]),
     ("maestro-tooling", &[]),
-    ("maestro-tui", &[]),
+    ("maestro-tui", &["maestro-cancellation"]),
     ("maestro-agent", &["maestro-models"]),
     ("maestro-credentials", &["maestro-models"]),
     (
@@ -126,7 +127,10 @@ pub(crate) fn uses_utility(name: &str) -> bool {
     name != UTILITY
         && !matches!(
             name,
-            "maestro-extensions-wasm" | "maestro-extensions-wasmtime" | "maestro-test-terminal"
+            "maestro-cancellation"
+                | "maestro-extensions-wasm"
+                | "maestro-extensions-wasmtime"
+                | "maestro-test-terminal"
         )
 }
 

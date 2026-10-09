@@ -107,8 +107,8 @@ reserved before extraction, so an extractor's reentrant pushes are ignored.
 Readers and result observers wait for publication. Caller wakers, retained-result
 clones and callback destruction also execute outside ownership locks.
 
-`Cancellation` starts un-aborted. Clones share the same signal; `abort` is
-idempotent and wakes every cancellation observer. The caller decides which
+`Cancellation` is re-exported from the [shared cancellation owner](../crates/maestro-cancellation/README.md)
+through both models public paths. The caller decides which
 producer observes a signal; unrelated streams are not automatically stopped.
 
 ## Cleanup and diagnostics

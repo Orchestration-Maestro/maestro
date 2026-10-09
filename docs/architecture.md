@@ -16,8 +16,8 @@ no internal dependencies apart from the optional utility. Classes are not numeri
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
-Eight leaves in the specification table have no internal dependencies; the
-foundation utility `maestro-path` is a ninth. Other crates may use a subset of
+Seven leaves in the specification table have no internal dependencies; the
+foundation utility `maestro-path` is an eighth. Other crates may use a subset of
 their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
@@ -37,6 +37,9 @@ host-filtered full metadata with default features, not all features. Package IDs
 and canonical member paths establish identity, not dependency aliases. Optional,
 build, dev and inactive foreign-target declarations remain subject to policy.
 Malformed metadata and command failures return diagnostics, not acceptance.
+
+The cancellation leaf has no internal dependencies; only models and the toolkit
+may depend directly on it.
 
 ## Authored paths and the foundation utility
 
@@ -61,9 +64,10 @@ working directory with no drive entries yields `D:b`, not `..\b`.
 leaf and exact-set rules. Any crate in the specification table may declare it as
 a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
-adapter and the terminal scenario harness. The edge is ignored when checking a
-crate's complete direct set or leaf status, so the graph holds 27 crates and 85
-permitted edges: 62 table edges plus 23 utility edges. Dev-dependencies on the
+adapter, the terminal scenario harness and the cancellation leaf. The edge is
+ignored when checking a crate's complete direct set or leaf status, so the graph
+holds 28 crates and 87
+permitted edges: 64 table edges plus 23 utility edges. Dev-dependencies on the
 utility, dependencies from the utility, and cycles are rejected like any other
 internal edge.
 

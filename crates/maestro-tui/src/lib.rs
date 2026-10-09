@@ -19,8 +19,8 @@ pub use autocomplete::{
     SlashCommand,
 };
 pub use components::{
-    Box, Image, ImageOptions, ImageTheme, Input, Loader, LoaderIndicatorOptions, Spacer, Text,
-    TruncatedText,
+    Box, CancellableLoader, Image, ImageOptions, ImageTheme, Input, Loader, LoaderIndicatorOptions,
+    Spacer, Text, TruncatedText,
 };
 pub use editor_component::EditorComponent;
 pub use keys::{
