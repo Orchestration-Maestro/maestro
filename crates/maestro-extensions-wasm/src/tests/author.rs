@@ -285,14 +285,31 @@ struct Directive {
     wait: bool,
     /// Edit the event in place.
     mark: bool,
+    /// A session example operation to execute.
+    session_action: Option<SessionAction>,
+    /// Apply the recorded session edit before ending the handler.
+    session_edit: Option<String>,
+
     /// Replace the event with the event this document describes.
     replace_with: Option<Value>,
     /// Bits to assign to a numeric event field.
     number_bits: Option<String>,
+    /// Numeric session field selected for a typed assignment.
+    number_field: Option<String>,
     /// Number bits to put in a returned compaction.
     result_number_bits: Option<String>,
     /// How the handler ends.
     ending: Ending,
+}
+
+/// The session example operation requested by the probe driver.
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum SessionAction {
+    /// Assemble a user-request summary.
+    Summary,
+    /// Remove and reinsert a literal read path.
+    FileEdit,
 }
 
 /// The resources one invocation of the probe handler kept.
@@ -365,8 +382,11 @@ impl Probe {
         let directive: Directive = serde_json::from_str(&ctx.cwd()?)
             .map_err(|error| format!("unreadable directive: {error}"))?;
         self.keep(&directive.retain, event, &ctx);
+        if matches!(directive.session_action, Some(SessionAction::Summary)) {
+            return summarize(event).map(Some);
+        }
         if let Some(bits) = directive.number_bits.as_deref() {
-            write_number(event, bits)?;
+            write_number(event, bits, directive.number_field.as_deref())?;
         }
         if directive.wait {
             let command = self.captured.borrow().clone();
@@ -374,6 +394,15 @@ impl Probe {
                 .ok_or("no command context was captured")?
                 .wait_for_idle()
                 .await?;
+        }
+        if let Some(edit) = &directive.session_edit {
+            edit_session(event, edit);
+        }
+        if matches!(directive.session_action, Some(SessionAction::FileEdit))
+            && let ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) = event
+            && compact.preparation.file_ops.read.shift_remove("z")
+        {
+            compact.preparation.file_ops.read.insert("z".to_owned());
         }
         if directive.mark {
             mark(event);
@@ -415,6 +444,7 @@ impl Probe {
             ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => {
                 Some(compact.signal.clone())
             }
+            ExtensionEvent::Session(SessionEvent::BeforeTree(tree)) => Some(tree.signal.clone()),
             _ => None,
         };
         let kept = Kept {
@@ -494,6 +524,13 @@ fn mark(event: &mut ExtensionEvent) {
         ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => {
             compact.custom_instructions = Presence::Present(changed());
         }
+        ExtensionEvent::Session(SessionEvent::Compact(event)) => {
+            event.compaction_entry.summary = changed();
+        }
+        ExtensionEvent::Session(SessionEvent::BeforeTree(event)) => {
+            event.preparation.target_id = changed();
+        }
+        ExtensionEvent::Session(SessionEvent::Tree(event)) => event.new_leaf_id = Some(changed()),
         ExtensionEvent::Session(SessionEvent::Shutdown(shutdown)) => {
             shutdown.target_session_file = Presence::Present(changed());
         }
@@ -548,12 +585,12 @@ fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
         "session_before_fork" => ExtensionEvent::Session(SessionEvent::BeforeFork(
             from_value(document).map_err(unreadable)?,
         )),
-        "session_before_compact" => {
-            ExtensionEvent::Session(SessionEvent::BeforeCompact(SessionBeforeCompactEvent {
+        "session_before_compact" => ExtensionEvent::Session(SessionEvent::BeforeCompact(Box::new(
+            SessionBeforeCompactEvent {
                 data: from_value(document).map_err(unreadable)?,
                 signal: AbortSignal::new(Rc::new(Live)),
-            }))
-        }
+            },
+        ))),
         "session_shutdown" => ExtensionEvent::Session(SessionEvent::Shutdown(
             from_value(document).map_err(unreadable)?,
         )),
@@ -589,6 +626,9 @@ fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
         "session_before_compact" => {
             ExtensionEventResult::SessionBeforeCompact(from_value(value).map_err(unreadable)?)
         }
+        "session_before_tree" => {
+            ExtensionEventResult::SessionBeforeTree(from_value(value).map_err(unreadable)?)
+        }
         "before_provider_request" => {
             ExtensionEventResult::BeforeProviderRequest(from_value(value).map_err(unreadable)?)
         }
@@ -598,7 +638,7 @@ fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
 }
 
 /// Writes a number as an extension would, without a JSON conversion first.
-fn write_number(event: &mut ExtensionEvent, bits: &str) -> Result<(), String> {
+fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> Result<(), String> {
     let bits = u64::from_str_radix(bits, 16).map_err(|e| e.to_string())?;
     let value = f64::from_bits(bits);
     match event {
@@ -631,6 +671,14 @@ fn write_number(event: &mut ExtensionEvent, bits: &str) -> Result<(), String> {
             };
             shared.write().unwrap().usage.total_tokens = value;
         }
+        ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => match field {
+            Some("reserveTokens") => compact.preparation.settings.reserve_tokens = value,
+            Some("keepRecentTokens") => compact.preparation.settings.keep_recent_tokens = value,
+            _ => compact.preparation.tokens_before = value,
+        },
+        ExtensionEvent::Session(SessionEvent::Compact(compact)) => {
+            compact.compaction_entry.tokens_before = value;
+        }
         ExtensionEvent::TurnStart(turn) => turn.timestamp = value,
         _ => return Err("unsupported number edit".to_owned()),
     }
@@ -646,4 +694,69 @@ fn mark_message(message: &mut maestro_extensions_wasm::AgentMessage) {
             maestro_extensions_wasm::Message::ToolResult(tool) => tool.timestamp = 99.0,
         }
     }
+}
+
+/// Apply nested changes through the typed session payloads.
+fn edit_session(event: &mut ExtensionEvent, edit: &str) {
+    let changed = || "edited Ω".to_owned();
+    match event {
+        ExtensionEvent::Session(SessionEvent::BeforeCompact(event)) if edit == "nested" => {
+            event.preparation.messages_to_summarize.reverse();
+            event.branch_entries.reverse();
+            event.preparation.file_ops.read.shift_remove("z");
+            event.preparation.file_ops.read.insert("z".to_owned());
+        }
+        ExtensionEvent::Session(SessionEvent::BeforeCompact(event)) => {
+            event.preparation.previous_summary = Presence::Present(changed());
+        }
+        ExtensionEvent::Session(SessionEvent::Compact(event)) => {
+            event.compaction_entry.summary = changed();
+        }
+        ExtensionEvent::Session(SessionEvent::BeforeTree(event)) => {
+            event.preparation.target_id = changed();
+            if edit == "nested" {
+                event.preparation.entries_to_summarize.reverse();
+            }
+        }
+        ExtensionEvent::Session(SessionEvent::Tree(event)) => event.new_leaf_id = Some(changed()),
+        _ => {}
+    }
+}
+
+/// Assemble the example summary without cutting a Unicode scalar value.
+fn summarize(event: &ExtensionEvent) -> ExtensionResult<ExtensionEventResult> {
+    use maestro_extensions_wasm::{AgentMessage, Message, UserContent};
+    let ExtensionEvent::Session(SessionEvent::BeforeCompact(event)) = event else {
+        return Err("not a before-compaction event".to_owned());
+    };
+    let requests = event
+        .preparation
+        .messages_to_summarize
+        .iter()
+        .filter_map(|message| {
+            let AgentMessage::Message(message) = message else {
+                return None;
+            };
+            let Message::User(user) = message.as_ref() else {
+                return None;
+            };
+            let text = match &user.content {
+                UserContent::Text(text) => text.chars().take(100).collect::<String>(),
+                UserContent::Blocks(_) => "[complex]".to_owned(),
+            };
+            Some(format!("- {text}"))
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    Ok(ExtensionEventResult::SessionBeforeCompact(
+        SessionBeforeCompactResult {
+            cancel: Presence::Missing,
+            compaction: Presence::Present(CompactionResult {
+                summary: format!("User requests:\n{requests}"),
+                first_kept_entry_id: event.preparation.first_kept_entry_id.clone(),
+                tokens_before: event.preparation.tokens_before,
+                details: Presence::Missing,
+            }),
+        },
+    ))
 }

@@ -4,7 +4,7 @@
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
-This page describes what is delivered so far: registration, 23 events and nine result
+This page describes what is delivered so far: registration, 26 events and ten result
 families, command contexts and session continuations.
 
 ## Build a component
@@ -71,14 +71,27 @@ differs from a result whose properties are all omitted.
 | `session_start` | `SessionStartEvent` | `reason` (`startup`, `reload`, `new`, `resume`, `fork`), `previousSessionFile?` |
 | `session_before_switch` | `SessionBeforeSwitchEvent` | `reason` (`new`, `resume`), `targetSessionFile?` |
 | `session_before_fork` | `SessionBeforeForkEvent` | `entryId`, `position` (`before`, `at`) |
-| `session_before_compact` | `SessionBeforeCompactEvent` | `preparation`, `customInstructions?` |
+| `session_before_compact` | `SessionBeforeCompactEvent` | `preparation`, `branchEntries`, `customInstructions?` |
+| `session_compact` | `SessionCompactEvent` | `compactionEntry`, `fromExtension` |
+| `session_before_tree` | `SessionBeforeTreeEvent` | `preparation` |
+| `session_tree` | `SessionTreeEvent` | `newLeafId`, `oldLeafId`, `summaryEntry?`, `fromExtension?` |
 | `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
 | `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
 | `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
 | `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
 
-`preparation` holds `firstKeptEntryId`, `isSplitTurn`, `tokensBefore` and `previousSummary?`.
-The five session events are variants of `SessionEvent`. `images` is a list of `data` and
+Before-compaction `preparation` holds `firstKeptEntryId`, `messagesToSummarize`,
+`turnPrefixMessages`, `isSplitTurn`, `tokensBefore`, `previousSummary?`, `fileOps` and
+`settings`. `settings` carries `enabled`, `reserveTokens` and `keepRecentTokens`;
+`fileOps` carries insertion-ordered `read`, `written` and `edited` path sets.
+The guest does not normalize authored paths. `branchEntries` is independent of the
+prepared message lists.
+
+Before-tree `preparation` holds `targetId`, nullable `oldLeafId` and
+`commonAncestorId`, `entriesToSummarize`, `userWantsSummary`, `customInstructions?`,
+`replaceInstructions?` and `label?`. After-tree leaf IDs are also nullable; an absent
+summary is not a fabricated summary entry. The eight session events are variants of
+`SessionEvent`. `images` is a list of `data` and
 `mimeType` records tagged with `type: "image"`, and `headers` a list of name and value pairs in the order the host gave
 them; nothing trims, folds, sorts or combines them.
 
@@ -110,11 +123,14 @@ the guest does not discover resources or build the prompt.
 | `session_before_switch` | `SessionBeforeSwitchResult` | `cancel?` |
 | `session_before_fork` | `SessionBeforeForkResult` | `cancel?`, `skipConversationRestore?` |
 | `session_before_compact` | `SessionBeforeCompactResult` | `cancel?`, `compaction?` |
+| `session_before_tree` | `SessionBeforeTreeResult` | `cancel?`, `summary?`, `customInstructions?`, `replaceInstructions?`, `label?` |
 | `before_provider_request` | `BeforeProviderRequestEventResult` | a string holding the replacement request |
 | `input` | `InputEventResult` | `action` is `continue`, `handled` or `transform`; a transform has `text` and `images?` |
 
-`compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`. A compaction
-currently carries only the fields listed here. Session start, session shutdown and provider
+Returned `compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`.
+A returned tree `summary` holds `summary` and optional opaque `details`. Cancellation
+and summary overrides may be supplied together; the guest carries the decision without
+executing navigation policy. Session start, session shutdown and provider
 responses have no result type delivered here. The adapter does not check that a result
 belongs to the family of the event it answers: the host reads it. A message-end replacement
 may carry a different role; host reduction policy is not applied in the guest.
@@ -131,8 +147,8 @@ the delivery is refused.
 
 The guest exports one asynchronous function, `invoke-event`, for every event. The host passes
 the callback, the event as one host-encoded JSON document whose `type` names the kind, and the resources
-the event needs: a context, and for a compaction its signal. A signal that comes with any other
-event is dropped. Resources never appear in the document.
+the event needs: a context, and for before-compaction or before-tree its owned signal.
+A signal that comes with any other event is dropped. Resources never appear in the document.
 
 Unshared optional properties keep three states apart: omitted, explicitly `null`, and present, including
 empty strings, empty lists and `false`. In unshared records such a field is a
@@ -162,12 +178,17 @@ of resource discovery, session start, session switch and session shutdown, the f
 and the input source accept only their declared JSON string literals in event records, not
 object variants. They still serialize as lowercase strings.
 
-The export decodes the host-encoded document before it enters the handler. The outer event,
-`preparation` and input-image list elements are read from JSON objects. The outer tag reader
+The export decodes the host-encoded document before it enters the handler. The outer event, before-compaction preparation and input-image list elements are read
+from JSON objects. Tree preparation, settings and file-set records also accept Serde
+positional arrays. Flattened session entries remain maps; the entry union reads the tag first,
+then decodes that concrete record from the original JSON, including nested messages.
+Concrete-entry tags are serialization metadata, not a second ingress validator.
+Known duplicate members follow the owning decoder; flattened unknown members are
+buffered and have no arbitrary-depth skipping guarantee. The outer tag reader
 skips other properties, and each payload uses its owning record decoder. Shared records decode
 through the same Serde derives used by the host, including their native record and union
 admission; there is no additional validation of foreign input shapes or tolerance of
-unrepresentable unread members. A decoding failure or a compaction without its signal makes
+unrepresentable unread members. A decoding failure or a before-compaction/before-tree event without its signal makes
 the export fail with an error message before handler entry. A callback identity that is unknown,
 or registered for a command, does not fail the export: the outcome reports the lookup message
 as the decision.
@@ -177,6 +198,34 @@ it returned or failed, and is absent only when the handler replaced it with an e
 kind, which includes another session event. `decision` is `returned` with the encoded result,
 or `failed` with a message: the handler's own, or the lookup message. A failure to encode the event or the result is reported
 in its own part, as a message, and never replaces the other part or the handler's failure.
+
+### Session entries
+
+Every entry carries `id`, nullable `parentId` and a string `timestamp`; the guest
+interprets neither IDs nor timestamps. Typed null parent/leaf/ancestor IDs serialize
+as present null, unlike omitted `Presence` fields. Their `Option` decoder also accepts
+absence. The tagged `SessionEntry` variants carry these additional fields:
+
+| `type` | Fields |
+| --- | --- |
+| `message` | `message` (shared or application message) |
+| `thinking_level_change` | `thinkingLevel` (open text) |
+| `model_change` | `provider`, `modelId` |
+| `compaction` | `summary`, `firstKeptEntryId`, `tokensBefore`, `details?`, `fromHook?` |
+| `branch_summary` | `fromId`, `summary`, `details?`, `fromHook?` |
+| `custom` | `customType`, `data?` (opaque text) |
+| `custom_message` | `customType`, `content`, `details?`, `display` |
+| `label` | `targetId`, `label?` |
+| `session_info` | `name?` |
+
+The persisted compact event includes a full `CompactionEntry`, not just a returned
+`CompactionResult`. Its `fromExtension` flag is independent of the entry's `fromHook`.
+Entry/message lists preserve order and repeated elements; file sets preserve distinct
+literal members in insertion order.
+
+The guest does not compact, persist entries or navigate a tree. It returns edited
+preparation and branch entries through the event outcome; later host execution must
+apply those edits before continuing.
 
 ## Contexts and sessions
 
@@ -214,3 +263,55 @@ only after that wait resumes. Afterwards the test checks that every callback, in
 one a destructor registered, and every context and signal the host lent was dropped. The
 tests in `src/tests/event_values.rs` and `src/tests/event_transport.rs` deliver the classes of
 every property and every way an invocation can end through both hosts with the probe handler.
+
+
+### A user-request summary handler
+
+This executable handler summarizes only supplied user messages; block content becomes
+`[complex]`, and text keeps its first 100 Unicode scalar values. It does not read a
+session or choose compaction settings. Register it as `session_before_compact`:
+
+```rust
+use maestro_extensions_wasm::{
+    AgentMessage, CompactionResult, ExtensionAPI, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture, Message, Presence, SessionBeforeCompactResult, SessionEvent, UserContent,
+};
+use std::rc::Rc;
+
+fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
+    Box::pin(async move {
+        api.on("session_before_compact", Rc::new(|event, _ctx| {
+            Box::pin(async move {
+                let ExtensionEvent::Session(SessionEvent::BeforeCompact(event)) = event else {
+                    return Ok(None);
+                };
+                let requests = event.preparation.messages_to_summarize.iter()
+                    .filter_map(|message| {
+                        let AgentMessage::Message(message) = message else { return None; };
+                        let Message::User(user) = message.as_ref() else { return None; };
+                        let text = match &user.content {
+                            UserContent::Text(text) => text.chars().take(100).collect::<String>(),
+                            UserContent::Blocks(_) => "[complex]".to_owned(),
+                        };
+                        Some(format!("- {text}"))
+                    }).collect::<Vec<_>>().join("\n");
+                Ok(Some(ExtensionEventResult::SessionBeforeCompact(SessionBeforeCompactResult {
+                    cancel: Presence::Missing,
+                    compaction: Presence::Present(CompactionResult {
+                        summary: format!("User requests:\n{requests}"),
+                        first_kept_entry_id: event.preparation.first_kept_entry_id.clone(),
+                        tokens_before: event.preparation.tokens_before,
+                        details: Presence::Missing,
+                    }),
+                })))
+            })
+        }))
+    })
+}
+```
+
+For cancellation instead, return a `SessionBeforeCompactResult` with
+`cancel: Presence::Present(true)` and `compaction: Presence::Missing` from a separate
+handler. Do not put a summary return after an unconditional cancellation return.
+The tests invoke the summary handler on empty, mixed-role and repeated inputs,
+ASCII boundaries, emoji and combining marks through both adapters.

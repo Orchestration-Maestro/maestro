@@ -45,6 +45,10 @@ mod join;
 mod observed;
 mod scenario;
 mod selection_events;
+mod session_corpus;
+mod session_events;
+mod session_records;
+mod session_summary;
 mod shared_records;
 mod stream_events;
 

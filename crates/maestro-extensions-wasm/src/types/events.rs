@@ -24,9 +24,13 @@ use super::extension_result::ExtensionFuture;
 use super::object;
 use super::presence::Presence;
 use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
+use super::session_events::{
+    SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionCompactEvent, SessionTreeEvent,
+};
 use super::tool_events::{
     ToolExecutionEndEvent, ToolExecutionStartEvent, ToolExecutionUpdateEvent,
 };
+use crate::SessionEntry;
 use crate::compaction::{CompactionPreparation, CompactionResult};
 use crate::{BeforeAgentStartEventResult, ContextEventResult, ImageContent, MessageEndEventResult};
 
@@ -271,6 +275,8 @@ pub struct SessionBeforeCompactEventData {
     /// What the compaction is about to summarize.
     #[serde(deserialize_with = "object::record")]
     pub preparation: CompactionPreparation,
+    /// Ordered branch entries supplied independently of summary messages.
+    pub branch_entries: Vec<SessionEntry>,
     /// Instructions the user gave the compaction.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub custom_instructions: Presence<String>,
@@ -321,7 +327,13 @@ pub enum SessionEvent {
     /// The session is about to fork.
     BeforeFork(SessionBeforeForkEvent),
     /// A compaction is about to happen.
-    BeforeCompact(SessionBeforeCompactEvent),
+    BeforeCompact(Box<SessionBeforeCompactEvent>),
+    /// A compaction entry was persisted.
+    Compact(SessionCompactEvent),
+    /// Tree navigation is about to occur.
+    BeforeTree(SessionBeforeTreeEvent),
+    /// Tree navigation completed.
+    Tree(SessionTreeEvent),
     /// A runtime is shutting down.
     Shutdown(SessionShutdownEvent),
 }
@@ -391,6 +403,8 @@ pub enum ExtensionEventResult {
     SessionBeforeFork(SessionBeforeForkResult),
     /// Verdict or replacement of a compaction handler.
     SessionBeforeCompact(SessionBeforeCompactResult),
+    /// A tree handler cancellation, summary or override decision.
+    SessionBeforeTree(SessionBeforeTreeResult),
     /// A replacement request body.
     BeforeProviderRequest(BeforeProviderRequestEventResult),
     /// What an input handler decided.

@@ -18,6 +18,7 @@ pub(crate) mod finite;
 pub(crate) mod object;
 mod presence;
 mod selection_events;
+mod session_events;
 mod tool_events;
 
 pub use agent_events::*;
@@ -42,6 +43,7 @@ pub use events::{
 pub use extension_result::{ExtensionFuture, ExtensionResult};
 pub use presence::Presence;
 pub use selection_events::*;
+pub use session_events::*;
 pub use tool_events::*;
 
 pub use crate::bindings::maestro::extension::session::{

@@ -16,6 +16,7 @@ mod compaction;
 mod component_adapter;
 mod loader;
 mod messages;
+mod session_manager;
 mod system_prompt;
 #[cfg(test)]
 mod tests;
@@ -42,6 +43,7 @@ pub use maestro_request::types::{
     UsageCost, UserBlock, UserContent, UserMessage, VercelGatewayRouting,
 };
 pub use messages::*;
+pub use session_manager::*;
 pub use system_prompt::*;
 pub use types::*;
 

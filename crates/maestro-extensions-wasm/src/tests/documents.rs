@@ -152,7 +152,8 @@ pub fn document(kind: &str) -> Value {
         "session_before_fork" => json!({ "type": kind, "entryId": "e1", "position": "at" }),
         "session_before_compact" => json!({
             "type": kind,
-            "preparation": { "firstKeptEntryId": "e2", "isSplitTurn": false, "tokensBefore": 1234.0 },
+            "branchEntries": [],
+            "preparation": { "firstKeptEntryId": "e2", "isSplitTurn": false, "tokensBefore": 1234.0, "messagesToSummarize": [], "turnPrefixMessages": [], "fileOps": {"read":[],"written":[],"edited":[]}, "settings":{"enabled":true,"reserveTokens":1.0,"keepRecentTokens":2.0} },
         }),
         "before_provider_request" => json!({ "type": kind, "payload": "{\"model\":\"m\"}" }),
         "after_provider_response" => json!({
@@ -262,7 +263,10 @@ pub async fn ask(
     event: &Value,
     directive: &Value,
 ) -> Result<Answer, String> {
-    let signal = if event["type"] == "session_before_compact" {
+    let signal = if matches!(
+        event["type"].as_str(),
+        Some("session_before_compact" | "session_before_tree")
+    ) {
         Some(driver.lend_signal(false)?)
     } else {
         None
