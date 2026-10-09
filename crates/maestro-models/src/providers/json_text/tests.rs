@@ -80,3 +80,25 @@ fn numeric_projection_preserves_compact_output() {
         );
     }
 }
+
+#[test]
+fn unread_surrogate_names_do_not_hide_read_members() {
+    #[derive(Debug, PartialEq, serde::Deserialize)]
+    struct Record {
+        value: u32,
+    }
+    for text in [
+        r#"{"\ud800":0,"value":7,"value":9}"#,
+        r#"{"value":7,"value":9,"\ud800":null}"#,
+    ] {
+        let raw = raw_json(text).unwrap();
+        assert_eq!(
+            super::member(raw, "value").map(serde_json::value::RawValue::get),
+            Some("9")
+        );
+        assert_eq!(
+            super::object_record::<Record>(raw),
+            Some(Record { value: 9 })
+        );
+    }
+}

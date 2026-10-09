@@ -1,5 +1,5 @@
 //! Borrowed feed fields and typed descriptor projection.
-use crate::providers::json_text::{is_truthy, member, raw_number};
+use crate::providers::json_text::{EntryKey, is_truthy, member, raw_number};
 use crate::{Model, ModelCost, ModelInput};
 use serde_json::value::RawValue;
 
@@ -161,49 +161,4 @@ pub(super) fn entries(raw: Option<&RawValue>) -> Vec<(EntryKey, &RawValue)> {
             .unwrap_or(u32::MAX)
     });
     entries
-}
-
-/// A JSON object key retaining lone-surrogate identity until duplicate resolution.
-#[derive(Eq, PartialEq, Hash)]
-pub(super) struct EntryKey(
-    /// Original decoded WTF-8 bytes.
-    pub(super) Vec<u8>,
-);
-impl EntryKey {
-    /// Decode WTF-8 with one replacement character per surviving surrogate unit.
-    pub(super) fn text(&self) -> String {
-        let mut remaining = self.0.as_slice();
-        let mut output = String::new();
-        while !remaining.is_empty() {
-            match std::str::from_utf8(remaining) {
-                Ok(text) => {
-                    output.push_str(text);
-                    break;
-                }
-                Err(error) => {
-                    let (prefix, tail) = remaining.split_at(error.valid_up_to());
-                    output.push_str(std::str::from_utf8(prefix).unwrap_or_default());
-                    output.push('\u{fffd}');
-                    remaining = &tail[3..];
-                }
-            }
-        }
-        output
-    }
-}
-impl<'de> serde::Deserialize<'de> for EntryKey {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        /// Request the JSON library's WTF-8 byte decoding for object keys.
-        struct KeyVisitor;
-        impl serde::de::Visitor<'_> for KeyVisitor {
-            type Value = EntryKey;
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("a JSON object key")
-            }
-            fn visit_bytes<E: serde::de::Error>(self, bytes: &[u8]) -> Result<EntryKey, E> {
-                Ok(EntryKey(bytes.to_vec()))
-            }
-        }
-        deserializer.deserialize_bytes(KeyVisitor)
-    }
 }

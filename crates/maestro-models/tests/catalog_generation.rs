@@ -827,3 +827,60 @@ fn distinct_surrogate_entry_keys_survive_selection() {
         }
     }
 }
+
+#[test]
+fn unread_surrogate_member_names_preserve_selected_models() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    for (source, text) in [
+        (
+            "router",
+            r#"{"data":[{"id":"good","name":"Good","supported_parameters":["tools"],"architecture":{"modality":"text+image"},"pricing":{"prompt":"0.001","completion":"0.002","input_cache_read":"0.003","input_cache_write":"0.004"},"context_length":12345,"top_provider":{"max_completion_tokens":6789}}]}"#,
+        ),
+        (
+            "gateway",
+            r#"{"data":[{"id":"good","name":"Good","tags":["tool-use","vision","reasoning"],"pricing":{"input":"0.001","output":"0.002","input_cache_read":"0.003","input_cache_write":"0.004"},"context_window":12345,"max_tokens":6789}]}"#,
+        ),
+        (
+            "dev",
+            r#"{"opencode":{"models":{"good":{"tool_call":true,"name":"Good","reasoning":true,"modalities":{"input":["text","image"]},"cost":{"input":1,"output":2,"cache_read":3,"cache_write":4},"limit":{"context":12345,"output":6789},"provider":{"npm":"@ai-sdk/anthropic"}}}}}"#,
+        ),
+    ] {
+        let baseline = runtime
+            .block_on(invoke(
+                source,
+                &response_fetch(text.as_bytes().to_vec()),
+                &mut Vec::new(),
+                &mut Vec::new(),
+            ))
+            .unwrap();
+        assert_eq!(baseline.len(), 1);
+        // Each object is a separate input: root, provider, record,
+        // and every used metadata container must preserve the same descriptor.
+        for (offset, _) in text.match_indices('{') {
+            // Entry collection keys are model IDs, not unread metadata fields.
+            if text[..offset].ends_with("\"models\":") {
+                continue;
+            }
+            for (position, member) in [
+                (offset + 1, r#""\ud800":0,"#),
+                (offset + 1, r#""\ud800":null,"#),
+            ] {
+                let mut input = text.to_owned();
+                input.insert_str(position, member);
+                let mut errors = Vec::new();
+                let models = runtime
+                    .block_on(invoke(
+                        source,
+                        &response_fetch(input.into_bytes()),
+                        &mut Vec::new(),
+                        &mut errors,
+                    ))
+                    .unwrap();
+                assert_eq!(models, baseline, "{source} object at {offset}");
+                assert!(errors.is_empty(), "{source} object at {offset}");
+            }
+        }
+    }
+}

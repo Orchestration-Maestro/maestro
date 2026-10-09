@@ -51,6 +51,9 @@ without recursive conversion. Missing array IDs use the JSON-escaped
 `<entry:N>` with zero-based `N`. models.dev diagnostics use the entry key.
 
 Body decoding removes one leading UTF-8 BOM and replaces invalid UTF-8 sequences.
+The shared JSON member boundary ignores names that are not valid UTF-8 before
+field lookup or typed record decoding, so unread lone-surrogate names do not
+hide representable fields.
 Object entry keys retain distinct UTF-16 units through duplicate resolution and
 ordering, so lone-surrogate keys cannot overwrite different keys. In surviving
 IDs and other decoded strings, each unpaired UTF-16 escape is spelled as one
