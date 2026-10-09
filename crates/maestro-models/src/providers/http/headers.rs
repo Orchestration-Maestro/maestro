@@ -38,7 +38,7 @@ fn header_name(name: &str) -> Result<HeaderName, String> {
 /// # Errors
 /// Fails with the text of the first header that has an invalid name, a character above
 /// U+00FF, or a value holding NUL, a carriage return or a line feed.
-pub(super) fn normalize_request(headers: &mut IndexMap<String, String>) -> Result<(), String> {
+pub(crate) fn normalize_request(headers: &mut IndexMap<String, String>) -> Result<(), String> {
     for (name, value) in headers {
         *value = value.trim_matches(edge_whitespace).to_owned();
         header_name(name)?;

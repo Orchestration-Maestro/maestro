@@ -75,8 +75,10 @@ pub enum MistralReasoningEffort {
 #[cfg(test)]
 mod tests;
 
+mod wire;
+
 #[cfg_attr(
     not(test),
-    expect(dead_code, reason = "request wire awaits its invocation caller")
+    expect(dead_code, reason = "request preparation awaits its invocation caller")
 )]
-mod wire;
+mod request;
