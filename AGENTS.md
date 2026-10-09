@@ -367,3 +367,15 @@ All are MIT OR Apache-2.0. The hashing closure is digest `=0.11.3`
 (`default`, `block-api`), block-buffer `=0.12.1`, crypto-common `=0.2.2`,
 hybrid-array `=0.4.15` and typenum `=1.20.1` (`const-generics`), also MIT OR
 Apache-2.0. No third-party type appears in the OAuth primitive interface.
+
+## Approved native terminal libraries
+
+On Unix, `maestro-tui-crossterm` uses rustix `=1.1.5` (defaults off; `std`, `event`, `fs`,
+`stdio`, `termios`) on the actual standard descriptors, Tokio `=1.53.2` (defaults off; `rt`, `net`,
+`time`, `signal`, `macros`) for its caller-driven local task set and `chrono =0.4.45`
+(defaults off; `clock`) for log file names. Rustix is Apache-2.0 WITH LLVM-exception OR
+Apache-2.0 OR MIT, Tokio is MIT and chrono is MIT OR Apache-2.0. All three are scoped to
+`cfg(unix)`; the crate does not use crossterm there, because crossterm prefers the
+controlling terminal over the redirected descriptors. Its tests add rustix `pipe`, `pty`
+and `process` and Tokio `test-util`. No library type appears in a public
+interface except Tokio's `LocalSet`, which the caller supplies to `ProcessTerminal::new`.
