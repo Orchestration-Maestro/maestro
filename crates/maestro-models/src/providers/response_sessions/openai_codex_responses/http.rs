@@ -113,3 +113,208 @@ pub(super) fn parse_error_response(
         friendly_message: None,
     })
 }
+
+use super::{CodexError, OpenAICodexResponsesOptions, events::Source, request::PreparedRequest};
+use crate::providers::http::{HttpRequest, HttpResponse, Raced, race};
+use crate::providers::json_text::compact_json;
+use crate::providers::responses::openai_responses_shared::{
+    OpenAIResponsesStreamOptions, process_responses_stream,
+};
+use crate::{
+    AssistantMessageEvent, AssistantMessageEventStream, Model, ProviderResponse,
+    SharedAssistantMessage,
+};
+use std::sync::Arc;
+
+/// Send one setup attempt and await its response observation before processing the body.
+async fn attempt(
+    request: HttpRequest,
+    model: &Arc<Model>,
+    options: &OpenAICodexResponsesOptions,
+) -> Result<HttpResponse, CodexError> {
+    let fetch = options
+        .common
+        .fetch
+        .clone()
+        .unwrap_or_else(crate::default_fetch);
+    let response = match race(fetch(request), None, options.common.signal.as_ref()).await {
+        Raced::Done(Ok(response)) => response,
+        Raced::Done(Err(error)) => return Err(error.into()),
+        Raced::Cancelled | Raced::TimedOut => {
+            return Err(CodexError::Transport(diagnostic("Request was aborted")));
+        }
+    };
+    if let Some(hook) = &options.common.on_response {
+        hook(
+            ProviderResponse {
+                status: f64::from(response.status),
+                headers: response.headers.clone(),
+            },
+            Arc::clone(model),
+        )
+        .await
+        .map_err(CodexError::Transport)?;
+    }
+    Ok(response)
+}
+
+/// Announce usable HTTP bodies and delegate content updates without ending the caller's stream.
+pub(crate) async fn invoke_sse(
+    prepared: &PreparedRequest,
+    model: &Arc<Model>,
+    options: &OpenAICodexResponsesOptions,
+    output: &SharedAssistantMessage,
+    events: &AssistantMessageEventStream,
+) -> Result<(), CodexError> {
+    let body = compact_json(&prepared.body)
+        .map_err(|error| CodexError::Transport(diagnostic(error.to_string())))?
+        .into_bytes();
+    let response = send_response(
+        &HttpRequest {
+            method: "POST".to_owned(),
+            url: prepared.url.clone(),
+            headers: prepared.headers.clone(),
+            body,
+            signal: options.common.signal.clone(),
+        },
+        model,
+        options,
+    )
+    .await?;
+    if matches!(response.status, 204 | 205) {
+        return Err(CodexError::Transport(diagnostic("No response body")));
+    }
+    events.push(AssistantMessageEvent::Start {
+        partial: Arc::clone(output),
+    });
+    let mut source = Source::new(response.body, options.common.signal.clone());
+    let view = futures_util::stream::unfold(&mut source, |source| async move {
+        source.next().await.map(|event| (event, source))
+    });
+    let requested = match options.service_tier.as_ref() {
+        Some(crate::providers::nullable::Nullable::Value(tier)) => Some(tier.name()),
+        _ => None,
+    };
+    let pricing = |usage: &mut crate::Usage, tier: Option<&str>| {
+        super::events::apply_service_tier_pricing(usage, tier, &model.id);
+    };
+    let stream_options = OpenAIResponsesStreamOptions {
+        service_tier: requested,
+        resolve_service_tier: Some(&super::events::resolve_codex_service_tier),
+        apply_service_tier_pricing: Some(&pricing),
+    };
+    let result =
+        process_responses_stream(Box::pin(view), output, events, model, Some(&stream_options))
+            .await;
+    result.map_err(|error| source.failure.take().unwrap_or(CodexError::Protocol(error)))
+}
+
+use crate::Cancellation;
+use crate::providers::http::decode_utf8;
+use futures_util::StreamExt;
+use std::{
+    future::pending,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
+
+/// Read a failed setup response before applying friendly parsing or retry policy.
+async fn error_body(
+    response: &mut HttpResponse,
+    signal: Option<&Cancellation>,
+) -> Result<String, CodexError> {
+    let mut bytes = Vec::new();
+    loop {
+        match race(response.body.next(), None, signal).await {
+            Raced::Done(Some(Ok(chunk))) => bytes.extend(chunk),
+            Raced::Done(None) => return Ok(decode_utf8(&bytes).into_owned()),
+            Raced::Done(Some(Err(error))) => return Err(error.into()),
+            Raced::Cancelled | Raced::TimedOut => {
+                return Err(CodexError::Transport(diagnostic("Request was aborted")));
+            }
+        }
+    }
+}
+
+/// Wait with scoped timer and cancellation futures; expiry leaves no registration behind.
+async fn wait(attempt: u32, signal: Option<&Cancellation>) -> Result<(), CodexError> {
+    if signal.is_some_and(Cancellation::is_aborted) {
+        return Err(CodexError::Transport(diagnostic("Request was aborted")));
+    }
+    match race(
+        pending::<()>(),
+        Some(Duration::from_millis(1000 << attempt)),
+        signal,
+    )
+    .await
+    {
+        Raced::TimedOut | Raced::Done(()) => Ok(()),
+        Raced::Cancelled => Err(CodexError::Transport(diagnostic("Request was aborted"))),
+    }
+}
+
+/// Caught setup failures use case-sensitive usage exclusion and exact abort identity.
+fn caught(error: CodexError) -> Result<CodexError, CodexError> {
+    let info = error.diagnostic();
+    if info.name.as_deref() == Some("AbortError") || info.message == "Request was aborted" {
+        return Err(CodexError::Transport(diagnostic("Request was aborted")));
+    }
+    if info.message.contains("usage limit") {
+        Err(error)
+    } else {
+        Ok(error)
+    }
+}
+
+/// Retry only setup work; a classified HTTP failure never re-enters the caught network branch.
+async fn send_response(
+    request: &HttpRequest,
+    model: &Arc<Model>,
+    options: &OpenAICodexResponsesOptions,
+) -> Result<HttpResponse, CodexError> {
+    let signal = options.common.signal.as_ref();
+    let mut index = 0;
+    loop {
+        if signal.is_some_and(Cancellation::is_aborted) {
+            return Err(CodexError::Transport(diagnostic("Request was aborted")));
+        }
+        let setup = async {
+            let mut response = attempt(request.clone(), model, options).await?;
+            if (200..300).contains(&response.status) {
+                return Ok((response, None));
+            }
+            let text = error_body(&mut response, signal).await?;
+            Ok((response, Some(text)))
+        }
+        .await;
+        let (response, text) = match setup {
+            Ok(response) => response,
+            Err(error) => {
+                let error = caught(error)?;
+                if index == 3 {
+                    return Err(error);
+                }
+                wait(index, signal).await?;
+                index += 1;
+                continue;
+            }
+        };
+        let Some(text) = text else {
+            return Ok(response);
+        };
+        if index < 3 && is_retryable_error(response.status, &text).map_err(CodexError::Transport)? {
+            wait(index, signal).await?;
+            index += 1;
+            continue;
+        }
+        let error = parse_error_response(response.status, &text, &response.status_text, || {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs_f64()
+                * 1000.0
+        });
+        return Err(CodexError::Transport(diagnostic(
+            error.friendly_message.unwrap_or(error.message),
+        )));
+    }
+}

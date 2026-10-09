@@ -25,3 +25,15 @@ An explicitly requested reasoning effort uses the descriptor's mapping when
 non-null, including an empty mapped spelling; otherwise it retains the requested
 effort (`Off` sends `none`). Summary defaults to `auto` only when effort is
 requested. No descriptor reasoning-capability check restricts raw effort.
+
+The internal SSE invocation observes each actual response before checking its
+status or body. Setup permits four attempts, with scoped waits of 1,000, 2,000
+and 4,000 milliseconds. A known nonretryable status returns its failure without
+entering the network retry branch. Common retry/timeout settings do not replace
+this provider's setup policy.
+
+Usable success bodies publish `start`. Provider event selection trims each data
+field, skips empty data and exact `[DONE]`, and normalizes terminal event names
+before delegating content reduction to the [shared response reducer](responses.md).
+This internal operation leaves final done/error publication and stream ending
+to its caller; no public dispatch caller is delivered yet.

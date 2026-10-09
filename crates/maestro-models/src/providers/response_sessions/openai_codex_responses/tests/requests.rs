@@ -425,3 +425,60 @@ fn maestro_response_sessions_render_friendly_http_errors() {
         );
     }
 }
+
+/// Requested and echoed tiers, with null and omission selecting no named tier.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TierCase {
+    /// Echoed tier.
+    response: Option<String>,
+    /// Requested tier.
+    request: Option<String>,
+    /// Resolved named tier.
+    expected: Option<String>,
+}
+
+#[test]
+fn maestro_response_sessions_resolve_echoed_tier() {
+    let rows: Vec<TierCase> = serde_json::from_str(include_str!("fixtures/tiers.json")).unwrap();
+    for row in rows {
+        assert_eq!(
+            super::super::events::resolve_codex_service_tier(
+                row.response.as_deref(),
+                row.request.as_deref()
+            ),
+            row.expected
+        );
+    }
+}
+
+/// All cost categories and a deliberately stale total distinguish pricing from a no-op.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PriceCase {
+    /// Exact model ID.
+    id: String,
+    /// Requested pricing tier.
+    tier: Option<String>,
+    /// Complete input costs.
+    cost: crate::UsageCost,
+    /// Independently recorded resulting costs.
+    expected: crate::UsageCost,
+}
+
+#[test]
+fn maestro_response_sessions_price_all_cost_categories() {
+    let rows: Vec<PriceCase> = serde_json::from_str(include_str!("fixtures/prices.json")).unwrap();
+    for row in rows {
+        let mut usage = crate::Usage {
+            cost: row.cost,
+            input: 0.0,
+            output: 0.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+            total_tokens: 0.0,
+        };
+        super::super::events::apply_service_tier_pricing(&mut usage, row.tier.as_deref(), &row.id);
+        assert_eq!(usage.cost, row.expected);
+    }
+}

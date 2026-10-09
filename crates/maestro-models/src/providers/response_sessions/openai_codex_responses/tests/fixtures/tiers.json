@@ -1,0 +1,247 @@
+[
+  {
+    "response": null,
+    "request": null,
+    "expected": null
+  },
+  {
+    "response": null,
+    "request": null,
+    "expected": null
+  },
+  {
+    "response": "auto",
+    "request": null,
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": null,
+    "expected": "default"
+  },
+  {
+    "response": "flex",
+    "request": null,
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": null,
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": null,
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": null,
+    "expected": null
+  },
+  {
+    "response": null,
+    "request": null,
+    "expected": null
+  },
+  {
+    "response": "auto",
+    "request": null,
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": null,
+    "expected": "default"
+  },
+  {
+    "response": "flex",
+    "request": null,
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": null,
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": null,
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": "auto",
+    "expected": "auto"
+  },
+  {
+    "response": null,
+    "request": "auto",
+    "expected": "auto"
+  },
+  {
+    "response": "auto",
+    "request": "auto",
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": "auto",
+    "expected": "default"
+  },
+  {
+    "response": "flex",
+    "request": "auto",
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": "auto",
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": "auto",
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": "default",
+    "expected": "default"
+  },
+  {
+    "response": null,
+    "request": "default",
+    "expected": "default"
+  },
+  {
+    "response": "auto",
+    "request": "default",
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": "default",
+    "expected": "default"
+  },
+  {
+    "response": "flex",
+    "request": "default",
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": "default",
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": "default",
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": "flex",
+    "expected": "flex"
+  },
+  {
+    "response": null,
+    "request": "flex",
+    "expected": "flex"
+  },
+  {
+    "response": "auto",
+    "request": "flex",
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": "flex",
+    "expected": "flex"
+  },
+  {
+    "response": "flex",
+    "request": "flex",
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": "flex",
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": "flex",
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": "scale",
+    "expected": "scale"
+  },
+  {
+    "response": null,
+    "request": "scale",
+    "expected": "scale"
+  },
+  {
+    "response": "auto",
+    "request": "scale",
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": "scale",
+    "expected": "default"
+  },
+  {
+    "response": "flex",
+    "request": "scale",
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": "scale",
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": "scale",
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": "priority",
+    "expected": "priority"
+  },
+  {
+    "response": null,
+    "request": "priority",
+    "expected": "priority"
+  },
+  {
+    "response": "auto",
+    "request": "priority",
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "request": "priority",
+    "expected": "priority"
+  },
+  {
+    "response": "flex",
+    "request": "priority",
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "request": "priority",
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "request": "priority",
+    "expected": "priority"
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "status": null,
+    "expected": null
+  },
+  {
+    "status": null,
+    "expected": null
+  },
+  {
+    "status": "",
+    "expected": null
+  },
+  {
+    "status": "completed",
+    "expected": "completed"
+  },
+  {
+    "status": "incomplete",
+    "expected": "incomplete"
+  },
+  {
+    "status": "failed",
+    "expected": "failed"
+  },
+  {
+    "status": "cancelled",
+    "expected": "cancelled"
+  },
+  {
+    "status": "queued",
+    "expected": "queued"
+  },
+  {
+    "status": "in_progress",
+    "expected": "in_progress"
+  },
+  {
+    "status": "unknown",
+    "expected": null
+  },
+  {
+    "status": 1,
+    "expected": null
+  }
+]

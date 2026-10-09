@@ -203,7 +203,7 @@ pub(crate) async fn prepare_request(
     context: &Context,
     options: &OpenAICodexResponsesOptions,
     user_agent: &str,
-) -> Result<PreparedRequest, DiagnosticErrorInfo> {
+) -> Result<PreparedRequest, super::CodexError> {
     let key = options
         .common
         .api_key
