@@ -482,3 +482,75 @@ fn maestro_response_sessions_price_all_cost_categories() {
         assert_eq!(usage.cost, row.expected);
     }
 }
+
+#[test]
+fn maestro_response_sessions_validate_headers_before_fetch() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        for (name, value, replaced, expected) in [
+            ("bad name", "valid", false, "Header bad name:"),
+            (
+                "x-test",
+                "first\nsecond",
+                false,
+                "Header x-test holds NUL or a line break.",
+            ),
+            (
+                "x-test",
+                "Ω",
+                false,
+                "Header x-test holds U+03A9, which is not a single byte.",
+            ),
+            (
+                "x-test",
+                "first\nsecond",
+                true,
+                "Header x-test holds NUL or a line break.",
+            ),
+        ] {
+            assert_invalid_header(name, value, replaced, expected).await;
+        }
+    });
+}
+
+/// Observe payload preparation before each rejected header layer.
+async fn assert_invalid_header(name: &str, value: &str, replaced: bool, expected: &str) {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let (mut model, context, mut options) = super::invocation();
+    Arc::make_mut(&mut model).headers = Some(indexmap::IndexMap::from([(
+        name.to_owned(),
+        value.to_owned(),
+    )]));
+    if replaced {
+        options.common.headers = Some(indexmap::IndexMap::from([(
+            name.to_owned(),
+            "replacement".to_owned(),
+        )]));
+    }
+    let payloads = Arc::new(AtomicUsize::new(0));
+    let observed = Arc::clone(&payloads);
+    options.common.on_payload = Some(Arc::new(move |payload, _| {
+        observed.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async { Ok(payload) })
+    }));
+    options.common.fetch = Some(Arc::new(|_| {
+        panic!("invalid headers must fail before Fetch")
+    }));
+    let error =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .err()
+            .unwrap();
+    assert!(
+        error.diagnostic().message.starts_with(expected),
+        "{}",
+        error.diagnostic().message
+    );
+    assert_eq!(payloads.load(Ordering::SeqCst), 1);
+}
