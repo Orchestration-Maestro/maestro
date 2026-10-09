@@ -7,8 +7,13 @@
 
 mod api;
 mod context;
+#[cfg(any(test, target_arch = "wasm32"))]
+mod event_data;
 mod events;
 mod extension_result;
+pub(crate) mod number;
+mod object;
+mod presence;
 
 pub use api::{CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost};
 pub use context::{
@@ -16,16 +21,20 @@ pub use context::{
     NewSessionCommandOptions, ReplacedSessionContext, ReplacedSessionContextPort, SignalPort,
     WithSession,
 };
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(crate) use event_data::EventData;
 pub use events::{
-    ExtensionEvent, ExtensionEventResult, ExtensionHandler, SessionBeforeCompactEvent, SessionEvent,
+    AfterProviderResponseEvent, BeforeProviderRequestEvent, BeforeProviderRequestEventResult,
+    ExtensionEvent, ExtensionEventResult, ExtensionHandler, ForkPosition, InputEvent,
+    InputEventResult, InputSource, InputTransform, ResourcesDiscoverEvent, ResourcesDiscoverReason,
+    ResourcesDiscoverResult, SessionBeforeCompactEvent, SessionBeforeCompactEventData,
+    SessionBeforeCompactResult, SessionBeforeForkEvent, SessionBeforeForkResult,
+    SessionBeforeSwitchEvent, SessionBeforeSwitchReason, SessionBeforeSwitchResult, SessionEvent,
+    SessionShutdownEvent, SessionShutdownReason, SessionStartEvent, SessionStartReason,
 };
 pub use extension_result::{ExtensionFuture, ExtensionResult};
+pub use presence::Presence;
 
-pub use crate::bindings::maestro::extension::events::{
-    InputEvent, InputEventResult, InputSource, InputTransform, SessionBeforeCompactEventData,
-    SessionBeforeCompactResult,
-};
-pub use crate::bindings::maestro::extension::models::ImageContent;
 pub use crate::bindings::maestro::extension::session::{
     NewSessionCommandData, SessionChangeResult,
 };

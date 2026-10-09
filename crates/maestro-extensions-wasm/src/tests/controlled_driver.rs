@@ -6,8 +6,8 @@ use std::future::Future;
 use super::controlled::{Controlled, Flag};
 use super::guest_family as fixtures;
 use super::observed::gate;
-use super::scenario::Driver;
-use crate::component_adapter::{Exports, release};
+use super::scenario::{Delivery, Driver, UNKNOWN};
+use crate::component_adapter::{Capabilities, Exports, release};
 use crate::loader::{Extension, load_extension_from_factory};
 use crate::types::{ExtensionAPI, ExtensionFuture};
 
@@ -24,8 +24,10 @@ impl Extension for Author {
 pub struct ControlledDriver {
     /// The host the extension registers with.
     host: Controlled,
-    /// The signal of the previous compaction, which the driver cancels before the next one.
-    previous: Option<Flag>,
+    /// The flags lent so far, by handle.
+    flags: Vec<Flag>,
+    /// The flag of the previous compaction, which the driver cancels before the next one.
+    previous: Option<usize>,
 }
 
 impl ControlledDriver {
@@ -33,6 +35,7 @@ impl ControlledDriver {
     pub fn new() -> Self {
         Self {
             host: Controlled::default(),
+            flags: Vec::new(),
             previous: None,
         }
     }
@@ -42,9 +45,26 @@ impl ControlledDriver {
         Exports::new(self.host.clone())
     }
 
-    /// The key a callback was registered under.
-    fn handler(&self, name: &str) -> Result<u32, String> {
-        self.host.observed().callback(name)
+    /// The flag lent under a handle.
+    fn flag(&self, signal: usize) -> Result<&Flag, String> {
+        self.flags
+            .get(signal)
+            .ok_or_else(|| format!("no flag was lent as {signal}"))
+    }
+
+    /// The resources an event delivery lends: a context in `cwd` and the flag under `signal`.
+    fn resources(
+        &self,
+        cwd: &str,
+        signal: Option<usize>,
+    ) -> Result<Capabilities<Controlled>, String> {
+        let signal = signal
+            .map(|signal| self.flag(signal).map(|flag| self.host.signal(flag)))
+            .transpose()?;
+        Ok(Capabilities {
+            ctx: self.host.context(cwd),
+            signal,
+        })
     }
 
     /// Releases the registration next in line; whether there was one.
@@ -53,60 +73,10 @@ impl ControlledDriver {
         next.map(|(_, key)| release(key)).is_some()
     }
 
-    /// Delivers an input to the handler registered as `name`.
-    async fn deliver_input(
-        &self,
-        name: &str,
-        text: &str,
-    ) -> Result<fixtures::guest::InputOutcome, String> {
-        let handler = self.handler(name)?;
-        let ctx = self.host.context("/work");
-        Ok(self
-            .exports()
-            .invoke_input(handler, fixtures::input(text), ctx)
-            .await)
-    }
-
-    /// A cancellation flag for the handler that keeps its signal; cancelling it first
-    /// cancels the signal that handler kept from the previous compaction.
-    fn retained_flag(&mut self, aborted: bool) -> Flag {
-        let flag = Flag::default();
-        if aborted {
-            self.previous.iter().for_each(Flag::abort);
-            flag.abort();
-        }
-        self.previous = Some(flag.clone());
-        flag
-    }
-
-    /// Delivers a before-compact event with `flag` to the handler registered as `name`.
-    async fn deliver_compact(
-        &self,
-        name: &str,
-        flag: &Flag,
-    ) -> Result<fixtures::guest::SessionBeforeCompactOutcome, String> {
-        let handler = self.handler(name)?;
-        let ctx = self.host.context("/work");
-        Ok(self
-            .exports()
-            .invoke_session_before_compact(
-                handler,
-                fixtures::compact_data(),
-                self.host.signal(flag),
-                ctx,
-            )
-            .await)
-    }
-
-    /// Runs the command with the wait for idle of its continuation held until the driver saw it
-    /// pending.
-    async fn run_command(&self, args: &str) -> Result<(), String> {
-        let handler = self.handler("command replace")?;
-        let ctx = self.host.command_context("/work");
+    /// Runs `run` with the wait for idle it starts held pending until the driver saw it.
+    async fn held<T>(&self, run: impl Future<Output = Result<T, String>>) -> Result<T, String> {
         let (hold, started, open) = gate();
         self.host.observe().hold_next_idle(hold);
-        let exports = self.exports();
-        let run = exports.invoke_command(handler, args.to_owned(), ctx);
         let release = async {
             let _ = started.await;
             self.host.observe().suspended();
@@ -128,35 +98,74 @@ impl Driver for ControlledDriver {
         self.exports().start::<Author>().await
     }
 
-    async fn input(&mut self, text: &str) -> Result<String, String> {
-        let outcome = self.deliver_input("event input", text).await?;
-        Ok(fixtures::input_decision(&outcome.decision))
+    fn identity(&self, name: &str) -> Result<u32, String> {
+        self.host.observed().callback(name)
     }
 
-    async fn compact(&mut self, aborted: bool) -> Result<String, String> {
-        let flag = self.retained_flag(aborted);
+    async fn deliver(
+        &mut self,
+        handler: u32,
+        event: &str,
+        cwd: &str,
+        signal: Option<usize>,
+    ) -> Result<Delivery, String> {
+        let resources = self.resources(cwd, signal)?;
         let outcome = self
-            .deliver_compact("event session_before_compact", &flag)
+            .exports()
+            .invoke_event(handler, event.to_owned(), resources)
             .await?;
-        Ok(fixtures::compact_decision(&outcome.decision))
+        Ok(fixtures::delivery(outcome))
     }
 
-    async fn trim_input(&mut self, text: &str) -> Result<String, String> {
-        let outcome = self.deliver_input("event trim_input", text).await?;
-        Ok(fixtures::trimmed(&outcome))
+    async fn deliver_held(
+        &mut self,
+        handler: u32,
+        event: &str,
+        cwd: &str,
+    ) -> Result<Delivery, String> {
+        let resources = self.resources(cwd, None)?;
+        let exports = self.exports();
+        let outcome = self
+            .held(exports.invoke_event(handler, event.to_owned(), resources))
+            .await?;
+        Ok(fixtures::delivery(outcome))
     }
 
-    async fn note_compaction(&mut self, aborted: bool) -> Result<String, String> {
+    fn unregistered(&mut self) -> Result<u32, String> {
+        Ok(UNKNOWN)
+    }
+
+    fn lend_signal(&mut self, aborted: bool) -> Result<usize, String> {
         let flag = Flag::default();
         if aborted {
             flag.abort();
         }
-        let outcome = self.deliver_compact("event note_compaction", &flag).await?;
-        Ok(fixtures::noted(&outcome))
+        self.flags.push(flag);
+        Ok(self.flags.len() - 1)
+    }
+
+    fn abort_signal(&mut self, signal: usize) -> Result<(), String> {
+        self.flag(signal).map(Flag::abort)
+    }
+
+    fn previous_signal(&mut self) -> &mut Option<usize> {
+        &mut self.previous
+    }
+
+    async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
+        let handler = self.identity(&format!("command {name}"))?;
+        let ctx = self.host.command_context("/work");
+        self.exports()
+            .invoke_command(handler, args.to_owned(), ctx)
+            .await
     }
 
     async fn command(&mut self, args: &str) -> Result<(), String> {
-        self.run_command(args).await
+        let handler = self.identity("command replace")?;
+        let ctx = self.host.command_context("/work");
+        let exports = self.exports();
+        self.held(exports.invoke_command(handler, args.to_owned(), ctx))
+            .await
     }
 
     fn release_all(&mut self) -> impl Future<Output = ()> {
@@ -164,23 +173,19 @@ impl Driver for ControlledDriver {
         std::future::ready(())
     }
 
+    fn release(&mut self, name: &str) -> impl Future<Output = bool> {
+        let key = self.host.observe().take_registration(name);
+        std::future::ready(key.map(release).is_some())
+    }
+
     fn reject_next_session(&mut self) {
         self.host.observe().reject_next_session();
     }
 
-    async fn invoke_unknown_callbacks(&mut self) -> Vec<String> {
-        let exports = self.exports();
-        let decision = exports
-            .invoke_input(4242, fixtures::input("x"), self.host.context("/work"))
-            .await
-            .decision;
-        let continuation = exports
-            .invoke_with_session(4242, self.host.replaced_context("/replacement"))
-            .await;
-        vec![
-            decision.err().unwrap_or_default(),
-            continuation.err().unwrap_or_default(),
-        ]
+    async fn invoke_unknown_continuation(&mut self) -> String {
+        let replaced = self.host.replaced_context("/replacement");
+        let continuation = self.exports().invoke_with_session(UNKNOWN, replaced).await;
+        continuation.err().unwrap_or_default()
     }
 
     fn log(&mut self, line: String) {

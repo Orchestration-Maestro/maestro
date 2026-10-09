@@ -4,8 +4,8 @@
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade has no internal
-dependencies. This page describes what is delivered so far: registration, the input and
-before-compact events, command contexts and session continuations.
+dependencies. This page describes what is delivered so far: registration, nine events and the
+results of six of them, command contexts and session continuations.
 
 ## Build a component
 
@@ -46,24 +46,90 @@ its own closure is released.
 
 ## Events and results
 
-A handler receives `&mut ExtensionEvent` and an `ExtensionContext` and answers with
-`Option<ExtensionEventResult>`; an absent result differs from a result whose fields are
-`None`. Two events exist so far:
+Rust records define the event payloads and results; the interface files define how a callback
+is invoked and which host resources it is lent. A handler receives `&mut ExtensionEvent` and
+an `ExtensionContext` and answers with `Option<ExtensionEventResult>` or a message. No result
+differs from a result whose properties are all omitted.
 
-- `ExtensionEvent::Input` carries the text, optional images and source. A handler may answer
-  `InputEventResult::Transform`, `Handled` or `Continue`.
-- `ExtensionEvent::Session(SessionEvent::BeforeCompact)` carries the compaction preparation,
-  custom instructions and an `AbortSignal`. A handler may cancel the compaction or supply a
-  `CompactionResult`.
+| `type` | Rust event | Properties (`?` marks an optional one) |
+| --- | --- | --- |
+| `resources_discover` | `ResourcesDiscoverEvent` | `cwd`, `reason` (`startup`, `reload`) |
+| `session_start` | `SessionStartEvent` | `reason` (`startup`, `reload`, `new`, `resume`, `fork`), `previousSessionFile?` |
+| `session_before_switch` | `SessionBeforeSwitchEvent` | `reason` (`new`, `resume`), `targetSessionFile?` |
+| `session_before_fork` | `SessionBeforeForkEvent` | `entryId`, `position` (`before`, `at`) |
+| `session_before_compact` | `SessionBeforeCompactEvent` | `preparation`, `customInstructions?` |
+| `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
+| `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
+| `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
+| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
+
+`preparation` holds `firstKeptEntryId`, `isSplitTurn`, `tokensBefore` and `previousSummary?`.
+The five session events are variants of `SessionEvent`. `images` is a list of `data` and
+`mimeType` records, and `headers` a list of name and value pairs in the order the host gave
+them; nothing trims, folds, sorts or combines them.
+
+| Event | Result | Properties of the result |
+| --- | --- | --- |
+| `resources_discover` | `ResourcesDiscoverResult` | `skillPaths?`, `promptPaths?`, `themePaths?` |
+| `session_before_switch` | `SessionBeforeSwitchResult` | `cancel?` |
+| `session_before_fork` | `SessionBeforeForkResult` | `cancel?`, `skipConversationRestore?` |
+| `session_before_compact` | `SessionBeforeCompactResult` | `cancel?`, `compaction?` |
+| `before_provider_request` | `BeforeProviderRequestEventResult` | a string holding the replacement request |
+| `input` | `InputEventResult` | `action` is `continue`, `handled` or `transform`; a transform has `text` and `images?` |
+
+`compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`. A compaction
+currently carries only the fields listed here. Session start, session shutdown and provider
+responses have no result, and the adapter does not check that a result belongs to the family
+of the event it answers: the host reads it.
 
 An `AbortSignal` is a capability, not a snapshot: keep it past the callback and read
-`aborted()` later.
+`aborted()` later. Keeping the `ExtensionContext` works the same way. Both continue to read
+the host resources lent for the invocation that delivered them, whatever later invocations
+receive. What a handler does not keep is dropped when the invocation ends, including when
+the delivery is refused.
 
-The component returns the event as the handler left it together with the handler's decision,
-whether the handler answered or failed, unless the handler replaced it with another kind.
-An edit of the same kind survives a returned error. A replacement with another kind leaves
-no edit to return, and the host receives no event. Signals travel to the guest and are never
-returned.
+## How an event travels
+
+The guest exports one asynchronous function, `invoke-event`, for every event. The host passes
+the callback, the event as one JSON document whose `type` names the kind, and the resources
+the event needs: a context, and for a compaction its signal. A signal that comes with any other
+event is dropped. Resources never appear in the document.
+
+Optional properties keep three states apart: omitted, explicitly `null`, and present, including
+empty strings, empty lists and `false`. In the delivered records such a field is a
+`Presence<T>`: it defaults to `Missing` when the property is absent and is skipped on
+serialization only while it is `Missing`. Serializing `Missing` on its own, outside a property,
+is an error; `Null` serializes as `null` and `Present` as its value.
+
+Three properties hold a number that a handler may edit: `status`, `tokensBefore` of the
+preparation and `tokensBefore` of a compaction. A finite value is a JSON number, negative zero
+included. A value that is not finite is the text `f64:` followed by the 16 hexadecimal digits of
+its IEEE-754 bits, written in lower case. The reader accepts either case of the digits and
+refuses another prefix, a length other than 16, characters that are not hexadecimal digits and
+the bits of a finite value. The same text elsewhere in a document is just text.
+
+The request body of `before_provider_request`, its replacement, and the `details` of a
+compaction are JSON text carried as a string. The adapter never parses or reformats it, so
+duplicate keys, spacing, exponents and any nesting depth reach the handler as authored. A
+replacement `null` is text and differs from returning no result; `details` text `null` differs
+from `details` null.
+
+The event's `type` tag must be a JSON string, not a single-property object.
+
+The export decodes the document before it enters the handler. The event, the `preparation` and
+each element of `images` are read from JSON objects only; a positional array is refused. Malformed
+JSON, a record that is not an object, an unknown `type` or word, a missing required property, a
+mistyped property (optional ones included), and a compaction without its signal make the export
+fail with an error message; the handler is not entered. Properties the author's types do not
+declare are skipped without being stored wherever they occur in the event, the `preparation` or an
+image, however deeply nested. A callback identity that is unknown, or registered for a
+command, does not fail the export: the outcome reports the lookup message as the decision.
+
+The outcome has two independent parts. `event` is the event as the handler left it, whether
+it returned or failed, and is absent only when the handler replaced it with an event of another
+kind, which includes another session event. `decision` is `returned` with the encoded result,
+or `failed` with a message: the handler's own, or the lookup message. A failure to encode the event or the result is reported
+in its own part, as a message, and never replaces the other part or the handler's failure.
 
 ## Contexts and sessions
 
@@ -89,10 +155,15 @@ state of the signal it kept from the previous one, a command that starts a new s
 waits for idle from its continuation, a handler the host rejects, and a handler whose
 destructor registers another. Two more handlers edit their event: one trims an input in place
 and fails when nothing is left, the other notes the tokens in a compaction preparation and
-fails when the compaction was aborted.
+fails when the compaction was aborted. A probe handler does what the delivery tells it, in the
+JSON document that the delivery gives as the working directory of its context: edit the event,
+replace it, keep the context and signal, report what it kept, wait on a command context that
+the `capture` command stored, and return a result or fail.
 
 `src/tests.rs` runs the extension through the built component and through an in-process host
 that runs the component adapter's own functions, and compares the two transcripts. The host
 holds the continuation's wait for idle until the test saw it pending, so the command finishes
 only after that wait resumes. Afterwards the test checks that every callback, including the
-one a destructor registered, and every context and signal the host lent was dropped.
+one a destructor registered, and every context and signal the host lent was dropped. The
+tests in `src/tests/event_values.rs` and `src/tests/event_transport.rs` deliver the classes of
+every property and every way an invocation can end through both hosts with the probe handler.

@@ -1,5 +1,9 @@
 //! A test-only native host: it instantiates the built author component and implements the
 //! imports the component calls.
+use std::path::Path;
+use std::sync::OnceLock;
+
+use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
@@ -10,7 +14,7 @@ use crate::bindings::host_side::exports::maestro::extension::guest::Guest;
 use crate::bindings::host_side::maestro::extension::session::{
     NewSessionCommandData, SessionChangeResult,
 };
-use crate::bindings::host_side::maestro::extension::{events, host, models, session};
+use crate::bindings::host_side::maestro::extension::{host, session};
 
 /// Host identity of one guest closure.
 pub struct Identity(u32);
@@ -70,8 +74,6 @@ impl State {
     }
 }
 
-impl events::Host for State {}
-impl models::Host for State {}
 impl session::Host for State {}
 
 impl host::HostCallback for State {
@@ -232,6 +234,20 @@ impl host::HostCommandContextWithStore<State> for Imports {
     }
 }
 
+/// Once the host saw a held wait for idle pending, records that and lets the wait continue; a
+/// delivery without a hold has nothing to wait for.
+pub async fn release_held(
+    accessor: &Accessor<State>,
+    held: Option<(oneshot::Receiver<()>, oneshot::Sender<()>)>,
+) {
+    let Some((pending, proceed)) = held else {
+        return;
+    };
+    let _ = pending.await;
+    accessor.with(|mut access| access.get().observed.suspended());
+    let _ = proceed.send(());
+}
+
 /// Turns a message from the extension into a host error.
 pub fn reported<T>(result: Result<T, String>) -> wasmtime::Result<T> {
     result.map_err(wasmtime::Error::msg)
@@ -250,18 +266,32 @@ pub struct Harness {
     pub exports: Guest,
 }
 
+/// The engine and the component compiled from the built artifact; compiling dominates a test
+/// run, so every harness of the process shares one.
+fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
+    static COMPILED: OnceLock<Result<(Engine, Component), String>> = OnceLock::new();
+    COMPILED
+        .get_or_init(|| {
+            let mut config = Config::new();
+            config.wasm_component_model_async(true);
+            let engine = Engine::new(&config).map_err(|error| error.to_string())?;
+            let component =
+                Component::from_file(&engine, path).map_err(|error| error.to_string())?;
+            Ok((engine, component))
+        })
+        .as_ref()
+        .map_err(|message| wasmtime::format_err!("{message}"))
+}
+
 impl Harness {
     /// Instantiates the component and runs its factory.
-    pub async fn start(path: &std::path::Path) -> wasmtime::Result<Self> {
-        let mut config = Config::new();
-        config.wasm_component_model_async(true);
-        let engine = Engine::new(&config)?;
-        let component = Component::from_file(&engine, path)?;
-        let mut linker = Linker::new(&engine);
+    pub async fn start(path: &Path) -> wasmtime::Result<Self> {
+        let (engine, component) = compiled(path)?;
+        let mut linker = Linker::new(engine);
         wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
         Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;
-        let mut store = Store::new(&engine, State::new());
-        let extension = Extension::instantiate_async(&mut store, &component, &linker).await?;
+        let mut store = Store::new(engine, State::new());
+        let extension = Extension::instantiate_async(&mut store, component, &linker).await?;
         let exports = extension.maestro_extension_guest().clone();
         store.data_mut().guest = Some(exports.clone());
         let started = exports.clone();
@@ -292,9 +322,10 @@ impl Harness {
         self.store.data_mut().push(Ordinary(Session::new(cwd)))
     }
 
-    /// A fresh identity the component never registered.
+    /// A fresh identity the component never registered. The host keeps it and only lends
+    /// borrows of it, so it is not counted as handed to the extension.
     pub fn identity(&mut self, id: u32) -> wasmtime::Result<u32> {
-        Ok(self.store.data_mut().push(Identity(id))?.rep())
+        Ok(self.store.data_mut().table.push(Identity(id))?.rep())
     }
 
     /// A fresh replacement context in `cwd`.

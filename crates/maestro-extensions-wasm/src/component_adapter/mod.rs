@@ -16,7 +16,9 @@ mod host_api;
 mod imports;
 
 pub(crate) use callbacks::release;
-pub(crate) use exports::Exports;
+#[cfg(test)]
+pub(crate) use exports::outcome;
+pub(crate) use exports::{Capabilities, Exports};
 #[cfg(target_arch = "wasm32")]
 pub use generated::Glue;
 pub(crate) use imports::Imports;

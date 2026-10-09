@@ -13,7 +13,6 @@ wit_bindgen::generate!({
     world: "extension",
     pub_export_macro: true,
     default_bindings_module: "maestro_extensions_wasm::bindings",
-    additional_derives: [PartialEq],
     generate_unused_types: true,
 });
 
