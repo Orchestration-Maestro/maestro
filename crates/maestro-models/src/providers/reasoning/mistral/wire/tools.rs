@@ -85,11 +85,7 @@ pub(super) struct ToolConfiguration {
     #[serde(
         default,
         deserialize_with = "nullable",
-        skip_serializing_if = "Option::is_none",
-        rename(
-            deserialize = "requiresConfirmation",
-            serialize = "requires_confirmation"
-        )
+        skip_serializing_if = "Option::is_none"
     )]
     requires_confirmation: Option<Nullable<Vec<String>>>,
 }

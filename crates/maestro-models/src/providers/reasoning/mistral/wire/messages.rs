@@ -167,11 +167,11 @@ pub(super) enum Message {
     User(Object<UserMessage>),
 }
 
-/// Function arguments retain dictionaries or authored strings.
+/// Function arguments accept dictionaries decoded by `serde_json` or authored strings.
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 enum Arguments {
-    /// Literal dictionary members.
+    /// Dictionary members in the shared JSON representation.
     Object(serde_json::Map<String, serde_json::Value>),
     /// Authored argument text.
     String(String),

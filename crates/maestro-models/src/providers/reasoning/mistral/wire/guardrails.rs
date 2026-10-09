@@ -37,21 +37,11 @@ pub(super) struct ModerationLlmv1Config {
     #[serde(
         default,
         deserialize_with = "nullable",
-        skip_serializing_if = "Option::is_none",
-        rename(
-            deserialize = "customCategoryThresholds",
-            serialize = "custom_category_thresholds"
-        )
+        skip_serializing_if = "Option::is_none"
     )]
     custom_category_thresholds: Option<Nullable<Object<ModerationLlmv1CategoryThresholds>>>,
     /// The `ignoreOtherCategories` field.
-    #[serde(
-        default,
-        rename(
-            deserialize = "ignoreOtherCategories",
-            serialize = "ignore_other_categories"
-        )
-    )]
+    #[serde(default)]
     ignore_other_categories: bool,
     /// The `action` field.
     #[serde(
@@ -73,21 +63,11 @@ pub(super) struct ModerationLlmv2Config {
     #[serde(
         default,
         deserialize_with = "nullable",
-        skip_serializing_if = "Option::is_none",
-        rename(
-            deserialize = "customCategoryThresholds",
-            serialize = "custom_category_thresholds"
-        )
+        skip_serializing_if = "Option::is_none"
     )]
     custom_category_thresholds: Option<Nullable<Object<ModerationLlmv2CategoryThresholds>>>,
     /// The `ignoreOtherCategories` field.
-    #[serde(
-        default,
-        rename(
-            deserialize = "ignoreOtherCategories",
-            serialize = "ignore_other_categories"
-        )
-    )]
+    #[serde(default)]
     ignore_other_categories: bool,
     /// The `action` field.
     #[serde(
@@ -113,11 +93,7 @@ pub(super) struct ModerationLlmv1CategoryThresholds {
     #[serde(
         default,
         deserialize_with = "nullable",
-        skip_serializing_if = "Option::is_none",
-        rename(
-            deserialize = "hateAndDiscrimination",
-            serialize = "hate_and_discrimination"
-        )
+        skip_serializing_if = "Option::is_none"
     )]
     hate_and_discrimination: Option<Nullable<serde_json::Number>>,
     /// The `violenceAndThreats` field.
@@ -131,11 +107,7 @@ pub(super) struct ModerationLlmv1CategoryThresholds {
     #[serde(
         default,
         deserialize_with = "nullable",
-        skip_serializing_if = "Option::is_none",
-        rename(
-            deserialize = "dangerousAndCriminalContent",
-            serialize = "dangerous_and_criminal_content"
-        )
+        skip_serializing_if = "Option::is_none"
     )]
     dangerous_and_criminal_content: Option<Nullable<serde_json::Number>>,
     /// The `selfharm` field.
@@ -190,11 +162,7 @@ pub(super) struct ModerationLlmv2CategoryThresholds {
     #[serde(
         default,
         deserialize_with = "nullable",
-        skip_serializing_if = "Option::is_none",
-        rename(
-            deserialize = "hateAndDiscrimination",
-            serialize = "hate_and_discrimination"
-        )
+        skip_serializing_if = "Option::is_none"
     )]
     hate_and_discrimination: Option<Nullable<serde_json::Number>>,
     /// The `violenceAndThreats` field.
