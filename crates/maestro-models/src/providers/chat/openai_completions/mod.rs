@@ -14,16 +14,16 @@ use std::sync::{Arc, PoisonError, RwLock};
 
 pub use compat::ResolvedOpenAICompletionsCompat;
 
+use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::http::{
     HttpRequest, HttpResponse, RequestFailure, endpoint_url, send, spawn_detached,
 };
 use crate::providers::json_text::compact_json;
-use crate::records::diagnostics::timestamp_now;
 use crate::{
-    AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context,
-    DiagnosticErrorInfo, DoneReason, ErrorReason, Model, ModelThinkingLevel, ProviderResponse,
-    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel,
-    ToolChoice, Usage, UsageCost, build_base_options, clamp_thinking_level, get_env_api_key,
+    AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
+    DoneReason, Model, ModelThinkingLevel, ProviderResponse, SharedAssistantMessage,
+    SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, ToolChoice, build_base_options,
+    clamp_thinking_level, get_env_api_key,
 };
 use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
@@ -122,36 +122,6 @@ pub fn stream_simple_openai_completions(
     ))
 }
 
-/// The assistant message an invocation fills in, before any response arrives.
-fn initial_message(model: &Model) -> AssistantMessage {
-    AssistantMessage {
-        content: Vec::new(),
-        api: model.api.clone(),
-        provider: model.provider.clone(),
-        model: model.id.clone(),
-        response_model: None,
-        response_id: None,
-        diagnostics: None,
-        usage: Usage {
-            input: 0.0,
-            output: 0.0,
-            cache_read: 0.0,
-            cache_write: 0.0,
-            total_tokens: 0.0,
-            cost: UsageCost {
-                input: 0.0,
-                output: 0.0,
-                cache_read: 0.0,
-                cache_write: 0.0,
-                total: 0.0,
-            },
-        },
-        stop_reason: StopReason::Stop,
-        error_message: None,
-        timestamp: timestamp_now(),
-    }
-}
-
 /// Drive one invocation to its terminal update.
 async fn run(
     model: Arc<Model>,
@@ -248,28 +218,4 @@ fn conclude(
     });
     stream.end(None);
     Ok(())
-}
-
-/// End the stream with an error or abort update that keeps the partial message.
-fn fail(
-    stream: &AssistantMessageEventStream,
-    output: &SharedAssistantMessage,
-    signal: Option<&Cancellation>,
-    failure: RequestFailure,
-) {
-    let (stop_reason, reason) = if signal.is_some_and(Cancellation::is_aborted) {
-        (StopReason::Aborted, ErrorReason::Aborted)
-    } else {
-        (StopReason::Error, ErrorReason::Error)
-    };
-    {
-        let mut message = output.write().unwrap_or_else(PoisonError::into_inner);
-        message.stop_reason = stop_reason;
-        message.error_message = Some(failure.into_text());
-    }
-    stream.push(AssistantMessageEvent::Error {
-        reason,
-        error: Arc::clone(output),
-    });
-    stream.end(None);
 }

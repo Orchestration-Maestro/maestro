@@ -6,6 +6,8 @@ mod cases;
 mod chat;
 #[path = "support/child_process.rs"]
 mod child_process;
+#[path = "support/json.rs"]
+mod json;
 #[allow(
     dead_code,
     reason = "Each test binary uses part of the loopback server."
@@ -19,9 +21,10 @@ mod loopback;
 #[path = "support/transport.rs"]
 mod transport;
 
-use cases::{assert_rows, canonical, run_case};
+use cases::{assert_rows, run_case};
 use chat::{TestResult, context, model, rows};
 use child_process::{child_case, rerun};
+use json::canonical;
 use maestro_models::providers::chat::openai_completions::ResolvedOpenAICompletionsCompat;
 use maestro_models::providers::chat::openai_completions::messages::convert_messages;
 use maestro_models::{

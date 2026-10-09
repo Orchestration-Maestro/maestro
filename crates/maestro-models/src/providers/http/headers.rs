@@ -7,7 +7,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 /// Whitespace the HTTP field syntax removes around a value: tab, line feed, carriage return
 /// and space; no other character is whitespace here.
-fn edge_whitespace(character: char) -> bool {
+pub(crate) fn edge_whitespace(character: char) -> bool {
     matches!(character, '\t' | '\n' | '\r' | ' ')
 }
 
