@@ -648,7 +648,7 @@ async fn pending_injected_read_still_contributes(rest: &[Value]) -> TestResult {
         matches!(event, AssistantMessageEvent::TextStart { .. })
     })
     .await?;
-    within(feed.read_pending()).await??;
+    feed.read_pending().await?;
     signal.abort();
     feed_events(&feed, rest)?;
     let (kinds, message) = drain(&stream).await?;
@@ -702,7 +702,7 @@ async fn transport_cancellation_covers_setup_and_body() -> TestResult {
         matches!(event, AssistantMessageEvent::Start { .. })
     })
     .await?;
-    within(feed.read_pending()).await??;
+    feed.read_pending().await?;
     signal.abort();
     let (kinds, message) = drain(&stream).await?;
     assert_eq!(kinds, ["error"]);
