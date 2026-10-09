@@ -431,3 +431,11 @@ data (Unicode-3.0), plus `utf16_iter =1.0.5` and `write16 =1.0.0`
 and the `unicode-ident =1.0.24` hold. No third-party type enters the completion API.
 Authored path operations use the shared `maestro-path` utility. Browser callers
 supply their own `AutocompleteOperations`, without native filesystem or ICU edges.
+
+## Approved attachment process libraries
+
+Outside browser targets, `maestro-tui` uses Tokio `=1.53.2`, defaults off, with
+`process`, `io-util`, `rt` and `macros` for caller-selected attachment search.
+Native tests add `net` for child readiness sockets. Tokio is MIT; no runtime type
+enters the completion interface. Native consumer tests use fd `10.5.0`, pinned
+with the development tools in `mise.toml`.

@@ -1,0 +1,5160 @@
+[
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": null,
+    "result": null,
+    "calls": [],
+    "id": "route_absent",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "",
+    "result": null,
+    "calls": [],
+    "id": "route_empty",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "@x",
+    "col": 2,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "abort": "before",
+    "result": null,
+    "calls": [],
+    "id": "route_aborted",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "word",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "route_ordinary",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "x@foo",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "route_embedded",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "@\"x\"",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "route_closed",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "/go @x",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000a b.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        },
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "route_slash",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "@x",
+    "col": 2,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "force": true,
+    "chunks": [
+      "x\u0000a b.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        },
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "route_force",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "say @\"a b",
+    "col": 9,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000a b.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        }
+      ],
+      "prefix": "@\"a b"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a b"
+      ]
+    ],
+    "id": "route_quoted",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "key=@x",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000a b.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        },
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "route_equals",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a\t@x",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000a b.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        },
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "route_tab",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "'@x",
+    "col": 3,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000a b.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        },
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "route_apostrophe",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "x@\"abc",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "route_at_quote_embedded",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a @x",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "delimiter_20",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a\t@x",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x",
+          "label": "x",
+          "description": "x"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "id": "delimiter_9",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a\n@x",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "delimiter_a",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a @x",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "delimiter_a0",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a﻿@x",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "delimiter_feff",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "a@x",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "result": null,
+    "calls": [],
+    "id": "delimiter_85",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "@src/a",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "src/alpha.ts"
+        },
+        {
+          "value": "@src/nested/also.ts",
+          "label": "also.ts",
+          "description": "src/nested/also.ts"
+        }
+      ],
+      "prefix": "@src/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_relative",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@../outside/a",
+    "col": 13,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/outside/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@../outside/alpha.ts",
+          "label": "alpha.ts",
+          "description": "../outside/alpha.ts"
+        },
+        {
+          "value": "@../outside/nested/also.ts",
+          "label": "also.ts",
+          "description": "../outside/nested/also.ts"
+        }
+      ],
+      "prefix": "@../outside/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/outside/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/outside/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_parent",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@./src/a",
+    "col": 8,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@./src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "./src/alpha.ts"
+        },
+        {
+          "value": "@./src/nested/also.ts",
+          "label": "also.ts",
+          "description": "./src/nested/also.ts"
+        }
+      ],
+      "prefix": "@./src/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_dot",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@/outside/a",
+    "col": 11,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/outside/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@/outside/alpha.ts",
+          "label": "alpha.ts",
+          "description": "/outside/alpha.ts"
+        },
+        {
+          "value": "@/outside/nested/also.ts",
+          "label": "also.ts",
+          "description": "/outside/nested/also.ts"
+        }
+      ],
+      "prefix": "@/outside/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/outside/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/outside/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_absolute",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@/a",
+    "col": 3,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@/alpha.ts",
+          "label": "alpha.ts",
+          "description": "/alpha.ts"
+        },
+        {
+          "value": "@/nested/also.ts",
+          "label": "also.ts",
+          "description": "/nested/also.ts"
+        }
+      ],
+      "prefix": "@/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_root",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@~/src/a",
+    "col": 8,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "home": "/home/test",
+    "stat": {
+      "/home/test/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@~/src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "~/src/alpha.ts"
+        },
+        {
+          "value": "@~/src/nested/also.ts",
+          "label": "also.ts",
+          "description": "~/src/nested/also.ts"
+        }
+      ],
+      "prefix": "@~/src/a"
+    },
+    "calls": [
+      [
+        "home"
+      ],
+      [
+        "stat",
+        "/home/test/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/home/test/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_home",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@~u/src/a",
+    "col": 9,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/~u/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@~u/src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "~u/src/alpha.ts"
+        },
+        {
+          "value": "@~u/src/nested/also.ts",
+          "label": "also.ts",
+          "description": "~u/src/nested/also.ts"
+        }
+      ],
+      "prefix": "@~u/src/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/~u/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/~u/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_tilde_user",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src/",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "src/alpha.ts"
+        },
+        {
+          "value": "@src/nested/also.ts",
+          "label": "also.ts",
+          "description": "src/nested/also.ts"
+        },
+        {
+          "value": "@src/zzz.ts",
+          "label": "zzz.ts",
+          "description": "src/zzz.ts"
+        }
+      ],
+      "prefix": "@src/"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "scope_empty_basename",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src//a",
+    "col": 7,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@src//alpha.ts",
+          "label": "alpha.ts",
+          "description": "src//alpha.ts"
+        },
+        {
+          "value": "@src//nested/also.ts",
+          "label": "also.ts",
+          "description": "src//nested/also.ts"
+        }
+      ],
+      "prefix": "@src//a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_repeated",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src/../lib/a",
+    "col": 13,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/lib/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@src/../lib/alpha.ts",
+          "label": "alpha.ts",
+          "description": "src/../lib/alpha.ts"
+        },
+        {
+          "value": "@src/../lib/nested/also.ts",
+          "label": "also.ts",
+          "description": "src/../lib/nested/also.ts"
+        }
+      ],
+      "prefix": "@src/../lib/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/lib/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/lib/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_dotdot",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src\\a",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "src\\a"
+      ]
+    ],
+    "id": "scope_backslash",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src/a",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "src/a"
+      ]
+    ],
+    "id": "scope_missing",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src/a",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/src/": false
+    },
+    "chunks": [
+      "alpha.ts\u0000nested/also.ts\u0000zzz.ts\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "src/a"
+      ]
+    ],
+    "id": "scope_file",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@~/src/a",
+    "col": 8,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "home_error": true,
+    "result": null,
+    "calls": [
+      [
+        "home"
+      ]
+    ],
+    "id": "scope_home_failure",
+    "group": "scoped_home_failure_stops_search_without_fallback"
+  },
+  {
+    "text": "@src/a",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/src/": true
+    },
+    "chunks": [
+      "alpha.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "src/alpha.ts"
+        }
+      ],
+      "prefix": "@src/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/src/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "id": "scope_no_home",
+    "group": "scoped_home_failure_stops_search_without_fallback"
+  },
+  {
+    "text": "@foo",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "foo"
+      ]
+    ],
+    "id": "pattern_0",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@FOO",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "FOO"
+      ]
+    ],
+    "id": "pattern_1",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@file.txt",
+    "col": 9,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/file.txt",
+          "label": "file.txt",
+          "description": "dir/file.txt"
+        },
+        {
+          "value": "@file.txt",
+          "label": "file.txt",
+          "description": "file.txt"
+        }
+      ],
+      "prefix": "@file.txt"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "file.txt"
+      ]
+    ],
+    "id": "pattern_2",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@[",
+    "col": 2,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "["
+      ]
+    ],
+    "id": "pattern_3",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@a+b",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a+b"
+      ]
+    ],
+    "id": "pattern_4",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@^x$",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "^x$"
+      ]
+    ],
+    "id": "pattern_5",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@a?b",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a?b"
+      ]
+    ],
+    "id": "pattern_6",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@(x)",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "(x)"
+      ]
+    ],
+    "id": "pattern_7",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@x|y",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x|y"
+      ]
+    ],
+    "id": "pattern_8",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@{a}",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "{a}"
+      ]
+    ],
+    "id": "pattern_9",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@-x",
+    "col": 3,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "-x"
+      ]
+    ],
+    "id": "pattern_10",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@--help",
+    "col": 7,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "--help"
+      ]
+    ],
+    "id": "pattern_11",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@dir/file.txt",
+    "col": 13,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/file.txt",
+          "label": "file.txt",
+          "description": "dir/file.txt"
+        }
+      ],
+      "prefix": "@dir/file.txt"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/dir/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "dir/file\\.txt"
+      ]
+    ],
+    "id": "pattern_12",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@dir///a+b",
+    "col": 10,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "stat",
+        "/work/dir/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "dir/a\\+b"
+      ]
+    ],
+    "id": "pattern_13",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@/",
+    "col": 2,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/file.txt",
+          "label": "file.txt",
+          "description": "dir/file.txt"
+        }
+      ],
+      "prefix": "@/"
+    },
+    "calls": [
+      [
+        "stat",
+        "/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "/"
+      ]
+    ],
+    "id": "pattern_14",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@///",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/file.txt",
+          "label": "file.txt",
+          "description": "dir/file.txt"
+        }
+      ],
+      "prefix": "@///"
+    },
+    "calls": [
+      [
+        "stat",
+        "///"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "/"
+      ]
+    ],
+    "id": "pattern_15",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@dir/",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/file.txt",
+          "label": "file.txt",
+          "description": "dir/file.txt"
+        }
+      ],
+      "prefix": "@dir/"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/dir/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "dir/"
+      ]
+    ],
+    "id": "pattern_16",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@dir\\a",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "dir\\a"
+      ]
+    ],
+    "id": "pattern_17",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@/dir/file",
+    "col": 10,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "stat",
+        "/dir/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "dir/file"
+      ]
+    ],
+    "id": "pattern_18",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@dir/[x]",
+    "col": 8,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "stat",
+        "/work/dir/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "dir/\\[x\\]"
+      ]
+    ],
+    "id": "pattern_19",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@dir/a^$.*+?()|[]{}",
+    "col": 19,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "dir/file.txt\u0000file.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "stat",
+        "/work/dir/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "dir/a\\^\\$\\.\\*\\+\\?\\(\\)\\|\\[\\]\\{\\}"
+      ]
+    ],
+    "id": "pattern_20",
+    "group": "fd_queries_preserve_literal_case_and_separator_matching"
+  },
+  {
+    "text": "@alpha",
+    "col": 6,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "xalpha.txt\u0000alpha/nested.txt\u0000alpha-more\u0000alpha\u0000alpha/\u0000xalpha/\u0000alpha-more/\u0000alpha/nested/\u0000none\u0000alpha\u0000ALPHA\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@alpha/",
+          "label": "alpha/",
+          "description": "alpha"
+        },
+        {
+          "value": "@alpha",
+          "label": "alpha",
+          "description": "alpha"
+        },
+        {
+          "value": "@alpha",
+          "label": "alpha",
+          "description": "alpha"
+        },
+        {
+          "value": "@ALPHA",
+          "label": "ALPHA",
+          "description": "ALPHA"
+        },
+        {
+          "value": "@alpha-more/",
+          "label": "alpha-more/",
+          "description": "alpha-more"
+        },
+        {
+          "value": "@alpha-more",
+          "label": "alpha-more",
+          "description": "alpha-more"
+        },
+        {
+          "value": "@xalpha/",
+          "label": "xalpha/",
+          "description": "xalpha"
+        },
+        {
+          "value": "@xalpha.txt",
+          "label": "xalpha.txt",
+          "description": "xalpha.txt"
+        },
+        {
+          "value": "@alpha/nested/",
+          "label": "nested/",
+          "description": "alpha/nested"
+        },
+        {
+          "value": "@alpha/nested.txt",
+          "label": "nested.txt",
+          "description": "alpha/nested.txt"
+        }
+      ],
+      "prefix": "@alpha"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "alpha"
+      ]
+    ],
+    "id": "score_tiers",
+    "group": "attachment_scores_sort_stably_without_deduplication"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "z.txt\u0000a/\u0000z.txt\u0000b/\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@z.txt",
+          "label": "z.txt",
+          "description": "z.txt"
+        },
+        {
+          "value": "@a/",
+          "label": "a/",
+          "description": "a"
+        },
+        {
+          "value": "@z.txt",
+          "label": "z.txt",
+          "description": "z.txt"
+        },
+        {
+          "value": "@b/",
+          "label": "b/",
+          "description": "b"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "score_empty",
+    "group": "empty_attachment_queries_keep_process_order"
+  },
+  {
+    "text": "@ΟΣ",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "ΟΣ\u0000ος\u0000οσ\u0000XΟΣ\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@ΟΣ",
+          "label": "ΟΣ",
+          "description": "ΟΣ"
+        },
+        {
+          "value": "@ος",
+          "label": "ος",
+          "description": "ος"
+        },
+        {
+          "value": "@XΟΣ",
+          "label": "XΟΣ",
+          "description": "XΟΣ"
+        }
+      ],
+      "prefix": "@ΟΣ"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "ΟΣ"
+      ]
+    ],
+    "id": "score_unicode",
+    "group": "attachment_scores_use_whole_string_lowercase"
+  },
+  {
+    "text": "@İ",
+    "col": 3,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "İ\u0000i\u0000i̇\u0000I\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@İ",
+          "label": "İ",
+          "description": "İ"
+        },
+        {
+          "value": "@i̇",
+          "label": "i̇",
+          "description": "i̇"
+        }
+      ],
+      "prefix": "@İ"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "İ"
+      ]
+    ],
+    "id": "score_dotted",
+    "group": "attachment_scores_use_whole_string_lowercase"
+  },
+  {
+    "text": "@😀",
+    "col": 5,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "😀\u0000😁🨀\u0000x😀\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@😀",
+          "label": "😀",
+          "description": "😀"
+        },
+        {
+          "value": "@x😀",
+          "label": "x😀",
+          "description": "x😀"
+        }
+      ],
+      "prefix": "@😀"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "😀"
+      ]
+    ],
+    "id": "score_scalar",
+    "group": "attachment_scores_use_whole_string_lowercase"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      ""
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "limit_0",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "f000\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@f000",
+          "label": "f000",
+          "description": "f000"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "limit_1",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "f000\u0000f001\u0000f002\u0000f003\u0000f004\u0000f005\u0000f006\u0000f007\u0000f008\u0000f009\u0000f010\u0000f011\u0000f012\u0000f013\u0000f014\u0000f015\u0000f016\u0000f017\u0000f018\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@f000",
+          "label": "f000",
+          "description": "f000"
+        },
+        {
+          "value": "@f001",
+          "label": "f001",
+          "description": "f001"
+        },
+        {
+          "value": "@f002",
+          "label": "f002",
+          "description": "f002"
+        },
+        {
+          "value": "@f003",
+          "label": "f003",
+          "description": "f003"
+        },
+        {
+          "value": "@f004",
+          "label": "f004",
+          "description": "f004"
+        },
+        {
+          "value": "@f005",
+          "label": "f005",
+          "description": "f005"
+        },
+        {
+          "value": "@f006",
+          "label": "f006",
+          "description": "f006"
+        },
+        {
+          "value": "@f007",
+          "label": "f007",
+          "description": "f007"
+        },
+        {
+          "value": "@f008",
+          "label": "f008",
+          "description": "f008"
+        },
+        {
+          "value": "@f009",
+          "label": "f009",
+          "description": "f009"
+        },
+        {
+          "value": "@f010",
+          "label": "f010",
+          "description": "f010"
+        },
+        {
+          "value": "@f011",
+          "label": "f011",
+          "description": "f011"
+        },
+        {
+          "value": "@f012",
+          "label": "f012",
+          "description": "f012"
+        },
+        {
+          "value": "@f013",
+          "label": "f013",
+          "description": "f013"
+        },
+        {
+          "value": "@f014",
+          "label": "f014",
+          "description": "f014"
+        },
+        {
+          "value": "@f015",
+          "label": "f015",
+          "description": "f015"
+        },
+        {
+          "value": "@f016",
+          "label": "f016",
+          "description": "f016"
+        },
+        {
+          "value": "@f017",
+          "label": "f017",
+          "description": "f017"
+        },
+        {
+          "value": "@f018",
+          "label": "f018",
+          "description": "f018"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "limit_19",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "f000\u0000f001\u0000f002\u0000f003\u0000f004\u0000f005\u0000f006\u0000f007\u0000f008\u0000f009\u0000f010\u0000f011\u0000f012\u0000f013\u0000f014\u0000f015\u0000f016\u0000f017\u0000f018\u0000f019\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@f000",
+          "label": "f000",
+          "description": "f000"
+        },
+        {
+          "value": "@f001",
+          "label": "f001",
+          "description": "f001"
+        },
+        {
+          "value": "@f002",
+          "label": "f002",
+          "description": "f002"
+        },
+        {
+          "value": "@f003",
+          "label": "f003",
+          "description": "f003"
+        },
+        {
+          "value": "@f004",
+          "label": "f004",
+          "description": "f004"
+        },
+        {
+          "value": "@f005",
+          "label": "f005",
+          "description": "f005"
+        },
+        {
+          "value": "@f006",
+          "label": "f006",
+          "description": "f006"
+        },
+        {
+          "value": "@f007",
+          "label": "f007",
+          "description": "f007"
+        },
+        {
+          "value": "@f008",
+          "label": "f008",
+          "description": "f008"
+        },
+        {
+          "value": "@f009",
+          "label": "f009",
+          "description": "f009"
+        },
+        {
+          "value": "@f010",
+          "label": "f010",
+          "description": "f010"
+        },
+        {
+          "value": "@f011",
+          "label": "f011",
+          "description": "f011"
+        },
+        {
+          "value": "@f012",
+          "label": "f012",
+          "description": "f012"
+        },
+        {
+          "value": "@f013",
+          "label": "f013",
+          "description": "f013"
+        },
+        {
+          "value": "@f014",
+          "label": "f014",
+          "description": "f014"
+        },
+        {
+          "value": "@f015",
+          "label": "f015",
+          "description": "f015"
+        },
+        {
+          "value": "@f016",
+          "label": "f016",
+          "description": "f016"
+        },
+        {
+          "value": "@f017",
+          "label": "f017",
+          "description": "f017"
+        },
+        {
+          "value": "@f018",
+          "label": "f018",
+          "description": "f018"
+        },
+        {
+          "value": "@f019",
+          "label": "f019",
+          "description": "f019"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "limit_20",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@needle",
+    "col": 7,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "unmatched000\u0000needle-prefix000\u0000needle-prefix001\u0000needle-prefix002\u0000needle-prefix003\u0000needle-prefix004\u0000needle-prefix005\u0000needle-prefix006\u0000needle-prefix007\u0000needle-prefix008\u0000needle-prefix009\u0000needle-prefix010\u0000needle-prefix011\u0000needle-prefix012\u0000needle-prefix013\u0000needle-prefix014\u0000needle-prefix015\u0000needle-prefix016\u0000needle-prefix017\u0000needle-prefix018\u0000needle\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@needle",
+          "label": "needle",
+          "description": "needle"
+        },
+        {
+          "value": "@needle-prefix000",
+          "label": "needle-prefix000",
+          "description": "needle-prefix000"
+        },
+        {
+          "value": "@needle-prefix001",
+          "label": "needle-prefix001",
+          "description": "needle-prefix001"
+        },
+        {
+          "value": "@needle-prefix002",
+          "label": "needle-prefix002",
+          "description": "needle-prefix002"
+        },
+        {
+          "value": "@needle-prefix003",
+          "label": "needle-prefix003",
+          "description": "needle-prefix003"
+        },
+        {
+          "value": "@needle-prefix004",
+          "label": "needle-prefix004",
+          "description": "needle-prefix004"
+        },
+        {
+          "value": "@needle-prefix005",
+          "label": "needle-prefix005",
+          "description": "needle-prefix005"
+        },
+        {
+          "value": "@needle-prefix006",
+          "label": "needle-prefix006",
+          "description": "needle-prefix006"
+        },
+        {
+          "value": "@needle-prefix007",
+          "label": "needle-prefix007",
+          "description": "needle-prefix007"
+        },
+        {
+          "value": "@needle-prefix008",
+          "label": "needle-prefix008",
+          "description": "needle-prefix008"
+        },
+        {
+          "value": "@needle-prefix009",
+          "label": "needle-prefix009",
+          "description": "needle-prefix009"
+        },
+        {
+          "value": "@needle-prefix010",
+          "label": "needle-prefix010",
+          "description": "needle-prefix010"
+        },
+        {
+          "value": "@needle-prefix011",
+          "label": "needle-prefix011",
+          "description": "needle-prefix011"
+        },
+        {
+          "value": "@needle-prefix012",
+          "label": "needle-prefix012",
+          "description": "needle-prefix012"
+        },
+        {
+          "value": "@needle-prefix013",
+          "label": "needle-prefix013",
+          "description": "needle-prefix013"
+        },
+        {
+          "value": "@needle-prefix014",
+          "label": "needle-prefix014",
+          "description": "needle-prefix014"
+        },
+        {
+          "value": "@needle-prefix015",
+          "label": "needle-prefix015",
+          "description": "needle-prefix015"
+        },
+        {
+          "value": "@needle-prefix016",
+          "label": "needle-prefix016",
+          "description": "needle-prefix016"
+        },
+        {
+          "value": "@needle-prefix017",
+          "label": "needle-prefix017",
+          "description": "needle-prefix017"
+        },
+        {
+          "value": "@needle-prefix018",
+          "label": "needle-prefix018",
+          "description": "needle-prefix018"
+        }
+      ],
+      "prefix": "@needle"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "needle"
+      ]
+    ],
+    "id": "limit_21",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@needle",
+    "col": 7,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "unmatched000\u0000unmatched001\u0000unmatched002\u0000unmatched003\u0000unmatched004\u0000unmatched005\u0000unmatched006\u0000unmatched007\u0000unmatched008\u0000unmatched009\u0000unmatched010\u0000unmatched011\u0000unmatched012\u0000unmatched013\u0000unmatched014\u0000unmatched015\u0000unmatched016\u0000unmatched017\u0000unmatched018\u0000unmatched019\u0000unmatched020\u0000unmatched021\u0000unmatched022\u0000unmatched023\u0000unmatched024\u0000unmatched025\u0000unmatched026\u0000unmatched027\u0000unmatched028\u0000unmatched029\u0000unmatched030\u0000unmatched031\u0000unmatched032\u0000unmatched033\u0000unmatched034\u0000unmatched035\u0000unmatched036\u0000unmatched037\u0000unmatched038\u0000unmatched039\u0000unmatched040\u0000unmatched041\u0000unmatched042\u0000unmatched043\u0000unmatched044\u0000unmatched045\u0000unmatched046\u0000unmatched047\u0000unmatched048\u0000unmatched049\u0000unmatched050\u0000unmatched051\u0000unmatched052\u0000unmatched053\u0000unmatched054\u0000unmatched055\u0000unmatched056\u0000unmatched057\u0000unmatched058\u0000unmatched059\u0000unmatched060\u0000unmatched061\u0000unmatched062\u0000unmatched063\u0000unmatched064\u0000unmatched065\u0000unmatched066\u0000unmatched067\u0000unmatched068\u0000unmatched069\u0000unmatched070\u0000unmatched071\u0000unmatched072\u0000unmatched073\u0000unmatched074\u0000unmatched075\u0000unmatched076\u0000unmatched077\u0000unmatched078\u0000needle-prefix000\u0000needle-prefix001\u0000needle-prefix002\u0000needle-prefix003\u0000needle-prefix004\u0000needle-prefix005\u0000needle-prefix006\u0000needle-prefix007\u0000needle-prefix008\u0000needle-prefix009\u0000needle-prefix010\u0000needle-prefix011\u0000needle-prefix012\u0000needle-prefix013\u0000needle-prefix014\u0000needle-prefix015\u0000needle-prefix016\u0000needle-prefix017\u0000needle-prefix018\u0000needle-prefix019\u0000needle\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@needle",
+          "label": "needle",
+          "description": "needle"
+        },
+        {
+          "value": "@needle-prefix000",
+          "label": "needle-prefix000",
+          "description": "needle-prefix000"
+        },
+        {
+          "value": "@needle-prefix001",
+          "label": "needle-prefix001",
+          "description": "needle-prefix001"
+        },
+        {
+          "value": "@needle-prefix002",
+          "label": "needle-prefix002",
+          "description": "needle-prefix002"
+        },
+        {
+          "value": "@needle-prefix003",
+          "label": "needle-prefix003",
+          "description": "needle-prefix003"
+        },
+        {
+          "value": "@needle-prefix004",
+          "label": "needle-prefix004",
+          "description": "needle-prefix004"
+        },
+        {
+          "value": "@needle-prefix005",
+          "label": "needle-prefix005",
+          "description": "needle-prefix005"
+        },
+        {
+          "value": "@needle-prefix006",
+          "label": "needle-prefix006",
+          "description": "needle-prefix006"
+        },
+        {
+          "value": "@needle-prefix007",
+          "label": "needle-prefix007",
+          "description": "needle-prefix007"
+        },
+        {
+          "value": "@needle-prefix008",
+          "label": "needle-prefix008",
+          "description": "needle-prefix008"
+        },
+        {
+          "value": "@needle-prefix009",
+          "label": "needle-prefix009",
+          "description": "needle-prefix009"
+        },
+        {
+          "value": "@needle-prefix010",
+          "label": "needle-prefix010",
+          "description": "needle-prefix010"
+        },
+        {
+          "value": "@needle-prefix011",
+          "label": "needle-prefix011",
+          "description": "needle-prefix011"
+        },
+        {
+          "value": "@needle-prefix012",
+          "label": "needle-prefix012",
+          "description": "needle-prefix012"
+        },
+        {
+          "value": "@needle-prefix013",
+          "label": "needle-prefix013",
+          "description": "needle-prefix013"
+        },
+        {
+          "value": "@needle-prefix014",
+          "label": "needle-prefix014",
+          "description": "needle-prefix014"
+        },
+        {
+          "value": "@needle-prefix015",
+          "label": "needle-prefix015",
+          "description": "needle-prefix015"
+        },
+        {
+          "value": "@needle-prefix016",
+          "label": "needle-prefix016",
+          "description": "needle-prefix016"
+        },
+        {
+          "value": "@needle-prefix017",
+          "label": "needle-prefix017",
+          "description": "needle-prefix017"
+        },
+        {
+          "value": "@needle-prefix018",
+          "label": "needle-prefix018",
+          "description": "needle-prefix018"
+        }
+      ],
+      "prefix": "@needle"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "needle"
+      ]
+    ],
+    "id": "limit_100",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@needle",
+    "col": 7,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "unmatched000\u0000unmatched001\u0000unmatched002\u0000unmatched003\u0000unmatched004\u0000unmatched005\u0000unmatched006\u0000unmatched007\u0000unmatched008\u0000unmatched009\u0000unmatched010\u0000unmatched011\u0000unmatched012\u0000unmatched013\u0000unmatched014\u0000unmatched015\u0000unmatched016\u0000unmatched017\u0000unmatched018\u0000unmatched019\u0000unmatched020\u0000unmatched021\u0000unmatched022\u0000unmatched023\u0000unmatched024\u0000unmatched025\u0000unmatched026\u0000unmatched027\u0000unmatched028\u0000unmatched029\u0000unmatched030\u0000unmatched031\u0000unmatched032\u0000unmatched033\u0000unmatched034\u0000unmatched035\u0000unmatched036\u0000unmatched037\u0000unmatched038\u0000unmatched039\u0000unmatched040\u0000unmatched041\u0000unmatched042\u0000unmatched043\u0000unmatched044\u0000unmatched045\u0000unmatched046\u0000unmatched047\u0000unmatched048\u0000unmatched049\u0000unmatched050\u0000unmatched051\u0000unmatched052\u0000unmatched053\u0000unmatched054\u0000unmatched055\u0000unmatched056\u0000unmatched057\u0000unmatched058\u0000unmatched059\u0000unmatched060\u0000unmatched061\u0000unmatched062\u0000unmatched063\u0000unmatched064\u0000unmatched065\u0000unmatched066\u0000unmatched067\u0000unmatched068\u0000unmatched069\u0000unmatched070\u0000unmatched071\u0000unmatched072\u0000unmatched073\u0000unmatched074\u0000unmatched075\u0000unmatched076\u0000unmatched077\u0000unmatched078\u0000unmatched079\u0000needle-prefix000\u0000needle-prefix001\u0000needle-prefix002\u0000needle-prefix003\u0000needle-prefix004\u0000needle-prefix005\u0000needle-prefix006\u0000needle-prefix007\u0000needle-prefix008\u0000needle-prefix009\u0000needle-prefix010\u0000needle-prefix011\u0000needle-prefix012\u0000needle-prefix013\u0000needle-prefix014\u0000needle-prefix015\u0000needle-prefix016\u0000needle-prefix017\u0000needle-prefix018\u0000needle-prefix019\u0000needle\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@needle",
+          "label": "needle",
+          "description": "needle"
+        },
+        {
+          "value": "@needle-prefix000",
+          "label": "needle-prefix000",
+          "description": "needle-prefix000"
+        },
+        {
+          "value": "@needle-prefix001",
+          "label": "needle-prefix001",
+          "description": "needle-prefix001"
+        },
+        {
+          "value": "@needle-prefix002",
+          "label": "needle-prefix002",
+          "description": "needle-prefix002"
+        },
+        {
+          "value": "@needle-prefix003",
+          "label": "needle-prefix003",
+          "description": "needle-prefix003"
+        },
+        {
+          "value": "@needle-prefix004",
+          "label": "needle-prefix004",
+          "description": "needle-prefix004"
+        },
+        {
+          "value": "@needle-prefix005",
+          "label": "needle-prefix005",
+          "description": "needle-prefix005"
+        },
+        {
+          "value": "@needle-prefix006",
+          "label": "needle-prefix006",
+          "description": "needle-prefix006"
+        },
+        {
+          "value": "@needle-prefix007",
+          "label": "needle-prefix007",
+          "description": "needle-prefix007"
+        },
+        {
+          "value": "@needle-prefix008",
+          "label": "needle-prefix008",
+          "description": "needle-prefix008"
+        },
+        {
+          "value": "@needle-prefix009",
+          "label": "needle-prefix009",
+          "description": "needle-prefix009"
+        },
+        {
+          "value": "@needle-prefix010",
+          "label": "needle-prefix010",
+          "description": "needle-prefix010"
+        },
+        {
+          "value": "@needle-prefix011",
+          "label": "needle-prefix011",
+          "description": "needle-prefix011"
+        },
+        {
+          "value": "@needle-prefix012",
+          "label": "needle-prefix012",
+          "description": "needle-prefix012"
+        },
+        {
+          "value": "@needle-prefix013",
+          "label": "needle-prefix013",
+          "description": "needle-prefix013"
+        },
+        {
+          "value": "@needle-prefix014",
+          "label": "needle-prefix014",
+          "description": "needle-prefix014"
+        },
+        {
+          "value": "@needle-prefix015",
+          "label": "needle-prefix015",
+          "description": "needle-prefix015"
+        },
+        {
+          "value": "@needle-prefix016",
+          "label": "needle-prefix016",
+          "description": "needle-prefix016"
+        },
+        {
+          "value": "@needle-prefix017",
+          "label": "needle-prefix017",
+          "description": "needle-prefix017"
+        },
+        {
+          "value": "@needle-prefix018",
+          "label": "needle-prefix018",
+          "description": "needle-prefix018"
+        }
+      ],
+      "prefix": "@needle"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "needle"
+      ]
+    ],
+    "id": "limit_101",
+    "group": "attachment_search_limits_results_after_stable_ranking"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "\u0000\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_blank",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "  \u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"  \"",
+          "label": "  ",
+          "description": "  "
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_spaces",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      " leading\u0000trailing \u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\" leading\"",
+          "label": " leading",
+          "description": " leading"
+        },
+        {
+          "value": "@\"trailing \"",
+          "label": "trailing ",
+          "description": "trailing "
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_trim",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "﻿first\u0000last﻿\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@﻿first",
+          "label": "﻿first",
+          "description": "﻿first"
+        },
+        {
+          "value": "@last﻿",
+          "label": "last﻿",
+          "description": "last﻿"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_feff",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "first\u0000last\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@first",
+          "label": "first",
+          "description": "first"
+        },
+        {
+          "value": "@last",
+          "label": "last",
+          "description": "last"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_nel",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "a\u0000\u0000b\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a",
+          "label": "a",
+          "description": "a"
+        },
+        {
+          "value": "@b",
+          "label": "b",
+          "description": "b"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_inner_blank",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "a\u0000b/\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a",
+          "label": "a",
+          "description": "a"
+        },
+        {
+          "value": "@b/",
+          "label": "b/",
+          "description": "b"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_crlf",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "sub\\x.txt\u0000sub\\dir\\\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@sub\\x.txt",
+          "label": "sub\\x.txt",
+          "description": "sub\\x.txt"
+        },
+        {
+          "value": "@sub\\dir\\",
+          "label": "sub\\dir\\",
+          "description": "sub\\dir\\"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_backslashes",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      ".git\u0000.git/\u0000.git/config\u0000x/.git/y\u0000x/.git\u0000x/.git/\u0000.gitignore\u0000.github/\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@.gitignore",
+          "label": ".gitignore",
+          "description": ".gitignore"
+        },
+        {
+          "value": "@.github/",
+          "label": ".github/",
+          "description": ".github"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_git",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "a b.txt\u0000z dir/\u0000plain\u0000quote\"x\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"a b.txt\"",
+          "label": "a b.txt",
+          "description": "a b.txt"
+        },
+        {
+          "value": "@\"z dir/\"",
+          "label": "z dir/",
+          "description": "z dir"
+        },
+        {
+          "value": "@plain",
+          "label": "plain",
+          "description": "plain"
+        },
+        {
+          "value": "@quote\"x",
+          "label": "quote\"x",
+          "description": "quote\"x"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_quotes",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "a\nb.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a\nb.txt",
+          "label": "a\nb.txt",
+          "description": "a\nb.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "frame_newline_name",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "error": true,
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "process_spawn_throw",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "alpha.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@alpha.txt",
+          "label": "alpha.txt",
+          "description": "alpha.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "process_success",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "sub/",
+      "😀",
+      "x.txt",
+      "\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@sub/😀x.txt",
+          "label": "😀x.txt",
+          "description": "sub/😀x.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "process_chunked",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "abort": "output",
+    "chunks": [
+      "alpha.txt\u0000"
+    ],
+    "result": null,
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "process_output_cancelled",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "@~/a",
+    "col": 4,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "abort": "home",
+    "home": "/home/test",
+    "stat": {
+      "/home/test/": true
+    },
+    "result": null,
+    "calls": [
+      [
+        "home"
+      ],
+      [
+        "stat",
+        "/home/test/"
+      ]
+    ],
+    "id": "process_home_abort",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "say @\"my folder/a\" tail",
+    "col": 17,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/my folder/": true
+    },
+    "chunks": [
+      "alpha.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"my folder/alpha.txt\"",
+          "label": "alpha.txt",
+          "description": "my folder/alpha.txt"
+        }
+      ],
+      "prefix": "@\"my folder/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/my folder/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/my folder/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "applications": [
+      {
+        "lines": [
+          "say @\"my folder/alpha.txt\"  tail"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 27
+      }
+    ],
+    "id": "apply_quoted_file",
+    "group": "selected_attachment_roundtrips_through_insertion"
+  },
+  {
+    "text": "say @\"my folder/\" tail",
+    "col": 16,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/work/my folder/": true
+    },
+    "chunks": [
+      "nested dir/\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"my folder/nested dir/\"",
+          "label": "nested dir/",
+          "description": "my folder/nested dir"
+        }
+      ],
+      "prefix": "@\"my folder/"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/my folder/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work/my folder/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "applications": [
+      {
+        "lines": [
+          "say @\"my folder/nested dir/\" tail"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 27
+      }
+    ],
+    "id": "apply_quoted_dir",
+    "group": "selected_attachment_roundtrips_through_insertion"
+  },
+  {
+    "text": "😀 @x tail",
+    "col": 7,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "x😀.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x😀.txt",
+          "label": "x😀.txt",
+          "description": "x😀.txt"
+        }
+      ],
+      "prefix": "@x"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "x"
+      ]
+    ],
+    "applications": [
+      {
+        "lines": [
+          "😀 @x😀.txt  tail"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 16
+      }
+    ],
+    "id": "apply_unicode",
+    "group": "selected_attachment_roundtrips_through_insertion"
+  },
+  {
+    "text": "@my",
+    "col": 3,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "my folder/\u0000my file.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"my folder/\"",
+          "label": "my folder/",
+          "description": "my folder"
+        },
+        {
+          "value": "@\"my file.txt\"",
+          "label": "my file.txt",
+          "description": "my file.txt"
+        }
+      ],
+      "prefix": "@my"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "my"
+      ]
+    ],
+    "applications": [
+      {
+        "lines": [
+          "@\"my folder/\""
+        ],
+        "cursorLine": 0,
+        "cursorCol": 12
+      },
+      {
+        "lines": [
+          "@\"my file.txt\" "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 15
+      }
+    ],
+    "id": "apply_unquoted_space",
+    "group": "selected_attachment_roundtrips_through_insertion"
+  },
+  {
+    "text": "@src/alpha",
+    "col": 10,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "top/src/alpha.ts\u0000other/alpha.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "top/src/alpha.ts"
+        }
+      ],
+      "prefix": "@src/alpha"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "src/alpha"
+      ]
+    ],
+    "id": "fallback_positive",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@src//alpha",
+    "col": 11,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "top/src/alpha.ts\u0000other/alpha.ts\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/src/alpha.ts",
+          "label": "alpha.ts",
+          "description": "top/src/alpha.ts"
+        }
+      ],
+      "prefix": "@src//alpha"
+    },
+    "calls": [
+      [
+        "stat",
+        "/work/src/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "src/alpha"
+      ]
+    ],
+    "id": "fallback_repeated",
+    "group": "scoped_search_retains_authored_directory_spelling"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": null,
+    "abort": "before",
+    "result": null,
+    "calls": [],
+    "id": "abort_without_fd",
+    "group": "attachment_routing_precedes_commands_and_forced_paths"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "first\u0000second\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@first",
+          "label": "first",
+          "description": "first"
+        },
+        {
+          "value": "@second",
+          "label": "second",
+          "description": "second"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "nul_records",
+    "group": "fd_output_keeps_filename_identity_and_git_components"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      [
+        240,
+        159
+      ],
+      [
+        152,
+        128,
+        120,
+        46,
+        116,
+        120,
+        116,
+        0
+      ]
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@😀x.txt",
+          "label": "😀x.txt",
+          "description": "😀x.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "byte_chunks",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "@",
+    "col": 1,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      [
+        255,
+        120,
+        46,
+        116,
+        120,
+        116,
+        0
+      ]
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@�x.txt",
+          "label": "�x.txt",
+          "description": "�x.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**"
+      ]
+    ],
+    "id": "invalid_utf8",
+    "group": "process_failures_and_cancellation_discard_partial_output"
+  },
+  {
+    "text": "@z",
+    "col": 2,
+    "base": "/work",
+    "executable": "/tool/fd",
+    "chunks": [
+      "alpha/\u0000zeta.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@zeta.txt",
+          "label": "zeta.txt",
+          "description": "zeta.txt"
+        }
+      ],
+      "prefix": "@z"
+    },
+    "calls": [
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "z"
+      ]
+    ],
+    "id": "directory_without_match",
+    "group": "attachment_scores_sort_stably_without_deduplication"
+  },
+  {
+    "text": "@~/a",
+    "col": 4,
+    "base": "/work",
+    "executable": null,
+    "result": null,
+    "calls": [],
+    "id": "no_fd_home",
+    "group": "scoped_home_failure_stops_search_without_fallback"
+  },
+  {
+    "text": "@D:\\docs\\a",
+    "col": 10,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "stat": {
+      "D:/docs/": true
+    },
+    "chunks": [
+      "alpha.txt\u0000sub\\also.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@D:/docs/alpha.txt",
+          "label": "alpha.txt",
+          "description": "D:/docs/alpha.txt"
+        },
+        {
+          "value": "@D:/docs/sub/also.txt",
+          "label": "also.txt",
+          "description": "D:/docs/sub/also.txt"
+        }
+      ],
+      "prefix": "@D:\\docs\\a"
+    },
+    "calls": [
+      [
+        "stat",
+        "D:/docs/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "D:/docs/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_drive",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  },
+  {
+    "text": "@src\\a",
+    "col": 6,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "stat": {
+      "C:\\work\\src\\": true
+    },
+    "chunks": [
+      "alpha.txt\u0000sub\\also.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@src/alpha.txt",
+          "label": "alpha.txt",
+          "description": "src/alpha.txt"
+        },
+        {
+          "value": "@src/sub/also.txt",
+          "label": "also.txt",
+          "description": "src/sub/also.txt"
+        }
+      ],
+      "prefix": "@src\\a"
+    },
+    "calls": [
+      [
+        "stat",
+        "C:\\work\\src\\"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "C:\\work\\src\\",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_relative",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  },
+  {
+    "text": "@src\\a",
+    "col": 6,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "stat": {},
+    "chunks": [
+      "top\\src\\alpha.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/src/alpha.txt",
+          "label": "alpha.txt",
+          "description": "top/src/alpha.txt"
+        }
+      ],
+      "prefix": "@src\\a"
+    },
+    "calls": [
+      [
+        "stat",
+        "C:\\work\\src\\"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "C:\\work",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--full-path",
+        "--",
+        "src[\\\\/]a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_fallback",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  },
+  {
+    "text": "@\\\\server\\share\\a",
+    "col": 17,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "stat": {
+      "//server/share/": true
+    },
+    "chunks": [
+      "alpha.txt\u0000sub\\also.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@//server/share/alpha.txt",
+          "label": "alpha.txt",
+          "description": "//server/share/alpha.txt"
+        },
+        {
+          "value": "@//server/share/sub/also.txt",
+          "label": "also.txt",
+          "description": "//server/share/sub/also.txt"
+        }
+      ],
+      "prefix": "@\\\\server\\share\\a"
+    },
+    "calls": [
+      [
+        "stat",
+        "//server/share/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "//server/share/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_unc",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  },
+  {
+    "text": "@/a",
+    "col": 3,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "stat": {
+      "/": true
+    },
+    "chunks": [
+      "alpha.txt\u0000sub\\also.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@/alpha.txt",
+          "label": "alpha.txt",
+          "description": "/alpha.txt"
+        },
+        {
+          "value": "@/sub/also.txt",
+          "label": "also.txt",
+          "description": "/sub/also.txt"
+        }
+      ],
+      "prefix": "@/a"
+    },
+    "calls": [
+      [
+        "stat",
+        "/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_root",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  },
+  {
+    "text": "@~/a",
+    "col": 4,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "home": "C:\\Users\\test",
+    "stat": {
+      "C:\\Users\\test/": true
+    },
+    "chunks": [
+      "alpha.txt\u0000sub\\also.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@~/alpha.txt",
+          "label": "alpha.txt",
+          "description": "~/alpha.txt"
+        },
+        {
+          "value": "@~/sub/also.txt",
+          "label": "also.txt",
+          "description": "~/sub/also.txt"
+        }
+      ],
+      "prefix": "@~/a"
+    },
+    "calls": [
+      [
+        "home"
+      ],
+      [
+        "stat",
+        "C:\\Users\\test/"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "C:\\Users\\test/",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_home",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  },
+  {
+    "text": "@D:docs\\a",
+    "col": 9,
+    "base": "C:\\work",
+    "executable": "/tool/fd",
+    "stat": {
+      "C:\\work\\D:docs\\": true
+    },
+    "chunks": [
+      "alpha.txt\u0000sub\\also.txt\u0000"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@D:docs/alpha.txt",
+          "label": "alpha.txt",
+          "description": "D:docs/alpha.txt"
+        },
+        {
+          "value": "@D:docs/sub/also.txt",
+          "label": "also.txt",
+          "description": "D:docs/sub/also.txt"
+        }
+      ],
+      "prefix": "@D:docs\\a"
+    },
+    "calls": [
+      [
+        "stat",
+        "C:\\work\\D:docs\\"
+      ],
+      [
+        "spawn",
+        "/tool/fd",
+        "--print0",
+        "--strip-cwd-prefix=always",
+        "--ignore-case",
+        "--base-directory",
+        "C:\\work\\D:docs\\",
+        "--max-results",
+        "100",
+        "--type",
+        "f",
+        "--type",
+        "d",
+        "--follow",
+        "--hidden",
+        "--exclude",
+        ".git",
+        "--exclude",
+        ".git/*",
+        "--exclude",
+        ".git/**",
+        "--fixed-strings",
+        "--",
+        "a"
+      ]
+    ],
+    "windows": true,
+    "id": "win_drive_relative",
+    "group": "windows_attachment_paths_keep_devices_and_separators"
+  }
+]

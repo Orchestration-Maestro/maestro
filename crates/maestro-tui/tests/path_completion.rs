@@ -45,6 +45,7 @@ fn completion_continues_inside_quoted_nested_paths()
     let provider = CombinedAutocompleteProvider::new(
         vec![],
         tree.authored(),
+        None,
         NativeAutocompleteOperations::default(),
     );
     let lines = ["\"my folder/\"".to_owned()];
@@ -55,7 +56,7 @@ fn completion_continues_inside_quoted_nested_paths()
             col: lines[0].len() - 1,
         },
         CompletionOptions {
-            signal: &(),
+            signal: &maestro_cancellation::Cancellation::new(),
             force: Some(true),
         },
     ))?
@@ -97,6 +98,7 @@ fn quoted_absolute_suggestions_insert_as_paths() {
             let provider = CombinedAutocompleteProvider::new(
                 vec![],
                 "/work".into(),
+                None,
                 Files {
                     entries: vec![("a b", kind)],
                     ..Files::default()
@@ -148,6 +150,7 @@ fn native_completion_preserves_literal_backslash_identity() {
     let provider = CombinedAutocompleteProvider::new(
         vec![],
         tree.authored(),
+        None,
         NativeAutocompleteOperations::default(),
     );
     let lines = ["./a".to_owned()];
@@ -156,7 +159,7 @@ fn native_completion_preserves_literal_backslash_identity() {
         &lines,
         cursor,
         CompletionOptions {
-            signal: &(),
+            signal: &maestro_cancellation::Cancellation::new(),
             force: None,
         },
     ))
@@ -189,7 +192,7 @@ fn direct_path_operations_are_replaceable() {
         signal: &S,
     ) -> Result<maestro_tui::AutocompleteSuggestions, maestro_tui::autocomplete::CompletionError>
     {
-        let provider = CombinedAutocompleteProvider::new(vec![], base, operations);
+        let provider = CombinedAutocompleteProvider::new(vec![], base, None, operations);
         let lines = ["./al".into()];
         Ok(fixtures::futures::block_on(provider.get_suggestions(
             &lines,
@@ -216,7 +219,7 @@ fn direct_path_operations_are_replaceable() {
     let native = query(
         NativeAutocompleteOperations::default(),
         tree.authored(),
-        &(),
+        &maestro_cancellation::Cancellation::new(),
     )
     .expect("native candidates");
     assert_eq!(memory, native);

@@ -119,5 +119,5 @@ An `AutocompleteProvider` suggests items for lines and a UTF-8 byte cursor, borr
 a caller-supplied signal. Suggestions and optional command argument callbacks return
 fallible futures. `None`, an empty list and a nonempty list remain distinct contract
 results; a provider without an opinion on explicit file completion returns `None`.
-See [completion](completion.md) for the command and direct-path provider, its host
-operations and shared fuzzy ranking.
+See [completion](completion.md) for the command, direct-path and attachment
+provider, its host operations and shared fuzzy ranking.

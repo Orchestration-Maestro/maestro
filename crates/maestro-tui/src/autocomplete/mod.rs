@@ -1,6 +1,9 @@
-//! Command and direct-path completion through replaceable host operations.
+//! Command and filesystem completion through replaceable host operations.
 
+mod attachments;
 mod commands;
+#[cfg(not(target_arch = "wasm32"))]
+mod fd;
 mod operations;
 mod paths;
 
@@ -128,22 +131,30 @@ pub enum Command {
     AutocompleteItem(AutocompleteItem),
 }
 
-/// Suggests command names, command arguments and direct filesystem paths.
+/// Suggests command names, command arguments, direct paths and attachment paths.
 pub struct CombinedAutocompleteProvider<O: AutocompleteOperations> {
     /// Owned command definitions in caller order.
     commands: Vec<Command>,
     /// Authored base directory for relative completions.
     base_path: String,
+    /// Optional caller-selected recursive search executable.
+    fd_path: Option<String>,
     /// Host filesystem and collation effects.
     operations: O,
 }
 
 impl<O: AutocompleteOperations> CombinedAutocompleteProvider<O> {
     /// Construct a provider without accessing the host.
-    pub fn new(commands: Vec<Command>, base_path: String, operations: O) -> Self {
+    pub fn new(
+        commands: Vec<Command>,
+        base_path: String,
+        fd_path: Option<String>,
+        operations: O,
+    ) -> Self {
         Self {
             commands,
             base_path,
+            fd_path,
             operations,
         }
     }
@@ -161,8 +172,11 @@ impl<O: AutocompleteOperations> AutocompleteProvider for CombinedAutocompletePro
     {
         Box::pin(async move {
             let text = before_cursor(lines, cursor);
-            if paths::attachment_prefix(text) {
-                return Ok(None);
+            if let Some(prefix) = paths::attachment_prefix(text) {
+                return Ok(attachments::suggest(self, prefix, options.signal)
+                    .await
+                    .ok()
+                    .flatten());
             }
             if options.force != Some(true) && text.starts_with('/') {
                 return commands::suggest(&self.commands, text).await;

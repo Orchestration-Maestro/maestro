@@ -1,4 +1,4 @@
-//! Host operations consumed by direct path completion.
+//! Host operations consumed by filesystem completion.
 
 use std::cmp::Ordering;
 use std::io;
@@ -22,10 +22,22 @@ pub enum DirectoryEntryKind {
     Other,
 }
 
-/// Replaceable filesystem and collation effects.
+/// Replaceable filesystem, collation and search effects.
 pub trait AutocompleteOperations {
     /// The caller's cancellation signal type.
     type Signal: ?Sized;
+    /// Read request cancellation without changing the signal.
+    fn is_aborted(&self, signal: &Self::Signal) -> bool;
+    /// Run the supplied search executable and return successful stdout bytes.
+    ///
+    /// # Errors
+    /// Returns process, pipe or cancellation failure.
+    fn run_fd<'a>(
+        &'a self,
+        executable: &'a str,
+        args: &'a [String],
+        signal: &'a Self::Signal,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = io::Result<Vec<u8>>> + 'a>>;
     /// Read the native home directory.
     ///
     /// # Errors
@@ -49,6 +61,42 @@ pub trait AutocompleteOperations {
 }
 
 /// Native filesystem effects with a lazily retained locale collator.
+///
+/// Polling an attachment search requires an entered Tokio runtime with I/O
+/// enabled. Without it, native process spawning or pipe registration can panic;
+/// the provider's caught-error path handles I/O errors, not runtime panics.
+/// The other native host operations are synchronous.
+///
+/// ```
+/// use maestro_cancellation::Cancellation;
+/// use maestro_tui::autocomplete::{
+///     CompletionOptions, CursorPosition, NativeAutocompleteOperations,
+/// };
+/// use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
+///
+/// let runtime = tokio::runtime::Builder::new_current_thread()
+///     .enable_io()
+///     .build()?;
+/// runtime.block_on(async {
+///     let provider = CombinedAutocompleteProvider::new(
+///         vec![], ".".into(), Some("fd".into()),
+///         NativeAutocompleteOperations::default(),
+///     );
+///     let lines = vec!["@".into()];
+///     let signal = Cancellation::new();
+///     let suggestions = provider.get_suggestions(
+///         &lines,
+///         CursorPosition { line: 0, col: 1 },
+///         CompletionOptions { signal: &signal, force: None },
+///     ).await?;
+///     // An unavailable executable yields no attachment suggestions.
+///     if let Some(suggestions) = suggestions {
+///         assert!(!suggestions.items.is_empty());
+///     }
+///     Ok::<(), Box<dyn std::error::Error>>(())
+/// })?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativeAutocompleteOperations<E = fn(&str) -> Option<String>> {
     /// Locale environment reader, independent of home lookup.
@@ -100,7 +148,24 @@ impl<E: Fn(&str) -> Option<String>> NativeAutocompleteOperations<E> {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocompleteOperations<E> {
-    type Signal = ();
+    type Signal = maestro_cancellation::Cancellation;
+
+    fn is_aborted(&self, signal: &Self::Signal) -> bool {
+        signal.is_aborted()
+    }
+
+    /// Run native search within the caller's entered, I/O-enabled Tokio runtime.
+    ///
+    /// # Panics
+    /// Can panic when polled without an entered Tokio runtime with I/O enabled.
+    fn run_fd<'a>(
+        &'a self,
+        executable: &'a str,
+        args: &'a [String],
+        signal: &'a Self::Signal,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = io::Result<Vec<u8>>> + 'a>> {
+        Box::pin(super::fd::run(executable, args, signal))
+    }
 
     fn home_dir(&self) -> io::Result<String> {
         std::env::home_dir()

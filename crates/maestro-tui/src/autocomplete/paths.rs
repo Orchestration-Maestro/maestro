@@ -40,9 +40,12 @@ fn quoted_prefix(text: &str) -> Option<&str> {
 }
 
 /// Attachment routing precedes commands and direct paths.
-pub(super) fn attachment_prefix(text: &str) -> bool {
-    quoted_prefix(text).is_some_and(|prefix| prefix.starts_with("@\""))
-        || final_token(text).starts_with('@')
+pub(super) fn attachment_prefix(text: &str) -> Option<&str> {
+    if let Some(prefix) = quoted_prefix(text).filter(|prefix| prefix.starts_with("@\"")) {
+        return Some(prefix);
+    }
+    let token = final_token(text);
+    token.starts_with('@').then_some(token)
 }
 
 /// Select a quoted, natural path-like or explicitly forced prefix.
@@ -66,7 +69,10 @@ fn raw_prefix(prefix: &str) -> (&str, bool) {
 }
 
 /// Expand only the two supported home forms.
-fn expand_home<O: AutocompleteOperations>(operations: &O, raw: &str) -> io::Result<String> {
+pub(super) fn expand_home<O: AutocompleteOperations>(
+    operations: &O,
+    raw: &str,
+) -> io::Result<String> {
     if raw == "~" {
         return operations.home_dir();
     }
@@ -248,5 +254,14 @@ pub(super) fn apply(
         lines: updated,
         cursor_line: cursor.line,
         cursor_col: before.len() + offset,
+    }
+}
+
+/// Convert native separators for display without changing Unix filename data.
+pub(super) fn to_display_path(path: &str) -> std::borrow::Cow<'_, str> {
+    if cfg!(windows) {
+        std::borrow::Cow::Owned(path.replace('\\', "/"))
+    } else {
+        std::borrow::Cow::Borrowed(path)
     }
 }
