@@ -4,6 +4,7 @@ mod events;
 mod messages;
 mod request;
 mod sse;
+mod tool_names;
 mod wire;
 
 use std::sync::{Arc, PoisonError, RwLock};
@@ -14,8 +15,9 @@ use crate::providers::http::{
 };
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
-    DiagnosticErrorInfo, DoneReason, Model, ProviderResponse, SharedAssistantMessage, StopReason,
-    StreamOptions, ToolChoice,
+    DiagnosticErrorInfo, DoneReason, Model, ProviderResponse, SharedAssistantMessage,
+    SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, ToolChoice,
+    adjust_max_tokens_for_thinking, build_base_options, get_env_api_key,
 };
 use events::Reducer;
 use request::Invocation;
@@ -27,11 +29,82 @@ const ABORTED_TEXT: &str = "Request was aborted";
 /// Failure of a message whose stop reason names an error or an abort.
 const UNKNOWN_ERROR_TEXT: &str = "An unknown error occurred";
 
+/// Effort supplied to adaptive thinking on a raw invocation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AnthropicEffort {
+    /// Low effort.
+    Low,
+    /// Medium effort.
+    Medium,
+    /// High effort.
+    High,
+    /// Extra-high effort.
+    Xhigh,
+    /// Maximum effort.
+    Max,
+}
+impl AnthropicEffort {
+    /// The protocol spelling.
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Xhigh => "xhigh",
+            Self::Max => "max",
+        }
+    }
+}
+
+/// Display mode for enabled thinking.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AnthropicThinkingDisplay {
+    /// Request summarized thinking display.
+    Summarized,
+    /// Request omitted thinking display.
+    Omitted,
+}
+impl AnthropicThinkingDisplay {
+    /// The protocol spelling.
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Summarized => "summarized",
+            Self::Omitted => "omitted",
+        }
+    }
+}
+
+/// Provenance of thinking settings resolved by the simple entry.
+enum ThinkingInput {
+    /// Caller-supplied raw fields.
+    Raw,
+    /// Adaptive effort, preserving the model's open string vocabulary.
+    Effort(String),
+    /// Already-adjusted budget, including zero.
+    Budget(f64),
+}
+
+/// Raw fields accompanied by private simple-option provenance.
+struct CallOptions {
+    /// Shared protocol settings.
+    raw: AnthropicOptions,
+    /// Resolved thinking input.
+    thinking: ThinkingInput,
+}
+
 /// Options for a direct message-protocol invocation.
 #[derive(Clone, Default)]
 pub struct AnthropicOptions {
     /// Settings common to every protocol.
     pub common: StreamOptions,
+    /// Whether thinking is enabled; false explicitly disables it on reasoning models.
+    pub thinking_enabled: Option<bool>,
+    /// Raw budget; absent, zero and NaN use 1,024 tokens when budget thinking is enabled.
+    pub thinking_budget_tokens: Option<f64>,
+    /// Raw adaptive effort; absence emits no effort field.
+    pub effort: Option<AnthropicEffort>,
+    /// Enabled thinking defaults to summarized display.
+    pub thinking_display: Option<AnthropicThinkingDisplay>,
     /// Whether the interleaved-reasoning beta may be requested; absent means it may. It is never
     /// requested for models whose reasoning is adaptive.
     pub interleaved_thinking: Option<bool>,
@@ -84,10 +157,84 @@ pub fn stream_anthropic(
     context: Context,
     options: Option<AnthropicOptions>,
 ) -> AssistantMessageEventStream {
+    start(
+        model,
+        context,
+        CallOptions {
+            raw: options.unwrap_or_default(),
+            thinking: ThinkingInput::Raw,
+        },
+    )
+}
+
+/// Resolve simple settings before starting the shared invocation.
+///
+/// # Errors
+/// Fails before returning a stream when it cannot select a nonempty API key.
+pub fn stream_simple_anthropic(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let options = options.unwrap_or_default();
+    let key = options
+        .common
+        .api_key
+        .as_deref()
+        .filter(|key| !key.is_empty())
+        .map(str::to_owned)
+        .or_else(|| get_env_api_key(&model.provider))
+        .filter(|key| !key.is_empty())
+        .ok_or_else(|| DiagnosticErrorInfo {
+            name: Some("Error".to_owned()),
+            message: format!("No API key for provider: {}", model.provider),
+            stack: None,
+            code: None,
+        })?;
+    let mut raw = AnthropicOptions {
+        common: build_base_options(&model, Some(&options), Some(&key)),
+        thinking_enabled: Some(options.reasoning.is_some()),
+        ..AnthropicOptions::default()
+    };
+    let thinking = match options.reasoning {
+        None => ThinkingInput::Raw,
+        Some(level) if request::supports_adaptive_thinking(&model.id) => {
+            let mapped = model
+                .thinking_level_map
+                .as_ref()
+                .and_then(|mapping| mapping.get(&level.into()))
+                .and_then(Option::as_ref);
+            let fallback = match level {
+                ThinkingLevel::Minimal | ThinkingLevel::Low => "low",
+                ThinkingLevel::Medium => "medium",
+                ThinkingLevel::High | ThinkingLevel::Xhigh => "high",
+            };
+            ThinkingInput::Effort(mapped.map_or_else(|| fallback.to_owned(), Clone::clone))
+        }
+        Some(level) => {
+            let base = raw
+                .common
+                .max_tokens
+                .filter(|n| *n != 0.0 && !n.is_nan())
+                .unwrap_or(0.0);
+            let adjusted = adjust_max_tokens_for_thinking(
+                base,
+                model.max_tokens,
+                level,
+                options.thinking_budgets.as_ref(),
+            );
+            raw.common.max_tokens = Some(adjusted.max_tokens);
+            ThinkingInput::Budget(adjusted.thinking_budget)
+        }
+    };
+    Ok(start(model, context, CallOptions { raw, thinking }))
+}
+
+/// Start the producer shared by raw and simple options.
+fn start(model: Model, context: Context, options: CallOptions) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let output: SharedAssistantMessage = Arc::new(RwLock::new(initial_message(&model)));
-    let options = options.unwrap_or_default();
-    let signal = options.common.signal.clone();
+    let signal = options.raw.common.signal.clone();
     let task = run(
         Arc::new(model),
         context,
@@ -106,13 +253,18 @@ pub fn stream_anthropic(
 async fn run(
     model: Arc<Model>,
     context: Context,
-    options: AnthropicOptions,
+    options: CallOptions,
     stream: AssistantMessageEventStream,
     output: SharedAssistantMessage,
 ) {
     let outcome = invoke(&model, &context, &options, &stream, &output).await;
     if let Err(failure) = outcome {
-        fail(&stream, &output, options.common.signal.as_ref(), failure);
+        fail(
+            &stream,
+            &output,
+            options.raw.common.signal.as_ref(),
+            failure,
+        );
     }
 }
 
@@ -126,11 +278,12 @@ fn callback_failure(error: DiagnosticErrorInfo) -> RequestFailure {
 async fn invoke(
     model: &Arc<Model>,
     context: &Context,
-    options: &AnthropicOptions,
+    call: &CallOptions,
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
 ) -> Result<(), RequestFailure> {
-    let invocation = Invocation::new(model, context, options);
+    let options = &call.raw;
+    let invocation = Invocation::new(model, context, call)?;
     let mut payload = invocation.payload()?;
     if let Some(hook) = &options.common.on_payload {
         payload = hook(payload, Arc::clone(model))
@@ -174,7 +327,9 @@ async fn invoke(
     stream.push(AssistantMessageEvent::Start {
         partial: Arc::clone(output),
     });
-    let mut reducer = Reducer::new(model, output, stream);
+    let tools = matches!(invocation.naming, tool_names::Naming::Subscription)
+        .then(|| context.tools.as_deref().unwrap_or_default());
+    let mut reducer = Reducer::new(model, output, stream, tools);
     consume(body, options.common.signal.as_ref(), reading, &mut reducer).await?;
     conclude(stream, output, options.common.signal.as_ref())
 }

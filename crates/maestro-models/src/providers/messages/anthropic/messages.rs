@@ -1,5 +1,6 @@
 //! Typed wire messages, content blocks and tools, and the conversion from conversation history.
 
+use super::tool_names::Naming;
 use std::borrow::Cow;
 use std::iter::Peekable;
 
@@ -227,6 +228,7 @@ pub(super) fn convert(
     model: &Model,
     context: &Context,
     cache: Option<CacheControl>,
+    naming: Naming,
 ) -> Vec<WireMessage> {
     let normalize = |id: &str, _: &Model, _: &AssistantMessage| normalize_tool_call_id(id);
     let history = transform_messages(&context.messages, model, Some(&normalize));
@@ -235,7 +237,7 @@ pub(super) fn convert(
     while let Some(message) = remaining.next() {
         wire.extend(match message {
             Message::User(user) => user_message(&user.content),
-            Message::Assistant(assistant) => assistant_message(assistant),
+            Message::Assistant(assistant) => assistant_message(assistant, naming),
             Message::ToolResult(first) => Some(tool_results(first, &mut remaining)),
         });
     }
@@ -272,11 +274,11 @@ fn user_message(content: &UserContent) -> Option<WireMessage> {
 }
 
 /// Convert an assistant turn; a turn without any block produces no message.
-fn assistant_message(assistant: &AssistantMessage) -> Option<WireMessage> {
+fn assistant_message(assistant: &AssistantMessage, naming: Naming) -> Option<WireMessage> {
     let blocks: Vec<Block> = assistant
         .content
         .iter()
-        .filter_map(assistant_block)
+        .filter_map(|block| assistant_block(block, naming))
         .collect();
     (!blocks.is_empty()).then_some(WireMessage {
         role: Role::Assistant,
@@ -287,7 +289,7 @@ fn assistant_message(assistant: &AssistantMessage) -> Option<WireMessage> {
 /// Convert one block of an assistant turn. Blank text and blank unredacted reasoning are
 /// dropped; unredacted reasoning without a nonblank signature becomes plain text; redacted
 /// reasoning is kept whatever its text, with its opaque payload.
-fn assistant_block(block: &AssistantContent) -> Option<Block> {
+fn assistant_block(block: &AssistantContent, naming: Naming) -> Option<Block> {
     match block {
         AssistantContent::Text(text) => has_text(&text.text).then(|| Block::text(&text.text)),
         AssistantContent::Thinking(thinking) if thinking.redacted == Some(true) => {
@@ -311,7 +313,7 @@ fn assistant_block(block: &AssistantContent) -> Option<Block> {
         ),
         AssistantContent::ToolCall(call) => Some(Block::ToolUse {
             id: call.id.clone(),
-            name: call.name.clone(),
+            name: naming.outbound(&call.name).into_owned(),
             input: call.arguments.clone(),
         }),
     }
@@ -365,7 +367,7 @@ fn mark_final_user_message(wire: &mut [WireMessage], marker: CacheControl) {
 #[derive(Serialize)]
 pub(super) struct ToolParam<'a> {
     /// Tool name.
-    name: &'a str,
+    name: Cow<'a, str>,
     /// What the tool does.
     description: &'a str,
     /// Ask the service to stream the arguments as they are written.
@@ -402,13 +404,14 @@ pub(super) fn tools(
     tools: &[Tool],
     eager_input_streaming: bool,
     cache: Option<CacheControl>,
+    naming: Naming,
 ) -> Vec<ToolParam<'_>> {
     let last = tools.len().saturating_sub(1);
     tools
         .iter()
         .enumerate()
         .map(|(position, tool)| ToolParam {
-            name: &tool.name,
+            name: naming.outbound(&tool.name),
             description: &tool.description,
             eager_input_streaming: eager_input_streaming.then_some(true),
             input_schema: InputSchema {

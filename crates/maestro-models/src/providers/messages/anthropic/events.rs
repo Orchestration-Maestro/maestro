@@ -13,8 +13,8 @@ use crate::providers::http::RequestFailure;
 use crate::providers::json_text::json_value;
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
-    JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall,
-    calculate_cost, parse_streaming_json,
+    JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool,
+    ToolCall, calculate_cost, parse_streaming_json,
 };
 
 /// Text of a redacted reasoning block.
@@ -52,7 +52,7 @@ struct Slot {
 type StartEvent = fn(usize, SharedAssistantMessage) -> AssistantMessageEvent;
 
 /// Reduces events into the shared message, announcing each change.
-pub(super) struct Reducer {
+pub(super) struct Reducer<'a> {
     /// Model that was asked, for cost rates.
     model: Arc<Model>,
     /// Message shared by every update and the final result.
@@ -61,20 +61,24 @@ pub(super) struct Reducer {
     stream: AssistantMessageEventStream,
     /// One slot per content block, in content order.
     slots: Vec<Slot>,
+    /// Subscription declarations in their original order.
+    tools: Option<&'a [Tool]>,
 }
 
-impl Reducer {
+impl<'a> Reducer<'a> {
     /// Start reducing into `output`, announcing changes on `stream`.
     pub(super) fn new(
         model: &Arc<Model>,
         output: &SharedAssistantMessage,
         stream: &AssistantMessageEventStream,
+        tools: Option<&'a [Tool]>,
     ) -> Self {
         Self {
             model: Arc::clone(model),
             output: Arc::clone(output),
             stream: stream.clone(),
             slots: Vec::new(),
+            tools,
         }
     }
 
@@ -189,14 +193,22 @@ impl Reducer {
                     thinking(REDACTED_TEXT.to_owned(), data, Some(true)),
                     thinking_start,
                 ),
-                OpenedBlock::ToolUse(call) => (
-                    Kind::Tool(None),
-                    tool_call(call),
-                    |content_index, partial| AssistantMessageEvent::ToolcallStart {
-                        content_index,
-                        partial,
-                    },
-                ),
+                OpenedBlock::ToolUse(mut call) => {
+                    if let Some(tools) = self.tools {
+                        call.name = Some(super::tool_names::inbound(
+                            call.name.unwrap_or_default(),
+                            tools,
+                        ));
+                    }
+                    (
+                        Kind::Tool(None),
+                        tool_call(call),
+                        |content_index, partial| AssistantMessageEvent::ToolcallStart {
+                            content_index,
+                            partial,
+                        },
+                    )
+                }
                 OpenedBlock::Other => return,
             };
         let position = self.push_block(start.index, kind, content);

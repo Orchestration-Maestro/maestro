@@ -3,10 +3,16 @@
 use indexmap::IndexMap;
 use serde::Serialize;
 use serde_json::Value;
+use std::borrow::Cow;
 
-use super::AnthropicOptions;
 use super::messages::{CacheControl, ToolParam, WireMessage, convert, tools};
+use super::tool_names::Naming;
+use super::{AnthropicOptions, AnthropicThinkingDisplay, CallOptions, ThinkingInput};
 use crate::arguments::json_parse::whitespace;
+use crate::providers::chat::cloudflare::resolve_cloudflare_base_url;
+use crate::providers::chat::github_copilot_headers::{
+    build_copilot_dynamic_headers, has_copilot_vision_input,
+};
 use crate::providers::http::{HttpRequest, RequestFailure, edge_whitespace, endpoint_url};
 use crate::providers::json_text::compact_json;
 use crate::{CacheRetention, Context, Model, ModelCompat, ToolChoice, get_env_api_key};
@@ -41,19 +47,52 @@ struct Payload<'a> {
     stream: bool,
     /// System prompt.
     #[serde(skip_serializing_if = "Option::is_none")]
-    system: Option<[SystemBlock<'a>; 1]>,
+    system: Option<Vec<SystemBlock<'a>>>,
     /// Sampling temperature.
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f64>,
     /// Declared tools.
     #[serde(skip_serializing_if = "Option::is_none")]
     tools: Option<Vec<ToolParam<'a>>>,
+    /// Enabled, adaptive or disabled thinking.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking: Option<Thinking>,
+    /// Adaptive effort.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    output_config: Option<OutputConfig<'a>>,
     /// Request metadata.
     #[serde(skip_serializing_if = "Option::is_none")]
     metadata: Option<Metadata<'a>>,
     /// Forced tool selection.
     #[serde(skip_serializing_if = "Option::is_none")]
     tool_choice: Option<ToolSelection<'a>>,
+}
+
+/// Wire thinking states carry only the members their state uses.
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum Thinking {
+    /// Thinking explicitly disabled.
+    Disabled,
+    /// Adaptive thinking.
+    Adaptive {
+        /// Display of enabled thinking.
+        display: &'static str,
+    },
+    /// Budget-based thinking.
+    Enabled {
+        /// Thinking token budget.
+        budget_tokens: f64,
+        /// Display of enabled thinking.
+        display: &'static str,
+    },
+}
+
+/// Adaptive output effort.
+#[derive(Serialize)]
+struct OutputConfig<'a> {
+    /// Raw enum spelling or the model's mapped string.
+    effort: &'a str,
 }
 
 /// The system prompt as a text block.
@@ -88,17 +127,20 @@ enum ToolSelection<'a> {
     /// A call to the named tool.
     Tool {
         /// Tool name.
-        name: &'a str,
+        name: Cow<'a, str>,
     },
 }
 
-impl<'a> From<&'a ToolChoice> for ToolSelection<'a> {
-    fn from(choice: &'a ToolChoice) -> Self {
+impl<'a> ToolSelection<'a> {
+    /// Apply the invocation's naming policy to a named choice.
+    fn new(choice: &'a ToolChoice, naming: Naming) -> Self {
         match choice {
             ToolChoice::Auto => Self::Auto,
             ToolChoice::None => Self::None,
             ToolChoice::Required => Self::Any,
-            ToolChoice::Function { name } => Self::Tool { name },
+            ToolChoice::Function { name } => Self::Tool {
+                name: naming.outbound(name),
+            },
         }
     }
 }
@@ -119,8 +161,18 @@ pub(super) struct Invocation<'a> {
     context: &'a Context,
     /// Caller options.
     options: &'a AnthropicOptions,
+    /// Thinking provenance from the simple entry.
+    thinking: &'a ThinkingInput,
     /// Effective cache retention.
     retention: CacheRetention,
+    /// Frozen endpoint, expanded before the payload hook.
+    base_url: String,
+    /// Frozen header layers, validated when sending.
+    headers: IndexMap<String, String>,
+    /// Whether default authentication was deliberately suppressed.
+    gateway: bool,
+    /// Naming selected from credentials, not overridden headers.
+    pub(super) naming: Naming,
 }
 
 impl<'a> Invocation<'a> {
@@ -129,8 +181,9 @@ impl<'a> Invocation<'a> {
     pub(super) fn new(
         model: &'a Model,
         context: &'a Context,
-        options: &'a AnthropicOptions,
-    ) -> Self {
+        call: &'a CallOptions,
+    ) -> Result<Self, RequestFailure> {
+        let options = &call.raw;
         let retention = options.common.cache_retention.unwrap_or_else(|| {
             if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") {
                 CacheRetention::Long
@@ -138,12 +191,21 @@ impl<'a> Invocation<'a> {
                 CacheRetention::Short
             }
         });
-        Self {
+        let mut invocation = Self {
             model,
             context,
             options,
             retention,
+            thinking: &call.thinking,
+            base_url: model.base_url.clone(),
+            headers: IndexMap::new(),
+            gateway: false,
+            naming: Naming::Plain,
+        };
+        if options.client.is_none() {
+            invocation.resolve_authorization()?;
         }
+        Ok(invocation)
     }
 
     /// The compatibility flags of the model, each on unless the model turns it off.
@@ -187,42 +249,93 @@ impl<'a> Invocation<'a> {
     pub(super) fn payload(&self) -> Result<Value, RequestFailure> {
         let cache = self.cache_control();
         let common = &self.options.common;
+        let (thinking, output_config) = self.thinking_fields();
         let payload = Payload {
             model: &self.model.id,
-            messages: convert(self.model, self.context, cache),
+            messages: convert(self.model, self.context, cache, self.naming),
             max_tokens: self.max_tokens(),
             stream: true,
-            system: self
-                .context
-                .system_prompt
-                .as_deref()
-                .filter(|prompt| !prompt.is_empty())
-                .map(|text| {
-                    [SystemBlock {
-                        r#type: "text",
-                        text,
-                        cache_control: cache,
-                    }]
-                }),
-            temperature: common.temperature,
+            system: self.system(cache),
+            temperature: common
+                .temperature
+                .filter(|_| self.options.thinking_enabled != Some(true)),
             tools: self
                 .context
                 .tools
                 .as_deref()
                 .filter(|declared| !declared.is_empty())
-                .map(|declared| tools(declared, self.compat().eager_input_streaming, cache)),
+                .map(|declared| {
+                    tools(
+                        declared,
+                        self.compat().eager_input_streaming,
+                        cache,
+                        self.naming,
+                    )
+                }),
+            thinking,
+            output_config,
             metadata: common
                 .metadata
                 .as_ref()
                 .and_then(|metadata| metadata.get("user_id"))
                 .and_then(Value::as_str)
                 .map(|user_id| Metadata { user_id }),
-            tool_choice: self.options.tool_choice.as_ref().map(ToolSelection::from),
+            tool_choice: self
+                .options
+                .tool_choice
+                .as_ref()
+                .map(|choice| ToolSelection::new(choice, self.naming)),
         };
         serde_json::to_value(&payload).map_err(|error| RequestFailure::new(error.to_string()))
     }
 
-    /// The betas the request names: streamed tool arguments for a model without eager input
+    /// Select thinking only for reasoning-capable models.
+    fn thinking_fields(&self) -> (Option<Thinking>, Option<OutputConfig<'_>>) {
+        if !self.model.reasoning {
+            return (None, None);
+        }
+        match self.options.thinking_enabled {
+            None => return (None, None),
+            Some(false) => return (Some(Thinking::Disabled), None),
+            Some(true) => {}
+        }
+        let display = self
+            .options
+            .thinking_display
+            .unwrap_or(AnthropicThinkingDisplay::Summarized)
+            .as_str();
+        if supports_adaptive_thinking(&self.model.id) {
+            let effort = match self.thinking {
+                ThinkingInput::Effort(mapped) => Some(mapped.as_str()),
+                ThinkingInput::Raw | ThinkingInput::Budget(_) => {
+                    self.options.effort.map(super::AnthropicEffort::as_str)
+                }
+            }
+            .filter(|effort| !effort.is_empty());
+            (
+                Some(Thinking::Adaptive { display }),
+                effort.map(|effort| OutputConfig { effort }),
+            )
+        } else {
+            let budget = match self.thinking {
+                ThinkingInput::Budget(budget) => Some(*budget).filter(|n| !n.is_nan()),
+                ThinkingInput::Raw | ThinkingInput::Effort(_) => self
+                    .options
+                    .thinking_budget_tokens
+                    .filter(|n| *n != 0.0 && !n.is_nan()),
+            }
+            .unwrap_or(1024.0);
+            (
+                Some(Thinking::Enabled {
+                    budget_tokens: budget,
+                    display,
+                }),
+                None,
+            )
+        }
+    }
+
+    /// Optional betas: streamed tool arguments for a model without eager input
     /// streaming when tools are declared, and interleaved reasoning unless the caller turns it
     /// off or the model's reasoning is adaptive.
     fn betas(&self) -> Vec<&'static str> {
@@ -239,77 +352,122 @@ impl<'a> Invocation<'a> {
         betas
     }
 
-    /// Layer the protocol defaults, the key and ambient token, the betas, the model's headers
-    /// and the caller's headers; names are lowercase and later layers replace earlier ones. The
-    /// JSON encoding of the body then sets `content-type`.
-    ///
-    /// # Errors
-    /// Fails when the layers hold neither a key nor an authorization.
-    fn headers(&self) -> Result<IndexMap<String, String>, RequestFailure> {
-        let key = self
-            .options
+    /// Ordered protocol identity and optional caller prompt.
+    fn system(&self, cache: Option<CacheControl>) -> Option<Vec<SystemBlock<'_>>> {
+        let identity = matches!(self.naming, Naming::Subscription)
+            .then_some("You are Claude Code, Anthropic's official CLI for Claude.");
+        let prompt = self
+            .context
+            .system_prompt
+            .as_deref()
+            .filter(|text| !text.is_empty());
+        let blocks: Vec<_> = identity
+            .into_iter()
+            .chain(prompt)
+            .map(|text| SystemBlock {
+                r#type: "text",
+                text,
+                cache_control: cache,
+            })
+            .collect();
+        (!blocks.is_empty()).then_some(blocks)
+    }
+
+    /// Capture credentials, mode, endpoint expansion and header layers before hooks.
+    fn resolve_authorization(&mut self) -> Result<(), RequestFailure> {
+        let options = self.options;
+        let environment_key = options
             .common
             .api_key
-            .clone()
-            .or_else(|| get_env_api_key(&self.model.provider))
+            .is_none()
+            .then(|| get_env_api_key(&self.model.provider))
+            .flatten();
+        let key = options
+            .common
+            .api_key
+            .as_deref()
+            .or(environment_key.as_deref())
             .unwrap_or_default();
-        let mut headers = IndexMap::new();
-        layer(
-            &mut headers,
-            [
-                ("accept", "application/json"),
-                ("anthropic-dangerous-direct-browser-access", "true"),
-                ("anthropic-version", API_VERSION),
-                ("x-api-key", &key),
-            ]
-            .map(|(name, value)| (name.to_owned(), value.to_owned())),
-        );
-        if let Some(token) = ambient_token() {
-            layer(
-                &mut headers,
-                [("authorization".to_owned(), format!("Bearer {token}"))],
-            );
+        self.gateway = self.model.provider == "cloudflare-ai-gateway";
+        let account = self.model.provider == "github-copilot";
+        let subscription = !self.gateway && !account && key.contains("sk-ant-oat");
+        if subscription {
+            self.naming = Naming::Subscription;
         }
-        let betas = self.betas();
+        let mut headers = IndexMap::from([
+            ("accept".to_owned(), "application/json".to_owned()),
+            (
+                "anthropic-dangerous-direct-browser-access".to_owned(),
+                "true".to_owned(),
+            ),
+            ("anthropic-version".to_owned(), API_VERSION.to_owned()),
+        ]);
+        if self.gateway {
+            self.base_url = resolve_cloudflare_base_url(self.model)
+                .map_err(|error| RequestFailure::new(error.message))?;
+            headers.insert("cf-aig-authorization".to_owned(), format!("Bearer {key}"));
+        } else if account || subscription {
+            headers.insert("authorization".to_owned(), format!("Bearer {key}"));
+        } else {
+            headers.insert("x-api-key".to_owned(), key.to_owned());
+            if let Some(token) = ambient_token() {
+                headers.insert("authorization".to_owned(), format!("Bearer {token}"));
+            }
+        }
+        let mut betas = self.betas();
+        if subscription {
+            betas.splice(0..0, ["claude-code-20250219", "oauth-2025-04-20"]);
+            headers.insert("user-agent".to_owned(), "claude-cli/2.1.75".to_owned());
+            headers.insert("x-app".to_owned(), "cli".to_owned());
+        }
         if !betas.is_empty() {
+            headers.insert("anthropic-beta".to_owned(), betas.join(","));
+        }
+        self.layer_model_headers(&mut headers);
+        headers.insert("content-type".to_owned(), "application/json".to_owned());
+        self.headers = headers;
+        Ok(())
+    }
+
+    /// Apply model, account-history and caller layers in that order.
+    fn layer_model_headers(&self, headers: &mut IndexMap<String, String>) {
+        if let Some(source) = &self.model.headers {
+            layer(headers, source.iter().map(|(k, v)| (k.clone(), v.clone())));
+        }
+        if self.model.provider == "github-copilot" {
             layer(
-                &mut headers,
-                [("anthropic-beta".to_owned(), betas.join(","))],
+                headers,
+                build_copilot_dynamic_headers(
+                    &self.context.messages,
+                    has_copilot_vision_input(&self.context.messages),
+                ),
             );
         }
-        for source in [&self.model.headers, &self.options.common.headers]
-            .into_iter()
-            .flatten()
-        {
-            layer(
-                &mut headers,
-                source
-                    .iter()
-                    .map(|(name, value)| (name.clone(), value.clone())),
-            );
+        if let Some(source) = &self.options.common.headers {
+            layer(headers, source.iter().map(|(k, v)| (k.clone(), v.clone())));
         }
+    }
+
+    /// Validate the captured nongateway authentication only when preparing the send.
+    fn headers(&self) -> Result<IndexMap<String, String>, RequestFailure> {
         let authenticated = ["x-api-key", "authorization"].iter().any(|name| {
-            headers
+            self.headers
                 .get(*name)
                 .is_some_and(|value| !value.trim_matches(edge_whitespace).is_empty())
         });
-        if !authenticated {
+        if !self.gateway && !authenticated {
             return Err(RequestFailure::new(MISSING_AUTHENTICATION_TEXT));
         }
-        layer(
-            &mut headers,
-            [("content-type".to_owned(), "application/json".to_owned())],
-        );
-        Ok(headers)
+        Ok(self.headers.clone())
     }
 
     /// Build the request that posts the payload to the model's endpoint.
     ///
     /// # Errors
-    /// Fails when the endpoint is not a URL, the headers hold no authentication or the payload
+    /// Fails when the endpoint is not a URL, nongateway headers hold no authentication or the payload
     /// cannot be written as JSON.
     pub(super) fn request(&self, payload: &Value) -> Result<HttpRequest, RequestFailure> {
-        let base = match self.model.base_url.as_str() {
+        let base = match self.base_url.as_str() {
             "" => DEFAULT_BASE_URL,
             supplied => supplied,
         };
@@ -346,7 +504,7 @@ fn ambient_token() -> Option<String> {
 
 /// Report whether the model's reasoning is adaptive: Opus 4.6 and 4.7 and Sonnet 4.6, with
 /// either spelling of the version.
-fn supports_adaptive_thinking(model_id: &str) -> bool {
+pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
     [
         "opus-4-6",
         "opus-4.6",

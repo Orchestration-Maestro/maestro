@@ -225,7 +225,7 @@ pub(super) async fn consume(
     mut body: HttpBody,
     signal: Option<&Cancellation>,
     reading: Reading,
-    reducer: &mut Reducer,
+    reducer: &mut Reducer<'_>,
 ) -> Result<(), RequestFailure> {
     let mut decoder = Decoder::new();
     loop {

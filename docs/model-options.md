@@ -16,7 +16,7 @@ credential resolution, provider invocation or hook execution.
   `thinking_budget`: add the budget to the base and cap at the model limit. Only
   when that limit is no larger than the budget, reduce the budget to leave 1,024
   output tokens, never below zero. There is no unconditional output reserve,
-  rounding or input validation.
+  rounding or input validation. A NaN sum or model limit produces a NaN combined limit.
 - `is_context_overflow` classifies a borrowed assistant response as described below.
 
 ## Three context-overflow signals

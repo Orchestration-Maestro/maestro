@@ -243,6 +243,55 @@ mod tests {
         }
     }
 
+    #[test]
+    fn thinking_budget_propagates_nan() {
+        use maestro_models::{ThinkingBudgets, ThinkingLevel, adjust_max_tokens_for_thinking};
+        for (base, limit, budget, expected_limit, expected_budget) in [
+            (f64::NAN, 32000.0, 2048.0, f64::NAN, 2048.0),
+            (100.0, f64::NAN, 2048.0, f64::NAN, 2048.0),
+            (100.0, 32000.0, f64::NAN, f64::NAN, f64::NAN),
+            (f64::INFINITY, 32000.0, 2048.0, 32000.0, 2048.0),
+            (100.0, f64::INFINITY, 2048.0, 2148.0, 2048.0),
+            (100.0, 32000.0, f64::INFINITY, 32000.0, 30976.0),
+            (f64::NEG_INFINITY, 32000.0, 2048.0, f64::NEG_INFINITY, 0.0),
+            (100.0, f64::NEG_INFINITY, 2048.0, f64::NEG_INFINITY, 0.0),
+            (100.0, 32000.0, f64::NEG_INFINITY, f64::NEG_INFINITY, 0.0),
+            (0.0, 32000.0, 2048.0, 2048.0, 1024.0),
+            (100.0, 0.0, 2048.0, 0.0, 0.0),
+            (100.0, 32000.0, 0.0, 100.0, 0.0),
+            (-0.0, 32000.0, 2048.0, 2048.0, 1024.0),
+            (100.0, -0.0, 2048.0, -0.0, 0.0),
+            (100.0, 32000.0, -0.0, 100.0, -0.0),
+            (1.0, 32000.0, 2048.0, 2049.0, 2048.0),
+            (100.0, 1.0, 2048.0, 1.0, 0.0),
+            (100.0, 32000.0, 1.0, 101.0, 1.0),
+            (
+                f64::INFINITY,
+                32000.0,
+                f64::NEG_INFINITY,
+                f64::NAN,
+                f64::NEG_INFINITY,
+            ),
+        ] {
+            let custom = ThinkingBudgets {
+                low: Some(budget),
+                ..Default::default()
+            };
+            let adjusted =
+                adjust_max_tokens_for_thinking(base, limit, ThinkingLevel::Low, Some(&custom));
+            assert_float(adjusted.max_tokens, expected_limit);
+            assert_float(adjusted.thinking_budget, expected_budget);
+        }
+    }
+
+    fn assert_float(actual: f64, expected: f64) {
+        if expected.is_nan() {
+            assert!(actual.is_nan(), "expected NaN, got {actual}");
+        } else {
+            assert_eq!(actual.to_bits(), expected.to_bits());
+        }
+    }
+
     fn assert_common_fields(base: &StreamOptions, original: &StreamOptions) {
         assert_eq!(base.temperature, Some(0.25));
         assert_eq!(base.max_tokens, Some(-7.0));
