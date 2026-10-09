@@ -21,11 +21,9 @@ assert_eq!(options.prompt_mode, Some(MistralPromptMode::Reasoning));
 The private request encoder selects recognized fields from object-shaped records,
 adds their declared defaults and emits transport field names. Optional null is
 retained only where the field admits it. Unknown record members are omitted after
-decoding; dictionaries use the [shared JSON representation](../records.md).
-The decoder's private `$serde_json::private::RawValue` sentinel is not supported as
-literal object data in dictionary values or thinking parts, including unknown
-thinking-part members. Invalid selected fields return `Input validation failed: `
+decoding; dictionaries use the [shared JSON representation](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/records.md).
+Invalid selected fields return `Input validation failed: `
 followed by the native decoder's explanation.
 
 The encoder has no transport, retry or cancellation policy. See the
-[shared model records](../records.md) for the owning JSON representation.
+[shared model records](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/records.md) for the owning JSON representation.
