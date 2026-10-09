@@ -77,3 +77,7 @@ pub use oauth::types::{
     OAuthSelectOption, OAuthSelectPrompt,
 };
 pub use oauth::types::{OAuthCallbacks, OAuthError, OAuthLoginCallbacks, OAuthProviderInterface};
+pub use oauth::{
+    OAuthApiKey, OAuthProviderHandle, get_oauth_api_key, get_oauth_provider, get_oauth_providers,
+    refresh_oauth_token, register_oauth_provider, reset_oauth_providers, unregister_oauth_provider,
+};

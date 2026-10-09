@@ -202,7 +202,7 @@ pub fn refresh_openai_codex_token(
 mod tests;
 
 /// Response-account provider with the default unchanged model projection.
-struct OpenAICodexOAuthProvider;
+pub(crate) struct OpenAICodexOAuthProvider;
 impl crate::OAuthProviderInterface for OpenAICodexOAuthProvider {
     fn id(&self) -> &'static str {
         "openai-codex"

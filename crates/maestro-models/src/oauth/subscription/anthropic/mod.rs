@@ -204,7 +204,7 @@ fn validated_input(input: &str, verifier: &str) -> Result<AuthorizationCode, OAu
 }
 
 /// Subscription provider with unchanged model descriptors.
-struct AnthropicOAuthProvider;
+pub(crate) struct AnthropicOAuthProvider;
 impl OAuthProviderInterface for AnthropicOAuthProvider {
     fn id(&self) -> &'static str {
         "anthropic"

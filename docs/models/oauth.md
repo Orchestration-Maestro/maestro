@@ -31,6 +31,52 @@ diagnostic messages rather than a
 fallback palette. Replacing these assets changes the identity at build time;
 there is no runtime asset loader or network font acquisition.
 
+## Provider registry
+
+The registry starts with `anthropic`, `github-copilot` and `openai-codex`, in that
+order. `register_oauth_provider` appends a new literal ID or replaces an existing
+implementation without moving its slot. `unregister_oauth_provider` restores a
+built-in implementation or removes a custom entry; unknown IDs are ignored.
+`reset_oauth_providers` restores the original roster and order.
+`get_oauth_provider` looks up an exact ID; `get_oauth_providers` returns an ordered
+membership snapshot whose handles share provider state.
+
+`refresh_oauth_token` delegates one refresh without checking expiry or extracting
+a key. `get_oauth_api_key` selects a provider, returns `None` for missing supplied
+credentials, and otherwise refreshes once when the current epoch milliseconds
+are greater than or equal to `expires`. It returns `OAuthApiKey` containing the
+selected credentials and that provider's extracted key. An admitted operation
+keeps its selected provider across registry changes. Neither operation persists
+credentials; saving returned credentials belongs to the caller.
+
+Both operations reject unknown IDs with `Unknown OAuth provider: {id}`.
+Key resolution replaces only refresh failures with
+`Failed to refresh OAuth token for {id}`; extraction failures and direct-refresh
+failures retain their provider errors. Account-specific behavior is documented
+in the owning flow sections below.
+
+### Supplied nonexpiring credential example
+
+This example reads a built-in key without contacting an account service:
+
+```rust
+use maestro_models::{get_oauth_api_key, OAuthCredentials};
+use indexmap::IndexMap;
+
+let supplied = IndexMap::from([("anthropic".into(), OAuthCredentials {
+    refresh: "supplied-refresh".into(),
+    access: "supplied-access".into(),
+    expires: f64::INFINITY,
+    extra: Default::default(),
+})]);
+let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+let result = runtime.block_on(get_oauth_api_key("anthropic", &supplied, None))?
+    .ok_or("missing credential")?;
+assert_eq!(result.api_key, "supplied-access");
+assert_eq!(result.new_credentials, supplied["anthropic"]);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
 ## No-network example
 
 ```rust
