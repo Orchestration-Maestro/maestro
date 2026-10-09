@@ -47,8 +47,9 @@ back to the first nonblank body line, retaining its whitespace and at most 60
 Unicode scalars, followed by `...` only when longer. Nonempty authored descriptions
 are not truncated. Empty hints are omitted.
 
-File read/metadata parsing/selected-field failures omit only that file. A link
-metadata failure skips that link; directory-read or source-classification failure
-ends only that scan, retaining earlier records. Explicit-path metadata/source
+File read/metadata parsing/selected-field failures omit only that file. A failure
+of the initial link-kind metadata check skips that link; directory-read or
+source-classification failure (including a link's second metadata check) ends
+only that scan, retaining earlier records. Explicit-path metadata/source
 failures skip that path. Project-root and explicit-path resolution errors outside
 those catches propagate when the process directory is needed and unavailable.

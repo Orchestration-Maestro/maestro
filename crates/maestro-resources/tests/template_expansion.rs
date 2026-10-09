@@ -64,6 +64,9 @@ impl<'a> Observations<'a> {
     }
     /// Find the authored node, without following links.
     fn node(&self, path: &str) -> io::Result<&Node<'a>> {
+        if path.is_empty() {
+            return Err(io::ErrorKind::NotFound.into());
+        }
         let resolved = maestro_path::resolve(
             &[path],
             &maestro_path::Cwd {
@@ -2541,7 +2544,19 @@ const PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES: &[L
 #[test]
 fn prompt_discovery_preserves_order_and_shallow_markdown_selection() {
     for case in PROMPT_DISCOVERY_PRESERVES_ORDER_AND_SHALLOW_MARKDOWN_SELECTION_CASES {
-        run_case(case);
+        let calls = run_case(case);
+        assert!(
+            !calls
+                .iter()
+                .any(|(op, path)| op == "dir" && path == "/user/prompts/nested")
+        );
+        for name in [".gitignore", ".ignore", ".fdignore"] {
+            assert!(
+                !calls
+                    .iter()
+                    .any(|(op, path)| op == "read" && path == &format!("/extra/{name}"))
+            );
+        }
     }
 }
 
@@ -2584,7 +2599,14 @@ const PROMPT_LOADER_DISABLES_ONLY_DEFAULT_DISCOVERY_CASES: &[LoadCase<'_>] = &[L
 #[test]
 fn prompt_loader_disables_only_default_discovery() {
     for case in PROMPT_LOADER_DISABLES_ONLY_DEFAULT_DISCOVERY_CASES {
-        run_case(case);
+        let calls = run_case(case);
+        for name in [".gitignore", ".ignore", ".fdignore"] {
+            assert!(
+                !calls
+                    .iter()
+                    .any(|(op, path)| op == "read" && path == &format!("/extra/{name}"))
+            );
+        }
     }
 }
 
@@ -2647,7 +2669,14 @@ const MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES: &[LoadCase<'_>] = &[L
 #[test]
 fn maestro_prompt_loader_retains_duplicate_paths() {
     for case in MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES {
-        run_case(case);
+        let calls = run_case(case);
+        for name in [".gitignore", ".ignore", ".fdignore"] {
+            assert!(
+                !calls
+                    .iter()
+                    .any(|(op, path)| op == "read" && path == &format!("/extra/{name}"))
+            );
+        }
     }
 }
 
@@ -3132,6 +3161,8 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
         entries: &[
             ("/ambient", Node::Dir(&["a.md"])),
             ("/ambient/a.md", Node::File(Some("a"))),
+            ("/work/.maestro/prompts", Node::Dir(&["later.md"])),
+            ("/work/.maestro/prompts/later.md", Node::File(Some("later"))),
         ],
         failures: &[],
         kinds: &[],
@@ -3146,13 +3177,13 @@ const PROMPT_PATHS_KEEP_ENTRY_SPECIFIC_RESOLUTION_AND_SPELLING_CASES: &[LoadCase
         },
         paths: &[],
         expected: &[ExpectedTemplate {
-            name: "a",
-            description: "a",
+            name: "later",
+            description: "later",
             hint: None,
-            content: "a",
-            path: "a.md",
-            scope: SourceScope::Temporary,
-            base: ".",
+            content: "later",
+            path: "/work/.maestro/prompts/later.md",
+            scope: SourceScope::Project,
+            base: "/work/.maestro/prompts",
         }],
     },
     LoadCase {
