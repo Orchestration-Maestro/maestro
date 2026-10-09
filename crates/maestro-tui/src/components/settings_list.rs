@@ -192,7 +192,12 @@ impl SettingsList {
             lines.push(String::new());
         }
         if self.items.is_empty() {
-            lines.push(clip(&(self.theme.hint)("  No settings available"), width));
+            let message = (self.theme.hint)("  No settings available");
+            lines.push(if width > 0 && visible_width(&message) <= width {
+                message
+            } else {
+                clip(&message, width)
+            });
             if self.search.is_some() {
                 self.hint(&mut lines, width);
             }

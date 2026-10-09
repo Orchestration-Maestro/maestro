@@ -195,9 +195,9 @@ impl Component for SelectList {
     fn render(&self, width: usize) -> Vec<String> {
         let count = self.filtered.borrow().len();
         if count == 0 {
-            return vec![clip(
+            return vec![bound_styled(
                 &(self.theme.no_match)("  No matching commands"),
-                signed(width),
+                width,
             )];
         }
         let column = self.primary_width();
@@ -211,9 +211,9 @@ impl Component for SelectList {
         for index in start..end {
             let item = self.filtered.borrow().get(index).cloned();
             if let Some(item) = item {
-                lines.push(clip(
+                lines.push(bound_styled(
                     &self.row(&item, index == self.selected.get(), width, column),
-                    signed(width),
+                    width,
                 ));
             }
         }
@@ -334,7 +334,15 @@ fn display(item: &SelectItem) -> &str {
 fn signed(width: usize) -> isize {
     isize::try_from(width).unwrap_or(isize::MAX)
 }
-/// Clips without an ellipsis, preserving fitting bytes.
+/// Bounds styled output, retaining fitting bytes at nonzero widths.
+fn bound_styled(text: &str, width: usize) -> String {
+    if width > 0 && visible_width(text) <= width {
+        text.into()
+    } else {
+        clip(text, signed(width))
+    }
+}
+/// Clips without an ellipsis using [`truncate_to_width`].
 fn clip(text: &str, width: isize) -> String {
     truncate_to_width(
         text,

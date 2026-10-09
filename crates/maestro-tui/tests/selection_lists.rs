@@ -80,6 +80,38 @@ fn select_label_fallback_preserves_value_identity() {
     for case in list_support::cases("select_label_fallback_preserves_value_identity") {
         list_support::select_case(case);
     }
+    let list = SelectList::new(
+        vec![
+            SelectItem {
+                value: "same".into(),
+                label: String::new(),
+                description: None,
+            },
+            SelectItem {
+                value: "other".into(),
+                label: "same".into(),
+                description: None,
+            },
+        ],
+        2,
+        list_support::select_theme(false, &Rc::default()),
+        SelectListLayoutOptions::default(),
+    );
+    let first = list.get_selected_item().unwrap();
+    list.set_selected_index(1);
+    let second = list.get_selected_item().unwrap();
+    let selected = Rc::clone(&second);
+    let confirmations = Rc::new(std::cell::Cell::new(0));
+    let count = Rc::clone(&confirmations);
+    list.set_on_select(Some(Rc::new(move |item| {
+        assert!(Rc::ptr_eq(&item, &selected));
+        assert!(!Rc::ptr_eq(&item, &first));
+        assert_eq!(item.value, "other");
+        count.set(count.get() + 1);
+    })));
+    assert_eq!(list.render(80), ["  same", "→ same"]);
+    list.handle_input("\r");
+    assert_eq!(confirmations.get(), 1);
 }
 
 #[test]

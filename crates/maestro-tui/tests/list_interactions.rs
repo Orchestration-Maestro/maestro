@@ -167,3 +167,39 @@ fn rebound_keys() -> serde_json::Value {
     set_keybindings(KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new()));
     result
 }
+
+#[test]
+fn lists_preserve_fitting_theme_bytes() {
+    let _keys = list_support::KEYS.lock().unwrap();
+    for output in ["\x1b[31m", "\x1b]8;;https://example.test\x07row"] {
+        let mut theme = list_support::select_theme(false, &Rc::default());
+        theme.selected_text = Rc::new(move |_| output.into());
+        theme.no_match = Rc::new(move |_| output.into());
+        let list = SelectList::new(
+            vec![SelectItem {
+                value: "command".into(),
+                label: "Command".into(),
+                description: None,
+            }],
+            1,
+            theme,
+            SelectListLayoutOptions::default(),
+        );
+        assert_eq!(list.render(80), [output]);
+        assert_eq!(list.render(0), [""]);
+        list.set_filter("missing");
+        assert_eq!(list.render(80), [output]);
+        assert_eq!(list.render(0), [""]);
+        let mut theme = list_support::settings_theme(false, &Rc::default());
+        theme.hint = Rc::new(move |_| output.into());
+        let list = SettingsList::new(
+            vec![],
+            1,
+            theme,
+            (Rc::new(|_, _| {}), Rc::new(|| {})),
+            SettingsListOptions::default(),
+        );
+        assert_eq!(list.render(80), [output]);
+        assert_eq!(list.render(0), [""]);
+    }
+}

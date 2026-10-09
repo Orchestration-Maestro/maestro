@@ -263,17 +263,20 @@ fn show_cancellable_status(tui: TUI) {
 ## `SelectList`
 
 `SelectList` selects command records with the existing [keybindings](keybindings.md).
-Up/down wrap through nonempty matches, Enter confirms and Escape cancels; there are
-no page controls. `set_filter` matches a case-insensitive prefix of the command value
+Up/down wrap through nonempty matches. Enter confirms and Escape cancels by default;
+these controls use the current keybindings. There are no page controls. `set_filter`
+matches a case-insensitive prefix of the command value
 and resets selection without notification. Explicit selection also does not notify.
 The selected-item getter, confirmation and custom truncation context retain the original
 command handle, independent of its display label. The theme's `selected_prefix` callback
 is declared but never invoked.
 
 The empty-match message is `  No matching commands`; the scroll counter is
-`  ({selected + 1}/{count})`. Selected rows start with `→ ` and other rows with two spaces.
-Final styled command rows and the empty message use no-ellipsis clipping. Description
-layout uses the [styled-text helpers](text.md).
+`  ({selected + 1}/{count})`. Rows compose `→ ` for selection or two spaces otherwise
+before styling and clipping.
+Final styled command rows and the empty message preserve fitting bytes at nonzero
+widths and use no-ellipsis clipping otherwise. Description layout uses the
+[styled-text helpers](text.md).
 
 ```rust
 use std::rc::Rc;
@@ -297,7 +300,8 @@ assert_eq!(commands.get_selected_item().unwrap().value, "open");
 ## `SettingsList`
 
 `SettingsList` optionally searches labels through the [shared matcher](completion.md).
-Its persistent search editor is [Input](#input). Enter or a single space opens a supplied
+Its persistent search editor is [Input](#input). The confirmation key (Enter by default),
+or a single space when higher-priority movement bindings do not match, opens a supplied
 submenu before considering value cycling. `update_value` updates the first matching ID
 without invoking change notification. A submenu's repeatable completion callable can be
 retained: a supplied value is stored and notified before the child closes; no supplied

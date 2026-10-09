@@ -128,9 +128,16 @@ fn settings_submenu_delegates_and_done_restores() {
     let mut items = list_support::settings();
     let saved = Rc::clone(&done);
     let log = Rc::clone(&events);
+    let target = Rc::clone(&owner);
     items[1].submenu = Some(Rc::new(move |value, callback| {
         log.borrow_mut().push(json!(["open", value]));
         saved.replace(Some(callback));
+        target
+            .get()
+            .unwrap()
+            .upgrade()
+            .unwrap()
+            .handle_input("\x1b[B");
         Rc::new(list_support::Child {
             text: "child",
             events: Some(Rc::clone(&log)),

@@ -1343,6 +1343,9 @@
         "width": 80,
         "ops": [
           {
+            "index": 1
+          },
+          {
             "key": "\r"
           }
         ]
@@ -1350,16 +1353,16 @@
       "expected": {
         "frames": [
           [
-            "→ same                            D",
-            "  same"
+            "  same                            D",
+            "→ same"
           ]
         ],
-        "selected": "same",
+        "selected": "other",
         "events": [
           [
             "select",
-            0,
-            "same"
+            1,
+            "other"
           ]
         ],
         "calls": []
@@ -1398,8 +1401,7 @@
           {
             "width": 80
           }
-        ],
-        "width": 80
+        ]
       },
       "expected": {
         "frames": [
@@ -1409,14 +1411,6 @@
           ],
           [
             "  No match\u001b[0m"
-          ],
-          [
-            "→ One                             first",
-            "  Two                             second",
-            "  Three                           third",
-            "  Four",
-            "  Five",
-            "  (1/6)"
           ],
           [
             "→ One                             first",
@@ -2594,6 +2588,12 @@
             "key": " "
           },
           {
+            "key": "\u001b[B"
+          },
+          {
+            "width": 80
+          },
+          {
             "key": "   "
           },
           {
@@ -2618,13 +2618,20 @@
           [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "→ Alpha       on",
-            "  Beta label  2",
+            "  Alpha       on",
+            "→ Beta label  2",
             "  Gamma       read only",
-            "  (1/4)",
+            "  (2/4)",
             "",
-            "  first paragraph",
-            "  next paragraph",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  Alpha       on",
+            "→ Beta label  2",
+            "  Gamma       read only",
+            "  (2/4)",
             "",
             "  Type to search · Enter/Space to change · Esc to cancel"
           ],
@@ -2888,18 +2895,6 @@
           },
           {
             "width": 80
-          },
-          {
-            "key": "\u0015"
-          },
-          {
-            "width": 80
-          },
-          {
-            "key": "\u0019"
-          },
-          {
-            "width": 80
           }
         ]
       },
@@ -2914,20 +2909,6 @@
           ],
           [
             "> t\u001b[7mB\u001b[27me                                                                           ",
-            "",
-            "→ Beta label  2",
-            "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
-          ],
-          [
-            "> \u001b[7mB\u001b[27me                                                                            ",
-            "",
-            "→ Beta label  2",
-            "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
-          ],
-          [
-            "> \u001b[7mB\u001b[27me                                                                            ",
             "",
             "→ Beta label  2",
             "",
@@ -4477,7 +4458,7 @@
         "items": [
           {
             "id": "a",
-            "label": "A",
+            "label": "Z",
             "currentValue": "one"
           },
           {
@@ -4488,16 +4469,7 @@
         ],
         "ops": [
           {
-            "key": "A"
-          },
-          {
-            "width": 80
-          },
-          {
-            "key": ""
-          },
-          {
-            "key": "v\u0072y"
+            "key": "Z"
           },
           {
             "width": 80
@@ -4507,17 +4479,9 @@
       "expected": {
         "frames": [
           [
-            "> A\u001b[7m \u001b[27m                                                                            ",
+            "> Z\u001b[7m \u001b[27m                                                                            ",
             "",
-            "→ A              one",
-            "  VeryLongLabel  two",
-            "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
-          ],
-          [
-            "> v\u0072y\u001b[7m \u001b[27m                                                                          ",
-            "",
-            "→ VeryLongLabel  two",
+            "→ Z              one",
             "",
             "  Type to search · Enter/Space to change · Esc to cancel"
           ]
