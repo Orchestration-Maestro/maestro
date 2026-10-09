@@ -408,3 +408,70 @@ async fn assert_exhausted_retries() {
         .collect();
     assert_eq!(elapsed, [1000, 2000, 4000]);
 }
+
+#[test]
+fn maestro_response_sessions_reject_bodyless_success() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        for status in [204, 205, 200] {
+            assert_empty_success(status).await;
+        }
+    });
+}
+
+/// Distinguish absent success bodies from empty usable streams after the response hook.
+async fn assert_empty_success(status: u16) {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let (model, context, mut options) = super::invocation();
+    let hooks = Arc::new(AtomicUsize::new(0));
+    let observed = Arc::clone(&hooks);
+    options.common.on_response = Some(Arc::new(move |response, _| {
+        assert_eq!(response.status.to_bits(), f64::from(status).to_bits());
+        observed.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async { Ok(()) })
+    }));
+    options.common.fetch = Some(Arc::new(move |_| {
+        Box::pin(async move {
+            Ok(crate::HttpResponse {
+                status,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::new(),
+                body: Box::pin(stream::empty()),
+            })
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    let error = super::super::http::invoke_sse(&prepared, &model, &options, &output, &events)
+        .await
+        .unwrap_err();
+    assert_eq!(hooks.load(Ordering::SeqCst), 1);
+    if status == 200 {
+        assert_eq!(
+            error.diagnostic().message,
+            "Response stream ended before a terminal event"
+        );
+        assert!(matches!(
+            events.next().await,
+            Some(crate::AssistantMessageEvent::Start { .. })
+        ));
+    } else {
+        assert_eq!(error.diagnostic().message, "No response body");
+    }
+    assert!(
+        events.next().now_or_never().is_none(),
+        "settled invocation published an unexpected event"
+    );
+}
