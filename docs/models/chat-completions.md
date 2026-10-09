@@ -215,6 +215,8 @@ range of a double written as `null`. When a provider reports a nonempty
 is decoded as one text: a leading byte-order mark is dropped, so it does not hide a JSON
 error object, and invalid bytes appear as U+FFFD.
 
+## Whole-value conversion
+
 JSON text may nest to any depth: data that no field reads passes untouched, so an event or
 an error body with a deeply nested unread member is read as usual, and a deeply nested value
 in a field of the wrong type reads as absent. Values converted in full include tool
@@ -229,6 +231,13 @@ argument parsing retry raw projection, accepting overwritten lone-surrogate
 members only when the surviving value is representable; failed projection retains
 the native error. The client library has no such bound; it is a difference the
 owner approved, which keeps that conversion within a fixed recursion depth.
+
+Full-value conversion retains every surviving object member or fails. A surviving member
+name containing an unpaired UTF-16 escape cannot fit in a Rust string and fails
+at the native decoding boundary. Strict argument parsing retains its native error;
+signature attachment and replay omit the whole unrepresentable signature, and
+failure rendering writes the unrepresentable detail as empty text. Named-field
+selection skips unread names instead; see [catalog feed acquisition](generation.md).
 
 ## Example
 

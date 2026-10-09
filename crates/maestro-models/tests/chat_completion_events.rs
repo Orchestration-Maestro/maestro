@@ -1489,3 +1489,11 @@ fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
+    block_on(true, async {
+        assert_eq!(signature_after(r#"{"\ud800":7,"keep":1}"#).await?, None);
+        Ok(())
+    })
+}

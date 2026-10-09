@@ -543,3 +543,19 @@ fn maestro_counts_only_consumed_argument_containers() {
     let trailing = format!(r#"{{"ok":1}} {brackets}"#);
     assert_eq!(parse_streaming_json(Some(&trailing)), json!({"ok": 1}));
 }
+
+#[test]
+fn maestro_rejects_unrepresentable_argument_member_names() {
+    for input in [
+        r#"{"\ud800":7,"keep":1}"#,
+        r#"{"nested":{"\udc00":7,"keep":1}}"#,
+    ] {
+        let native = serde_json::from_str::<serde_json::Value>(input).unwrap_err();
+        assert_eq!(
+            maestro_models::parse_json_with_repair(input)
+                .unwrap_err()
+                .message,
+            native.to_string()
+        );
+    }
+}

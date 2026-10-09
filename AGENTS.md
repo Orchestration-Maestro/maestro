@@ -164,6 +164,9 @@ ordinary top-level imports and clear Rust types. Ask before removing intentional
 configurable keybindings with registered defaults, never hard-coded checks.
 The generated catalog belongs to its generator: change generation inputs or
 logic, never edit generated model records directly.
+Native developer feed APIs are explicit operations separate from runtime catalog
+lookup; they return descriptors without registering models or writing catalog files.
+See [catalog feed acquisition](docs/models/generation.md).
 
 For issue/PR comments, write the complete text to a temporary file, use
 `gh issue comment --body-file` or `gh pr comment --body-file`, and Preview

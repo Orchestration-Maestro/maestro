@@ -791,3 +791,11 @@ fn maestro_chat_forwards_control_characters_to_the_transport() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn maestro_chat_omits_unrepresentable_replayed_signatures() -> TestResult {
+    let message = replayed_with_signature(r#"{"\ud800":7,"keep":1}"#)?;
+    assert!(message.get("reasoning_details").is_none(), "{message}");
+    assert_eq!(message["tool_calls"][0]["id"], "call");
+    Ok(())
+}
