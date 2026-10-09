@@ -5,10 +5,13 @@ mod r#box;
 mod image;
 mod input;
 pub use input::Input;
+
+mod loader;
 mod spacer;
 mod text;
 mod truncated_text;
 pub use image::{Image, ImageOptions, ImageTheme};
+pub use loader::{Loader, LoaderIndicatorOptions};
 
 pub use r#box::Box;
 pub use spacer::Spacer;

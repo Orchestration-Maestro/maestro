@@ -93,6 +93,21 @@ impl TUI {
         }
     }
 
+    /// The host used for deferred writer effects.
+    pub(crate) fn runtime(&self) -> Rc<dyn TuiRuntime> {
+        Rc::clone(&self.shared.runtime)
+    }
+
+    /// An ordinary render request that does not retain the writer.
+    pub(crate) fn weak_render_request(&self) -> Rc<dyn Fn()> {
+        let weak = Rc::downgrade(&self.shared);
+        Rc::new(move || {
+            if let Some(shared) = weak.upgrade() {
+                TUI { shared }.request_render(false);
+            }
+        })
+    }
+
     /// The terminal frames are written to.
     #[must_use]
     pub fn terminal(&self) -> &TerminalHandle {
