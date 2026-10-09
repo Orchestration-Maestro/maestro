@@ -69,7 +69,10 @@ fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize
         label.to_owned()
     };
     let start = run.authored_offset(range.start);
-    Some((range.start..run.decoded_offset(start + label.len()), href))
+    Some((
+        run.decoded_offset(start)..run.decoded_offset(start + label.len()),
+        href,
+    ))
 }
 /// Reduces punctuation, unbalanced closing parentheses and entity tails.
 fn suffix(candidate: &str) -> &str {
@@ -104,10 +107,10 @@ struct Run {
     decoded: String,
     /// Text used for selected literal link spelling.
     authored: String,
-    /// Original text nodes and their decoded and authored buffer extents.
+    /// Ordered spans with decoded, authored and original source extents.
     units: Vec<Unit>,
 }
-/// Buffer extents and source provenance of one native text unit.
+/// Buffer extents of an equal span or one atomic native transformation.
 struct Unit {
     /// Original normalized source extent.
     source: Range<usize>,
@@ -130,42 +133,67 @@ impl Run {
                 let authored = run.authored.len();
                 run.decoded.push_str(&text.decoded);
                 run.authored.push_str(&text.authored);
-                run.units.push(Unit {
-                    source: part.range,
-                    decoded: decoded..run.decoded.len(),
-                    authored: authored..run.authored.len(),
-                });
+                run.spans(part.range, decoded, authored);
             }
         }
         run
     }
-    /// Maps a decoded boundary to its authored unit, preserving atomic entities.
+    /// Splits native text into equal spans and individual escaped punctuation.
+    /// A differing remainder is a native entity event, kept atomic.
+    fn spans(&mut self, source: Range<usize>, mut decoded: usize, mut authored: usize) {
+        while decoded < self.decoded.len() {
+            let display = &self.decoded[decoded..];
+            let literal = &self.authored[authored..];
+            let equal = display
+                .chars()
+                .zip(literal.chars())
+                .take_while(|(left, right)| left == right)
+                .map(|(left, _)| left.len_utf8())
+                .sum::<usize>();
+            let (display_len, literal_len) = if literal.starts_with('\\')
+                && display.as_bytes()[0].is_ascii_punctuation()
+                && literal.as_bytes().get(1) == display.as_bytes().first()
+            {
+                (1, 2)
+            } else if equal > 0 && (!literal.starts_with('&') || display == literal) {
+                (equal, equal)
+            } else {
+                (display.len(), literal.len())
+            };
+            self.units.push(Unit {
+                source: source.clone(),
+                decoded: decoded..decoded + display_len,
+                authored: authored..authored + literal_len,
+            });
+            decoded += display_len;
+            authored += literal_len;
+        }
+    }
+    /// Maps boundaries linearly in equal spans, snapping only atomic transforms.
     fn authored_offset(&self, offset: usize) -> usize {
         self.units
             .iter()
             .find(|unit| unit.decoded.end > offset)
             .map_or(self.authored.len(), |unit| {
-                let decoded = &unit.decoded;
-                let authored = &unit.authored;
-                authored.start
-                    + if self.decoded[decoded.clone()] == self.authored[authored.clone()] {
-                        offset - decoded.start
+                unit.authored.start
+                    + if self.decoded[unit.decoded.clone()] == self.authored[unit.authored.clone()]
+                    {
+                        offset - unit.decoded.start
                     } else {
                         0
                     }
             })
     }
-    /// Maps a selected authored boundary back to native display text.
+    /// Maps literal boundaries through the same ordered spans as display text.
     fn decoded_offset(&self, offset: usize) -> usize {
         self.units
             .iter()
             .find(|unit| unit.authored.end > offset)
             .map_or(self.decoded.len(), |unit| {
-                let decoded = &unit.decoded;
-                let authored = &unit.authored;
-                decoded.start
-                    + if self.decoded[decoded.clone()] == self.authored[authored.clone()] {
-                        offset - authored.start
+                unit.decoded.start
+                    + if self.decoded[unit.decoded.clone()] == self.authored[unit.authored.clone()]
+                    {
+                        offset - unit.authored.start
                     } else {
                         0
                     }
@@ -249,3 +277,6 @@ fn domain(label: &str) -> bool {
             .any(|part| part.contains('_'))
     })
 }
+
+#[cfg(test)]
+mod tests;

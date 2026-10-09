@@ -713,3 +713,70 @@ fn markdown_duplicate_definitions_are_consumed_without_gaps() {
     );
     assert_eq!(component.render(6), ["u (/a)"]);
 }
+
+#[test]
+fn markdown_mixed_escape_units_preserve_email_boundaries() {
+    let terminal = TerminalImage::new(|_| None, || 1);
+    let mut capabilities = terminal.get_capabilities();
+    capabilities.hyperlinks = true;
+    terminal.set_capabilities(capabilities);
+    let component = Markdown::new(
+        r"\*foo@example.com tail".to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        terminal,
+    );
+    assert_eq!(
+        component.render(21),
+        [format!(
+            "*{} tail",
+            maestro_tui::hyperlink("foo@example.com", "mailto:foo@example.com")
+        )]
+    );
+}
+
+#[test]
+fn markdown_mixed_escape_units_preserve_web_start() {
+    assert_mixed_escape_link(
+        r"\(https://example.com",
+        &format!(
+            "({}",
+            maestro_tui::hyperlink("https://example.com", "https://example.com")
+        ),
+    );
+}
+
+#[test]
+fn markdown_mixed_escape_units_preserve_web_suffix() {
+    assert_mixed_escape_link(
+        r"https://example.com/\*a.",
+        &format!(
+            "{}.",
+            maestro_tui::hyperlink(r"https://example.com/\*a", r"https://example.com/\*a")
+        ),
+    );
+}
+
+fn assert_mixed_escape_link(input: &str, expected: &str) {
+    let terminal = TerminalImage::new(|_| None, || 1);
+    let mut capabilities = terminal.get_capabilities();
+    capabilities.hyperlinks = true;
+    terminal.set_capabilities(capabilities);
+    let component = Markdown::new(
+        input.to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        terminal,
+    );
+    let rows = component.render(80);
+    assert_eq!(rows.len(), 1, "{input}");
+    assert_eq!(rows[0].trim_end(), expected, "{input}");
+}
