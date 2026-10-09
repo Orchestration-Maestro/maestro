@@ -36,16 +36,6 @@ fn responses_price_echoed_tier_before_requested_tier() -> chat::TestResult {
 fn responses_run_hooks_before_body_and_propagate_failures() -> chat::TestResult {
     chat::block_on(false, async {
         endpoint::assert_rows("responses_run_hooks_before_body_and_propagate_failures").await?;
-        for entry in ["raw", "simple"] {
-            let replacement =
-                endpoint::run_case(&serde_json::json!({"entry":entry,"hook":"replace"})).await?;
-            assert_eq!(
-                replacement["requests"][0]["body"],
-                serde_json::json!({"stream":true,"marker":"replacement"})
-            );
-            assert!(replacement["requests"][0]["body"].get("model").is_none());
-            assert!(replacement["requests"][0]["body"].get("input").is_none());
-        }
         let failed =
             endpoint::run_case(&serde_json::json!({"hook":"response_failure","cancel":"response"}))
                 .await?;
@@ -331,4 +321,47 @@ fn responses_trim_media_type_with_script_whitespace() -> chat::TestResult {
         }
         Ok(())
     })
+}
+
+#[test]
+fn responses_omit_falsy_payload_body_and_generated_headers() -> chat::TestResult {
+    chat::block_on(false, async {
+        for entry in ["raw", "simple"] {
+            for payload in serde_json::from_str::<Vec<serde_json::Value>>(r#"[false,0,-0.0,""]"#)? {
+                assert_falsy_payload_headers(entry, &payload).await?;
+            }
+        }
+        Ok(())
+    })
+}
+
+/// Check omitted wire bytes with absent or explicitly supplied body headers.
+async fn assert_falsy_payload_headers(
+    entry: &str,
+    payload: &serde_json::Value,
+) -> chat::TestResult {
+    for explicit in [false, true] {
+        let mut case = serde_json::json!({
+            "entry":entry,"hook":"scalar","payload":payload
+        });
+        if explicit {
+            case["options"] = serde_json::json!({"headers":{
+                "Content-Type":"application/explicit","X-Explicit":"retained"
+            }});
+        }
+        let actual = endpoint::run_case(&case).await?;
+        assert_eq!(
+            actual["requests"][0]["wire"],
+            serde_json::json!([]),
+            "{case}"
+        );
+        let headers = &actual["requests"][0]["headers"];
+        if explicit {
+            assert_eq!(headers["content-type"], "application/explicit");
+            assert_eq!(headers["x-explicit"], "retained");
+        } else {
+            assert!(headers.get("content-type").is_none(), "{case}");
+        }
+    }
+    Ok(())
 }

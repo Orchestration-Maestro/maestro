@@ -93,8 +93,8 @@ pub(super) enum Prepared {
     Nonstream,
 }
 
-/// The edited stream flag's truthiness.
-pub(super) fn streaming(value: &serde_json::Value) -> bool {
+/// Whether an edited JSON value enables a stream or request body.
+pub(super) fn truthy(value: &serde_json::Value) -> bool {
     match value {
         serde_json::Value::Null => false,
         serde_json::Value::Bool(flag) => *flag,

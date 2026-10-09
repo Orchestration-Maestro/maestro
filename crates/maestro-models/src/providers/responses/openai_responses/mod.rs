@@ -243,7 +243,7 @@ impl Request<'_> {
         }
     }
 
-    /// Ordered case-insensitive header layers with gateway and body headers applied last.
+    /// Ordered case-insensitive header layers with gateway authorization applied last.
     fn headers(&self, key: &str) -> IndexMap<String, String> {
         let mut headers = IndexMap::from([("accept".to_owned(), "application/json".to_owned())]);
         headers.extend(scope_headers());
@@ -278,7 +278,6 @@ impl Request<'_> {
         if self.model.provider == "cloudflare-ai-gateway" {
             headers.insert("cf-aig-authorization".to_owned(), format!("Bearer {key}"));
         }
-        headers.insert("content-type".to_owned(), "application/json".to_owned());
         headers
     }
 
@@ -337,7 +336,7 @@ impl Request<'_> {
         } else {
             Cow::Borrowed(self.model.base_url.as_str())
         };
-        let headers = self.headers(key);
+        let mut headers = self.headers(key);
         let mut payload = self.payload()?;
         if let Some(hook) = &self.options.common.on_payload {
             payload = hook(payload, Arc::clone(self.model)).await?;
@@ -345,14 +344,20 @@ impl Request<'_> {
         if payload.is_null() {
             return Err(RequestFailure::new("Response payload must not be null"));
         }
-        let streaming = payload.get("stream").is_some_and(source::streaming);
+        let streaming = payload.get("stream").is_some_and(source::truthy);
+        let body = if source::truthy(&payload) {
+            headers.insert("content-type".to_owned(), "application/json".to_owned());
+            compact_json(&payload)
+                .map_err(|e| RequestFailure::new(e.to_string()))?
+                .into_bytes()
+        } else {
+            Vec::new()
+        };
         let request = HttpRequest {
             method: "POST".to_owned(),
             url: endpoint_url(&base_url, "/responses")?,
             headers,
-            body: compact_json(&payload)
-                .map_err(|e| RequestFailure::new(e.to_string()))?
-                .into_bytes(),
+            body,
             signal: self.options.common.signal.clone(),
         };
         let response =

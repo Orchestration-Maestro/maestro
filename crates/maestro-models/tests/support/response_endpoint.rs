@@ -95,6 +95,7 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
     let body_abort = case["cancel"] == "body";
     let body_failure = case["cancel"] == "body_failure";
     let ordered = case["hook"] == "order";
+    let scalar = case["hook"] == "scalar";
     let content_type = case["contentType"]
         .as_str()
         .unwrap_or("text/event-stream")
@@ -108,6 +109,9 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
                     .map(|body| body.keys().collect::<Vec<_>>())
             );
             captured["wire"] = json!(std::str::from_utf8(&request.body).ok());
+        }
+        if scalar {
+            captured["wire"] = json!(request.body);
         }
         sent.lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -141,6 +145,7 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         Arc::clone(&log.hooks),
         case["hook"].as_str().unwrap_or_default().to_owned(),
     );
+    let replacement = case["payload"].clone();
     Arc::new(move |mut payload, _| {
         let label = if hook == "order" {
             json!(
@@ -159,6 +164,7 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
             "payload_failure" => Err(failure("payload failed")),
             "null" => Ok(Value::Null),
             "array" => Ok(json!(["replacement", {"retained":true} ])),
+            "scalar" => Ok(replacement.clone()),
             "nonstream" => {
                 payload["stream"] = json!(false);
                 Ok(payload)
@@ -310,6 +316,12 @@ pub async fn run_case(case: &Value) -> TestResult<Value> {
 }
 /// Compare recorded observations, with native parser text checked at its own boundary.
 fn compare(row: &Value, mut actual: Value) {
+    if row["case"]["hook"] == "replace" {
+        assert_eq!(
+            actual["requests"][0]["body"],
+            json!({"stream":true,"marker":"replacement"})
+        );
+    }
     if row["expected"]["result"]["errorMessage"] == json!({"nativeDiagnostic":true}) {
         assert!(
             actual["result"]["errorMessage"]
