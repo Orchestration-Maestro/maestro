@@ -864,3 +864,115 @@ fn partial_event(
         }
     }
 }
+
+#[test]
+fn maestro_response_sessions_use_native_http() {
+    use std::sync::Arc;
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let (request_sender, request_receiver) = tokio::sync::oneshot::channel();
+    let (closed_sender, closed_receiver) = tokio::sync::oneshot::channel();
+    let server = std::thread::spawn(move || {
+        let (mut peer, _) = listener.accept().unwrap();
+        let request = read_native_request(&mut peer);
+        request_sender.send(request).unwrap();
+        send_native_terminal(&mut peer);
+        assert_native_body_closed(&mut peer);
+        closed_sender.send(()).unwrap();
+    });
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let (mut model, context, options) = super::invocation();
+        Arc::make_mut(&mut model).base_url = format!("http://{address}/codex");
+        let prepared =
+            super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+                .await
+                .unwrap();
+        let output = Arc::new(std::sync::RwLock::new(
+            crate::providers::assistant_output::initial_message(&model),
+        ));
+        let events = crate::AssistantMessageEventStream::new();
+        super::super::http::invoke_sse(&prepared, &model, &options, &output, &events)
+            .await
+            .unwrap();
+        let (headers, body) = request_receiver.await.unwrap();
+        assert!(headers.starts_with("POST /codex/responses HTTP/1.1\r\n"));
+        assert_eq!(
+            body,
+            crate::providers::json_text::compact_json(&prepared.body)
+                .unwrap()
+                .into_bytes()
+        );
+        for (name, value) in &prepared.headers {
+            assert!(
+                headers.contains(&format!("\r\n{name}: {value}\r\n")),
+                "missing {name}"
+            );
+        }
+        assert_eq!(
+            serde_json::to_value(&output.read().unwrap().content).unwrap()[0]["text"],
+            "native Ω🧭"
+        );
+        assert_eq!(output.read().unwrap().stop_reason, crate::StopReason::Stop);
+        closed_receiver.await.unwrap();
+    });
+    server.join().unwrap();
+}
+
+/// Read one complete native HTTP request, preserving authored body bytes.
+fn read_native_request(peer: &mut std::net::TcpStream) -> (String, Vec<u8>) {
+    use std::io::Read as _;
+    let mut bytes = Vec::new();
+    let boundary = loop {
+        let mut chunk = [0; 1024];
+        let count = peer.read(&mut chunk).unwrap();
+        assert_ne!(count, 0, "request closed before headers");
+        bytes.extend_from_slice(&chunk[..count]);
+        if let Some(position) = bytes.windows(4).position(|part| part == b"\r\n\r\n") {
+            break position + 4;
+        }
+    };
+    let headers = String::from_utf8(bytes[..boundary].to_vec()).unwrap();
+    let length: usize = headers
+        .lines()
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.eq_ignore_ascii_case("content-length")
+                .then(|| value.trim().parse().unwrap())
+        })
+        .unwrap();
+    while bytes.len() < boundary + length {
+        let mut chunk = [0; 1024];
+        let count = peer.read(&mut chunk).unwrap();
+        assert_ne!(count, 0, "request closed before body");
+        bytes.extend_from_slice(&chunk[..count]);
+    }
+    assert_eq!(bytes.len(), boundary + length);
+    (headers, bytes[boundary..].to_vec())
+}
+
+/// Send split UTF-8 and CRLF event bytes without terminating the chunked HTTP body.
+fn send_native_terminal(peer: &mut std::net::TcpStream) {
+    use std::io::Write as _;
+    peer.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n").unwrap();
+    let text = "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"message\",\"content\":[{\"type\":\"output_text\"}]}}\r\n\r\ndata: {\"type\":\"response.output_text.delta\",\"delta\":\"native Ω🧭\"}\r\n\r\ndata: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\r\n\r\n";
+    for &byte in text.as_bytes() {
+        peer.write_all(&[b'1', b'\r', b'\n', byte, b'\r', b'\n'])
+            .unwrap();
+    }
+    peer.flush().unwrap();
+}
+
+/// Observe client body cancellation while the server still has no HTTP EOF to send.
+fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
+    use std::io::Read as _;
+    let mut byte = [0];
+    match peer.read(&mut byte) {
+        Ok(0) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
+        outcome => panic!("client did not close terminal body: {outcome:?}"),
+    }
+}
