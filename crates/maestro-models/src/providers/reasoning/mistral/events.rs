@@ -14,7 +14,7 @@ use crate::{
 use num_traits::ToPrimitive;
 use std::sync::{Arc, PoisonError};
 
-/// The current text block in the shared output.
+/// Active content and tool associations for one shared output.
 #[derive(Default)]
 pub(super) struct Events {
     /// Active content index.

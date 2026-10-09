@@ -39,7 +39,7 @@ pub(super) struct Choice {
 /// Incoming message changes.
 #[derive(Deserialize)]
 pub(super) struct Delta {
-    /// Plain text content.
+    /// Selected text and thinking contributions.
     #[serde(default)]
     pub content: super::content::Contents,
     /// Optional nullable tool updates.

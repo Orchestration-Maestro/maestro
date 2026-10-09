@@ -188,7 +188,7 @@ pub async fn simple_controls() -> TestResult {
     Ok(())
 }
 
-/// All cumulative aliases survive transitions and admission leaves response hooks unused.
+/// An early message alias observes later text while the response hook stays unused.
 pub async fn shared_admission() -> TestResult {
     let (reached, waiting) = oneshot::channel();
     let (release, released) = oneshot::channel();
