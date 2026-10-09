@@ -1034,6 +1034,7 @@ fn overlay_focus_restoration_uses_post_callback_stack_slot() {
             .unwrap();
         scene.terminal.send_input("editor");
         assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
+        options.borrow_mut().visible = None;
         scene.stop();
     }
 }
@@ -1113,6 +1114,7 @@ fn overlay_predecessor_rechecks_callback_hidden_or_removed_identity() {
         assert_eq!(calls.get(), 1);
         assert!(candidate.inputs.borrow().is_empty());
         assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
+        options.borrow_mut().visible = None;
         scene.stop();
     }
 }
