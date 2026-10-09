@@ -150,9 +150,8 @@ impl Input {
         } else if bindings.matches(data, "tui.editor.undo") {
             self.state.borrow_mut().undo();
         } else if bindings.matches(data, "tui.input.submit") || data == "\n" {
-            let callback = self.on_submit();
-            let value = self.get_value();
-            if let Some(callback) = callback {
+            if let Some(callback) = self.on_submit() {
+                let value = self.get_value();
                 callback(&value);
             }
         } else {

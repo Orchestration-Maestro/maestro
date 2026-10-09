@@ -10808,7 +10808,7 @@
           "value": "aa\tbb"
         },
         {
-          "line": "> aa\t\u001b[7mb\u001b[27mb       "
+          "line": "> aa   \u001b[7mb\u001b[27mb       "
         },
         {
           "value": "aa\tbb"
@@ -10817,7 +10817,7 @@
           "value": "!aa\tbb"
         },
         {
-          "line": "> !\u001b[7ma\u001b[27ma\tbb      "
+          "line": "> !\u001b[7ma\u001b[27ma   bb      "
         }
       ],
       "events": []
@@ -10860,7 +10860,7 @@
           "value": "aa\tbb"
         },
         {
-          "line": "> aa\u001b[7m\t\u001b[27mbb       "
+          "line": "> aa\u001b[7m \u001b[27m  bb       "
         },
         {
           "value": "aa\tbb"
@@ -10869,7 +10869,7 @@
           "value": "aa\tbb!"
         },
         {
-          "line": "> aa\tbb!\u001b[7m \u001b[27m     "
+          "line": "> aa   bb!\u001b[7m \u001b[27m     "
         }
       ],
       "events": []

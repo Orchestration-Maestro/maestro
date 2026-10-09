@@ -97,7 +97,7 @@ fn sgr_params(code: &str) -> Option<&str> {
 }
 
 /// Last positions at which a CSI or a string escape of a text can still end.
-struct Endings {
+pub(crate) struct Endings {
     /// Position of the last CSI final byte.
     csi: Option<usize>,
     /// Position of the last BEL or `ESC \` terminator byte.
@@ -106,12 +106,19 @@ struct Endings {
 
 impl Endings {
     /// Scans `text` once for the last possible terminators.
-    fn of(text: &str) -> Self {
+    pub(crate) fn of(text: &str) -> Self {
         let string_terminator = text.rfind("\x1b\\").map(|index| index + 1);
         Self {
             csi: text.rfind(['m', 'G', 'K', 'H', 'J']),
             string: text.rfind('\x07').max(string_terminator),
         }
+    }
+
+    /// Recognizes an escape only when this input still has a possible terminator.
+    pub(crate) fn recognize<'a>(&self, text: &'a str, position: usize) -> Option<&'a str> {
+        self.can_end(text, position)
+            .then(|| recognize(text, position))
+            .flatten()
     }
 
     /// Whether an escape starting at `position` has any terminator after it.
@@ -162,10 +169,7 @@ impl<'a> Parsed<'a> {
         while let Some(found) = text[index..].find('\x1b') {
             let position = index + found;
             self.visible.push_str(&text[index..position]);
-            let code = endings
-                .can_end(text, position)
-                .then(|| recognize(text, position))
-                .flatten();
+            let code = endings.recognize(text, position);
             if let Some(code) = code {
                 self.push_event(code);
                 index = position + code.len();

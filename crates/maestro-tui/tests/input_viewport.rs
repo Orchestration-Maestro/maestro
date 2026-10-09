@@ -116,3 +116,45 @@ const WIDE_CASES: &[(&str, [&str; 3])] = &[
         ],
     ),
 ];
+
+#[test]
+fn tab_cursor_fits_without_changing_stored_text() {
+    let input = Input::new();
+    input.set_value("\t".into());
+    assert_eq!(input.render(3), ["> \x1b[7m \x1b[27m"]);
+    assert_eq!(input.get_value(), "\t");
+}
+
+#[test]
+fn combining_suffix_reserves_the_mapped_end_cursor() {
+    let input = Input::new();
+    input.set_value("\u{301}".into());
+    input.handle_input("ab");
+    assert_eq!(input.render(4), ["> b\u{301}\x1b[7m \x1b[27m"]);
+    assert_eq!(input.get_value(), "ab\u{301}");
+    input.handle_input("c");
+    assert_eq!(input.get_value(), "abc\u{301}");
+}
+
+#[test]
+fn unterminated_escape_prefixes_remain_literal_at_the_end_cursor() {
+    for prefix in ["\x1b[", "\x1b]", "\x1b_"] {
+        let input = Input::new();
+        let text = prefix.repeat(16_384);
+        input.set_value(text.clone());
+        input.handle_input("\x05");
+        assert_eq!(input.render(3), ["> \x1b[7m \x1b[27m"]);
+        assert_eq!(input.get_value(), text);
+    }
+}
+
+#[test]
+fn tabs_display_as_three_spaces_with_the_original_edit_cursor() {
+    let input = Input::new();
+    input.set_value("a\tb".into());
+    input.handle_input("\x1b[C");
+    input.handle_input("\x1b[C");
+    assert_eq!(input.render(8), ["> a   \x1b[7mb\x1b[27m "]);
+    input.handle_input("!");
+    assert_eq!(input.get_value(), "a\t!b");
+}

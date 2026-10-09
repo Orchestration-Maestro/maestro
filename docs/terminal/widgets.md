@@ -170,7 +170,9 @@ Edits segment the prefix or suffix at the cursor, including cross-boundary joins
 A completed paste removes CR/LF, expands tabs to four spaces and captures one undo
 snapshot before dispatching its suffix. Rendering returns one string; widths at
 most two show only the clipped prompt without a cursor, and a focused wider view
-emits the hardware cursor marker. Input has no rendering cache.
+emits the hardware cursor marker. Literal tabs display as three spaces without
+changing the stored text or editing position. A cursor mapped to the selected
+text's end gets a reserved blank cell. Input has no rendering cache.
 
 ### Shared editing history
 
