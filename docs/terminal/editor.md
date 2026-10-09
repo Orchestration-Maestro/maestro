@@ -34,7 +34,7 @@ live terminal rows. Wrapping segments visible graphemes after removing recognize
 escapes, retaining their original byte ranges. Escapes inside a grapheme stay with
 it; between graphemes they travel with the following one, or the preceding one at
 line end. Supplied segments refine only at these boundaries. An indivisible
-overwide grapheme is emitted alone; a narrow viewport clips only display text. Width zero emits empty rows without
+overwide grapheme stays intact; a narrow viewport clips only display text. Width zero emits empty rows without
 a cursor marker. Both scroll labels are clipped before border styling. Caller
 styling may add visible text. Display tabs expand outside recognized escapes;
 escape-safe cursor decoration never changes the stored edit position.
