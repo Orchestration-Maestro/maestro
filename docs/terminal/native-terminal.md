@@ -90,7 +90,7 @@ Standard input is read as a stream of UTF-8, at most 4096 bytes per read: a read
 is available at that moment, and a longer burst arrives in consecutive reads. A character
 split across reads is held until it completes, and invalid bytes become U+FFFD; only text
 that is complete reaches the toolkit's shared `StdinBuffer`. Its framing and release rules
-are described in [Input](input.md). Each event it releases reaches the input callback in
+are described in [Input](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/input.md). Each event it releases reaches the input callback in
 order, except keyboard replies and the events of a drain, which are described below; a
 paste has its two markers put back. Malformed UTF-8 is never treated as a legacy
 alt-modified byte. At the end of input the decoder is flushed and reading stops, but the
@@ -113,7 +113,7 @@ after that still enables the enhanced protocol, and both modes are then disabled
 `drain_input(max, idle)` is for the end of a session, so key releases do not reach the
 shell. It defaults to at most 1000 ms and 50 ms without input. When called, before the
 returned future is polled, it disables the keyboard modes and stops delivering input.
-Input still goes to the shared buffer under the [Input](input.md) framing and release rules.
+Input still goes to the shared buffer under the [Input](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/input.md) framing and release rules.
 While the drain runs, every event the buffer releases is discarded, whatever released it.
 The drain does not reset framing state.
 
