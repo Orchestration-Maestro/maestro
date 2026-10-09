@@ -127,6 +127,7 @@ fn tab_cursor_fits_without_changing_stored_text() {
 
 #[test]
 fn combining_suffix_reserves_the_mapped_end_cursor() {
+    let _guard = input_support::globals();
     let input = Input::new();
     input.set_value("\u{301}".into());
     input.handle_input("ab");
@@ -138,6 +139,7 @@ fn combining_suffix_reserves_the_mapped_end_cursor() {
 
 #[test]
 fn unterminated_escape_prefixes_remain_literal_at_the_end_cursor() {
+    let _guard = input_support::globals();
     for prefix in ["\x1b[", "\x1b]", "\x1b_"] {
         let input = Input::new();
         let text = prefix.repeat(16_384);
@@ -149,7 +151,44 @@ fn unterminated_escape_prefixes_remain_literal_at_the_end_cursor() {
 }
 
 #[test]
+fn tab_expansion_preserves_recognized_escape_payloads_and_cursor_mapping() {
+    let _guard = input_support::globals();
+    for (text, width, expected) in [
+        (
+            "\x1b]0;A\tB\x07X",
+            12,
+            "> \x1b]0;A\tB\x07X\x1b[7m \x1b[27m        ",
+        ),
+        (
+            "\x1b_meta\tdata\x07",
+            4,
+            "> \x1b_meta\tdata\x07\x1b[7m \x1b[27m ",
+        ),
+        ("\x1b[1\tGX\tY", 12, "> \x1b[1\tGX   Y\x1b[7m \x1b[27m    "),
+        (
+            "\x1b]0;A\tB\x1b\\X",
+            12,
+            "> \x1b]0;A\tB\x1b\\X\x1b[7m \x1b[27m        ",
+        ),
+        (
+            "\x1b_meta\tdata\x1b\\",
+            4,
+            "> \x1b_meta\tdata\x1b\\\x1b[7m \x1b[27m ",
+        ),
+    ] {
+        let input = Input::new();
+        input.set_value(text.into());
+        input.handle_input("\x05");
+        assert_eq!(input.render(width), [expected], "{text:?}");
+        assert_eq!(input.get_value(), text);
+        input.handle_input("!");
+        assert_eq!(input.get_value(), format!("{text}!"));
+    }
+}
+
+#[test]
 fn tabs_display_as_three_spaces_with_the_original_edit_cursor() {
+    let _guard = input_support::globals();
     let input = Input::new();
     input.set_value("a\tb".into());
     input.handle_input("\x1b[C");

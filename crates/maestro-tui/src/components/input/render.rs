@@ -10,8 +10,7 @@ pub(super) fn line(state: &InputState, width: usize, focused: bool) -> String {
         return "> "[..width].to_owned();
     }
     let available = width - 2;
-    let text = crate::text::expand_tabs(&state.value);
-    let cursor = state.cursor + 2 * state.value[..state.cursor].matches('\t').count();
+    let (text, cursor) = crate::text::expand_tabs(&state.value, state.cursor);
     let (visible, cursor) = viewport(&text, cursor, available);
     let cursor = display_cursor(&visible, cursor);
     let at = get_segmenter(&visible[cursor..])
