@@ -1,5 +1,8 @@
 //! Standard response endpoint invocation.
 
+mod source;
+use source::{Prepared, Source};
+
 use super::openai_responses_shared::{
     OpenAIResponsesStreamOptions,
     messages::{convert_responses_messages, convert_responses_tools},
@@ -14,17 +17,17 @@ use crate::providers::chat::openai_completions::{
     copied, layer, level_name, resolve_cache_retention, scope_headers,
 };
 use crate::providers::http::{
-    HttpBody, HttpRequest, HttpResponse, Raced, RequestFailure, ServerSentEvent, SseMessages,
-    endpoint_url, race, send, spawn_detached, stream_failure,
+    HttpRequest, RequestFailure, SseMessages, endpoint_url, sdk_status_failure,
+    send_with_status_error, spawn_detached,
 };
-use crate::providers::json_text::{compact_json, is_truthy, member, raw_json};
+use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Cancellation, Context,
-    DiagnosticErrorInfo, DoneReason, Model, ModelCompat, ModelThinkingLevel, ProviderResponse,
+    DiagnosticErrorInfo, DoneReason, Model, ModelCompat, ModelThinkingLevel,
     SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel,
     build_base_options, clamp_thinking_level, get_env_api_key,
 };
-use futures_util::{StreamExt, stream};
+use futures_util::stream;
 use indexmap::IndexMap;
 use serde::Serialize;
 use serde_json::Value;
@@ -171,19 +174,16 @@ struct Payload<'a> {
     model: &'a str,
     /// Converted conversation.
     input: Vec<Value>,
-    /// Nonempty converted tool declarations.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tools: Option<Vec<Value>>,
     /// Request a streamed response.
     stream: bool,
+    /// Session key when caching is enabled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prompt_cache_key: Option<&'a str>,
+    /// Long retention when supported.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prompt_cache_retention: Option<&'a str>,
     /// Do not store the response.
     store: bool,
-    /// Reasoning request for reasoning models.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    reasoning: Option<Reasoning<'a>>,
-    /// Encrypted reasoning requested for replay.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    include: Option<[&'a str; 1]>,
     /// Requested output limit; zero and NaN are omitted.
     #[serde(skip_serializing_if = "Option::is_none")]
     max_output_tokens: Option<f64>,
@@ -193,12 +193,15 @@ struct Payload<'a> {
     /// Service tier with a distinct explicit null.
     #[serde(skip_serializing_if = "Option::is_none")]
     service_tier: Option<&'a Option<OpenAIResponsesServiceTier>>,
-    /// Session key when caching is enabled.
+    /// Nonempty converted tool declarations.
     #[serde(skip_serializing_if = "Option::is_none")]
-    prompt_cache_key: Option<&'a str>,
-    /// Long retention when supported.
+    tools: Option<Vec<Value>>,
+    /// Reasoning request for reasoning models.
     #[serde(skip_serializing_if = "Option::is_none")]
-    prompt_cache_retention: Option<&'a str>,
+    reasoning: Option<Reasoning<'a>>,
+    /// Encrypted reasoning requested for replay.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    include: Option<[&'a str; 1]>,
 }
 
 /// Requested reasoning effort.
@@ -327,8 +330,8 @@ impl Request<'_> {
         .map_err(|e| RequestFailure::new(e.to_string()))
     }
 
-    /// Run hooks around sending, before returning the successful response body.
-    async fn send(&self, key: &str) -> Result<HttpBody, RequestFailure> {
+    /// Prepare the edited request and response before invoking the response hook.
+    async fn send(&self, key: &str) -> Result<Prepared, RequestFailure> {
         let base_url = if is_cloudflare_provider(&self.model.provider) {
             Cow::Owned(resolve_cloudflare_base_url(self.model)?)
         } else {
@@ -339,6 +342,10 @@ impl Request<'_> {
         if let Some(hook) = &self.options.common.on_payload {
             payload = hook(payload, Arc::clone(self.model)).await?;
         }
+        let payload_object = payload
+            .as_object()
+            .ok_or_else(|| RequestFailure::new("Response payload must be an object"))?;
+        let streaming = payload_object.get("stream").is_some_and(source::streaming);
         let request = HttpRequest {
             method: "POST".to_owned(),
             url: endpoint_url(&base_url, "/responses")?,
@@ -348,23 +355,14 @@ impl Request<'_> {
                 .into_bytes(),
             signal: self.options.common.signal.clone(),
         };
-        let HttpResponse {
-            body,
-            status,
-            headers,
-            ..
-        } = send(request, &self.options.common).await?;
+        let response =
+            send_with_status_error(request, &self.options.common, sdk_status_failure).await?;
+        let (prepared, observation) =
+            source::prepare(response, streaming, self.options.common.signal.as_ref()).await?;
         if let Some(hook) = &self.options.common.on_response {
-            hook(
-                ProviderResponse {
-                    status: f64::from(status),
-                    headers,
-                },
-                Arc::clone(self.model),
-            )
-            .await?;
+            hook(observation, Arc::clone(self.model)).await?;
         }
-        Ok(body)
+        Ok(prepared)
     }
 }
 
@@ -392,10 +390,13 @@ async fn run(
             options: &options,
             retention: resolve_cache_retention(options.common.cache_retention),
         };
-        let body = request.send(&key).await?;
+        let prepared = request.send(&key).await?;
         stream.push(AssistantMessageEvent::Start {
             partial: Arc::clone(&output),
         });
+        let Prepared::Stream(body) = prepared else {
+            return Err(RequestFailure::new("Response is not an event stream"));
+        };
         let source = stream::unfold(
             Source {
                 body,
@@ -484,11 +485,11 @@ fn reasoning<'a>(model: &'a Model, options: &OpenAIResponsesOptions) -> Option<R
     }
     let map = model.thinking_level_map.as_ref();
     if options.reasoning_effort.is_some() || options.reasoning_summary.is_some() {
-        let level = options.reasoning_effort.unwrap_or(ThinkingLevel::Medium);
-        let effort = map
-            .and_then(|m| m.get(&level.into()))
-            .and_then(Option::as_deref)
-            .unwrap_or_else(|| level_name(level));
+        let effort = options.reasoning_effort.map_or("medium", |level| {
+            map.and_then(|m| m.get(&level.into()))
+                .and_then(Option::as_deref)
+                .unwrap_or_else(|| level_name(level))
+        });
         return Some(Reasoning {
             effort,
             summary: Some(
@@ -510,74 +511,4 @@ fn reasoning<'a>(model: &'a Model, options: &OpenAIResponsesOptions) -> Option<R
         effort,
         summary: None,
     })
-}
-
-/// Framing state for one body.
-struct Source {
-    /// Underlying transport body.
-    body: HttpBody,
-    /// Shared frame reader.
-    messages: SseMessages,
-    /// Completed event data awaiting reduction.
-    pending: VecDeque<ServerSentEvent>,
-    /// Whether the body ended.
-    ended: bool,
-    /// Whether a DONE prefix has suppressed further parsing.
-    done: bool,
-    /// Cancellation of body consumption.
-    signal: Option<Cancellation>,
-}
-impl Source {
-    /// Validate one frame; DONE suppresses parsing while the body continues to drain.
-    fn frame(&mut self, event: ServerSentEvent) -> Result<Option<String>, DiagnosticErrorInfo> {
-        if self.done || event.data.starts_with("[DONE]") {
-            self.done = true;
-            return Ok(None);
-        }
-        let parsed = raw_json(&event.data).map_err(|error| diagnostic(error.to_string()))?;
-        if event
-            .event
-            .as_deref()
-            .is_some_and(|name| name.starts_with("thread."))
-        {
-            return Ok(None);
-        }
-        if let Some(error) = member(parsed, "error").filter(|v| is_truthy(v)) {
-            return Err(diagnostic(stream_failure(error).into_text()));
-        }
-        Ok(Some(event.data))
-    }
-
-    /// Read the next framed event or source failure.
-    async fn next(&mut self) -> Option<Result<String, DiagnosticErrorInfo>> {
-        loop {
-            if let Some(event) = self.pending.pop_front() {
-                match self.frame(event) {
-                    Ok(None) => continue,
-                    Ok(Some(data)) => return Some(Ok(data)),
-                    Err(error) => return Some(Err(error)),
-                }
-            }
-            if self.ended {
-                return None;
-            }
-            let frames = match race(self.body.next(), None, self.signal.as_ref()).await {
-                Raced::Done(Some(Ok(bytes))) => self.messages.push(&bytes),
-                Raced::Done(None) => {
-                    self.ended = true;
-                    self.messages.finish()
-                }
-                Raced::Done(Some(Err(_)))
-                    if self.signal.as_ref().is_some_and(Cancellation::is_aborted) =>
-                {
-                    return Some(Err(diagnostic("Request was aborted")));
-                }
-                Raced::Done(Some(Err(error))) => return Some(Err(diagnostic(error.to_string()))),
-                Raced::Cancelled | Raced::TimedOut => {
-                    return Some(Err(diagnostic("Request was aborted")));
-                }
-            };
-            self.pending.extend(frames);
-        }
-    }
 }

@@ -699,20 +699,25 @@ fn maestro_http_retries_native_header_rejections() -> TestResult {
 }
 
 #[test]
-fn maestro_http_omits_unrepresentable_failure_details() -> TestResult {
+fn maestro_http_reports_unrepresentable_failure_details() -> TestResult {
     chat::block_on(true, async {
         for error in [
             r#"{"\ud800":7,"keep":1}"#,
             r#"{"message":{"\ud800":7,"keep":1}}"#,
         ] {
-            for (status, body, expected) in [
-                (400, format!("{{\"error\":{error}}}"), "400 "),
-                (200, format!("data: {{\"error\":{error}}}\n\n"), ""),
+            for (status, body) in [
+                (400, format!("{{\"error\":{error}}}")),
+                (200, format!("data: {{\"error\":{error}}}\n\n")),
             ] {
                 let target = transport(vec![Attempt::body(status, &[], body.into_bytes())]);
                 let outcome = run(&target, |options| options.max_retries = Some(0.0)).await?;
                 assert!(matches!(outcome.stop_reason, StopReason::Error));
-                assert_eq!(outcome.error.as_deref(), Some(expected));
+                assert!(
+                    outcome
+                        .error
+                        .as_deref()
+                        .is_some_and(|error| error.contains("invalid utf-8"))
+                );
             }
         }
         Ok(())

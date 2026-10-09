@@ -38,11 +38,6 @@ fn history(case: &Value) -> TestResult<maestro_models::Context> {
             .ok_or("history object")?
             .extend(changes.clone());
     }
-    for message in history["messages"].as_array_mut().ok_or("messages")? {
-        if message["role"] == "assistant" && message["usage"] == json!({}) {
-            message.as_object_mut().ok_or("assistant")?.remove("usage");
-        }
-    }
     context(&history)
 }
 /// Read a tagged nonfinite test number.
@@ -98,8 +93,21 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
         case["chunked"] == true,
     );
     let body_abort = case["cancel"] == "body";
+    let ordered = case["hook"] == "order";
+    let content_type = case["contentType"]
+        .as_str()
+        .unwrap_or("text/event-stream")
+        .to_owned();
     Ok(Arc::new(move |request| {
-        let captured = json!({"url":request.url,"headers":request.headers,"body":serde_json::from_slice::<Value>(&request.body).unwrap_or(Value::Null)});
+        let mut captured = json!({"url":request.url,"headers":request.headers,"body":serde_json::from_slice::<Value>(&request.body).unwrap_or(Value::Null)});
+        if ordered {
+            captured["bodyKeys"] = json!(
+                captured["body"]
+                    .as_object()
+                    .map(|body| body.keys().collect::<Vec<_>>())
+            );
+            captured["wire"] = json!(std::str::from_utf8(&request.body).ok());
+        }
         sent.lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(captured);
@@ -115,7 +123,7 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
             status,
             status_text: String::new(),
             headers: [
-                ("content-type".into(), "text/event-stream".into()),
+                ("content-type".into(), content_type.clone()),
                 ("x-controlled".into(), "yes".into()),
             ]
             .into(),
@@ -130,13 +138,26 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         case["hook"].as_str().unwrap_or_default().to_owned(),
     );
     Arc::new(move |mut payload, _| {
-        let label = json!("payload");
+        let label = if hook == "order" {
+            json!(
+                payload
+                    .as_object()
+                    .map(|payload| payload.keys().collect::<Vec<_>>())
+            )
+        } else {
+            json!("payload")
+        };
         recorded
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(label);
         let result = match hook.as_str() {
             "payload_failure" => Err(failure("payload failed")),
+            "null" => Ok(Value::Null),
+            "nonstream" => {
+                payload["stream"] = json!(false);
+                Ok(payload)
+            }
             "replace" => {
                 payload["marker"] = json!("replacement");
                 Ok(payload)
@@ -150,7 +171,7 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         Box::pin(std::future::ready(result))
     })
 }
-/// Response hook observes headers before the body is read.
+/// Response hook records the response after endpoint preparation.
 fn response_hook(case: &Value, log: &Log, signal: Cancellation) -> OnResponse {
     let (recorded, hook, cancel) = (
         Arc::clone(&log.hooks),

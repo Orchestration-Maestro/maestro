@@ -10580,7 +10580,6 @@
             "model": "gpt-5.4",
             "content": [],
             "stopReason": "stop",
-            "usage": {},
             "timestamp": 0
           }
         ]

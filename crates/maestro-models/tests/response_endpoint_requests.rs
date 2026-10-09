@@ -153,3 +153,58 @@ fn responses_ignore_unsupported_common_options() -> chat::TestResult {
         endpoint::assert_rows("responses_ignore_unsupported_common_options"),
     )
 }
+
+#[test]
+fn responses_summary_only_uses_literal_medium() -> chat::TestResult {
+    chat::block_on(false, async {
+        for mapped in ["low", ""] {
+            let actual = endpoint::run_case(&serde_json::json!({
+                "model":{"reasoning":true,"thinkingLevelMap":{"medium":mapped}},
+                "options":{"reasoningSummary":"detailed"}
+            }))
+            .await?;
+            assert_eq!(
+                actual["requests"][0]["body"]["reasoning"]["effort"],
+                "medium"
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn responses_preserve_payload_insertion_order_at_hook_and_wire() -> chat::TestResult {
+    chat::block_on(false, async {
+        let actual = endpoint::run_case(&serde_json::json!({
+            "hook":"order","model":{"reasoning":true},
+            "context":{"tools":[{"name":"lookup","description":"Find","parameters":{"type":"object"}}]},
+            "options":{"sessionId":"session","cacheRetention":"long","maxTokens":7,"temperature":0.5,"serviceTier":"flex","reasoningEffort":"low"}
+        })).await?;
+        let expected = serde_json::json!([
+            "model",
+            "input",
+            "stream",
+            "prompt_cache_key",
+            "prompt_cache_retention",
+            "store",
+            "max_output_tokens",
+            "temperature",
+            "service_tier",
+            "tools",
+            "reasoning",
+            "include"
+        ]);
+        assert_eq!(actual["hooks"][0], expected);
+        assert_eq!(actual["requests"][0]["bodyKeys"], expected);
+        let wire = actual["requests"][0]["wire"].as_str().ok_or("wire")?;
+        let mut previous = 0;
+        for key in expected.as_array().ok_or("keys")? {
+            let position = wire
+                .find(&format!("\"{}\":", key.as_str().ok_or("key")?))
+                .ok_or("serialized key")?;
+            assert!(position >= previous, "wire key order: {wire}");
+            previous = position;
+        }
+        Ok(())
+    })
+}

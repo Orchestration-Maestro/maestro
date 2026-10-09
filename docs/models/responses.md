@@ -18,12 +18,15 @@ model compatibility permits it. Disabling `sendSessionIdHeader` leaves generated
 generated affinity and the prompt key, not explicitly supplied headers.
 
 Reasoning options select effort and summary for reasoning models; requested
-reasoning includes encrypted content for replay. Service tier options distinguish
+reasoning includes encrypted content for replay. Summary alone selects literal
+medium effort, without consulting the model's effort mapping. Service tier options distinguish
 omission, explicit null and named values. Pricing uses the echoed tier unless
 it is absent or null, then the requested tier. Flex scales cost by 0.5; priority
 uses 2.5 for exactly `gpt-5.5` and 2 for other models.
 
-Successful response hooks complete before Start and body processing.
+Response hooks complete before Start and streamed body processing. If a payload
+hook disables streaming, the response body is consumed before the response hook;
+a non-event response cannot feed the event reducer.
 Transport, metadata and maximum retry-delay preferences are unused here. The
 endpoint uses the shared [HTTP transport](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport)
 and the conversion and reduction described below.

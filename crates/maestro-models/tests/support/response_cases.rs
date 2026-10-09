@@ -15,7 +15,7 @@ struct Row {
     /// All retained observations are compared.
     expected: Expected,
 }
-/// Selected inputs; model and history are delegated in full to their existing builders.
+/// Selected model and history overrides are passed to their existing builders.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct Query {
@@ -56,7 +56,7 @@ struct Query {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     status: Option<u16>,
 }
-/// Every recognized option is passed to its owning typed option constructor.
+/// Recognized options are consumed according to the selected entry point.
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 enum OptionField {

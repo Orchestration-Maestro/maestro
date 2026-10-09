@@ -1303,8 +1303,8 @@ fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
     )
 }
 
-/// An error payload is described in full up to 127 nested arrays or objects; a deeper one is
-/// malformed, so it adds no description.
+/// Selected error details within the conversion bound render; deeper details report the
+/// native conversion failure.
 async fn error_details_convert_to_the_json_limit() -> TestResult {
     let deepest = cases::DEEPEST_NESTING;
     let failure = failure_of_error_body(vec![deep_error(deepest).into_bytes()]).await?;
@@ -1314,9 +1314,15 @@ async fn error_details_convert_to_the_json_limit() -> TestResult {
     for containers in [100_000, deepest + 1] {
         let body = deep_error(containers).into_bytes();
         let failure = failure_of_error_body(vec![body]).await?;
-        assert_eq!(failure, "400 ", "{containers} containers");
+        assert_eq!(
+            failure, "recursion limit exceeded",
+            "{containers} containers"
+        );
         let failure = failure_after_text(&deep_error(containers)).await?;
-        assert_eq!(failure, "", "{containers} containers");
+        assert_eq!(
+            failure, "recursion limit exceeded",
+            "{containers} containers"
+        );
     }
     Ok(())
 }
