@@ -217,12 +217,18 @@ error object, and invalid bytes appear as U+FFFD.
 
 JSON text may nest to any depth: data that no field reads passes untouched, so an event or
 an error body with a deeply nested unread member is read as usual, and a deeply nested value
-in a field of the wrong type reads as absent. Two kinds of value are converted in full:
-a thought signature, and the `error` value or `message` that a failure text writes out.
+in a field of the wrong type reads as absent. Values converted in full include tool
+arguments, a thought signature, and the `error` value or `message` that a failure text
+writes out.
 Each may hold at most 127 nested arrays or objects. A deeper one is malformed: a signature
-holding it is dropped and a failure text writes it as empty text. The client library has
-no such bound; it is a difference the owner approved, which keeps that conversion within a
-fixed recursion depth.
+holding it is dropped, a failure text writes it as empty text, and streamed tool
+arguments fall back to `{}`. Tool-argument numbers round to binary64 doubles; valid
+numeric overflow becomes null and negative zero keeps its sign in values (compact
+JSON writes it as `0`). Native magnitude and lone-surrogate errors in strict
+argument parsing retry raw projection, accepting overwritten lone-surrogate
+members only when the surviving value is representable; failed projection retains
+the native error. The client library has no such bound; it is a difference the
+owner approved, which keeps that conversion within a fixed recursion depth.
 
 ## Example
 

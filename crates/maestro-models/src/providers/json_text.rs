@@ -2,6 +2,7 @@
 //! that `JSON.parse` gives: every number is the double it rounds to.
 
 use indexmap::IndexMap;
+use num_traits::ToPrimitive;
 use serde::de::DeserializeOwned;
 use serde::de::value::MapDeserializer;
 use serde_json::value::RawValue;
@@ -88,7 +89,7 @@ fn array_index(key: &str) -> Option<u32> {
 
 /// Containers a value may nest when [`json_value`] decodes it: the most that the parser's
 /// recursion limit of 128 accepts.
-const MAX_NESTING: usize = 127;
+pub(crate) const MAX_NESTING: usize = 127;
 
 /// Read external JSON text as a raw value. The text may nest to any depth: skipping over
 /// nested containers takes no recursion.
@@ -139,6 +140,8 @@ pub(crate) fn is_truthy(raw: &RawValue) -> bool {
 /// Decode a value into the JSON data model, where every number is a double and an infinity,
 /// which JSON cannot spell, becomes `null`. Decoding recurses once per level, so a value that
 /// nests more than [`MAX_NESTING`] containers fails as malformed text does.
+/// Exactly representable integral doubles use integer storage where in range, except
+/// negative zero, whose sign is retained. Compact number spelling is unchanged.
 ///
 /// # Errors
 /// Returns the decoder failure for malformed text, or a recursion-limit failure for a value
@@ -150,7 +153,7 @@ pub(crate) fn json_value(raw: &RawValue) -> Result<Value, serde_json::Error> {
 /// Decode a value that may hold `containers` more levels of containers.
 fn decode(raw: &RawValue, containers: usize) -> Result<Value, serde_json::Error> {
     if let Some(number) = raw_number(raw) {
-        return Ok(Value::from(number));
+        return Ok(project_number(number));
     }
     match raw.get().as_bytes().first() {
         Some(b'[' | b'{') if containers == 0 => {
@@ -166,6 +169,20 @@ fn decode(raw: &RawValue, containers: usize) -> Result<Value, serde_json::Error>
             .collect(),
         _ => serde_json::from_str(raw.get()),
     }
+}
+
+/// Store integral doubles losslessly as integers, except negative zero whose sign is retained.
+fn project_number(number: f64) -> Value {
+    if number.is_finite() && number.fract() == 0.0 && !(number == 0.0 && number.is_sign_negative())
+    {
+        if let Some(integer) = number.to_i64() {
+            return Value::from(integer);
+        }
+        if let Some(integer) = number.to_u64() {
+            return Value::from(integer);
+        }
+    }
+    Value::from(number)
 }
 
 /// Serialize a value like [`compact_json`] serializes its [`json_value`].

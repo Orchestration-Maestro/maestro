@@ -53,12 +53,28 @@ mod tests {
     #[test]
     fn maestro_reports_last_strict_parse_error() {
         use maestro_models::{parse_json_with_repair, repair_json};
-        for input in ["not JSON", "{\"x\":\"a\n\" trailing"] {
+        let deep = format!("{}0{}", "[".repeat(128), "]".repeat(128));
+        for input in [
+            "not JSON",
+            "{\"x\":\"a\n\" trailing",
+            r#""\uD800" trailing"#,
+            r#"{"n":1e400,"s":"\uD800"}"#,
+            r#"{"s":"\uD800","n":1e400}"#,
+            r#"{"n":1e400,]"#,
+            "{\"n\":1e400,\"s\":\"a\n\" trailing",
+            deep.as_str(),
+        ] {
             let expected = serde_json::from_str::<serde_json::Value>(&repair_json(input))
                 .unwrap_err()
                 .to_string();
             assert_eq!(parse_json_with_repair(input).unwrap_err().message, expected);
         }
+        assert!(
+            serde_json::from_str::<serde_json::Value>("1e400")
+                .unwrap_err()
+                .to_string()
+                .starts_with("number out of range at line ")
+        );
         assert_eq!(parse_json_with_repair("5").unwrap(), serde_json::json!(5));
         let controls: String = (0..32).map(char::from).collect();
         for (input, expected) in [
@@ -85,6 +101,35 @@ mod tests {
                 .unwrap_err()
                 .to_string();
             assert_eq!(parse_json_with_repair(input).unwrap_err().message, expected);
+        }
+    }
+
+    #[test]
+    fn maestro_accepts_representable_discarded_surrogate_duplicates() {
+        use maestro_models::parse_json_with_repair;
+        for (input, expected) in [
+            (r#"{"s":"\uD800","s":"ok"}"#, serde_json::json!({"s":"ok"})),
+            (r#"{"s":"\uDC00","s":"ok"}"#, serde_json::json!({"s":"ok"})),
+            (
+                r#"{"s":"\uD800","n":1e400,"s":"ok"}"#,
+                serde_json::json!({"s":"ok","n":null}),
+            ),
+        ] {
+            assert_eq!(parse_json_with_repair(input).unwrap(), expected, "{input}");
+        }
+        for (input, prefix) in [
+            (r#""\uD800""#, "unexpected end of hex escape at line "),
+            (
+                r#""\uDC00""#,
+                "lone leading surrogate in hex escape at line ",
+            ),
+        ] {
+            let native = serde_json::from_str::<serde_json::Value>(input).unwrap_err();
+            assert!(native.to_string().starts_with(prefix));
+            assert_eq!(
+                parse_json_with_repair(input).unwrap_err().message,
+                native.to_string()
+            );
         }
     }
 
@@ -188,7 +233,7 @@ mod tests {
             (r#""x""#, json!("x")),
             ("false", json!(false)),
             ("null", json!(null)),
-            ("1e400", json!({})),
+            ("1e400", json!(null)),
             ("\u{feff}{\"a\":1", json!({"a":1})),
             ("\u{85}{\"a\":1", json!({})),
         ] {
@@ -236,7 +281,7 @@ fn maestro_rejects_invalid_leading_json_grammar() {
 fn maestro_completes_literals_and_numeric_suffixes_consistently() {
     assert_eq!(
         maestro_models::parse_streaming_json(Some("9007199254740993e")),
-        serde_json::json!(9_007_199_254_740_993_u64)
+        serde_json::json!(9_007_199_254_740_992_u64)
     );
     assert_eq!(
         maestro_models::parse_streaming_json(Some("1e+")),
@@ -295,4 +340,206 @@ fn maestro_completes_every_proper_literal_prefix() {
             assert_eq!(parse_streaming_json(Some(&input)), array, "{input}");
         }
     }
+}
+
+/// Recorded number results at the three parsing and writing boundaries.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NumberCorpus {
+    /// Complete values read by the strict parser.
+    strict: Vec<NumberRow>,
+    /// Accumulated prefixes read by the streaming parser.
+    streaming: Vec<NumberRow>,
+    /// Compact text cases consumed by the shared writer's unit test.
+    compact: Vec<NumberRow>,
+}
+
+/// One input and its independent numeric result.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NumberRow {
+    /// Original JSON text.
+    input: String,
+    /// Recorded projected value, or compact text in the writer corpus.
+    expected: serde_json::Value,
+    /// Recorded sign of the root number or the `n` member.
+    negative_zero: Option<bool>,
+}
+
+/// Compare numeric leaves as doubles, independently of integer storage.
+fn assert_numeric_value(actual: &serde_json::Value, expected: &serde_json::Value) {
+    match (actual, expected) {
+        (serde_json::Value::Number(a), serde_json::Value::Number(b)) => {
+            assert_eq!(a.as_f64(), b.as_f64());
+        }
+        (serde_json::Value::Array(a), serde_json::Value::Array(b)) => {
+            assert_eq!(a.len(), b.len());
+            for (a, b) in a.iter().zip(b) {
+                assert_numeric_value(a, b);
+            }
+        }
+        (serde_json::Value::Object(a), serde_json::Value::Object(b)) => {
+            assert_eq!(a.len(), b.len());
+            for (key, value) in b {
+                assert!(a.contains_key(key), "missing member {key}");
+                assert_numeric_value(&a[key], value);
+            }
+        }
+        _ => assert_eq!(actual, expected),
+    }
+}
+
+/// Check the recorded value and any recorded zero sign.
+fn assert_number_row(row: &NumberRow, actual: &serde_json::Value) {
+    assert_numeric_value(actual, &row.expected);
+    if let Some(negative_zero) = row.negative_zero {
+        let number = if actual.is_object() {
+            &actual["n"]
+        } else {
+            actual
+        };
+        // Overflow has no numeric leaf in the projected JSON data model.
+        if let Some(value) = number.as_f64() {
+            assert_eq!(value == 0.0 && value.is_sign_negative(), negative_zero);
+        } else {
+            assert!(number.is_null());
+            assert!(!negative_zero);
+        }
+    }
+}
+
+/// Load the typed fixture, including the rows owned by the writer test.
+fn number_corpus() -> Result<NumberCorpus, serde_json::Error> {
+    let corpus: NumberCorpus =
+        serde_json::from_str(include_str!("fixtures/streamed_argument_numbers.json"))?;
+    assert!(!corpus.compact.is_empty());
+    Ok(corpus)
+}
+
+#[test]
+fn maestro_projects_strict_argument_numbers() {
+    for row in number_corpus().unwrap().strict {
+        let actual = maestro_models::parse_json_with_repair(&row.input)
+            .unwrap_or_else(|error| panic!("{}: {}", row.input, error.message));
+        assert_number_row(&row, &actual);
+    }
+}
+
+#[test]
+fn maestro_projects_partial_argument_numbers() {
+    for row in number_corpus().unwrap().streaming {
+        let actual = maestro_models::parse_streaming_json(Some(&row.input));
+        assert_number_row(&row, &actual);
+    }
+}
+
+/// Construct JSON text without constructing a deeply nested owned value.
+fn nested_arguments(kind: &str, depth: usize, leaf: &str, complete: bool) -> String {
+    let openings: Vec<&str> = (0..depth)
+        .map(|position| match kind {
+            "array" => "[",
+            "object" => r#"{"x":"#,
+            _ if position % 2 == 0 => "[",
+            _ => r#"{"x":"#,
+        })
+        .collect();
+    let mut text = openings.concat();
+    text.push_str(leaf);
+    if complete {
+        for open in openings.iter().rev() {
+            text.push(if *open == "[" { ']' } else { '}' });
+        }
+    }
+    text
+}
+
+/// Walk one-child containers to inspect the actual accepted leaf.
+fn argument_leaf(mut value: &serde_json::Value, depth: usize) -> Option<&serde_json::Value> {
+    for _ in 0..depth {
+        value = match value {
+            serde_json::Value::Array(items) => {
+                assert_eq!(items.len(), 1);
+                &items[0]
+            }
+            serde_json::Value::Object(members) => {
+                assert_eq!(members.len(), 1);
+                members.get("x")?
+            }
+            _ => return None,
+        };
+    }
+    Some(value)
+}
+
+#[test]
+fn maestro_bounds_materialized_arguments() {
+    use maestro_models::{parse_json_with_repair, parse_streaming_json};
+    let cases = ["array", "object", "mixed"].into_iter().flat_map(|kind| {
+        [127, 128].into_iter().flat_map(move |depth| {
+            ["0", "1e400"]
+                .into_iter()
+                .flat_map(move |leaf| [false, true].map(|complete| (kind, depth, leaf, complete)))
+        })
+    });
+    for (kind, depth, leaf, complete) in cases {
+        let text = nested_arguments(kind, depth, leaf, complete);
+        let value = parse_streaming_json(Some(&text));
+        if depth == 127 {
+            let expected = if leaf == "0" {
+                serde_json::json!(0)
+            } else {
+                serde_json::Value::Null
+            };
+            assert_eq!(argument_leaf(&value, depth).unwrap(), &expected);
+        } else {
+            assert_eq!(value, serde_json::json!({}));
+        }
+        let strict = parse_json_with_repair(&text);
+        if depth == 127 && complete {
+            assert_eq!(strict.unwrap(), value);
+        } else {
+            assert!(strict.is_err());
+        }
+    }
+}
+
+#[path = "support/child_process.rs"]
+mod child_process;
+
+#[test]
+fn maestro_drops_extreme_argument_depth_safely() -> child_process::TestResult {
+    if child_process::child_case().is_none() {
+        return child_process::rerun("maestro_drops_extreme_argument_depth_safely", "depth", &[]);
+    }
+    for kind in ["array", "object", "mixed"] {
+        for leaf in ["0", "1e400"] {
+            for complete in [false, true] {
+                let text = nested_arguments(kind, 100_000, leaf, complete);
+                assert!(maestro_models::parse_json_with_repair(&text).is_err());
+                let value = maestro_models::parse_streaming_json(Some(&text));
+                assert_eq!(value, serde_json::json!({}));
+                drop(value);
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_counts_only_consumed_argument_containers() {
+    use maestro_models::parse_streaming_json;
+    use serde_json::json;
+    let brackets = "[".repeat(128);
+    let text = format!(r#"{{"brackets":"{brackets}","n":1e400}}"#);
+    assert_eq!(
+        parse_streaming_json(Some(&text)),
+        json!({"brackets": brackets, "n": null})
+    );
+    let wide = format!("[{}]", vec!["[]"; 128].join(","));
+    assert_eq!(
+        parse_streaming_json(Some(&wide)),
+        json!(vec![Vec::<u8>::new(); 128])
+    );
+    let trailing = format!(r#"{{"ok":1}} {brackets}"#);
+    assert_eq!(parse_streaming_json(Some(&trailing)), json!({"ok": 1}));
 }

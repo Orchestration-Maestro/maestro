@@ -1,6 +1,8 @@
 //! Repair of JSON string literals and parsing of streamed JSON values.
 use std::fmt::Write;
 
+use crate::providers::json_text::{MAX_NESTING, json_value, raw_json};
+
 /// Escape raw controls and invalid backslashes inside JSON string literals.
 #[must_use]
 pub fn repair_json(json: &str) -> String {
@@ -42,17 +44,21 @@ pub fn repair_json(json: &str) -> String {
 }
 
 /// Parse the original JSON, retrying repaired string literals only when changed.
+/// Numbers round to binary64 doubles; valid numeric overflow becomes JSON null.
+/// Values may contain at most 127 nested arrays or objects.
+/// Native magnitude and lone-surrogate errors retry raw projection; success requires
+/// a representable surviving value, so overwritten lone-surrogate members may be discarded.
 ///
 /// # Errors
 /// Returns the native strict-reader cause from the last attempted parse.
 pub fn parse_json_with_repair(json: &str) -> Result<serde_json::Value, crate::DiagnosticErrorInfo> {
-    serde_json::from_str(json)
+    strict(json)
         .or_else(|original| {
             let repaired = repair_json(json);
             if repaired == json {
                 Err(original)
             } else {
-                serde_json::from_str(&repaired)
+                strict(&repaired)
             }
         })
         .map_err(|error| crate::DiagnosticErrorInfo {
@@ -63,13 +69,43 @@ pub fn parse_json_with_repair(json: &str) -> Result<serde_json::Value, crate::Di
         })
 }
 
+/// Project validated JSON after preserving the native reader's error priority.
+fn strict(text: &str) -> Result<serde_json::Value, serde_json::Error> {
+    match serde_json::from_str::<serde_json::Value>(text) {
+        Ok(value) => {
+            drop(value);
+            json_value(raw_json(text)?)
+        }
+        Err(error) if projection_error(&error) => {
+            raw_json(text).and_then(json_value).map_err(|_| error)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+/// Identify native magnitude or lone-surrogate failures that projection may resolve.
+fn projection_error(error: &serde_json::Error) -> bool {
+    let message = error.to_string();
+    [
+        "number out of range at line ",
+        "unexpected end of hex escape at line ",
+        "lone leading surrogate in hex escape at line ",
+    ]
+    .iter()
+    .any(|prefix| message.starts_with(prefix))
+}
+
 /// Recognize the whitespace accepted around streamed JSON.
 pub(crate) fn whitespace(ch: char) -> bool {
     matches!(ch, '\u{09}'..='\u{0d}' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
 }
 
 /// Parse complete or useful incomplete JSON, falling back to an empty object.
-/// Strictly parsed scalar values, including null, are preserved.
+/// Strictly parsed scalar values, including null, are preserved. Numbers round to
+/// binary64 doubles, with valid overflow represented as null, even in partial containers.
+/// Partial root null literals fall back to an empty object; numeric null requires all input.
+/// Materialization beyond 127 nested containers fails the attempt, without scanning
+/// unconsumed trailing text or counting delimiters inside strings.
 #[must_use]
 pub fn parse_streaming_json(partial_json: Option<&str>) -> serde_json::Value {
     let Some(input) = partial_json.filter(|text| !text.trim_matches(whitespace).is_empty()) else {
@@ -160,14 +196,15 @@ impl Cursor<'_> {
                     .filter(|prefix| *suffix != "." || !prefix.contains('.'))
             })
             .filter(|prefix| !prefix.contains(['e', 'E']));
-        let number = serde_json::from_str::<serde_json::Number>(token)
+        let number = raw_json(token)
+            .and_then(json_value)
             .ok()
-            .or_else(|| serde_json::from_str::<serde_json::Number>(completed?).ok())?;
+            .or_else(|| raw_json(completed?).and_then(json_value).ok())?;
         self.skip_space();
         if !matches!(self.peek(), None | Some(b',' | b']' | b'}')) {
             return None;
         }
-        Some(serde_json::Value::Number(number))
+        Some(number)
     }
 }
 
@@ -283,6 +320,9 @@ fn partial(input: &str) -> Option<serde_json::Value> {
         }
         cursor.skip_space();
         if let Some(open @ (b'{' | b'[')) = cursor.peek() {
+            if frames.len() == MAX_NESTING {
+                return None;
+            }
             cursor.position += 1;
             frames.push(Frame::new(open));
             continue;
@@ -299,8 +339,9 @@ fn partial(input: &str) -> Option<serde_json::Value> {
                 parent.finished = true;
             }
         } else {
+            let numeric = matches!(cursor.input.as_bytes().first(), Some(b'-' | b'0'..=b'9'));
             return value.filter(|value| {
-                !value.is_null() && (!value.is_number() || cursor.position == cursor.input.len())
+                (numeric && cursor.position == cursor.input.len()) || (!numeric && !value.is_null())
             });
         }
     }
