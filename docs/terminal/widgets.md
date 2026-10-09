@@ -7,9 +7,11 @@ accepts input, takes focus or wants key-release events. `Box` here is
 `maestro_tui::Box`, not `std::boxed::Box`; a glob import of the crate root would hide the
 standard one.
 
-A background is any `Rc<dyn Fn(&str) -> String>`. A widget passes it one row at a time,
-padded with spaces up to the viewport width, and shows what it returns, so it can wrap the
-row in a colour escape. A widget does not measure what a background returns.
+A background is any `Rc<dyn Fn(&str) -> String>`. For displayed rows, a widget passes it
+one row at a time, padded with spaces up to the viewport width, and shows what it returns,
+so it can wrap the row in a colour escape. Box also passes the raw sample `"test"` and uses
+its result only to decide whether to repaint. A widget does not measure what a background
+returns.
 
 Every method takes `&self`, so a background or a child may call back into the widget that
 is rendering it. A widget never holds a borrow of its own state while it runs a
@@ -39,8 +41,7 @@ background. Otherwise a `Box` rerenders its children and samples a configured ba
 rows. They are reused when the width, the ordered child rows and the sample are all
 unchanged since they were composed. `add_child`, `clear`, a `remove_child` that found its
 child, `set_bg_fn` and `invalidate` drop them, and `invalidate` drops them before it
-invalidates the children. A background that starts styling differently without changing
-its answer for `test` is noticed after `set_bg_fn` or `invalidate`, not before.
+invalidates the children.
 
 A child or background that changes the box while it renders does not make the render
 fail. The render finishes with the child rows it collected and with the background in
@@ -77,8 +78,7 @@ no rows at all, padding included; other text is wrapped after each tab becomes t
 spaces. Whitespace here is the tab, line feed, vertical tab, form feed, carriage return,
 space, no-break space, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F, U+3000
 and U+FEFF. The next-line control U+0085, U+180E and the zero-width space U+200B are
-text. Wrapping follows [styled text](text.md): escapes and hyperlinks are kept, graphemes
-are never split, and explicit line breaks are honored.
+text. See [styled text](text.md) for wrapping behavior.
 
 Horizontal padding is never more than half the viewport width, rounded down. The wrap
 width is the width that remains, but at least one. A wrapped row wider than the cells
@@ -93,9 +93,9 @@ blank rows, and each blank row is shown above and below.
 `Text` reuses its rows for an unchanged width until `set_text`, `set_custom_bg_fn` or
 `invalidate` drops them; `set_text` with equal text counts. It does not sample a
 background: when the state a background reads changes, call `invalidate`. A setter or
-`invalidate` called while the text renders does not change that render, which continues
-with the text it started with and uses a replaced background from the next row on, and
-its rows are not kept, so the next render shows the new values.
+`invalidate` called while the text renders keeps its rows out of the cache, so the next
+render shows the new values. The current render continues with the text it started with;
+a replaced background applies from the next row on.
 
 ```rust
 use std::rc::Rc;

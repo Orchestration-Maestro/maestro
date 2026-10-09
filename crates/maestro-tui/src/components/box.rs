@@ -11,8 +11,8 @@ const BACKGROUND_SAMPLE: &str = "test";
 
 /// Children laid out inside horizontal and vertical padding, over an optional background.
 ///
-/// Every render renders the children again and samples the background, if there is one;
-/// the composed rows are reused only when the width, the children's rows and the sample are
+/// Every render renders the children again; when they produce rows, it samples any background.
+/// The composed rows are reused only when the width, the children's rows and the sample are
 /// all unchanged. Children are held in a shared array: whoever keeps the handle from
 /// [`Box::children`] edits the array the box renders, and a render in progress stays on the
 /// array it started on when [`Box::clear`] or [`Box::set_children`] installs another.

@@ -104,7 +104,10 @@ impl Text {
         let blank: Vec<String> = (0..self.padding_y)
             .map(|_| self.row(&" ".repeat(width), width))
             .collect();
-        [blank.clone(), content, blank].concat()
+        let mut lines = blank.clone();
+        lines.extend(content);
+        lines.extend(blank);
+        lines
     }
 }
 
