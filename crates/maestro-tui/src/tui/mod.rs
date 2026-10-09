@@ -63,6 +63,8 @@ struct Shared {
     overlays: RefCell<Vec<Rc<overlays::Entry>>>,
     /// Counter for visual focus order.
     focus_order: Cell<usize>,
+    /// Overlay provenance retained while removal callbacks run.
+    focused_overlay: RefCell<std::rc::Weak<overlays::Entry>>,
     /// Whether the hardware cursor is shown where a component asks for it.
     show_hardware_cursor: Cell<bool>,
     /// Whether shrinking content clears the screen.
@@ -96,6 +98,7 @@ impl TUI {
                 input: RefCell::new(Input::default()),
                 overlays: RefCell::default(),
                 focus_order: Cell::new(0),
+                focused_overlay: RefCell::default(),
                 show_hardware_cursor: Cell::new(show_hardware_cursor),
                 clear_on_shrink: Cell::new(clear_on_shrink),
             }),

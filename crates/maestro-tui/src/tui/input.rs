@@ -149,6 +149,31 @@ impl TUI {
         if let Some(flag) = component.as_deref().and_then(focus_flag) {
             flag.set(true);
         }
+        let overlay = self
+            .shared
+            .overlays
+            .borrow()
+            .iter()
+            .rev()
+            .find(|entry| {
+                component
+                    .as_ref()
+                    .is_some_and(|focus| Rc::ptr_eq(focus, &entry.component))
+            })
+            .map(Rc::downgrade)
+            .or_else(|| {
+                self.shared
+                    .focused_overlay
+                    .borrow()
+                    .upgrade()
+                    .filter(|entry| {
+                        component
+                            .as_ref()
+                            .is_some_and(|focus| Rc::ptr_eq(focus, &entry.component))
+                    })
+                    .map(|entry| Rc::downgrade(&entry))
+            });
+        *self.shared.focused_overlay.borrow_mut() = overlay.unwrap_or_default();
         self.shared.input.borrow_mut().focused = component;
     }
 

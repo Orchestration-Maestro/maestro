@@ -1,7 +1,7 @@
 # Retained overlays
 
 `TUI::show_overlay` adds a component to the writer's shared stack. Its handle keeps
-that writer alive; dropping the handle leaves the entry in the stack. Options are
+that writer alive; dropping the handle does not remove the entry. Options are
 shared with the caller and read again on subsequent operations.
 
 ```rust
@@ -63,7 +63,8 @@ recognized escape payloads and leaves image base lines unchanged.
 
 ## Focus and controls
 
-Capturing entries take focus on creation or unhide only when visible.
+Capturing entries take focus on creation or unhide only when their visibility
+check accepts them and leaves them attached and not hidden.
 Noncapturing entries do not capture on creation or unhide; explicit focus and
 predecessor restoration can select them. Explicit focus raises
 visual order, but neither removal by `hide_overlay` nor fallback selection uses
@@ -72,14 +73,18 @@ that order: both use creation order.
 Temporary hiding and removal are distinct. Repeated hidden flags and detached
 mutations do nothing; `is_hidden` reports only the stored temporary flag.
 `is_focused` compares component identity, not labels or attachment.
-Restoration chooses the last-created visible capturing entry, except that an
-unfocus of that entry falls directly to its captured predecessor. Predecessor
+Restoration walks capturing candidates in reverse creation order and reads the
+selected stack slot again after its visibility callback. Unfocusing the selected
+entry instead falls directly to its captured predecessor. Predecessor
 links skip removed, hidden and callback-invisible entries, reaching an available
-component or the captured base focus, which can be absent.
+component or the captured base focus, which can be absent. An overlay created while
+the removed entry still owns focus captures that entry as an overlay predecessor,
+not base focus.
 
 Hidden entries skip visibility callbacks. `has_overlay` checks current slots up
-to the starting length and stops at the first visible entry, including a
-noncapturing one. Invalidation visits base children first, then the live overlay
+to the starting length and stops at the first accepted visibility result, including
+a noncapturing entry. A callback can remove that entry before the query returns.
+Invalidation visits base children first, then the live overlay
 stack including hidden entries. [Frame rendering](rendering.md) owns input
 routing, render scheduling and cursor placement.
 

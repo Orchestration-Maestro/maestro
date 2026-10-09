@@ -45,8 +45,8 @@ impl Entry {
 }
 
 impl TUI {
-    /// Shows `component` with caller-editable options, capturing focus when visible
-    /// unless `non_capturing` is true. Dropping the returned handle leaves it shown.
+    /// Shows `component` with caller-editable options, capturing focus when still available
+    /// unless `non_capturing` is true. Dropping the returned handle does not remove it.
     ///
     /// # Errors
     /// Returns cursor-hiding errors after the stack and focus changes; no frame is
@@ -59,19 +59,10 @@ impl TUI {
         let focused = self.focused_component();
         let predecessor = self
             .shared
-            .overlays
+            .focused_overlay
             .borrow()
-            .iter()
-            .rev()
-            .find(|entry| {
-                focused
-                    .as_ref()
-                    .is_some_and(|focus| Rc::ptr_eq(focus, &entry.component))
-            })
-            .map_or_else(
-                || Predecessor::Base(focused.clone()),
-                |entry| Predecessor::Overlay(Rc::clone(entry)),
-            );
+            .upgrade()
+            .map_or_else(|| Predecessor::Base(focused), Predecessor::Overlay);
         let entry = Rc::new(Entry {
             component,
             options: options.unwrap_or_default(),
@@ -80,7 +71,7 @@ impl TUI {
             order: Cell::new(self.next_focus_order()),
         });
         self.shared.overlays.borrow_mut().push(Rc::clone(&entry));
-        if entry.capturing() && self.overlay_visible(&entry) {
+        if entry.capturing() && self.focus_available(&entry) {
             self.set_focus(Some(Rc::clone(&entry.component)));
         }
         self.shared.terminal.borrow_mut().hide_cursor()?;
@@ -104,7 +95,8 @@ impl TUI {
         Ok(())
     }
 
-    /// Whether a currently visible entry exists, including noncapturing entries.
+    /// Whether the visibility walk observes a visible entry, including noncapturing entries.
+    /// A callback may remove the observed entry before this method returns.
     #[must_use]
     pub fn has_overlay(&self) -> bool {
         let length = self.shared.overlays.borrow().len();
@@ -143,12 +135,28 @@ impl TUI {
         })
     }
 
-    /// The last-created visible capturing entry, reading current slots while walking.
+    /// Tests visibility before checking callback-mutated attachment and hidden state.
+    fn focus_available(&self, entry: &Rc<Entry>) -> bool {
+        self.attached(entry)
+            && self.overlay_visible(entry)
+            && self.attached(entry)
+            && !entry.hidden.get()
+    }
+
+    /// The last-created capturing candidate, rereading its slot after visibility callbacks.
     fn top_capturing(&self) -> Option<Rc<Entry>> {
         let length = self.shared.overlays.borrow().len();
         (0..length).rev().find_map(|index| {
-            self.overlay_at(index)
-                .filter(|entry| entry.capturing() && self.overlay_visible(entry))
+            let candidate = self.overlay_at(index)?;
+            if !candidate.capturing() || !self.overlay_visible(&candidate) {
+                return None;
+            }
+            let selected = self.overlay_at(index)?;
+            if Rc::ptr_eq(&candidate, &selected) {
+                (!selected.hidden.get()).then_some(selected)
+            } else {
+                self.focus_available(&selected).then_some(selected)
+            }
         })
     }
 
@@ -178,9 +186,7 @@ impl TUI {
                     self.set_focus(component);
                     return;
                 }
-                Predecessor::Overlay(previous)
-                    if self.attached(&previous) && self.overlay_visible(&previous) =>
-                {
+                Predecessor::Overlay(previous) if self.focus_available(&previous) => {
                     self.set_focus(Some(Rc::clone(&previous.component)));
                     return;
                 }
@@ -236,7 +242,7 @@ impl TUI {
                     .is_some_and(|focus| Rc::ptr_eq(focus, &entry.component))
             })
             .cloned();
-        if let Some(entry) = entry.filter(|entry| !self.overlay_visible(entry)) {
+        if let Some(entry) = entry.filter(|entry| !self.focus_available(entry)) {
             self.restore_overlay_focus(&entry);
         }
     }
@@ -255,7 +261,7 @@ impl OverlayHandle for Handle {
             if self.tui.overlay_focused(&self.entry) {
                 self.tui.restore_overlay_focus(&self.entry);
             }
-        } else if self.entry.capturing() && self.tui.overlay_visible(&self.entry) {
+        } else if self.entry.capturing() && self.tui.focus_available(&self.entry) {
             self.entry.order.set(self.tui.next_focus_order());
             self.tui.set_focus(Some(Rc::clone(&self.entry.component)));
         }
@@ -267,7 +273,7 @@ impl OverlayHandle for Handle {
     }
 
     fn focus(&mut self) {
-        if !self.tui.attached(&self.entry) || !self.tui.overlay_visible(&self.entry) {
+        if !self.tui.focus_available(&self.entry) {
             return;
         }
         if !self.is_focused() {

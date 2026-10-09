@@ -35,22 +35,28 @@ fn percentage(text: &str) -> Option<f64> {
         || valid(digits),
         |(whole, fraction)| valid(whole) && valid(fraction),
     );
-    accepted.then(|| digits.parse::<f64>().unwrap_or(f64::INFINITY) / 100.0)
+    accepted.then(|| digits.parse::<f64>().unwrap_or(f64::INFINITY))
 }
 
 /// Floors a fractional span and saturates at the signed cell boundary.
-fn percent_cells(percent: f64, span: isize) -> isize {
-    let span = span.to_string().parse::<f64>().unwrap_or(f64::INFINITY);
-    format!("{:.0}", (span * percent).floor())
+fn floor_cells(value: f64) -> isize {
+    format!("{:.0}", value.floor())
         .parse()
         .unwrap_or(isize::MAX)
+}
+
+/// Converts a signed span without a lossy integer cast.
+fn float_span(span: isize) -> f64 {
+    span.to_string().parse().unwrap_or(f64::INFINITY)
 }
 
 /// Resolves cells or percentage sizes against `span`.
 fn size(value: Option<&SizeValue>, span: isize) -> Option<isize> {
     match value? {
         SizeValue::Cells(cells) => Some(*cells),
-        SizeValue::Percentage(text) => percentage(text).map(|percent| percent_cells(percent, span)),
+        SizeValue::Percentage(text) => {
+            percentage(text).map(|percent| floor_cells(float_span(span) * percent / 100.0))
+        }
     }
 }
 
@@ -70,7 +76,7 @@ fn position(value: Option<&SizeValue>, free: isize, margin: isize, anchor: isize
         Some(SizeValue::Cells(value)) => *value,
         Some(SizeValue::Percentage(text)) => {
             margin.saturating_add(percentage(text).map_or(free.div_euclid(2), |percent| {
-                percent_cells(percent, free.max(0))
+                floor_cells(float_span(free.max(0)) * (percent / 100.0))
             }))
         }
         None => margin.saturating_add(anchor),

@@ -506,3 +506,80 @@ fn maestro_overlays_properly_hide_overlays_in_stack_order() {
     );
     scene.stop();
 }
+
+#[test]
+fn overlay_size_percentages_multiply_before_dividing() {
+    let scene = support::scene::Scene::new(100, 100);
+    scene.start(&[]);
+    let overlay = Probe::shared(&[]);
+    overlay.set_lines(&(0..100).map(|_| "X".to_owned()).collect::<Vec<_>>());
+    scene
+        .tui
+        .show_overlay(
+            overlay.clone(),
+            Some(Rc::new(RefCell::new(OverlayOptions {
+                width: Some(SizeValue::Percentage("58%".to_owned())),
+                max_height: Some(SizeValue::Percentage("58%".to_owned())),
+                row: Some(SizeValue::Cells(0)),
+                col: Some(SizeValue::Cells(0)),
+                ..OverlayOptions::default()
+            }))),
+        )
+        .unwrap();
+    scene.render();
+    assert_eq!(*overlay.widths.borrow(), [58]);
+    assert_eq!(
+        scene
+            .viewport()
+            .iter()
+            .filter(|line| line.starts_with('X'))
+            .count(),
+        58
+    );
+    scene.stop();
+}
+
+#[test]
+fn overlay_tab_expansion_keeps_unterminated_escape_text_and_clips_it() {
+    for (line, width, expected) in [
+        ("\x1b]\tZ".to_owned(), 6, "\x1b]   Z"),
+        (
+            format!("{}\t", "\x1b]".repeat(100_000)),
+            4,
+            "\x1b]\x1b]\x1b]\x1b]",
+        ),
+    ] {
+        let scene = support::scene::Scene::new(10, 2);
+        scene.start(&[]);
+        let overlay = Probe::shared(&[]);
+        overlay.set_lines(&[line]);
+        scene
+            .tui
+            .show_overlay(
+                overlay,
+                Some(Rc::new(RefCell::new(OverlayOptions {
+                    width: Some(SizeValue::Cells(width)),
+                    row: Some(SizeValue::Cells(0)),
+                    col: Some(SizeValue::Cells(0)),
+                    ..OverlayOptions::default()
+                }))),
+            )
+            .unwrap();
+        scene.render();
+        assert!(
+            scene
+                .terminal
+                .writes()
+                .iter()
+                .any(|write| write.contains(expected))
+        );
+        assert!(
+            scene
+                .terminal
+                .writes()
+                .iter()
+                .all(|write| !write.contains('\t'))
+        );
+        scene.stop();
+    }
+}
