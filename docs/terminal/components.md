@@ -1,12 +1,14 @@
 # Terminal components
 
 `maestro-tui` defines what a renderable component is and ships the pieces that need
-no terminal: a container, box, text, spacer, input, loader and image components, the contracts for
-overlays, terminals, editors and completion, and the `TUI` frame writer that draws
+no terminal: container, box, text, spacer, input, loader, image, command-selection
+and settings components; contracts for overlays, terminals, editors and completion;
+and the `TUI` frame writer that draws
 components to a terminal. It performs no terminal I/O and starts no timers; whatever
 connects a real terminal supplies a `Terminal` implementation, and the host of the frame
 writer supplies a `TuiRuntime` for time, deferral and log files.
-See [widgets](widgets.md) for padded content, editing, loading and cancellable loading, [retained
+See [widgets](widgets.md) for padded content, editing, loading, cancellable loading,
+command selection and settings, [retained
 frames](rendering.md) for the frame writer, [inline images](images.md) for capability
 detection and retained image rendering, [key input](keys.md) for decoding and
 [keybindings](keybindings.md) for configurable actions.

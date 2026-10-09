@@ -140,3 +140,6 @@ are later scope, not active foundation concepts.
 - **Input:** The single-line editable terminal component.
 - **Kill ring:** Shared deleted-text history for yank and rotation.
 - **Undo stack:** Shared clone-on-push snapshots for restoring editable state.
+
+- **SelectList:** A terminal command-selection component.
+- **SettingsList:** A terminal settings component with optional label search.

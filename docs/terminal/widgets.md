@@ -259,3 +259,78 @@ fn show_cancellable_status(tui: TUI) {
     widget.dispose();
 }
 ```
+
+## `SelectList`
+
+`SelectList` selects command records with the existing [keybindings](keybindings.md).
+Up/down wrap through nonempty matches, Enter confirms and Escape cancels; there are
+no page controls. `set_filter` matches a case-insensitive prefix of the command value
+and resets selection without notification. Explicit selection also does not notify.
+The selected-item getter, confirmation and custom truncation context retain the original
+command handle, independent of its display label. The theme's `selected_prefix` callback
+is declared but never invoked.
+
+The empty-match message is `  No matching commands`; the scroll counter is
+`  ({selected + 1}/{count})`. Selected rows start with `→ ` and other rows with two spaces.
+Final styled command rows and the empty message use no-ellipsis clipping. Description
+layout uses the [styled-text helpers](text.md).
+
+```rust
+use std::rc::Rc;
+use maestro_tui::{Component, SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme};
+
+let plain: Rc<dyn Fn(&str) -> String> = Rc::new(str::to_owned);
+let commands = SelectList::new(
+    vec![SelectItem { value: "open".into(), label: "Open".into(), description: None }],
+    5,
+    SelectListTheme {
+        selected_prefix: plain.clone(), selected_text: plain.clone(),
+        description: plain.clone(), scroll_info: plain.clone(), no_match: plain,
+    },
+    SelectListLayoutOptions::default(),
+);
+commands.set_filter("OP");
+assert_eq!(commands.render(20), ["→ Open"]);
+assert_eq!(commands.get_selected_item().unwrap().value, "open");
+```
+
+## `SettingsList`
+
+`SettingsList` optionally searches labels through the [shared matcher](completion.md).
+Its persistent search editor is [Input](#input). Enter or a single space opens a supplied
+submenu before considering value cycling. `update_value` updates the first matching ID
+without invoking change notification. A submenu's repeatable completion callable can be
+retained: a supplied value is stored and notified before the child closes; no supplied
+value only closes it. Completion restores the saved opener index when one remains.
+Constructor records are owned; theme callables can read their own live captured state.
+
+An empty original list shows `  No settings available`; an empty search result shows
+`  No matching settings`. The main-list hint is
+`  Enter/Space to change · Esc to cancel`, or, with search enabled,
+`  Type to search · Enter/Space to change · Esc to cancel`. The scroll counter is
+`  ({selected + 1}/{count})`. Original-empty messages use no-ellipsis clipping;
+matching-result messages, composed setting rows and hints use the text helper's default
+truncation. Description rows use delegated wrapping, not a universal width guarantee.
+
+```rust
+use std::rc::Rc;
+use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme, tui::InputHandler};
+use maestro_tui::components::settings_list::SettingsListOptions;
+
+let settings = SettingsList::new(
+    vec![SettingItem {
+        id: "color".into(), label: "Color".into(), description: None,
+        current_value: "off".into(), values: Some(vec!["off".into(), "on".into()]),
+        submenu: None,
+    }],
+    3,
+    SettingsListTheme {
+        label: Rc::new(|text, _| text.into()), value: Rc::new(|text, _| text.into()),
+        description: Rc::new(str::to_owned), cursor: "→ ".into(), hint: Rc::new(str::to_owned),
+    },
+    (Rc::new(|_id, _value| {}), Rc::new(|| {})),
+    SettingsListOptions::default(),
+);
+settings.handle_input(" ");
+assert_eq!(settings.render(80)[0], "→ Color  on");
+```
