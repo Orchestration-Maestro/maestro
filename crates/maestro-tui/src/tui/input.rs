@@ -152,6 +152,11 @@ impl TUI {
         self.shared.input.borrow_mut().focused = component;
     }
 
+    /// Retains the current input target without an input-state borrow.
+    pub(super) fn focused_component(&self) -> Option<ComponentHandle> {
+        self.shared.input.borrow().focused.clone()
+    }
+
     /// Sets the callback that runs when the debug key is pressed, replacing any earlier one.
     pub fn set_on_debug(&self, callback: Option<Rc<dyn Fn()>>) {
         let replaced = std::mem::replace(&mut self.shared.input.borrow_mut().on_debug, callback);
@@ -215,6 +220,7 @@ impl TUI {
                 return;
             }
         }
+        self.repair_overlay_focus();
         self.forward_to_focus(&data);
     }
 

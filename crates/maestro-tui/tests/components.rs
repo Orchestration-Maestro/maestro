@@ -9,9 +9,8 @@ use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPo
 use maestro_tui::editor_component::{BorderColor, EditorCallbacks};
 use maestro_tui::tui::{ChildArray, ComponentHandle, InputHandler};
 use maestro_tui::{
-    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayHandle,
-    OverlayMargin, OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable,
-    visible_width,
+    AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayMargin,
+    OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable, visible_width,
 };
 
 mod fixtures {
@@ -27,7 +26,7 @@ use fixtures::futures::{YieldOnce, block_on};
 use fixtures::providers::{CommandProvider, CountingProvider, item};
 use fixtures::terminals::{Probe, Recording, Screen};
 use fixtures::truncated_cases::TRUNCATED_CASES;
-use fixtures::widgets::{Block, Field, Handle, InvalidationTrace, Passive};
+use fixtures::widgets::{Block, Field, InvalidationTrace, Passive};
 
 const RESET: &str = "\x1b[0m";
 
@@ -296,23 +295,8 @@ fn visibility_options(seen: &Rc<RefCell<Vec<(usize, usize)>>>) -> OverlayOptions
     }
 }
 
-fn assert_handle_effects() {
-    let mut handle = Handle::default();
-    handle.focus();
-    handle.set_hidden(true);
-    assert!(handle.is_focused() && handle.is_hidden());
-    handle.unfocus();
-    handle.set_hidden(false);
-    handle.hide();
-    assert!(!handle.is_focused() && !handle.is_hidden() && handle.removed);
-    assert_eq!(
-        handle.log,
-        ["focus", "set_hidden", "unfocus", "set_hidden", "hide"]
-    );
-}
-
 #[test]
-fn overlay_defaults_unset_visibility_callback_and_handle_effects() {
+fn overlay_defaults_unset_visibility_callback() {
     assert_overlay_defaults();
     let seen = Rc::new(RefCell::new(Vec::new()));
     let options = visibility_options(&seen);
@@ -322,7 +306,6 @@ fn overlay_defaults_unset_visibility_callback_and_handle_effects() {
         .map(|callback| (callback(100, 30), callback(79, 24)));
     assert_eq!(visible, Some((true, false)));
     assert_eq!(*seen.borrow(), [(100, 30), (79, 24)]);
-    assert_handle_effects();
 }
 
 /// Drives any terminal through every operation.

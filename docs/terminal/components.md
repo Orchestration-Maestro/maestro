@@ -91,11 +91,9 @@ assert_eq!(container.render(14), [" Hello world  "]);
 
 ## Overlays
 
-`OverlayOptions` records how an overlay is sized, anchored, offset, margined and
-shown; every member is optional and sizes keep a percentage's spelling. The
-`visible` callback takes the viewport width and height.
-`OverlayHandle` is the control surface of a shown overlay. Resolving positions and
-managing a stack of overlays belong to the frame writer that uses these records.
+`TUI::show_overlay` retains a component with optional caller-editable
+`OverlayOptions` and returns its `OverlayHandle`. See [retained overlays](overlays.md)
+for placement, focus, visibility and terminal error ordering.
 
 ## Terminals
 

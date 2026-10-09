@@ -257,7 +257,7 @@ impl TUI {
             let terminal = self.shared.terminal.borrow();
             (terminal.columns(), terminal.rows())
         };
-        let mut lines = self.render(width);
+        let mut lines = self.composite_overlays(self.render(width), (width, height));
         let cursor = drawing::extract_cursor_position(&mut lines, height);
         drawing::apply_line_resets(&mut lines);
         let frame = Frame {
@@ -268,7 +268,8 @@ impl TUI {
         };
         self.reject_overflow(&frame)?;
         let policy = Policy {
-            clear_on_shrink: self.shared.clear_on_shrink.get(),
+            clear_on_shrink: self.shared.clear_on_shrink.get()
+                && self.shared.overlays.borrow().is_empty(),
             mobile: self
                 .shared
                 .runtime
