@@ -99,6 +99,44 @@ struct RequestBody<'a> {
     /// Nonempty tool declarations.
     #[serde(skip_serializing_if = "Option::is_none")]
     tools: Option<Vec<Value>>,
+    /// Explicit requested effort and default summary.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning: Option<Reasoning<'a>>,
+}
+
+/// Effective descriptor-mapped effort.
+#[derive(Serialize)]
+struct Reasoning<'a> {
+    /// Wire spelling, including an empty descriptor mapping.
+    effort: &'a str,
+    /// Summary selected when reasoning was requested.
+    summary: super::OpenAICodexReasoningSummary,
+}
+
+/// Keep explicit effort even when the descriptor does not advertise reasoning.
+fn reasoning<'a>(model: &'a Model, options: &OpenAICodexResponsesOptions) -> Option<Reasoning<'a>> {
+    use crate::ModelThinkingLevel as Level;
+    let level = options.reasoning_effort.as_ref()?;
+    let fallback = match level {
+        Level::Off => "none",
+        Level::Minimal => "minimal",
+        Level::Low => "low",
+        Level::Medium => "medium",
+        Level::High => "high",
+        Level::Xhigh => "xhigh",
+    };
+    let effort = model
+        .thinking_level_map
+        .as_ref()
+        .and_then(|map| map.get(level))
+        .and_then(Option::as_deref)
+        .unwrap_or(fallback);
+    Some(Reasoning {
+        effort,
+        summary: options
+            .reasoning_summary
+            .unwrap_or(super::OpenAICodexReasoningSummary::Auto),
+    })
 }
 
 /// Text output preferences.
@@ -147,6 +185,7 @@ fn build_request_body(
         parallel_tool_calls: true,
         temperature: options.common.temperature,
         service_tier: options.service_tier.as_ref(),
+        reasoning: reasoning(model, options),
         tools: context
             .tools
             .as_deref()

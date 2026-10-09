@@ -78,6 +78,10 @@ fn maestro_response_sessions_build_request_defaults() {
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RequestOptions {
+    /// Raw requested effort.
+    reasoning_effort: Option<String>,
+    /// Summary selection, null and omission both default.
+    reasoning_summary: Option<String>,
     /// Temperature, including zero.
     temperature: Option<f64>,
     /// Explicit null is different from omission.
@@ -104,9 +108,29 @@ fn present<'de, D: serde::Deserializer<'de>>(
 
 impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
     fn from(input: RequestOptions) -> Self {
+        use super::super::OpenAICodexReasoningSummary as Summary;
         use super::super::OpenAICodexTextVerbosity as Verbosity;
         use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier as Tier;
+        let effort = input.reasoning_effort.map(|name| match name.as_str() {
+            "none" => crate::ModelThinkingLevel::Off,
+            "minimal" => crate::ModelThinkingLevel::Minimal,
+            "low" => crate::ModelThinkingLevel::Low,
+            "medium" => crate::ModelThinkingLevel::Medium,
+            "high" => crate::ModelThinkingLevel::High,
+            "xhigh" => crate::ModelThinkingLevel::Xhigh,
+            _ => panic!("invalid fixture effort"),
+        });
+        let summary = input.reasoning_summary.map(|name| match name.as_str() {
+            "auto" => Summary::Auto,
+            "concise" => Summary::Concise,
+            "detailed" => Summary::Detailed,
+            "off" => Summary::Off,
+            "on" => Summary::On,
+            _ => panic!("invalid fixture summary"),
+        });
         Self {
+            reasoning_effort: effort,
+            reasoning_summary: summary,
             common: crate::StreamOptions {
                 api_key: Some("a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b".to_owned()),
                 temperature: input.temperature,
@@ -278,4 +302,51 @@ fn maestro_response_sessions_convert_history_and_tools() {
             );
         }
     });
+}
+
+/// Assert complete wire documents from the independent request corpus.
+async fn assert_bodies(text: &str) {
+    let rows: Vec<BodyCase> = serde_json::from_str(text).unwrap();
+    for row in rows {
+        let options = row.options.into();
+        let prepared = super::super::request::prepare_request(
+            &std::sync::Arc::new(row.model),
+            &row.context,
+            &options,
+            "maestro (browser)",
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            crate::providers::json_text::compact_json(&prepared.body).unwrap(),
+            crate::providers::json_text::compact_json(&row.expected).unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_response_sessions_map_reasoning_from_descriptor() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(assert_bodies(include_str!("fixtures/reasoning.json")));
+}
+
+#[test]
+fn maestro_response_sessions_keep_raw_minimal_without_mapping() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(assert_bodies(include_str!("fixtures/minimal.json")));
+}
+
+#[test]
+fn maestro_response_sessions_default_reasoning_summary() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(assert_bodies(include_str!("fixtures/summary.json")));
 }

@@ -18,6 +18,10 @@ pub(crate) struct OpenAICodexResponsesOptions {
     pub(crate) common: StreamOptions,
     /// Omitted, explicitly null, or named service tier.
     pub(crate) service_tier: Option<Nullable<OpenAIResponsesServiceTier>>,
+    /// Explicit raw effort, independent of descriptor capability.
+    pub(crate) reasoning_effort: Option<crate::ModelThinkingLevel>,
+    /// Optional summary, omission and null both select auto.
+    pub(crate) reasoning_summary: Option<OpenAICodexReasoningSummary>,
     /// Requested output verbosity.
     pub(crate) text_verbosity: Option<OpenAICodexTextVerbosity>,
 }
@@ -32,4 +36,20 @@ pub(crate) enum OpenAICodexTextVerbosity {
     Medium,
     /// Extensive detail.
     High,
+}
+
+/// Requested reasoning summary style.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum OpenAICodexReasoningSummary {
+    /// Provider-selected summary.
+    Auto,
+    /// Brief summary.
+    Concise,
+    /// Detailed summary.
+    Detailed,
+    /// Disable summary.
+    Off,
+    /// Enable summary.
+    On,
 }
