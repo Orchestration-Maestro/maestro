@@ -78,12 +78,9 @@ fn body(case: &Case) -> Vec<u8> {
         _ => case.input.get().as_bytes().to_vec(),
     }
 }
-/// Replace the recording's negative-zero marker in expected descriptor leaves.
+/// Normalize integer expectations to the descriptor's floating-point representation.
 fn expected_numbers(value: &mut Value) {
     match value {
-        Value::Object(map) if map.get("$number") == Some(&Value::String("-0".into())) => {
-            *value = serde_json::json!(-0.0);
-        }
         Value::Object(map) => map.values_mut().for_each(expected_numbers),
         Value::Array(items) => items.iter_mut().for_each(expected_numbers),
         Value::Number(number) => *value = serde_json::json!(number.as_f64().unwrap()),
@@ -420,7 +417,9 @@ fn output_sink_errors_are_returned() {
             } else {
                 empty_body(source)
             };
-            let fetch: Fetch = if phase == "source-error" {
+            let fetch: Fetch = if phase == "start" {
+                Arc::new(|_| panic!("fetch after failed initial progress write"))
+            } else if phase == "source-error" {
                 connection_fetch()
             } else {
                 response_fetch(bytes)
@@ -522,12 +521,9 @@ fn controlled_response(mode: &str, bytes: Vec<u8>) -> Result<HttpResponse, Fetch
 /// Compare each descriptor field and every completed application line.
 fn assert_observations(case: &mut Case, models: Vec<Model>, out: Vec<u8>, err: Vec<u8>) {
     expected_numbers(&mut case.expected.models);
-    assert_eq!(
-        serde_json::to_value(models).unwrap(),
-        case.expected.models,
-        "{} models",
-        case.id
-    );
+    let actual = serde_json::to_value(models).unwrap();
+    assert_eq!(actual, case.expected.models, "{} models", case.id);
+    assert_number_bits(&actual, &case.expected.models, &case.id);
     assert_eq!(
         String::from_utf8(out).unwrap().lines().collect::<Vec<_>>(),
         case.expected.stdout,
@@ -551,6 +547,30 @@ fn assert_observations(case: &mut Case, models: Vec<Model>, out: Vec<u8>, err: V
                 case.id
             ),
         }
+    }
+}
+
+/// Compare numeric leaves by bits, including the sign of zero.
+fn assert_number_bits(actual: &Value, expected: &Value, id: &str) {
+    match (actual, expected) {
+        (Value::Number(actual), Value::Number(expected)) => {
+            assert_eq!(
+                actual.as_f64().unwrap().to_bits(),
+                expected.as_f64().unwrap().to_bits(),
+                "{id} numeric leaf"
+            );
+        }
+        (Value::Object(actual), Value::Object(expected)) => {
+            for (key, expected) in expected {
+                assert_number_bits(&actual[key], expected, id);
+            }
+        }
+        (Value::Array(actual), Value::Array(expected)) => {
+            for (actual, expected) in actual.iter().zip(expected) {
+                assert_number_bits(actual, expected, id);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -762,5 +782,48 @@ fn invalid_id_diagnostics_retain_original_escape_spelling() {
             String::from_utf8(errors).unwrap(),
             format!("Failed to fetch {label} models: skipping model {id}: invalid metadata\n")
         );
+    }
+}
+
+#[test]
+fn distinct_surrogate_entry_keys_survive_selection() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    for provider in ["anthropic", "opencode"] {
+        for (members, names) in [
+            (
+                r#""\ud800":{"tool_call":true,"name":"First"},"\ud801":{"tool_call":false,"name":"Rejected"}"#,
+                vec!["First"],
+            ),
+            (
+                r#""\ud800":{"tool_call":true,"name":"First"},"\ufffd":{"tool_call":true,"name":"Second"}"#,
+                vec!["First", "Second"],
+            ),
+            (
+                r#""\ud800":{"tool_call":true,"name":"First"},"\ud800":{"tool_call":true,"name":"Last"}"#,
+                vec!["Last"],
+            ),
+        ] {
+            let text = format!("{{\"{provider}\":{{\"models\":{{{members}}}}}}}");
+            let mut errors = Vec::new();
+            let models = runtime
+                .block_on(invoke(
+                    "dev",
+                    &response_fetch(text.into_bytes()),
+                    &mut Vec::new(),
+                    &mut errors,
+                ))
+                .unwrap();
+            assert_eq!(
+                models
+                    .iter()
+                    .map(|model| model.name.as_str())
+                    .collect::<Vec<_>>(),
+                names
+            );
+            assert!(models.iter().all(|model| model.id == "\u{fffd}"));
+            assert!(errors.is_empty());
+        }
     }
 }

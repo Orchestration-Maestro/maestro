@@ -2,9 +2,10 @@
 
 The native-only `maestro_models::catalog_generation::generate_models` module
 provides `fetch_open_router_models`, `fetch_ai_gateway_models` and
-`load_models_dev_data`. Each explicitly called operation issues one GET through
-its supplied `Fetch`, with no supplied authentication, timeout, cancellation
-signal or retry. HTTP status does not replace JSON processing.
+`load_models_dev_data`. After its initial progress line is written successfully,
+each operation issues one GET through its supplied `Fetch`, with no supplied
+authentication, timeout, cancellation signal or retry. A failed initial write
+returns an error without fetching. HTTP status does not replace JSON processing.
 
 These operations return typed model descriptors; they do not register models,
 refresh the embedded catalog or write catalog files. Returned descriptors retain
@@ -29,7 +30,13 @@ Gateway prices accept decimal prefixes and are scaled to USD per million
 tokens; nonfinite parsing or scaling becomes zero. models.dev rates are already
 per million. Missing or falsy limits use 4096, except the GitHub provider's
 128000 context and 8192 output defaults. Finite nonzero negative and fractional
-limits remain; wrong-typed selected metadata rejects that model.
+limits remain. Truthy limit and models.dev price leaves must be finite numbers;
+gateway price leaves must be numbers or strings when not defaulted as falsy.
+Non-null models.dev input modalities and `OpenRouter` architecture modalities
+must be strings or arrays. Invalid values in these validated fields reject
+selected models. Other fields can be defaulted or ignored: `cost: 42` supplies no
+price leaves and defaults to zero, wrong-typed models.dev `reasoning` becomes
+false, and an invalid SDK identifier uses the fallback route.
 
 A source fetch, body or whole-feed decode failure returns an empty vector if
 writing its diagnostic succeeds. A malformed selected record is skipped after
@@ -44,9 +51,12 @@ without recursive conversion. Missing array IDs use the JSON-escaped
 `<entry:N>` with zero-based `N`. models.dev diagnostics use the entry key.
 
 Body decoding removes one leading UTF-8 BOM and replaces invalid UTF-8 sequences.
-Unpaired UTF-16 escapes become replacement characters; valid pairs and literal
-escaped text remain intact. Unknown metadata is borrowed without recursively
-converting, serializing or dropping it as a value tree.
+Object entry keys retain distinct UTF-16 units through duplicate resolution and
+ordering, so lone-surrogate keys cannot overwrite different keys. In surviving
+IDs and other decoded strings, each unpaired UTF-16 escape is spelled as one
+U+FFFD replacement character because Rust strings cannot hold that unit; valid
+pairs and literal escaped text remain intact. Unknown metadata is borrowed
+without recursively converting, serializing or dropping it as a value tree.
 
 ## Controlled client
 

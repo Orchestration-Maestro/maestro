@@ -112,8 +112,7 @@ async fn retrieve(
             return Ok(Vec::new());
         }
     };
-    let projected_text = input::string_units(&text);
-    let raw = match raw_json(&projected_text) {
+    let raw = match raw_json(&text) {
         Ok(raw) => raw,
         Err(error) => {
             writeln!(errors, "{} {error}", source.prefix())?;
@@ -128,7 +127,7 @@ async fn retrieve(
         writeln!(errors, "{} invalid feed collection", source.prefix())?;
         return Ok(Vec::new());
     }
-    let models = normalize(raw, source, errors, &text, &projected_text)?;
+    let models = normalize(raw, source, errors)?;
     let verb = if matches!(source, Source::Dev) {
         "Loaded"
     } else {
@@ -144,13 +143,7 @@ async fn retrieve(
 }
 
 /// Normalize the selected feed records.
-fn normalize(
-    raw: &RawValue,
-    source: Source,
-    errors: &mut dyn Write,
-    original_text: &str,
-    projected_text: &str,
-) -> io::Result<Vec<Model>> {
+fn normalize(raw: &RawValue, source: Source, errors: &mut dyn Write) -> io::Result<Vec<Model>> {
     let mut models = Vec::new();
     match source {
         Source::Router | Source::Gateway => {
@@ -163,7 +156,7 @@ fn normalize(
                     Ok(None) => {}
                     Err(_) => {
                         let id = match member(item, "id") {
-                            Some(id) => diagnostic_id(id, original_text, projected_text)?,
+                            Some(id) => diagnostic_id(id)?,
                             None => serde_json::to_string(&format!("<entry:{index}>"))?,
                         };
                         writeln!(
@@ -288,14 +281,9 @@ fn gateway_limits(model: &mut Model, raw: &RawValue, source: Source) -> Result<(
 }
 
 /// Escape string identifiers and retain original JSON spelling for wrong-typed identifiers.
-fn diagnostic_id(id: &RawValue, original: &str, projected: &str) -> io::Result<String> {
+fn diagnostic_id(id: &RawValue) -> io::Result<String> {
     if let Ok(id) = input::text(Some(id)) {
         return Ok(serde_json::to_string(&id)?);
     }
-    // Borrowed values are slices of projected text; escape substitutions retain byte lengths.
-    let offset = id.get().as_ptr().addr() - projected.as_ptr().addr();
-    original
-        .get(offset..offset + id.get().len())
-        .map(str::to_owned)
-        .ok_or_else(|| io::Error::other("identifier range does not belong to the decoded feed"))
+    Ok(id.get().to_owned())
 }

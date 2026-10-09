@@ -13,7 +13,8 @@ pub(super) fn normalize(raw: &RawValue, errors: &mut dyn Write) -> io::Result<Ve
         let mut canonical = if source == "kimi-for-coding" {
             entries
                 .iter()
-                .find(|(id, _)| id == "kimi-for-coding")
+                .find(|(id, _)| id.0 == b"kimi-for-coding")
+                .filter(|(_, raw)| raw.get() == "null" || eligible(raw))
                 .map(|(_, raw)| {
                     project(
                         input::descriptor("kimi-for-coding".into(), api, provider, url),
@@ -27,6 +28,10 @@ pub(super) fn normalize(raw: &RawValue, errors: &mut dyn Write) -> io::Result<Ve
             .as_ref()
             .is_some_and(|result| matches!(result, Ok(Some(_))));
         for (id, raw) in entries {
+            if raw.get() != "null" && !eligible(raw) {
+                continue;
+            }
+            let id = id.text();
             if included_canonical && ["k2p5", "k2p6"].contains(&id.as_str()) {
                 continue;
             }
@@ -49,9 +54,6 @@ fn project(model: Model, raw: &RawValue) -> Result<Option<Model>, input::Invalid
     if raw.get() == "null" {
         return Err(input::Invalid);
     }
-    if member(raw, "tool_call").is_none_or(|raw| raw.get() != "true") {
-        return Ok(None);
-    }
     let Some(mut model) = routes::route(model, raw) else {
         return Ok(None);
     };
@@ -63,4 +65,9 @@ fn project(model: Model, raw: &RawValue) -> Result<Option<Model>, input::Invalid
         model.name = input::text(Some(name))?;
     }
     input::dev_metadata(model, raw).map(Some)
+}
+
+/// Select literal tool support before decoding an entry's identifier.
+fn eligible(raw: &RawValue) -> bool {
+    member(raw, "tool_call").is_some_and(|raw| raw.get() == "true")
 }
