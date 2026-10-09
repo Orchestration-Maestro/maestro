@@ -22,7 +22,8 @@ replayed only when it has a nonempty signature. Replay uses the owning
 numeric spelling can change.
 
 Tool identities are normalized for foreign history. The allowed-provider set
-selects whether a compound identity retains a separate item identity. Item
+selects whether a compound identity retains a separate item identity. A call
+without an item identity replays without an `id` member. Item
 identities starting with `fc_` are omitted for a different model only when
 provider and API both match. Tool-result images follow the joined text when
 supported, including image-only results; otherwise empty text uses
@@ -47,7 +48,9 @@ whole item as compact JSON after successful conversion. Encoded message signatur
 retain truthy phases; recognized phases are selected only during history conversion.
 Existing
 calls use nonempty scratch arguments before final arguments and ignore final
-identity. Final-only calls are inserted before publishing their end. Argument
+identity. Final-only calls are inserted before publishing their end. When creating
+a call, an omitted item ID leaves the call identity alone; a present string ID
+appends `|{id}`. Argument
 completion delegates to the owning JSON helper; nonobject results become `{}`.
 Argument completion replaces stored arguments, emitting a delta only when the
 completed text adds a nonempty suffix to the previous scratch.
@@ -55,12 +58,16 @@ completed text adds a nonempty suffix to the previous scratch.
 Completion publishes the final nonempty ID and model-priced usage before any
 tier callbacks. Resolution runs only with pricing, outside message locks. Priced
 usage is published before status selection, including when that selection fails.
-Only a stop outcome is upgraded to tool use when a call exists.
+Only a stop outcome is upgraded to tool use when a call exists. Reported input,
+output, total and cached token counts default to zero when absent, null or zero;
+numbers pass through, while other values return a native typed-read error.
 
 Direct errors render `Error Code {code}: {message}`. Failed responses prefer a
 truthy error, then a truthy incomplete reason, otherwise no-details text. Selected
-SDK string fields, including deltas, call identity, error details and final text
+SDK string fields, including deltas, call identity, error messages and final text
 parts, reject nonstrings or missing required values with native typed-read errors.
+A direct error code also accepts null, rendered as `null`; a function-call item ID
+may be omitted, but a present value must be a string.
 The read occurs only when its branch uses the value; already published content
 survives a later malformed field. Raw truthiness still selects source defaults.
 

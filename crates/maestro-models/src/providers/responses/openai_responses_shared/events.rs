@@ -5,11 +5,11 @@ use std::sync::{Arc, PoisonError};
 
 use serde_json::value::RawValue;
 
-use super::wire::{appended, arguments, field, joined, kind, last, required, signature, string};
-use super::{OpenAIResponsesStreamOptions, failure, native};
-use crate::providers::json_text::{
-    compact_raw, is_truthy, member, or_zero, parsed_arguments, raw_json, raw_number,
+use super::wire::{
+    appended, arguments, count, field, joined, kind, last, required, signature, string,
 };
+use super::{OpenAIResponsesStreamOptions, failure, native};
+use crate::providers::json_text::{compact_raw, is_truthy, member, parsed_arguments, raw_json};
 use crate::{
     AssistantContent as Block, AssistantMessage, AssistantMessageEvent as Update,
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
@@ -228,7 +228,11 @@ impl<'a> Reducer<'a> {
             "error" => {
                 return Err(failure(format!(
                     "Error Code {}: {}",
-                    string(member(raw, "code"))?,
+                    if member(raw, "code").is_some_and(|code| code.get() == "null") {
+                        "null".to_owned()
+                    } else {
+                        string(member(raw, "code"))?
+                    },
                     string(member(raw, "message"))?
                 )));
             }
@@ -405,14 +409,15 @@ impl<'a> Reducer<'a> {
             .and_then(|response| member(response, "usage"))
             .filter(|raw| is_truthy(raw))
         {
-            let count = |raw, key| or_zero(member(raw, key).and_then(raw_number));
             let cached = member(reported, "input_tokens_details")
-                .map_or(0.0, |details| count(details, "cached_tokens"));
-            usage.input = count(reported, "input_tokens") - cached;
-            usage.output = count(reported, "output_tokens");
+                .map(|details| count(details, "cached_tokens"))
+                .transpose()?
+                .unwrap_or_default();
+            usage.input = count(reported, "input_tokens")? - cached;
+            usage.output = count(reported, "output_tokens")?;
             usage.cache_read = cached;
             usage.cache_write = 0.0;
-            usage.total_tokens = count(reported, "total_tokens");
+            usage.total_tokens = count(reported, "total_tokens")?;
         }
         calculate_cost(self.model, &mut usage);
         self.change(|message| message.usage = usage.clone());
@@ -484,12 +489,13 @@ fn argument_update(
 
 /// Build a final call from the selected identity and already-parsed arguments.
 fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErrorInfo> {
+    let mut id = string(member(raw, "call_id"))?;
+    if let Some(item_id) = field::<String>(raw, "id")? {
+        id.push('|');
+        id.push_str(&item_id);
+    }
     Ok(ToolCall {
-        id: format!(
-            "{}|{}",
-            string(member(raw, "call_id"))?,
-            string(member(raw, "id"))?
-        ),
+        id,
         name: string(member(raw, "name"))?,
         arguments,
         thought_signature: None,

@@ -5,7 +5,17 @@ use serde_json::value::RawValue;
 
 use super::native;
 use crate::DiagnosticErrorInfo;
-use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json};
+use crate::providers::json_text::{compact_raw, is_truthy, member, or_zero, raw_json, raw_number};
+
+/// Read a numeric usage member, defaulting only absent, null and zero values to zero.
+pub(super) fn count(raw: &RawValue, name: &str) -> Result<f64, DiagnosticErrorInfo> {
+    let Some(value) = member(raw, name).filter(|value| value.get() != "null") else {
+        return Ok(0.0);
+    };
+    raw_number(value)
+        .map(|number| or_zero(Some(number)))
+        .ok_or_else(|| native(&serde_json::Error::custom("expected a numeric usage count")))
+}
 
 /// Decode a selected typed member; missing members are absent and invalid types fail.
 pub(super) fn field<T: DeserializeOwned>(

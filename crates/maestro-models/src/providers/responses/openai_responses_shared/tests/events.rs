@@ -978,3 +978,103 @@ fn maestro_responses_events_reject_selected_identity_and_error_strings() -> Test
     }
     Ok(())
 }
+
+#[test]
+fn maestro_responses_events_accept_nullable_error_code() -> TestResult {
+    let run = block_on(
+        false,
+        responses::reduce(Script::of(vec![
+            r#"{"type":"error","code":null,"message":"quota"}"#.to_owned(),
+        ])?),
+    )?;
+    assert_eq!(run.outcome.unwrap_err().message, "Error Code null: quota");
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
+    for key in [
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+        "cached_tokens",
+    ] {
+        for value in [
+            None,
+            Some(json!(null)),
+            Some(json!(0)),
+            Some(json!(7)),
+            Some(json!("7")),
+        ] {
+            let mut usage = json!({});
+            if let Some(value) = &value {
+                usage[key] = value.clone();
+            }
+            if key == "cached_tokens" {
+                usage = json!({"input_tokens_details": usage});
+            }
+            let run = block_on(
+                false,
+                responses::reduce(Script::of(vec![
+                    json!({"type": "response.completed", "response": {"usage": usage}}).to_string(),
+                ])?),
+            )?;
+            if value.as_ref().is_some_and(Value::is_string) {
+                assert_eq!(
+                    run.outcome.unwrap_err().message,
+                    "expected a numeric usage count"
+                );
+                continue;
+            }
+            run.outcome?;
+            let expected = value.as_ref().and_then(Value::as_f64).unwrap_or_default();
+            let counts = &run.message.usage;
+            let (actual, expected) = match key {
+                "input_tokens" => (json!(counts.input), json!(expected)),
+                "output_tokens" => (json!(counts.output), json!(expected)),
+                "total_tokens" => (json!(counts.total_tokens), json!(expected)),
+                _ => (
+                    json!([counts.input, counts.cache_read]),
+                    json!([-expected, expected]),
+                ),
+            };
+            assert_eq!(actual, expected, "{key}");
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
+    for event_kind in ["response.output_item.added", "response.output_item.done"] {
+        let item =
+            json!({"type": "function_call", "call_id": "c", "name": "lookup", "arguments": "{}"});
+        let mut events = vec![json!({"type": event_kind, "item": item}).to_string()];
+        if event_kind == "response.output_item.added" {
+            events.push(json!({"type": "response.output_item.done", "item": item}).to_string());
+        }
+        events.push(json!({"type": "response.completed"}).to_string());
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        run.outcome?;
+        let maestro_models::AssistantContent::ToolCall(call) = &run.message.content[0] else {
+            panic!("missing tool call");
+        };
+        assert_eq!(call.id, "c");
+        let context = maestro_models::Context {
+            system_prompt: None,
+            messages: vec![maestro_models::Message::Assistant(run.message)],
+            tools: None,
+        };
+        let replay = super::super::messages::convert_responses_messages(
+            &responses::model(None)?,
+            &context,
+            &std::collections::HashSet::<String>::new(),
+            None,
+        )?;
+        assert_eq!(
+            replay[0],
+            json!({"type":"function_call", "call_id":"c", "name":"lookup", "arguments":"{}"})
+        );
+    }
+    Ok(())
+}
