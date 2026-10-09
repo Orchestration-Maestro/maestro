@@ -1,0 +1,789 @@
+[
+  {
+    "test": "loader_defaults_style_the_spinner_and_message",
+    "input": {},
+    "expected": {
+      "rows": [
+        "",
+        " \u001b[36m⠋\u001b[39m \u001b[2mLoading...\u001b[22m   "
+      ],
+      "calls": [
+        [
+          "spinner",
+          "⠋"
+        ],
+        [
+          "message",
+          "Loading..."
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_defaults_style_the_spinner_and_message",
+    "input": {
+      "indicator": {}
+    },
+    "expected": {
+      "rows": [
+        "",
+        " ⠋ \u001b[2mLoading...\u001b[22m   "
+      ],
+      "calls": [
+        [
+          "message",
+          "Loading..."
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_defaults_style_the_spinner_and_message",
+    "input": {
+      "indicator": {
+        "intervalMs": 12
+      }
+    },
+    "expected": {
+      "rows": [
+        "",
+        " ⠋ \u001b[2mLoading...\u001b[22m   "
+      ],
+      "calls": [
+        [
+          "message",
+          "Loading..."
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_defaults_style_the_spinner_and_message",
+    "input": {
+      "style": "empty-spinner",
+      "message": "M"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "  \u001b[2mM\u001b[22m             "
+      ],
+      "calls": [
+        [
+          "spinner",
+          "⠋"
+        ],
+        [
+          "message",
+          "M"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_defaults_style_the_spinner_and_message",
+    "input": {
+      "message": ""
+    },
+    "expected": {
+      "rows": [
+        "",
+        " \u001b[36m⠋\u001b[39m \u001b[2m\u001b[22m             "
+      ],
+      "calls": [
+        [
+          "spinner",
+          "⠋"
+        ],
+        [
+          "message",
+          ""
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_static_indicators_keep_spacing_without_animation",
+    "input": {
+      "indicator": {
+        "frames": []
+      }
+    },
+    "expected": {
+      "rows": [
+        "",
+        " \u001b[2mLoading...\u001b[22m     "
+      ],
+      "calls": [
+        [
+          "message",
+          "Loading..."
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_static_indicators_keep_spacing_without_animation",
+    "input": {
+      "indicator": {
+        "frames": [
+          "*"
+        ]
+      }
+    },
+    "expected": {
+      "rows": [
+        "",
+        " * \u001b[2mLoading...\u001b[22m   "
+      ],
+      "calls": [
+        [
+          "message",
+          "Loading..."
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_static_indicators_keep_spacing_without_animation",
+    "input": {
+      "indicator": {
+        "frames": [
+          ""
+        ]
+      }
+    },
+    "expected": {
+      "rows": [
+        "",
+        " \u001b[2mLoading...\u001b[22m     "
+      ],
+      "calls": [
+        [
+          "message",
+          "Loading..."
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_static_indicators_keep_spacing_without_animation",
+    "input": {
+      "indicator": {
+        "frames": [
+          " "
+        ]
+      },
+      "style": "identity",
+      "message": "M"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "   M            "
+      ],
+      "calls": [
+        [
+          "message",
+          "M"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_static_indicators_keep_spacing_without_animation",
+    "input": {
+      "indicator": {
+        "frames": [
+          "\u001b[31m*\u001b[39m"
+        ]
+      },
+      "message": "M"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " \u001b[31m*\u001b[39m \u001b[2mM\u001b[22m            "
+      ],
+      "calls": [
+        [
+          "message",
+          "M"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_blank_messages_keep_the_leading_row",
+    "input": {
+      "message": " \t﻿",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        ""
+      ],
+      "calls": [
+        [
+          "message",
+          " \t﻿"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_blank_messages_keep_the_leading_row",
+    "input": {
+      "message": "",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "                "
+      ],
+      "calls": [
+        [
+          "message",
+          ""
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_blank_messages_keep_the_leading_row",
+    "input": {
+      "message": "",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        ""
+      ],
+      "calls": [
+        [
+          "message",
+          ""
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_layout_delegates_wrapping_and_escapes_to_text",
+    "input": {
+      "message": "A\tB\n界 👩‍💻 é",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity",
+      "width": 8
+    },
+    "expected": {
+      "rows": [
+        "",
+        " A   B  ",
+        " 界 👩‍💻  ",
+        " é      "
+      ],
+      "calls": [
+        [
+          "message",
+          "A\tB\n界 👩‍💻 é"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_layout_delegates_wrapping_and_escapes_to_text",
+    "input": {
+      "message": "\u001b[31mred\u001b[0m \u001b]8;;https://example.com\u0007link\u001b]8;;\u0007",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity",
+      "width": 9
+    },
+    "expected": {
+      "rows": [
+        "",
+        " \u001b[31mred\u001b[0m     ",
+        " \u001b]8;;https://example.com\u0007link\u001b]8;;\u0007    "
+      ],
+      "calls": [
+        [
+          "message",
+          "\u001b[31mred\u001b[0m \u001b]8;;https://example.com\u0007link\u001b]8;;\u0007"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 0,
+      "message": "X",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        ""
+      ],
+      "calls": [
+        [
+          "message",
+          "X"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 0,
+      "message": "界",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        ""
+      ],
+      "calls": [
+        [
+          "message",
+          "界"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 0,
+      "message": "👩‍💻",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        ""
+      ],
+      "calls": [
+        [
+          "message",
+          "👩‍💻"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 0,
+      "message": "é",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        ""
+      ],
+      "calls": [
+        [
+          "message",
+          "é"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 1,
+      "message": "X",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "X"
+      ],
+      "calls": [
+        [
+          "message",
+          "X"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 1,
+      "message": "界",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " "
+      ],
+      "calls": [
+        [
+          "message",
+          "界"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 1,
+      "message": "👩‍💻",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " "
+      ],
+      "calls": [
+        [
+          "message",
+          "👩‍💻"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 1,
+      "message": "é",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "é"
+      ],
+      "calls": [
+        [
+          "message",
+          "é"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 2,
+      "message": "X",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "  "
+      ],
+      "calls": [
+        [
+          "message",
+          "X"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 2,
+      "message": "界",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "  "
+      ],
+      "calls": [
+        [
+          "message",
+          "界"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 2,
+      "message": "👩‍💻",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "  "
+      ],
+      "calls": [
+        [
+          "message",
+          "👩‍💻"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 2,
+      "message": "é",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "  "
+      ],
+      "calls": [
+        [
+          "message",
+          "é"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 3,
+      "message": "X",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " X "
+      ],
+      "calls": [
+        [
+          "message",
+          "X"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 3,
+      "message": "界",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "   "
+      ],
+      "calls": [
+        [
+          "message",
+          "界"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 3,
+      "message": "👩‍💻",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        "   "
+      ],
+      "calls": [
+        [
+          "message",
+          "👩‍💻"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 3,
+      "message": "é",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " é "
+      ],
+      "calls": [
+        [
+          "message",
+          "é"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 4,
+      "message": "X",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " X  "
+      ],
+      "calls": [
+        [
+          "message",
+          "X"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 4,
+      "message": "界",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " 界 "
+      ],
+      "calls": [
+        [
+          "message",
+          "界"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 4,
+      "message": "👩‍💻",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " 👩‍💻 "
+      ],
+      "calls": [
+        [
+          "message",
+          "👩‍💻"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "loader_narrow_rows_reuse_bounded_text_layout",
+    "input": {
+      "width": 4,
+      "message": "é",
+      "indicator": {
+        "frames": []
+      },
+      "style": "identity"
+    },
+    "expected": {
+      "rows": [
+        "",
+        " é  "
+      ],
+      "calls": [
+        [
+          "message",
+          "é"
+        ]
+      ]
+    }
+  }
+]

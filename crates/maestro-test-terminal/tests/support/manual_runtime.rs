@@ -103,6 +103,16 @@ impl ManualRuntime {
         self.state.borrow().pending.len()
     }
 
+    /// Earliest pending deadline, if any.
+    pub fn next_deadline(&self) -> Option<Duration> {
+        self.state
+            .borrow()
+            .pending
+            .iter()
+            .map(|entry| entry.due)
+            .min()
+    }
+
     /// Log effects in the order requested.
     pub fn files(&self) -> Vec<FileEffect> {
         self.state.borrow().files.clone()

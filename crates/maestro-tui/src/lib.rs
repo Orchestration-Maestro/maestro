@@ -16,7 +16,10 @@ pub mod undo_stack;
 pub use autocomplete::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, SlashCommand,
 };
-pub use components::{Box, Image, ImageOptions, ImageTheme, Input, Spacer, Text, TruncatedText};
+pub use components::{
+    Box, Image, ImageOptions, ImageTheme, Input, Loader, LoaderIndicatorOptions, Spacer, Text,
+    TruncatedText,
+};
 pub use editor_component::EditorComponent;
 pub use keys::{
     Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,

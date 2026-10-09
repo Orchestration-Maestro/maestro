@@ -187,3 +187,43 @@ snapshot on `pop`. `clear` drops snapshots and `length` counts them. Input's
 snapshots own their text; an arbitrary shared-handle `Clone` is not a deep copy.
 Ctrl+- restores an input snapshot without rewinding the kill ring. Consecutive
 non-whitespace typing shares a snapshot; a whitespace-containing chunk starts one.
+
+## Loader
+
+`Loader::new(tui, spinner_color_fn, message_color_fn, message, indicator)` starts an
+optional animated indicator beside a message; an absent message is `Loading...`.
+The default indicator cycles through ten spinner frames at 80 ms. Explicit
+`LoaderIndicatorOptions` display their frames without spinner coloring, even when
+both fields are absent. An empty frame list hides the indicator, and a single
+frame stays static. Message coloring applies in either mode.
+
+`stop` retains the displayed content. `start` refreshes it and restarts the interval
+without resetting the frame. `set_message` refreshes the message even while stopped;
+`set_indicator` resets the frame and starts again. Cloned handles share this state.
+Rendering prepends one empty row to [Text](#text)'s result, with horizontal padding
+1 and vertical padding 0. Render and invalidation do not rerun the color callbacks.
+
+Absent, nonpositive and NaN intervals use 80 ms. Only two or more frames with a
+finite representable delay animate; positive delays below the native quantum use
+1 ns. Infinite or unrepresentable positive delays leave the initialized display
+without a finite tick. The loader uses the writer's existing runtime and ordinary
+render requests. Dropping the last handle cancels its animation timer.
+
+```rust
+use std::rc::Rc;
+use maestro_tui::{Loader, TUI};
+
+fn show_status(tui: TUI) {
+    let loader = Loader::new(
+        tui.clone(),
+        Rc::new(|frame| format!("\x1b[36m{frame}\x1b[39m")),
+        Rc::new(str::to_owned),
+        None,
+        None,
+    );
+    tui.add_child(Rc::new(loader.clone()));
+    loader.start();
+    loader.set_message("Still loading...".into());
+    loader.stop();
+}
+```
