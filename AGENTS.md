@@ -441,3 +441,11 @@ Outside browser targets, `maestro-tui` uses Tokio `=1.53.2`, defaults off, with
 Native tests add `net` for child readiness sockets. Tokio is MIT; no runtime type
 enters the completion interface. Native consumer tests use fd `10.5.0`, pinned
 with the development tools in `mise.toml`.
+
+## Approved credentials configuration libraries
+
+`maestro-credentials` uses `indexmap =2.14.2` with defaults for ordered headers,
+plus the existing `maestro-path` utility for authored documentation paths. Native
+only Tokio `=1.53.2`, defaults off, enables `rt`, `time`, `process`, `io-util` and
+`macros` for helper execution. Indexmap is MIT OR Apache-2.0; Tokio is MIT.
+Browser callers supply configuration operations without a native process edge.
