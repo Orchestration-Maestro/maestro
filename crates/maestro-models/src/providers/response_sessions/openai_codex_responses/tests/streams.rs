@@ -475,3 +475,107 @@ async fn assert_empty_success(status: u16) {
         "settled invocation published an unexpected event"
     );
 }
+
+/// Producer that supplies one chunk and rejects any subsequent read.
+struct TerminalBody {
+    /// Complete terminal frame, followed by invalid queued data.
+    chunk: Option<Vec<u8>>,
+    /// Witness that the same source was released by invocation.
+    dropped: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl futures_core::Stream for TerminalBody {
+    type Item = Result<Vec<u8>, crate::FetchError>;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        std::task::Poll::Ready(Some(Ok(self
+            .chunk
+            .take()
+            .expect("terminal must finish before a second body poll"))))
+    }
+}
+
+impl Drop for TerminalBody {
+    fn drop(&mut self) {
+        self.dropped
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+#[test]
+fn maestro_response_sessions_finish_before_body_eof() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        for kind in ["response.done", "response.completed", "response.incomplete"] {
+            for status in [
+                serde_json::json!("completed"),
+                serde_json::json!("incomplete"),
+                serde_json::json!("failed"),
+                serde_json::json!("cancelled"),
+                serde_json::json!("queued"),
+                serde_json::json!("in_progress"),
+                serde_json::json!(null),
+                serde_json::json!("unknown"),
+                serde_json::json!(42),
+            ] {
+                assert_open_terminal(kind, status).await;
+            }
+        }
+    });
+}
+
+/// Invoke each terminal through reduction without allowing the producer to return EOF.
+async fn assert_open_terminal(kind: &str, status: Value) {
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    };
+    let (model, context, mut options) = super::invocation();
+    let dropped = Arc::new(AtomicBool::new(false));
+    let mut bytes = event_bytes(&[serde_json::json!({"type":kind,"response":{"status":status}})]);
+    bytes.extend_from_slice(b"data: invalid JSON after terminal\n\n");
+    let body = Arc::new(Mutex::new(Some(TerminalBody {
+        chunk: Some(bytes),
+        dropped: Arc::clone(&dropped),
+    })));
+    options.common.fetch = Some(Arc::new(move |_| {
+        let body = body.lock().unwrap().take().unwrap();
+        Box::pin(async move {
+            Ok(crate::HttpResponse {
+                status: 200,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::new(),
+                body: Box::pin(body),
+            })
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    super::super::http::invoke_sse(&prepared, &model, &options, &output, &events)
+        .await
+        .unwrap();
+    assert!(
+        dropped.load(Ordering::SeqCst),
+        "invocation retained the same source after terminal reduction"
+    );
+    assert_eq!(
+        output.read().unwrap().stop_reason,
+        match status.as_str() {
+            Some("incomplete") => crate::StopReason::Length,
+            Some("failed" | "cancelled") => crate::StopReason::Error,
+            _ => crate::StopReason::Stop,
+        }
+    );
+}
