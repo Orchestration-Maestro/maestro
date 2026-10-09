@@ -187,6 +187,22 @@ fn tab_expansion_preserves_recognized_escape_payloads_and_cursor_mapping() {
 }
 
 #[test]
+fn cursor_inside_a_tabbed_escape_uses_the_complete_escape_for_display() {
+    let _guard = input_support::globals();
+    let input = Input::new();
+    input.set_value("\x1b]0;A\tB\x07X".into());
+    for _ in 0..6 {
+        input.handle_input("\x1b[C");
+    }
+    assert_eq!(
+        input.render(12),
+        ["> \x1b]0;A\tB\x07\x1b[7mX\x1b[27m         "]
+    );
+    input.handle_input("!");
+    assert_eq!(input.get_value(), "\x1b]0;A\t!B\x07X");
+}
+
+#[test]
 fn tabs_display_as_three_spaces_with_the_original_edit_cursor() {
     let _guard = input_support::globals();
     let input = Input::new();
