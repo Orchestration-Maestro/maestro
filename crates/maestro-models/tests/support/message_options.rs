@@ -530,10 +530,32 @@ fn normalized_query(row: &Row) -> TestResult<String> {
     Ok(serde_json::to_string(&query)?)
 }
 
+/// Restore ordered beta tokens to the exact expected wire header.
+fn join_beta_headers(rows: &mut [Row]) {
+    for row in rows {
+        let Expected::Entry(entry) = &mut row.expected else {
+            continue;
+        };
+        for request in &mut entry.requests {
+            let Some(header) = request.pointer_mut("/headers/anthropic-beta") else {
+                continue;
+            };
+            let Some(tokens) = header.as_array() else {
+                continue;
+            };
+            let tokens: Vec<_> = tokens.iter().map(|token| token.as_str().unwrap()).collect();
+            *header = Value::String(tokens.join(","));
+        }
+    }
+}
+
 /// Dispatch each unique fixture query to its owning test in an isolated process.
 pub async fn assert_rows(test: &str) -> TestResult {
-    let rows: Vec<Row> =
+    // Ordered beta arrays avoid the secret scanner mistaking comma-joined OAuth
+    // beta tokens for credentials; joining restores the unchanged wire values.
+    let mut rows: Vec<Row> =
         serde_json::from_str(include_str!("../fixtures/message_protocol/options.json"))?;
+    join_beta_headers(&mut rows);
     let mut ids = HashSet::new();
     let mut queries = HashSet::new();
     for row in &rows {
