@@ -4,6 +4,11 @@
 //! a child copy of its test with fresh descriptors installed over 0 and 1. The scenario
 //! drives a current-thread runtime whose clock is either paused (deadline decisions) or
 //! real (the reactor waking for a real deadline).
+//!
+//! Observations wait on the operation that produces them: a callback that ran, bytes that
+//! reached a descriptor, a descriptor that was released, or the paused clock reaching a time.
+//! The runtime moves a paused clock only while no task can run, so every task whose deadline
+//! lies before the time reached has run by then.
 #![cfg(test)]
 
 use std::cell::{Cell, RefCell};
@@ -11,13 +16,11 @@ use std::future::Future;
 use std::os::fd::OwnedFd;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
-use std::sync::mpsc;
 use std::time::Duration;
 
 use rustix::event::{PollFd, PollFlags, poll};
 use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
 use rustix::io::{Errno, read, write};
-use rustix::process::{Pid, Signal, kill_process};
 use rustix::pty::{OpenptFlags, grantpt, openpt, ptsname, unlockpt};
 use rustix::stdio::{dup2_stdin, dup2_stdout, stdin, stdout};
 use rustix::termios::{Winsize, tcsetwinsize};
@@ -36,9 +39,6 @@ const SCENARIO_VARIABLES: [&str; 4] = ["COLUMNS", "LINES", "MAESTRO_TUI_WRITE_LO
 /// The bytes a terminal writes when it starts: bracketed paste on, then the keyboard query.
 pub const START_BYTES: &str = "\x1b[?2004h\x1b[?u";
 
-/// How long a child may run before the parent kills it and fails the test.
-const CHILD_LIMIT: Duration = Duration::from_secs(120);
-
 /// Runs scenario number `case` of `test` in a child copy of the calling test and fails the
 /// test when the child fails. Inside the child it runs `scenario` only when it is the case
 /// the parent chose. `environment` is passed to the child on top of a clean slate.
@@ -54,7 +54,7 @@ pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario:
     for name in SCENARIO_VARIABLES {
         command.env_remove(name);
     }
-    let child = command
+    let output = command
         .args([test, "--exact", "--test-threads=1", "--nocapture"])
         .env(CHILD_MARKER, "1")
         .env(CASE_MARKER, case.to_string())
@@ -63,15 +63,9 @@ pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario:
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("the child test starts");
-    let pid = Pid::from_raw(i32::try_from(child.id()).expect("a process id fits"));
-    let (finished, outcome) = mpsc::channel();
-    std::thread::spawn(move || finished.send(child.wait_with_output()));
-    let Ok(output) = outcome.recv_timeout(CHILD_LIMIT) else {
-        kill_process(pid.expect("a child has a process id"), Signal::KILL).expect("kill the child");
-        panic!("{test} did not finish within {CHILD_LIMIT:?}");
-    };
-    let output = output.expect("the child output is collected");
+        .expect("the child test starts")
+        .wait_with_output()
+        .expect("the child output is collected");
     assert!(
         output.status.success(),
         "{test} case {case} failed in its child:\n{}\n{}",
@@ -120,7 +114,7 @@ pub struct Rig {
 }
 
 impl Rig {
-    /// A rig whose clock only moves when the scenario advances it.
+    /// A rig whose clock the runtime moves only while no task can run, to the earliest deadline.
     pub fn paused() -> Self {
         Self::on(
             Builder::new_current_thread()
@@ -184,8 +178,7 @@ pub fn pty_output() -> Capture {
 pub struct Feed(pub OwnedFd);
 
 impl Feed {
-    /// Writes `bytes` and returns once standard input holds them, so the next turn of the
-    /// reactor sees them.
+    /// Writes `bytes` and returns once standard input holds them.
     pub fn send(&self, bytes: &[u8]) {
         let mut rest = bytes;
         while !rest.is_empty() {
@@ -217,6 +210,18 @@ impl Capture {
             bytes.extend_from_slice(&chunk[..count]);
         }
         String::from_utf8(bytes).expect("terminal output is text")
+    }
+
+    /// Waits until `expected` has been written since the last observation, then checks that
+    /// nothing else came with it.
+    pub async fn written(&self, expected: &str) {
+        let mut collected = String::new();
+        until(|| {
+            collected.push_str(&self.take());
+            collected.len() >= expected.len()
+        })
+        .await;
+        assert_eq!(collected, expected);
     }
 
     /// Sets the window size of the pseudo-terminal this capture reads.
@@ -251,19 +256,20 @@ pub fn set_size(fd: &OwnedFd, columns: u16, rows: u16) {
     tcsetwinsize(fd, size).expect("the size is set");
 }
 
-/// Lets every task that is ready run, after one turn of the reactor and timers.
-pub async fn settle(local: &LocalSet) {
-    tokio::task::yield_now().await;
-    local
-        .spawn_local(async {})
-        .await
-        .expect("the barrier task runs");
+/// Yields to the runtime until `done` holds. The condition is the effect being waited for,
+/// so the wait ends exactly when the producing operation has finished.
+pub async fn until(mut done: impl FnMut() -> bool) {
+    while !done() {
+        tokio::task::yield_now().await;
+    }
 }
 
-/// Moves the paused clock forward and lets the woken tasks run.
-pub async fn advance(local: &LocalSet, milliseconds: u64) {
-    tokio::time::advance(Duration::from_millis(milliseconds)).await;
-    settle(local).await;
+/// Moves the paused clock forward by `milliseconds`. The runtime stops the clock at every
+/// earlier deadline and runs the tasks it wakes before moving on, so an effect due strictly
+/// before the time reached has happened when this returns. A deadline at the time reached
+/// wakes its task together with the caller, so such an effect is waited for with [`until`].
+pub async fn elapse(milliseconds: u64) {
+    tokio::time::sleep(Duration::from_millis(milliseconds)).await;
 }
 
 /// Input chunks a terminal delivered, in order.

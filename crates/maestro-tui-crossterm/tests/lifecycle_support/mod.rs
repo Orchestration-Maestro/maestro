@@ -5,18 +5,18 @@ mod utf8_streams;
 
 use std::fs::File;
 use std::io::{Seek, Write};
+use std::os::fd::AsRawFd;
 use std::os::unix::net::UnixStream;
 
 use rustix::event::{PollFd, PollFlags, Timespec, poll};
 use rustix::fs::{OFlags, fcntl_getfl};
 use rustix::io::read;
-use rustix::process::{Signal, getpid, kill_process};
+use rustix::process::{Resource, Rlimit, Signal, getpid, getrlimit, kill_process, setrlimit};
 use rustix::stdio::{dup2_stdin, stdin};
 use rustix::termios::{Termios, tcgetattr};
 use tokio::runtime::Builder;
-use tokio::task::LocalSet;
 
-use crate::support::{Feed, Inputs, Resizes, Rig, pty, set_size, settle};
+use crate::support::{Feed, Inputs, Resizes, Rig, pty, set_size, until};
 
 pub use utf8_streams::UTF8_STREAMS;
 
@@ -85,6 +85,11 @@ impl Inputs {
     pub fn count(&self) -> usize {
         self.0.borrow().len()
     }
+
+    /// Waits until at least `count` chunks were delivered.
+    pub async fn delivered(&self, count: usize) {
+        until(|| self.count() >= count).await;
+    }
 }
 
 impl Resizes {
@@ -92,34 +97,65 @@ impl Resizes {
     pub fn count(&self) -> usize {
         self.0.get()
     }
+
+    /// Waits until at least `count` notices were delivered.
+    pub async fn delivered(&self, count: usize) {
+        until(|| self.count() >= count).await;
+    }
+}
+
+/// Makes opening one more descriptor fail with `EMFILE` until it is dropped.
+pub struct DescriptorLimit(Rlimit);
+
+impl DescriptorLimit {
+    /// Lowers the soft limit to the number of the lowest free descriptor.
+    pub fn reached() -> Self {
+        let original = getrlimit(Resource::Nofile);
+        let probe = rustix::io::dup(stdin()).expect("a probe descriptor opens");
+        let lowest_free = u64::try_from(probe.as_raw_fd()).expect("a descriptor is not negative");
+        drop(probe);
+        let lowered = Rlimit {
+            current: Some(lowest_free),
+            maximum: original.maximum,
+        };
+        setrlimit(Resource::Nofile, lowered).expect("the limit is lowered");
+        Self(original)
+    }
+}
+
+impl Drop for DescriptorLimit {
+    fn drop(&mut self) {
+        setrlimit(Resource::Nofile, self.0).expect("the limit is restored");
+    }
+}
+
+/// Whether standard input holds bytes nobody has read.
+fn has_unread_input() -> bool {
+    let stdin = stdin();
+    let mut fds = [PollFd::new(&stdin, PollFlags::IN)];
+    let none = Timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    poll(&mut fds, Some(&none)).expect("poll") > 0 && fds[0].revents().contains(PollFlags::IN)
 }
 
 /// The bytes standard input holds unread, without waiting for more.
 pub fn unread_input() -> Vec<u8> {
-    let stdin = stdin();
-    let mut fds = [PollFd::new(&stdin, PollFlags::IN)];
-    let ready = poll(
-        &mut fds,
-        Some(&Timespec {
-            tv_sec: 0,
-            tv_nsec: 0,
-        }),
-    )
-    .expect("poll");
     let mut bytes = vec![0; 256];
-    if ready == 0 {
+    if !has_unread_input() {
         return Vec::new();
     }
-    let count = read(stdin, &mut bytes).expect("input reads");
+    let count = read(stdin(), &mut bytes).expect("input reads");
     bytes.truncate(count);
     bytes
 }
 
-/// Lets ready tasks run until `done` holds.
-pub async fn until(local: &LocalSet, mut done: impl FnMut() -> bool) {
-    while !done() {
-        settle(local).await;
-    }
+/// Waits until the terminal has read everything the scenario sent to standard input. For a
+/// descriptor the reactor reads, framing and delivery follow the read in the same step of the
+/// single-threaded runtime, so they have happened when this returns.
+pub async fn consumed() {
+    until(|| !has_unread_input()).await;
 }
 
 /// Sends the window-change signal to this process.

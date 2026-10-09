@@ -378,4 +378,4 @@ Apache-2.0 OR MIT, Tokio is MIT and chrono is MIT OR Apache-2.0. All three are s
 `cfg(unix)`; the crate does not use crossterm there, because crossterm prefers the
 controlling terminal over the redirected descriptors. Its tests add rustix `pipe`, `pty`
 and `process` and Tokio `test-util`. No library type appears in a public
-interface.
+interface except Tokio's `LocalSet`, which the caller supplies to `ProcessTerminal::new`.

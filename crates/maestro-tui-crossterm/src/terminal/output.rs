@@ -63,8 +63,10 @@ const KEEPALIVE: Duration = Duration::from_millis(1000);
 /// The environment variable naming the write log.
 const LOG_VARIABLE: &str = "MAESTRO_TUI_WRITE_LOG";
 
-/// Writes all of `text` to standard output, waiting while it is full. The reader makes the
-/// description nonblocking, and standard output usually shares it.
+/// Writes all of `text` to standard output, waiting while it is full, or returns the first
+/// error that is neither an interruption nor a full output; part of `text` may be written
+/// by then. The reader makes the description nonblocking, and standard output usually shares
+/// it.
 pub(super) fn emit(text: &str) -> io::Result<()> {
     let mut rest = text.as_bytes();
     while !rest.is_empty() {
@@ -149,7 +151,8 @@ pub(super) fn append_log(path: &Path, text: &str) {
 
 impl ProcessTerminal {
     /// Shows progress and keeps it shown, or clears it. Showing it again writes it again but
-    /// never starts a second keepalive or restarts the running one; clearing always writes.
+    /// starts a keepalive only when none is running, so a running one is never doubled or
+    /// restarted and one that ended on a failed write is replaced; clearing always writes.
     pub(super) fn show_progress(&mut self, active: bool) -> io::Result<()> {
         if !active {
             self.cancel_keepalive();

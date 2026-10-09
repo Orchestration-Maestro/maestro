@@ -53,15 +53,18 @@ pub struct ProcessTerminal {
 struct Shared {
     /// Identifies the live input task; changing it retires every earlier task.
     generation: Cell<u64>,
-    /// Receives input; absent while the terminal is stopped or draining.
+    /// Receives input; absent while the terminal is stopped or draining, and while one call
+    /// to it runs.
     on_input: RefCell<Option<InputCallback>>,
-    /// Receives window-size changes; absent while the terminal is stopped.
+    /// Receives window-size changes; absent while the terminal is stopped, and while one call
+    /// to it runs.
     on_resize: RefCell<Option<ResizeCallback>>,
     /// Whether the enhanced keyboard protocol is enabled, after the terminal reported support.
     enhanced: Cell<bool>,
     /// Whether the modified-key reporting is enabled, because no support report arrived in time.
     fallback: Cell<bool>,
-    /// Whether a support reply may still enable the enhanced keyboard modes.
+    /// Whether a support reply read by the live generation may still enable the enhanced
+    /// keyboard modes; false once a drain has begun.
     negotiating: Cell<bool>,
     /// When decoded input last arrived, whether or not it was delivered.
     activity: Cell<Instant>,
@@ -94,7 +97,7 @@ impl Shared {
         self.generation.get()
     }
 
-    /// Gives `text` to the input callback unless draining or stopped.
+    /// Gives `text` to the input callback unless draining, stopped or inside a call to it.
     fn call_input(&self, generation: u64, text: &str) {
         self.call(&self.on_input, generation, |callback| callback(text));
     }

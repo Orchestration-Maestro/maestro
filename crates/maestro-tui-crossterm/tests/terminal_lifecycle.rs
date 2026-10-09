@@ -8,12 +8,15 @@ mod lifecycle_support;
 mod support;
 
 use std::cell::{Cell, RefCell};
+use std::future::{Future, poll_fn};
+use std::pin::pin;
 use std::rc::Rc;
 use std::time::Duration;
 
 use lifecycle_support::{
-    UTF8_STREAMS, attributes, directory_input, file_input, open_descriptors, pty_input,
-    socket_input, stdin_attributes, stdin_flags, unread_input, until, window_change,
+    DescriptorLimit, UTF8_STREAMS, attributes, consumed, directory_input, file_input,
+    open_descriptors, pty_input, socket_input, stdin_attributes, stdin_flags, unread_input,
+    window_change,
 };
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
@@ -21,13 +24,12 @@ use rustix::fs::OFlags;
 use rustix::io::Errno;
 use rustix::stdio::{stdin, stdout};
 use rustix::termios::{
-    LocalModes, OptionalActions, OutputModes, SpecialCodeIndex, Termios, tcsetattr,
+    InputModes, LocalModes, OptionalActions, OutputModes, SpecialCodeIndex, Termios, tcsetattr,
 };
 use support::{
-    Capture, Feed, Inputs, Resizes, Rig, START_BYTES, advance, pipe_input, pipe_output, pty_output,
-    settle,
+    Capture, Feed, Inputs, Resizes, Rig, START_BYTES, elapse, pipe_input, pipe_output, pty_output,
+    until,
 };
-use tokio::task::LocalSet;
 
 /// A started terminal and what it delivered.
 struct Session {
@@ -53,12 +55,25 @@ fn start(rig: &Rig) -> Session {
     }
 }
 
-/// Checks the raw-mode settings the terminal applies: no line editing, echo or signal keys,
-/// output post-processing kept, one-byte reads.
+/// Checks the raw-mode settings the terminal applies: no line editing, echo, signal keys or
+/// input translation, output post-processing on, one-byte reads.
 fn assert_raw(attributes: &Termios) {
     let line_modes = LocalModes::ICANON | LocalModes::ECHO | LocalModes::ISIG | LocalModes::IEXTEN;
+    let translations = InputModes::IGNBRK
+        | InputModes::BRKINT
+        | InputModes::PARMRK
+        | InputModes::ISTRIP
+        | InputModes::INLCR
+        | InputModes::IGNCR
+        | InputModes::ICRNL
+        | InputModes::IXON;
     assert!(!attributes.local_modes.intersects(line_modes));
-    assert!(attributes.output_modes.contains(OutputModes::ONLCR));
+    assert!(!attributes.input_modes.intersects(translations));
+    assert!(
+        attributes
+            .output_modes
+            .contains(OutputModes::OPOST | OutputModes::ONLCR)
+    );
     assert_eq!(attributes.special_codes[SpecialCodeIndex::VMIN], 1);
     assert_eq!(attributes.special_codes[SpecialCodeIndex::VTIME], 0);
 }
@@ -80,18 +95,13 @@ fn partitions(bytes: &[u8]) -> Vec<Vec<&[u8]>> {
         .collect()
 }
 
-/// Sends each chunk and lets the input task consume it, returning what had been delivered
-/// after each one.
-async fn send_each(
-    rig: &Rig,
-    feed: &Feed,
-    session: &Session,
-    chunks: &[&[u8]],
-) -> Vec<Vec<String>> {
+/// Sends each chunk and waits until the input task has read it, returning what had been
+/// delivered after each one.
+async fn send_each(feed: &Feed, session: &Session, chunks: &[&[u8]]) -> Vec<Vec<String>> {
     let mut seen = Vec::new();
     for chunk in chunks {
         feed.send(chunk);
-        settle(&rig.local()).await;
+        consumed().await;
         seen.push(session.inputs.all());
     }
     seen
@@ -101,7 +111,7 @@ async fn send_each(
 /// been delivered after each.
 async fn send_split(rig: &Rig, feed: &Feed, chunks: &[&[u8]]) -> (Session, Vec<Vec<String>>) {
     let session = start(rig);
-    let seen = send_each(rig, feed, &session, chunks).await;
+    let seen = send_each(feed, &session, chunks).await;
     (session, seen)
 }
 
@@ -118,9 +128,10 @@ fn native_start_stop_restores_modes_and_listeners() {
             assert_eq!(output.take(), "\x1b[?2004h\x1b[?u");
             assert_raw(&attributes(stdin()));
             assert!(stdin_flags().contains(OFlags::NONBLOCK));
+            let reader = open_descriptors();
             output.resize(100, 30);
             window_change();
-            until(&rig.local(), || session.resizes.count() == 1).await;
+            session.resizes.delivered(1).await;
             assert_eq!(
                 (session.terminal.columns(), session.terminal.rows()),
                 (100, 30)
@@ -130,9 +141,9 @@ fn native_start_stop_restores_modes_and_listeners() {
             assert_eq!((stdin_attributes(), stdin_flags()), (cooked, flags));
             session.terminal.stop().unwrap();
             assert_eq!(output.take(), "\x1b[?2004l");
+            until(|| open_descriptors() < reader).await;
             output.resize(120, 40);
             window_change();
-            settle(&rig.local()).await;
             assert_eq!(session.resizes.count(), 1);
         });
     });
@@ -163,6 +174,46 @@ fn native_preserves_preexisting_raw_mode() {
 }
 
 #[test]
+fn native_raw_mode_delivers_bytes_unchanged_despite_input_translation_flags() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let feed = pty_input();
+        let _output = pipe_output();
+        let mut translating = attributes(stdin());
+        translating
+            .input_modes
+            .insert(InputModes::INLCR | InputModes::IGNCR | InputModes::PARMRK);
+        tcsetattr(stdin(), OptionalActions::Now, &translating).unwrap();
+        rig.run(async {
+            let mut session = start(&rig);
+            feed.send(b"a\rb\nc\xffd");
+            session.inputs.delivered(7).await;
+            let expected = ["a", "\r", "b", "\n", "c", "\u{fffd}", "d"];
+            assert_eq!(session.inputs.all(), expected);
+            session.terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_stop_restores_saved_attributes_over_changes_made_meanwhile() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pty_input();
+        let _output = pipe_output();
+        let saved = stdin_attributes();
+        rig.run(async {
+            let mut session = start(&rig);
+            let mut changed = attributes(stdin());
+            changed.local_modes.insert(LocalModes::ECHOK);
+            tcsetattr(stdin(), OptionalActions::Now, &changed).unwrap();
+            session.terminal.stop().unwrap();
+        });
+        assert_eq!(stdin_attributes(), saved);
+    });
+}
+
+#[test]
 fn native_accepts_input_without_a_raw_mode_method() {
     isolated!(&[], || {
         let rig = Rig::paused();
@@ -170,25 +221,24 @@ fn native_accepts_input_without_a_raw_mode_method() {
         rig.run(async {
             let pipe = pipe_input();
             let mut session = start(&rig);
-            pipe.send(b"ab");
-            until(&rig.local(), || session.inputs.count() == 2).await;
+            pipe.send(b"ab\xf0");
             pipe.close();
-            settle(&rig.local()).await;
+            session.inputs.delivered(3).await;
             session.terminal.stop().unwrap();
-            assert_eq!(session.inputs.all(), ["a", "b"]);
+            assert_eq!(session.inputs.all(), ["a", "b", "\u{fffd}"]);
 
             let socket = socket_input();
             let mut session = start(&rig);
             socket.send(b"cd");
-            until(&rig.local(), || session.inputs.count() == 2).await;
+            session.inputs.delivered(2).await;
             session.terminal.stop().unwrap();
             assert_eq!(session.inputs.all(), ["c", "d"]);
 
-            file_input(b"ef");
+            file_input(b"ef\xf0");
             let mut session = start(&rig);
-            until(&rig.local(), || session.inputs.count() == 2).await;
+            session.inputs.delivered(3).await;
             session.terminal.stop().unwrap();
-            assert_eq!(session.inputs.all(), ["e", "f"]);
+            assert_eq!(session.inputs.all(), ["e", "f", "\u{fffd}"]);
         });
     });
 }
@@ -277,7 +327,7 @@ fn native_replaces_invalid_utf8_and_flushes_decoder_at_eof() {
                 let feed = pipe_input();
                 let (mut session, _) = send_split(&rig, &feed, chunks).await;
                 feed.close();
-                settle(&rig.local()).await;
+                until(|| session.inputs.all().concat().len() >= text.len()).await;
                 assert_eq!(session.inputs.all().concat(), text, "{chunks:?}");
                 session.terminal.stop().unwrap();
             }
@@ -299,12 +349,14 @@ fn native_enables_fallback_at_150ms() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (_feed, mut session) = started(&rig, &output);
-            advance(&rig.local(), 149).await;
+            let (feed, mut session) = started(&rig, &output);
+            elapse(149).await;
+            feed.send(b"x");
+            consumed().await;
             assert_eq!(output.take(), "");
-            advance(&rig.local(), 1).await;
-            assert_eq!(output.take(), "\x1b[>4;2m");
-            advance(&rig.local(), 1000).await;
+            elapse(1).await;
+            output.written("\x1b[>4;2m").await;
+            elapse(1000).await;
             assert_eq!(output.take(), "");
             assert!(!session.terminal.kitty_protocol_active());
             session.terminal.stop().unwrap();
@@ -321,14 +373,13 @@ fn native_enables_flags_and_consumes_first_response() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
             feed.send(b"\x1b[?0u");
-            settle(&rig.local()).await;
-            assert_eq!(output.take(), "\x1b[>7u");
+            output.written("\x1b[>7u").await;
             assert!(session.terminal.kitty_protocol_active());
             assert!(maestro_tui::is_kitty_protocol_active());
-            advance(&rig.local(), 150).await;
+            elapse(151).await;
             assert_eq!(output.take(), "");
             feed.send(b"\x1b[?1u");
-            settle(&rig.local()).await;
+            consumed().await;
             assert_eq!(session.inputs.all(), ["\x1b[?1u"]);
             assert_eq!(output.take(), "");
             session.terminal.stop().unwrap();
@@ -343,11 +394,10 @@ fn native_enables_flags_and_consumes_first_response() {
 /// both keyboard modes are on, and returns it with its input and what it has written.
 async fn with_both_keyboard_modes(rig: &Rig, output: &Capture) -> (Feed, Session) {
     let (feed, session) = started(rig, output);
-    advance(&rig.local(), 150).await;
-    assert_eq!(output.take(), "\x1b[>4;2m");
+    elapse(150).await;
+    output.written("\x1b[>4;2m").await;
     feed.send(b"\x1b[?25u");
-    settle(&rig.local()).await;
-    assert_eq!(output.take(), "\x1b[>7u");
+    output.written("\x1b[>7u").await;
     assert!(session.terminal.kitty_protocol_active());
     assert!(session.inputs.all().is_empty());
     (feed, session)
@@ -397,7 +447,7 @@ fn native_recognizes_only_ascii_decimal_protocol_replies() {
             {
                 let (feed, mut session) = started(&rig, &output);
                 feed.send(reply.as_bytes());
-                settle(&rig.local()).await;
+                consumed().await;
                 let (written, delivered) = (output.take(), session.inputs.all());
                 assert_eq!(written, if enables { "\x1b[>7u" } else { "" }, "{reply:?}");
                 assert_eq!(delivered.is_empty(), enables, "{reply:?}");
@@ -418,14 +468,14 @@ fn native_buffers_split_replies_until_complete() {
             for cut in 1..reply.len() {
                 let (feed, mut session) = started(&rig, &output);
                 feed.send(&reply[..cut]);
-                settle(&rig.local()).await;
+                consumed().await;
                 assert_eq!(
                     (output.take(), session.inputs.count()),
                     (String::new(), 0),
                     "{cut}"
                 );
                 feed.send(&reply[cut..]);
-                settle(&rig.local()).await;
+                consumed().await;
                 assert_eq!(
                     (output.take(), session.inputs.count()),
                     ("\x1b[>7u".into(), 0),
@@ -436,9 +486,10 @@ fn native_buffers_split_replies_until_complete() {
             }
             let (feed, mut session) = started(&rig, &output);
             feed.send(b"\x1b[?");
-            advance(&rig.local(), 9).await;
+            consumed().await;
+            elapse(9).await;
             feed.send(b"7u");
-            settle(&rig.local()).await;
+            consumed().await;
             assert_eq!(
                 (output.take(), session.inputs.count()),
                 ("\x1b[>7u".into(), 0)
@@ -456,13 +507,14 @@ fn native_expires_only_the_pending_fragment() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
             feed.send(b"\x1b[?");
-            settle(&rig.local()).await;
-            advance(&rig.local(), 9).await;
+            consumed().await;
+            elapse(9).await;
             assert!(session.inputs.all().is_empty());
-            advance(&rig.local(), 1).await;
+            elapse(1).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["\x1b[?"]);
             feed.send(b"7u");
-            settle(&rig.local()).await;
+            consumed().await;
             assert_eq!(session.inputs.all(), ["\x1b[?", "7", "u"]);
             assert_eq!(output.take(), "");
             session.terminal.stop().unwrap();
@@ -478,8 +530,8 @@ fn native_stop_cancels_all_mode_enable_work() {
         rig.run(async {
             let (_feed, mut session) = started(&rig, &output);
             session.terminal.stop().unwrap();
-            advance(&rig.local(), 150).await;
-            advance(&rig.local(), 1000).await;
+            elapse(151).await;
+            elapse(1000).await;
             assert_eq!(output.take(), "\x1b[?2004l");
         });
     });
@@ -498,11 +550,13 @@ fn native_stop_discards_pending_input() {
             ];
             for (before, after) in pending {
                 let (feed, mut session) = started(&rig, &output);
+                let reader = open_descriptors();
                 feed.send(before);
-                settle(&rig.local()).await;
+                consumed().await;
                 session.terminal.stop().unwrap();
+                until(|| open_descriptors() < reader).await;
                 feed.send(after);
-                advance(&rig.local(), 10).await;
+                elapse(11).await;
                 assert!(session.inputs.all().is_empty(), "{before:?}");
                 assert_eq!(unread_input(), after, "{before:?}");
                 output.take();
@@ -518,7 +572,7 @@ fn native_restart_ignores_prior_generation_timers() {
         let output = pipe_output();
         rig.run(async {
             let (_feed, mut session) = started(&rig, &output);
-            advance(&rig.local(), 50).await;
+            elapse(50).await;
             session.terminal.stop().unwrap();
             assert_eq!(output.take(), "\x1b[?2004l");
             session
@@ -526,10 +580,10 @@ fn native_restart_ignores_prior_generation_timers() {
                 .start(session.inputs.callback(), session.resizes.callback())
                 .unwrap();
             assert_eq!(output.take(), START_BYTES);
-            advance(&rig.local(), 100).await;
+            elapse(101).await;
             assert_eq!(output.take(), "");
-            advance(&rig.local(), 50).await;
-            assert_eq!(output.take(), "\x1b[>4;2m");
+            elapse(49).await;
+            output.written("\x1b[>4;2m").await;
             session.terminal.stop().unwrap();
         });
     });
@@ -547,33 +601,43 @@ fn native_eof_keeps_pending_buffer_and_negotiation_deadlines() {
             let mut session = start(&rig);
             output.take();
             pipe.send(b"\x1b[");
-            settle(&rig.local()).await;
+            consumed().await;
             pipe.close();
-            settle(&rig.local()).await;
-            advance(&rig.local(), 10).await;
+            elapse(5).await;
+            elapse(5).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["\x1b["]);
             output.resize(90, 30);
             window_change();
-            until(&rig.local(), || session.resizes.count() == 1).await;
-            advance(&rig.local(), 140).await;
-            assert_eq!(output.take(), "\x1b[>4;2m");
+            session.resizes.delivered(1).await;
+            elapse(140).await;
+            output.written("\x1b[>4;2m").await;
             session.terminal.stop().unwrap();
             assert_eq!(output.take(), "\x1b[?2004l\x1b[>4;0m");
         });
     });
 }
 
-/// Runs `drain` beside `script`, which can check `done` to see whether the drain has ended.
-async fn drain_beside<F: std::future::Future>(
-    drain: impl std::future::Future<Output = std::io::Result<()>>,
+/// Runs `drain` and `script` in one task, polling the drain first on every wake so that
+/// `done` is what the drain decided at the time the script observes.
+async fn drain_beside<F: Future>(
+    drain: impl Future<Output = std::io::Result<()>>,
     done: &Cell<bool>,
     script: F,
 ) {
-    let finishing = async {
+    let mut finishing = pin!(async {
         drain.await.unwrap();
         done.set(true);
-    };
-    tokio::join!(finishing, script);
+    });
+    let mut script = pin!(script);
+    let mut drained = false;
+    poll_fn(|cx| {
+        if !drained {
+            drained = finishing.as_mut().poll(cx).is_ready();
+        }
+        script.as_mut().poll(cx).map(|_| ())
+    })
+    .await;
 }
 
 #[test]
@@ -584,21 +648,20 @@ fn native_drain_uses_default_idle_exit_and_restores_handler() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
             feed.send(b"\x1b[?1u");
-            settle(&rig.local()).await;
-            assert_eq!(output.take(), "\x1b[>7u");
-            let (done, local) = (Cell::new(false), rig.local());
+            output.written("\x1b[>7u").await;
+            let done = Cell::new(false);
             let drain = session.terminal.drain_input(None, None);
             assert_eq!(output.take(), "\x1b[<u");
             drain_beside(drain, &done, async {
-                advance(&local, 49).await;
+                elapse(49).await;
                 assert!(!done.get());
-                advance(&local, 1).await;
-                assert!(done.get());
+                elapse(1).await;
+                until(|| done.get()).await;
             })
             .await;
             assert!(session.inputs.all().is_empty());
             feed.send(b"z");
-            settle(&rig.local()).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["z"]);
             assert!(!session.terminal.kitty_protocol_active());
         });
@@ -611,47 +674,50 @@ fn busy_drain_with_explicit_limits() {
     let output = pipe_output();
     rig.run(async {
         let (feed, mut session) = started(&rig, &output);
-        let local = rig.local();
-        advance(&local, 150).await;
-        assert_eq!(output.take(), "\x1b[>4;2m");
+        elapse(150).await;
+        output.written("\x1b[>4;2m").await;
         let done = Cell::new(false);
         let (max, idle) = (Duration::from_millis(120), Duration::from_millis(50));
         let drain = session.terminal.drain_input(Some(max), Some(idle));
         assert_eq!(output.take(), "\x1b[>4;0m");
         drain_beside(drain, &done, async {
-            advance(&local, 40).await;
+            elapse(40).await;
             feed.send(b"a");
-            settle(&local).await;
-            advance(&local, 10).await;
-            advance(&local, 30).await;
+            consumed().await;
+            elapse(10).await;
+            elapse(30).await;
             feed.send(b"b");
-            settle(&local).await;
-            advance(&local, 20).await;
-            advance(&local, 19).await;
+            consumed().await;
+            elapse(20).await;
+            elapse(19).await;
             assert!(!done.get());
-            advance(&local, 1).await;
-            assert!(done.get());
+            elapse(1).await;
+            until(|| done.get()).await;
         })
         .await;
         assert!(session.inputs.all().is_empty());
         feed.send(b"z");
-        settle(&local).await;
+        session.inputs.delivered(1).await;
         assert_eq!(session.inputs.all(), ["z"]);
         session.terminal.stop().unwrap();
     });
 }
 
 /// Advances 10 ms at a time for a second, sending input every 40 ms, and checks that the
-/// drain ends exactly at the last step.
-async fn input_every_forty_milliseconds(local: &LocalSet, feed: &Feed, done: &Cell<bool>) {
-    for step in 1..=100 {
-        advance(local, 10).await;
-        if step % 4 == 0 && step < 100 {
+/// drain ends at the maximum and not a millisecond before.
+async fn input_every_forty_milliseconds(feed: &Feed, done: &Cell<bool>) {
+    for step in 1..=99 {
+        elapse(10).await;
+        if step % 4 == 0 {
             feed.send(b"x");
-            settle(local).await;
+            consumed().await;
         }
-        assert_eq!(done.get(), step == 100, "step {step}");
+        assert!(!done.get(), "step {step}");
     }
+    elapse(9).await;
+    assert!(!done.get(), "one millisecond before the maximum");
+    elapse(1).await;
+    until(|| done.get()).await;
 }
 
 /// Drains with the default limits while input arrives every 40 ms.
@@ -660,9 +726,9 @@ fn busy_drain_with_default_limits() {
     let output = pipe_output();
     rig.run(async {
         let (feed, mut session) = started(&rig, &output);
-        let (local, done) = (rig.local(), Cell::new(false));
+        let done = Cell::new(false);
         let drain = session.terminal.drain_input(None, None);
-        let script = input_every_forty_milliseconds(&local, &feed, &done);
+        let script = input_every_forty_milliseconds(&feed, &done);
         drain_beside(drain, &done, script).await;
         assert!(session.inputs.all().is_empty());
         session.terminal.stop().unwrap();
@@ -682,21 +748,21 @@ fn native_drain_checks_idle_on_its_wait_cadence() {
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            let (local, done) = (rig.local(), Cell::new(false));
+            let done = Cell::new(false);
             let (max, idle) = (Duration::from_millis(1000), Duration::from_millis(50));
             let drain = session.terminal.drain_input(Some(max), Some(idle));
             drain_beside(drain, &done, async {
-                advance(&local, 49).await;
+                elapse(49).await;
                 feed.send(b"x");
-                settle(&local).await;
-                advance(&local, 1).await;
-                advance(&local, 49).await;
+                consumed().await;
+                elapse(1).await;
+                elapse(49).await;
                 assert!(
                     !done.get(),
                     "idle is checked every wait, not at the earliest deadline"
                 );
-                advance(&local, 1).await;
-                assert!(done.get());
+                elapse(1).await;
+                until(|| done.get()).await;
             })
             .await;
             session.terminal.stop().unwrap();
@@ -712,8 +778,7 @@ fn native_drain_zero_limit_restores_immediately() {
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
             feed.send(b"\x1b[?1u");
-            settle(&rig.local()).await;
-            output.take();
+            output.written("\x1b[>7u").await;
             let (max, idle) = (Duration::ZERO, Duration::from_millis(50));
             session
                 .terminal
@@ -722,7 +787,7 @@ fn native_drain_zero_limit_restores_immediately() {
                 .unwrap();
             assert_eq!(output.take(), "\x1b[<u");
             feed.send(b"z");
-            settle(&rig.local()).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["z"]);
             session.terminal.stop().unwrap();
         });
@@ -736,7 +801,7 @@ fn native_drain_zero_idle_restores_immediately() {
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            let (local, done) = (rig.local(), Cell::new(false));
+            let done = Cell::new(false);
             let (max, idle) = (Duration::from_millis(1000), Duration::ZERO);
             session
                 .terminal
@@ -744,15 +809,15 @@ fn native_drain_zero_idle_restores_immediately() {
                 .await
                 .unwrap();
             feed.send(b"z");
-            settle(&local).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["z"]);
             let (max, idle) = (Duration::from_millis(10), Duration::from_millis(50));
             let drain = session.terminal.drain_input(Some(max), Some(idle));
             drain_beside(drain, &done, async {
-                advance(&local, 9).await;
+                elapse(9).await;
                 assert!(!done.get());
-                advance(&local, 1).await;
-                assert!(done.get());
+                elapse(1).await;
+                until(|| done.get()).await;
             })
             .await;
             session.terminal.stop().unwrap();
@@ -767,27 +832,51 @@ fn native_drain_cannot_reenable_keyboard_modes() {
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            let (local, done) = (rig.local(), Cell::new(false));
+            let done = Cell::new(false);
             let (max, idle) = (Duration::from_millis(1000), Duration::from_millis(200));
             let drain = session.terminal.drain_input(Some(max), Some(idle));
             drain_beside(drain, &done, async {
-                advance(&local, 150).await;
+                elapse(150).await;
                 feed.send(b"\x1b[?1u");
-                settle(&local).await;
-                advance(&local, 50).await;
-                advance(&local, 199).await;
+                consumed().await;
+                elapse(50).await;
+                elapse(199).await;
                 assert!(!done.get());
-                advance(&local, 1).await;
+                elapse(1).await;
+                until(|| done.get()).await;
             })
             .await;
             assert_eq!(output.take(), "");
             assert!(session.inputs.all().is_empty());
             feed.send(b"\x1b[?1u");
-            advance(&local, 1000).await;
+            consumed().await;
             assert!(!session.terminal.kitty_protocol_active());
             assert_eq!((output.take(), session.inputs.count()), (String::new(), 0));
             session.terminal.stop().unwrap();
             assert_eq!(output.take(), "\x1b[?2004l");
+        });
+    });
+}
+
+#[test]
+fn native_drain_keeps_an_unfinished_character_for_later_input() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output);
+            feed.send(&[240, 159]);
+            consumed().await;
+            let (max, idle) = (Duration::ZERO, Duration::ZERO);
+            session
+                .terminal
+                .drain_input(Some(max), Some(idle))
+                .await
+                .unwrap();
+            feed.send(&[142, 137]);
+            session.inputs.delivered(1).await;
+            assert_eq!(session.inputs.all(), ["\u{1f389}"]);
+            session.terminal.stop().unwrap();
         });
     });
 }
@@ -799,19 +888,17 @@ fn native_cancelled_drain_restores_handler() {
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            let local = rig.local();
             feed.send(b"\x1b[?1u");
-            settle(&local).await;
-            output.take();
+            output.written("\x1b[>7u").await;
             let drain = session.terminal.drain_input(None, None);
             assert_eq!(output.take(), "\x1b[<u");
             tokio::select! {
                 biased;
                 _ = drain => unreachable!("the drain outlasts ten milliseconds"),
-                () = advance(&local, 10) => {}
+                () = elapse(10) => {}
             }
             feed.send(b"z");
-            settle(&local).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["z"]);
             session.terminal.stop().unwrap();
             assert_eq!(output.take(), "\x1b[?2004l");
@@ -826,35 +913,32 @@ fn native_drain_counts_decoded_input_activity() {
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            let (local, done) = (rig.local(), Cell::new(false));
+            let done = Cell::new(false);
             let drain = session.terminal.drain_input(None, None);
             drain_beside(drain, &done, async {
-                advance(&local, 40).await;
+                elapse(40).await;
                 feed.send(&[240, 159]);
-                settle(&local).await;
-                advance(&local, 9).await;
+                consumed().await;
+                elapse(9).await;
                 assert!(!done.get());
-                advance(&local, 1).await;
-                assert!(
-                    done.get(),
-                    "the half character does not restart the idle wait"
-                );
+                elapse(1).await;
+                until(|| done.get()).await;
             })
             .await;
             let drain = session.terminal.drain_input(None, None);
             done.set(false);
             drain_beside(drain, &done, async {
-                advance(&local, 40).await;
+                elapse(40).await;
                 feed.send(&[142, 137]);
-                settle(&local).await;
-                advance(&local, 10).await;
-                advance(&local, 49).await;
+                consumed().await;
+                elapse(10).await;
+                elapse(49).await;
                 assert!(
                     !done.get(),
                     "the completed character restarts the idle wait"
                 );
-                advance(&local, 1).await;
-                assert!(done.get());
+                elapse(1).await;
+                until(|| done.get()).await;
             })
             .await;
             assert!(session.inputs.all().is_empty());
@@ -883,8 +967,9 @@ fn native_callbacks_can_reenter_output_and_stop() {
                 .start(Box::new(on_input), Box::new(|| {}))
                 .unwrap();
             assert_eq!(output.take(), START_BYTES);
+            let reader = open_descriptors();
             feed.send(b"ab");
-            settle(&rig.local()).await;
+            until(|| open_descriptors() < reader).await;
             assert_eq!(*seen.borrow(), ["a"]);
             assert_eq!(output.take(), "reentered\x1b[?2004l");
             assert_eq!(Rc::strong_count(&terminal), 1);
@@ -899,19 +984,18 @@ fn native_idle_reader_cancellation_needs_no_input() {
         let _feed = pipe_input();
         let _output = pipe_output();
         rig.run(async {
-            let local = rig.local();
-            start(&rig).terminal.stop().unwrap();
-            settle(&local).await;
+            let mut warm = start(&rig);
+            let reader = open_descriptors();
+            warm.terminal.stop().unwrap();
+            until(|| open_descriptors() < reader).await;
             let baseline = open_descriptors();
             let mut session = start(&rig);
-            settle(&local).await;
             assert!(
                 open_descriptors() > baseline,
                 "the reader holds a descriptor"
             );
             session.terminal.stop().unwrap();
-            settle(&local).await;
-            assert_eq!(open_descriptors(), baseline);
+            until(|| open_descriptors() == baseline).await;
         });
     });
 }
@@ -925,7 +1009,7 @@ fn native_reader_uses_buffer_deadline_on_a_real_pty() {
         rig.run(async {
             let mut session = start(&rig);
             feed.send(b"\x1b[");
-            until(&rig.local(), || session.inputs.count() == 1).await;
+            session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["\x1b["]);
             session.terminal.stop().unwrap();
         });
@@ -949,19 +1033,11 @@ fn native_resize_tracks_stdout_not_the_controlling_terminal() {
             output.resize(130, 45);
             input.resize(70, 20);
             window_change();
-            until(&rig.local(), || session.resizes.count() == 1).await;
+            session.resizes.delivered(1).await;
             assert_eq!(
                 (session.terminal.columns(), session.terminal.rows()),
                 (130, 45)
             );
-            let _redirected = pipe_output();
-            window_change();
-            settle(&rig.local()).await;
-            assert_eq!(
-                (session.terminal.columns(), session.terminal.rows()),
-                (130, 45)
-            );
-            assert_eq!(session.resizes.count(), 1);
             session.terminal.stop().unwrap();
         });
     });
@@ -997,19 +1073,19 @@ fn native_failed_start_and_stop_release_owned_resources() {
         assert_eq!(failure.kind(), std::io::ErrorKind::Other);
         assert_eq!((stdin_attributes(), stdin_flags()), (before.clone(), flags));
         rig.run(async {
-            let local = rig.local();
             let warm = pipe_output();
-            start(&rig).terminal.stop().unwrap();
-            settle(&local).await;
+            let mut first = start(&rig);
+            let reader = open_descriptors();
+            first.terminal.stop().unwrap();
+            until(|| open_descriptors() < reader).await;
             drop(warm);
             drop(pipe_output());
             let baseline = open_descriptors();
-            let mut terminal = ProcessTerminal::new(local.clone());
+            let mut terminal = ProcessTerminal::new(rig.local());
             let failure = terminal
                 .start(Box::new(|_| {}), Box::new(|| {}))
                 .unwrap_err();
             assert_eq!(failure.kind(), std::io::ErrorKind::BrokenPipe);
-            settle(&local).await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before.clone(), flags));
             assert_eq!(open_descriptors(), baseline);
             assert!(!terminal.kitty_protocol_active());
@@ -1020,13 +1096,8 @@ fn native_failed_start_and_stop_release_owned_resources() {
             drop(output);
             let failure = session.terminal.stop().unwrap_err();
             assert_eq!(failure.kind(), std::io::ErrorKind::BrokenPipe);
-            settle(&local).await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));
-            assert_eq!(
-                open_descriptors(),
-                baseline - 1,
-                "only the closed capture is gone"
-            );
+            until(|| open_descriptors() == baseline - 1).await;
         });
     });
 }
@@ -1039,7 +1110,8 @@ fn native_background_io_failure_is_reported_by_stop() {
         let _output = pipe_output();
         rig.run(async {
             let mut session = start(&rig);
-            settle(&rig.local()).await;
+            let reader = open_descriptors();
+            until(|| open_descriptors() < reader).await;
             let failure = session.terminal.stop().unwrap_err();
             assert_eq!(failure.raw_os_error(), Some(Errno::ISDIR.raw_os_error()));
             session.terminal.stop().unwrap();
@@ -1052,9 +1124,18 @@ fn native_background_io_failure_is_reported_by_stop() {
             let mut terminal = ProcessTerminal::new(rig.local());
             terminal.set_progress(true).unwrap();
             drop(output);
-            advance(&rig.local(), 1000).await;
+            elapse(1001).await;
+            let repaired = pipe_output();
+            terminal.write("healthy").unwrap();
+            assert_eq!(repaired.take(), "healthy");
+            terminal.set_progress(true).unwrap();
+            assert_eq!(repaired.take(), "\x1b]9;4;3\x07");
+            elapse(1000).await;
+            repaired.written("\x1b]9;4;3\x07").await;
             let failure = terminal.stop().unwrap_err();
             assert_eq!(failure.kind(), std::io::ErrorKind::BrokenPipe);
+            assert_eq!(repaired.take(), "\x1b]9;4;0;\x07\x1b[?2004l");
+            terminal.stop().unwrap();
         });
     });
 }
@@ -1084,7 +1165,57 @@ fn native_dropped_terminal_releases_only_owned_active_resources() {
             output.take();
             drop(terminal);
             assert_eq!(output.take(), "\x1b]9;4;0;\x07");
-            advance(&rig.local(), 3000).await;
+            elapse(3001).await;
+            assert_eq!(output.take(), "");
+        });
+    });
+}
+
+#[test]
+fn native_failed_restart_releases_every_owned_mode() {
+    isolated!(0, &[], || {
+        let rig = Rig::paused();
+        let feed = pty_input();
+        let output = pipe_output();
+        let (cooked, flags) = (stdin_attributes(), stdin_flags());
+        rig.run(async {
+            let mut session = start(&rig);
+            feed.send(b"\x1b[?1u");
+            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
+            session.terminal.set_progress(true).unwrap();
+            assert_eq!(output.take(), "\x1b]9;4;3\x07");
+            let limit = DescriptorLimit::reached();
+            let restart = session
+                .terminal
+                .start(session.inputs.callback(), session.resizes.callback());
+            drop(limit);
+            let failure = restart.unwrap_err();
+            assert_eq!(failure.raw_os_error(), Some(Errno::MFILE.raw_os_error()));
+            assert_eq!(output.take(), "\x1b[?2004l\x1b[<u");
+            assert!(!session.terminal.kitty_protocol_active());
+            assert!(!maestro_tui::is_kitty_protocol_active());
+            assert_eq!((stdin_attributes(), stdin_flags()), (cooked, flags));
+            drop(session);
+            assert_eq!(output.take(), "\x1b]9;4;0;\x07");
+        });
+    });
+    isolated!(1, &[], || {
+        let rig = Rig::paused();
+        let _feed = pipe_input();
+        let output = pipe_output();
+        rig.run(async {
+            let mut session = start(&rig);
+            elapse(150).await;
+            output.written(&format!("{START_BYTES}\x1b[>4;2m")).await;
+            let limit = DescriptorLimit::reached();
+            let restart = session
+                .terminal
+                .start(session.inputs.callback(), session.resizes.callback());
+            drop(limit);
+            let failure = restart.unwrap_err();
+            assert_eq!(failure.raw_os_error(), Some(Errno::MFILE.raw_os_error()));
+            assert_eq!(output.take(), "\x1b[?2004l\x1b[>4;0m");
+            drop(session);
             assert_eq!(output.take(), "");
         });
     });
@@ -1098,10 +1229,8 @@ fn native_restarting_active_terminal_replaces_resources_once() {
         let output = pipe_output();
         let (before, flags) = (stdin_attributes(), stdin_flags());
         rig.run(async {
-            let local = rig.local();
             let mut first = start(&rig);
             first.terminal.set_progress(true).unwrap();
-            settle(&local).await;
             let one_reader = open_descriptors();
             assert_eq!(output.take(), format!("{START_BYTES}\x1b]9;4;3\x07"));
             let second = (Inputs::default(), Resizes::default());
@@ -1109,17 +1238,16 @@ fn native_restarting_active_terminal_replaces_resources_once() {
                 .terminal
                 .start(second.0.callback(), second.1.callback())
                 .unwrap();
-            settle(&local).await;
             assert_eq!(output.take(), START_BYTES);
-            assert_eq!(open_descriptors(), one_reader);
+            until(|| open_descriptors() == one_reader).await;
             feed.send(b"a");
-            settle(&local).await;
+            second.0.delivered(1).await;
             assert_eq!(
                 (first.inputs.count(), second.0.all()),
                 (0, vec!["a".to_owned()])
             );
-            advance(&local, 1000).await;
-            assert_eq!(output.take(), "\x1b[>4;2m\x1b]9;4;3\x07");
+            elapse(1000).await;
+            output.written("\x1b[>4;2m\x1b]9;4;3\x07").await;
             first.terminal.stop().unwrap();
             assert_eq!(output.take(), "\x1b]9;4;0;\x07\x1b[?2004l\x1b[>4;0m");
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));

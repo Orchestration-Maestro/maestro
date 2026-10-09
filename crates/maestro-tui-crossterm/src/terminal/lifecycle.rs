@@ -10,10 +10,7 @@ use std::time::Duration;
 use maestro_tui::set_kitty_protocol_active;
 use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
 use rustix::stdio::stdin;
-use rustix::termios::{
-    ControlModes, InputModes, LocalModes, OptionalActions, OutputModes, SpecialCodeIndex, Termios,
-    tcgetattr, tcsetattr,
-};
+use rustix::termios::{OptionalActions, OutputModes, Termios, tcgetattr, tcsetattr};
 use tokio::runtime::Handle;
 use tokio::signal::unix::{SignalKind, signal};
 use tokio::task::JoinHandle;
@@ -91,22 +88,13 @@ impl Drop for Acquired {
 }
 
 /// `original` in raw mode: no echo, line editing, signal keys or input translation, one-byte
-/// reads, and output post-processing kept so a bare newline still returns the carriage.
+/// reads, and output post-processing with newline-to-CR-LF mapping on so a bare newline
+/// written to the device returns the carriage.
 fn raw(original: &Termios) -> Termios {
     let mut raw = original.clone();
-    raw.input_modes.remove(
-        InputModes::BRKINT
-            | InputModes::ICRNL
-            | InputModes::INPCK
-            | InputModes::ISTRIP
-            | InputModes::IXON,
-    );
-    raw.output_modes.insert(OutputModes::ONLCR);
-    raw.control_modes.insert(ControlModes::CS8);
-    raw.local_modes
-        .remove(LocalModes::ECHO | LocalModes::ICANON | LocalModes::IEXTEN | LocalModes::ISIG);
-    raw.special_codes[SpecialCodeIndex::VMIN] = 1;
-    raw.special_codes[SpecialCodeIndex::VTIME] = 0;
+    raw.make_raw();
+    raw.output_modes
+        .insert(OutputModes::OPOST | OutputModes::ONLCR);
     raw
 }
 
@@ -123,15 +111,39 @@ impl ProcessTerminal {
     }
 
     /// Starts an input generation, replacing the live one and keeping its original
-    /// standard-input state. A failure leaves the terminal stopped with standard input
-    /// restored.
+    /// standard-input state. Outside a runtime it fails first and changes nothing. Any later
+    /// failure leaves the terminal stopped with standard input restored, after the paste and
+    /// keyboard modes a replaced generation had enabled are written off.
     pub(super) fn begin(
         &mut self,
         on_input: InputCallback,
         on_resize: ResizeCallback,
     ) -> io::Result<()> {
         Handle::try_current().map_err(io::Error::other)?;
+        let replaced = self.running.is_some();
         let mut acquired = self.retire();
+        match self.spawn_input(&mut acquired, on_input, on_resize) {
+            Ok(task) => {
+                self.running = Some(Running { task, acquired });
+                Ok(())
+            }
+            Err(error) => {
+                if replaced {
+                    let _ = self.give_back(&mut acquired);
+                }
+                Err(error)
+            }
+        }
+    }
+
+    /// Acquires standard input, opens the reader, announces the modes and spawns the input
+    /// task of a new generation.
+    fn spawn_input(
+        &self,
+        acquired: &mut Acquired,
+        on_input: InputCallback,
+        on_resize: ResizeCallback,
+    ) -> io::Result<JoinHandle<()>> {
         acquired.take()?;
         let source = Source::open()?;
         let resize = signal(SignalKind::window_change())?;
@@ -142,9 +154,17 @@ impl ProcessTerminal {
             generation,
             Instant::now() + NEGOTIATION,
         );
-        let task = self.local.spawn_local(input.run(source, resize));
-        self.running = Some(Running { task, acquired });
-        Ok(())
+        Ok(self.local.spawn_local(input.run(source, resize)))
+    }
+
+    /// Writes the paste and keyboard disables and gives standard input back; every step is
+    /// attempted and the first failure is returned.
+    fn give_back(&self, acquired: &mut Acquired) -> io::Result<()> {
+        first_failure([
+            emit(PASTE_OFF),
+            self.shared.disable_keyboard(),
+            acquired.restore(),
+        ])
     }
 
     /// Stops the terminal. Every step is attempted; the first failure, a retained background
@@ -155,9 +175,7 @@ impl ProcessTerminal {
         first_failure([
             self.shared.failure.take().map_or(Ok(()), Err),
             progress,
-            emit(PASTE_OFF),
-            self.shared.disable_keyboard(),
-            acquired.restore(),
+            self.give_back(&mut acquired),
         ])
     }
 }
@@ -238,10 +256,11 @@ impl Drop for Suspended {
 }
 
 impl ProcessTerminal {
-    /// Stops delivering input and disables the keyboard modes now, then waits until input has
-    /// been quiet for `idle` or `max` has passed, and delivers input again. Dropping the
+    /// Stops delivering input and disables the keyboard modes now, then waits until no decoded
+    /// text has arrived for `idle` or `max` has passed, and delivers input again. Dropping the
     /// returned future early delivers input again at once. Keyboard replies received from
-    /// now on never enable a mode for this generation.
+    /// now on never enable a mode for this generation. Framing state is kept, so an
+    /// unfinished character, paste or escape sequence is completed by later input.
     pub(super) fn drain(
         &mut self,
         max: Option<Duration>,

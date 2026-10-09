@@ -16,8 +16,8 @@ use rustix::event::{PollFd, PollFlags, poll};
 use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
 use rustix::stdio::stdout;
 use support::{
-    Capture, Inputs, Resizes, Rig, START_BYTES, advance, is_child, pipe_input, pipe_output,
-    pty_output, settle,
+    Capture, Inputs, Resizes, Rig, START_BYTES, elapse, is_child, pipe_input, pipe_output,
+    pty_output,
 };
 
 /// Collects on another thread until `length` bytes arrived, so a writer can fill the pipe and
@@ -99,17 +99,17 @@ fn native_progress_repeats_one_keepalive_until_clear() {
             let mut terminal = ProcessTerminal::new(rig.local());
             terminal.set_progress(true).unwrap();
             assert_eq!(output.take(), PROGRESS_ACTIVE);
-            advance(&rig.local(), 999).await;
+            elapse(999).await;
             assert_eq!(output.take(), "");
             terminal.set_progress(true).unwrap();
             assert_eq!(output.take(), PROGRESS_ACTIVE);
-            advance(&rig.local(), 1).await;
-            assert_eq!(output.take(), PROGRESS_ACTIVE);
-            advance(&rig.local(), 1000).await;
-            assert_eq!(output.take(), PROGRESS_ACTIVE);
+            elapse(1).await;
+            output.written(PROGRESS_ACTIVE).await;
+            elapse(1000).await;
+            output.written(PROGRESS_ACTIVE).await;
             terminal.set_progress(false).unwrap();
             assert_eq!(output.take(), PROGRESS_CLEAR);
-            advance(&rig.local(), 2000).await;
+            elapse(2001).await;
             assert_eq!(output.take(), "");
         });
     });
@@ -128,15 +128,12 @@ fn native_stop_clears_active_progress_before_input_modes() {
                 .start(inputs.callback(), resizes.callback())
                 .unwrap();
             feed.send(b"\x1b[?1u");
-            settle(&rig.local()).await;
+            output.written(&format!("{START_BYTES}\x1b[>7u")).await;
             terminal.set_progress(true).unwrap();
-            assert_eq!(
-                output.take(),
-                format!("{START_BYTES}\x1b[>7u{PROGRESS_ACTIVE}")
-            );
+            assert_eq!(output.take(), PROGRESS_ACTIVE);
             terminal.stop().unwrap();
             assert_eq!(output.take(), format!("{PROGRESS_CLEAR}\x1b[?2004l\x1b[<u"));
-            advance(&rig.local(), 3000).await;
+            elapse(3001).await;
             assert_eq!(output.take(), "");
         });
     });
@@ -155,51 +152,36 @@ fn native_clear_progress_emits_even_when_inactive() {
     });
 }
 
-/// Environment values and the dimensions they select when standard output reports none.
-fn environment_cases() -> Vec<(String, (usize, usize))> {
+/// Environment values and the dimensions they select when standard output reports none: one
+/// value of each kind the numeric coercion of the text accepts, and the kinds it refuses.
+fn environment_cases() -> Vec<(&'static str, (usize, usize))> {
     let defaults = (80, 24);
     let both = |value: usize| (value, value);
-    let accepted = [
+    vec![
         ("123", both(123)),
-        (" 123 ", both(123)),
-        ("\u{c}123\u{c}", both(123)),
-        ("\t123\r\n", both(123)),
         ("00080", both(80)),
-        ("9007199254740993", both(9_007_199_254_740_993)),
-    ];
-    let rejected = [
-        "",
-        " ",
-        "0",
-        "-0",
-        "\u{feff}123\u{feff}",
-        "\u{85}123\u{85}",
-        "\u{b}123\u{b}",
-        "1e2",
-        "1.5",
-        "-1",
-        "Infinity",
-        "NaN",
-        "0x50",
-        "0b1010000",
-        "0o120",
-        "1_000",
-        "+42",
-    ];
-    let largest = usize::MAX.to_string();
-    let beyond = (u128::try_from(usize::MAX).unwrap() + 1).to_string();
-    let mut cases: Vec<(String, (usize, usize))> =
-        accepted.map(|(text, size)| (text.to_owned(), size)).into();
-    cases.extend(rejected.map(|text| (text.to_owned(), defaults)));
-    cases.push((largest, both(usize::MAX)));
-    cases.push((beyond, defaults));
-    cases
+        ("+42", both(42)),
+        ("1e2", both(100)),
+        ("0x50", both(80)),
+        ("0b1010000", both(80)),
+        ("0o120", both(80)),
+        ("42.0", both(42)),
+        ("\u{feff}\u{b}123\u{a0}\u{2028}", both(123)),
+        ("", defaults),
+        ("0", defaults),
+        ("-1", defaults),
+        ("1.5", defaults),
+        ("Infinity", defaults),
+        ("\u{85}123", defaults),
+        ("1_000", defaults),
+        ("12 3", defaults),
+    ]
 }
 
 #[test]
-fn native_dimensions_accept_only_positive_decimal_environment_values() {
+fn native_dimensions_use_the_numeric_value_of_environment_text() {
     for (case, (value, expected)) in environment_cases().into_iter().enumerate() {
-        isolated!(case, &[("COLUMNS", &value), ("LINES", &value)], || {
+        isolated!(case, &[("COLUMNS", value), ("LINES", value)], || {
             let rig = Rig::paused();
             let _output = pipe_output();
             let terminal = ProcessTerminal::new(rig.local());
@@ -328,7 +310,8 @@ fn scratch(name: &str, case: usize) -> PathBuf {
     dir
 }
 
-/// Writes around other output and checks that everything reached standard output.
+/// Writes around other output and checks that everything reached standard output, and that a
+/// write standard output refuses is not logged.
 fn write_around_other_output() {
     let rig = Rig::paused();
     let _feed = pipe_input();
@@ -349,6 +332,9 @@ fn write_around_other_output() {
     let expected =
         format!("first\x1b[?25l\x1b]0;t\x07{PROGRESS_CLEAR}{START_BYTES}\x1b[?2004lsecond");
     assert_eq!(output.take(), expected);
+    drop(output);
+    let failure = terminal.write("lost").unwrap_err();
+    assert_eq!(failure.kind(), std::io::ErrorKind::BrokenPipe);
 }
 
 #[test]
