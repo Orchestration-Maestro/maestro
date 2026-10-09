@@ -43,7 +43,8 @@ pub struct AdjustedMaxTokens {
 /// Defaults are 1,024, 2,048, 8,192 and 16,384 for minimal through high.
 /// Extra-high uses the high slot. Missing custom slots retain their defaults.
 /// When the capped limit is no larger than the budget, reserve 1,024 output
-/// tokens by reducing the budget, never below zero.
+/// tokens by reducing the budget, never below zero. A NaN sum or model limit
+/// produces a NaN combined limit.
 #[must_use]
 pub fn adjust_max_tokens_for_thinking(
     base_max_tokens: f64,
@@ -60,7 +61,12 @@ pub fn adjust_max_tokens_for_thinking(
         }
     };
     let budget = custom.unwrap_or(default);
-    let max_tokens = (base_max_tokens + budget).min(model_max_tokens);
+    let combined = base_max_tokens + budget;
+    let max_tokens = if combined.is_nan() || model_max_tokens.is_nan() {
+        f64::NAN
+    } else {
+        combined.min(model_max_tokens)
+    };
     let thinking_budget = if max_tokens <= budget {
         (max_tokens - 1024.0).max(0.0)
     } else {

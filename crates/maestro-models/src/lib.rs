@@ -32,7 +32,8 @@ pub use providers::chat::openai_completions::{
 };
 pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
 pub use providers::messages::anthropic::{
-    AnthropicClient, AnthropicOptions, AnthropicRequestOptions, stream_anthropic,
+    AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
+    AnthropicThinkingDisplay, stream_anthropic, stream_simple_anthropic,
 };
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,

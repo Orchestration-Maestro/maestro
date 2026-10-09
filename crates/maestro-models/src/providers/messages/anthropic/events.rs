@@ -13,8 +13,8 @@ use crate::providers::http::RequestFailure;
 use crate::providers::json_text::json_value;
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
-    JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall,
-    calculate_cost, parse_streaming_json,
+    JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool,
+    ToolCall, calculate_cost, parse_streaming_json,
 };
 
 /// Text of a redacted reasoning block.
@@ -52,7 +52,7 @@ struct Slot {
 type StartEvent = fn(usize, SharedAssistantMessage) -> AssistantMessageEvent;
 
 /// Reduces events into the shared message, announcing each change.
-pub(super) struct Reducer {
+pub(super) struct Reducer<'a> {
     /// Model that was asked, for cost rates.
     model: Arc<Model>,
     /// Message shared by every update and the final result.
@@ -61,20 +61,24 @@ pub(super) struct Reducer {
     stream: AssistantMessageEventStream,
     /// One slot per content block, in content order.
     slots: Vec<Slot>,
+    /// Subscription declarations in their original order.
+    tools: Option<&'a [Tool]>,
 }
 
-impl Reducer {
+impl<'a> Reducer<'a> {
     /// Start reducing into `output`, announcing changes on `stream`.
     pub(super) fn new(
         model: &Arc<Model>,
         output: &SharedAssistantMessage,
         stream: &AssistantMessageEventStream,
+        tools: Option<&'a [Tool]>,
     ) -> Self {
         Self {
             model: Arc::clone(model),
             output: Arc::clone(output),
             stream: stream.clone(),
             slots: Vec::new(),
+            tools,
         }
     }
 
@@ -92,11 +96,12 @@ impl Reducer {
     ///
     /// # Errors
     /// Fails on a stop reason that names no known outcome and on usage that a reduction needs
-    /// and the event lacks or does not write as an object.
+    /// and the event lacks or does not write as an object, or on an invalid subscription tool name
+    /// when declarations are nonempty.
     pub(super) fn event(&mut self, event: Event) -> Result<Progress, RequestFailure> {
         match event {
             Event::MessageStart(start) => self.start_message(start)?,
-            Event::ContentBlockStart(start) => self.start_block(start),
+            Event::ContentBlockStart(start) => self.start_block(start)?,
             Event::ContentBlockDelta(delta) => self.delta(delta),
             Event::ContentBlockStop(stop) => self.stop_block(&stop),
             Event::MessageDelta(delta) => self.message_delta(&delta)?,
@@ -164,8 +169,8 @@ impl Reducer {
         })
     }
 
-    /// Open the block a start event describes; kinds the message has no block for are ignored.
-    fn start_block(&mut self, start: ContentBlockStart) {
+    /// Open a recognized block, rejecting invalid subscription names when tools are declared.
+    fn start_block(&mut self, start: ContentBlockStart) -> Result<(), RequestFailure> {
         let (kind, content, announced): (Kind, AssistantContent, StartEvent) =
             match start.content_block {
                 OpenedBlock::Text => (
@@ -189,18 +194,35 @@ impl Reducer {
                     thinking(REDACTED_TEXT.to_owned(), data, Some(true)),
                     thinking_start,
                 ),
-                OpenedBlock::ToolUse(call) => (
-                    Kind::Tool(None),
-                    tool_call(call),
-                    |content_index, partial| AssistantMessageEvent::ToolcallStart {
-                        content_index,
-                        partial,
-                    },
-                ),
-                OpenedBlock::Other => return,
+                OpenedBlock::ToolUse(call) => {
+                    let decoded = call
+                        .name
+                        .as_deref()
+                        .filter(|raw| raw.get().starts_with('"'))
+                        .map(|raw| serde_json::from_str::<String>(raw.get()))
+                        .transpose();
+                    let name = if let Some(tools) = self.tools.filter(|tools| !tools.is_empty()) {
+                        let name = decoded
+                            .map_err(|error| RequestFailure::new(error.to_string()))?
+                            .ok_or_else(|| RequestFailure::new("Tool name must be a string"))?;
+                        super::tool_names::inbound(name, tools)
+                    } else {
+                        decoded.ok().flatten().unwrap_or_default()
+                    };
+                    (
+                        Kind::Tool(None),
+                        tool_call(call, name),
+                        |content_index, partial| AssistantMessageEvent::ToolcallStart {
+                            content_index,
+                            partial,
+                        },
+                    )
+                }
+                OpenedBlock::Other => return Ok(()),
             };
         let position = self.push_block(start.index, kind, content);
         self.announce(|partial| announced(position, partial));
+        Ok(())
     }
 
     /// Find the open block that carries a wire position, with its content position.
@@ -362,7 +384,7 @@ fn thinking(text: String, signature: Option<String>, redacted: Option<bool>) -> 
 
 /// Build the tool call a block opens: its initial arguments are those it carries when they
 /// are an object that fits the conversion bound, otherwise none.
-fn tool_call(call: ToolUse) -> AssistantContent {
+fn tool_call(call: ToolUse, name: String) -> AssistantContent {
     let arguments = call
         .input
         .as_deref()
@@ -374,7 +396,7 @@ fn tool_call(call: ToolUse) -> AssistantContent {
         .unwrap_or_default();
     AssistantContent::ToolCall(ToolCall {
         id: call.id.unwrap_or_default(),
-        name: call.name.unwrap_or_default(),
+        name,
         arguments,
         thought_signature: None,
     })

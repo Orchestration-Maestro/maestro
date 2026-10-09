@@ -2,12 +2,17 @@
 
 `maestro-models` sends message-protocol requests directly and streams the answer as shared
 assistant updates. `stream_anthropic(model, context, options)` takes `AnthropicOptions`: the
-common `StreamOptions`, a typed `ToolChoice`, the interleaved-reasoning switch and an optional
-client. It returns the call's `AssistantMessageEventStream`, and every failure the call detects,
+common `StreamOptions`, a typed `ToolChoice`, thinking settings, the interleaved-reasoning
+switch and an optional client. It returns the call's `AssistantMessageEventStream`, and every
+failure the call detects,
 including a missing key, ends that stream with an error update instead of failing the call.
 
-This interface covers key-authenticated requests. Subscription, account and gateway
-authorization, thinking options and the simple-options entry point are not part of it yet.
+`stream_simple_anthropic(model, context, options)` takes `SimpleStreamOptions`. It returns an
+immediate error, `No API key for provider: {provider}`, when neither a nonempty explicit key
+nor the provider's environment key can be selected; an ambient bearer alone is not a simple key.
+Other detected failures end the returned stream as on the raw entry. The simple entry reuses
+[common option and budget helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
+and does not forward its `tool_choice`.
 
 On native targets the call must run inside a Tokio runtime. A request through the shared HTTP sender
 needs the runtime's time driver (`enable_time`, or `enable_all`) for its setup timeout and retry
@@ -20,9 +25,28 @@ Browser targets use local futures.
 ## Key and client
 
 The request is authenticated with the explicit `api_key`, including an explicitly empty one,
-otherwise `get_env_api_key(provider)`, otherwise the empty string. The environment variable
-`ANTHROPIC_AUTH_TOKEN`, trimmed of script whitespace (the byte-order mark counts, U+0085 does
+otherwise `get_env_api_key(provider)`, otherwise the empty string. In ordinary key mode the
+environment variable `ANTHROPIC_AUTH_TOKEN`, trimmed of script whitespace (the byte-order
+mark counts, U+0085 does
 not), adds an `authorization: Bearer` header when it is not empty.
+
+Without an injected client, authorization is selected before `on_payload`: gateway provider
+first, account provider second, then subscription when the key contains the case-sensitive
+substring `sk-ant-oat`, otherwise ordinary key mode. Gateway requests use `cf-aig-authorization`,
+suppress default key/authorization headers and expand uppercase endpoint placeholders before
+the hook; a missing or empty variable fails there. Account requests use bearer authorization
+and the existing account-header helper on the original history. Subscription requests use
+bearer authorization and the required identity headers. Caller headers do not reclassify mode.
+Credentials and expanded endpoints are retained when the payload hook replaces the body.
+Endpoint URL validation remains after that hook.
+
+Subscription payloads prepend the required identity block before a nonempty caller system
+prompt. Matching tool declarations, replayed calls and named selections use canonical wire
+names. Incoming lowercase matches use the first declared spelling. Matching uses Unicode
+lowercasing, not case folding or whitespace trimming; unknown names remain unchanged.
+With nonempty declarations, a missing or non-string incoming subscription tool name ends the
+stream with an error before opening that block. A JSON string that cannot be decoded into a
+Rust string ends the stream with the native decoder error at the same read site.
 
 `AnthropicOptions::client` replaces the key, the endpoint and the HTTP transport with one
 function from the payload and an `AnthropicRequestOptions` to an `HttpResponse`. The client
@@ -30,32 +54,33 @@ receives the payload after `on_payload` ran and `stream` was set to `true`; the 
 exactly the signal, timeout and retry count the call was given, each absent when it was not
 given. The client owns authentication, retries and status handling: a response it returns is
 read as an event stream whatever its status, and a failure it reports ends the call with the
-failure's `message` as it is, even when that is empty. Payload construction, `on_payload`,
-`on_response`, cache markers and the reduction of the answer are the same as without a client.
+failure's `message` as it is, even when that is empty. An injected client bypasses internal
+authorization and endpoint setup, including subscription identity and tool-name conversion.
+Thinking, cache markers, hooks and the other answer reduction rules still apply.
 
 ## Request
 
 The endpoint is the model's base URL with `/v1/messages` appended (the base `https://api.anthropic.com`
 when the model's is empty); a trailing slash on the base is not doubled.
 
-Headers are layered, later layers replacing earlier ones case-insensitively: the protocol defaults
-(`accept`, `anthropic-version: 2023-06-01`, `anthropic-dangerous-direct-browser-access: true`),
-the key as `x-api-key`, the ambient bearer token, `anthropic-beta`, the model's headers and the
-caller's headers. Names are sent in lowercase. The body is JSON, so `content-type:
-application/json` is set last and replaces even a caller's. A request needs a nonempty
-`x-api-key` or `authorization` once the layers are merged and edge whitespace is removed;
-otherwise the stream fails after `on_payload` has run and before any request is sent, with
-`Could not resolve authentication method. Expected either apiKey or authToken to be set. Or for one of the "X-Api-Key" or "Authorization" headers to be explicitly omitted`.
-A caller's `authorization` or `x-api-key` header can supply the authentication.
+Headers are layered case-insensitively: protocol defaults and selected credentials/betas,
+model headers, account dynamic headers when applicable, then caller headers. The body encoding
+sets `content-type: application/json` last. For nongateway requests, a nonempty `x-api-key` or
+`authorization` after edge trimming is required; validation runs after `on_payload` and before
+sending. Gateway requests retain this exemption only while at least one default authentication
+omission survives: when model/caller headers supply both fields, the same nonempty check applies.
 
-`anthropic-beta` names `interleaved-thinking-2025-05-14` unless the caller sets
+Subscription defaults prepend `claude-code-20250219,oauth-2025-04-20` to the optional betas;
+model/caller headers can replace `anthropic-beta`. Before these overrides, `anthropic-beta` names
+`interleaved-thinking-2025-05-14` unless the caller sets
 `interleaved_thinking` to `false` or the model ID contains `opus-4-6`, `opus-4.6`, `opus-4-7`,
 `opus-4.7`, `sonnet-4-6` or `sonnet-4.6`, and `fine-grained-tool-streaming-2025-05-14` when
 tools are declared and the model's compatibility turns eager input streaming off. With eager
 input streaming (the default) each tool carries `eager_input_streaming: true` instead.
 
 The payload holds `model`, `messages`, `max_tokens`, `stream`, then `system`, `temperature`,
-`tools`, `metadata` and `tool_choice` where they apply. `max_tokens` is the caller's value
+`tools`, `thinking`, `output_config`, `metadata` and `tool_choice` where they apply.
+`max_tokens` is the caller's value
 unless it is zero or not a number, otherwise a third of the model's, truncated toward zero. An
 infinite limit, and a temperature that is infinite or not a number, are written as `null`;
 negative zero is written as `0`. `metadata` carries `user_id` only when the caller's metadata
@@ -70,6 +95,24 @@ value that is not an object becomes `{"stream": true}`. `on_response` receives t
 headers of the accepted response before the `start` update; it is not called for responses that
 are retried. Both hooks also receive the one model the request holds, shared and read-only. A
 hook error ends the stream with the error's message as it is.
+
+## Thinking
+
+Thinking fields require model reasoning support. Raw `thinking_enabled` absent omits thinking;
+`false` sends disabled thinking; `true` selects adaptive thinking for the case-sensitive ID
+substrings listed above, otherwise budget-based thinking. True enablement suppresses temperature
+even on a nonreasoning model. Enabled thinking defaults to summarized display;
+`AnthropicThinkingDisplay::Omitted` selects omitted display.
+
+Only enabled adaptive thinking emits a supplied nonempty effort. Raw `AnthropicEffort` offers
+low, medium, high, extra-high and max, with no inferred default. Simple adaptive reasoning uses
+the model's mapped string when present and nonnull, otherwise minimal/low map to low, medium
+to medium and high/extra-high to high. An empty mapped string emits no effort field.
+
+Raw absent, zero or NaN thinking budgets default to 1,024. The simple budget route uses the
+shared adjustment helper and keeps an already-adjusted zero; adjusted NaN still defaults to
+1,024. Simple absent reasoning explicitly disables thinking on reasoning-capable models.
+These are request settings, not guarantees about a service's response.
 
 ## History
 
@@ -189,7 +232,7 @@ use maestro_models::{
 let model: Model = serde_json::from_value(serde_json::json!({
     "id": "controlled", "name": "Controlled", "api": "anthropic-messages",
     "provider": "controlled", "baseUrl": "https://example.invalid",
-    "reasoning": false, "input": ["text"], "contextWindow": 1000, "maxTokens": 100,
+    "reasoning": true, "input": ["text"], "contextWindow": 1000, "maxTokens": 100,
     "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
 }))?;
 let context: Context = serde_json::from_value(serde_json::json!({
@@ -207,6 +250,7 @@ let answer = concat!(
 );
 let client: AnthropicClient = Arc::new(move |payload, _| {
     assert_eq!(payload["stream"], true);
+    assert_eq!(payload["thinking"]["type"], "disabled");
     Box::pin(std::future::ready(Ok(HttpResponse {
         status_text: String::new(),
         status: 200,
@@ -214,7 +258,9 @@ let client: AnthropicClient = Arc::new(move |payload, _| {
         body: Box::pin(stream::iter([Ok(answer.as_bytes().to_vec())])),
     })))
 });
-let options = AnthropicOptions { client: Some(client), ..AnthropicOptions::default() };
+let options = AnthropicOptions {
+    client: Some(client), thinking_enabled: Some(false), ..AnthropicOptions::default()
+};
 let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 let text = runtime.block_on(async {
     let stream = stream_anthropic(model, context, Some(options));

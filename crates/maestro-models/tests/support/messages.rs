@@ -197,6 +197,7 @@ pub fn options(case: &Case) -> TestResult<AnthropicOptions> {
         interleaved_thinking: spec["interleavedThinking"].as_bool(),
         tool_choice: decode(spec, "toolChoice")?,
         client: None,
+        ..AnthropicOptions::default()
     })
 }
 
