@@ -337,9 +337,15 @@ fn maestro_response_sessions_filter_sse_data() {
 fn maestro_response_sessions_keep_hook_and_abort_order() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
+        .start_paused(true)
         .build()
         .unwrap();
     runtime.block_on(async {
+        for stage in ["preaborted", "payload-fails", "payload-fails-invalid-header", "missing-key", "invalid-token"] {
+            assert_preparation_stage(stage).await;
+        }
+        assert_first_wait_abort().await;
+
         let (model, context, mut options) = super::invocation();
         let signal = crate::Cancellation::new();
         let abort = signal.clone();
@@ -1146,5 +1152,137 @@ fn assert_sent_bodies(observed: &LifecycleObservations, body: &Value, attempts: 
     assert_eq!(bodies.len(), attempts);
     for body in &*bodies {
         assert_eq!(body, &expected);
+    }
+}
+
+/// Prove setup precedence through the actual prepared request before any Fetch is allowed.
+async fn assert_preparation_stage(stage: &str) {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let (mut model, context, mut options) = super::invocation();
+    select_preparation_stage(stage, &mut model, &mut options);
+    let payloads = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&payloads);
+    let fails = stage.starts_with("payload-fails");
+    options.common.on_payload = Some(Arc::new(move |body, _| {
+        let count = Arc::clone(&count);
+        Box::pin(async move {
+            count.fetch_add(1, Ordering::SeqCst);
+            if fails {
+                Err(super::super::request::diagnostic("payload failed"))
+            } else {
+                Ok(body)
+            }
+        })
+    }));
+    options.common.fetch = Some(Arc::new(|_| {
+        panic!("preparation stage must not reach Fetch")
+    }));
+    options.common.on_response = Some(Arc::new(|_, _| {
+        panic!("preparation stage must not reach response hook")
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await;
+    let error = match prepared {
+        Err(error) => error,
+        Ok(prepared) => {
+            let output = Arc::new(std::sync::RwLock::new(
+                crate::providers::assistant_output::initial_message(&model),
+            ));
+            let events = crate::AssistantMessageEventStream::new();
+            super::super::http::invoke_sse(&prepared, &model, &options, &output, &events)
+                .await
+                .unwrap_err()
+        }
+    };
+    let (expected, calls) = match stage {
+        "preaborted" => ("Request was aborted", 1),
+        "missing-key" => ("No API key for provider: fixture-no-environment-key", 0),
+        "invalid-token" => ("Failed to extract accountId from token", 0),
+        _ => ("payload failed", 1),
+    };
+    assert_eq!(error.diagnostic().message, expected);
+    assert_eq!(payloads.load(Ordering::SeqCst), calls);
+}
+
+/// Cancel after the first failed response entered its scoped wait, before another Fetch.
+async fn assert_first_wait_abort() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let (model, context, mut options) = super::invocation();
+    let signal = crate::Cancellation::new();
+    options.common.signal = Some(signal.clone());
+    let hooks = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&hooks);
+    options.common.on_response = Some(Arc::new(move |_, _| {
+        let count = Arc::clone(&count);
+        Box::pin(async move {
+            count.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        })
+    }));
+    let calls = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&calls);
+    options.common.fetch = Some(Arc::new(move |_| {
+        count.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async {
+            Ok(crate::HttpResponse {
+                status: 429,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::new(),
+                body: Box::pin(stream::iter([Ok(b"overloaded".to_vec())])),
+            })
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    let future = super::super::http::invoke_sse(&prepared, &model, &options, &output, &events);
+    futures_util::pin_mut!(future);
+    assert!(future.as_mut().now_or_never().is_none());
+    assert_eq!(hooks.load(Ordering::SeqCst), 1);
+    signal.abort();
+    assert_eq!(
+        future.await.unwrap_err().diagnostic().message,
+        "Request was aborted"
+    );
+    tokio::time::advance(std::time::Duration::from_secs(10)).await;
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    assert!(events.next().now_or_never().is_none());
+}
+
+/// Select only the source inputs needed for a preparation/abort precedence witness.
+fn select_preparation_stage(
+    stage: &str,
+    model: &mut std::sync::Arc<crate::Model>,
+    options: &mut super::super::OpenAICodexResponsesOptions,
+) {
+    let signal = crate::Cancellation::new();
+    if stage == "preaborted" {
+        signal.abort();
+    }
+    options.common.signal = Some(signal);
+    if stage == "missing-key" {
+        std::sync::Arc::make_mut(model).provider = "fixture-no-environment-key".to_owned();
+        options.common.api_key = None;
+    }
+    if stage == "invalid-token" {
+        options.common.api_key = Some("invalid.token".to_owned());
+    }
+    if stage == "payload-fails-invalid-header" {
+        std::sync::Arc::make_mut(model).headers = Some(indexmap::IndexMap::from([(
+            "bad name".to_owned(),
+            "later failure".to_owned(),
+        )]));
     }
 }
