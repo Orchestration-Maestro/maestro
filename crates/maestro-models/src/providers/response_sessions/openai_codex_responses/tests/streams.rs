@@ -124,28 +124,15 @@ async fn assert_api_case(row: ApiCase) {
 fn maestro_response_sessions_run_http_lifecycle() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
+        .start_paused(true)
         .build()
         .unwrap();
     runtime.block_on(async {
-        let (model, context, mut options) = super::invocation();
-        options.common.fetch = Some(std::sync::Arc::new(|request| {
-            let body: Value = serde_json::from_slice(&request.body).unwrap();
-            assert_eq!(body["marker"], "retained");
-            Box::pin(async {
-                Ok(crate::HttpResponse { status: 200, status_text: String::new(), headers: std::collections::BTreeMap::default(),
-                    body: Box::pin(stream::iter([Ok(b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec())])) })
-            })
-        }));
-        options.common.on_payload = Some(std::sync::Arc::new(|mut payload, _| Box::pin(async move {
-            payload["marker"] = Value::from("retained"); Ok(payload)
-        })));
-        let prepared = super::super::request::prepare_request(&model, &context, &options, "maestro (browser)").await.unwrap();
-        let output = std::sync::Arc::new(std::sync::RwLock::new(crate::providers::assistant_output::initial_message(&model)));
-        let events = crate::AssistantMessageEventStream::new();
-        super::super::http::invoke_sse(&prepared, &model, &options, &output, &events).await.unwrap();
-        assert!(matches!(events.next().await, Some(crate::AssistantMessageEvent::Start { partial }) if std::sync::Arc::ptr_eq(&partial, &output)));
-        assert_eq!(output.read().unwrap().stop_reason, crate::StopReason::Stop);
-        assert!(events.next().now_or_never().is_none(), "internal invocation must leave final publication to its caller");
+        let rows: Vec<LifecycleCase> =
+            serde_json::from_str(include_str!("fixtures/lifecycle.json")).unwrap();
+        for row in rows {
+            assert_lifecycle(row).await;
+        }
     });
 }
 
@@ -974,5 +961,190 @@ fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
         Ok(0) => {}
         Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
         outcome => panic!("client did not close terminal body: {outcome:?}"),
+    }
+}
+
+/// Selected full invocation and its observed internal outcome.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LifecycleCase {
+    /// Controlled setup/body branch.
+    scenario: String,
+    /// Settled producer attempt count.
+    attempts: usize,
+    /// Awaited response observations.
+    hooks: usize,
+    /// Native error, or success.
+    error: Option<String>,
+    /// Reducer stop reason on the supplied output.
+    reason: String,
+}
+
+/// Owned observations shared with the controlled producers, not the invocation owner.
+#[derive(Default)]
+struct LifecycleObservations {
+    /// Body bytes actually sent by each attempt.
+    bodies: std::sync::Mutex<Vec<Vec<u8>>>,
+    /// Finished response callbacks.
+    hooks: std::sync::atomic::AtomicUsize,
+    /// Finished payload callbacks.
+    payloads: std::sync::atomic::AtomicUsize,
+}
+
+/// Exercise the reference setup/callback/body boundary rather than deferred outer outcomes.
+async fn assert_lifecycle(row: LifecycleCase) {
+    use std::sync::{Arc, atomic::Ordering};
+    let (model, context, mut options) = super::invocation();
+    let observed = Arc::new(LifecycleObservations::default());
+    configure_lifecycle(&mut options, &row.scenario, &observed);
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    let result =
+        super::super::http::invoke_sse(&prepared, &model, &options, &output, &events).await;
+    assert_eq!(
+        result.err().map(|error| error.diagnostic().message.clone()),
+        row.error,
+        "{}",
+        row.scenario
+    );
+    assert_eq!(observed.payloads.load(Ordering::SeqCst), 1);
+    assert_eq!(observed.hooks.load(Ordering::SeqCst), row.hooks);
+    assert_sent_bodies(&observed, &prepared.body, row.attempts);
+    assert_eq!(
+        serde_json::to_value(&output.read().unwrap().stop_reason).unwrap(),
+        row.reason
+    );
+    let started = matches!(
+        row.scenario.as_str(),
+        "terminal" | "incomplete" | "no-terminal" | "malformed"
+    );
+    if started {
+        assert!(matches!(
+            events.next().await,
+            Some(crate::AssistantMessageEvent::Start { .. })
+        ));
+    }
+    assert!(
+        events.next().now_or_never().is_none(),
+        "internal operation published final outcome"
+    );
+}
+
+/// Produce the selected response or setup failure, with body reads gated on the response hook.
+fn lifecycle_response(
+    scenario: &str,
+    observed: std::sync::Arc<LifecycleObservations>,
+) -> Result<crate::HttpResponse, crate::FetchError> {
+    let message = match scenario {
+        "network" => Some("connection lost"),
+        "usage-network" => Some("usage limit exceeded"),
+        "upper-usage-network" => Some("Usage limit exceeded"),
+        "abort-network" => Some("Request was aborted"),
+        _ => None,
+    };
+    if let Some(message) = message {
+        return Err(crate::FetchError::Connection(
+            super::super::request::diagnostic(message),
+        ));
+    }
+    let status = match scenario {
+        "400" | "usage400" | "body-read-fails" => 400,
+        "429" | "usage429" => 429,
+        _ => 200,
+    };
+    let bytes = match scenario {
+        "400" => b"bad input".to_vec(),
+        "429" => b"overloaded".to_vec(),
+        "usage400" | "usage429" => {
+            br#"{"error":{"code":"usage_limit_reached","message":"server message"}}"#.to_vec()
+        }
+        "no-terminal" => event_bytes(&[
+            serde_json::json!({"type":"response.created","response":{"id":"created"}}),
+        ]),
+        "malformed" => b"data: {invalid\n\n".to_vec(),
+        "incomplete" => event_bytes(&[
+            serde_json::json!({"type":"response.incomplete","response":{"status":"incomplete"}}),
+        ]),
+        _ => event_bytes(&[
+            serde_json::json!({"type":"response.completed","response":{"status":"completed"}}),
+        ]),
+    };
+    let fail_read = scenario == "body-read-fails";
+    let count = observed.bodies.lock().unwrap().len();
+    let body = stream::once(async move {
+        assert_eq!(
+            observed.hooks.load(std::sync::atomic::Ordering::SeqCst),
+            count,
+            "body read preceded awaited response hook"
+        );
+        if fail_read {
+            Err(crate::FetchError::Connection(
+                super::super::request::diagnostic("body read failed"),
+            ))
+        } else {
+            Ok(bytes)
+        }
+    });
+    Ok(crate::HttpResponse {
+        status,
+        status_text: String::new(),
+        headers: std::collections::BTreeMap::new(),
+        body: Box::pin(body),
+    })
+}
+
+/// Configure finite callbacks over owned observations without capturing their owner.
+fn configure_lifecycle(
+    options: &mut super::super::OpenAICodexResponsesOptions,
+    scenario: &str,
+    observed: &std::sync::Arc<LifecycleObservations>,
+) {
+    use std::sync::{Arc, atomic::Ordering};
+    let payloads = Arc::clone(observed);
+    options.common.on_payload = Some(Arc::new(move |mut body, _| {
+        payloads.payloads.fetch_add(1, Ordering::SeqCst);
+        body["marker"] = Value::from("replaced");
+        Box::pin(async { Ok(body) })
+    }));
+    let hooks = Arc::clone(observed);
+    let hook_scenario = scenario.to_owned();
+    options.common.on_response = Some(Arc::new(move |_, _| {
+        hooks.hooks.fetch_add(1, Ordering::SeqCst);
+        let error = match hook_scenario.as_str() {
+            "hook" => Some("hook failed"),
+            "hook-usage" => Some("usage limit from hook"),
+            _ => None,
+        };
+        Box::pin(async move {
+            error.map_or(Ok(()), |message| {
+                Err(super::super::request::diagnostic(message))
+            })
+        })
+    }));
+    let calls = Arc::clone(observed);
+    let scenario = scenario.to_owned();
+    options.common.fetch = Some(Arc::new(move |request| {
+        calls.bodies.lock().unwrap().push(request.body);
+        let scenario = scenario.clone();
+        let calls = Arc::clone(&calls);
+        Box::pin(async move { lifecycle_response(&scenario, calls) })
+    }));
+}
+
+/// Compare each settled attempt's exact body against the one retained payload result.
+fn assert_sent_bodies(observed: &LifecycleObservations, body: &Value, attempts: usize) {
+    let expected = crate::providers::json_text::compact_json(body)
+        .unwrap()
+        .into_bytes();
+    let bodies = observed.bodies.lock().unwrap();
+    assert_eq!(bodies.len(), attempts);
+    for body in &*bodies {
+        assert_eq!(body, &expected);
     }
 }
