@@ -4,8 +4,8 @@
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
-This page describes what is delivered so far: registration, seventeen events and the
-results of six of them, command contexts and session continuations.
+This page describes what is delivered so far: registration, 23 events and nine result
+families, command contexts and session continuations.
 
 ## Build a component
 
