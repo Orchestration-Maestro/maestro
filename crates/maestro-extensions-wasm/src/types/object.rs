@@ -42,7 +42,6 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Object<T> {
 /// # Errors
 /// Returns an error for malformed text, for a document that is not an object, and for an
 /// object `T` does not accept.
-#[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) fn from_str<'de, T: Deserialize<'de>>(text: &'de str) -> Result<T, serde_json::Error> {
     serde_json::from_str::<Object<T>>(text).map(|Object(record)| record)
 }
@@ -69,4 +68,12 @@ pub(crate) fn records<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     Ok(list.map_or(Presence::Null, |records| {
         Presence::Present(records.into_iter().map(|Object(record)| record).collect())
     }))
+}
+
+/// Reads a required list of named records.
+pub(crate) fn list<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Vec<T>, D::Error> {
+    Vec::<Object<T>>::deserialize(deserializer)
+        .map(|records| records.into_iter().map(|Object(record)| record).collect())
 }

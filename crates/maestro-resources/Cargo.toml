@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-request = { path = "../maestro-request" }
 maestro-path = { path = "../maestro-path" }
 num-bigint.workspace = true
 num-traits.workspace = true

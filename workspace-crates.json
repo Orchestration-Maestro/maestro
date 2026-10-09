@@ -4,6 +4,7 @@
   "maestro-extensions-wasm": "core",
   "maestro-models": "core",
   "maestro-path": "core",
+  "maestro-request": "core",
   "maestro-resources": "core",
   "maestro-settings": "core",
   "maestro-test-conventions": "dedicated",

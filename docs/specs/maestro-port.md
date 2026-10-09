@@ -169,17 +169,16 @@ Shared-workflow changes require one separate issue and clone in maestro-rust-wor
 
 ## Crates and delivery order
 
-The table declares the currently enforced crate graph. The authoritative
-shared-record amendment below changes its destination graph; extraction updates
-this table and its conventions checks together. An em dash means no internal
+The table declares the enforced crate graph. An em dash means no internal
 dependencies apart from the optional foundation utility described below.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
-| `maestro-extensions-wasm` | provide guest authoring | — | 0 |
-| `maestro-models` | supply model invocations | `maestro-cancellation` | 0 |
-| `maestro-resources` | discover instruction resources | — | 0 |
+| `maestro-request` | define model-request records | — | below 0 |
+| `maestro-extensions-wasm` | provide guest authoring | `maestro-request` | 0 |
+| `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request` | 0 |
+| `maestro-resources` | discover instruction resources | `maestro-request` | 0 |
 | `maestro-settings` | own accepted preferences | — | 0 |
 | `maestro-storage` | access transcript bytes | — | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
@@ -204,26 +203,8 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime` | 6 |
 
-`maestro-path` is the foundation utility for lexical path strings. It sits below
-layer 0, has no internal dependencies, and exposes platform-independent path
-operations. Native crates may depend on it without changing their delivery layer.
-This optional utility edge is ignored when evaluating leaf status and exact
-direct-dependency sets; every other dependency rule, including cycle and internal
-dev-dependency checks, still applies. The guest authoring crate
-(`maestro-extensions-wasm`), component runtime adapter
-(`maestro-extensions-wasmtime`) and terminal scenario harness
-(`maestro-test-terminal`) and cancellation leaf (`maestro-cancellation`) are
-excluded from this permission.
-
-The graph contains 28 crates: the 27 table entries plus the foundation utility.
-It permits 87 internal production dependency edges: 64 table edges plus 23
-optional utility edges. Eight crates are leaves when utility edges are ignored,
-including the utility itself. The utility is delivered before its first consumer.
-
 `maestro-cancellation` owns cooperative cancellation below layer 0, with no
 internal dependencies. Only models and the terminal toolkit may depend on it.
-
-### Shared-record amendment
 
 `maestro-request` defines model-request records: model descriptors, messages,
 content, usage, stream events and diagnostics, plus `SourceInfo` and `Skill` for
@@ -240,15 +221,21 @@ the guest still cannot depend on models or resources, the runtime adapter still
 targets extensions only, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its three consumers.
 
-The destination graph has 29 crates, 67 table edges plus 23 optional utility
-edges (90 production edges), and seven leaves when utility edges are ignored.
-The extraction must update `workspace-crates.json`, graph policy, utility
-exclusions and architecture tests together. Tests cover ordinary, renamed,
-optional, target and build declarations for the three allowed edges and reject
-all other edges, including request-to-path and internal dev dependencies.
-Move this amendment into the enforced table and surrounding ownership text when
-the extraction lands, removing this temporary subsection rather than retaining
-two descriptions of the graph.
+`maestro-path` is the foundation utility for lexical path strings. It sits below
+layer 0, has no internal dependencies, and exposes platform-independent path
+operations. Native crates may depend on it without changing their delivery layer.
+This optional utility edge is ignored when evaluating leaf status and exact
+direct-dependency sets; every other dependency rule, including cycle and internal
+dev-dependency checks, still applies. The guest authoring crate
+(`maestro-extensions-wasm`), component runtime adapter
+(`maestro-extensions-wasmtime`), terminal scenario harness
+(`maestro-test-terminal`), cancellation leaf (`maestro-cancellation`) and shared
+request owner (`maestro-request`) are excluded from this permission.
+
+The graph contains 29 crates: the 28 table entries plus the foundation utility.
+It permits 90 internal production dependency edges: 67 table edges plus 23
+optional utility edges. Seven crates are leaves when utility edges are ignored,
+including the utility itself. The utility is delivered before its first consumer.
 
 ### Crate order
 

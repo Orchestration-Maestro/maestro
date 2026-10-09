@@ -15,7 +15,15 @@ use super::scenario::{Decision, Delivery, Driver, Encoded};
 pub const LITERAL: &str = " \u{feff}\u{85}é😀/../x ";
 
 /// The `type` tag of every delivered event kind.
-pub const KINDS: [&str; 9] = [
+pub const KINDS: [&str; 17] = [
+    "context",
+    "before_agent_start",
+    "agent_start",
+    "agent_end",
+    "turn_start",
+    "turn_end",
+    "message_start",
+    "message_end",
     "resources_discover",
     "session_start",
     "session_before_switch",
@@ -67,8 +75,8 @@ pub fn images() -> Vec<Class> {
         Some(Value::Null),
         Some(json!([])),
         Some(json!([
-            { "data": "AA==", "mimeType": "image/Ω" },
-            { "data": "BB==", "mimeType": "image/png" },
+            { "type": "image", "data": "AA==", "mimeType": "image/Ω" },
+            { "type": "image", "data": "BB==", "mimeType": "image/png" },
         ])),
     ]
 }
@@ -103,7 +111,18 @@ pub fn with(mut document: Value, key: &str, class: &Class) -> Value {
 
 /// A valid document of the event kind `kind`.
 pub fn document(kind: &str) -> Value {
+    let message = json!({"role":"user","content":"first","timestamp":1.0});
     match kind {
+        "context" | "agent_end" => {
+            json!({"type":kind,"messages":[message, {"role":"user","content":"second","timestamp":2.0}]})
+        }
+        "before_agent_start" => {
+            json!({"type":kind,"prompt":"p","systemPrompt":"s","systemPromptOptions":{"cwd":"/work"}})
+        }
+        "agent_start" => json!({"type":kind}),
+        "turn_start" => json!({"type":kind,"turnIndex":1.0,"timestamp":2.0}),
+        "turn_end" => json!({"type":kind,"turnIndex":1.0,"message":message,"toolResults":[]}),
+        "message_start" | "message_end" => json!({"type":kind,"message":message}),
         "resources_discover" => json!({ "type": kind, "cwd": "/work", "reason": "startup" }),
         "session_start" => json!({ "type": kind, "reason": "new" }),
         "session_shutdown" => json!({ "type": kind, "reason": "quit" }),

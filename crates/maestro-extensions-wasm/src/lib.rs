@@ -8,23 +8,30 @@
 
 #[macro_use]
 mod port;
+mod agent;
 #[doc(hidden)]
 pub mod bindings;
 mod compaction;
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
 mod loader;
-mod models;
+mod system_prompt;
 #[cfg(test)]
 mod tests;
 mod types;
 
+pub use agent::*;
 pub use compaction::*;
 #[cfg(target_arch = "wasm32")]
 #[doc(hidden)]
 pub use component_adapter::Glue;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
-pub use models::*;
+pub use maestro_request::skills::Skill;
+pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
+pub use maestro_request::types::{
+    ImageContent, Message, TextContent, ToolResultMessage, UserBlock, UserContent, UserMessage,
+};
+pub use system_prompt::*;
 pub use types::*;
 
 #[cfg(test)]

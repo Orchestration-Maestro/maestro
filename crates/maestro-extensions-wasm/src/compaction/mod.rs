@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Presence, number};
+use crate::types::Presence;
 
 /// What a compaction is about to summarize; only the fields delivered so far.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,8 +17,7 @@ pub struct CompactionPreparation {
     pub first_kept_entry_id: String,
     /// Whether the compaction cuts through a turn.
     pub is_split_turn: bool,
-    /// The context size before the compaction; a nonfinite value is carried by its bits.
-    #[serde(with = "number")]
+    /// The context size before the compaction.
     pub tokens_before: f64,
     /// The summary of an earlier compaction, when there is one.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
@@ -33,8 +32,7 @@ pub struct CompactionResult {
     pub summary: String,
     /// The first entry the compaction keeps.
     pub first_kept_entry_id: String,
-    /// The context size before the compaction; a nonfinite value is carried by its bits.
-    #[serde(with = "number")]
+    /// The context size before the compaction.
     pub tokens_before: f64,
     /// Opaque JSON text, carried without parsing or reformatting.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]

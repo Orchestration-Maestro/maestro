@@ -32,7 +32,10 @@ pub(crate) struct Capabilities<I: Imports> {
 /// Encodes an optional document, or the message the encoding failed with.
 fn encode<T: Serialize>(value: Option<T>) -> Encoded {
     value
-        .map(|value| serde_json::to_string(&value))
+        .map(|value| {
+            value.serialize(crate::types::finite::Finite)?;
+            serde_json::to_string(&value)
+        })
         .transpose()
         .map_err(|error| error.to_string())
 }

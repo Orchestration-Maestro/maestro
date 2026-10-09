@@ -8,8 +8,8 @@ mod discovery;
 mod real_path;
 mod validation;
 use crate::{
-    ResourceDiagnostic, SourceInfo, SourceScope, SyntheticSourceOptions,
-    create_synthetic_source_info, parse_frontmatter,
+    ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
+    parse_frontmatter,
 };
 use maestro_path::{SEP, basename, dirname, is_absolute, join};
 #[cfg(not(target_arch = "wasm32"))]
@@ -19,22 +19,7 @@ pub use operations::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::{io, path::Path};
 pub use validation::SkillFrontmatter;
 
-/// A described instruction file with its provenance.
-#[derive(Debug)]
-pub struct Skill {
-    /// Declared name, or the containing directory name.
-    pub name: String,
-    /// Authored description.
-    pub description: String,
-    /// Instruction file location.
-    pub file_path: String,
-    /// Directory used for relative instruction paths.
-    pub base_dir: String,
-    /// Origin of this file.
-    pub source_info: SourceInfo,
-    /// Whether this skill is omitted from model-facing prompts.
-    pub disable_model_invocation: bool,
-}
+pub use maestro_request::skills::Skill;
 /// Ordered discoveries and their diagnostics.
 #[derive(Debug, Default)]
 pub struct LoadSkillsResult {

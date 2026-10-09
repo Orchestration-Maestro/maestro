@@ -196,6 +196,8 @@ fn leaf_internal_dependencies_are_rejected() {
     for (leaf, class) in [
         ("maestro-path", "core"),
         ("maestro-cancellation", "core"),
+        ("maestro-request", "core"),
+        ("maestro-models", "core"),
         ("maestro-storage", "core"),
         ("maestro-resources", "core"),
         ("maestro-settings", "core"),
@@ -216,9 +218,15 @@ fn leaf_internal_dependencies_are_rejected() {
             workspace.member("leaf", leaf, declaration);
             assert_eq!(
                 check_workspace(&workspace.root),
-                Err(format!(
-                    "{leaf} must not depend on workspace crate maestro-app"
-                ))
+                Err(if is_leaf(leaf) {
+                    format!("{leaf} must not depend on workspace crate maestro-app")
+                } else if declaration.starts_with("[dev-dependencies]") {
+                    format!(
+                        "internal dev dependency requires declared dependency-free test support: {leaf} -> maestro-app"
+                    )
+                } else {
+                    format!("forbidden production dependency: {leaf} -> maestro-app")
+                })
             );
             workspace.member("leaf", leaf, "");
             assert_eq!(check_workspace(&workspace.root), Ok(()));
@@ -459,7 +467,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        64
+        67
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -487,6 +495,7 @@ const DECLARATIONS: &[(&str, &str)] = &[
 /// Crates that may not declare the foundation utility.
 const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-cancellation",
+    "maestro-request",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-test-terminal",
@@ -534,9 +543,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 28);
+    assert_eq!(rows.len(), 29);
     assert_eq!(consumers.len(), 23);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 8);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 7);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }

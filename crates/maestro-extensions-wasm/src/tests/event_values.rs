@@ -6,14 +6,12 @@
     clippy::excessive_nesting
 )]
 
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use super::documents::{
     Answer, Ended, LITERAL, ask, document, flags, images, lists, product, returns, strings, with,
 };
 use super::scenario::Driver;
-use crate::types::number;
 
 /// Delivers `event` and checks that the handler saw it unchanged and returned `result`, a
 /// document of the contract of `family`, or nothing.
@@ -237,7 +235,7 @@ async fn responses(driver: &mut impl Driver) -> Result<(), String> {
             .rev()
             .cloned()
             .collect();
-        for status in [json!(-3.0), json!(0.25), json!("f64:7ff0000000000000")] {
+        for status in [json!(-3.0), json!(0.25), json!(-0.0)] {
             let edit =
                 json!({ "type": "after_provider_response", "status": status, "headers": reversed });
             let directive = json!({ "replaceWith": edit });
@@ -351,9 +349,8 @@ fn maestro_opaque_event_json_keeps_authored_bytes() -> Result<(), String> {
     on_both_adapters!(opaque_and_compaction)
 }
 
-/// Bit patterns of a number property: both zeros, the extreme finite values, the precision
-/// boundary, both infinities and not-a-number with distinct payloads.
-const PATTERNS: [u64; 17] = [
+/// Finite number patterns: both zeros, finite extremes and the integer precision boundary.
+const PATTERNS: [u64; 13] = [
     0x4069_0000_0000_0000,
     0x4082_b800_0000_0000,
     0x0000_0000_0000_0000,
@@ -367,32 +364,19 @@ const PATTERNS: [u64; 17] = [
     0xbff8_0000_0000_0000,
     0x4340_0000_0000_0000,
     0x4340_0000_0000_0001,
-    0x7ff0_0000_0000_0000,
-    0xfff0_0000_0000_0000,
-    0x7ff8_0000_0000_0042,
-    0xfff8_0000_0000_1234,
 ];
 
-/// The document of a number: a JSON number, or `f64:` and the bits when it is not finite.
+/// The JSON document of a finite number.
 fn number_of(bits: u64) -> Value {
-    let value = f64::from_bits(bits);
-    if value.is_finite() {
-        json!(value)
-    } else {
-        json!(format!("f64:{bits:016x}"))
-    }
+    json!(f64::from_bits(bits))
 }
 
-/// The bits a number document stands for.
+/// The bits of a JSON number document.
 fn bits_of(document: Option<&Value>) -> Result<u64, String> {
-    match document {
-        Some(Value::Number(number)) => number.as_f64().map(f64::to_bits),
-        Some(Value::String(text)) => text
-            .strip_prefix("f64:")
-            .and_then(|digits| u64::from_str_radix(digits, 16).ok()),
-        _ => None,
-    }
-    .ok_or_else(|| format!("{document:?} is not a number document"))
+    document
+        .and_then(Value::as_f64)
+        .map(f64::to_bits)
+        .ok_or_else(|| format!("{document:?} is not a number document"))
 }
 
 /// The bits of the status that came back after the number `bits` went in beside `headers`,
@@ -460,59 +444,7 @@ async fn numbers(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 
-/// A record with one number property, to run the codec by itself.
-#[derive(Debug, Serialize, Deserialize)]
-struct Tokens {
-    /// The number.
-    #[serde(with = "number")]
-    n: f64,
-}
-
-/// What the codec makes of a number document.
-fn decode(document: &Value) -> Result<f64, String> {
-    serde_json::from_value::<Tokens>(json!({ "n": document }))
-        .map(|tokens| tokens.n)
-        .map_err(|error| error.to_string())
-}
-
-/// The codec accepts the spelling of a nonfinite value in either letter case, writes it in
-/// lower case, and rejects every other text and every document that is neither text nor a
-/// number.
-fn malformed_encodings() {
-    let upper = decode(&json!("f64:7FF0000000000000"));
-    assert_eq!(upper.map(f64::to_bits), Ok(f64::INFINITY.to_bits()));
-    let spelled = serde_json::to_string(&Tokens {
-        n: f64::from_bits(0x7ff8_0000_0000_0042),
-    });
-    assert_eq!(
-        spelled.map_err(|error| error.to_string()),
-        Ok(r#"{"n":"f64:7ff8000000000042"}"#.to_owned())
-    );
-    for text in [
-        "g64:7ff0000000000000",
-        "F64:7ff0000000000000",
-        "7ff0000000000000",
-        "f64:7ff000000000000",
-        "f64:7ff00000000000000",
-        "f64:7ff000000000000z",
-        "f64:+7ff000000000000",
-        "f64:3ff0000000000000",
-        "f64:8000000000000000",
-        "",
-    ] {
-        assert_eq!(
-            decode(&json!(text)),
-            Err("invalid nonfinite number encoding".to_owned()),
-            "spelling {text:?}"
-        );
-    }
-    for other in [json!(null), json!(true), json!([]), json!({})] {
-        assert!(decode(&other).is_err(), "document {other} is not a number");
-    }
-}
-
 #[test]
 fn maestro_event_numbers_keep_bits_across_adapters() -> Result<(), String> {
-    malformed_encodings();
     on_both_adapters!(numbers)
 }

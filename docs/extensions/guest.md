@@ -3,8 +3,8 @@
 `maestro-extensions-wasm` is the Rust library an extension author links to. It owns the
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
-async Rust that the host runs as a WebAssembly component. The facade has no internal
-dependencies. This page describes what is delivered so far: registration, nine events and the
+async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
+This page describes what is delivered so far: registration, seventeen events and the
 results of six of them, command contexts and session continuations.
 
 ## Build a component
@@ -53,6 +53,14 @@ differs from a result whose properties are all omitted.
 
 | `type` | Rust event | Properties (`?` marks an optional one) |
 | --- | --- | --- |
+| `context` | `ContextEvent` | `messages` |
+| `before_agent_start` | `BeforeAgentStartEvent` | `prompt`, `images?`, `systemPrompt`, `systemPromptOptions` |
+| `agent_start` | `AgentStartEvent` | none |
+| `agent_end` | `AgentEndEvent` | `messages` |
+| `turn_start` | `TurnStartEvent` | `turnIndex`, `timestamp` |
+| `turn_end` | `TurnEndEvent` | `turnIndex`, `message`, `toolResults` |
+| `message_start` | `MessageStartEvent` | `message` |
+| `message_end` | `MessageEndEvent` | `message` |
 | `resources_discover` | `ResourcesDiscoverEvent` | `cwd`, `reason` (`startup`, `reload`) |
 | `session_start` | `SessionStartEvent` | `reason` (`startup`, `reload`, `new`, `resume`, `fork`), `previousSessionFile?` |
 | `session_before_switch` | `SessionBeforeSwitchEvent` | `reason` (`new`, `resume`), `targetSessionFile?` |
@@ -65,8 +73,18 @@ differs from a result whose properties are all omitted.
 
 `preparation` holds `firstKeptEntryId`, `isSplitTurn`, `tokensBefore` and `previousSummary?`.
 The five session events are variants of `SessionEvent`. `images` is a list of `data` and
-`mimeType` records, and `headers` a list of name and value pairs in the order the host gave
+`mimeType` records tagged with `type: "image"`, and `headers` a list of name and value pairs in the order the host gave
 them; nothing trims, folds, sorts or combines them.
+
+The agent payloads use shared user, assistant and tool-result messages. Unknown roles
+use `CustomAgentMessages` with a role and opaque `data` string; malformed known roles
+are rejected rather than treated as custom data. Application-defined bash, custom and
+summary roles are not delivered yet.
+
+`BuildSystemPromptOptions` carries `cwd` and optional `customPrompt`, `selectedTools`,
+`toolSnippets`, `promptGuidelines`, `appendSystemPrompt`, `contextFiles` and `skills`.
+`toolSnippets` is a string-keyed ordered map. These are already-assembled inputs;
+the guest does not discover resources or build the prompt.
 
 | Event | Result | Properties of the result |
 | --- | --- | --- |
@@ -79,7 +97,8 @@ them; nothing trims, folds, sorts or combines them.
 
 `compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`. A compaction
 currently carries only the fields listed here. Session start, session shutdown and provider
-responses have no result, and the adapter does not check that a result belongs to the family
+responses have no result type delivered here; the added agent events also have
+no result types delivered here, and the adapter does not check that a result belongs to the family
 of the event it answers: the host reads it.
 
 An `AbortSignal` is a capability, not a snapshot: keep it past the callback and read
@@ -95,18 +114,21 @@ the callback, the event as one JSON document whose `type` names the kind, and th
 the event needs: a context, and for a compaction its signal. A signal that comes with any other
 event is dropped. Resources never appear in the document.
 
-Optional properties keep three states apart: omitted, explicitly `null`, and present, including
-empty strings, empty lists and `false`. In the delivered records such a field is a
+Unshared optional properties keep three states apart: omitted, explicitly `null`, and present, including
+empty strings, empty lists and `false`. In unshared records such a field is a
 `Presence<T>`: it defaults to `Missing` when the property is absent and is skipped on
 serialization only while it is `Missing`. Serializing `Missing` on its own, outside a property,
 is an error; `Null` serializes as `null` and `Present` as its value.
 
-Three properties hold a number that a handler may edit: `status`, `tokensBefore` of the
-preparation and `tokensBefore` of a compaction. A finite value is a JSON number, negative zero
-included. A value that is not finite is the text `f64:` followed by the 16 hexadecimal digits of
-its IEEE-754 bits, written in lower case. The reader accepts either case of the digits and
-refuses another prefix, a length other than 16, characters that are not hexadecimal digits and
-the bits of a finite value. The same text elsewhere in a document is just text.
+Shared records retain their own optional-field serialization: ordinary `Option` fields
+collapse missing and null, while existing nested options retain explicit null. They
+have no added `Presence` wrapper.
+
+Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
+Ordinary host nonfinite serialization writes null, which a required numeric decoder
+may reject. An extension-assigned Infinity or NaN fails encoding with
+`extension wrote a non-finite number (Infinity or NaN)`; the independent callback
+failure or other encoded part is retained. Numeric-looking text remains text.
 
 The request body of `before_provider_request`, its replacement, and the `details` of a
 compaction are JSON text carried as a string. The adapter never parses or reformats it, so
@@ -123,9 +145,8 @@ The export decodes the document before it enters the handler. The event, the `pr
 each element of `images` are read from JSON objects only; a positional array is refused. Malformed
 JSON, a record that is not an object, an unknown `type` or word, a missing required property, a
 mistyped property (optional ones included), and a compaction without its signal make the export
-fail with an error message; the handler is not entered. Properties the author's types do not
-declare are skipped without being stored wherever they occur in the event, the `preparation` or an
-image, however deeply nested. A callback identity that is unknown, or registered for a
+fail with an error message; the handler is not entered. The outer tag reader skips other properties, and each payload uses its owning
+record decoder. Shared records retain their native parser and union behavior. A callback identity that is unknown, or registered for a
 command, does not fail the export: the outcome reports the lookup message as the decision.
 
 The outcome has two independent parts. `event` is the event as the handler left it, whether

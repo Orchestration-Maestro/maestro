@@ -1,24 +1,6 @@
 //! Resource provenance without configuration selection.
 
-/// The scope from which a resource was supplied.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SourceScope {
-    /// User configuration material.
-    User,
-    /// Project configuration material.
-    Project,
-    /// Explicit temporary material.
-    Temporary,
-}
-
-/// The origin of the containing resource.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SourceOrigin {
-    /// A package-provided resource.
-    Package,
-    /// An independently supplied resource.
-    TopLevel,
-}
+pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 
 /// Complete provenance accompanying a resolved path.
 pub struct PathMetadata {
@@ -29,21 +11,6 @@ pub struct PathMetadata {
     /// Resource origin.
     pub origin: SourceOrigin,
     /// Optional containing directory, retaining explicit empty spelling.
-    pub base_dir: Option<String>,
-}
-
-/// Provenance associated with a resource file.
-#[derive(Debug)]
-pub struct SourceInfo {
-    /// Supplied resource path.
-    pub path: String,
-    /// Extensible source label.
-    pub source: String,
-    /// Resource scope.
-    pub scope: SourceScope,
-    /// Resource origin.
-    pub origin: SourceOrigin,
-    /// Optional containing directory.
     pub base_dir: Option<String>,
 }
 

@@ -3,6 +3,10 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::agent_events::{
+    AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, ContextEvent, MessageEndEvent,
+    MessageStartEvent, TurnEndEvent, TurnStartEvent,
+};
 use super::context::AbortSignal;
 use super::events::{
     AfterProviderResponseEvent, BeforeProviderRequestEvent, ExtensionEvent, InputEvent,
@@ -16,6 +20,23 @@ use super::object;
 #[derive(Deserialize)]
 #[serde(variant_identifier, rename_all = "snake_case")]
 enum Kind {
+    /// Context notification.
+    Context,
+    /// `BeforeAgentStart` notification.
+    BeforeAgentStart,
+    /// `AgentStart` notification.
+    AgentStart,
+    /// `AgentEnd` notification.
+    AgentEnd,
+    /// `TurnStart` notification.
+    TurnStart,
+    /// `TurnEnd` notification.
+    TurnEnd,
+    /// `MessageStart` notification.
+    MessageStart,
+    /// `MessageEnd` notification.
+    MessageEnd,
+
     /// Resources are being discovered.
     ResourcesDiscover,
     /// A session started.
@@ -48,6 +69,23 @@ struct Tag {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(crate) enum EventData {
+    /// Context notification.
+    Context(Box<ContextEvent>),
+    /// `BeforeAgentStart` notification.
+    BeforeAgentStart(Box<BeforeAgentStartEvent>),
+    /// `AgentStart` notification.
+    AgentStart(AgentStartEvent),
+    /// `AgentEnd` notification.
+    AgentEnd(Box<AgentEndEvent>),
+    /// `TurnStart` notification.
+    TurnStart(TurnStartEvent),
+    /// `TurnEnd` notification.
+    TurnEnd(Box<TurnEndEvent>),
+    /// `MessageStart` notification.
+    MessageStart(Box<MessageStartEvent>),
+    /// `MessageEnd` notification.
+    MessageEnd(Box<MessageEndEvent>),
+
     /// Resources are being discovered.
     ResourcesDiscover(ResourcesDiscoverEvent),
     /// A session started.
@@ -70,8 +108,8 @@ pub(crate) enum EventData {
 
 impl EventData {
     /// The data a JSON document holds. The tag is read first, with every other property
-    /// skipped; the record the tag selects is then read from the same text, so properties it
-    /// does not declare are skipped too, however deeply nested.
+    /// skipped; the record the tag selects is then read from the same text using its
+    /// owning record decoder.
     ///
     /// # Errors
     /// Returns an error when the text is malformed, is not a JSON object, has a missing or
@@ -80,6 +118,15 @@ impl EventData {
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
         let Tag { kind } = object::from_str(text)?;
         Ok(match kind {
+            Kind::Context => Self::Context(object::from_str(text)?),
+            Kind::BeforeAgentStart => Self::BeforeAgentStart(object::from_str(text)?),
+            Kind::AgentStart => Self::AgentStart(object::from_str(text)?),
+            Kind::AgentEnd => Self::AgentEnd(object::from_str(text)?),
+            Kind::TurnStart => Self::TurnStart(object::from_str(text)?),
+            Kind::TurnEnd => Self::TurnEnd(object::from_str(text)?),
+            Kind::MessageStart => Self::MessageStart(object::from_str(text)?),
+            Kind::MessageEnd => Self::MessageEnd(object::from_str(text)?),
+
             Kind::ResourcesDiscover => Self::ResourcesDiscover(object::from_str(text)?),
             Kind::SessionStart => Self::SessionStart(object::from_str(text)?),
             Kind::SessionBeforeSwitch => Self::SessionBeforeSwitch(object::from_str(text)?),
@@ -99,6 +146,15 @@ impl EventData {
     /// Returns an error when a compaction has no signal.
     pub(crate) fn attach(self, signal: Option<AbortSignal>) -> Result<ExtensionEvent, String> {
         Ok(match self {
+            Self::Context(event) => ExtensionEvent::Context(event),
+            Self::BeforeAgentStart(event) => ExtensionEvent::BeforeAgentStart(event),
+            Self::AgentStart(event) => ExtensionEvent::AgentStart(event),
+            Self::AgentEnd(event) => ExtensionEvent::AgentEnd(event),
+            Self::TurnStart(event) => ExtensionEvent::TurnStart(event),
+            Self::TurnEnd(event) => ExtensionEvent::TurnEnd(event),
+            Self::MessageStart(event) => ExtensionEvent::MessageStart(event),
+            Self::MessageEnd(event) => ExtensionEvent::MessageEnd(event),
+
             Self::ResourcesDiscover(event) => ExtensionEvent::ResourcesDiscover(event),
             Self::SessionStart(event) => ExtensionEvent::Session(SessionEvent::Start(event)),
             Self::SessionBeforeSwitch(event) => {
@@ -126,6 +182,15 @@ impl From<ExtensionEvent> for EventData {
     /// The data of an event; a compaction's signal is dropped.
     fn from(event: ExtensionEvent) -> Self {
         match event {
+            ExtensionEvent::Context(event) => Self::Context(event),
+            ExtensionEvent::BeforeAgentStart(event) => Self::BeforeAgentStart(event),
+            ExtensionEvent::AgentStart(event) => Self::AgentStart(event),
+            ExtensionEvent::AgentEnd(event) => Self::AgentEnd(event),
+            ExtensionEvent::TurnStart(event) => Self::TurnStart(event),
+            ExtensionEvent::TurnEnd(event) => Self::TurnEnd(event),
+            ExtensionEvent::MessageStart(event) => Self::MessageStart(event),
+            ExtensionEvent::MessageEnd(event) => Self::MessageEnd(event),
+
             ExtensionEvent::ResourcesDiscover(event) => Self::ResourcesDiscover(event),
             ExtensionEvent::Session(SessionEvent::Start(event)) => Self::SessionStart(event),
             ExtensionEvent::Session(SessionEvent::BeforeSwitch(event)) => {

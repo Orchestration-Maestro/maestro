@@ -11,9 +11,11 @@ name = "author_component"
 crate-type = ["cdylib"]
 
 [dependencies]
+indexmap = { version = "=2.14.2", features = ["serde"] }
+maestro-request = { path = "../maestro-request" }
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "std"] }
 serde.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 wasmtime = { version = "=49.0.2", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async"] }
