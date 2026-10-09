@@ -6,6 +6,7 @@
 )]
 
 mod agent_events;
+mod agent_results;
 mod api;
 mod context;
 #[cfg(any(test, target_arch = "wasm32"))]
@@ -16,8 +17,11 @@ mod extension_result;
 pub(crate) mod finite;
 pub(crate) mod object;
 mod presence;
+mod selection_events;
+mod tool_events;
 
 pub use agent_events::*;
+pub use agent_results::*;
 pub use api::{CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost};
 pub use context::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
@@ -37,6 +41,8 @@ pub use events::{
 };
 pub use extension_result::{ExtensionFuture, ExtensionResult};
 pub use presence::Presence;
+pub use selection_events::*;
+pub use tool_events::*;
 
 pub use crate::bindings::maestro::extension::session::{
     NewSessionCommandData, SessionChangeResult,

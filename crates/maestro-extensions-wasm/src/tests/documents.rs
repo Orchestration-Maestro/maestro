@@ -15,7 +15,13 @@ use super::scenario::{Decision, Delivery, Driver, Encoded};
 pub const LITERAL: &str = " \u{feff}\u{85}é😀/../x ";
 
 /// The `type` tag of every delivered event kind.
-pub const KINDS: [&str; 17] = [
+pub const KINDS: [&str; 23] = [
+    "message_update",
+    "tool_execution_start",
+    "tool_execution_update",
+    "tool_execution_end",
+    "model_select",
+    "thinking_level_select",
     "context",
     "before_agent_start",
     "agent_start",
@@ -113,6 +119,22 @@ pub fn with(mut document: Value, key: &str, class: &Class) -> Value {
 pub fn document(kind: &str) -> Value {
     let message = json!({"role":"user","content":"first","timestamp":1.0});
     match kind {
+        "message_update" => {
+            json!({"type":kind,"message":message,"assistantMessageEvent":{"type":"start","partial":super::stream_events::assistant()}})
+        }
+        "tool_execution_start" => {
+            json!({"type":kind,"toolCallId":"id","toolName":"tool","args":" opaque "})
+        }
+        "tool_execution_update" => {
+            json!({"type":kind,"toolCallId":"id","toolName":"tool","args":" opaque ","partialResult":" partial "})
+        }
+        "tool_execution_end" => {
+            json!({"type":kind,"toolCallId":"id","toolName":"tool","result":" final ","isError":false})
+        }
+        "model_select" => {
+            json!({"type":kind,"model":super::selection_events::model(),"source":"set"})
+        }
+        "thinking_level_select" => json!({"type":kind,"level":"high","previousLevel":"minimal"}),
         "context" | "agent_end" => {
             json!({"type":kind,"messages":[message, {"role":"user","content":"second","timestamp":2.0}]})
         }

@@ -17,14 +17,18 @@ use serde::{Deserialize, Deserializer, Serialize, de::IntoDeserializer};
 
 use super::agent_events::{
     AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, ContextEvent, MessageEndEvent,
-    MessageStartEvent, TurnEndEvent, TurnStartEvent,
+    MessageStartEvent, MessageUpdateEvent, TurnEndEvent, TurnStartEvent,
 };
 use super::context::{AbortSignal, ExtensionContext};
 use super::extension_result::ExtensionFuture;
 use super::object;
 use super::presence::Presence;
-use crate::ImageContent;
+use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
+use super::tool_events::{
+    ToolExecutionEndEvent, ToolExecutionStartEvent, ToolExecutionUpdateEvent,
+};
 use crate::compaction::{CompactionPreparation, CompactionResult};
+use crate::{BeforeAgentStartEventResult, ContextEventResult, ImageContent, MessageEndEventResult};
 
 /// Reads a string, then deserializes `T` from it.
 ///
@@ -325,6 +329,18 @@ pub enum SessionEvent {
 /// An event delivered to handlers, in the shape authors write against.
 #[derive(Debug)]
 pub enum ExtensionEvent {
+    /// Selection notification.
+    ModelSelect(Box<ModelSelectEvent>),
+    /// Selection notification.
+    ThinkingLevelSelect(ThinkingLevelSelectEvent),
+
+    /// Tool execution notification.
+    ToolExecutionStart(ToolExecutionStartEvent),
+    /// Tool execution notification.
+    ToolExecutionUpdate(ToolExecutionUpdateEvent),
+    /// Tool execution notification.
+    ToolExecutionEnd(ToolExecutionEndEvent),
+
     /// Context notification.
     Context(Box<ContextEvent>),
     /// `BeforeAgentStart` notification.
@@ -339,6 +355,8 @@ pub enum ExtensionEvent {
     TurnEnd(Box<TurnEndEvent>),
     /// `MessageStart` notification.
     MessageStart(Box<MessageStartEvent>),
+    /// Stream update notification.
+    MessageUpdate(Box<MessageUpdateEvent>),
     /// `MessageEnd` notification.
     MessageEnd(Box<MessageEndEvent>),
 
@@ -359,6 +377,12 @@ pub enum ExtensionEvent {
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ExtensionEventResult {
+    /// Replacement context messages.
+    Context(ContextEventResult),
+    /// Replacement finalized message.
+    MessageEnd(MessageEndEventResult),
+    /// Replacements before the agent starts.
+    BeforeAgentStart(BeforeAgentStartEventResult),
     /// Resource paths to add.
     ResourcesDiscover(ResourcesDiscoverResult),
     /// Whether to cancel a switch.

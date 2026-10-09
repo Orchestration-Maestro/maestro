@@ -111,7 +111,13 @@ fn maestro_missing_properties_do_not_become_null() -> Result<(), String> {
 const AUTHORED_FAILURE: &str = "authored failure Ω";
 
 /// The field of each kind that the probe handler edits.
-const MARKED: [(&str, &str); 16] = [
+const MARKED: [(&str, &str); 22] = [
+    ("message_update", "message"),
+    ("tool_execution_start", "toolName"),
+    ("tool_execution_update", "toolName"),
+    ("tool_execution_end", "toolName"),
+    ("model_select", "model"),
+    ("thinking_level_select", "level"),
     ("context", "messages"),
     ("agent_end", "messages"),
     ("before_agent_start", "prompt"),
@@ -134,6 +140,8 @@ const MARKED: [(&str, &str); 16] = [
 fn edited(document: &Value, field: &str) -> Value {
     let mut edited = document.clone();
     match field {
+        "model" => edited[field]["name"] = json!("changed"),
+        "level" => edited[field] = json!("off"),
         "messages" => edited[field].as_array_mut().unwrap().reverse(),
         "message" => edited[field]["timestamp"] = json!(99.0),
         "turnIndex" => edited[field] = json!(99.0),
@@ -146,6 +154,12 @@ fn edited(document: &Value, field: &str) -> Value {
 /// A result of the contract of the kind, for the kinds that have one.
 fn own_result(kind: &str) -> Option<(&'static str, Value)> {
     Some(match kind {
+        "context" => ("context", json!({"messages":[]})),
+        "message_end" => (
+            "message_end",
+            json!({"message":{"role":"user","content":"replacement","timestamp":7.0}}),
+        ),
+        "before_agent_start" => ("before_agent_start", json!({"systemPrompt":"replacement"})),
         "resources_discover" => ("resources_discover", json!({ "skillPaths": ["a"] })),
         "session_before_switch" => ("session_before_switch", json!({ "cancel": true })),
         "session_before_fork" => (
@@ -170,8 +184,12 @@ fn foreign_result(kind: &str) -> (&'static str, Value) {
 
 /// An edit made before an error, a result or none survives in the event; a handler that
 /// replaces its event with one of any other kind leaves no event to return.
-async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> {
-    for (kind, field) in MARKED {
+async fn edit_outcomes(
+    driver: &mut impl Driver,
+    marked: &[(&str, &str)],
+    kinds: &[&str],
+) -> Result<(), String> {
+    for &(kind, field) in marked {
         let event = document(kind);
         let edit = edited(&event, field);
         let (family, value) = foreign_result(kind);
@@ -195,7 +213,7 @@ async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> 
             assert_eq!(answer, expected, "{kind} edited, directive {directive}");
         }
     }
-    for kind in KINDS {
+    for &kind in kinds {
         for target in KINDS.into_iter().filter(|target| *target != kind) {
             for (directive, ended) in [
                 (json!({}), Ended::Returned(None)),
@@ -217,13 +235,37 @@ async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> 
     Ok(())
 }
 
+/// Existing event kinds retain their edit and replacement outcomes.
+async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> {
+    edit_outcomes(driver, &MARKED[6..], &KINDS[6..]).await
+}
+/// New event kinds use the same edit and replacement boundary.
+async fn new_edit_outcomes(driver: &mut impl Driver) -> Result<(), String> {
+    edit_outcomes(driver, &MARKED[..6], &KINDS[..6]).await
+}
 #[test]
 fn maestro_event_edits_survive_errors_and_kind_changes() -> Result<(), String> {
     on_both_adapters!(edits_and_replacements)
 }
+#[test]
+fn maestro_new_event_kinds_keep_edit_and_failure_outcomes() -> Result<(), String> {
+    on_both_adapters!(new_edit_outcomes)
+}
 
 /// The properties each kind cannot do without.
-const REQUIRED: [(&str, &[&str]); 17] = [
+const REQUIRED: [(&str, &[&str]); 23] = [
+    ("message_update", &["message", "assistantMessageEvent"]),
+    ("tool_execution_start", &["toolCallId", "toolName", "args"]),
+    (
+        "tool_execution_update",
+        &["toolCallId", "toolName", "args", "partialResult"],
+    ),
+    (
+        "tool_execution_end",
+        &["toolCallId", "toolName", "result", "isError"],
+    ),
+    ("model_select", &["model", "source"]),
+    ("thinking_level_select", &["level", "previousLevel"]),
     ("context", &["messages"]),
     ("agent_end", &["messages"]),
     (
