@@ -13,7 +13,7 @@
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de::IntoDeserializer};
 
 use super::context::{AbortSignal, ExtensionContext};
 use super::extension_result::ExtensionFuture;
@@ -21,6 +21,14 @@ use super::presence::Presence;
 use super::{number, object};
 use crate::compaction::{CompactionPreparation, CompactionResult};
 use crate::models::ImageContent;
+
+/// Reads a string, then deserializes `T` from it.
+///
+/// # Errors
+/// Returns an error if string reading or `T` deserialization fails.
+fn literal<'de, D: Deserializer<'de>, T: Deserialize<'de>>(deserializer: D) -> Result<T, D::Error> {
+    T::deserialize(String::deserialize(deserializer)?.into_deserializer())
+}
 
 /// Why resources are being discovered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,6 +46,7 @@ pub struct ResourcesDiscoverEvent {
     /// The working directory, carried as given.
     pub cwd: String,
     /// What triggered the discovery.
+    #[serde(deserialize_with = "literal")]
     pub reason: ResourcesDiscoverReason,
 }
 
@@ -78,6 +87,7 @@ pub enum SessionStartReason {
 #[serde(rename_all = "camelCase")]
 pub struct SessionStartEvent {
     /// Why the session started.
+    #[serde(deserialize_with = "literal")]
     pub reason: SessionStartReason,
     /// The session file that was active before, when the host supplies it.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
@@ -99,6 +109,7 @@ pub enum SessionBeforeSwitchReason {
 #[serde(rename_all = "camelCase")]
 pub struct SessionBeforeSwitchEvent {
     /// Why the session switches.
+    #[serde(deserialize_with = "literal")]
     pub reason: SessionBeforeSwitchReason,
     /// The session file switched to, when the host supplies it.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
@@ -122,6 +133,7 @@ pub struct SessionBeforeForkEvent {
     /// The entry the fork starts from.
     pub entry_id: String,
     /// Where the fork starts relative to the entry.
+    #[serde(deserialize_with = "literal")]
     pub position: ForkPosition,
 }
 
@@ -146,6 +158,7 @@ pub enum SessionShutdownReason {
 #[serde(rename_all = "camelCase")]
 pub struct SessionShutdownEvent {
     /// Why the runtime shuts down.
+    #[serde(deserialize_with = "literal")]
     pub reason: SessionShutdownReason,
     /// The session file that follows, when the host supplies it.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
@@ -219,6 +232,7 @@ pub struct InputEvent {
     )]
     pub images: Presence<Vec<ImageContent>>,
     /// Where the input came from.
+    #[serde(deserialize_with = "literal")]
     pub source: InputSource,
 }
 
