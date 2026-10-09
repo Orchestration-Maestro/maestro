@@ -30,7 +30,7 @@ Cloudflare and Copilot helpers.
 
 The [OAuth authorization guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
 covers data records, secure proof keys, escaped callback pages and subscription
-login and refresh.
+and response-account login and refresh.
 
 The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/messages.md)
 covers direct streamed message requests with key authentication, their payload, cache and

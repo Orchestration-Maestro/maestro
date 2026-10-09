@@ -397,7 +397,7 @@ fn callback_routes_preserve_status_and_escaped_text() {
     }
     run(async {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
-        let server = super::native::bind("good".into()).await.unwrap();
+        let server = super::callback::bind("good".into()).await.unwrap();
         for (target, expected) in [("http://[", 400), ("//[", 500)] {
             let mut peer = tokio::net::TcpStream::connect("127.0.0.1:53692")
                 .await
@@ -889,6 +889,8 @@ fn listener_failure_reaches_pending_login() {
         let failure = release.clone();
         let server = super::native::bind_with(
             "verifier".into(),
+            53692,
+            route,
             |_| None,
             move |_| {
                 let failure = failure.clone();
@@ -979,6 +981,8 @@ fn callback_host_changes_bind_only() {
             );
             let result = super::native::bind_with(
                 "verifier".into(),
+                53692,
+                route,
                 |key| {
                     assert_eq!(key, "MAESTRO_OAUTH_CALLBACK_HOST");
                     input.map(str::to_owned)
@@ -1152,7 +1156,7 @@ fn listener_stops_after_exchange_starts() {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         for (token_failure, body_pending) in [(false, false), (true, false), (false, true)] {
             let callbacks = Interaction::new(Some(Ok("manual".into())), "unused", "");
-            let server = super::native::bind("verifier".into()).await.unwrap();
+            let server = super::callback::bind("verifier".into()).await.unwrap();
             let stopped = server.stopped.clone();
             let release = crate::EventStream::new(|()| true, |()| ());
             let entered = crate::EventStream::new(|()| true, |()| ());
@@ -1184,7 +1188,7 @@ fn listener_stops_after_exchange_starts() {
             release.push(());
             assert_eq!(login.await.unwrap().is_err(), token_failure);
         }
-        let server = super::native::bind("verifier".into()).await.unwrap();
+        let server = super::callback::bind("verifier".into()).await.unwrap();
         let stopped = server.stopped.clone();
         let callbacks = Interaction::new(None, "unused", "");
         let mut login = Box::pin(super::login(callbacks, success_fetch(), pkce(), server));
@@ -1193,7 +1197,7 @@ fn listener_stops_after_exchange_starts() {
         stopped.result().await;
         let released = native_probe("127.0.0.1");
         drop(released);
-        let server = super::native::bind("verifier".into()).await.unwrap();
+        let server = super::callback::bind("verifier".into()).await.unwrap();
         let callbacks = Interaction::new(None, "unused", "auth");
         assert_eq!(
             super::login(callbacks, success_fetch(), pkce(), server)
@@ -1213,7 +1217,7 @@ fn native_unavailable_does_not_block_refresh() {
             callbacks.clone(),
             success_fetch(),
             || Ok(pkce()),
-            super::native::unavailable,
+            super::callback::unavailable,
         )
         .await;
         assert_eq!(
