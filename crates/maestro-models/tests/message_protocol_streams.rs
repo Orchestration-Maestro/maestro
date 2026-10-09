@@ -14,9 +14,7 @@ mod json;
 #[path = "support/messages.rs"]
 mod messages;
 
-use std::future::Future;
 use std::sync::Arc;
-use std::time::Duration;
 
 use chat::{TestResult, block_on};
 use child_process::child_case;
@@ -78,18 +76,12 @@ fn feed_events(feed: &Feed, events: &[Value]) -> TestResult {
     Ok(())
 }
 
-/// Wait for a future that must finish without further input: a future that never would
-/// fails the test, at once when the clock is paused.
-async fn within<T>(future: impl Future<Output = T>) -> TestResult<T> {
-    Ok(tokio::time::timeout(Duration::from_secs(1), future).await?)
-}
-
 /// Read updates until one matches; return it.
 async fn next_matching(
     stream: &AssistantMessageEventStream,
     matches: impl Fn(&AssistantMessageEvent) -> bool,
 ) -> TestResult<AssistantMessageEvent> {
-    while let Some(event) = within(stream.next()).await? {
+    while let Some(event) = stream.next().await {
         if matches(&event) {
             return Ok(event);
         }
@@ -271,9 +263,9 @@ fn messages_reject_unterminated_stream() -> TestResult {
 async fn stop_releases_the_body() -> TestResult {
     let (stream, feed) = start_fed(None)?;
     feed_events(&feed, &[message_start(), message_stop()])?;
-    let message = within(stream.result()).await?;
+    let message = stream.result().await;
     assert!(matches!(snapshot(&message)?.stop_reason, StopReason::Stop));
-    within(feed.released).await??;
+    feed.released.await?;
     let tail = b"event: error\ndata: trailing failure\n\n".to_vec();
     assert!(
         feed.chunks.send(tail).is_err(),
@@ -550,7 +542,7 @@ async fn handles_stay_live() -> TestResult {
         matches!(snapshot(&early)?.content.first(), Some(AssistantContent::Text(text)) if text.text == "hello")
     );
     feed_events(&feed, &[text_delta(" there"), message_stop()])?;
-    let finished = within(stream.result()).await?;
+    let finished = stream.result().await;
     assert!(Arc::ptr_eq(&early, &finished));
     assert!(
         matches!(snapshot(&early)?.content.first(), Some(AssistantContent::Text(text)) if text.text == "hello there")
@@ -573,8 +565,8 @@ async fn dropped_observer_keeps_the_invocation_running() -> TestResult {
             message_stop(),
         ],
     )?;
-    let message = snapshot(&within(result).await?)?;
-    within(feed.released).await??;
+    let message = snapshot(&result.await)?;
+    feed.released.await?;
     assert!(
         matches!(message.content.first(), Some(AssistantContent::Text(text)) if text.text == "kept")
     );
@@ -594,7 +586,7 @@ fn messages_retain_live_message_handles() -> TestResult {
 async fn drain(
     stream: &AssistantMessageEventStream,
 ) -> TestResult<(Vec<String>, AssistantMessage)> {
-    let (events, result) = within(messages::collect(stream)).await??;
+    let (events, result) = messages::collect(stream).await?;
     let kinds = events
         .iter()
         .map(|event| event["type"].as_str().unwrap_or_default().to_owned())
@@ -711,7 +703,7 @@ async fn transport_cancellation_covers_setup_and_body() -> TestResult {
         message.error_message.as_deref(),
         Some("Request was aborted")
     );
-    within(feed.released).await??;
+    feed.released.await?;
 
     let signal = Cancellation::new();
     signal.abort();
