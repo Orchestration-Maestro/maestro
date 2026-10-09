@@ -74,7 +74,8 @@ before creating a stream and uses the shared simple budgets and reasoning suppor
 Credentials select a nonempty explicit key, then the provider's environment key.
 Raw invocation alone finally tries `AZURE_OPENAI_API_KEY`. Requests authenticate
 with `api-key`; model and caller headers override defaults through the existing
-case-insensitive layering. Cloud invocation generates no affinity headers.
+case-insensitive layering, except JSON `Content-Type`, which is applied last.
+Cloud invocation generates no affinity headers.
 
 The base URL selects a trimmed nonblank `azure_base_url`, then
 `AZURE_OPENAI_BASE_URL`, then nonempty `azure_resource_name` or
@@ -94,13 +95,15 @@ value of `AZURE_OPENAI_DEPLOYMENT_NAME_MAP`, then the descriptor ID. Map entries
 are comma-separated; only the first two equals-separated fields are considered.
 Entry trimming precedes field-emptiness checks; field trimming follows them.
 Later valid entries replace earlier ones, including a whitespace-only value that
-becomes empty. A deployment changes the request body, not the selected model's
+becomes empty. A deployment changes the initial payload's `model`, not the selected model's
 identity or rates.
 
-The supplied session ID becomes `prompt_cache_key`, including an empty string,
-independently of retention. Cloud bodies omit store, retention, service tier and
-metadata. Reasoning uses the shared effort mapping without the standard endpoint's
-account-provider exception; summary-only requests select literal `medium`.
+Before `on_payload`, the initial payload uses the supplied session ID as
+`prompt_cache_key`, including an empty string, independently of retention. It
+omits store, retention, service tier and metadata. Reasoning uses the shared
+effort mapping without the standard endpoint's account-provider exception;
+summary-only requests select literal `medium`. The hook can replace the entire
+payload, including these selections and omissions.
 Usage uses model rates without service-tier scaling. Hooks, HTTP retries,
 timeouts and cancellation use the existing [transport](chat-completions.md#transport),
 [JSON conversion](arguments.md#streamed-arguments) and [response reduction](#event-reduction).
