@@ -234,3 +234,31 @@ fn maestro_number_or_string_fields_keep_ambiguous_text() -> Result<(), String> {
 fn maestro_selection_events_keep_model_and_thinking_metadata() -> Result<(), String> {
     on_both_adapters!(selections)
 }
+
+/// Custom protocols retain selected and previous descriptors from every compatibility family.
+async fn custom_protocol_compatibility(driver: &mut impl Driver) -> Result<(), String> {
+    for compat in [
+        model()["compat"].clone(),
+        json!({"sendSessionIdHeader":false,"supportsLongCacheRetention":true}),
+        json!({"supportsEagerToolInputStreaming":true,"supportsLongCacheRetention":false}),
+        json!({}),
+    ] {
+        let mut custom = model();
+        custom["api"] = json!("custom");
+        custom["compat"] = compat;
+        for (selected, previous) in [(custom.clone(), model()), (model(), custom.clone())] {
+            let event = json!({"type":"model_select","model":selected,"previousModel":previous,"source":"set"});
+            assert_eq!(
+                ask(driver, &event, &json!({})).await?,
+                Answer::returned(&event, None)
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_custom_protocol_selection_retains_selected_and_previous_compatibility()
+-> Result<(), String> {
+    on_both_adapters!(custom_protocol_compatibility)
+}

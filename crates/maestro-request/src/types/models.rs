@@ -267,7 +267,7 @@ pub struct ModelCost {
     /// Cache write.
     pub cache_write: f64,
 }
-/// Select typed compatibility fields using the model protocol identifier.
+/// Carry typed compatibility fields; custom protocols select a lossless family on decode.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum ModelCompat {
@@ -332,14 +332,25 @@ impl<'de> Deserialize<'de> for Model {
         Ok(model)
     }
 }
-/// Decode API-specific compatibility options into the matching typed variant.
+/// Accept a family only when encoding it retains every supplied compatibility member.
+fn decode_exact_compat<T: serde::de::DeserializeOwned>(
+    wire: &serde_json::Value,
+    family: impl FnOnce(T) -> ModelCompat,
+) -> Option<ModelCompat> {
+    let decoded = family(serde_json::from_value(wire.clone()).ok()?);
+    (serde_json::to_value(&decoded).ok()?.eq(wire)).then_some(decoded)
+}
+/// Decode built-in protocol options or a lossless compatibility family for other protocols.
 fn decode_compat(api: &str, wire: serde_json::Value) -> Result<ModelCompat, serde_json::Error> {
     match api {
         "openai-completions" => serde_json::from_value(wire).map(ModelCompat::OpenAICompletions),
         "openai-responses" => serde_json::from_value(wire).map(ModelCompat::OpenAIResponses),
         "anthropic-messages" => serde_json::from_value(wire).map(ModelCompat::AnthropicMessages),
-        _ => Err(serde::de::Error::custom(
-            "compatibility fields require a supported protocol",
-        )),
+        _ => decode_exact_compat(&wire, ModelCompat::OpenAICompletions)
+            .or_else(|| decode_exact_compat(&wire, ModelCompat::OpenAIResponses))
+            .or_else(|| decode_exact_compat(&wire, ModelCompat::AnthropicMessages))
+            .ok_or_else(|| {
+                serde::de::Error::custom("compatibility fields do not match a supported family")
+            }),
     }
 }

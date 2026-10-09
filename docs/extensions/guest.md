@@ -91,8 +91,9 @@ known role does not fall back to custom data.
 is independent of the stream message. The stream handle is detached after the callback,
 before output validation and encoding; retained handles cannot change that output snapshot.
 Guest snapshots do not provide live identity propagation between component values.
-Model selection uses shared descriptors and their host decoding; reasoning selection
-carries the current and previous levels without checking model support.
+Model selection uses shared descriptors and their host decoding. Custom protocols retain
+compatibility members when a shared compatibility family reproduces the encoded object.
+Reasoning selection carries the current and previous levels without checking model support.
 
 `BuildSystemPromptOptions` carries `cwd` and optional `customPrompt`, `selectedTools`,
 `toolSnippets`, `promptGuidelines`, `appendSystemPrompt`, `contextFiles` and `skills`.

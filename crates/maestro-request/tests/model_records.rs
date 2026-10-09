@@ -69,6 +69,34 @@ mod tests {
         json!({"id":"custom-model","name":"Custom","api":api,"provider":"custom","baseUrl":"https://fixture.invalid","reasoning":true,"thinkingLevelMap":{"off":null,"minimal":"tiny","low":"low","medium":"medium","high":"high","xhigh":"max"},"input":["text","image"],"cost":{"input":1.0,"output":2.0,"cacheRead":3.0,"cacheWrite":4.0},"contextWindow":1000.0,"maxTokens":50.0,"headers":{"x":"y"},"compat":compat})
     }
 
+    #[test]
+    fn custom_protocol_models_round_trip_each_compatibility_family() {
+        use maestro_request::types::Model;
+        for api in [
+            "openai-completions",
+            "openai-responses",
+            "anthropic-messages",
+        ] {
+            for compat in [
+                match api {
+                    "openai-completions" => {
+                        json!({"supportsStore":false,"openRouterRouting":{"order":["b","a","b"]}})
+                    }
+                    "openai-responses" => json!({"sendSessionIdHeader":false}),
+                    _ => json!({"supportsEagerToolInputStreaming":true}),
+                },
+                json!({}),
+                json!({"supportsLongCacheRetention":false}),
+            ] {
+                let mut model: Model = serde_json::from_value(model_fixture(api, &compat)).unwrap();
+                model.api = "custom".into();
+                let encoded = serde_json::to_value(&model).unwrap();
+                let decoded: Model = serde_json::from_value(encoded.clone()).unwrap();
+                assert_eq!(serde_json::to_value(&decoded).unwrap(), encoded);
+            }
+        }
+    }
+
     fn compatibility_contracts() {
         use maestro_request::types::{Model, ModelCompat};
         let completion = json!({"supportsStore":false,"supportsDeveloperRole":true,"supportsReasoningEffort":false,"supportsUsageInStreaming":true,"maxTokensField":"max_completion_tokens","requiresToolResultName":true,"requiresAssistantAfterToolResult":true,"requiresThinkingAsText":false,"requiresReasoningContentOnAssistantMessages":true,"thinkingFormat":"qwen-chat-template","openRouterRouting":{"allow_fallbacks":false,"require_parameters":true,"data_collection":"deny","zdr":true,"enforce_distillable_text":true,"order":["b","a"],"only":["b"],"ignore":["c"],"quantizations":["fp16"],"sort":{"by":"price","partition":null},"max_price":{"prompt":1.0,"completion":"2","image":3.0,"audio":"4","request":5.0},"preferred_min_throughput":{"p50":1.0,"p75":2.0,"p90":3.0,"p99":4.0},"preferred_max_latency":5.0},"vercelGatewayRouting":{"only":["b"],"order":["b","a"]},"zaiToolStream":false,"supportsStrictMode":false,"cacheControlFormat":"anthropic","sendSessionAffinityHeaders":true,"supportsLongCacheRetention":false});
@@ -173,7 +201,13 @@ mod tests {
         let model: Model = serde_json::from_value(absent.clone()).unwrap();
         assert_eq!(model.compat, None);
         assert_eq!(serde_json::to_value(model).unwrap(), absent);
-        assert!(serde_json::from_value::<Model>(model_fixture("custom", &json!({}))).is_err());
+        assert!(
+            serde_json::from_value::<Model>(model_fixture(
+                "custom",
+                &json!({"supportsStore":true,"sendSessionIdHeader":false})
+            ))
+            .is_err()
+        );
         let standalone = TextContent {
             text: "standalone".into(),
             text_signature: None,
