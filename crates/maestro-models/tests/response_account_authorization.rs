@@ -7,25 +7,28 @@ use std::{collections::BTreeMap, sync::Arc};
 #[test]
 fn maestro_response_refresh_keeps_stderr_clean() {
     if std::env::var_os("MAESTRO_RESPONSE_STDERR_CHILD").is_none() {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "maestro_response_refresh_keeps_stderr_clean",
-                "--nocapture",
-            ])
-            .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stdout)
-        );
-        assert!(
-            output.stderr.is_empty(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+        run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "maestro_response_refresh_keeps_stderr_clean",
+                    "--nocapture",
+                ])
+                .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            assert!(
+                output.stderr.is_empty(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        });
         return;
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
@@ -112,7 +115,7 @@ fn maestro_response_tokens_require_account_claim() {
     });
 }
 
-/// Fixed-port scenarios in this executable share admission.
+/// Fixed-port scenarios and the stderr subprocess share admission.
 static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 /// Interaction that recovers with a pasted code.
 struct Manual;
