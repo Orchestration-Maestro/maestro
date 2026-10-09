@@ -14,7 +14,7 @@ pub mod tui;
 pub use autocomplete::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, SlashCommand,
 };
-pub use components::{Image, ImageOptions, ImageTheme, TruncatedText};
+pub use components::{Box, Image, ImageOptions, ImageTheme, Spacer, Text, TruncatedText};
 pub use editor_component::EditorComponent;
 pub use keys::{
     Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,

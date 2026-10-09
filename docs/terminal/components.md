@@ -1,17 +1,18 @@
 # Terminal components
 
 `maestro-tui` defines what a renderable component is and ships the pieces that need
-no terminal: a container, text and image components, the contracts for overlays,
-terminals, editors and completion, and the `TUI` frame writer that draws components
-to a terminal. It performs no terminal I/O and starts no timers; whatever connects a
-real terminal supplies a `Terminal` implementation, and the host of the frame writer
-supplies a `TuiRuntime` for time, deferral and log files.
-See [retained frames](rendering.md) for the frame writer, [inline images](images.md)
-for capability detection and retained image rendering, [key input](keys.md) for
-decoding and [keybindings](keybindings.md) for configurable actions.
+no terminal: a container, box, text, spacer and image components, the contracts for
+overlays, terminals, editors and completion, and the `TUI` frame writer that draws
+components to a terminal. It performs no terminal I/O and starts no timers; whatever
+connects a real terminal supplies a `Terminal` implementation, and the host of the frame
+writer supplies a `TuiRuntime` for time, deferral and log files.
+See [box, text and spacer](widgets.md) for the padded widgets, [retained
+frames](rendering.md) for the frame writer, [inline images](images.md) for capability
+detection and retained image rendering, [key input](keys.md) for decoding and
+[keybindings](keybindings.md) for configurable actions.
 
-The crate root re-exports the component, container, overlay, terminal, editor and
-completion names used below, so `maestro_tui::Component` and
+The crate root re-exports the component, container, widget, overlay, terminal, editor and
+completion names used below and in the widget guide, so `maestro_tui::Component` and
 `maestro_tui::tui::Component` are the same trait; supporting types such as
 `ComponentHandle` stay in their modules.
 

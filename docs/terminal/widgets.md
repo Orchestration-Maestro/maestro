@@ -1,0 +1,134 @@
+# Box, Text and Spacer widgets
+
+`maestro-tui` ships three passive widgets that implement the [component
+contract](components.md): `Box` lays its children out inside padding over an optional
+background, `Text` shows word-wrapped text, and `Spacer` shows empty rows. None of them
+accepts input, takes focus or wants key-release events. `Box` here is
+`maestro_tui::Box`, not `std::boxed::Box`; a glob import of the crate root would hide the
+standard one.
+
+A background is any `Rc<dyn Fn(&str) -> String>`. A widget passes it one row at a time,
+padded with spaces up to the viewport width, and shows what it returns, so it can wrap the
+row in a colour escape. A widget does not measure what a background returns.
+
+Every method takes `&self`, so a background or a child may call back into the widget that
+is rendering it. A widget never holds a borrow of its own state while it runs a
+background or another component.
+
+## Box
+
+`Box::new(padding_x, padding_y, bg_fn)` renders its children one after another, indents
+every child row by `padding_x` spaces and adds `padding_y` blank rows above and below.
+`Box::default()` pads one column and one row and has no background. Horizontal padding is
+never more than half the viewport width, rounded down, and the children are rendered at
+the width that remains, which can be zero. Each row is padded with spaces up to the
+viewport width before the background styles it. A child row wider than the viewport is
+not cut, so children and backgrounds answer for the width of their own output.
+
+A `Box` holds the same child array its callers can edit; replacing it leaves a running
+walk on its original array. `children` returns the array itself, `set_children` makes
+another array the one the box renders, `add_child` appends, `remove_child` removes the
+first occurrence of a handle and ignores a missing one, and `clear` installs a new empty
+array that a handle kept from before no longer reaches. The walk rules of a
+[`Container`](components.md) apply: a render or an invalidation walks the array held when
+it starts, reading each position when it is reached.
+
+A box with no child row renders nothing, without padding rows and without calling the
+background. Otherwise a `Box` rerenders its children and samples a configured background
+(the row it returns for the text `test`) before deciding whether to reuse the composed
+rows. They are reused when the width, the ordered child rows and the sample are all
+unchanged since they were composed. `add_child`, `clear`, a `remove_child` that found its
+child, `set_bg_fn` and `invalidate` drop them, and `invalidate` drops them before it
+invalidates the children. A background that starts styling differently without changing
+its answer for `test` is noticed after `set_bg_fn` or `invalidate`, not before.
+
+A child or background that changes the box while it renders does not make the render
+fail. The render finishes with the child rows it collected and with the background in
+effect at each call. If `set_bg_fn`, `invalidate`, `add_child`, `remove_child` (that found
+its child) or `clear` was called during the render, its rows are not kept for reuse.
+
+```rust
+use std::rc::Rc;
+
+use maestro_tui::{Box, Component, Text};
+
+let gray = |row: &str| format!("\x1b[100m{row}\x1b[49m");
+let panel = Box::new(1, 1, Some(Rc::new(gray)));
+panel.add_child(Rc::new(Text::new("Content".into(), 0, 0, None)));
+assert_eq!(
+    panel.render(11),
+    [
+        "\x1b[100m           \x1b[49m",
+        "\x1b[100m Content   \x1b[49m",
+        "\x1b[100m           \x1b[49m",
+    ]
+);
+
+panel.set_bg_fn(Some(Rc::new(|row: &str| format!("\x1b[44m{row}\x1b[49m"))));
+assert_eq!(panel.render(11)[1], "\x1b[44m Content   \x1b[49m");
+```
+
+## Text
+
+`Text::new(text, padding_x, padding_y, custom_bg_fn)` shows `text` between `padding_x`
+columns on each side and `padding_y` blank rows above and below; `Text::default()` is
+empty, with one column and one row of padding. Text with no non-whitespace scalar renders
+no rows at all, padding included; other text is wrapped after each tab becomes three
+spaces. Whitespace here is the tab, line feed, vertical tab, form feed, carriage return,
+space, no-break space, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F, U+3000
+and U+FEFF. The next-line control U+0085, U+180E and the zero-width space U+200B are
+text. Wrapping follows [styled text](text.md): escapes and hyperlinks are kept, graphemes
+are never split, and explicit line breaks are honored.
+
+Horizontal padding is never more than half the viewport width, rounded down. The wrap
+width is the width that remains, but at least one. A wrapped row wider than the cells
+that remain is cut to the whole graphemes that fit, so an overwide grapheme is omitted
+instead of split. That happens only when one grapheme is wider than the remaining cells or
+when no cell remains, and then the cut row keeps its place in the output without the
+omitted grapheme. Every row is padded with spaces up to the viewport width before the
+background styles it. The
+background receives the content rows in order, then one call for each of the `padding_y`
+blank rows, and each blank row is shown above and below.
+
+`Text` reuses its rows for an unchanged width until `set_text`, `set_custom_bg_fn` or
+`invalidate` drops them; `set_text` with equal text counts. It does not sample a
+background: when the state a background reads changes, call `invalidate`. A setter or
+`invalidate` called while the text renders does not change that render, which continues
+with the text it started with and uses a replaced background from the next row on, and
+its rows are not kept, so the next render shows the new values.
+
+```rust
+use std::rc::Rc;
+
+use maestro_tui::{Component, Text};
+
+let text = Text::new(
+    "Hello World".into(),
+    1,
+    0,
+    Some(Rc::new(|row: &str| format!("\x1b[100m{row}\x1b[49m"))),
+);
+assert_eq!(
+    text.render(9),
+    ["\x1b[100m Hello   \x1b[49m", "\x1b[100m World   \x1b[49m"]
+);
+
+text.set_text("Updated".into());
+assert_eq!(text.render(11), ["\x1b[100m Updated   \x1b[49m"]);
+```
+
+## Spacer
+
+`Spacer::new(lines)` renders `lines` empty strings, whatever the viewport width, and
+`Spacer::default()` renders one. `set_lines` changes the count. The rows are empty
+strings, not spaces. A `Spacer` caches no rows, so invalidating it does nothing.
+
+```rust
+use maestro_tui::{Component, Spacer};
+
+let spacer = Spacer::new(2);
+assert_eq!(spacer.render(80), ["", ""]);
+
+spacer.set_lines(0);
+assert!(spacer.render(80).is_empty());
+```
