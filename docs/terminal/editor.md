@@ -30,9 +30,11 @@ bound, and bounded to the available cells only during rendering. Nonfinite
 padding uses zero.
 
 Rendering wraps at word boundaries and keeps a scrolling viewport sized from
-live terminal rows. At positive wrapping widths, recognized escapes remain intact,
-including inside oversized supplied segments. An indivisible overwide grapheme stays intact;
-a narrow viewport clips only display text. Width zero emits empty rows without
+live terminal rows. Wrapping segments visible graphemes after removing recognized
+escapes, retaining their original byte ranges. Escapes inside a grapheme stay with
+it; between graphemes they travel with the following one, or the preceding one at
+line end. Supplied segments refine only at these boundaries. An indivisible
+overwide grapheme is emitted alone; a narrow viewport clips only display text. Width zero emits empty rows without
 a cursor marker. Both scroll labels are clipped before border styling. Caller
 styling may add visible text. Display tabs expand outside recognized escapes;
 escape-safe cursor decoration never changes the stored edit position.

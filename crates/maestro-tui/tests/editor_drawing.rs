@@ -126,12 +126,43 @@ fn editor_narrow_rows_preserve_escape_payloads() {
             editor.render(2),
             [
                 "──".to_owned(),
-                format!("a{escape} "),
-                "b ".to_owned(),
+                "a ".to_owned(),
+                format!("{escape}b "),
                 "c\x1b[7m \x1b[0m".to_owned(),
                 "──".to_owned()
             ]
         );
         assert_eq!(editor.get_text(), format!("a{escape}bc"));
+    }
+}
+
+#[test]
+fn editor_wraps_escape_interleaved_clusters_without_splitting_storage() {
+    use maestro_tui::{Component, Editor, EditorOptions};
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(24);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    for (line, rows) in [
+        (
+            "👩\x1b[31m\u{200d}💻x",
+            vec!["👩\x1b[31m\u{200d}💻", "x\x1b[7m \x1b[0m"],
+        ),
+        (
+            "\x1b[31m\u{1f3fd}x",
+            vec!["\x1b[31m\u{1f3fd}", "x\x1b[7m \x1b[0m"],
+        ),
+        ("ab\x1b[0m", vec!["a ", "b\x1b[0m\x1b[7m \x1b[0m"]),
+        (
+            "a \x1b[31mbc",
+            vec!["a ", "  ", "\x1b[31mb ", "c\x1b[7m \x1b[0m"],
+        ),
+    ] {
+        editor.set_text(line);
+        let mut expected = vec!["──".to_owned()];
+        expected.extend(rows.into_iter().map(str::to_owned));
+        expected.push("──".to_owned());
+        assert_eq!(editor.render(2), expected, "{line:?}");
+        assert_eq!(editor.get_text(), line);
+        assert_eq!(editor.get_cursor().col, line.len());
     }
 }

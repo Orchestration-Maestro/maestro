@@ -56,6 +56,27 @@ fn editor_bindings_keep_precedence() {
     support::run("editor_bindings_keep_precedence");
 }
 #[test]
+fn editor_reads_binding_replacement_after_construction() {
+    use maestro_tui::{
+        Editor, EditorOptions, KeybindingKeys, KeybindingsManager, tui::InputHandler,
+    };
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(24);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    editor.handle_input("x");
+    let config = vec![(
+        "tui.editor.deleteCharBackward".to_owned(),
+        Some(KeybindingKeys::Single("x".to_owned())),
+    )];
+    maestro_tui::set_keybindings(KeybindingsManager::new(
+        maestro_tui::TUI_KEYBINDINGS.clone(),
+        config,
+    ));
+    editor.handle_input("x");
+    assert_eq!(editor.get_text(), "");
+    assert_eq!(editor.get_cursor().col, 0);
+}
+#[test]
 fn editor_newline_input_classes_split_once() {
     support::run("editor_newline_input_classes_split_once");
 }

@@ -89,8 +89,8 @@ fn wrap_keeps_escape_payloads_intact_at_narrow_widths() {
     for escape in ["\x1b[31m", "\x1b]0;x\ty\x07"] {
         let line = format!("a{escape}bc");
         let expected = vec![
-            (format!("a{escape}"), 0, 1 + escape.len()),
-            ("b".to_owned(), 1 + escape.len(), 2 + escape.len()),
+            ("a".to_owned(), 0, 1),
+            (format!("{escape}b"), 1, 2 + escape.len()),
             ("c".to_owned(), 2 + escape.len(), 3 + escape.len()),
         ];
         let supplied = [(0, line.as_str())];
@@ -137,5 +137,35 @@ fn wrap_supplied_whitespace_excludes_only_escape_payloads() {
                 .collect::<Vec<_>>(),
             expected
         );
+    }
+}
+
+#[test]
+fn wrap_escape_interleaved_visible_graphemes_consume_once() {
+    for (line, expected) in [
+        ("👩\x1b[31m\u{200d}💻x", vec!["👩\x1b[31m\u{200d}💻", "x"]),
+        ("\x1b[31m\u{1f3fd}x", vec!["\x1b[31m\u{1f3fd}", "x"]),
+        ("ab\x1b[0m", vec!["a", "b\x1b[0m"]),
+        ("a \x1b[31mbc", vec!["a", " ", "\x1b[31mb", "c"]),
+    ] {
+        let supplied = [(0, line)];
+        let raw = maestro_tui::get_segmenter(line).collect::<Vec<_>>();
+        for segments in [None, Some(supplied.as_slice()), Some(raw.as_slice())] {
+            let chunks = word_wrap_line(line, 1, segments);
+            assert_eq!(
+                chunks
+                    .iter()
+                    .map(|part| part.text.as_str())
+                    .collect::<Vec<_>>(),
+                expected
+            );
+            let mut at = 0;
+            for part in chunks {
+                assert_eq!(part.start_index, at);
+                at += part.text.len();
+                assert_eq!(part.end_index, at);
+            }
+            assert_eq!(at, line.len());
+        }
     }
 }

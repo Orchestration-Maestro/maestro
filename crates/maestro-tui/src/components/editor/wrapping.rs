@@ -24,87 +24,102 @@ pub fn word_wrap_line(
     if visible_width(line) <= max_width {
         return vec![chunk(line, 0, line.len())];
     }
-    let segments = escape_safe_segments(line, pre_segmented);
+    let atoms = atoms(line);
+    let groups = groups(&atoms, pre_segmented);
     let mut scan = Wrap::default();
-    for (index, &(at, text)) in segments.iter().enumerate() {
-        let cells = visible_width(text);
+    for (index, group) in groups.iter().enumerate() {
+        let at = group[0].start;
+        let cells = group.iter().map(|atom| atom.cells).sum();
         scan.overflow(line, at, cells, max_width);
-        if cells > max_width && crate::get_segmenter(text).count() > 1 {
-            let mut sub = word_wrap_line(text, max_width, None);
-            if let Some(last) = sub.pop() {
-                scan.start = at + last.start_index;
-                scan.width = visible_width(&last.text);
-                scan.chunks.extend(sub.into_iter().map(|part| TextChunk {
-                    text: part.text,
-                    start_index: at + part.start_index,
-                    end_index: at + part.end_index,
-                }));
-                scan.opportunity = None;
-            }
+        if cells > max_width && group.len() > 1 {
+            let inner = Wrap::refine(line, group, max_width);
+            scan.chunks.extend(inner.chunks);
+            scan.start = inner.start;
+            scan.width = inner.width;
+            scan.opportunity = None;
             continue;
         }
         scan.width += cells;
-        if !marker(text)
-            && visible_whitespace(text)
-            && let Some(&(next, following)) = segments.get(index + 1)
-            && (marker(following) || !visible_whitespace(following))
+        if whitespace(line, group)
+            && let Some(following) = groups.get(index + 1)
+            && !whitespace(line, following)
         {
-            scan.opportunity = Some((next, scan.width));
+            scan.opportunity = Some((following[0].start, scan.width));
         }
     }
     scan.chunks.push(chunk(line, scan.start, line.len()));
     scan.chunks
 }
-/// Keeps supplied boundaries except those inside recognized escapes.
-/// Without supplied segments, grapheme boundaries frame the visible text.
-fn escape_safe_segments<'a>(
-    line: &'a str,
-    supplied: Option<&[(usize, &str)]>,
-) -> Vec<(usize, &'a str)> {
-    let endings = crate::text::Endings::of(line);
-    let mut escapes = Vec::new();
-    let mut end = 0;
-    for (at, _) in line.char_indices() {
-        if at >= end
-            && let Some(code) = endings.recognize(line, at)
-        {
-            end = at + code.len();
-            escapes.push(at..end);
-        }
-    }
-    let mut boundaries = supplied.map_or_else(
-        || {
-            crate::get_segmenter(line)
-                .map(|(at, _)| at)
-                .collect::<Vec<_>>()
-        },
-        |parts| parts.iter().map(|&(at, _)| at).collect(),
-    );
-    boundaries.retain(|&at| {
-        let index = escapes.partition_point(|range| range.end <= at);
-        escapes.get(index).is_none_or(|range| at <= range.start)
-    });
-    boundaries.push(line.len());
-    boundaries
-        .windows(2)
-        .map(|pair| (pair[0], &line[pair[0]..pair[1]]))
-        .collect()
+/// One visible grapheme with any escapes inside or immediately before it.
+struct Atom {
+    /// Original byte range start, including preceding escapes.
+    start: usize,
+    /// Original byte range end, including trailing escapes at line end.
+    end: usize,
+    /// Shared measurement of the visible grapheme.
+    cells: usize,
+    /// Shared whitespace classification of the visible grapheme.
+    whitespace: bool,
 }
-/// Classifies whitespace outside recognized escape payloads.
-fn visible_whitespace(text: &str) -> bool {
-    let endings = crate::text::Endings::of(text);
+/// Removes recognized escapes for segmentation while retaining original scalar ends.
+fn atoms(line: &str) -> Vec<Atom> {
+    let endings = crate::text::Endings::of(line);
+    let mut visible = String::new();
+    let mut positions = Vec::new();
     let mut end = 0;
-    for (at, scalar) in text.char_indices() {
+    for (at, scalar) in line.char_indices() {
         if at < end {
             continue;
         }
-        if let Some(code) = endings.recognize(text, at) {
+        if let Some(code) = endings.recognize(line, at) {
             end = at + code.len();
-        } else if crate::text::utils::is_whitespace_scalar(scalar) {
-            return true;
+        } else {
+            visible.push(scalar);
+            positions.push((visible.len(), at + scalar.len_utf8()));
         }
     }
-    false
+    let mut start = 0;
+    let mut atoms = Vec::new();
+    for (at, grapheme) in crate::get_segmenter(&visible) {
+        let index = positions.partition_point(|&(end, _)| end < at + grapheme.len());
+        let end = positions[index].1;
+        atoms.push(Atom {
+            start,
+            end,
+            cells: visible_width(grapheme),
+            whitespace: crate::text::utils::is_whitespace_char(grapheme),
+        });
+        start = end;
+    }
+    if let Some(last) = atoms.last_mut() {
+        last.end = line.len();
+    }
+    atoms
+}
+/// Keeps supplied spans only at visible atom boundaries; an empty list stays empty.
+fn groups<'a>(atoms: &'a [Atom], supplied: Option<&[(usize, &str)]>) -> Vec<&'a [Atom]> {
+    let Some(parts) = supplied else {
+        return atoms.chunks(1).collect();
+    };
+    if parts.is_empty() {
+        return Vec::new();
+    }
+    let mut boundaries = vec![0];
+    for (index, atom) in atoms.iter().enumerate().skip(1) {
+        if parts.iter().any(|&(at, _)| at == atom.start) {
+            boundaries.push(index);
+        }
+    }
+    boundaries.push(atoms.len());
+    boundaries
+        .windows(2)
+        .map(|pair| &atoms[pair[0]..pair[1]])
+        .collect()
+}
+/// Supplied marker spans suppress internal word opportunities.
+fn whitespace(line: &str, group: &[Atom]) -> bool {
+    !marker(&line[group[0].start..group[group.len() - 1].end])
+        && group.iter().any(|atom| atom.whitespace)
 }
 /// Current chunk and latest viable word boundary.
 #[derive(Default)]
@@ -119,6 +134,25 @@ struct Wrap {
     opportunity: Option<(usize, usize)>,
 }
 impl Wrap {
+    /// Refines an oversized supplied span by consuming its visible atoms once.
+    fn refine(line: &str, atoms: &[Atom], maximum: usize) -> Self {
+        let mut scan = Self {
+            start: atoms[0].start,
+            ..Self::default()
+        };
+        for (index, atom) in atoms.iter().enumerate() {
+            scan.overflow(line, atom.start, atom.cells, maximum);
+            scan.width += atom.cells;
+            if atom.whitespace
+                && let Some(next) = atoms.get(index + 1)
+                && !next.whitespace
+            {
+                scan.opportunity = Some((next.start, scan.width));
+            }
+        }
+        scan
+    }
+
     /// Selects the last viable word boundary or the current segment boundary.
     fn overflow(&mut self, line: &str, at: usize, cells: usize, maximum: usize) {
         if self.width + cells <= maximum {
