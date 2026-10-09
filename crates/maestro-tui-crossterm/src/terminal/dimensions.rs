@@ -75,15 +75,14 @@ fn extent(observed: usize, variable: &str, default: usize) -> usize {
         .unwrap_or(default)
 }
 
-/// Whether `Number` skips `character` around a numeric string: the characters the language
-/// calls whitespace or line terminators, which is the Unicode white space set less U+0085
-/// plus U+FEFF.
+/// Whether numeric text may be surrounded by `character`: Unicode white space, line
+/// terminators included, except U+0085, and U+FEFF.
 fn is_numeric_whitespace(character: char) -> bool {
     character == '\u{feff}' || (character != '\u{85}' && character.is_whitespace())
 }
 
-/// The extent `Number(text)` gives when that is a whole number from 1 to `usize::MAX`; empty,
-/// negative, fractional, nonnumeric, non-finite and larger values give `None`.
+/// The extent `text` reads as when it is a number that is whole and from 1 to `usize::MAX`;
+/// empty, zero, negative, fractional, nonnumeric, non-finite and larger values give `None`.
 fn numeric_extent(text: &str) -> Option<usize> {
     let value = numeric_value(text.trim_matches(is_numeric_whitespace))?;
     (value >= 1.0 && value.fract() == 0.0)
@@ -94,9 +93,9 @@ fn numeric_extent(text: &str) -> Option<usize> {
 /// The prefixes that select an integer in another base, case-insensitively.
 const RADIX_PREFIXES: [(&str, u32); 3] = [("0x", 16), ("0b", 2), ("0o", 8)];
 
-/// `Number(text)` for text without surrounding whitespace, or `None` when it is NaN or an
-/// integer in another base too large for any extent. Empty text is zero. Decimal text takes
-/// an optional sign, a fraction and an exponent.
+/// The number `text` reads as, without surrounding whitespace, or `None` when it is not a
+/// number or is an integer in another base too large for any extent. Empty text is zero.
+/// Decimal text takes an optional sign, a fraction and an exponent.
 fn numeric_value(text: &str) -> Option<f64> {
     if text.is_empty() {
         return Some(0.0);
@@ -176,7 +175,7 @@ mod tests {
     }
 
     #[test]
-    fn numeric_text_gives_the_extent_the_language_coercion_gives() {
+    fn numeric_text_gives_whole_number_extents() {
         let accepted: [(&str, usize); 27] = [
             ("123", 123),
             (" 123 ", 123),
@@ -269,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn exactly_the_language_whitespace_is_skipped_around_numbers() {
+    fn exactly_unicode_spaces_and_feff_are_skipped_around_numbers() {
         let skipped = [
             0x9, 0xa, 0xb, 0xc, 0xd, 0x20, 0xa0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
             0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000,

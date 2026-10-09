@@ -20,7 +20,7 @@ use lifecycle_support::{
 };
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
-use rustix::fs::OFlags;
+use rustix::fs::{OFlags, fcntl_setfl};
 use rustix::io::Errno;
 use rustix::stdio::{stdin, stdout};
 use rustix::termios::{
@@ -196,20 +196,22 @@ fn native_raw_mode_delivers_bytes_unchanged_despite_input_translation_flags() {
 }
 
 #[test]
-fn native_stop_restores_saved_attributes_over_changes_made_meanwhile() {
+fn native_stop_restores_saved_attributes_and_flags_over_changes_made_meanwhile() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let _input = pty_input();
         let _output = pipe_output();
-        let saved = stdin_attributes();
+        let (saved, flags) = (stdin_attributes(), stdin_flags());
         rig.run(async {
             let mut session = start(&rig);
             let mut changed = attributes(stdin());
             changed.local_modes.insert(LocalModes::ECHOK);
             tcsetattr(stdin(), OptionalActions::Now, &changed).unwrap();
+            fcntl_setfl(stdin(), stdin_flags() | OFlags::APPEND).unwrap();
+            assert!(stdin_flags().contains(OFlags::APPEND));
             session.terminal.stop().unwrap();
         });
-        assert_eq!(stdin_attributes(), saved);
+        assert_eq!((stdin_attributes(), stdin_flags()), (saved, flags));
     });
 }
 
@@ -529,7 +531,9 @@ fn native_stop_cancels_all_mode_enable_work() {
         let output = pipe_output();
         rig.run(async {
             let (_feed, mut session) = started(&rig, &output);
+            let reader = open_descriptors();
             session.terminal.stop().unwrap();
+            until(|| open_descriptors() < reader).await;
             elapse(151).await;
             elapse(1000).await;
             assert_eq!(output.take(), "\x1b[?2004l");
@@ -859,23 +863,28 @@ fn native_drain_cannot_reenable_keyboard_modes() {
 }
 
 #[test]
-fn native_drain_keeps_an_unfinished_character_for_later_input() {
+fn native_drain_keeps_an_unfinished_character_paste_and_sequence() {
     isolated!(&[], || {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
             let (feed, mut session) = started(&rig, &output);
-            feed.send(&[240, 159]);
-            consumed().await;
-            let (max, idle) = (Duration::ZERO, Duration::ZERO);
-            session
-                .terminal
-                .drain_input(Some(max), Some(idle))
-                .await
-                .unwrap();
-            feed.send(&[142, 137]);
-            session.inputs.delivered(1).await;
-            assert_eq!(session.inputs.all(), ["\u{1f389}"]);
+            let unfinished: [(&[u8], &[u8], &str); 3] = [
+                (&[240, 159], &[142, 137], "\u{1f389}"),
+                (b"\x1b[200~ab", b"cd\x1b[201~", "\x1b[200~abcd\x1b[201~"),
+                (b"\x1b[", b"A", "\x1b[A"),
+            ];
+            for (before, after, delivered) in unfinished {
+                feed.send(before);
+                consumed().await;
+                let (max, idle) = (Duration::ZERO, Duration::ZERO);
+                let drain = session.terminal.drain_input(Some(max), Some(idle));
+                drain.await.unwrap();
+                feed.send(after);
+                consumed().await;
+                let seen = session.inputs.all();
+                assert_eq!(seen.last().map(String::as_str), Some(delivered));
+            }
             session.terminal.stop().unwrap();
         });
     });
@@ -1063,6 +1072,29 @@ fn native_raw_mode_restores_the_actual_stdin_device() {
 }
 
 #[test]
+fn native_start_outside_a_runtime_leaves_a_started_terminal_running() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let feed = pty_input();
+        let _output = pipe_output();
+        let mut session = rig.run(async { start(&rig) });
+        let raw = stdin_attributes();
+        let failure = session
+            .terminal
+            .start(session.inputs.callback(), session.resizes.callback())
+            .unwrap_err();
+        assert_eq!(failure.kind(), std::io::ErrorKind::Other);
+        assert_eq!(stdin_attributes(), raw);
+        rig.run(async {
+            feed.send(b"a");
+            session.inputs.delivered(1).await;
+            assert_eq!(session.inputs.all(), ["a"]);
+            session.terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
 fn native_failed_start_and_stop_release_owned_resources() {
     isolated!(&[], || {
         let rig = Rig::paused();
@@ -1107,14 +1139,16 @@ fn native_background_io_failure_is_reported_by_stop() {
     isolated!(0, &[], || {
         let rig = Rig::paused();
         directory_input();
-        let _output = pipe_output();
+        let output = pipe_output();
         rig.run(async {
             let mut session = start(&rig);
             let reader = open_descriptors();
             until(|| open_descriptors() < reader).await;
+            drop(output);
             let failure = session.terminal.stop().unwrap_err();
             assert_eq!(failure.raw_os_error(), Some(Errno::ISDIR.raw_os_error()));
-            session.terminal.stop().unwrap();
+            let repeated = session.terminal.stop().unwrap_err();
+            assert_eq!(repeated.kind(), std::io::ErrorKind::BrokenPipe);
         });
     });
     isolated!(1, &[], || {

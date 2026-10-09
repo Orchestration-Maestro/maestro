@@ -153,7 +153,7 @@ fn native_clear_progress_emits_even_when_inactive() {
 }
 
 /// Environment values and the dimensions they select when standard output reports none: one
-/// value of each kind the numeric coercion of the text accepts, and the kinds it refuses.
+/// value of each kind of number text that is accepted, and of the kinds that are refused.
 fn environment_cases() -> Vec<(&'static str, (usize, usize))> {
     let defaults = (80, 24);
     let both = |value: usize| (value, value);

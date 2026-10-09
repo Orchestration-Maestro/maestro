@@ -56,9 +56,9 @@ touched; when it is a different terminal, that guarantee does not reach it. Stan
 that is not a terminal (a pipe, a socket, a regular file, `/dev/null`) skips raw mode and is
 still read as a stream of text.
 
-If a step of `start` fails, the attributes and flags of standard input are restored and the
-terminal is left stopped; the error is the failing operating-system call's, and output
-already written is not retracted. Calling `start` on a started terminal replaces its input
+If an operating-system step of `start` fails, the attributes and flags of standard input are
+restored and the terminal is left stopped; the error is that call's, and output already
+written is not retracted. Calling `start` on a started terminal replaces its input
 generation: the earlier callbacks and reader are retired, the original standard-input state
 is kept for the final `stop`, and active progress continues. If the replacing `start` fails
 (other than outside a runtime), the replaced generation's paste and keyboard modes are
@@ -75,9 +75,9 @@ Stopping again writes the paste disable again and changes nothing else. Dropping
 terminal does what `stop` does and ignores its errors; dropping a terminal that is not
 started writes nothing, except that dropping one with active progress clears it.
 
-Restoration writes back the complete attributes and status flags saved by the first
-`start`, so it also replaces any change another party made to standard input while the
-terminal was started. Standard input that was not a terminal has no attributes to restore.
+Restoration writes back the complete attributes and status flags saved when standard input
+was first taken, by the earliest `start` since the last `stop`, so it also replaces any
+change another party made to standard input while the terminal was started. Standard input that was not a terminal has no attributes to restore.
 
 ## Input
 
@@ -126,13 +126,12 @@ size differs from the cached one. A failed query leaves the cached size as it wa
 dimension the cache holds as zero, or never observed, falls back independently: to the
 number in `COLUMNS` (width) or `LINES` (height), then to 80 by 24.
 
-The variable is read as the language's numeric coercion reads a string. Surrounding
-whitespace is skipped (the language's whitespace and line terminators, including U+FEFF and
-not U+0085); then a decimal with optional sign, fraction and exponent, or an unsigned `0x`,
-`0b` or `0o` integer, gives a number rounded to the nearest double. It is used when it is a
-whole number from 1 to `usize::MAX`. Empty, zero, negative, fractional, non-numeric,
-non-finite and larger values are ignored; the last four are where a `usize` cannot hold what
-the language would return.
+The variable is read as a number. Surrounding whitespace is skipped (Unicode white space,
+line terminators included, except U+0085; and U+FEFF); then a decimal with optional sign,
+fraction and exponent, or an unsigned `0x`, `0b` or `0o` integer, gives a number rounded to
+the nearest double. It is used when it is a whole number from 1 to `usize::MAX`. Empty, zero and
+non-numeric text is ignored, and so is a negative, fractional, non-finite or larger number,
+which a `usize` cannot hold.
 
 ## Output
 
