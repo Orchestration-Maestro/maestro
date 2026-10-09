@@ -261,11 +261,10 @@ impl ProcessTerminal {
     /// Stops delivering input and disables the keyboard modes now, then waits until no decoded
     /// text has arrived for `idle` or `max` has passed, and delivers input again. Dropping the
     /// returned future early delivers input again at once. Keyboard replies received from
-    /// now on never enable a mode for this generation. Framing state is not reset: an
-    /// unfinished character or paste stays pending however long the drain lasts, and an
-    /// unfinished escape sequence is released at its buffer deadline, which runs during the
-    /// drain, so it is discarded when the drain outlasts it and otherwise stays pending for
-    /// later input or its deadline.
+    /// now on never enable a mode for this generation. Input still goes to the shared buffer
+    /// under the framing and release rules described in `docs/terminal/input.md`. Every event
+    /// it releases during the drain is discarded, whatever released it. The drain does not
+    /// reset framing state.
     pub(super) fn drain(
         &mut self,
         max: Option<Duration>,

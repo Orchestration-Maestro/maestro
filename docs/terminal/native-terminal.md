@@ -89,16 +89,14 @@ was started. Standard input that was not a terminal has no attributes to restore
 Standard input is read as a stream of UTF-8, at most 4096 bytes per read: a read takes what
 is available at that moment, and a longer burst arrives in consecutive reads. A character
 split across reads is held until it completes, and invalid bytes become U+FFFD; only text
-that is complete reaches the toolkit's `StdinBuffer`, which frames it into one event per
-character or escape sequence and one per bracketed paste. Each event reaches the input
-callback in order, except keyboard replies and the events of a drain, which are described
-below; a paste arrives as one chunk with its two markers put back. Malformed UTF-8 is never
-treated as a legacy alt-modified byte. An incomplete escape sequence waits for the buffer's
-deadline, 10 ms after the input that left it incomplete, and is then released as it is: to
-the input callback, or discarded when a drain is running. At the end of input the decoder is
-flushed and reading stops, but the buffer's deadline, the keyboard decision and window-size
-tracking continue until `stop`. A read error ends the input task, and with it that tracking;
-the first such error is kept and returned by the next `stop`.
+that is complete reaches the toolkit's shared `StdinBuffer`. Its framing and release rules
+are described in [Input](input.md). Each event it releases reaches the input callback in
+order, except keyboard replies and the events of a drain, which are described below; a
+paste has its two markers put back. Malformed UTF-8 is never treated as a legacy
+alt-modified byte. At the end of input the decoder is flushed and reading stops, but the
+buffer's deadline, the keyboard decision and window-size tracking continue until `stop`.
+A read error ends the input task, and with it that tracking; the first such error is kept
+and returned by the next `stop`.
 
 ## Keyboard protocols
 
@@ -114,14 +112,10 @@ after that still enables the enhanced protocol, and both modes are then disabled
 
 `drain_input(max, idle)` is for the end of a session, so key releases do not reach the
 shell. It defaults to at most 1000 ms and 50 ms without input. When called, before the
-returned future is polled, it disables the keyboard modes and stops delivering input; text
-that arrives is framed as usual, and the events produced while the drain runs are discarded,
-a sequence released by the buffer's deadline included. Framing state is not reset. An
-unfinished character or paste stays pending however long the drain lasts and is completed by
-later input. An unfinished escape sequence keeps its 10 ms deadline, which runs during the
-drain: one released while the drain runs is discarded, so input after a longer drain does not
-complete it, while one still pending when the drain ends is completed by later input or
-released to the callback at its deadline.
+returned future is polled, it disables the keyboard modes and stops delivering input.
+Input still goes to the shared buffer under the [Input](input.md) framing and release rules.
+While the drain runs, every event the buffer releases is discarded, whatever released it.
+The drain does not reset framing state.
 
 The future checks the elapsed quiet time and the maximum, then waits the shorter of the idle
 time and the time left, so the idle exit is noticed on that cadence. Only complete decoded

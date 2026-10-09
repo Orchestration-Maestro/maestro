@@ -210,10 +210,13 @@ fn native_stop_restores_saved_attributes_and_flags_over_changes_made_meanwhile()
         let (saved, flags) = (stdin_attributes(), stdin_flags());
         rig.run(async {
             let mut session = start(&rig);
+            let before = (stdin_attributes(), stdin_flags());
             let mut changed = attributes(stdin());
-            changed.local_modes.insert(LocalModes::ECHOK);
+            changed.local_modes.toggle(LocalModes::ECHOK);
             tcsetattr(stdin(), OptionalActions::Now, &changed).unwrap();
             fcntl_setfl(stdin(), stdin_flags() | OFlags::APPEND).unwrap();
+            assert_ne!(stdin_attributes(), before.0);
+            assert_ne!(stdin_flags(), before.1);
             assert!(stdin_flags().contains(OFlags::APPEND));
             session.terminal.stop().unwrap();
         });
@@ -243,11 +246,12 @@ fn native_start_after_a_failed_start_saves_standard_input_afresh() {
                 assert!(failed.is_err());
                 assert_eq!((stdin_attributes(), stdin_flags()), cooked);
                 let mut changed = attributes(stdin());
-                changed.local_modes.insert(LocalModes::ECHOK);
+                changed.local_modes.toggle(LocalModes::ECHOK);
                 tcsetattr(stdin(), OptionalActions::Now, &changed).unwrap();
                 fcntl_setfl(stdin(), stdin_flags() | OFlags::APPEND).unwrap();
                 let changed = (stdin_attributes(), stdin_flags());
-                assert_ne!(changed, cooked);
+                assert_ne!(changed.0, cooked.0);
+                assert_ne!(changed.1, cooked.1);
                 session
                     .terminal
                     .start(session.inputs.callback(), session.resizes.callback())
@@ -990,6 +994,35 @@ fn native_drain_leaves_a_sequence_to_its_own_buffer_deadline() {
             session.inputs.delivered(3).await;
             assert_eq!(session.inputs.all()[2], "\x1b[");
             session.terminal.stop().unwrap();
+        });
+    });
+}
+
+#[test]
+fn native_drain_discards_a_prefix_released_before_paste() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let output = pipe_output();
+        rig.run(async {
+            let (feed, mut session) = started(&rig, &output);
+            feed.send(b"\x1b[");
+            consumed().await;
+            let max = Duration::from_millis(5);
+            let idle = Duration::from_millis(50);
+            let done = Cell::new(false);
+            let drain = session.terminal.drain_input(Some(max), Some(idle));
+            drain_beside(drain, &done, async {
+                feed.send(b"\x1b[200~paste\x1b[201~");
+                consumed().await;
+                assert!(!done.get());
+                elapse(5).await;
+                assert!(done.get());
+            })
+            .await;
+            feed.send(b"A");
+            consumed().await;
+            session.terminal.stop().unwrap();
+            assert_eq!(session.inputs.all(), ["A"]);
         });
     });
 }
