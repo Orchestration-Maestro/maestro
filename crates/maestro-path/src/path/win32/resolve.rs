@@ -4,7 +4,7 @@ use std::borrow::Cow;
 
 use super::{is_separator, same_name};
 use crate::path::segments::reduce;
-use crate::path::{Cwd, Root};
+use crate::path::{Cwd, CwdUnavailable, Root};
 
 /// The operands consumed so far, from the last one backwards.
 #[derive(Default)]
@@ -43,14 +43,18 @@ impl<'a> Resolution<'a> {
         absolute && !self.device.is_empty()
     }
 
-    /// Continue from the directory of the chosen drive when no operand was absolute.
-    fn consume_drive_directory(&mut self, cwd: &Cwd<'a>) {
-        let letter = self.device.chars().next().unwrap_or_default();
-        let directory = cwd
-            .drive_directories
+    /// The current directory of the chosen drive that `drive_directories` holds, if any.
+    fn drive_directory(&self, drive_directories: &[(char, &'a str)]) -> Option<&'a str> {
+        let letter = self.device.chars().next()?;
+        drive_directories
             .iter()
             .find(|(drive, directory)| drive.eq_ignore_ascii_case(&letter) && !directory.is_empty())
-            .map_or(cwd.current, |(_, directory)| *directory);
+            .map(|(_, directory)| *directory)
+    }
+
+    /// Continue from `directory`, the current directory of the chosen drive,
+    /// when no operand was absolute.
+    fn consume_drive_directory(&mut self, directory: &'a str) {
         let (leading, rest) = directory
             .char_indices()
             .nth(2)
@@ -107,20 +111,28 @@ impl Location<'_> {
     }
 }
 
+/// Consume `paths` from right to left and report whether they complete the
+/// resolution: a root on a device, with nothing left to supply.
+fn consume_operands<'a>(resolution: &mut Resolution<'a>, paths: &[&'a str]) -> bool {
+    paths
+        .iter()
+        .rev()
+        .filter(|path| !path.is_empty())
+        .any(|path| resolution.consume(path))
+}
+
 /// Resolve `paths` from right to left against `cwd` into the normalized
 /// location they name.
 pub(super) fn locate<'a>(paths: &[&'a str], cwd: &Cwd<'a>) -> Location<'a> {
     let mut resolution = Resolution::default();
-    let complete = paths
-        .iter()
-        .rev()
-        .filter(|path| !path.is_empty())
-        .any(|path| resolution.consume(path));
-    if !complete {
+    if !consume_operands(&mut resolution, paths) {
         if resolution.device.is_empty() {
             resolution.consume(cwd.current);
         } else {
-            resolution.consume_drive_directory(cwd);
+            let directory = resolution
+                .drive_directory(cwd.drive_directories)
+                .unwrap_or(cwd.current);
+            resolution.consume_drive_directory(directory);
         }
     }
     resolution.location()
@@ -158,4 +170,40 @@ pub fn resolve(paths: &[&str], cwd: &Cwd<'_>) -> String {
         return cwd.current.replace('/', "\\");
     }
     locate(paths, cwd).spell()
+}
+
+/// Resolve `paths` from right to left when there is no working directory.
+///
+/// It gives the result [`resolve`] gives, and fails where [`resolve`] would
+/// have read `cwd.current`: when no operand names a device, or the device it
+/// names is not complete and `drive_directories` holds no non-empty entry for
+/// it. Such an entry, like a root on a device, completes the resolution with no
+/// working directory.
+///
+/// # Errors
+/// Returns [`CwdUnavailable`] when the working directory would be read.
+///
+/// # Examples
+///
+/// ```
+/// use maestro_path::{CwdUnavailable, win32};
+///
+/// let drives = [('C', "C:\\Users")];
+/// assert_eq!(win32::try_resolve(&["C:notes"], &drives), Ok("C:\\Users\\notes".to_owned()));
+/// assert_eq!(win32::try_resolve(&["D:\\a", "b"], &drives), Ok("D:\\a\\b".to_owned()));
+/// assert_eq!(win32::try_resolve(&["\\x"], &drives), Err(CwdUnavailable));
+/// assert_eq!(win32::try_resolve(&["D:notes"], &drives), Err(CwdUnavailable));
+/// ```
+pub fn try_resolve(
+    paths: &[&str],
+    drive_directories: &[(char, &str)],
+) -> Result<String, CwdUnavailable> {
+    let mut resolution = Resolution::default();
+    if !consume_operands(&mut resolution, paths) {
+        let directory = resolution
+            .drive_directory(drive_directories)
+            .ok_or(CwdUnavailable)?;
+        resolution.consume_drive_directory(directory);
+    }
+    Ok(resolution.location().spell())
 }

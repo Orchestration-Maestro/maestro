@@ -1,6 +1,7 @@
 //! Shared inputs of the two path flavors.
 
 use std::borrow::Cow;
+use std::fmt;
 
 pub mod posix;
 mod segments;
@@ -21,6 +22,18 @@ pub struct Cwd<'a> {
     /// The current directory of each drive, keyed by its uppercase letter.
     pub drive_directories: &'a [(char, &'a str)],
 }
+
+/// The paths given to `try_resolve` leave open a part that only the working directory can supply.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CwdUnavailable;
+
+impl fmt::Display for CwdUnavailable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("the path needs a working directory that is unavailable")
+    }
+}
+
+impl std::error::Error for CwdUnavailable {}
 
 /// The root of a Windows path, borrowing the authored spelling.
 ///

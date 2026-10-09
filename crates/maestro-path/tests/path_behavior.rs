@@ -1,7 +1,7 @@
 //! Behavior of the lexical path operations against recorded runtime results.
 #![cfg(test)]
 
-use maestro_path::{Cwd, posix, win32};
+use maestro_path::{Cwd, CwdUnavailable, posix, win32};
 use serde_json::{Value, json};
 
 /// Recorded calls: runtime provenance and one expected result per call.
@@ -454,4 +454,81 @@ fn win32_relative_keeps_unanchored_component_boundaries() {
 #[test]
 fn win32_relative_compares_unanchored_unicode_components() {
     check("win32_relative_compares_unanchored_unicode_components", 18);
+}
+
+/// Without a working directory, POSIX resolution succeeds only when an operand is rooted.
+#[test]
+fn posix_try_resolve_needs_a_rooted_operand() {
+    for (paths, resolved) in [
+        (&["/a", "b", "../c"][..], "/a/c"),
+        (&["x", "/y", ""], "/y"),
+        (&["/a/./b//c/.."], "/a/b"),
+    ] {
+        assert_eq!(posix::try_resolve(paths, &[]), Ok(resolved.to_owned()));
+        for current in ["/one/two", "/three"] {
+            let cwd = Cwd {
+                current,
+                drive_directories: &[],
+            };
+            assert_eq!(posix::resolve(paths, &cwd), resolved, "{paths:?}");
+        }
+    }
+    for paths in [&[][..], &[""], &["."], &["a", ".."], &["a/b", "", "c"]] {
+        assert_eq!(
+            posix::try_resolve(paths, &[]),
+            Err(CwdUnavailable),
+            "{paths:?}"
+        );
+    }
+}
+
+/// Without a working directory, Windows resolution needs a device and either a root or that drive's own directory.
+#[test]
+fn win32_try_resolve_needs_a_device_and_a_root_or_a_drive_directory() {
+    let drives: [(char, &str); 2] = [('C', "C:\\work\\here"), ('E', "")];
+    for (paths, resolved) in [
+        (&["C:\\a", "b"][..], "C:\\a\\b"),
+        (&["C:x", "..\\y"][..], "C:\\work\\here\\y"),
+        (&["C:x"], "C:\\work\\here\\x"),
+        (&["C:/a", "D:\\b", "C:c"], "C:\\a\\c"),
+        (&["\\\\srv\\share\\x", "..\\y"], "\\\\srv\\share\\y"),
+        (&["\\\\.\\dev\\x"], "\\\\.\\dev\\x"),
+    ] {
+        assert_eq!(win32::try_resolve(paths, &drives), Ok(resolved.to_owned()));
+        for current in ["D:\\one\\two", "\\\\other\\share\\x"] {
+            let cwd = Cwd {
+                current,
+                drive_directories: &drives,
+            };
+            assert_eq!(win32::resolve(paths, &cwd), resolved, "{paths:?}");
+        }
+    }
+    for paths in [
+        &[][..],
+        &[""],
+        &["."],
+        &["x"],
+        &["\\x"],
+        &["/x", "y"],
+        &["D:y"],
+        &["E:y"],
+        &["C:\\a", "D:b"],
+    ] {
+        assert_eq!(
+            win32::try_resolve(paths, &drives),
+            Err(CwdUnavailable),
+            "{paths:?}"
+        );
+    }
+}
+
+/// The root export is the native flavor's fallible resolution.
+#[test]
+fn root_try_resolve_follows_the_native_flavor() {
+    let rooted = if cfg!(windows) { "C:\\a\\b" } else { "/a/b" };
+    assert_eq!(
+        maestro_path::try_resolve(&[rooted, "..", "b"], &[]),
+        Ok(rooted.to_owned())
+    );
+    assert_eq!(maestro_path::try_resolve(&["b"], &[]), Err(CwdUnavailable));
 }

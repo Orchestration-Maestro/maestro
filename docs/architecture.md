@@ -6,7 +6,7 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
-The extension domain may depend directly on resources for shared source information. Resources remain a leaf; this permission does not allow the reverse dependency or internal dev-dependencies.
+The extension domain may depend directly on resources for shared source information. Resources remain a leaf apart from the shared path utility edge; this permission does not allow the reverse dependency or internal dev-dependencies.
 
 `workspace-crates.json` lists actual workspace members with string-valued classes.
 The binary composition root, conventions checker, terminal scenario harness and
@@ -48,7 +48,9 @@ a POSIX `parse`, with the results of the JavaScript runtime's `path` module,
 except where its result is a defect; the crate's tests mark each one. The crate
 root re-exports the flavor of the compile target. Nothing reads the process
 working directory or the environment: `resolve` and `relative` take a `Cwd`
-snapshot from the caller. Windows relative paths require matching resolved
+snapshot from the caller, and `try_resolve` resolves what the operands anchor and
+fails with `CwdUnavailable` where the runtime would have read the working
+directory. Windows relative paths require matching resolved
 root identities, including anchoring. A matching anchored drive, share or
 namespace supplies a comparison base; otherwise, nonempty tails need a complete
 shared first component. Empty tails still permit component traversal. Without a
