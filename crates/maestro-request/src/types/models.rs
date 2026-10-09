@@ -337,7 +337,7 @@ fn decode_exact_compat<T: serde::de::DeserializeOwned>(
     wire: &serde_json::Value,
     family: impl FnOnce(T) -> ModelCompat,
 ) -> Option<ModelCompat> {
-    let decoded = family(serde_json::from_value(wire.clone()).ok()?);
+    let decoded = family(T::deserialize(wire).ok()?);
     (serde_json::to_value(&decoded).ok()?.eq(wire)).then_some(decoded)
 }
 /// Decode built-in protocol options or a lossless compatibility family for other protocols.
