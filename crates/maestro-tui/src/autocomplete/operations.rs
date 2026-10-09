@@ -65,7 +65,7 @@ pub trait AutocompleteOperations {
 /// Polling an attachment search requires an entered Tokio runtime with I/O
 /// enabled. Without it, native process spawning or pipe registration can panic;
 /// the provider's caught-error path handles I/O errors, not runtime panics.
-/// Other completion operations do not require a runtime.
+/// The other native host operations are synchronous.
 ///
 /// ```
 /// use maestro_cancellation::Cancellation;
