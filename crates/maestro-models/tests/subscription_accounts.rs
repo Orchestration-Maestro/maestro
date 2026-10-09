@@ -363,7 +363,7 @@ fn serve_token_peer(listener: &std::net::TcpListener) {
     }
 }
 
-/// Write a complete request without relying on buffering helpers.
+/// Attempt a complete request write, stopping quietly if the peer has closed.
 async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
     while !bytes.is_empty() {
         peer.writable().await.unwrap();
