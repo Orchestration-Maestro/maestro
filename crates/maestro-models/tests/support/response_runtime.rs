@@ -1,59 +1,100 @@
-//! Native execution witnesses for response invocations.
+//! Controlled runtime witnesses shared by response endpoints.
 use crate::chat::{TestResult, context, model};
+use futures_util::FutureExt;
+use maestro_models::providers::responses::azure_openai_responses::{
+    stream_azure_openai_responses, stream_simple_azure_openai_responses,
+};
 use maestro_models::providers::responses::openai_responses::{
     stream_openai_responses, stream_simple_openai_responses,
 };
 use maestro_models::{
-    AssistantMessageEventStream, Context, Model, OpenAIResponsesOptions, SimpleStreamOptions,
-    StreamOptions,
+    AssistantMessageEventStream, AzureOpenAIResponsesOptions, Context, Model,
+    OpenAIResponsesOptions, SimpleStreamOptions, StreamOptions,
 };
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, PoisonError};
 
+/// Response endpoint under test.
+#[allow(dead_code, reason = "Each test executable selects one endpoint.")]
+#[derive(Clone, Copy)]
+pub enum Endpoint {
+    /// Standard response endpoint.
+    Standard,
+    /// Cloud response endpoint.
+    Azure,
+}
+/// One endpoint and entry-point selection.
+#[derive(Clone, Copy)]
+struct Invocation {
+    /// Endpoint-specific request policy.
+    endpoint: Endpoint,
+    /// Whether to use the simple entry point.
+    simple: bool,
+}
 /// Descriptor and conversation shared by controlled runtime tests.
-fn inputs() -> TestResult<(Model, Context)> {
+fn inputs(endpoint: Endpoint) -> TestResult<(Model, Context)> {
+    let (api, provider) = match endpoint {
+        Endpoint::Standard => ("openai-responses", "openai"),
+        Endpoint::Azure => ("azure-openai-responses", "azure-openai-responses"),
+    };
     Ok((
         model(
-            &json!({"api":"openai-responses","provider":"openai","cost":{"input":2,"output":7,"cacheRead":0.3,"cacheWrite":0.9}}),
+            &json!({"api":api,"provider":provider,"cost":{"input":2,"output":7,"cacheRead":0.3,"cacheWrite":0.9}}),
         )?,
         context(&json!({"messages":[{"role":"user","content":"hello"}]}))?,
     ))
 }
 /// Invoke one of the two public entries.
 fn start(
-    simple: bool,
+    call: Invocation,
     model: Model,
     context: Context,
     common: StreamOptions,
 ) -> TestResult<AssistantMessageEventStream> {
-    Ok(if simple {
-        stream_simple_openai_responses(
+    Ok(match (call.endpoint, call.simple) {
+        (Endpoint::Standard, true) => stream_simple_openai_responses(
             model,
             context,
             Some(SimpleStreamOptions {
                 common,
                 ..Default::default()
             }),
-        )?
-    } else {
-        stream_openai_responses(
+        )?,
+        (Endpoint::Standard, false) => stream_openai_responses(
             model,
             context,
             Some(OpenAIResponsesOptions {
                 common,
                 ..Default::default()
             }),
-        )
+        ),
+        (Endpoint::Azure, true) => stream_simple_azure_openai_responses(
+            model,
+            context,
+            Some(SimpleStreamOptions {
+                common,
+                ..Default::default()
+            }),
+        )?,
+        (Endpoint::Azure, false) => stream_azure_openai_responses(
+            model,
+            context,
+            Some(AzureOpenAIResponsesOptions {
+                common,
+                ..Default::default()
+            }),
+        ),
     })
 }
 /// Both entries use native HTTP with hooks, closed success, incomplete EOF and failures.
-pub async fn native() -> TestResult {
+pub async fn native(endpoint: Endpoint) -> TestResult {
     let success = format!(
         "{}{}",
         "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"message\",\"id\":\"m\",\"content\":[]}}\n\ndata: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"message\",\"id\":\"m\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}}\n\n",
         crate::endpoint::COMPLETE
     );
     for simple in [false, true] {
+        let call = Invocation { endpoint, simple };
         for (head, body, reason, error) in [
             (
                 crate::loopback::EVENT_STREAM_HEAD,
@@ -64,6 +105,12 @@ pub async fn native() -> TestResult {
             (
                 crate::loopback::EVENT_STREAM_HEAD,
                 "data: {\"type\":\"response.created\",\"response\":{\"id\":\"created\"}}\n\n",
+                "error",
+                Some("Response stream ended before a terminal event"),
+            ),
+            (
+                crate::loopback::EVENT_STREAM_HEAD,
+                "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"message\",\"id\":\"m\",\"content\":[]}}\n\ndata: {\"type\":\"response.content_part.added\",\"part\":{\"type\":\"output_text\",\"text\":\"\"}}\n\ndata: {\"type\":\"response.output_text.delta\",\"delta\":\"draft\"}\n\n",
                 "error",
                 Some("Response stream ended before a terminal event"),
             ),
@@ -80,14 +127,14 @@ pub async fn native() -> TestResult {
                 Some("Error Code bad: failure"),
             ),
         ] {
-            native_case(simple, head, body, reason, error).await?;
+            native_case(call, head, body, reason, error).await?;
         }
     }
     Ok(())
 }
 /// Exercise one joined native exchange.
 async fn native_case(
-    simple: bool,
+    call: Invocation,
     head: &'static str,
     body: &str,
     reason: &str,
@@ -98,15 +145,17 @@ async fn native_case(
         vec![body.as_bytes().to_vec()],
         std::time::Duration::ZERO,
     )?;
-    let (mut target, history) = inputs()?;
-    target.base_url = format!("{}/v1", server.url);
+    let (mut target, history) = inputs(call.endpoint)?;
+    target.base_url = match call.endpoint {
+        Endpoint::Standard => format!("{}/v1", server.url),
+        Endpoint::Azure => format!("{}/v1?token=a/#fragment", server.url),
+    };
     let hooks = Arc::new(Mutex::new(Vec::new()));
     let common = native_options(&hooks);
-    let stream = start(simple, target, history, common)?;
-    let (events, result) = crate::endpoint::collect(&stream).await?;
+    let stream = start(call, target, history, common)?;
+    let (events, result) = crate::response_output::collect(&stream).await?;
     let received = server.finish()?;
-    assert_eq!(received.request_line, "POST /v1/responses HTTP/1.1");
-    assert_eq!(received.header("authorization"), Some("Bearer fixture-key"));
+    check_native_target(call.endpoint, &received);
     let captured: Value = serde_json::from_slice(&received.body)?;
     assert_eq!(captured["marker"], "sent");
     assert_eq!(
@@ -130,11 +179,39 @@ async fn native_case(
             vec!["payload", "response"]
         }
     );
+    check_native_contents(call.endpoint, &result, body, error);
+    Ok(())
+}
+/// Inspect retained text and model-priced cost for the closed native response.
+fn check_native_contents(endpoint: Endpoint, result: &Value, body: &str, error: Option<&str>) {
+    if body.contains("draft") {
+        assert_eq!(result["content"][0]["text"], "draft");
+    }
     if error.is_none() {
-        assert_eq!(result["usage"]["cost"]["total"], 15.575);
+        let cost = match endpoint {
+            Endpoint::Standard => 15.575,
+            Endpoint::Azure => 0.002_219_999_999_999_999_8,
+        };
+        assert_eq!(result["usage"]["cost"]["total"], cost);
         assert_eq!(result["content"][0]["text"], "answer");
     }
-    Ok(())
+}
+/// Assert endpoint-specific native path and credential headers.
+fn check_native_target(endpoint: Endpoint, received: &crate::loopback::Received) {
+    let (path, header, key) = match endpoint {
+        Endpoint::Standard => (
+            "POST /v1/responses HTTP/1.1",
+            "authorization",
+            "Bearer fixture-key",
+        ),
+        Endpoint::Azure => (
+            "POST /v1/responses?token=a/&api-version=v1 HTTP/1.1",
+            "api-key",
+            "fixture-key",
+        ),
+    };
+    assert_eq!(received.request_line, path);
+    assert_eq!(received.header(header), Some(key));
 }
 /// Record native hook effects without holding a lock around serialization or user code.
 fn native_options(hooks: &Arc<Mutex<Vec<&'static str>>>) -> StreamOptions {
@@ -228,7 +305,7 @@ fn pending_body(
     ))
 }
 /// Gate one operation, then abort a witnessed pending read after observing its partial.
-async fn gated_call(simple: bool) -> TestResult {
+async fn gated_call(call: Invocation) -> TestResult {
     let (payload_hook, payload_entered, payload_release, payload_done) = gate_hook();
     let (response_gate, response_entered, response_release, response_done) = gate_hook();
     let (waiting_tx, waiting) = tokio::sync::oneshot::channel();
@@ -240,7 +317,7 @@ async fn gated_call(simple: bool) -> TestResult {
     ))));
     let fetch = gated_fetch(body, payload_done);
     let signal = maestro_models::Cancellation::new();
-    let (target, history) = inputs()?;
+    let (target, history) = inputs(call.endpoint)?;
     let common = StreamOptions {
         api_key: Some("fixture-key".into()),
         fetch: Some(fetch),
@@ -252,11 +329,24 @@ async fn gated_call(simple: bool) -> TestResult {
         })),
         ..Default::default()
     };
-    let stream = start(simple, target, history, common)?;
+    let stream = start(call, target, history, common)?;
     payload_entered.await?;
     let _ = payload_release.send(());
     response_entered.await?;
+    assert!(
+        stream.next().now_or_never().is_none(),
+        "response gate prevents Start"
+    );
     let _ = response_release.send(());
+    cancel_partial(&stream, signal, waiting, closed).await
+}
+/// Abort the same operation after its body acknowledges publication of partial text.
+async fn cancel_partial(
+    stream: &AssistantMessageEventStream,
+    signal: maestro_models::Cancellation,
+    waiting: tokio::sync::oneshot::Receiver<()>,
+    closed: tokio::sync::oneshot::Receiver<()>,
+) -> TestResult {
     let partial = loop {
         if let maestro_models::AssistantMessageEvent::TextDelta { partial, .. } =
             stream.next().await.ok_or("text delta before stream end")?
@@ -269,7 +359,7 @@ async fn gated_call(simple: bool) -> TestResult {
     assert_eq!(before["content"][0]["text"], "retained");
     waiting.await?;
     signal.abort();
-    let (events, result) = crate::endpoint::collect(&stream).await?;
+    let (events, result) = crate::response_output::collect(stream).await?;
     closed.await?;
     assert_eq!(
         events.last(),
@@ -277,6 +367,10 @@ async fn gated_call(simple: bool) -> TestResult {
     );
     assert_eq!(result["errorMessage"], "Request was aborted");
     assert_eq!(result["content"], before["content"]);
+    assert_eq!(
+        crate::json::canonical(result["usage"].clone()),
+        json!({"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}})
+    );
     let final_alias = stream.result().await;
     assert!(Arc::ptr_eq(&partial, &final_alias));
     assert_eq!(
@@ -302,16 +396,18 @@ fn gated_fetch(
     })
 }
 /// Both entry points preserve effect order and the pending body's partial output.
-pub async fn gated() -> TestResult {
+pub async fn gated(endpoint: Endpoint) -> TestResult {
     for simple in [false, true] {
-        gated_call(simple).await?;
+        let call = Invocation { endpoint, simple };
+        gated_call(call).await?;
     }
     Ok(())
 }
 
 /// Shared HTTP retry, timeout and cancellation options reach the existing sender.
-pub async fn transport_options() -> TestResult {
+pub async fn transport_options(endpoint: Endpoint) -> TestResult {
     for simple in [false, true] {
+        let call = Invocation { endpoint, simple };
         let response_hooks = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let count = Arc::clone(&response_hooks);
         let setup = crate::transport::transport(vec![
@@ -326,7 +422,7 @@ pub async fn transport_options() -> TestResult {
                 crate::endpoint::COMPLETE.as_bytes().to_vec(),
             ),
         ]);
-        let (target, history) = inputs()?;
+        let (target, history) = inputs(call.endpoint)?;
         let common = StreamOptions {
             api_key: Some("fixture-key".into()),
             fetch: Some(Arc::clone(&setup.fetch)),
@@ -339,13 +435,13 @@ pub async fn transport_options() -> TestResult {
             ..Default::default()
         };
         let (_, result) =
-            crate::endpoint::collect(&start(simple, target, history, common)?).await?;
+            crate::response_output::collect(&start(call, target, history, common)?).await?;
         assert_eq!(result["stopReason"], "stop");
         assert_eq!(setup.attempts(), 2);
         assert!(setup.gaps()[0] > std::time::Duration::from_millis(1));
         assert_eq!(response_hooks.load(std::sync::atomic::Ordering::SeqCst), 1);
         attempt_failure(
-            simple,
+            call,
             crate::transport::Attempt::Fail(maestro_models::FetchError::Connection(
                 maestro_models::extract_diagnostic_error(maestro_models::DiagnosticInput::Text(
                     "no retry",
@@ -356,25 +452,27 @@ pub async fn transport_options() -> TestResult {
         )
         .await?;
         attempt_failure(
-            simple,
+            call,
             crate::transport::Attempt::Hang,
             Some(1.0),
             "Request timed out.",
         )
         .await?;
-        cancel_setup(simple).await?;
+        cancel_setup(call).await?;
+        retry_statuses(call).await?;
+        inherited_timeout(call).await?;
     }
     Ok(())
 }
 /// Zero retries and a caller timeout are forwarded unchanged.
 async fn attempt_failure(
-    simple: bool,
+    call: Invocation,
     attempt: crate::transport::Attempt,
     timeout_ms: Option<f64>,
     expected: &str,
 ) -> TestResult {
     let setup = crate::transport::transport(vec![attempt]);
-    let (target, history) = inputs()?;
+    let (target, history) = inputs(call.endpoint)?;
     let common = StreamOptions {
         api_key: Some("fixture-key".into()),
         fetch: Some(Arc::clone(&setup.fetch)),
@@ -382,42 +480,45 @@ async fn attempt_failure(
         timeout_ms,
         ..Default::default()
     };
-    let (_, result) = crate::endpoint::collect(&start(simple, target, history, common)?).await?;
+    let (_, result) =
+        crate::response_output::collect(&start(call, target, history, common)?).await?;
     assert_eq!(result["errorMessage"], expected);
     assert_eq!(setup.attempts(), 1);
     Ok(())
 }
 /// Abort after the transport begins a pending setup, without advancing a timer.
-async fn cancel_setup(simple: bool) -> TestResult {
+async fn cancel_setup(call: Invocation) -> TestResult {
     let signal = maestro_models::Cancellation::new();
     let cancel = signal.clone();
     let fetch: maestro_models::Fetch = Arc::new(move |_| {
         cancel.abort();
         Box::pin(std::future::pending())
     });
-    let (target, history) = inputs()?;
+    let (target, history) = inputs(call.endpoint)?;
     let common = StreamOptions {
         api_key: Some("fixture-key".into()),
         fetch: Some(fetch),
         signal: Some(signal),
         ..Default::default()
     };
-    let (_, result) = crate::endpoint::collect(&start(simple, target, history, common)?).await?;
+    let (_, result) =
+        crate::response_output::collect(&start(call, target, history, common)?).await?;
     assert_eq!(result["stopReason"], "aborted");
     assert_eq!(result["errorMessage"], "Request was aborted.");
     Ok(())
 }
 /// Failure to spawn without a native runtime still closes both entry streams.
-pub fn without_runtime() -> TestResult {
+pub fn without_runtime(endpoint: Endpoint) -> TestResult {
     for simple in [false, true] {
-        let (target, history) = inputs()?;
+        let call = Invocation { endpoint, simple };
+        let (target, history) = inputs(call.endpoint)?;
         let common = StreamOptions {
             api_key: Some("fixture-key".into()),
             ..Default::default()
         };
-        let stream = start(simple, target, history, common)?;
+        let stream = start(call, target, history, common)?;
         crate::chat::block_on(false, async {
-            let (events, result) = crate::endpoint::collect(&stream).await?;
+            let (events, result) = crate::response_output::collect(&stream).await?;
             assert_eq!(events, vec![json!({"type":"error","reason":"error"})]);
             assert_eq!(
                 result["errorMessage"],
@@ -429,15 +530,90 @@ pub fn without_runtime() -> TestResult {
     Ok(())
 }
 
+/// HTTP status retries retain the retry hint while ignoring the delay-cap preference.
+async fn retry_statuses(call: Invocation) -> TestResult {
+    for retries in [Some(0_u8), Some(1), None] {
+        let setup = crate::transport::transport(vec![
+            crate::transport::Attempt::status(503, &[("retry-after-ms", "2")]),
+            crate::transport::Attempt::body(
+                200,
+                &[],
+                crate::endpoint::COMPLETE.as_bytes().to_vec(),
+            ),
+        ]);
+        let count = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let observed = Arc::clone(&count);
+        let (target, history) = inputs(call.endpoint)?;
+        let common = StreamOptions {
+            api_key: Some("fixture-key".into()),
+            fetch: Some(Arc::clone(&setup.fetch)),
+            max_retries: retries.map(f64::from),
+            max_retry_delay_ms: Some(1.0),
+            on_response: Some(Arc::new(move |_, _| {
+                observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Box::pin(std::future::ready(Ok(())))
+            })),
+            ..Default::default()
+        };
+        let (_, result) =
+            crate::response_output::collect(&start(call, target, history, common)?).await?;
+        let retried = retries != Some(0);
+        assert_eq!(setup.attempts(), if retried { 2 } else { 1 });
+        assert_eq!(
+            count.load(std::sync::atomic::Ordering::SeqCst),
+            usize::from(retried)
+        );
+        assert_eq!(result["stopReason"], if retried { "stop" } else { "error" });
+        if retried {
+            assert_eq!(setup.gaps(), vec![std::time::Duration::from_millis(2)]);
+        }
+    }
+    let setup = crate::transport::transport(vec![
+        crate::transport::Attempt::status(503, &[("retry-after-ms", "2")]),
+        crate::transport::Attempt::status(503, &[("retry-after-ms", "2")]),
+        crate::transport::Attempt::body(200, &[], crate::endpoint::COMPLETE.as_bytes().to_vec()),
+    ]);
+    let (target, history) = inputs(call.endpoint)?;
+    let common = StreamOptions {
+        api_key: Some("fixture-key".into()),
+        fetch: Some(Arc::clone(&setup.fetch)),
+        ..Default::default()
+    };
+    let (_, result) =
+        crate::response_output::collect(&start(call, target, history, common)?).await?;
+    assert_eq!(setup.attempts(), 3);
+    assert_eq!(result["stopReason"], "stop");
+    Ok(())
+}
+/// The inherited timeout remains ten minutes on a controlled paused clock.
+async fn inherited_timeout(call: Invocation) -> TestResult {
+    let setup = crate::transport::transport(vec![crate::transport::Attempt::Hang]);
+    let (target, history) = inputs(call.endpoint)?;
+    let began = tokio::time::Instant::now();
+    let common = StreamOptions {
+        api_key: Some("fixture-key".into()),
+        fetch: Some(Arc::clone(&setup.fetch)),
+        max_retries: Some(0.0),
+        ..Default::default()
+    };
+    let (_, result) =
+        crate::response_output::collect(&start(call, target, history, common)?).await?;
+    assert_eq!(result["errorMessage"], "Request timed out.");
+    assert_eq!(began.elapsed(), std::time::Duration::from_secs(600));
+    Ok(())
+}
+
 /// Fixture wrappers reject unread fields; each unique query has one existing test owner.
-pub fn fixture_consumers() -> TestResult {
-    let rows = crate::response_cases::rows(crate::endpoint::FIXTURE)?;
+pub fn fixture_consumers(
+    fixture: &str,
+    decode: fn(&str) -> TestResult<Vec<Value>>,
+    source: &str,
+    expected: (usize, usize),
+    query_key: fn(&Value) -> TestResult<String>,
+) -> TestResult {
+    let rows = decode(fixture)?;
     let mut queries = std::collections::HashSet::new();
     let mut owners = std::collections::HashSet::new();
-    let source = concat!(
-        include_str!("../response_endpoint_requests.rs"),
-        include_str!("../response_endpoint_streams.rs")
-    );
     for row in &rows {
         let owner = row["test"].as_str().ok_or("test owner")?;
         assert!(
@@ -446,13 +622,13 @@ pub fn fixture_consumers() -> TestResult {
         );
         owners.insert(owner);
         assert!(
-            queries.insert(serde_json::to_string(&row["case"])?),
+            queries.insert(query_key(&row["case"])?),
             "unique effective query: {}",
             row["case"]
         );
     }
-    assert_eq!(owners.len(), 28);
-    assert_eq!(rows.len(), 435);
+    assert_eq!(owners.len(), expected.0);
+    assert_eq!(rows.len(), expected.1);
     for location in ["wrapper", "input", "option", "expected"] {
         let mut invalid = rows[0].clone();
         let object = match location {
@@ -469,7 +645,7 @@ pub fn fixture_consumers() -> TestResult {
             .ok_or("fixture object")?
             .insert("unread".into(), json!(1));
         assert!(
-            crate::response_cases::rows(&serde_json::to_string(&vec![invalid])?).is_err(),
+            decode(&serde_json::to_string(&vec![invalid])?).is_err(),
             "{location} rejects unread fields"
         );
     }

@@ -115,27 +115,39 @@ fn responses_compute_catalog_costs_for_priority_and_flex() -> chat::TestResult {
 
 #[test]
 fn responses_native_endpoint_delivers_both_entry_results() -> chat::TestResult {
-    chat::block_on(false, runtime::native())
+    chat::block_on(false, runtime::native(runtime::Endpoint::Standard))
 }
 
 #[test]
 fn responses_gate_hooks_and_cancel_a_pending_body() -> chat::TestResult {
-    chat::block_on(false, runtime::gated())
+    chat::block_on(false, runtime::gated(runtime::Endpoint::Standard))
 }
 
 #[test]
 fn responses_forward_retry_timeout_and_cancellation_options() -> chat::TestResult {
-    chat::block_on(true, runtime::transport_options())
+    chat::block_on(
+        true,
+        runtime::transport_options(runtime::Endpoint::Standard),
+    )
 }
 
 #[test]
 fn responses_native_runtime_failure_finishes_stream() -> chat::TestResult {
-    runtime::without_runtime()
+    runtime::without_runtime(runtime::Endpoint::Standard)
 }
 
 #[test]
 fn responses_fixture_cases_have_complete_consumers() -> chat::TestResult {
-    runtime::fixture_consumers()
+    runtime::fixture_consumers(
+        endpoint::FIXTURE,
+        response_cases::rows,
+        concat!(
+            include_str!("response_endpoint_requests.rs"),
+            include_str!("response_endpoint_streams.rs")
+        ),
+        (28, 435),
+        |q| Ok(serde_json::to_string(q)?),
+    )
 }
 
 #[test]
@@ -340,3 +352,6 @@ fn responses_send_false_payload_as_json() -> chat::TestResult {
         Ok(())
     })
 }
+
+#[path = "support/response_output.rs"]
+mod response_output;

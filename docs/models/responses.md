@@ -63,6 +63,92 @@ async fn controlled() {
 }
 ```
 
+## Cloud invocation
+
+`providers::responses::azure_openai_responses` provides
+`stream_azure_openai_responses` and `stream_simple_azure_openai_responses`;
+`AzureOpenAIResponsesOptions` is also exported at the package root. Raw setup
+failures are stream errors. Simple invocation rejects a missing provider key
+before creating a stream and uses the shared simple budgets and reasoning support.
+
+Credentials select a nonempty explicit key, then the provider's environment key.
+Raw invocation alone finally tries `AZURE_OPENAI_API_KEY`. Requests authenticate
+with `api-key`; model and caller headers override defaults through the existing
+case-insensitive layering, except JSON `Content-Type`, which is applied last.
+Cloud invocation generates no affinity headers.
+
+The base URL selects a trimmed nonblank `azure_base_url`, then
+`AZURE_OPENAI_BASE_URL`, then nonempty `azure_resource_name` or
+`AZURE_OPENAI_RESOURCE_NAME`, then the descriptor base URL. A selected invalid URL
+fails without fallback. Resource shorthand constructs
+`https://{resource}.openai.azure.com/openai/v1`. Azure `OpenAI` and Cognitive Services
+host roots and `/openai` paths normalize to `/openai/v1` and discard their query.
+Other paths retain non-version query pairs, including order, duplicates and
+escaped values. `/responses` is appended to the pathname; fragments are removed.
+No deployment segment is generated. `azure_api_version`, then
+`AZURE_OPENAI_API_VERSION`, then `v1` selects the nonempty version, replacing all
+query keys decoding exactly to `api-version`. The inserted value uses RFC3986
+encoding, including `%20` for spaces. Resource names and versions are not trimmed.
+
+Deployment selects nonempty `azure_deployment_name`, then the matching nonempty
+value of `AZURE_OPENAI_DEPLOYMENT_NAME_MAP`, then the descriptor ID. Map entries
+are comma-separated; only the first two equals-separated fields are considered.
+Entry trimming precedes field-emptiness checks; field trimming follows them.
+Later valid entries replace earlier ones, including a whitespace-only value that
+becomes empty. A deployment changes the initial payload's `model`, not the selected model's
+identity or rates.
+
+Before `on_payload`, the initial payload uses the supplied session ID as
+`prompt_cache_key`, including an empty string, independently of retention. It
+omits store, retention, service tier and metadata. Reasoning uses the shared
+effort mapping without the standard endpoint's account-provider exception;
+summary-only requests select literal `medium`. The hook can replace the entire
+payload, including these selections and omissions.
+Usage uses model rates without service-tier scaling. Hooks, HTTP retries,
+timeouts and cancellation use the existing [transport](chat-completions.md#transport),
+[JSON conversion](arguments.md#streamed-arguments) and [response reduction](#event-reduction).
+Transport and maximum retry-delay preferences are unused here.
+
+### Cloud error messages
+
+Cloud-authored failures use these messages; transport, hook and reduction errors
+retain their owning operation's text:
+
+- `Azure OpenAI API key is required. Set AZURE_OPENAI_API_KEY environment variable or pass it as an argument.`
+- `No API key for provider: {provider}`
+- `Invalid Azure OpenAI base URL: {baseUrl}`
+- `Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl.`
+- `Request was aborted`
+- `An unknown error occurred`
+
+### Controlled cloud example
+
+Run inside a native Tokio runtime or a browser executor. This finite replacement
+transport does not contact an external service.
+
+```rust,no_run
+use std::sync::Arc;
+use maestro_models::{AzureOpenAIResponsesOptions, Context, Fetch, HttpResponse, Model, StreamOptions};
+use maestro_models::providers::responses::azure_openai_responses::stream_azure_openai_responses;
+
+async fn controlled_cloud(model: Model, context: Context) {
+    let fetch: Fetch = Arc::new(|_| {
+        let bytes = b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec();
+        Box::pin(std::future::ready(Ok(HttpResponse {
+            status: 200, status_text: String::new(), headers: Default::default(),
+            body: Box::pin(futures_util::stream::iter([Ok(bytes)])),
+        })))
+    });
+    let stream = stream_azure_openai_responses(model, context, Some(AzureOpenAIResponsesOptions {
+        azure_base_url: Some("https://controlled.invalid/v1".into()),
+        common: StreamOptions { api_key: Some("controlled-key".into()), fetch: Some(fetch), ..Default::default() },
+        ..Default::default()
+    }));
+    let message = stream.result().await;
+    assert!(message.read().is_ok());
+}
+```
+
 ## Internal response conversion
 
 Its three operations convert history, convert tool declarations and reduce
@@ -138,5 +224,5 @@ survives a later malformed field. Raw truthiness still selects source defaults.
 The reducer consumes to source EOF, propagating later failures even after
 completion. EOF without a completed or incomplete event returns
 `Response stream ended before a terminal event`. It publishes content updates
-only; the caller owns final outcome events and stream termination. Standard
-invocation uses this reducer and supplies the final outcome events.
+only; the caller owns final outcome events and stream termination. Standard and cloud
+invocations use this reducer and supply the final outcome events.
