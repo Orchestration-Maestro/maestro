@@ -1257,6 +1257,7 @@ fn overlay_top_walk_stops_when_an_accepted_slot_is_vacated() {
     scene.terminal.send_input("external");
     assert_eq!(*external.inputs.borrow(), ["external"]);
     assert!(lower.inputs.borrow().is_empty());
+    options.borrow_mut().visible = None;
     scene.stop();
 }
 
