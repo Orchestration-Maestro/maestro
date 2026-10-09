@@ -77,6 +77,96 @@ fn absolute_candidates_do_not_gain_command_punctuation() {
 }
 
 #[test]
+fn quoted_absolute_suggestions_insert_as_paths() {
+    use maestro_tui::autocomplete::CompletionOptions;
+    for (input, force) in [("/", Some(true)), ("/a", Some(true)), ("  /a", None)] {
+        for (kind, value, label, offset) in [
+            (DirectoryEntryKind::Other, "\"/a b\"", "a b", 6),
+            (DirectoryEntryKind::Directory, "\"/a b/\"", "a b/", 6),
+        ] {
+            let provider = CombinedAutocompleteProvider::new(
+                vec![],
+                "/work".into(),
+                Files {
+                    entries: vec![("a b", kind)],
+                    ..Files::default()
+                },
+            );
+            let lines = [input.to_owned()];
+            let cursor = CursorPosition {
+                line: 0,
+                col: input.len(),
+            };
+            let suggestions = fixtures::futures::block_on(provider.get_suggestions(
+                &lines,
+                cursor,
+                CompletionOptions {
+                    signal: &std::cell::Cell::new(false),
+                    force,
+                },
+            ))
+            .expect("query succeeds")
+            .expect("absolute candidate");
+            assert_eq!(suggestions.items, [item(value, label, None)]);
+            let applied = provider.apply_completion(
+                &lines,
+                cursor,
+                &suggestions.items[0],
+                &suggestions.prefix,
+            );
+            let leading = if input.starts_with(' ') { "  " } else { "" };
+            assert_eq!(applied.lines, [format!("{leading}{value}")], "{input}");
+            assert_eq!(
+                (applied.cursor_line, applied.cursor_col),
+                (0, leading.len() + offset)
+            );
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn native_completion_preserves_literal_backslash_identity() {
+    use fixtures::completion_native::Tree;
+    use maestro_tui::autocomplete::{CompletionOptions, NativeAutocompleteOperations};
+    let tree = Tree::new().expect("temporary directory created");
+    tree.file("a\\b").expect("literal backslash file created");
+    tree.directory("a").expect("decoy directory created");
+    tree.file("a/b").expect("nested decoy created");
+    std::fs::write(tree.0.join("a\\b"), b"literal").expect("literal contents written");
+    std::fs::write(tree.0.join("a/b"), b"nested").expect("decoy contents written");
+    let provider = CombinedAutocompleteProvider::new(
+        vec![],
+        tree.authored(),
+        NativeAutocompleteOperations::default(),
+    );
+    let lines = ["./a".to_owned()];
+    let cursor = CursorPosition { line: 0, col: 3 };
+    let suggestions = fixtures::futures::block_on(provider.get_suggestions(
+        &lines,
+        cursor,
+        CompletionOptions {
+            signal: &(),
+            force: None,
+        },
+    ))
+    .expect("query succeeds")
+    .expect("native candidates");
+    assert_eq!(
+        suggestions.items,
+        [item("./a/", "a/", None), item("./a\\b", "a\\b", None)]
+    );
+    let applied =
+        provider.apply_completion(&lines, cursor, &suggestions.items[1], &suggestions.prefix);
+    assert_eq!(applied.lines, ["./a\\b"]);
+    assert_eq!((applied.cursor_line, applied.cursor_col), (0, 5));
+    assert_eq!(
+        std::fs::read(tree.0.join(&applied.lines[0])).expect("inserted path exists"),
+        b"literal"
+    );
+}
+
+#[test]
 fn direct_path_operations_are_replaceable() {
     use fixtures::completion_native::Tree;
     use maestro_tui::autocomplete::{
@@ -356,7 +446,7 @@ const NATIVE_NAMES_KEEP_CASE_QUOTE_AND_SEPARATOR_SEMANTICS_CASES: &[SuggestionCa
             "",
             &[
                 ("a\"b", "a\"b", None),
-                ("a/b", "a\\b", None),
+                (if cfg!(windows) { "a/b" } else { "a\\b" }, "a\\b", None),
                 ("\"file a\"", "file a", None),
                 ("line\u{a}file", "line\u{a}file", None),
                 ("tab\u{9}file", "tab\u{9}file", None),

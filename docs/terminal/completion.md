@@ -67,12 +67,17 @@ with `NativeAutocompleteOperations::with_environment` independently of home look
 Direct completion filters names by lowercase prefix. Resolved directories precede
 files, with stable host comparison within each class. Listing, home and comparison
 failures yield no suggestions; failed link metadata leaves that entry file-like.
-Candidates retain direct-path spelling and quote paths containing ASCII spaces or
-an already quoted prefix. See the [path utility](../../crates/maestro-path/src/lib.rs) for lexical operations.
+Candidates retain relative, `./`, home and absolute prefix styles; reconstructed
+components follow the [path utility](../../crates/maestro-path/src/lib.rs).
+Only Windows separators are normalized to slashes; literal Unix backslashes remain
+filename characters. Paths containing ASCII spaces or an already quoted prefix
+are quoted.
 
-Applying a candidate replaces its prefix, preserves the suffix and returns a byte
-cursor. Command insertion adds a slash and trailing space unless the value already
-starts with a slash. Attachment-file insertion adds a trailing space; directory
+Applying a candidate replaces its prefix and returns a byte cursor. The suffix is
+retained except for one leading closing quote when the prefix is quoted and the
+candidate ends in a quote. Command insertion adds a slash and trailing space unless
+the value, after removing its opening display quote if present, starts with a slash.
+Attachment-file insertion adds a trailing space; directory
 insertion keeps the cursor inside a closing quote when one is present.
 
 ## Shared fuzzy ranking

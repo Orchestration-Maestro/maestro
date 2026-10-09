@@ -127,7 +127,11 @@ fn display_path(raw: &str, name: &str) -> String {
     } else {
         name.to_owned()
     };
-    path.replace('\\', "/")
+    if cfg!(windows) {
+        path.replace('\\', "/")
+    } else {
+        path
+    }
 }
 
 /// Retained directory classification before display quoting.
@@ -200,7 +204,9 @@ pub(super) fn suggest<O: AutocompleteOperations>(
     ))
 }
 
-/// Replace the selected prefix, preserving the suffix and byte cursor.
+/// Replace the prefix and return a byte cursor.
+///
+/// Drop one leading suffix quote when the prefix is quoted and the candidate ends in a quote.
 pub(super) fn apply(
     lines: &[String],
     cursor: CursorPosition,
@@ -219,7 +225,7 @@ pub(super) fn apply(
     let command = prefix.starts_with('/')
         && before.trim_matches(is_whitespace_scalar).is_empty()
         && !prefix[1..].contains('/')
-        && !item.value.starts_with('/');
+        && !raw_prefix(&item.value).0.starts_with('/');
     let directory = item.label.ends_with('/');
     let (value, offset) = if command {
         (format!("/{} ", item.value), item.value.len() + 2)
