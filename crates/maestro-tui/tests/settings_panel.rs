@@ -339,9 +339,9 @@ fn settings_done_updates_captured_item_after_filter_changes() {
                 list.handle_input("\r");
                 let callback = done.borrow().clone().unwrap();
                 callback(None);
-                list.handle_input("gm");
+                list.handle_input("a");
+                list.handle_input("\x1b[B");
                 callback(Some("retained".into()));
-                list.handle_input("\x7f");
                 list.handle_input("\x7f");
                 json!({"events":*events.borrow(),"lines":list.render(80)})
             }

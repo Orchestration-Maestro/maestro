@@ -69,32 +69,47 @@ fn lists_theme_closures_read_live_captured_state() {
     let captured = Rc::clone(&prefix);
     select_theme.selected_text = Rc::new(move |text| format!("{}{text}", *captured.borrow()));
     let a = SelectList::new(
-        vec![SelectItem {
-            value: "x".into(),
-            label: "X".into(),
-            description: None,
-        }],
-        1,
+        vec![
+            SelectItem {
+                value: "x".into(),
+                label: "X".into(),
+                description: None,
+            },
+            SelectItem {
+                value: "y".into(),
+                label: "Y".into(),
+                description: None,
+            },
+        ],
+        2,
         select_theme,
         SelectListLayoutOptions::default(),
     );
+    a.set_selected_index(1);
     let mut settings_theme = list_support::settings_theme(false, &calls);
     let captured = Rc::clone(&prefix);
     settings_theme.value = Rc::new(move |text, _| format!("{}{text}", *captured.borrow()));
     let b = SettingsList::new(
-        vec![SettingItem {
-            id: "x".into(),
-            label: "X".into(),
-            description: None,
-            current_value: "V".into(),
-            values: None,
-            submenu: None,
-        }],
-        1,
+        [("x", "X", "V"), ("y", "XY", "W"), ("z", "Z", "Q")]
+            .into_iter()
+            .map(|(id, label, value)| SettingItem {
+                id: id.into(),
+                label: label.into(),
+                current_value: value.into(),
+                description: None,
+                values: None,
+                submenu: None,
+            })
+            .collect(),
+        3,
         settings_theme,
         (Rc::new(|_, _| {}), Rc::new(|| {})),
-        SettingsListOptions::default(),
+        SettingsListOptions {
+            enable_search: true,
+        },
     );
+    b.handle_input("X");
+    b.handle_input("\x1b[B");
     let before = [a.render(40), b.render(40)];
     prefix.replace("b:");
     a.invalidate();
@@ -201,5 +216,23 @@ fn lists_preserve_fitting_theme_bytes() {
         );
         assert_eq!(list.render(80), [output]);
         assert_eq!(list.render(0), [""]);
+        let mut theme = list_support::settings_theme(false, &Rc::default());
+        theme.description = Rc::new(move |_| output.into());
+        let list = SettingsList::new(
+            vec![SettingItem {
+                id: "x".into(),
+                label: "X".into(),
+                description: Some("description".into()),
+                current_value: "V".into(),
+                values: None,
+                submenu: None,
+            }],
+            1,
+            theme,
+            (Rc::new(|_, _| {}), Rc::new(|| {})),
+            SettingsListOptions::default(),
+        );
+        assert_eq!(list.render(80)[2], output);
+        assert_eq!(list.render(0)[2], "");
     }
 }

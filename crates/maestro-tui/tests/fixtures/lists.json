@@ -2452,13 +2452,10 @@
             "key": "\u001b[B"
           },
           {
-            "key": "gm"
+            "key": "a"
           },
           {
-            "width": 80
-          },
-          {
-            "key": ""
+            "key": "\u001b[B"
           },
           {
             "width": 80
@@ -2483,16 +2480,12 @@
       "expected": {
         "frames": [
           [
-            "> gm\u001b[7m \u001b[27m                                                                           ",
+            "> a\u001b[7m \u001b[27m                                                                            ",
             "",
+            "  Alpha       off",
             "→ Gamma       read only",
-            "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
-          ],
-          [
-            "> g\u001b[7m \u001b[27m                                                                            ",
-            "",
-            "→ Gamma       read only",
+            "  Beta label  2",
+            "  (2/4)",
             "",
             "  Type to search · Enter/Space to change · Esc to cancel"
           ],
@@ -3233,6 +3226,9 @@
             ]
           },
           {
+            "width": 80
+          },
+          {
             "update": [
               "same",
               ""
@@ -3245,6 +3241,12 @@
       },
       "expected": {
         "frames": [
+          [
+            "→ A  a",
+            "  B  b",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
           [
             "→ A  ",
             "  B  b",
@@ -3379,15 +3381,15 @@
             "",
             "",
             "",
-            "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31mn\u001b[0m",
-            "\u001b[32m  \u001b[31me\u001b[0m",
-            "\u001b[32m  \u001b[31mt\u001b[0m",
-            "\u001b[32m  \u001b[31mw\u001b[0m",
-            "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31m界\u001b[0m",
-            "\u001b[32m  \u001b[31m三\u001b[0m",
-            "\u001b[32m  \u001b[31m四\u001b[0m\u001b[0m",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
             "",
             ""
           ]
@@ -3483,15 +3485,15 @@
             "\u001b[0m.\u001b[0m",
             "\u001b[0m.\u001b[0m",
             "",
-            "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31mn\u001b[0m",
-            "\u001b[32m  \u001b[31me\u001b[0m",
-            "\u001b[32m  \u001b[31mt\u001b[0m",
-            "\u001b[32m  \u001b[31mw\u001b[0m",
-            "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31m界\u001b[0m",
-            "\u001b[32m  \u001b[31m三\u001b[0m",
-            "\u001b[32m  \u001b[31m四\u001b[0m\u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
             "",
             "\u001b[0m.\u001b[0m"
           ]
@@ -3587,15 +3589,15 @@
             "\u001b[0m..\u001b[0m",
             "\u001b[0m..\u001b[0m",
             "",
-            "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31mn\u001b[0m",
-            "\u001b[32m  \u001b[31me\u001b[0m",
-            "\u001b[32m  \u001b[31mt\u001b[0m",
-            "\u001b[32m  \u001b[31mw\u001b[0m",
-            "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31m界\u001b[0m",
-            "\u001b[32m  \u001b[31m三\u001b[0m",
-            "\u001b[32m  \u001b[31m四\u001b[0m\u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
             "",
             "\u001b[0m..\u001b[0m"
           ]
@@ -3697,9 +3699,9 @@
             "\u001b[32m  \u001b[31mt\u001b[0m",
             "\u001b[32m  \u001b[31mw\u001b[0m",
             "\u001b[32m  \u001b[31mo\u001b[0m",
-            "\u001b[32m  \u001b[31m界\u001b[0m",
-            "\u001b[32m  \u001b[31m三\u001b[0m",
-            "\u001b[32m  \u001b[31m四\u001b[0m\u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
             "",
             "\u001b[0m...\u001b[0m"
           ]
@@ -4852,22 +4854,30 @@
       "expected": {
         "before": [
           [
-            "a:→ X"
+            "  X",
+            "a:→ Y"
           ],
           [
-            "→ X  a:V",
+            "> X\u001b[7m \u001b[27m                                    ",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  X   a:V",
+            "→ XY  a:W",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
           ]
         ],
         "after": [
           [
-            "b:→ X"
+            "  X",
+            "b:→ Y"
           ],
           [
-            "→ X  b:V",
+            "> X\u001b[7m \u001b[27m                                    ",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  X   b:V",
+            "→ XY  b:W",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
           ]
         ]
       }

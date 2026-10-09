@@ -242,18 +242,26 @@ impl SettingsList {
     }
     /// Appends the current selected description from the captured view.
     fn description(&self, items: &[Rc<SharedSetting>], lines: &mut Vec<String>, width: usize) {
-        if let Some(description) = items
+        let Some(description) = items
             .get(self.state.selected.get())
             .and_then(|item| item.description.as_deref())
             .filter(|text| !text.is_empty())
-        {
-            lines.push(String::new());
-            lines.extend(
-                wrap_text_with_ansi(description, width.saturating_sub(4))
-                    .into_iter()
-                    .map(|line| (self.theme.description)(&format!("  {line}"))),
-            );
-        }
+        else {
+            return;
+        };
+        lines.push(String::new());
+        lines.extend(
+            wrap_text_with_ansi(description, width.saturating_sub(4))
+                .into_iter()
+                .map(|line| {
+                    let styled = (self.theme.description)(&format!("  {line}"));
+                    if width > 0 && visible_width(&styled) <= width {
+                        styled
+                    } else {
+                        clip(&styled, width)
+                    }
+                }),
+        );
     }
     /// Styles label and then reads the current value before composing the row.
     fn row(

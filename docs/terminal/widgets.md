@@ -314,7 +314,9 @@ An empty original list shows `  No settings available`; an empty search result s
 `  Type to search · Enter/Space to change · Esc to cancel`. The scroll counter is
 `  ({selected + 1}/{count})`. Original-empty messages use no-ellipsis clipping;
 matching-result messages, composed setting rows and hints use the text helper's default
-truncation. Description rows use delegated wrapping, not a universal width guarantee.
+truncation. Descriptions use delegated wrapping, then indentation and styling. Each
+completed description row preserves fitting bytes at nonzero widths and otherwise uses
+no-ellipsis clipping.
 
 ```rust
 use std::rc::Rc;
