@@ -1,0 +1,309 @@
+[
+  {
+    "model": {
+      "id": "gpt-5.1-codex",
+      "name": "test",
+      "api": "openai-codex-responses",
+      "provider": "openai-codex",
+      "baseUrl": "https://chatgpt.com/backend-api",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 400000,
+      "maxTokens": 128000
+    },
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello Ω",
+          "timestamp": 1
+        }
+      ]
+    },
+    "options": {},
+    "expected": {
+      "model": "gpt-5.1-codex",
+      "store": false,
+      "stream": true,
+      "instructions": "You are a helpful assistant.",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hello Ω"
+            }
+          ]
+        }
+      ],
+      "text": {
+        "verbosity": "low"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "tool_choice": "auto",
+      "parallel_tool_calls": true
+    }
+  },
+  {
+    "model": {
+      "id": "gpt-5.1-codex",
+      "name": "test",
+      "api": "openai-codex-responses",
+      "provider": "openai-codex",
+      "baseUrl": "https://chatgpt.com/backend-api",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 400000,
+      "maxTokens": 128000
+    },
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello Ω",
+          "timestamp": 1
+        }
+      ],
+      "systemPrompt": ""
+    },
+    "options": {},
+    "expected": {
+      "model": "gpt-5.1-codex",
+      "store": false,
+      "stream": true,
+      "instructions": "You are a helpful assistant.",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hello Ω"
+            }
+          ]
+        }
+      ],
+      "text": {
+        "verbosity": "low"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "tool_choice": "auto",
+      "parallel_tool_calls": true
+    }
+  },
+  {
+    "model": {
+      "id": "gpt-5.1-codex",
+      "name": "test",
+      "api": "openai-codex-responses",
+      "provider": "openai-codex",
+      "baseUrl": "https://chatgpt.com/backend-api",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 400000,
+      "maxTokens": 128000
+    },
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello Ω",
+          "timestamp": 1
+        }
+      ],
+      "systemPrompt": "  "
+    },
+    "options": {},
+    "expected": {
+      "model": "gpt-5.1-codex",
+      "store": false,
+      "stream": true,
+      "instructions": "  ",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hello Ω"
+            }
+          ]
+        }
+      ],
+      "text": {
+        "verbosity": "low"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "tool_choice": "auto",
+      "parallel_tool_calls": true
+    }
+  },
+  {
+    "model": {
+      "id": "gpt-5.1-codex",
+      "name": "test",
+      "api": "openai-codex-responses",
+      "provider": "openai-codex",
+      "baseUrl": "https://chatgpt.com/backend-api",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 400000,
+      "maxTokens": 128000
+    },
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello Ω",
+          "timestamp": 1
+        }
+      ]
+    },
+    "options": {
+      "temperature": 0,
+      "serviceTier": null,
+      "sessionId": ""
+    },
+    "expected": {
+      "model": "gpt-5.1-codex",
+      "store": false,
+      "stream": true,
+      "instructions": "You are a helpful assistant.",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hello Ω"
+            }
+          ]
+        }
+      ],
+      "text": {
+        "verbosity": "low"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "prompt_cache_key": "",
+      "tool_choice": "auto",
+      "parallel_tool_calls": true,
+      "temperature": 0,
+      "service_tier": null
+    }
+  },
+  {
+    "model": {
+      "id": "gpt-5.1-codex",
+      "name": "test",
+      "api": "openai-codex-responses",
+      "provider": "openai-codex",
+      "baseUrl": "https://chatgpt.com/backend-api",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 400000,
+      "maxTokens": 128000
+    },
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello Ω",
+          "timestamp": 1
+        }
+      ]
+    },
+    "options": {
+      "temperature": 0.25,
+      "serviceTier": "scale",
+      "sessionId": "s",
+      "textVerbosity": "high",
+      "maxTokens": 5,
+      "metadata": {
+        "ignore": "me"
+      },
+      "cacheRetention": "none"
+    },
+    "expected": {
+      "model": "gpt-5.1-codex",
+      "store": false,
+      "stream": true,
+      "instructions": "You are a helpful assistant.",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hello Ω"
+            }
+          ]
+        }
+      ],
+      "text": {
+        "verbosity": "high"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "prompt_cache_key": "s",
+      "tool_choice": "auto",
+      "parallel_tool_calls": true,
+      "temperature": 0.25,
+      "service_tier": "scale"
+    }
+  }
+]
