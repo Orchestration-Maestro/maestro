@@ -160,12 +160,17 @@ use maestro_models::{Fetch, HttpResponse, refresh_openai_codex_token};
 use std::{collections::BTreeMap, sync::Arc};
 
 let fetch: Fetch = Arc::new(|_| Box::pin(async {
-    let body = br#"{"access_token":"h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s","refresh_token":"rotated","expires_in":3600}"#;
+    use base64::Engine as _;
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .encode(br#"{"https://api.openai.com/auth":{"chatgpt_account_id":"acct_123"}}"#);
+    let body = format!(
+        r#"{{"access_token":"h.{payload}.s","refresh_token":"rotated","expires_in":3600}}"#
+    );
     Ok(HttpResponse {
         status: 200,
         status_text: String::new(),
         headers: BTreeMap::new(),
-        body: Box::pin(futures_util::stream::iter([Ok(body.to_vec())])),
+        body: Box::pin(futures_util::stream::iter([Ok(body.into_bytes())])),
     })
 }));
 let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;

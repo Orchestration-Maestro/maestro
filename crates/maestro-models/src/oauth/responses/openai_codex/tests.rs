@@ -147,10 +147,12 @@ struct AccountCase {
 }
 /// Read only the committed, consumed fixture schema.
 fn corpus() -> Corpus {
-    let corpus: Corpus = serde_json::from_str(include_str!(
-        "../../../../tests/fixtures/response_accounts.json"
-    ))
-    .unwrap();
+    use base64::Engine as _;
+    let prefix =
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"https://api.openai.com/au"#);
+    let fixture = include_str!("../../../../tests/fixtures/response_accounts.json")
+        .replace("<fake-account-prefix>", &prefix);
+    let corpus: Corpus = serde_json::from_str(&fixture).unwrap();
     let mut requests = std::collections::HashSet::new();
     for case in corpus
         .fields
@@ -305,7 +307,10 @@ fn check_accounts(cases: Vec<AccountCase>) {
         expected,
     } in cases
     {
-        assert_eq!(token::account_id(&input), expected, "{input}");
+        assert!(
+            token::account_id(&input) == expected,
+            "account claim mismatch"
+        );
     }
 }
 
@@ -337,6 +342,24 @@ fn response_token_text_handles_fragmented_utf8() {
 #[test]
 fn response_account_payload_decodes_url_safe_utf8() {
     check_accounts(corpus().decode);
+}
+
+#[test]
+fn response_account_payload_requires_full_or_absent_padding() {
+    use base64::Engine as _;
+    let payload = base64::engine::general_purpose::URL_SAFE
+        .encode(br#"{"https://api.openai.com/auth":{"chatgpt_account_id":"acct_123"}}  "#);
+    assert!(payload.ends_with("=="));
+    for (encoded, expected) in [
+        (payload.as_str(), Some("acct_123")),
+        (payload.trim_end_matches('='), Some("acct_123")),
+        (&payload[..payload.len() - 1], None),
+    ] {
+        assert!(
+            token::account_id(&format!("h.{encoded}.s")).as_deref() == expected,
+            "account payload padding mismatch"
+        );
+    }
 }
 
 #[test]
@@ -533,7 +556,11 @@ fn accept(wait: &EventStream<crate::oauth::native::CallbackOutcome, ()>, code: &
 }
 /// Successful token bytes for interaction tests.
 fn success_bytes() -> Vec<u8> {
-    br#"{"access_token":"h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s","refresh_token":"rotated","expires_in":0.5}"#.to_vec()
+    use base64::Engine as _;
+    let payload = base64::engine::general_purpose::URL_SAFE
+        .encode(br#"{"https://api.openai.com/auth":{"chatgpt_account_id":"acct_123"}}"#);
+    format!(r#"{{"access_token":"h.{payload}.s","refresh_token":"rotated","expires_in":0.5}}"#)
+        .into_bytes()
 }
 /// Controlled successful transport.
 fn success_fetch() -> Fetch {

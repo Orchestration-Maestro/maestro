@@ -131,13 +131,20 @@ pub(super) fn account_id(token: &str) -> Option<String> {
         .bytes()
         .filter(|byte| !matches!(byte, b' ' | b'\t' | b'\n' | b'\r' | 0x0c))
         .collect();
-    let config = GeneralPurposeConfig::new()
-        .with_decode_padding_mode(DecodePaddingMode::Indifferent)
-        .with_decode_allow_trailing_bits(true);
-    let bytes = GeneralPurpose::new(&alphabet::URL_SAFE, config)
-        .decode(&encoded)
-        .or_else(|_| GeneralPurpose::new(&alphabet::STANDARD, config).decode(&encoded))
-        .ok()?;
+    let bytes = [
+        DecodePaddingMode::RequireCanonical,
+        DecodePaddingMode::RequireNone,
+    ]
+    .into_iter()
+    .find_map(|padding| {
+        let config = GeneralPurposeConfig::new()
+            .with_decode_padding_mode(padding)
+            .with_decode_allow_trailing_bits(true);
+        GeneralPurpose::new(&alphabet::URL_SAFE, config)
+            .decode(&encoded)
+            .or_else(|_| GeneralPurpose::new(&alphabet::STANDARD, config).decode(&encoded))
+            .ok()
+    })?;
     let text = std::str::from_utf8(&bytes).ok()?;
     let raw = raw_json(text).ok()?;
     let auth = member(raw, "https://api.openai.com/auth")?;
