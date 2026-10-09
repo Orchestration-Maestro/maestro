@@ -23,8 +23,8 @@ numeric spelling can change.
 
 Tool identities are normalized for foreign history. The allowed-provider set
 selects whether a compound identity retains a separate item identity. A call
-without an item identity replays without an `id` member. Item
-identities starting with `fc_` are omitted for a different model only when
+without an item identity replays without an `id` member. Replay retains the whole
+item identity after the first `|`. Item identities starting with `fc_` are omitted for a different model only when
 provider and API both match. Tool-result images follow the joined text when
 supported, including image-only results; otherwise empty text uses
 `(see attached image)`. `convert_responses_tools` preserves declaration order
@@ -50,7 +50,8 @@ Existing
 calls use nonempty scratch arguments before final arguments and ignore final
 identity. Final-only calls are inserted before publishing their end. When creating
 a call, an omitted item ID leaves the call identity alone; a present string ID
-appends `|{id}`. Argument
+appends `|{id}`. A `call_id` containing `|` returns a native diagnostic because
+it cannot be distinguished from the compound identity. Argument
 completion delegates to the owning JSON helper; nonobject results become `{}`.
 Argument completion replaces stored arguments, emitting a delta only when the
 completed text adds a nonempty suffix to the previous scratch.

@@ -993,23 +993,31 @@ fn maestro_responses_events_accept_nullable_error_code() -> TestResult {
 
 #[test]
 fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
+    let run = block_on(
+        false,
+        responses::reduce(Script::of(vec![
+            json!({"type":"response.completed","response":{"usage":{}}}).to_string(),
+        ])?),
+    )?;
+    run.outcome?;
+    assert_eq!(
+        json!([
+            run.message.usage.input,
+            run.message.usage.output,
+            run.message.usage.total_tokens,
+            run.message.usage.cache_read
+        ]),
+        json!([0.0, 0.0, 0.0, 0.0])
+    );
     for key in [
         "input_tokens",
         "output_tokens",
         "total_tokens",
         "cached_tokens",
     ] {
-        for value in [
-            None,
-            Some(json!(null)),
-            Some(json!(0)),
-            Some(json!(7)),
-            Some(json!("7")),
-        ] {
+        for value in [json!(null), json!(0), json!(7), json!("7")] {
             let mut usage = json!({});
-            if let Some(value) = &value {
-                usage[key] = value.clone();
-            }
+            usage[key] = value.clone();
             if key == "cached_tokens" {
                 usage = json!({"input_tokens_details": usage});
             }
@@ -1019,7 +1027,7 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
                     json!({"type": "response.completed", "response": {"usage": usage}}).to_string(),
                 ])?),
             )?;
-            if value.as_ref().is_some_and(Value::is_string) {
+            if value.is_string() {
                 assert_eq!(
                     run.outcome.unwrap_err().message,
                     "expected a numeric usage count"
@@ -1027,7 +1035,7 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
                 continue;
             }
             run.outcome?;
-            let expected = value.as_ref().and_then(Value::as_f64).unwrap_or_default();
+            let expected = value.as_f64().unwrap_or_default();
             let counts = &run.message.usage;
             let (actual, expected) = match key {
                 "input_tokens" => (json!(counts.input), json!(expected)),
@@ -1051,7 +1059,10 @@ fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
             json!({"type": "function_call", "call_id": "c", "name": "lookup", "arguments": "{}"});
         let mut events = vec![json!({"type": event_kind, "item": item}).to_string()];
         if event_kind == "response.output_item.added" {
-            events.push(json!({"type": "response.output_item.done", "item": item}).to_string());
+            events.push(
+                json!({"type": "response.output_item.done", "item": {"type":"function_call"}})
+                    .to_string(),
+            );
         }
         events.push(json!({"type": "response.completed"}).to_string());
         let run = block_on(false, responses::reduce(Script::of(events)?))?;
@@ -1074,6 +1085,65 @@ fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
         assert_eq!(
             replay[0],
             json!({"type":"function_call", "call_id":"c", "name":"lookup", "arguments":"{}"})
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_reject_ambiguous_call_identity() -> TestResult {
+    for event_kind in ["response.output_item.added", "response.output_item.done"] {
+        let run = block_on(
+            false,
+            responses::reduce(Script::of(vec![
+                json!({"type":event_kind,"item":{"type":"function_call",
+                "call_id":"c|i","name":"lookup","arguments":"{}"}})
+                .to_string(),
+                json!({"type":"response.completed"}).to_string(),
+            ])?),
+        )?;
+        assert_eq!(
+            run.outcome.unwrap_err().message,
+            "call_id contains the item identity separator"
+        );
+        assert!(run.message.content.is_empty());
+        assert!(run.events.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_replay_complete_item_identity() -> TestResult {
+    for event_kind in ["response.output_item.added", "response.output_item.done"] {
+        let mut events = vec![
+            json!({"type":event_kind,"item":{"type":"function_call",
+            "call_id":"c","id":"i|j","name":"lookup","arguments":"{}"}})
+            .to_string(),
+        ];
+        if event_kind == "response.output_item.added" {
+            events.push(
+                json!({"type":"response.output_item.done","item":{"type":"function_call"}})
+                    .to_string(),
+            );
+        }
+        events.push(json!({"type":"response.completed"}).to_string());
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        run.outcome?;
+        let context = maestro_models::Context {
+            system_prompt: None,
+            messages: vec![maestro_models::Message::Assistant(run.message)],
+            tools: None,
+        };
+        let replay = super::super::messages::convert_responses_messages(
+            &responses::model(None)?,
+            &context,
+            &std::collections::HashSet::<String>::new(),
+            None,
+        )?;
+        assert_eq!(
+            replay[0],
+            json!({"type":"function_call","call_id":"c",
+            "id":"i|j","name":"lookup","arguments":"{}"})
         );
     }
     Ok(())

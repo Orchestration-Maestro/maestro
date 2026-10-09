@@ -490,6 +490,9 @@ fn argument_update(
 /// Build a final call from the selected identity and already-parsed arguments.
 fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErrorInfo> {
     let mut id = string(member(raw, "call_id"))?;
+    if id.contains('|') {
+        return Err(failure("call_id contains the item identity separator"));
+    }
     if let Some(item_id) = field::<String>(raw, "id")? {
         id.push('|');
         id.push_str(&item_id);

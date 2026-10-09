@@ -240,11 +240,11 @@ fn output_message(text: &TextContent, retained: usize) -> Value {
 /// model of the same provider and API made a call whose item identifier starts with `fc_`, so the service
 /// does not look for the reasoning item it was paired with.
 fn function_call(call: &ToolCall, other_model: bool) -> Result<Value, DiagnosticErrorInfo> {
-    let mut parts = call.id.split('|');
-    let call_id = parts.next().unwrap_or_default();
-    let item_id = parts
-        .next()
-        .filter(|item| !(other_model && item.starts_with("fc_")));
+    let (call_id, item_id) = call
+        .id
+        .split_once('|')
+        .map_or((call.id.as_str(), None), |(call, item)| (call, Some(item)));
+    let item_id = item_id.filter(|item| !(other_model && item.starts_with("fc_")));
     let mut item = Map::new();
     item.insert("type".to_owned(), json!("function_call"));
     if let Some(item_id) = item_id {
@@ -285,6 +285,9 @@ fn convert_tool_result(result: &ToolResultMessage, model: &Model) -> Value {
     } else {
         json!(text)
     };
-    let call_id = result.tool_call_id.split('|').next().unwrap_or_default();
+    let call_id = result
+        .tool_call_id
+        .split_once('|')
+        .map_or(result.tool_call_id.as_str(), |(call, _)| call);
     json!({"type": "function_call_output", "call_id": call_id, "output": output})
 }
