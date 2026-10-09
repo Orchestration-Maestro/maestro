@@ -669,6 +669,7 @@ fn transport_options(
         let taken = body.lock().ok().and_then(|mut body| body.take());
         Box::pin(std::future::ready(match taken {
             Some(body) => Ok(HttpResponse {
+                status_text: String::new(),
                 status: 200,
                 headers: std::collections::BTreeMap::new(),
                 body,

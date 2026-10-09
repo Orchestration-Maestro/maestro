@@ -276,6 +276,7 @@ fn response_fetch(bytes: Vec<u8>) -> Fetch {
         let bytes = bytes.clone();
         Box::pin(async move {
             Ok(HttpResponse {
+                status_text: String::new(),
                 status: 200,
                 headers: std::collections::BTreeMap::new(),
                 body: Box::pin(futures_util::stream::iter([Ok(bytes)])),
@@ -512,6 +513,7 @@ fn controlled_response(mode: &str, bytes: Vec<u8>) -> Result<HttpResponse, Fetch
         Ok(bytes)
     };
     Ok(HttpResponse {
+        status_text: String::new(),
         status: if mode == "http503" { 503 } else { 200 },
         headers: std::collections::BTreeMap::new(),
         body: Box::pin(futures_util::stream::iter([chunk])),
@@ -614,6 +616,7 @@ fn body_gate(source: &str) -> BodyGate {
         std::task::Poll::Ready(None)
     }));
     let response = Mutex::new(Some(HttpResponse {
+        status_text: String::new(),
         status: 200,
         headers: std::collections::BTreeMap::new(),
         body: Box::pin(stream),
@@ -642,6 +645,7 @@ fn request_fetch(
             Err(failure("controlled failure"))
         } else {
             Ok(HttpResponse {
+                status_text: String::new(),
                 status: 503,
                 headers: std::collections::BTreeMap::new(),
                 body: Box::pin(futures_util::stream::iter([Ok(bytes.clone())])),

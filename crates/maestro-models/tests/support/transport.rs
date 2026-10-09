@@ -99,6 +99,7 @@ impl Attempt {
     /// The response or failure this attempt produces.
     fn respond(&self) -> BoxFuture<Result<HttpResponse, FetchError>> {
         let response = |status, headers, body| HttpResponse {
+            status_text: String::new(),
             status,
             headers,
             body,

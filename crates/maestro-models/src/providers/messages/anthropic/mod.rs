@@ -160,6 +160,7 @@ async fn invoke(
         status,
         headers,
         body,
+        ..
     } = response;
     if let Some(hook) = &options.common.on_response {
         let observed = ProviderResponse {

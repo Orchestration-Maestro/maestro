@@ -19,6 +19,10 @@ pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, Fetc
         }
         let response = builder.body(request.body).send().await.map_err(failed)?;
         let status = response.status().as_u16();
+        #[cfg(not(target_arch = "wasm32"))]
+        let status_text = status_text(&response);
+        #[cfg(target_arch = "wasm32")]
+        let status_text = String::new();
         let headers = response_record(response.headers());
         let body: HttpBody = Box::pin(
             response
@@ -27,6 +31,7 @@ pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, Fetc
         );
         Ok(HttpResponse {
             status,
+            status_text,
             headers,
             body,
         })
@@ -89,3 +94,30 @@ fn failed<E: Error + 'static>(error: E) -> FetchError {
         connection(chain(&error))
     }
 }
+
+/// Read the native response status text.
+#[cfg(not(target_arch = "wasm32"))]
+fn status_text(response: &reqwest::Response) -> String {
+    if !matches!(
+        response.version(),
+        reqwest::Version::HTTP_10 | reqwest::Version::HTTP_11
+    ) {
+        return String::new();
+    }
+    response
+        .extensions()
+        .get::<hyper::ext::ReasonPhrase>()
+        .map_or_else(
+            || {
+                response
+                    .status()
+                    .canonical_reason()
+                    .unwrap_or_default()
+                    .to_owned()
+            },
+            |phrase| String::from_utf8_lossy(phrase.as_bytes()).into_owned(),
+        )
+}
+
+#[cfg(test)]
+mod tests;

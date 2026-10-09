@@ -160,6 +160,7 @@ pub fn scripted_fetch(case: &Case, requests: &Requests) -> maestro_models::Fetch
             }));
         }
         Box::pin(std::future::ready(Ok(HttpResponse {
+            status_text: String::new(),
             status,
             headers: [("content-type".to_owned(), "text/event-stream".to_owned())].into(),
             body: body(&chunks),
@@ -315,6 +316,7 @@ pub fn client_for(body: HttpBody) -> AnthropicClient {
         let taken = body.lock().ok().and_then(|mut body| body.take());
         Box::pin(std::future::ready(match taken {
             Some(body) => Ok(HttpResponse {
+                status_text: String::new(),
                 status: 200,
                 headers: BTreeMap::new(),
                 body,
@@ -328,6 +330,7 @@ pub fn client_for(body: HttpBody) -> AnthropicClient {
 pub fn status_client(status: u16) -> AnthropicClient {
     Arc::new(move |_, _| {
         Box::pin(std::future::ready(Ok(HttpResponse {
+            status_text: String::new(),
             status,
             headers: BTreeMap::new(),
             body: body(&[Chunk::Text(STOP.to_owned())]),
