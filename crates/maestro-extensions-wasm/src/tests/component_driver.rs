@@ -4,10 +4,10 @@ use std::path::PathBuf;
 
 use wasmtime::component::Resource;
 
-use super::host::{Harness, borrow, reported};
+use super::host::{Harness, borrow, release_held, reported};
 use super::host_family as fixtures;
 use super::observed::{Observed, gate};
-use super::scenario::Driver;
+use super::scenario::{Delivery, Driver, UNKNOWN};
 
 /// The component with the state the scenario keeps between steps.
 pub struct ComponentDriver {
@@ -15,8 +15,10 @@ pub struct ComponentDriver {
     path: PathBuf,
     /// The running component, once started.
     harness: Option<Harness>,
-    /// The signal of the previous compaction, which the driver cancels before the next one.
-    previous: Option<u32>,
+    /// The table keys of the flags lent so far, by handle.
+    flags: Vec<u32>,
+    /// The flag of the previous compaction, which the driver cancels before the next one.
+    previous: Option<usize>,
 }
 
 /// The running harness, or an error when the component was not started.
@@ -32,6 +34,7 @@ impl ComponentDriver {
         Self {
             path,
             harness: None,
+            flags: Vec::new(),
             previous: None,
         }
     }
@@ -44,115 +47,91 @@ impl ComponentDriver {
             .unwrap_or_default()
     }
 
-    /// Delivers an input to the handler registered as `name`.
-    async fn deliver_input(
-        &mut self,
-        name: &str,
-        text: &str,
-    ) -> wasmtime::Result<fixtures::guest::InputOutcome> {
-        let harness = started(&mut self.harness)?;
-        let handler = harness.callback(name)?;
-        let ctx = harness.ordinary("/work")?;
-        let exports = harness.exports.clone();
-        harness
-            .store
-            .run_concurrent(async |accessor| {
-                exports
-                    .call_invoke_input(accessor, borrow(handler), fixtures::input(text), ctx)
-                    .await
-            })
-            .await?
+    /// The table key of the flag lent under a handle.
+    fn key(&self, signal: usize) -> wasmtime::Result<u32> {
+        self.flags
+            .get(signal)
+            .copied()
+            .ok_or_else(|| wasmtime::format_err!("no flag was lent as {signal}"))
     }
 
-    /// A cancellation flag for the handler that keeps its signal; cancelling it first
-    /// cancels the signal that handler kept from the previous compaction.
-    fn retained_flag(&mut self, aborted: bool) -> wasmtime::Result<u32> {
+    /// The resources an event delivery lends: a context in `cwd` and the flag under `signal`.
+    fn resources(
+        &mut self,
+        cwd: &str,
+        signal: Option<usize>,
+    ) -> wasmtime::Result<fixtures::guest::Capabilities> {
+        let signal = signal
+            .map(|signal| self.key(signal).map(Resource::new_own))
+            .transpose()?;
+        let ctx = started(&mut self.harness)?.ordinary(cwd)?;
+        Ok(fixtures::guest::Capabilities { ctx, signal })
+    }
+
+    /// Delivers the event to the handler `handler`, optionally holding the next wait for idle
+    /// pending until the driver saw it.
+    async fn call(
+        &mut self,
+        handler: u32,
+        event: &str,
+        resources: fixtures::guest::Capabilities,
+        hold: bool,
+    ) -> wasmtime::Result<Result<fixtures::guest::EventOutcome, String>> {
         let harness = started(&mut self.harness)?;
-        if aborted && let Some(previous) = self.previous {
-            harness.abort(previous)?;
+        let (pause, pending, proceed) = gate();
+        if hold {
+            harness.observed().hold_next_idle(pause);
         }
-        let key = harness.flag(aborted)?;
-        self.previous = Some(key);
-        Ok(key)
-    }
-
-    /// Delivers a before-compact event with the flag `key` to the handler registered as `name`.
-    async fn deliver_compact(
-        &mut self,
-        name: &str,
-        key: u32,
-    ) -> wasmtime::Result<fixtures::guest::SessionBeforeCompactOutcome> {
-        let harness = started(&mut self.harness)?;
-        let handler = harness.callback(name)?;
-        let ctx = harness.ordinary("/work")?;
-        let signal = Resource::new_own(key);
         let exports = harness.exports.clone();
+        let event = event.to_owned();
         harness
             .store
             .run_concurrent(async |accessor| {
-                exports
-                    .call_invoke_session_before_compact(
-                        accessor,
-                        borrow(handler),
-                        fixtures::compact_data(),
-                        signal,
-                        ctx,
-                    )
-                    .await
+                let call = exports.call_invoke_event(accessor, borrow(handler), event, resources);
+                let release = release_held(accessor, hold.then_some((pending, proceed)));
+                super::join::alongside(call, release).await
             })
             .await?
     }
 
-    /// Runs the command with the wait for idle of its continuation held until the driver saw it
-    /// pending.
-    async fn run_command(&mut self, args: &str) -> wasmtime::Result<()> {
+    /// Runs the command registered as `name`; with `hold`, the wait for idle of its
+    /// continuation stays pending until the driver saw it.
+    async fn run_command(&mut self, name: &str, args: &str, hold: bool) -> wasmtime::Result<()> {
         let harness = started(&mut self.harness)?;
-        let handler = harness.callback("command replace")?;
+        let handler = harness.callback(&format!("command {name}"))?;
         let ctx = harness.command_context("/work")?;
-        let (hold, started, open) = gate();
-        harness.observed().hold_next_idle(hold);
+        let (pause, pending, proceed) = gate();
+        if hold {
+            harness.observed().hold_next_idle(pause);
+        }
         let exports = harness.exports.clone();
         let finished = harness
             .store
             .run_concurrent(async |accessor| {
                 let call =
                     exports.call_invoke_command(accessor, borrow(handler), args.to_owned(), ctx);
-                let release = async {
-                    let _ = started.await;
-                    accessor.with(|mut access| access.get().observed.suspended());
-                    let _ = open.send(());
-                };
+                let release = release_held(accessor, hold.then_some((pending, proceed)));
                 super::join::alongside(call, release).await
             })
             .await??;
         reported(finished)
     }
 
-    /// Invokes handlers and continuations under an identity the component never registered,
-    /// and returns the errors it reports.
-    async fn unknown_callbacks(&mut self) -> wasmtime::Result<Vec<String>> {
+    /// Invokes a continuation under an identity the component never registered.
+    async fn unknown_continuation(&mut self) -> wasmtime::Result<String> {
         let harness = started(&mut self.harness)?;
-        let unknown = harness.identity(4242)?;
-        let (ctx, replaced) = (
-            harness.ordinary("/work")?,
-            harness.replaced("/replacement")?,
-        );
+        let unknown = harness.identity(UNKNOWN)?;
+        let replaced = harness.replaced("/replacement")?;
         let exports = harness.exports.clone();
-        let (decision, continuation) = harness
+        let continuation = harness
             .store
             .run_concurrent(async |accessor| {
-                let decision = exports
-                    .call_invoke_input(accessor, borrow(unknown), fixtures::input("x"), ctx)
-                    .await;
-                let continuation = exports
+                exports
                     .call_invoke_with_session(accessor, borrow(unknown), replaced)
-                    .await;
-                (decision, continuation)
+                    .await
             })
-            .await?;
-        let decision = decision?.decision.err().unwrap_or_default();
-        let continuation = continuation?.err().unwrap_or_default();
-        Ok(vec![decision, continuation])
+            .await??;
+        Ok(continuation.err().unwrap_or_default())
     }
 }
 
@@ -165,46 +144,80 @@ impl Driver for ComponentDriver {
         Ok(())
     }
 
-    async fn input(&mut self, text: &str) -> Result<String, String> {
-        let outcome = self
-            .deliver_input("event input", text)
-            .await
-            .map_err(|error| error.to_string())?;
-        Ok(fixtures::input_decision(&outcome.decision))
+    fn identity(&self, name: &str) -> Result<u32, String> {
+        self.harness
+            .as_ref()
+            .ok_or_else(|| "the component was not started".to_owned())?
+            .callback(name)
+            .map_err(|error| error.to_string())
     }
 
-    async fn compact(&mut self, aborted: bool) -> Result<String, String> {
-        let key = self
-            .retained_flag(aborted)
+    async fn deliver(
+        &mut self,
+        handler: u32,
+        event: &str,
+        cwd: &str,
+        signal: Option<usize>,
+    ) -> Result<Delivery, String> {
+        let resources = self
+            .resources(cwd, signal)
             .map_err(|error| error.to_string())?;
         let outcome = self
-            .deliver_compact("event session_before_compact", key)
+            .call(handler, event, resources, false)
             .await
-            .map_err(|error| error.to_string())?;
-        Ok(fixtures::compact_decision(&outcome.decision))
+            .map_err(|error| error.to_string())??;
+        Ok(fixtures::delivery(outcome))
     }
 
-    async fn trim_input(&mut self, text: &str) -> Result<String, String> {
+    async fn deliver_held(
+        &mut self,
+        handler: u32,
+        event: &str,
+        cwd: &str,
+    ) -> Result<Delivery, String> {
+        let resources = self
+            .resources(cwd, None)
+            .map_err(|error| error.to_string())?;
         let outcome = self
-            .deliver_input("event trim_input", text)
+            .call(handler, event, resources, true)
             .await
-            .map_err(|error| error.to_string())?;
-        Ok(fixtures::trimmed(&outcome))
+            .map_err(|error| error.to_string())??;
+        Ok(fixtures::delivery(outcome))
     }
 
-    async fn note_compaction(&mut self, aborted: bool) -> Result<String, String> {
+    fn unregistered(&mut self) -> Result<u32, String> {
+        started(&mut self.harness)
+            .and_then(|harness| harness.identity(UNKNOWN))
+            .map_err(|error| error.to_string())
+    }
+
+    fn lend_signal(&mut self, aborted: bool) -> Result<usize, String> {
         let key = started(&mut self.harness)
             .and_then(|harness| harness.flag(aborted))
             .map_err(|error| error.to_string())?;
-        let outcome = self
-            .deliver_compact("event note_compaction", key)
+        self.flags.push(key);
+        Ok(self.flags.len() - 1)
+    }
+
+    fn abort_signal(&mut self, signal: usize) -> Result<(), String> {
+        let key = self.key(signal).map_err(|error| error.to_string())?;
+        started(&mut self.harness)
+            .and_then(|harness| harness.abort(key))
+            .map_err(|error| error.to_string())
+    }
+
+    fn previous_signal(&mut self) -> &mut Option<usize> {
+        &mut self.previous
+    }
+
+    async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
+        self.run_command(name, args, false)
             .await
-            .map_err(|error| error.to_string())?;
-        Ok(fixtures::noted(&outcome))
+            .map_err(|error| error.to_string())
     }
 
     async fn command(&mut self, args: &str) -> Result<(), String> {
-        self.run_command(args)
+        self.run_command("replace", args, true)
             .await
             .map_err(|error| error.to_string())
     }
@@ -224,16 +237,26 @@ impl Driver for ComponentDriver {
         }
     }
 
+    async fn release(&mut self, name: &str) -> bool {
+        let Ok(harness) = started(&mut self.harness) else {
+            return false;
+        };
+        match harness.callback(name) {
+            Ok(key) => harness.release(key).await.is_ok(),
+            Err(_) => false,
+        }
+    }
+
     fn reject_next_session(&mut self) {
         if let Ok(harness) = started(&mut self.harness) {
             harness.observed().reject_next_session();
         }
     }
 
-    async fn invoke_unknown_callbacks(&mut self) -> Vec<String> {
-        match self.unknown_callbacks().await {
-            Ok(errors) => errors,
-            Err(error) => vec![format!("invocation failed: {error}")],
+    async fn invoke_unknown_continuation(&mut self) -> String {
+        match self.unknown_continuation().await {
+            Ok(error) => error,
+            Err(error) => format!("invocation failed: {error}"),
         }
     }
 

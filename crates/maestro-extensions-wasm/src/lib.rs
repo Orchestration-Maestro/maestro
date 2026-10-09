@@ -1,9 +1,10 @@
 //! Author-side contract for native-async extension components.
 //!
-//! The canonical interface files in `wit/` define every record and resource. Generated
-//! records are re-exported under their domain names; this crate adds only callback and
-//! ownership ergonomics around them. The component adapter is written against the host's
-//! imports, so its functions run unchanged in a component and against an in-process host.
+//! Rust records define the event payloads and results; the interface files in `wit/` define
+//! how callbacks are invoked and the host resources lent to them. An event crosses the
+//! component boundary as one JSON document beside its owned resources, and this crate turns it
+//! into the author's typed event. The component adapter is written against the host's imports,
+//! so its functions run unchanged in a component and against an in-process host.
 
 #[macro_use]
 mod port;
@@ -13,6 +14,7 @@ mod compaction;
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
 mod loader;
+mod models;
 #[cfg(test)]
 mod tests;
 mod types;
@@ -22,6 +24,7 @@ pub use compaction::*;
 #[doc(hidden)]
 pub use component_adapter::Glue;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
+pub use models::*;
 pub use types::*;
 
 #[cfg(test)]

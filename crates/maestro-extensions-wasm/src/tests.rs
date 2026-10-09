@@ -7,12 +7,32 @@
     clippy::excessive_nesting
 )]
 
+/// Starts the extension on the built component and on the controlled adapter in turn and runs
+/// the async test body `$body(&mut driver)` against each.
+macro_rules! on_both_adapters {
+    ($body:ident) => {{
+        let component = $crate::tests::path_of_component()?;
+        let mut built = $crate::tests::ComponentDriver::new(component);
+        $crate::tests::block_on(async {
+            $crate::tests::scenario::Driver::start(&mut built).await?;
+            $body(&mut built).await
+        })?;
+        let mut controlled = $crate::tests::ControlledDriver::new();
+        $crate::tests::block_on(async {
+            $crate::tests::scenario::Driver::start(&mut controlled).await?;
+            $body(&mut controlled).await
+        })
+    }};
+}
+
 mod author;
 mod build;
 mod component_driver;
 mod controlled;
 mod controlled_driver;
-mod event_kind;
+mod documents;
+mod event_transport;
+mod event_values;
 #[macro_use]
 mod fixtures;
 mod guest_family;
@@ -26,7 +46,7 @@ use std::future::Future;
 
 use component_driver::ComponentDriver;
 use controlled_driver::ControlledDriver;
-use scenario::{Driver, EXPECTED};
+use scenario::{Decision, Driver, EXPECTED};
 
 /// Runs a future to completion on a current-thread runtime.
 fn block_on<T>(future: impl Future<Output = T>) -> T {
@@ -85,7 +105,7 @@ async fn check_release<D: Driver>(adapter: impl Fn() -> D) -> Result<(), String>
     );
     assert_eq!(
         scenario_driver.dropped(),
-        [4, 8, 1, 2, 3, 5, 6, 7, 9],
+        [4, 10, 1, 2, 3, 5, 6, 7, 8, 9, 11],
         "the rejected identity drops at once, the continuation when its operation ends, and the \
          registered callbacks follow in registration order, ending with the one a destructor \
          registered"
@@ -105,13 +125,21 @@ async fn check_release<D: Driver>(adapter: impl Fn() -> D) -> Result<(), String>
     );
     let mut missing_driver = adapter();
     missing_driver.start().await?;
+    let event = r#"{"type":"input","text":"x","source":"rpc"}"#;
+    let unknown = missing_driver.unregistered()?;
+    let unregistered = missing_driver
+        .deliver(unknown, event, "/work", None)
+        .await?;
     assert_eq!(
-        missing_driver.invoke_unknown_callbacks().await,
-        [
-            "no callback registered for identity 4242".to_owned(),
-            "no pending continuation for identity 4242".to_owned(),
-        ],
-        "an invalid callback gets the adapter's exact diagnostic"
+        unregistered.decision,
+        Decision::Failed("no callback registered for identity 4242".to_owned()),
+        "an invalid handler gets the adapter's exact diagnostic and its decoded event back"
+    );
+    assert_eq!(unregistered.event, Ok(Some(event.to_owned())));
+    assert_eq!(
+        missing_driver.invoke_unknown_continuation().await,
+        "no pending continuation for identity 4242",
+        "an invalid continuation gets the adapter's exact diagnostic"
     );
     Ok(())
 }
@@ -200,10 +228,9 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         names(&contract.exports, true),
         [
             "invoke-command",
-            "invoke-input",
-            "invoke-session-before-compact",
+            "invoke-event",
             "invoke-with-session",
-            "start",
+            "start"
         ],
         "every event, command and pending call is native async"
     );

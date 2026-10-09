@@ -3,11 +3,8 @@
 
 use std::marker::PhantomData;
 
-use super::{Exports, Imports, release};
-use crate::bindings::exports::maestro::extension::guest::{
-    Guest, InputOutcome, SessionBeforeCompactOutcome,
-};
-use crate::bindings::maestro::extension::events as wire;
+use super::{Capabilities, Exports, Imports, release};
+use crate::bindings::exports::maestro::extension::guest::{self, Guest};
 use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::loader::Extension;
@@ -108,24 +105,14 @@ impl<E: Extension> Guest for Glue<E> {
             .await
     }
 
-    async fn invoke_session_before_compact(
+    async fn invoke_event(
         handler: &host::Callback,
-        event: wire::SessionBeforeCompactEventData,
-        signal: host::AbortSignal,
-        ctx: host::Context,
-    ) -> SessionBeforeCompactOutcome {
+        event: String,
+        resources: guest::Capabilities,
+    ) -> Result<guest::EventOutcome, String> {
+        let guest::Capabilities { ctx, signal } = resources;
         Exports::new(Generated)
-            .invoke_session_before_compact(handler.id(), event, signal, ctx)
-            .await
-    }
-
-    async fn invoke_input(
-        handler: &host::Callback,
-        event: wire::InputEvent,
-        ctx: host::Context,
-    ) -> InputOutcome {
-        Exports::new(Generated)
-            .invoke_input(handler.id(), event, ctx)
+            .invoke_event(handler.id(), event, Capabilities { ctx, signal })
             .await
     }
 }

@@ -7,11 +7,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
-    AbortSignal, CommandOptions, CompactionResult, ExtensionAPI, ExtensionEvent,
-    ExtensionEventResult, ExtensionFuture, ExtensionHandler, InputEventResult, InputTransform,
-    NewSessionCommandData, NewSessionCommandOptions, SessionBeforeCompactResult, SessionEvent,
+    AbortSignal, CommandOptions, CompactionResult, ExtensionAPI, ExtensionCommandContext,
+    ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionHandler,
+    ExtensionResult, InputEventResult, InputTransform, NewSessionCommandData,
+    NewSessionCommandOptions, Presence, SessionBeforeCompactEvent, SessionBeforeCompactResult,
+    SessionEvent, SignalPort,
 };
-use serde_json::json;
+use serde::Deserialize;
+use serde_json::{Value, from_value, json};
 
 /// Reports its label to the host when this guard is dropped.
 struct Released {
@@ -47,7 +50,8 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         register_rejected(&api)?;
         register_reentrant(&api)?;
         register_trim(&api)?;
-        register_note(&api)
+        register_note(&api)?;
+        register_probe(&api)
     })
 }
 
@@ -97,12 +101,12 @@ fn register_compaction(api: &ExtensionAPI) -> Result<(), String> {
                 remembered.replace(Some(compact.signal.clone()));
                 Ok(Some(ExtensionEventResult::SessionBeforeCompact(
                     SessionBeforeCompactResult {
-                        cancel: Some(compact.signal.aborted()),
-                        compaction: Some(CompactionResult {
+                        cancel: Presence::Present(compact.signal.aborted()),
+                        compaction: Presence::Present(CompactionResult {
                             summary: format!("previous_aborted:{previous:?}"),
                             first_kept_entry_id: compact.preparation.first_kept_entry_id.clone(),
                             tokens_before: compact.preparation.tokens_before,
-                            details: None,
+                            details: Presence::Missing,
                         }),
                     },
                 )))
@@ -141,7 +145,8 @@ fn register_note(api: &ExtensionAPI) -> Result<(), String> {
                     return Ok(None);
                 };
                 let tokens = compact.preparation.tokens_before;
-                compact.preparation.previous_summary = Some(format!("noted {tokens} tokens"));
+                compact.preparation.previous_summary =
+                    Presence::Present(format!("noted {tokens} tokens"));
                 if compact.signal.aborted() {
                     return Err("compaction aborted after the note".to_owned());
                 }
@@ -237,4 +242,264 @@ fn replacement(log: &ExtensionAPI) -> NewSessionCommandOptions {
             })
         })),
     }
+}
+
+/// How the probe handler ends, told by the test.
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+enum Ending {
+    /// Returns no result.
+    #[default]
+    Silently,
+    /// Returns a result of the named family, decoded from the value.
+    Returns {
+        /// The event whose result contract the value follows.
+        family: String,
+        /// The result document.
+        value: Value,
+    },
+    /// Fails with this message.
+    Fails(String),
+}
+
+/// Which resources of an invocation the probe handler keeps.
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields, default)]
+struct Retain {
+    /// Keep the context.
+    context: bool,
+    /// Keep the compaction signal.
+    signal: bool,
+}
+
+/// What the probe handler does, told by the test as JSON in the working directory of its
+/// context: it reads the directive from the context it is given.
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields, default)]
+struct Directive {
+    /// Resources to keep past this invocation.
+    retain: Retain,
+    /// Report every kept context and signal through an entry.
+    report: bool,
+    /// Wait for idle on the command context a command captured, before anything else.
+    wait: bool,
+    /// Edit the event in place.
+    mark: bool,
+    /// Replace the event with the event this document describes.
+    replace_with: Option<Value>,
+    /// How the handler ends.
+    ending: Ending,
+}
+
+/// The resources one invocation of the probe handler kept.
+struct Kept {
+    /// The kept context.
+    context: Option<ExtensionContext>,
+    /// The kept compaction signal.
+    signal: Option<AbortSignal>,
+}
+
+/// A signal that is never cancelled.
+struct Live;
+
+impl SignalPort for Live {
+    fn aborted(&self) -> bool {
+        false
+    }
+}
+
+/// What the probe handler and the command that feeds it share.
+#[derive(Clone)]
+struct Probe {
+    /// Reports through entries.
+    api: ExtensionAPI,
+    /// The command context the capture command last received.
+    captured: Rc<RefCell<Option<ExtensionCommandContext>>>,
+    /// Everything invocations kept.
+    kept: Rc<RefCell<Vec<Kept>>>,
+}
+
+/// Registers the handler that does what each delivery tells it, and the command that captures
+/// a command context for it to wait on.
+fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
+    let probe = Probe {
+        api: api.clone(),
+        captured: Rc::default(),
+        kept: Rc::default(),
+    };
+    let captured = Rc::clone(&probe.captured);
+    api.on(
+        "probe",
+        Rc::new(move |event, ctx| {
+            let probe = probe.clone();
+            Box::pin(async move { probe.run(event, ctx).await })
+        }),
+    )?;
+    api.register_command(
+        "capture",
+        CommandOptions {
+            description: None,
+            handler: Rc::new(move |_args, ctx| {
+                let captured = Rc::clone(&captured);
+                Box::pin(async move {
+                    captured.replace(Some(ctx));
+                    Ok(())
+                })
+            }),
+        },
+    )
+}
+
+impl Probe {
+    /// Does what the directive in the working directory of `ctx` says.
+    async fn run(
+        self,
+        event: &mut ExtensionEvent,
+        ctx: ExtensionContext,
+    ) -> ExtensionResult<Option<ExtensionEventResult>> {
+        self.api.append_entry("entered", None)?;
+        let directive: Directive = serde_json::from_str(&ctx.cwd()?)
+            .map_err(|error| format!("unreadable directive: {error}"))?;
+        self.keep(&directive.retain, event, &ctx);
+        if directive.wait {
+            let command = self.captured.borrow().clone();
+            command
+                .ok_or("no command context was captured")?
+                .wait_for_idle()
+                .await?;
+        }
+        if directive.mark {
+            mark(event);
+        }
+        if let Some(document) = directive.replace_with {
+            *event = event_from(document)?;
+        }
+        if directive.report {
+            self.report()?;
+        }
+        match directive.ending {
+            Ending::Silently => Ok(None),
+            Ending::Returns { family, value } => reply(&family, value).map(Some),
+            Ending::Fails(message) => Err(message),
+        }
+    }
+
+    /// Keeps what `retain` asks for.
+    fn keep(&self, retain: &Retain, event: &ExtensionEvent, ctx: &ExtensionContext) {
+        let signal = match event {
+            ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => {
+                Some(compact.signal.clone())
+            }
+            _ => None,
+        };
+        let kept = Kept {
+            context: retain.context.then(|| ctx.clone()),
+            signal: signal.filter(|_| retain.signal),
+        };
+        if kept.context.is_some() || kept.signal.is_some() {
+            self.kept.borrow_mut().push(kept);
+        }
+    }
+
+    /// Reports the working directory and cancellation state of everything kept.
+    fn report(&self) -> ExtensionResult<()> {
+        let kept: Vec<Value> = self
+            .kept
+            .borrow()
+            .iter()
+            .map(|kept| {
+                json!({
+                    "cwd": kept.context.as_ref().map(|ctx| ctx.cwd().unwrap_or_default()),
+                    "aborted": kept.signal.as_ref().map(AbortSignal::aborted),
+                })
+            })
+            .collect();
+        self.api.append_entry("kept", Some(Value::Array(kept)))
+    }
+}
+
+/// Edits the field of the event that tells the kinds apart.
+fn mark(event: &mut ExtensionEvent) {
+    let changed = || "changed".to_owned();
+    match event {
+        ExtensionEvent::ResourcesDiscover(discover) => discover.cwd = changed(),
+        ExtensionEvent::Session(SessionEvent::Start(start)) => {
+            start.previous_session_file = Presence::Present(changed());
+        }
+        ExtensionEvent::Session(SessionEvent::BeforeSwitch(switch)) => {
+            switch.target_session_file = Presence::Present(changed());
+        }
+        ExtensionEvent::Session(SessionEvent::BeforeFork(fork)) => fork.entry_id = changed(),
+        ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => {
+            compact.custom_instructions = Presence::Present(changed());
+        }
+        ExtensionEvent::Session(SessionEvent::Shutdown(shutdown)) => {
+            shutdown.target_session_file = Presence::Present(changed());
+        }
+        ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
+        ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
+        ExtensionEvent::Input(input) => input.text = changed(),
+    }
+}
+
+/// The event a document describes, tagged with its kind; a compaction gets a signal that is
+/// never cancelled.
+fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
+    let tag = document["type"].as_str().unwrap_or_default().to_owned();
+    let unreadable = |error: serde_json::Error| format!("unreadable event: {error}");
+    Ok(match tag.as_str() {
+        "resources_discover" => {
+            ExtensionEvent::ResourcesDiscover(from_value(document).map_err(unreadable)?)
+        }
+        "session_start" => ExtensionEvent::Session(SessionEvent::Start(
+            from_value(document).map_err(unreadable)?,
+        )),
+        "session_before_switch" => ExtensionEvent::Session(SessionEvent::BeforeSwitch(
+            from_value(document).map_err(unreadable)?,
+        )),
+        "session_before_fork" => ExtensionEvent::Session(SessionEvent::BeforeFork(
+            from_value(document).map_err(unreadable)?,
+        )),
+        "session_before_compact" => {
+            ExtensionEvent::Session(SessionEvent::BeforeCompact(SessionBeforeCompactEvent {
+                data: from_value(document).map_err(unreadable)?,
+                signal: AbortSignal::new(Rc::new(Live)),
+            }))
+        }
+        "session_shutdown" => ExtensionEvent::Session(SessionEvent::Shutdown(
+            from_value(document).map_err(unreadable)?,
+        )),
+        "before_provider_request" => {
+            ExtensionEvent::BeforeProviderRequest(from_value(document).map_err(unreadable)?)
+        }
+        "after_provider_response" => {
+            ExtensionEvent::AfterProviderResponse(from_value(document).map_err(unreadable)?)
+        }
+        "input" => ExtensionEvent::Input(from_value(document).map_err(unreadable)?),
+        other => return Err(format!("unknown event kind {other:?}")),
+    })
+}
+
+/// The result of the family a value describes, whatever event is being handled.
+fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
+    let unreadable = |error: serde_json::Error| format!("unreadable result: {error}");
+    Ok(match family {
+        "resources_discover" => {
+            ExtensionEventResult::ResourcesDiscover(from_value(value).map_err(unreadable)?)
+        }
+        "session_before_switch" => {
+            ExtensionEventResult::SessionBeforeSwitch(from_value(value).map_err(unreadable)?)
+        }
+        "session_before_fork" => {
+            ExtensionEventResult::SessionBeforeFork(from_value(value).map_err(unreadable)?)
+        }
+        "session_before_compact" => {
+            ExtensionEventResult::SessionBeforeCompact(from_value(value).map_err(unreadable)?)
+        }
+        "before_provider_request" => {
+            ExtensionEventResult::BeforeProviderRequest(from_value(value).map_err(unreadable)?)
+        }
+        "input" => ExtensionEventResult::Input(from_value(value).map_err(unreadable)?),
+        other => return Err(format!("unknown result family {other:?}")),
+    })
 }

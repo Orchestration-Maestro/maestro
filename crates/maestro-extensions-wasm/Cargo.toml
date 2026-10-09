@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "std"] }
+serde.workspace = true
 serde_json.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
