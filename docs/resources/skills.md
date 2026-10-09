@@ -100,6 +100,8 @@ explicit paths are temporary; defaults-enabled explicit paths are always tempora
 
 ## Validation and metadata
 
+See [frontmatter](frontmatter.md) for the shared escape-decoding rule.
+
 Description validation precedes name validation. Missing or blank descriptions
 omit the skill after collecting name warnings. Other validation warnings retain
 it: overlong descriptions, parent-name mismatch, overlong names, invalid name

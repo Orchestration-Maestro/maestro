@@ -765,6 +765,10 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.0.join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));
+    copy_tree(
+        &source.join("../../vendor/yaml-rust2"),
+        &workspace.0.join("vendor/yaml-rust2"),
+    );
     let main = root.join("src/bin/development.rs");
     let contents = fs::read_to_string(&main).unwrap().replace(
         "fn main() -> std::process::ExitCode {",

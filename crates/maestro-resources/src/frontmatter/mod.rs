@@ -59,6 +59,9 @@ impl FrontmatterError {
 
 /// Parse an optional leading metadata header.
 ///
+/// Double-quoted metadata strings accept adjacent four-digit high/low surrogate
+/// escape pairs as one Unicode scalar.
+///
 /// # Errors
 /// Returns a native parsing cause when the extracted metadata is invalid.
 pub fn parse_frontmatter(content: &str) -> Result<ParsedFrontmatter, FrontmatterError> {

@@ -40,7 +40,7 @@ shallow, preserve adapter order and accept exact `.md` suffixes, including hidde
 files and file symlinks. Repeated paths and names remain repeated. Paths use
 [the lexical path owner](../../crates/maestro-path/src/lib.rs); provenance uses authored spelling, not link targets.
 
-Metadata uses the shared [frontmatter parser](../../crates/maestro-resources/src/frontmatter/mod.rs). Only `description`
+Metadata uses the shared [frontmatter parser](frontmatter.md). Only `description`
 and `argument-hint` are selected: absent/null fields are absent, strings retain
 text, and other selected types silently omit the file. Empty descriptions fall
 back to the first nonblank body line, retaining its whitespace and at most 60
