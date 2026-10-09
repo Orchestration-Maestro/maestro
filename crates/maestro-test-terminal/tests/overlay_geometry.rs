@@ -583,3 +583,33 @@ fn overlay_tab_expansion_keeps_unterminated_escape_text_and_clips_it() {
         scene.stop();
     }
 }
+
+#[test]
+fn overlay_percentage_coordinates_keep_precision_until_final_clamp() {
+    let scene = support::scene::Scene::new(21, 21);
+    scene.start(&[]);
+    scene
+        .tui
+        .show_overlay(
+            Probe::shared(&["X"]),
+            Some(Rc::new(RefCell::new(OverlayOptions {
+                width: Some(SizeValue::Cells(1)),
+                row: Some(SizeValue::Percentage("100000000000000000000%".to_owned())),
+                col: Some(SizeValue::Percentage("100000000000000000000%".to_owned())),
+                offset_x: Some(isize::MIN),
+                offset_y: Some(isize::MIN),
+                ..OverlayOptions::default()
+            }))),
+        )
+        .unwrap();
+    scene.render();
+    let line = format!("{}\x1b[0m\x1b]8;;\x07X\x1b[0m\x1b]8;;\x07", " ".repeat(20));
+    assert!(scene.terminal.writes().concat().contains(&line));
+    assert_eq!(scene.viewport()[20], format!("{}X", " ".repeat(20)));
+    assert!(
+        scene.viewport()[..20]
+            .iter()
+            .all(|line| !line.contains('X'))
+    );
+    scene.stop();
+}

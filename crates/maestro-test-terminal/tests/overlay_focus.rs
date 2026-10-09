@@ -979,49 +979,63 @@ fn visibility_tail(scene: &Scene) -> std::io::Result<Rc<std::cell::Cell<usize>>>
 
 #[test]
 fn overlay_focus_restoration_uses_post_callback_stack_slot() {
-    let scene = focused_scene();
-    let armed = Rc::new(std::cell::Cell::new(false));
-    let replacement = Probe::shared(&["C"]);
-    let replacement_handle = Rc::new(RefCell::new(None::<Box<dyn maestro_tui::OverlayHandle>>));
-    let removed = Rc::new(RefCell::new(None::<Box<dyn maestro_tui::OverlayHandle>>));
-    let options = Rc::new(RefCell::new(OverlayOptions::default()));
-    let original = Probe::shared(&["B"]);
-    *removed.borrow_mut() = Some(
-        scene
-            .tui
-            .show_overlay(original.clone(), Some(options.clone()))
-            .unwrap(),
-    );
-    let (_, mut top) = show(&scene, "A", false).unwrap();
-    options.borrow_mut().visible = Some(Rc::new({
+    for replacement_state in ["capturing", "noncapturing", "hidden", "invisible"] {
+        let scene = focused_scene();
+        let armed = Rc::new(std::cell::Cell::new(false));
+        let replacement = Probe::shared(&["C"]);
+        let replacement_handle = Rc::new(RefCell::new(None::<Box<dyn maestro_tui::OverlayHandle>>));
+        let options = Rc::new(RefCell::new(OverlayOptions::default()));
+        let original = Probe::shared(&["B"]);
+        let removed = Rc::new(RefCell::new(
+            scene
+                .tui
+                .show_overlay(original.clone(), Some(options.clone()))
+                .unwrap(),
+        ));
+        let (_, mut top) = show(&scene, "A", false).unwrap();
+        let calls = Rc::new(std::cell::Cell::new(0));
+        let callback_calls = calls.clone();
         let tui = scene.tui.clone();
-        let armed = armed.clone();
-        let removed = removed.clone();
-        let replacement = replacement.clone();
-        let replacement_handle = replacement_handle.clone();
-        move |_, _| {
-            if armed.replace(false) {
-                removed.borrow_mut().as_mut().unwrap().hide().unwrap();
-                *replacement_handle.borrow_mut() =
-                    Some(tui.show_overlay(replacement.clone(), None).unwrap());
+        let callback_armed = armed.clone();
+        let callback_removed = removed.clone();
+        let callback_replacement = replacement.clone();
+        let callback_handle = replacement_handle.clone();
+        options.borrow_mut().visible = Some(Rc::new(move |_, _| {
+            callback_calls.set(callback_calls.get() + 1);
+            if !callback_armed.replace(false) {
+                return true;
             }
+            callback_removed.borrow_mut().hide().unwrap();
+            *callback_handle.borrow_mut() =
+                Some(replacement_overlay(&tui, &callback_replacement, replacement_state).unwrap());
             true
+        }));
+        armed.set(true);
+        top.hide().unwrap();
+        assert_eq!(calls.get(), 1);
+        let available = matches!(replacement_state, "capturing" | "noncapturing");
+        assert_eq!(replacement.focus.get(), available);
+        assert_eq!(scene.probe.focus.get(), !available);
+        if available {
+            scene.terminal.send_input("replacement");
+            assert_eq!(*replacement.inputs.borrow(), ["replacement"]);
+        } else {
+            scene.terminal.send_input("fallback");
+            assert!(replacement.inputs.borrow().is_empty());
+            assert_eq!(*scene.probe.inputs.borrow(), ["fallback"]);
+            scene.probe.inputs.borrow_mut().clear();
         }
-    }));
-    armed.set(true);
-    top.hide().unwrap();
-    scene.terminal.send_input("replacement");
-    assert_eq!(*replacement.inputs.borrow(), ["replacement"]);
-    assert!(original.inputs.borrow().is_empty());
-    replacement_handle
-        .borrow_mut()
-        .as_mut()
-        .unwrap()
-        .hide()
-        .unwrap();
-    scene.terminal.send_input("editor");
-    assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
-    scene.stop();
+        assert!(original.inputs.borrow().is_empty());
+        replacement_handle
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .hide()
+            .unwrap();
+        scene.terminal.send_input("editor");
+        assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
+        scene.stop();
+    }
 }
 
 #[test]
@@ -1083,9 +1097,20 @@ fn overlay_predecessor_rechecks_callback_hidden_or_removed_identity() {
         handle.borrow_mut().focus();
         let (_, mut top) = show(&scene, "top", true).unwrap();
         top.focus();
-        options.borrow_mut().visible = Some(unavailable_callback(handle.clone(), remove));
+        let calls = Rc::new(std::cell::Cell::new(0));
+        options.borrow_mut().visible = Some(Rc::new({
+            let callback = unavailable_callback(handle.clone(), remove);
+            let calls = calls.clone();
+            move |width, height| {
+                calls.set(calls.get() + 1);
+                callback(width, height)
+            }
+        }));
         top.hide().unwrap();
+        assert!(scene.probe.focus.get());
+        assert_eq!(calls.get(), 1);
         scene.terminal.send_input("editor");
+        assert_eq!(calls.get(), 1);
         assert!(candidate.inputs.borrow().is_empty());
         assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
         scene.stop();
@@ -1128,4 +1153,234 @@ fn unavailable_callback(
         }
         true
     })
+}
+
+#[test]
+fn overlay_captured_component_survives_removal_of_its_original_alias() {
+    let scene = focused_scene();
+    let component = Probe::shared(&["X"]);
+    let options = || {
+        Some(Rc::new(RefCell::new(OverlayOptions {
+            non_capturing: Some(true),
+            ..OverlayOptions::default()
+        })))
+    };
+    let mut original = scene
+        .tui
+        .show_overlay(component.clone(), options())
+        .unwrap();
+    original.focus();
+    let mut alias = scene
+        .tui
+        .show_overlay(component.clone(), options())
+        .unwrap();
+    let (_, mut capturing) = show(&scene, "C", false).unwrap();
+    original.hide().unwrap();
+    capturing.hide().unwrap();
+    assert!(alias.is_focused());
+    scene.terminal.send_input("alias");
+    assert_eq!(*component.inputs.borrow(), ["alias"]);
+    alias.hide().unwrap();
+    assert!(scene.probe.focus.get());
+    scene.terminal.send_input("editor");
+    assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
+    scene.stop();
+}
+
+#[test]
+fn overlay_input_resamples_false_visibility_without_excluding_its_entry() {
+    let scene = focused_scene();
+    let candidate = Probe::shared(&["X"]);
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let options = Rc::new(RefCell::new(OverlayOptions::default()));
+    let handle = scene
+        .tui
+        .show_overlay(candidate.clone(), Some(options.clone()))
+        .unwrap();
+    options.borrow_mut().visible = Some(Rc::new({
+        let calls = calls.clone();
+        move |_, _| {
+            let call = calls.get();
+            calls.set(call + 1);
+            call != 0
+        }
+    }));
+    scene.terminal.send_input("resampled");
+    assert!(handle.is_focused());
+    assert_eq!(calls.get(), 2);
+    assert_eq!(*candidate.inputs.borrow(), ["resampled"]);
+    assert!(scene.probe.inputs.borrow().is_empty());
+    scene.stop();
+}
+
+#[test]
+fn overlay_top_walk_stops_when_an_accepted_slot_is_vacated() {
+    let scene = focused_scene();
+    let lower_calls = Rc::new(std::cell::Cell::new(0));
+    let lower_options = Rc::new(RefCell::new(OverlayOptions::default()));
+    let lower = Probe::shared(&["D"]);
+    scene
+        .tui
+        .show_overlay(lower.clone(), Some(lower_options.clone()))
+        .unwrap();
+    lower_options.borrow_mut().visible = Some(Rc::new({
+        let calls = lower_calls.clone();
+        move |_, _| {
+            calls.set(calls.get() + 1);
+            true
+        }
+    }));
+    let options = Rc::new(RefCell::new(OverlayOptions::default()));
+    let middle = Rc::new(RefCell::new(
+        scene
+            .tui
+            .show_overlay(Probe::shared(&["B"]), Some(options.clone()))
+            .unwrap(),
+    ));
+    let external = Probe::shared(&["Q"]);
+    scene.tui.set_focus(Some(external.clone()));
+    let (_, mut top) = show(&scene, "A", false).unwrap();
+    let calls = Rc::new(std::cell::Cell::new(0));
+    options.borrow_mut().visible = Some(Rc::new({
+        let middle = middle.clone();
+        let calls = calls.clone();
+        move |_, _| {
+            calls.set(calls.get() + 1);
+            middle.borrow_mut().hide().unwrap();
+            true
+        }
+    }));
+    top.hide().unwrap();
+    assert!(external.focus.get());
+    assert_eq!(calls.get(), 1);
+    assert_eq!(lower_calls.get(), 0);
+    scene.terminal.send_input("external");
+    assert_eq!(*external.inputs.borrow(), ["external"]);
+    assert!(lower.inputs.borrow().is_empty());
+    scene.stop();
+}
+
+#[test]
+fn overlay_input_keeps_the_first_alias_visibility_trigger() {
+    for hidden in [false, true] {
+        let scene = focused_scene();
+        let candidate = Probe::shared(&["X"]);
+        let options = Rc::new(RefCell::new(OverlayOptions {
+            non_capturing: Some(true),
+            ..OverlayOptions::default()
+        }));
+        let mut original = scene
+            .tui
+            .show_overlay(candidate.clone(), Some(options.clone()))
+            .unwrap();
+        original.focus();
+        let alias = scene
+            .tui
+            .show_overlay(
+                candidate.clone(),
+                Some(Rc::new(RefCell::new(OverlayOptions {
+                    non_capturing: Some(true),
+                    ..OverlayOptions::default()
+                }))),
+            )
+            .unwrap();
+        let (_, mut top) = show(&scene, "C", false).unwrap();
+        let calls = Rc::new(std::cell::Cell::new(0));
+        if hidden {
+            original.set_hidden(true);
+        }
+        options.borrow_mut().visible = Some(Rc::new({
+            let calls = calls.clone();
+            move |_, _| {
+                calls.set(calls.get() + 1);
+                false
+            }
+        }));
+        top.hide().unwrap();
+        assert!(alias.is_focused());
+        assert_eq!(calls.get(), usize::from(!hidden));
+        if hidden {
+            scene.tui.set_focus(Some(candidate.clone()));
+        }
+        scene.terminal.send_input("editor");
+        assert!(scene.probe.focus.get());
+        assert_eq!(calls.get(), 2 * usize::from(!hidden));
+        assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
+        assert!(candidate.inputs.borrow().is_empty());
+        scene.stop();
+    }
+}
+
+#[test]
+fn overlay_creation_retains_its_component_when_callback_replaces_the_entry() {
+    let scene = focused_scene();
+    let candidate = Probe::shared(&["X"]);
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let options = Rc::new(RefCell::new(OverlayOptions {
+        visible: Some(Rc::new({
+            let tui = scene.tui.clone();
+            let candidate = candidate.clone();
+            let calls = calls.clone();
+            move |_, _| {
+                calls.set(calls.get() + 1);
+                tui.hide_overlay().unwrap();
+                tui.show_overlay(
+                    candidate.clone(),
+                    Some(Rc::new(RefCell::new(OverlayOptions {
+                        non_capturing: Some(true),
+                        ..OverlayOptions::default()
+                    }))),
+                )
+                .unwrap();
+                true
+            }
+        })),
+        ..OverlayOptions::default()
+    }));
+    let detached = scene
+        .tui
+        .show_overlay(candidate.clone(), Some(options))
+        .unwrap();
+    assert!(detached.is_focused());
+    assert_eq!(calls.get(), 1);
+    scene.terminal.send_input("alias");
+    assert_eq!(*candidate.inputs.borrow(), ["alias"]);
+    scene.stop();
+}
+
+#[test]
+fn overlay_same_label_is_not_a_component_availability_witness() {
+    let scene = focused_scene();
+    let (original, mut handle) = show(&scene, "X", true).unwrap();
+    handle.focus();
+    let (decoy, _) = show(&scene, "X", true).unwrap();
+    let (_, mut top) = show(&scene, "C", false).unwrap();
+    handle.hide().unwrap();
+    top.hide().unwrap();
+    assert!(scene.probe.focus.get());
+    scene.terminal.send_input("editor");
+    assert_eq!(*scene.probe.inputs.borrow(), ["editor"]);
+    assert!(original.inputs.borrow().is_empty());
+    assert!(decoy.inputs.borrow().is_empty());
+    scene.stop();
+}
+
+/// Appends the replacement selected by a visibility callback.
+fn replacement_overlay(
+    tui: &maestro_tui::TUI,
+    probe: &Rc<Probe>,
+    state: &str,
+) -> std::io::Result<Box<dyn maestro_tui::OverlayHandle>> {
+    let options = Rc::new(RefCell::new(OverlayOptions {
+        non_capturing: Some(state != "capturing"),
+        ..OverlayOptions::default()
+    }));
+    let mut handle = tui.show_overlay(probe.clone(), Some(options.clone()))?;
+    if state == "invisible" {
+        options.borrow_mut().visible = Some(Rc::new(|_, _| false));
+    }
+    if state == "hidden" {
+        handle.set_hidden(true);
+    }
+    Ok(handle)
 }

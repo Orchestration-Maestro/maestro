@@ -199,8 +199,8 @@ including the immediate one a forced request queued, and forgets any request, so
    including a bare escape, negative or fractional numbers, a trailing newline or a
    fragment, is ordinary input.
 3. The debug key, `shift+ctrl+d`, when `set_on_debug` installed a callback.
-4. Overlay visibility repairs an unavailable focused overlay before key-release
-   filtering. The focused component, if it can take input. Key-release events are dropped
+4. [Overlay input repair](overlays.md#focus-and-controls) runs before key-release
+   filtering. The resulting focused component, if it can take input. Key-release events are dropped
    unless it asks for them with `wants_key_release`. A frame is requested after
    each delivery.
 

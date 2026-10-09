@@ -70,16 +70,17 @@ fn cells(value: isize) -> usize {
     usize::try_from(value).unwrap_or(0)
 }
 
-/// Resolves explicit coordinates or an anchor on one axis, before offsets and clipping.
-fn position(value: Option<&SizeValue>, free: isize, margin: isize, anchor: isize) -> isize {
+/// Resolves coordinates without narrowing before offsets and clipping.
+fn position(value: Option<&SizeValue>, free: isize, margin: isize, anchor: isize) -> f64 {
     match value {
-        Some(SizeValue::Cells(value)) => *value,
+        Some(SizeValue::Cells(value)) => float_span(*value),
         Some(SizeValue::Percentage(text)) => {
-            margin.saturating_add(percentage(text).map_or(free.div_euclid(2), |percent| {
-                floor_cells(float_span(free.max(0)) * (percent / 100.0))
-            }))
+            float_span(margin)
+                + percentage(text).map_or(float_span(free.div_euclid(2)), |percent| {
+                    (float_span(free.max(0)) * (percent / 100.0)).floor()
+                })
         }
-        None => margin.saturating_add(anchor),
+        None => float_span(margin) + float_span(anchor),
     }
 }
 
@@ -139,22 +140,24 @@ fn resolve_overlay_layout(
         free_height,
         free_width,
     );
-    let row = position(options.row.as_ref(), free_height, top, anchor_row)
-        .saturating_add(options.offset_y.unwrap_or(0))
-        .min(
-            term_height
-                .saturating_sub(bottom)
-                .saturating_sub(effective_height),
-        )
-        .max(top);
-    let col = position(options.col.as_ref(), free_width, left, anchor_col)
-        .saturating_add(options.offset_x.unwrap_or(0))
-        .min(term_width.saturating_sub(right).saturating_sub(width))
-        .max(left);
+    let row = (position(options.row.as_ref(), free_height, top, anchor_row)
+        + float_span(options.offset_y.unwrap_or(0)))
+    .min(float_span(
+        term_height
+            .saturating_sub(bottom)
+            .saturating_sub(effective_height),
+    ))
+    .max(float_span(top));
+    let col = (position(options.col.as_ref(), free_width, left, anchor_col)
+        + float_span(options.offset_x.unwrap_or(0)))
+    .min(float_span(
+        term_width.saturating_sub(right).saturating_sub(width),
+    ))
+    .max(float_span(left));
     Layout {
         width: cells(width),
-        row: cells(row),
-        col: cells(col),
+        row: cells(floor_cells(row)),
+        col: cells(floor_cells(col)),
         max_height: max_height.map(cells),
     }
 }
@@ -222,7 +225,7 @@ impl TUI {
             .into_iter()
             .map(|entry| {
                 let mut layout = resolve_overlay_layout(&entry.options.borrow(), 0, dimensions);
-                let mut lines = entry.component.render(layout.width);
+                let mut lines = entry.capture.component.render(layout.width);
                 if let Some(height) = layout.max_height {
                     lines.truncate(height);
                 }

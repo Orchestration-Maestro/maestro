@@ -89,22 +89,19 @@ pub trait OverlayHandle {
     /// Removes the overlay for good.
     ///
     /// # Errors
-    /// Returns cursor-hiding errors after removal and focus restoration.
+    /// Returns cursor-hiding errors after removal and any applicable focus restoration.
     fn hide(&mut self) -> io::Result<()>;
 
-    /// Hides or shows an attached overlay temporarily; equal flags and detached
-    /// entries do nothing. Capturing entries regain focus on showing when visible.
+    /// Changes temporary hiding. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     fn set_hidden(&mut self, hidden: bool);
 
     /// Whether the overlay is temporarily hidden.
     fn is_hidden(&self) -> bool;
 
-    /// Focuses a visible attached overlay and raises its visual order, even when
-    /// already focused; hidden, callback-invisible and detached entries do nothing.
+    /// Requests focus and visual raising. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     fn focus(&mut self);
 
-    /// Yields focus when attached and focused: to the last-created visible capturing
-    /// entry unless it is this entry, otherwise to an available captured predecessor.
+    /// Yields component focus. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     fn unfocus(&mut self);
 
     /// Whether the component identity currently owns focus, even after detachment.

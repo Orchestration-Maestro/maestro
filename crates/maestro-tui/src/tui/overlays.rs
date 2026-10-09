@@ -6,23 +6,45 @@ use std::rc::Rc;
 
 use super::{ComponentHandle, OverlayHandle, OverlayOptions, TUI};
 
-/// A creation-time focus target; overlay links always point to older entries.
+/// A component target with immutable fallback data.
 #[derive(Clone)]
-enum Predecessor {
-    /// Focus outside the overlay stack, possibly absent.
+pub(super) enum Focus {
+    /// Explicit external focus, possibly absent.
     Base(Option<ComponentHandle>),
-    /// An earlier-created overlay.
-    Overlay(Rc<Entry>),
+    /// An overlay-derived component and its captured fallback.
+    Captured(Rc<Capture>),
+}
+
+impl Default for Focus {
+    fn default() -> Self {
+        Self::Base(None)
+    }
+}
+
+impl Focus {
+    /// Borrows the input recipient without copying its identity.
+    pub(super) fn component(&self) -> Option<&ComponentHandle> {
+        match self {
+            Self::Base(component) => component.as_ref(),
+            Self::Captured(capture) => Some(&capture.component),
+        }
+    }
+}
+
+/// The component and focus value retained at creation.
+pub(super) struct Capture {
+    /// Rendered component and potential input recipient.
+    pub component: ComponentHandle,
+    /// Focus captured before this node existed.
+    pre_focus: Focus,
 }
 
 /// One identity retained by the owner and its control handle.
 pub(super) struct Entry {
-    /// The rendered component.
-    pub component: ComponentHandle,
+    /// Immutable component and captured fallback.
+    pub capture: Rc<Capture>,
     /// Options shared with the caller.
     pub options: Rc<RefCell<OverlayOptions>>,
-    /// Creation-time focus target, relinked when an ancestor is removed.
-    predecessor: RefCell<Predecessor>,
     /// Temporary hiding, independent of callback visibility.
     hidden: Cell<bool>,
     /// Visual order, independent of stack order.
@@ -45,34 +67,28 @@ impl Entry {
 }
 
 impl TUI {
-    /// Shows `component` with caller-editable options, capturing focus when still available
-    /// unless `non_capturing` is true. Dropping the returned handle does not remove it.
+    /// Shows `component` with caller-editable options. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
     ///
     /// # Errors
-    /// Returns cursor-hiding errors after the stack and focus changes; no frame is
+    /// Returns cursor-hiding errors after completed stack and conditional focus changes; no frame is
     /// requested on that failure.
     pub fn show_overlay(
         &self,
         component: ComponentHandle,
         options: Option<Rc<RefCell<OverlayOptions>>>,
     ) -> io::Result<Box<dyn OverlayHandle>> {
-        let focused = self.focused_component();
-        let predecessor = self
-            .shared
-            .focused_overlay
-            .borrow()
-            .upgrade()
-            .map_or_else(|| Predecessor::Base(focused), Predecessor::Overlay);
         let entry = Rc::new(Entry {
-            component,
+            capture: Rc::new(Capture {
+                component,
+                pre_focus: self.shared.input.borrow().focused.clone(),
+            }),
             options: options.unwrap_or_default(),
-            predecessor: RefCell::new(predecessor),
             hidden: Cell::new(false),
             order: Cell::new(self.next_focus_order()),
         });
         self.shared.overlays.borrow_mut().push(Rc::clone(&entry));
         if entry.capturing() && self.focus_available(&entry) {
-            self.set_focus(Some(Rc::clone(&entry.component)));
+            self.commit_focus(Focus::Captured(Rc::clone(&entry.capture)));
         }
         self.shared.terminal.borrow_mut().hide_cursor()?;
         self.request_render(false);
@@ -85,7 +101,7 @@ impl TUI {
     /// Removes the last-created overlay; an empty stack does nothing.
     ///
     /// # Errors
-    /// Returns cursor-hiding errors after removal and focus restoration, without
+    /// Returns cursor-hiding errors after removal and any applicable focus restoration, without
     /// requesting a frame on that failure.
     pub fn hide_overlay(&self) -> io::Result<()> {
         let entry = self.shared.overlays.borrow().last().cloned();
@@ -135,29 +151,54 @@ impl TUI {
         })
     }
 
-    /// Tests visibility before checking callback-mutated attachment and hidden state.
+    /// Checks the retained component after its source visibility observation.
     fn focus_available(&self, entry: &Rc<Entry>) -> bool {
         self.attached(entry)
             && self.overlay_visible(entry)
-            && self.attached(entry)
-            && !entry.hidden.get()
+            && self.component_available(&entry.capture.component, Some(entry))
     }
 
-    /// The last-created capturing candidate, rereading its slot after visibility callbacks.
-    fn top_capturing(&self) -> Option<Rc<Entry>> {
+    /// Accepts a retained observation or samples a finite set of component aliases.
+    fn component_available(
+        &self,
+        component: &ComponentHandle,
+        accepted: Option<&Rc<Entry>>,
+    ) -> bool {
+        if accepted.is_some_and(|entry| self.attached(entry) && !entry.hidden.get()) {
+            return true;
+        }
+        let aliases: Vec<_> = self
+            .shared
+            .overlays
+            .borrow()
+            .iter()
+            .filter(|entry| Rc::ptr_eq(&entry.capture.component, component))
+            .cloned()
+            .collect();
+        aliases.into_iter().any(|entry| {
+            self.attached(&entry)
+                && !entry.hidden.get()
+                && self.overlay_visible(&entry)
+                && self.attached(&entry)
+                && !entry.hidden.get()
+        })
+    }
+
+    /// Rereads the first accepted numeric slot once, including a vacated slot.
+    fn top_capturing(&self) -> Option<(Rc<Entry>, bool)> {
         let length = self.shared.overlays.borrow().len();
-        (0..length).rev().find_map(|index| {
-            let candidate = self.overlay_at(index)?;
+        for index in (0..length).rev() {
+            let Some(candidate) = self.overlay_at(index) else {
+                continue;
+            };
             if !candidate.capturing() || !self.overlay_visible(&candidate) {
-                return None;
+                continue;
             }
             let selected = self.overlay_at(index)?;
-            if Rc::ptr_eq(&candidate, &selected) {
-                (!selected.hidden.get()).then_some(selected)
-            } else {
-                self.focus_available(&selected).then_some(selected)
-            }
-        })
+            let accepted = Rc::ptr_eq(&candidate, &selected);
+            return Some((selected, accepted));
+        }
+        None
     }
 
     /// The next visual order.
@@ -169,35 +210,43 @@ impl TUI {
 
     /// Whether this component currently owns focus.
     fn overlay_focused(&self, entry: &Entry) -> bool {
-        self.focused_component()
-            .is_some_and(|focus| Rc::ptr_eq(&focus, &entry.component))
+        self.shared
+            .input
+            .borrow()
+            .focused
+            .component()
+            .is_some_and(|focus| Rc::ptr_eq(focus, &entry.capture.component))
     }
 
-    /// Restores a capturing target, or walks older predecessors to an available target.
-    fn restore_overlay_focus(&self, entry: &Rc<Entry>) {
-        if let Some(top) = self.top_capturing().filter(|top| !Rc::ptr_eq(top, entry)) {
-            self.set_focus(Some(Rc::clone(&top.component)));
-            return;
-        }
-        let mut predecessor = entry.predecessor.borrow().clone();
-        loop {
-            match predecessor {
-                Predecessor::Base(component) => {
-                    self.set_focus(component);
-                    return;
-                }
-                Predecessor::Overlay(previous) if self.focus_available(&previous) => {
-                    self.set_focus(Some(Rc::clone(&previous.component)));
-                    return;
-                }
-                Predecessor::Overlay(previous) => {
-                    predecessor = previous.predecessor.borrow().clone();
-                }
+    /// Resolves a component capture, consuming older nodes when unavailable.
+    fn resolve_focus(&self, mut focus: Focus, accepted: Option<&Rc<Entry>>) {
+        let mut observation = accepted;
+        while let Focus::Captured(capture) = &focus {
+            if self.component_available(&capture.component, observation) {
+                break;
             }
+            focus = capture.pre_focus.clone();
+            observation = None;
+        }
+        self.commit_focus(focus);
+    }
+
+    /// Selects a top candidate or captured fallback; only unfocus excludes itself.
+    fn restore_overlay_focus(&self, entry: &Rc<Entry>, unfocus: bool) {
+        if let Some((top, accepted)) = self
+            .top_capturing()
+            .filter(|(top, _)| !unfocus || !Rc::ptr_eq(top, entry))
+        {
+            self.resolve_focus(
+                Focus::Captured(Rc::clone(&top.capture)),
+                accepted.then_some(&top),
+            );
+        } else {
+            self.resolve_focus(entry.capture.pre_focus.clone(), None);
         }
     }
 
-    /// Removes and relinks one identity, completing state changes before terminal effects.
+    /// Removes one identity, completing state changes before terminal effects.
     fn remove_overlay(&self, entry: &Rc<Entry>) -> io::Result<()> {
         let removed = {
             let mut stack = self.shared.overlays.borrow_mut();
@@ -209,17 +258,8 @@ impl TUI {
         if removed.is_none() {
             return Ok(());
         }
-        let predecessor = entry.predecessor.borrow().clone();
-        let length = self.shared.overlays.borrow().len();
-        for other in (0..length).filter_map(|index| self.overlay_at(index)) {
-            let matches = matches!(&*other.predecessor.borrow(), Predecessor::Overlay(previous) if Rc::ptr_eq(previous, entry));
-            if matches {
-                let replaced = other.predecessor.replace(predecessor.clone());
-                drop(replaced);
-            }
-        }
         if self.overlay_focused(entry) {
-            self.restore_overlay_focus(entry);
+            self.restore_overlay_focus(entry, false);
         }
         if self.shared.overlays.borrow().is_empty() {
             self.shared.terminal.borrow_mut().hide_cursor()?;
@@ -230,20 +270,24 @@ impl TUI {
 
     /// Repairs focus just before ordinary input dispatch.
     pub(super) fn repair_overlay_focus(&self) {
-        let focused = self.focused_component();
-        let entry = self
-            .shared
-            .overlays
-            .borrow()
-            .iter()
-            .find(|entry| {
-                focused
-                    .as_ref()
-                    .is_some_and(|focus| Rc::ptr_eq(focus, &entry.component))
-            })
-            .cloned();
-        if let Some(entry) = entry.filter(|entry| !self.focus_available(entry)) {
-            self.restore_overlay_focus(&entry);
+        let entry = {
+            let input = self.shared.input.borrow();
+            self.shared
+                .overlays
+                .borrow()
+                .iter()
+                .find(|entry| {
+                    input
+                        .focused
+                        .component()
+                        .is_some_and(|focus| Rc::ptr_eq(focus, &entry.capture.component))
+                })
+                .cloned()
+        };
+        if let Some(entry) = entry
+            && !self.overlay_visible(&entry)
+        {
+            self.restore_overlay_focus(&entry, false);
         }
     }
 }
@@ -259,11 +303,12 @@ impl OverlayHandle for Handle {
         }
         if hidden {
             if self.tui.overlay_focused(&self.entry) {
-                self.tui.restore_overlay_focus(&self.entry);
+                self.tui.restore_overlay_focus(&self.entry, false);
             }
         } else if self.entry.capturing() && self.tui.focus_available(&self.entry) {
             self.entry.order.set(self.tui.next_focus_order());
-            self.tui.set_focus(Some(Rc::clone(&self.entry.component)));
+            self.tui
+                .commit_focus(Focus::Captured(Rc::clone(&self.entry.capture)));
         }
         self.tui.request_render(false);
     }
@@ -277,7 +322,8 @@ impl OverlayHandle for Handle {
             return;
         }
         if !self.is_focused() {
-            self.tui.set_focus(Some(Rc::clone(&self.entry.component)));
+            self.tui
+                .commit_focus(Focus::Captured(Rc::clone(&self.entry.capture)));
         }
         self.entry.order.set(self.tui.next_focus_order());
         self.tui.request_render(false);
@@ -287,7 +333,7 @@ impl OverlayHandle for Handle {
         if !self.tui.attached(&self.entry) || !self.is_focused() {
             return;
         }
-        self.tui.restore_overlay_focus(&self.entry);
+        self.tui.restore_overlay_focus(&self.entry, true);
         self.tui.request_render(false);
     }
 

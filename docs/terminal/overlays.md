@@ -50,7 +50,8 @@ Percentage syntax is ASCII digits, an optional decimal fraction and `%`, with no
 whitespace or sign. Size percentages use terminal dimensions. Position percentages
 use the remaining span after margins and content. An explicit row or column wins
 over that axis's anchor; an invalid percentage position uses center on that axis.
-Offsets apply before final margin clamping. Oversized margins can place content
+Percentage coordinates retain floating-point precision through margins, offsets
+and final clamping, converting to cells last. Oversized margins can place content
 outside the terminal; they do not promise an onscreen rectangle.
 
 Visible entries are selected from current slots up to the stack's starting length,
@@ -63,23 +64,33 @@ recognized escape payloads and leaves image base lines unchanged.
 
 ## Focus and controls
 
-Capturing entries take focus on creation or unhide only when their visibility
-check accepts them and leaves them attached and not hidden.
-Noncapturing entries do not capture on creation or unhide; explicit focus and
-predecessor restoration can select them. Explicit focus raises
-visual order, but neither removal by `hide_overlay` nor fallback selection uses
-that order: both use creation order.
+Creation and unhide capture focus only when their capture gate permits it and
+the retained component has an accepted availability observation. Noncapturing
+creation/unhide does not itself capture focus. Explicit handle focus raises visual
+order after a successful availability check. Removal by `hide_overlay` uses
+creation order, not visual order. Public `set_focus` accepts the caller's selected
+component without an overlay availability check.
 
-Temporary hiding and removal are distinct. Repeated hidden flags and detached
-mutations do nothing; `is_hidden` reports only the stored temporary flag.
-`is_focused` compares component identity, not labels or attachment.
-Restoration walks capturing candidates in reverse creation order and reads the
-selected stack slot again after its visibility callback. Unfocusing the selected
-entry instead falls directly to its captured predecessor. Predecessor
-links skip removed, hidden and callback-invisible entries, reaching an available
-component or the captured base focus, which can be absent. An overlay created while
-the removed entry still owns focus captures that entry as an overlay predecessor,
-not base focus.
+When its component owns focus, removal or temporary hiding selects through the
+top-candidate walk, otherwise its captured focus. The walk checks capture flags
+before callbacks and rereads the accepted slot afterward; a replacement need not
+be capturing. An accepted vacated slot ends the walk. Only unfocus excludes its
+own selected entry.
+
+A captured target is a component, not one showing of it. Resolution accepts a
+live visible alias or advances through immutable captured predecessors to external
+focus or none. Additional availability reads use a finite snapshot of matching
+entries; side-effecting predicates can have additional effects at these validation
+boundaries. An alias created inside such a predicate is outside that snapshot.
+Acceptance requires a true observation and attachment/not-hidden state after the
+callback, not a fixed point or a timeless visibility promise.
+
+Input repair uses the first matching entry's visibility result. On false it
+selects through the top walk or captured fallback; that walk may accept the same
+entry on a second visibility call. It does not repair again after input handling.
+Mutating controls on removed entries do nothing. Getters read stored hidden state
+or current component identity, so a detached handle can report focused when a
+live alias owns focus.
 
 Hidden entries skip visibility callbacks. `has_overlay` checks current slots up
 to the starting length and stops at the first accepted visibility result, including
@@ -90,8 +101,9 @@ routing, render scheduling and cursor placement.
 
 ## Terminal errors
 
-Showing an overlay updates stack and focus before hiding the cursor. Removing
-one updates stack and focus before hiding the cursor when the stack becomes empty.
+Showing appends the entry and performs any applicable focus change before hiding
+the cursor. Removing an attached entry performs any applicable focus restoration
+before hiding the cursor if the stack is empty.
 These operations return a terminal error unchanged and do not request a frame
 when cursor hiding fails; completed state changes remain in place. Empty-stack
 removal has no terminal effect.
