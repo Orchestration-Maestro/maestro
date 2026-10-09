@@ -28,8 +28,9 @@ The [chat-completion guide](https://github.com/Orchestration-Maestro/maestro/blo
 covers direct streamed requests, header and cache policy, retries and the shared
 Cloudflare and Copilot helpers.
 
-The [shared OAuth primitives](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
-provide data records, secure proof keys and escaped callback pages.
+The [OAuth authorization guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
+covers data records, secure proof keys, escaped callback pages and subscription
+login and refresh.
 
 The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/messages.md)
 covers direct streamed message requests with key authentication, their payload, cache and
