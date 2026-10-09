@@ -92,7 +92,7 @@ is independent of the stream message. The stream handle is detached after the ca
 before output validation and encoding; retained handles cannot change that output snapshot.
 Guest snapshots do not provide live identity propagation between component values.
 Model selection uses shared descriptors and their host decoding; see
-[`ModelCompat`](https://docs.rs/maestro-request/latest/maestro_request/types/models/enum.ModelCompat.html)
+[`ModelCompat`](https://docs.rs/maestro-request/latest/maestro_request/types/enum.ModelCompat.html)
 for compatibility decoding.
 Reasoning selection carries the current and previous levels without checking model support.
 
