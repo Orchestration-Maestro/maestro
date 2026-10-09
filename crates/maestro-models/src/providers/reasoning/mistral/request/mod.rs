@@ -203,10 +203,10 @@ pub(super) async fn prepare(
     let key = options
         .common
         .api_key
-        .as_ref()
+        .as_deref()
         .filter(|key| !key.is_empty())
-        .cloned()
-        .or_else(|| crate::get_env_api_key(model.provider.as_str()))
+        .map(std::borrow::Cow::Borrowed)
+        .or_else(|| crate::get_env_api_key(model.provider.as_str()).map(std::borrow::Cow::Owned))
         .ok_or_else(|| {
             RequestFailure::new(format!("No API key for provider: {}", model.provider))
         })?;

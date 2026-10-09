@@ -1,14 +1,14 @@
 //! Request-local tool-call associations.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Forward mappings and occupied candidate identifiers.
 #[derive(Default)]
 pub(in crate::providers::reasoning::mistral) struct ToolCallIds {
     /// Original identifiers mapped to candidates.
     forward: HashMap<String, String>,
-    /// Candidate identifiers mapped to original owners.
-    reverse: HashMap<String, String>,
+    /// Candidate identifiers already assigned in this request.
+    occupied: HashSet<String>,
 }
 
 impl ToolCallIds {
@@ -20,8 +20,7 @@ impl ToolCallIds {
         let mut attempt = 0_u64;
         loop {
             let candidate = derive(id, attempt);
-            if !self.reverse.contains_key(&candidate) {
-                self.reverse.insert(candidate.clone(), id.to_owned());
+            if self.occupied.insert(candidate.clone()) {
                 self.forward.insert(id.to_owned(), candidate.clone());
                 return candidate;
             }
@@ -37,12 +36,14 @@ pub(in crate::providers::reasoning::mistral) fn derive(id: &str, attempt: u64) -
         return filtered;
     }
     let base = if filtered.is_empty() { id } else { &filtered };
+    let collision_seed;
     let seed = if attempt == 0 {
-        base.to_owned()
+        base
     } else {
-        format!("{base}:{attempt}")
+        collision_seed = format!("{base}:{attempt}");
+        &collision_seed
     };
-    crate::short_hash(&seed)
+    crate::short_hash(seed)
         .chars()
         .filter(char::is_ascii_alphanumeric)
         .take(9)

@@ -38,7 +38,7 @@ fn request_send_resolves_header_case_and_affinity() {
         .unwrap()
         .block_on(super::request_corpus::async_corpus(
             "request_send_resolves_header_case_and_affinity",
-            30,
+            31,
         ));
 }
 

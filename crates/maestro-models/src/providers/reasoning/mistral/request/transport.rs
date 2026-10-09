@@ -43,7 +43,7 @@ pub(in crate::providers::reasoning::mistral) fn endpoint(
         .map_err(|error| RequestFailure::new(error.to_string()))
 }
 
-/// Combine authored case variants and replace protocol defaults.
+/// Validate defaults before authored case variants replace them.
 pub(super) fn headers(
     key: &str,
     authored: IndexMap<String, String>,
@@ -62,6 +62,7 @@ pub(super) fn headers(
         ("content-type".into(), "application/json".into()),
         ("cookie".into(), String::new()),
     ]);
+    crate::providers::http::normalize_request(&mut defaults).map_err(RequestFailure::new)?;
     let mut combined: IndexMap<String, String> = IndexMap::new();
     for (name, value) in authored {
         let name = name.to_ascii_lowercase();

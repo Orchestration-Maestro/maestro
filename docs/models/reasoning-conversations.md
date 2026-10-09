@@ -31,7 +31,9 @@ The encoder has no transport, retry or cancellation policy. See the
 Private preparation projects history, selects model-specific simple reasoning
 controls and encodes payload-hook replacements. Raw controls remain explicit.
 Authored model and option headers merge with exact letter case before HTTP case
-variants combine. This provider does not call the response hook.
+variants combine. Credential headers are validated before authored overrides, so
+an override cannot conceal an invalid credential header. This provider does not
+call the response hook.
 
 Private sending makes one attempt. Without a caller cancellation signal, one
 30-second deadline covers request setup and body reads; a supplied signal disables

@@ -10304,7 +10304,8 @@
       "hook_calls": 1,
       "response_calls": 0,
       "outcome": {
-        "native_error": true
+        "error_prefix": "Header invalid name:",
+        "native_cause": true
       }
     }
   },
@@ -12437,6 +12438,26 @@
       "response_calls": 0,
       "outcome": {
         "error": "Mistral API error (422): not-json"
+      }
+    }
+  },
+  {
+    "test": "request_send_resolves_header_case_and_affinity",
+    "operation": "send",
+    "input": {
+      "options": {
+        "apiKey": "bad\nkey",
+        "headers": {
+          "authorization": "Bearer alternate"
+        }
+      }
+    },
+    "expected": {
+      "requests": [],
+      "hook_calls": 1,
+      "response_calls": 0,
+      "outcome": {
+        "error": "Header authorization holds NUL or a line break."
       }
     }
   }
