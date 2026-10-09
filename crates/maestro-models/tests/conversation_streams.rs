@@ -21,6 +21,7 @@ fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
     block_on(false, async {
         lifecycle::dropped_reader().await?;
         lifecycle::simple_controls().await?;
+        lifecycle::mapped_simple_controls().await?;
         lifecycle::raw_whitespace_key().await?;
         let stream = stream_mistral(model, context, None);
         let reader = stream.clone();

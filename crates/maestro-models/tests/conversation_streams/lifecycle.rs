@@ -535,3 +535,46 @@ async fn until_delta(
     }
     panic!("stream ended before the gated delta");
 }
+
+/// Model-mapped efforts stay open and simple tool selection is not forwarded.
+pub async fn mapped_simple_controls() -> TestResult {
+    let mut model = maestro_models::get_model("mistral", "mistral-small-2603").unwrap();
+    model.thinking_level_map = Some(
+        [(
+            maestro_models::ModelThinkingLevel::High,
+            Some("future-effort".into()),
+        )]
+        .into(),
+    );
+    let (sent, request) = oneshot::channel();
+    let slot = Arc::new(Mutex::new(Some(sent)));
+    let fetch: Fetch = Arc::new(move |request| {
+        let sent = slot.lock().unwrap().take().unwrap();
+        sent.send(serde_json::from_slice::<Value>(&request.body).unwrap())
+            .unwrap();
+        Box::pin(std::future::ready(Ok(HttpResponse {
+            status: 200,
+            status_text: String::new(),
+            headers: [("content-type".into(), "text/event-stream".into())].into(),
+            body: Box::pin(futures_util::stream::empty()),
+        })))
+    });
+    let stream = stream_simple_mistral(
+        model,
+        context()?,
+        Some(SimpleStreamOptions {
+            common: options(fetch).common,
+            reasoning: Some(maestro_models::ThinkingLevel::High),
+            tool_choice: Some(maestro_models::ToolChoice::Required),
+            ..Default::default()
+        }),
+    )?;
+    assert_eq!(
+        stream.result().await.read().unwrap().stop_reason,
+        StopReason::Stop
+    );
+    let payload = request.await?;
+    assert_eq!(payload["reasoning_effort"], "future-effort");
+    assert!(!payload.as_object().unwrap().contains_key("tool_choice"));
+    Ok(())
+}
