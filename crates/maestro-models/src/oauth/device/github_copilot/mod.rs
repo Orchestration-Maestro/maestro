@@ -38,11 +38,10 @@ pub fn get_github_copilot_base_url(token: Option<&str>, enterprise_domain: Optio
                 (!host.is_empty()).then_some(host)
             })
     }) {
-        return format!(
-            "https://{}",
-            host.strip_prefix("proxy.")
-                .map_or_else(|| host.to_owned(), |suffix| format!("api.{suffix}"))
-        );
+        return match host.strip_prefix("proxy.") {
+            Some(suffix) => format!("https://api.{suffix}"),
+            None => format!("https://{host}"),
+        };
     }
     enterprise_domain
         .filter(|domain| !domain.is_empty())

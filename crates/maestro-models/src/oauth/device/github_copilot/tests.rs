@@ -353,6 +353,9 @@ async fn device_long_and_fractional_waits_avoid_runtime_clamping_scenario() {
         ("3e6", "4e6", 3_600_000_000.0),
         ("5", "0.0005", 0.5),
         ("1e100", "1", 1000.0),
+        ("-1e308", "900", 1200.0),
+        ("1e308", "900", 900_000.0),
+        ("1.7e305", "900", 900_000.0),
     ] {
         assert_eq!(
             exercise(
@@ -367,6 +370,21 @@ async fn device_long_and_fractional_waits_avoid_runtime_clamping_scenario() {
             "ok"
         );
     }
+    assert_eq!(
+        exercise(
+            device("5", "900"),
+            vec![
+                r#"{"error":"slow_down","interval":1e308}"#,
+                r#"{"access_token":"bounded"}"#,
+            ],
+            vec![0.0, 0.0, 0.0, 6000.0, 6000.0],
+            &[6000.0, 894_000.0],
+        )
+        .await
+        .unwrap()
+        .refresh,
+        "bounded"
+    );
 }
 
 #[test]
@@ -409,10 +427,8 @@ async fn device_invalid_durations_fail_at_the_consuming_branch_scenario() {
     for (interval, lifetime, reads, auth) in [
         ("1e400", "900", vec![], 0),
         ("5", "1e400", vec![], 0),
-        ("1e308", "900", vec![0.0], 1),
         ("5", "1e308", vec![0.0], 1),
         ("1e100", "1e100", vec![0.0, 0.0, 0.0], 1),
-        ("1.7e305", "900", vec![0.0, 0.0, 0.0], 1),
     ] {
         let interaction = Arc::new(Interaction::default());
         let result = exercise_with(
@@ -429,18 +445,20 @@ async fn device_invalid_durations_fail_at_the_consuming_branch_scenario() {
     }
     for raw in ["1e400", "1e308"] {
         let slow = format!(r#"{{"error":"slow_down","interval":{raw}}}"#);
-        assert_eq!(
-            exercise(
-                device("5", "900"),
-                vec![&slow],
-                vec![0.0, 0.0, 0.0],
-                &[6000.0]
-            )
-            .await
-            .unwrap_err()
-            .to_string(),
-            "Invalid device code response fields"
-        );
+        if raw == "1e400" {
+            assert_eq!(
+                exercise(
+                    device("5", "900"),
+                    vec![&slow],
+                    vec![0.0, 0.0, 0.0],
+                    &[6000.0]
+                )
+                .await
+                .unwrap_err()
+                .to_string(),
+                "Invalid device code response fields"
+            );
+        }
         let text = format!(r#"{{"token":"ok","expires_at":{raw}}}"#);
         let fetch: Fetch = Arc::new(move |_| {
             let text = text.clone();

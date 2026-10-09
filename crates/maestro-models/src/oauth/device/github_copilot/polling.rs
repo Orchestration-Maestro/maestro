@@ -170,13 +170,13 @@ pub(super) async fn poll_for_github_access_token(
     clock: &(impl Fn() -> f64 + Sync),
 ) -> Result<String, OAuthError> {
     let deadline = finite(clock() + device.expires_in * 1000.0)?;
-    let mut interval = finite((device.interval * 1000.0).floor())?.max(1000.0);
+    let mut interval = (device.interval * 1000.0).floor().max(1000.0);
     let mut multiplier = 1.2;
     let mut slow_down = false;
     while clock() < deadline {
         check_cancelled(signal)?;
         let remaining = finite(deadline - clock())?;
-        let wait = finite((interval * multiplier).ceil())?.min(remaining);
+        let wait = (interval * multiplier).ceil().min(remaining);
         abortable_sleep(wait, signal).await?;
         let text = post_form(
             domain,
@@ -196,8 +196,8 @@ pub(super) async fn poll_for_github_access_token(
                 slow_down = true;
                 multiplier = 1.4;
                 interval = match supplied.map(finite).transpose()? {
-                    Some(seconds) if seconds > 0.0 => finite(seconds * 1000.0)?,
-                    _ => finite(interval + 5000.0)?.max(1000.0),
+                    Some(seconds) if seconds > 0.0 => seconds * 1000.0,
+                    _ => (interval + 5000.0).max(1000.0),
                 };
             }
         }

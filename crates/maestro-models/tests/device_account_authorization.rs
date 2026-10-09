@@ -1015,15 +1015,23 @@ async fn device_cancel_does_not_race_fetch_scenario() {
         let (started, mut requests) = tokio::sync::mpsc::unbounded_channel();
         let fetch = held_fetch(stage, pending, started);
         let interaction = Arc::new(Interaction::default());
-        let login = tokio::spawn(maestro_models::login_github_copilot(
+        let mut login = Box::pin(maestro_models::login_github_copilot(
             interaction.clone(),
             Some(fetch),
         ));
-        let release = requests.recv().await.expect("held-phase-started witness");
+        let release =
+            match futures_util::future::select(Box::pin(requests.recv()), login.as_mut()).await {
+                futures_util::future::Either::Left((release, _)) => {
+                    release.expect("held-phase-started witness")
+                }
+                futures_util::future::Either::Right((result, _)) => {
+                    panic!("login settled before held Fetch: {result:?}")
+                }
+            };
         interaction.signal.abort();
-        assert!(!login.is_finished());
+        assert!(login.as_mut().now_or_never().is_none());
         release.send(()).unwrap();
-        let result = login.await.unwrap();
+        let result = login.await;
         if pending {
             assert_eq!(result.unwrap_err().to_string(), "Login cancelled");
         } else {

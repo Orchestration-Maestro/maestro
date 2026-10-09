@@ -196,8 +196,12 @@ The multiplied interval is rounded upward; each wait is bounded by the
 remaining server lifetime. A poll
 admitted before expiry still runs after its wait: success or a server error can
 win at expiry. Timeout after a slow-down response includes clock-sync guidance.
-Nonfinite consumed or derived timing values and unrepresentable selected waits
-return the device-fields error; a negative remaining wait becomes zero.
+Nonfinite consumed timing operands, nonfinite deadlines or remaining lifetimes,
+and selected waits that cannot fit a duration return the device-fields error;
+a negative remaining wait becomes zero. Overflowing interval arithmetic is
+accepted when the clamp or remaining lifetime selects a finite wait.
+Native waits remain subject to the runtime's timer limits; an unrepresentable
+native deadline falls back to about 30 years.
 
 The login signal is checked after prompting, at entered poll iterations and
 while waiting, not during Fetch calls. Completed waits release their cancellation
@@ -209,8 +213,9 @@ are ignored and policy bodies are not read.
 `refresh_github_copilot_token(refresh_token, enterprise_domain, fetch)` returns
 service credentials with `expires_at * 1000 - 300000` as the expiry. Empty tokens
 and finite zero, negative or fractional expiry are accepted; nonfinite expiry
-is rejected. A supplied enterprise string is used verbatim and retained,
-including an empty string. Login and refresh do not store credentials or start
+is rejected. A nonempty supplied enterprise string is used verbatim and
+retained; an empty string selects the standard endpoint but remains in returned
+metadata. Login and refresh do not store credentials or start
 a callback listener. Requests use one selected Fetch without retries or an
 additional deadline; see the [transport guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport) for the shared adapter.
 
