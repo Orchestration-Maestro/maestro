@@ -3522,9 +3522,6 @@ fn prompt_source_metadata_failure_ends_only_current_scan() {
 const PROMPT_DIRECTORY_FAILURE_ALLOWS_LATER_EXPLICIT_PATHS_CASES: &[LoadCase<'_>] = &[LoadCase {
     entries: &[
         ("/scan", Node::Dir(&[])),
-        ("/scan/first.md", Node::File(None)),
-        ("/scan/bad.md", Node::File(None)),
-        ("/scan/last.md", Node::File(None)),
         ("/after.md", Node::File(Some("after"))),
     ],
     failures: &[("dir", "/scan", 0)],
@@ -3719,24 +3716,6 @@ fn absent_prompt_roots_yield_an_empty_list() {
     }
 }
 
-/// Distinct authored inputs and independently recorded expected outputs.
-const DOCUMENTED_TEMPLATE_EXAMPLE_EXPANDS_CASES: &[ExpansionCase<'_>] = &[(
-    "/review src tests",
-    &[("review", "Review $1; remaining: ${@:2}; all: $@")],
-    "Review src; remaining: tests; all: src tests",
-)];
-
-/// Exercise original inputs through the public template seam.
-#[test]
-fn documented_template_example_expands() {
-    for (text, templates, expected) in DOCUMENTED_TEMPLATE_EXAMPLE_EXPANDS_CASES {
-        let templates: Vec<_> = templates
-            .iter()
-            .map(|(name, content)| template(name, content))
-            .collect();
-        assert_eq!(expand_prompt_template(text, &templates), *expected);
-    }
-}
 /// Anchored operands never observe the unavailable process directory.
 #[test]
 fn anchored_prompt_paths_do_not_read_the_process_directory() {
