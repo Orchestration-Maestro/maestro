@@ -176,13 +176,18 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
 
     let reduce_item = |depth: usize| {
         let item = format!(
-            r#"{{"type":"reasoning","id":"rs_1","summary":[],"future":{}}}"#,
+            r#"{{"type":"reasoning","id":"rs_1","summary":[{{"text":"final"}}],"future":{}}}"#,
             nested(depth - 1)
         );
         let added = r#"{"type":"response.output_item.added","item":{"type":"reasoning","id":"rs_1","summary":[]}}"#;
         let done = format!(r#"{{"type":"response.output_item.done","item":{item}}}"#);
         let completed = r#"{"type":"response.completed","response":{"status":"completed"}}"#;
-        let script = Script::of(vec![added.to_owned(), done, completed.to_owned()])?;
+        let script = Script::of(vec![
+            added.to_owned(),
+            r#"{"type":"response.reasoning_text.delta","delta":"draft"}"#.to_owned(),
+            done,
+            completed.to_owned(),
+        ])?;
         Ok::<_, Box<dyn std::error::Error>>((item, block_on(false, responses::reduce(script))?))
     };
     let (item, accepted) = reduce_item(127)?;
@@ -197,12 +202,15 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
     assert_eq!(failure.message, "recursion limit exceeded");
     assert_eq!(
         serde_json::to_value(&rejected.message.content)?,
-        json!([{"type": "thinking", "thinking": ""}]),
-        "the provisional block is kept unsigned"
+        json!([{"type": "thinking", "thinking": "final"}]),
+        "final content survives signature failure unsigned"
     );
     assert_eq!(
         rejected.events,
-        [json!({"type": "thinking_start", "contentIndex": 0})]
+        [
+            json!({"type": "thinking_start", "contentIndex": 0}),
+            json!({"type":"thinking_delta","contentIndex":0,"delta":"draft"})
+        ]
     );
     Ok(())
 }
@@ -218,6 +226,15 @@ fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() ->
     again["id"] = json!("again");
     let repeated = Value::Array(rows.into_iter().chain([again]).collect());
     assert!(responses::assert_unique_queries(&repeated.to_string()).is_err());
+    let mut raw_copy = sample.clone();
+    raw_copy["id"] = json!("raw-copy");
+    for event in raw_copy["events"]
+        .as_array_mut()
+        .ok_or("events are an array")?
+    {
+        *event = Value::String(event.to_string());
+    }
+    assert!(responses::assert_unique_queries(&json!([sample, raw_copy]).to_string()).is_err());
 
     let consume = |row: Value| {
         let mut fields = Fields::new("sample", row)?;
@@ -231,6 +248,28 @@ fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() ->
     let failure = consume(nested)
         .err()
         .ok_or("the unread nested member is rejected")?;
+    assert!(failure.to_string().contains("unread members"), "{failure}");
+    let mut raw_nested = sample.clone();
+    raw_nested["events"][0]["response"]["unused"] = json!(1);
+    raw_nested["events"][0] = Value::String(raw_nested["events"][0].to_string());
+    let failure = consume(raw_nested)
+        .err()
+        .ok_or("raw nested member is unread")?;
+    assert!(failure.to_string().contains("unread members"), "{failure}");
+    let call = json!({"type":"toolCall","id":"undefined|undefined","name":"lookup","arguments":{}});
+    let mut call_row = json!({"events":[
+        {"type":"response.output_item.added","item":{"type":"function_call","name":"lookup","arguments":"{}"}},
+        {"type":"response.output_item.done","item":{"type":"function_call"}},
+        {"type":"response.completed"}
+    ],"expected":{"result":{"content":[call],"stopReason":"toolUse"},"events":[
+        {"type":"toolcall_start","contentIndex":0},
+        {"type":"toolcall_end","contentIndex":0,"toolCall":call}
+    ]}});
+    consume(call_row.clone())?;
+    call_row["events"][1]["item"]["arguments"] = json!("{}");
+    let failure = consume(call_row)
+        .err()
+        .ok_or("nonempty scratch leaves final arguments unread")?;
     assert!(failure.to_string().contains("unread members"), "{failure}");
     let mut extended = sample;
     extended["unused"] = json!(1);

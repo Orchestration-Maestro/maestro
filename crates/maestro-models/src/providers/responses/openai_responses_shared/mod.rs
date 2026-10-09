@@ -90,8 +90,8 @@ fn native(error: &serde_json::Error) -> DiagnosticErrorInfo {
     }
 }
 
-/// Reduce framed response events, given as JSON text, into `output`, announcing each content
-/// change on `stream`.
+/// Reduce framed response events, given as JSON text, into `output`, publishing content
+/// events on `stream`.
 ///
 /// Reduction continues until `events` ends, which must follow a completed or incomplete
 /// response. It publishes content updates only: it neither starts nor finishes `stream`, and

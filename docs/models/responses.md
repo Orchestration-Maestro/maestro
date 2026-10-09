@@ -32,18 +32,26 @@ and defaults `strict` to false; an explicit absent strict value sends null.
 ## Event reduction
 
 `process_responses_stream` selects an event branch before decoding its members.
-Unknown events and mismatched deltas leave unused fields unread. Selected scalar
-fields of the wrong type read as absent; malformed consumed strings return the
-native reader diagnostic. An initial message's last content part is inspected
+Unknown events and mismatched deltas leave unused fields unread. Concatenated
+values use string rendering, while selected typed assignments reject values the
+record cannot represent. Missing or null required containers and malformed
+consumed strings return native diagnostics. An initial message's last content part is inspected
 only when a matching delta needs its kind.
 
 Text, thinking and tool-call updates share the supplied output handle. Every
 opened block retains its index even if a caller appends another block. Final
-items replace provisional content; an unmatched final message or reasoning item
-is ignored. Final reasoning retains its whole item as compact JSON. Existing
+message items replace provisional text. Reasoning selects nonempty final summary,
+then nonempty final content, otherwise retains provisional thinking. An unmatched
+final message or reasoning item is ignored. Final text is stored before signature
+conversion; a conversion failure emits no end event. Final reasoning retains its
+whole item as compact JSON after successful conversion. Encoded message signatures
+retain truthy phases; recognized phases are selected only during history conversion.
+Existing
 calls use nonempty scratch arguments before final arguments and ignore final
 identity. Final-only calls are inserted before publishing their end. Argument
 completion delegates to the owning JSON helper; nonobject results become `{}`.
+Argument completion replaces stored arguments, emitting a delta only when the
+completed text adds a nonempty suffix to the previous scratch.
 
 Completion publishes the final nonempty ID and model-priced usage before any
 tier callbacks. Resolution runs only with pricing, outside message locks. Priced

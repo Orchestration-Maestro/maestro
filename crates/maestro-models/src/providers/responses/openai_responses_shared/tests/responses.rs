@@ -1,6 +1,6 @@
 //! Fixture rows, builders and reduction runs shared by the response-protocol tests.
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::{Arc, Mutex, RwLock};
 
 use super::super::messages::{convert_responses_messages, convert_responses_tools};
@@ -9,10 +9,12 @@ use super::super::{
     process_responses_stream,
 };
 use crate as maestro_models;
+use crate::providers::json_text::{is_truthy, member, raw_json};
 use maestro_models::{
     AssistantMessage, AssistantMessageEventStream, Context, DiagnosticCode, DiagnosticErrorInfo,
     Model, SharedAssistantMessage, Tool, Usage,
 };
+use serde_json::value::RawValue;
 use serde_json::{Map, Value, json};
 
 use super::TestResult;
@@ -91,6 +93,18 @@ pub fn assert_unique_queries(fixture: &str) -> TestResult {
         if let Some(members) = row.as_object_mut() {
             for key in ["test", "id", "expected"] {
                 members.remove(key);
+            }
+        }
+        for event in row
+            .get_mut("events")
+            .and_then(Value::as_array_mut)
+            .into_iter()
+            .flatten()
+        {
+            if let Some(raw) = event.as_str()
+                && let Ok(parsed) = serde_json::from_str::<Value>(raw)
+            {
+                *event = parsed;
             }
         }
         if !seen.insert(row.to_string()) {
@@ -475,17 +489,22 @@ pub async fn check_events(mut row: Fields) -> TestResult {
         .take("initial")
         .map_or_else(zero_usage, |initial| initial["usage"].clone());
     script.usage = initial.clone();
+    let mut call_scratch = None;
     script.events = row
         .require("events")?
         .as_array()
         .ok_or("events are a list")?
         .iter()
         .map(|event| {
-            audit_event(event, "event")?;
-            Ok(match event {
+            let text = match event {
                 Value::String(raw) => raw.clone(),
                 other => other.to_string(),
-            })
+            };
+            if let Ok(raw) = raw_json(&text) {
+                audit_event(raw, "event", call_scratch)?;
+                track_call(raw, &mut call_scratch);
+            }
+            Ok(text)
         })
         .collect::<TestResult<Vec<_>>>()?;
     script.failure = row.take("failure").map(|message| DiagnosticErrorInfo {
@@ -511,26 +530,72 @@ pub async fn check_events(mut row: Fields) -> TestResult {
     row.finish()
 }
 
-/// Reject fixture members that the selected event branch does not consume.
-fn audit_event(value: &Value, path: &str) -> TestResult {
-    let Some(members) = value.as_object() else {
+/// Track whether final-call arguments are selected or replaced by nonempty scratch.
+fn track_call(raw: &RawValue, scratch: &mut Option<bool>) {
+    let kind = raw_kind(raw);
+    if kind == "response.output_item.added" {
+        if let Some(item) = member(raw, "item") {
+            match raw_kind(item).as_str() {
+                "function_call" => {
+                    *scratch = Some(member(item, "arguments").is_some_and(is_truthy));
+                }
+                "message" | "reasoning" => *scratch = None,
+                _ => {}
+            }
+        }
+    } else if scratch.is_some() && kind == "response.function_call_arguments.delta" {
+        if member(raw, "delta").is_none_or(|raw| raw.get() != "\"\"") {
+            *scratch = Some(true);
+        }
+    } else if scratch.is_some() && kind == "response.function_call_arguments.done" {
+        *scratch = Some(member(raw, "arguments").is_some_and(|raw| raw.get() != "\"\""));
+    } else if kind == "response.output_item.done"
+        && member(raw, "item").is_some_and(|item| raw_kind(item) == "function_call")
+    {
+        *scratch = None;
+    }
+}
+
+/// Decode only a record's discriminator for fixture consumer selection.
+fn raw_kind(raw: &RawValue) -> String {
+    member(raw, "type")
+        .and_then(|raw| serde_json::from_str(raw.get()).ok())
+        .unwrap_or_default()
+}
+
+/// Reject ordinary unread members, retaining unrepresentable probes that test skipped reads.
+fn audit_event(raw: &RawValue, path: &str, scratch: Option<bool>) -> TestResult {
+    if !raw.get().starts_with('{') {
         return Ok(());
+    }
+    let members: BTreeMap<String, &RawValue> = serde_json::from_str(raw.get())?;
+    let kind = raw_kind(raw);
+    let allowed = if path == "done" && kind == "function_call" {
+        match scratch {
+            Some(true) => Some(&["type"][..]),
+            Some(false) => Some(&["type", "arguments"][..]),
+            None => consumed_fields(path, &kind),
+        }
+    } else {
+        consumed_fields(path, &kind)
     };
-    let kind = value["type"].as_str().unwrap_or_default();
-    let Some(allowed) = consumed_fields(path, kind) else {
+    let Some(allowed) = allowed else {
         return Ok(());
     };
     for (key, child) in members {
         if !allowed.contains(&key.as_str()) {
+            if serde_json::from_str::<Value>(child.get()).is_err() {
+                continue;
+            }
             return Err(format!("{path} has unread members [{key}]").into());
         }
-        let next = audit_path(path, kind, key);
-        if let Some(items) = child.as_array() {
-            for item in items {
-                audit_event(item, &next)?;
+        let next = audit_path(path, &kind, &key);
+        if child.get().starts_with('[') {
+            for item in serde_json::from_str::<Vec<&RawValue>>(child.get())? {
+                audit_event(item, &next, scratch)?;
             }
         } else {
-            audit_event(child, &next)?;
+            audit_event(child, &next, scratch)?;
         }
     }
     Ok(())

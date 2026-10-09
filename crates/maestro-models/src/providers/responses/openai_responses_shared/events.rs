@@ -5,7 +5,9 @@ use std::sync::{Arc, PoisonError};
 
 use serde_json::value::RawValue;
 
-use super::wire::{array, field, joined, spelled, text};
+use super::wire::{
+    appended, arguments, field, joined, kind, last, required, signature, spelled, string,
+};
 use super::{OpenAIResponsesStreamOptions, failure, native};
 use crate::providers::json_text::{
     compact_raw, is_truthy, member, or_zero, parsed_arguments, raw_json, raw_number,
@@ -13,16 +15,16 @@ use crate::providers::json_text::{
 use crate::{
     AssistantContent as Block, AssistantMessage, AssistantMessageEvent as Update,
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
-    StopReason, TextContent, TextSignatureV1, ThinkingContent, ToolCall, Usage, calculate_cost,
+    StopReason, TextContent, ThinkingContent, ToolCall, Usage, calculate_cost,
 };
 
 /// The open item and the block position captured when it started.
 enum Current {
     /// No item is open.
     Idle,
-    /// Thinking block and whether a summary part permits deltas.
-    Reasoning(usize, bool),
-    /// Text block and its last raw content part.
+    /// Thinking block and the raw summary used by later summary events.
+    Reasoning(usize, Option<Box<RawValue>>),
+    /// Text block and the raw content used by later part events.
     Message(usize, Option<Box<RawValue>>),
     /// Call block and accumulated argument text.
     Function(usize, String),
@@ -39,7 +41,7 @@ impl Current {
     }
 }
 
-/// Reduces response events into the shared message, announcing each content change.
+/// Reduces response events into the shared message and publishes content events.
 pub(super) struct Reducer<'a> {
     /// Message shared by every update and the final result.
     output: &'a SharedAssistantMessage,
@@ -56,7 +58,7 @@ pub(super) struct Reducer<'a> {
 }
 
 impl<'a> Reducer<'a> {
-    /// Start reducing into `output`, announcing changes on `stream`.
+    /// Start reducing into `output`, publishing content events on `stream`.
     pub(super) fn new(
         output: &'a SharedAssistantMessage,
         stream: &'a AssistantMessageEventStream,
@@ -171,14 +173,22 @@ impl<'a> Reducer<'a> {
         });
     }
 
-    /// Replace the text of the captured block, a thinking or a text block, with the final one,
-    /// keep the signature, and announce the end. Final thinking text may be absent.
-    fn end(&self, text: Option<String>, signature: String) {
+    /// Publish final text before signature conversion; absent reasoning text keeps the draft.
+    fn final_text(&self, text: Option<String>) {
+        self.publish(|block, _, _| {
+            match (block, text) {
+                (Block::Thinking(block), Some(text)) => block.thinking = text,
+                (Block::Text(block), Some(text)) => block.text = text,
+                _ => {}
+            }
+            None
+        });
+    }
+
+    /// Store a converted signature and announce the finalized content.
+    fn end(&self, signature: String) {
         self.publish(|block, content_index, partial| match block {
             Block::Thinking(block) => {
-                if let Some(text) = text {
-                    block.thinking = text;
-                }
                 block.thinking_signature = Some(signature);
                 let content = block.thinking.clone();
                 Some(Update::ThinkingEnd {
@@ -188,7 +198,6 @@ impl<'a> Reducer<'a> {
                 })
             }
             Block::Text(block) => {
-                block.text = text.unwrap_or_default();
                 block.text_signature = Some(signature);
                 let content = block.text.clone();
                 Some(Update::TextEnd {
@@ -203,24 +212,17 @@ impl<'a> Reducer<'a> {
 
     /// Select one event before reading the members its branch consumes.
     pub(super) fn event(&mut self, input: &str) -> Result<(), DiagnosticErrorInfo> {
-        let raw = raw_json(input).map_err(|error| native(&error))?;
-        match text(raw, "type")?.as_str() {
+        let raw = required(Some(raw_json(input).map_err(|error| native(&error))?))?;
+        match kind(raw, "type")?.as_str() {
             "response.created" => {
-                let id = member(raw, "response")
-                    .map(|response| field(response, "id"))
-                    .transpose()?
-                    .flatten();
+                let id = field(required(member(raw, "response"))?, "id")?;
                 self.change(|message| message.response_id = id);
             }
             "response.output_item.added" => {
-                if let Some(item) = member(raw, "item") {
-                    self.item_added(item)?;
-                }
+                self.item_added(required(member(raw, "item"))?)?;
             }
             "response.output_item.done" => {
-                if let Some(item) = member(raw, "item") {
-                    self.item_done(item)?;
-                }
+                self.item_done(required(member(raw, "item"))?)?;
             }
             "response.completed" | "response.incomplete" => {
                 self.completed(member(raw, "response"))?;
@@ -240,35 +242,31 @@ impl<'a> Reducer<'a> {
 
     /// Open a canonical block, retaining only later selection state.
     fn item_added(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
-        self.current = match text(raw, "type")?.as_str() {
+        self.current = match kind(raw, "type")?.as_str() {
             "reasoning" => {
-                let open = array(member(raw, "summary"))
-                    .last()
-                    .is_some_and(|part| is_truthy(part));
+                let summary = member(raw, "summary").map(RawValue::to_owned);
                 Current::Reasoning(
                     self.open(Block::Thinking(ThinkingContent {
                         thinking: String::new(),
                         thinking_signature: None,
                         redacted: None,
                     })),
-                    open,
+                    summary,
                 )
             }
             "message" => {
-                let part = array(member(raw, "content"))
-                    .last()
-                    .map(|part| (*part).to_owned());
+                let content = member(raw, "content").map(RawValue::to_owned);
                 Current::Message(
                     self.open(Block::Text(TextContent {
                         text: String::new(),
                         text_signature: None,
                     })),
-                    part,
+                    content,
                 )
             }
             "function_call" => {
                 let call = call(raw, JsonObject::new())?;
-                let scratch = text(raw, "arguments")?;
+                let scratch = arguments(raw)?;
                 Current::Function(self.open(Block::ToolCall(call)), scratch)
             }
             _ => return Ok(()),
@@ -277,53 +275,53 @@ impl<'a> Reducer<'a> {
     }
 
     /// Apply guarded part and delta events without reading rejected inputs.
-    fn delta(&mut self, raw: &RawValue, kind: &str) -> Result<(), DiagnosticErrorInfo> {
-        match (&mut self.current, kind) {
-            (Current::Reasoning(_, open), "response.reasoning_summary_part.added") => {
-                *open = member(raw, "part").is_some_and(is_truthy);
+    fn delta(&mut self, raw: &RawValue, event_kind: &str) -> Result<(), DiagnosticErrorInfo> {
+        match (&mut self.current, event_kind) {
+            (Current::Reasoning(_, summary), "response.reasoning_summary_part.added") => {
+                last(summary.as_deref())?;
+                *summary = appended(member(raw, "part"))?;
             }
-            (Current::Reasoning(_, true), "response.reasoning_summary_part.done") => {
-                self.append("\n\n");
+            (Current::Reasoning(_, summary), "response.reasoning_summary_part.done") => {
+                if last(summary.as_deref())?.is_some_and(is_truthy) {
+                    self.append("\n\n");
+                }
             }
-            (Current::Reasoning(_, true), "response.reasoning_summary_text.delta")
-            | (Current::Reasoning(_, _), "response.reasoning_text.delta") => {
-                self.append(&text(raw, "delta")?);
+            (Current::Reasoning(_, summary), "response.reasoning_summary_text.delta") => {
+                if last(summary.as_deref())?.is_some_and(is_truthy) {
+                    self.append(&spelled(member(raw, "delta"))?);
+                }
             }
-            (Current::Message(_, last), "response.content_part.added") => {
-                if let Some(part) = member(raw, "part")
-                    && matches!(text(part, "type")?.as_str(), "output_text" | "refusal")
-                {
-                    *last = Some(part.to_owned());
+            (Current::Reasoning(_, _), "response.reasoning_text.delta") => {
+                self.append(&spelled(member(raw, "delta"))?);
+            }
+            (Current::Message(_, content), "response.content_part.added") => {
+                let part = required(member(raw, "part"))?;
+                if matches!(kind(part, "type")?.as_str(), "output_text" | "refusal") {
+                    last(content.as_deref())?;
+                    *content = appended(Some(part))?;
                 }
             }
             (
-                Current::Message(_, Some(part)),
+                Current::Message(_, content),
                 "response.output_text.delta" | "response.refusal.delta",
             ) => {
-                let expected = if kind == "response.output_text.delta" {
+                let expected = if event_kind == "response.output_text.delta" {
                     "output_text"
                 } else {
                     "refusal"
                 };
-                if text(part, "type")? == expected {
-                    self.append(&text(raw, "delta")?);
+                if let Some(part) = last(content.as_deref())?
+                    && kind(part, "type")? == expected
+                {
+                    self.append(&spelled(member(raw, "delta"))?);
                 }
             }
-            (Current::Function(_, scratch), "response.function_call_arguments.delta") => {
-                let delta = text(raw, "delta")?;
-                scratch.push_str(&delta);
-                let arguments = parsed_arguments(scratch);
-                self.set_arguments(arguments, Some(delta));
-            }
-            (Current::Function(_, scratch), "response.function_call_arguments.done") => {
-                let complete = text(raw, "arguments")?;
-                let suffix = complete
-                    .strip_prefix(scratch.as_str())
-                    .filter(|suffix| !suffix.is_empty())
-                    .map(str::to_owned);
-                let arguments = parsed_arguments(&complete);
-                *scratch = complete;
-                self.set_arguments(arguments, suffix);
+            (
+                Current::Function(_, scratch),
+                "response.function_call_arguments.delta" | "response.function_call_arguments.done",
+            ) => {
+                let (arguments, delta) = argument_update(scratch, raw, event_kind)?;
+                self.set_arguments(arguments, delta);
             }
             _ => {}
         }
@@ -332,27 +330,18 @@ impl<'a> Reducer<'a> {
 
     /// Replace final content on the captured block and clear the open state.
     fn item_done(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
-        match (text(raw, "type")?.as_str(), &self.current) {
+        match (kind(raw, "type")?.as_str(), &self.current) {
             ("reasoning", Current::Reasoning(_, _)) => {
                 let summary = joined(raw, "summary", false)?;
                 let content = joined(raw, "content", false)?;
+                self.final_text([summary, content].into_iter().find(|text| !text.is_empty()));
                 let signature = compact_raw(raw).map_err(|error| native(&error))?;
-                self.end(
-                    [summary, content].into_iter().find(|text| !text.is_empty()),
-                    signature,
-                );
+                self.end(signature);
             }
             ("message", Current::Message(_, _)) => {
                 let content = joined(raw, "content", true)?;
-                let signature = TextSignatureV1 {
-                    v: 1,
-                    id: text(raw, "id")?,
-                    phase: field(raw, "phase")?,
-                };
-                self.end(
-                    Some(content),
-                    serde_json::to_string(&signature).map_err(|error| native(&error))?,
-                );
+                self.final_text(Some(content));
+                self.end(signature(raw)?);
             }
             ("function_call", _) => self.function_done(raw)?,
             _ => return Ok(()),
@@ -365,7 +354,7 @@ impl<'a> Reducer<'a> {
     fn function_done(&self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
         let arguments = match &self.current {
             Current::Function(_, scratch) if !scratch.is_empty() => parsed_arguments(scratch),
-            _ => parsed_arguments(&text(raw, "arguments")?),
+            _ => parsed_arguments(&arguments(raw)?),
         };
         if matches!(self.current, Current::Function(_, _)) {
             self.end_call(arguments);
@@ -405,7 +394,10 @@ impl<'a> Reducer<'a> {
     /// Publish completion effects before callbacks and status selection.
     fn completed(&mut self, response: Option<&RawValue>) -> Result<(), DiagnosticErrorInfo> {
         if let Some(response) = response {
-            let id = field::<String>(response, "id")?.filter(|id| !id.is_empty());
+            let id = member(response, "id")
+                .filter(|raw| is_truthy(raw))
+                .map(|raw| string(Some(raw)))
+                .transpose()?;
             if let Some(id) = id {
                 self.change(|message| message.response_id = Some(id));
             }
@@ -431,17 +423,14 @@ impl<'a> Reducer<'a> {
             .is_some_and(|options| options.apply_service_tier_pricing.is_some())
         {
             let echoed = response
-                .map(|raw| field::<String>(raw, "service_tier"))
+                .map(|raw| field::<Option<String>>(raw, "service_tier"))
                 .transpose()?
                 .flatten();
-            self.price(&mut usage, echoed.as_deref());
+            self.price(&mut usage, echoed.flatten().as_deref());
             self.change(|message| message.usage = usage);
         }
-        let status = response
-            .map(|raw| field::<String>(raw, "status"))
-            .transpose()?
-            .flatten();
-        let reason = stop_reason(status.as_deref())?;
+        let status = response.and_then(|raw| member(raw, "status"));
+        let reason = stop_reason(status)?;
         self.change(|message| {
             let calls_tool = message
                 .content
@@ -473,23 +462,60 @@ impl<'a> Reducer<'a> {
     }
 }
 
+/// Advance argument scratch and select only a nonempty completion suffix for publication.
+fn argument_update(
+    scratch: &mut String,
+    raw: &RawValue,
+    event_kind: &str,
+) -> Result<(JsonObject, Option<String>), DiagnosticErrorInfo> {
+    let delta = if event_kind == "response.function_call_arguments.delta" {
+        let delta = spelled(member(raw, "delta"))?;
+        scratch.push_str(&delta);
+        Some(delta)
+    } else {
+        let complete = string(member(raw, "arguments"))?;
+        let suffix = complete
+            .strip_prefix(scratch.as_str())
+            .filter(|suffix| !suffix.is_empty())
+            .map(str::to_owned);
+        *scratch = complete;
+        suffix
+    };
+    Ok((parsed_arguments(scratch), delta))
+}
+
 /// Build a final call from the selected identity and already-parsed arguments.
 fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErrorInfo> {
     Ok(ToolCall {
-        id: format!("{}|{}", text(raw, "call_id")?, text(raw, "id")?),
-        name: text(raw, "name")?,
+        id: format!(
+            "{}|{}",
+            spelled(member(raw, "call_id"))?,
+            spelled(member(raw, "id"))?
+        ),
+        name: string(member(raw, "name"))?,
         arguments,
         thought_signature: None,
     })
 }
 
 /// The outcome a response status stands for.
-fn stop_reason(status: Option<&str>) -> Result<StopReason, DiagnosticErrorInfo> {
-    match status.unwrap_or_default() {
-        "" | "completed" | "in_progress" | "queued" => Ok(StopReason::Stop),
+fn stop_reason(status: Option<&RawValue>) -> Result<StopReason, DiagnosticErrorInfo> {
+    let Some(status) = status.filter(|raw| is_truthy(raw)) else {
+        return Ok(StopReason::Stop);
+    };
+    let recognized = if status.get().starts_with('"') {
+        spelled(Some(status))?
+    } else {
+        String::new()
+    };
+    match recognized.as_str() {
+        "completed" | "in_progress" | "queued" => Ok(StopReason::Stop),
         "incomplete" => Ok(StopReason::Length),
         "failed" | "cancelled" => Ok(StopReason::Error),
-        other => Err(failure(format!("Unhandled stop reason: {other}"))),
+        _ => Err(failure(format!(
+            "Unhandled stop reason: {}",
+            spelled(Some(status))?
+        ))),
     }
 }
 

@@ -39,7 +39,28 @@ fn maestro_responses_events_replace_final_text() -> TestResult {
 
 #[test]
 fn maestro_responses_events_encode_text_signature() -> TestResult {
-    event_rows("maestro_responses_events_encode_text_signature", 3)
+    event_rows("maestro_responses_events_encode_text_signature", 3)?;
+    for (identity, phase, signature) in [
+        ("", "false", r#"{"v":1}"#),
+        (",\"id\":null", "null", r#"{"v":1,"id":null}"#),
+        (",\"id\":42", "[]", r#"{"v":1,"id":42,"phase":[]}"#),
+        (",\"id\":\"m\"", "true", r#"{"v":1,"id":"m","phase":true}"#),
+    ] {
+        let events = vec![
+            r#"{"type":"response.output_item.added","item":{"type":"message"}}"#.to_owned(),
+            format!(
+                r#"{{"type":"response.output_item.done","item":{{"type":"message"{identity},"phase":{phase},"content":[]}}}}"#
+            ),
+            r#"{"type":"response.completed"}"#.to_owned(),
+        ];
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        run.outcome?;
+        assert_eq!(
+            serde_json::to_value(&run.message.content)?[0]["textSignature"],
+            signature
+        );
+    }
+    Ok(())
 }
 
 #[test]
@@ -89,7 +110,22 @@ fn maestro_responses_events_insert_final_only_tool() -> TestResult {
 
 #[test]
 fn maestro_responses_events_map_completion_status() -> TestResult {
-    event_rows("maestro_responses_events_map_completion_status", 9)
+    event_rows("maestro_responses_events_map_completion_status", 10)?;
+    for (status, error) in [
+        ("false", None),
+        ("null", None),
+        ("0", None),
+        (r#""complet\u0065d""#, None),
+        ("[]", Some("Unhandled stop reason: ")),
+        ("{}", Some("Unhandled stop reason: [object Object]")),
+        (r#"["completed"]"#, Some("Unhandled stop reason: completed")),
+        ("42", Some("Unhandled stop reason: 42")),
+    ] {
+        let event = format!(r#"{{"type":"response.completed","response":{{"status":{status}}}}}"#);
+        let run = block_on(false, responses::reduce(Script::of(vec![event])?))?;
+        assert_eq!(run.outcome.err().map(|e| e.message).as_deref(), error);
+    }
+    Ok(())
 }
 
 #[test]
@@ -124,12 +160,12 @@ fn maestro_responses_events_skip_resolver_without_pricing() -> TestResult {
 
 #[test]
 fn maestro_responses_events_render_direct_errors() -> TestResult {
-    event_rows("maestro_responses_events_render_direct_errors", 17)
+    event_rows("maestro_responses_events_render_direct_errors", 16)
 }
 
 #[test]
 fn maestro_responses_events_render_failed_details() -> TestResult {
-    event_rows("maestro_responses_events_render_failed_details", 25)
+    event_rows("maestro_responses_events_render_failed_details", 24)
 }
 
 #[test]
@@ -212,13 +248,13 @@ fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
 }
 
 /// The arguments the reducer keeps for a call whose arguments arrive as `text`, streamed
-/// and then repeated by the final item.
+/// before the final item.
 fn arguments_kept(text: &str) -> TestResult<JsonObject> {
     let added = json!({"type": "response.output_item.added", "item": {"type": "function_call",
         "id": "fc_1", "call_id": "c", "name": "lookup", "arguments": ""}});
     let delta = json!({"type": "response.function_call_arguments.delta", "delta": text});
     let done = json!({"type": "response.output_item.done", "item": {"type": "function_call",
-        "id": "fc_1", "call_id": "c", "name": "lookup", "arguments": text}});
+    }});
     let completed = json!({"type": "response.completed", "response": {"status": "completed"}});
     let events = [added, delta, done, completed].map(|event| event.to_string());
     let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
@@ -330,10 +366,8 @@ fn watching_source(
 #[test]
 fn maestro_responses_events_share_live_output() -> TestResult {
     let events = [
-        json!({"type": "response.output_item.added", "item": {"type": "message", "id": "msg_1",
-            "role": "assistant", "status": "completed", "content": []}}),
+        json!({"type": "response.output_item.added", "item": {"type": "message", "content": []}}),
         json!({"type": "response.output_item.done", "item": {"type": "message", "id": "msg_1",
-            "role": "assistant", "status": "completed",
             "content": [{"type": "output_text", "text": "final"}]}}),
         json!({"type": "response.completed", "response": {"id": "done", "status": "completed"}}),
     ]
@@ -613,6 +647,306 @@ fn maestro_responses_events_render_nested_error_arrays() -> TestResult {
         let event = format!(r#"{{"type":"error","code":{value},"message":"nested"}}"#);
         let run = block_on(false, responses::reduce(Script::of(vec![event])?))?;
         assert_eq!(run.outcome.unwrap_err().message, "Error Code : nested");
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_join_final_values() -> TestResult {
+    for (kind, parts, wanted) in [
+        (
+            "message",
+            json!([{"type":"output_text","text":42},{"type":"refusal","refusal":false}]),
+            "42false",
+        ),
+        (
+            "message",
+            json!([{"type":"output_text"},{"type":"refusal","refusal":null}]),
+            "",
+        ),
+        (
+            "reasoning",
+            json!([{"text":42},{"text":false}]),
+            "42\n\nfalse",
+        ),
+    ] {
+        let added = json!({"type":"response.output_item.added","item":{"type":kind}});
+        let done = json!({"type":"response.output_item.done","item":{"type":kind,"id":"m","content":parts}});
+        let completed = json!({"type":"response.completed"});
+        let run = block_on(
+            false,
+            responses::reduce(Script::of(
+                [added, done, completed].map(|e| e.to_string()).to_vec(),
+            )?),
+        )?;
+        run.outcome?;
+        let content = serde_json::to_value(&run.message.content)?;
+        let key = if kind == "message" {
+            "text"
+        } else {
+            "thinking"
+        };
+        assert_eq!(content[0][key], wanted);
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_preserve_encoded_phase_and_missing_identity() -> TestResult {
+    let events = [
+        r#"{"type":"response.output_item.added","item":{"type":"message"}}"#,
+        r#"{"type":"response.output_item.done","item":{"type":"message","id":"m","phase":"other","content":[]}}"#,
+        r#"{"type":"response.output_item.done","item":{"type":"function_call","name":"lookup"}}"#,
+        r#"{"type":"response.completed"}"#,
+    ];
+    let run = block_on(
+        false,
+        responses::reduce(Script::of(events.map(str::to_owned).to_vec())?),
+    )?;
+    run.outcome?;
+    let content = serde_json::to_value(&run.message.content)?;
+    assert_eq!(
+        content[0]["textSignature"],
+        r#"{"v":1,"id":"m","phase":"other"}"#
+    );
+    assert_eq!(content[1]["id"], "undefined|undefined");
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_require_selected_containers() -> TestResult {
+    for event in [
+        "null",
+        r#"{"type":"response.created"}"#,
+        r#"{"type":"response.created","response":null}"#,
+        r#"{"type":"response.output_item.added"}"#,
+        r#"{"type":"response.output_item.added","item":null}"#,
+        r#"{"type":"response.output_item.done"}"#,
+        r#"{"type":"response.output_item.done","item":null}"#,
+    ] {
+        let run = block_on(
+            false,
+            responses::reduce(Script::of(vec![
+                event.to_owned(),
+                r#"{"type":"response.completed"}"#.to_owned(),
+            ])?),
+        )?;
+        assert!(run.outcome.is_err(), "{event}");
+        assert!(run.events.is_empty());
+    }
+    for content in ["", ",\"content\":null", ",\"content\":{}"] {
+        let events = vec![
+            r#"{"type":"response.output_item.added","item":{"type":"message"}}"#.to_owned(),
+            format!(
+                r#"{{"type":"response.output_item.done","item":{{"type":"message"{content}}}}}"#
+            ),
+        ];
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let error = run
+            .outcome
+            .err()
+            .ok_or("selected content must fail before EOF")?;
+        assert_ne!(
+            error.message,
+            "Response stream ended before a terminal event"
+        );
+        assert_eq!(run.events, [json!({"type":"text_start","contentIndex":0})]);
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_concatenate_raw_deltas() -> TestResult {
+    for kind in ["message", "reasoning", "function_call"] {
+        let delta = match kind {
+            "message" => "response.output_text.delta",
+            "reasoning" => "response.reasoning_text.delta",
+            _ => "response.function_call_arguments.delta",
+        };
+        let mut events = vec![json!({"type":"response.output_item.added","item":{"type":kind,"name":"lookup","content":[{"type":"output_text"}]}}).to_string()];
+        for value in [
+            json!(42),
+            json!(false),
+            Value::Null,
+            json!({}),
+            json!([1, null, 2]),
+        ] {
+            events.push(json!({"type":delta,"delta":value}).to_string());
+        }
+        events.push(format!(r#"{{"type":"{delta}"}}"#));
+        events.push(r#"{"type":"response.completed"}"#.to_owned());
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        run.outcome?;
+        let deltas: Vec<&Value> = run.events.iter().filter_map(|e| e.get("delta")).collect();
+        assert_eq!(
+            deltas,
+            vec![
+                &json!("42"),
+                &json!("false"),
+                &json!("null"),
+                &json!("[object Object]"),
+                &json!("1,,2"),
+                &json!("undefined")
+            ]
+        );
+        if kind != "function_call" {
+            let content = serde_json::to_value(&run.message.content)?;
+            let key = if kind == "message" {
+                "text"
+            } else {
+                "thinking"
+            };
+            assert_eq!(content[0][key], "42falsenull[object Object]1,,2undefined");
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_keep_final_text_when_signature_fails() -> TestResult {
+    let events = [
+        r#"{"type":"response.output_item.added","item":{"type":"message","content":[{"type":"output_text"}]}}"#,
+        r#"{"type":"response.output_text.delta","delta":"draft"}"#,
+        r#"{"type":"response.output_item.done","item":{"type":"message","id":"\ud800","content":[{"type":"output_text","text":"final"}]}}"#,
+    ];
+    let run = block_on(
+        false,
+        responses::reduce(Script::of(events.map(str::to_owned).to_vec())?),
+    )?;
+    assert!(run.outcome.is_err());
+    assert_eq!(
+        serde_json::to_value(&run.message.content)?,
+        json!([{"type":"text","text":"final"}])
+    );
+    assert_eq!(
+        run.events,
+        [
+            json!({"type":"text_start","contentIndex":0}),
+            json!({"type":"text_delta","contentIndex":0,"delta":"draft"})
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_reject_unrepresentable_assigned_strings() -> TestResult {
+    for event in [
+        r#"{"type":"response.output_item.added","item":{"type":"function_call"}}"#,
+        r#"{"type":"response.output_item.added","item":{"type":"function_call","name":false}}"#,
+        r#"{"type":"response.created","response":{"id":true}}"#,
+        r#"{"type":"response.completed","response":{"id":true}}"#,
+        r#"{"type":"response.output_item.added","item":{"type":"function_call","name":"lookup","arguments":[]}}"#,
+    ] {
+        let run = block_on(
+            false,
+            responses::reduce(Script::of(vec![
+                event.to_owned(),
+                r#"{"type":"response.completed"}"#.to_owned(),
+            ])?),
+        )?;
+        assert!(run.outcome.is_err(), "{event}");
+        assert!(run.message.content.is_empty());
+        assert!(run.events.is_empty());
+    }
+    for value in [Value::Null, json!(false), json!(0), json!("")] {
+        let run = block_on(false, responses::reduce(Script::of(vec![json!({"type":"response.output_item.added","item":{"type":"function_call","name":"lookup","arguments":value}}).to_string(),
+            r#"{"type":"response.completed","response":{"id":false}}"#.to_owned()])?))?;
+        run.outcome?;
+        assert!(run.message.response_id.is_none());
+        assert_eq!(
+            serde_json::to_value(&run.message.content)?[0]["arguments"],
+            json!({})
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_validate_initial_arrays_only_when_used() -> TestResult {
+    for (kind, field, selected) in [
+        (
+            "message",
+            "content",
+            r#"{"type":"response.output_text.delta","delta":"kept"}"#,
+        ),
+        (
+            "reasoning",
+            "summary",
+            r#"{"type":"response.reasoning_summary_text.delta","delta":"kept"}"#,
+        ),
+        (
+            "reasoning",
+            "summary",
+            r#"{"type":"response.reasoning_summary_part.done"}"#,
+        ),
+        (
+            "reasoning",
+            "summary",
+            r#"{"type":"response.reasoning_summary_part.added","part":{}}"#,
+        ),
+    ] {
+        for container in [r#""\ud800""#, r#"{"length":1,"0":{"type":"output_text"}}"#] {
+            for use_container in [false, true] {
+                let mut events = vec![format!(
+                    r#"{{"type":"response.output_item.added","item":{{"type":"{kind}","{field}":{container}}}}}"#
+                )];
+                events.extend(use_container.then(|| selected.to_owned()));
+                events.push(r#"{"type":"response.completed"}"#.to_owned());
+                let run = block_on(false, responses::reduce(Script::of(events)?))?;
+                assert_eq!(run.outcome.is_err(), use_container);
+                assert_eq!(run.events.len(), 1);
+                assert_eq!(
+                    run.events[0]["type"],
+                    format!(
+                        "{}_start",
+                        if kind == "message" {
+                            "text"
+                        } else {
+                            "thinking"
+                        }
+                    )
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestResult {
+    for pricing in [false, true] {
+        let mut script = Script::of(vec![
+            r#"{"type":"response.completed","response":{"service_tier":42}}"#.to_owned(),
+        ])?;
+        script.options = json!({"pricing":pricing});
+        let run = block_on(false, responses::reduce(script))?;
+        assert_eq!(run.outcome.is_err(), pricing);
+        assert!(run.tiers.is_empty());
+    }
+    for arguments in ["null", "true", "42", "[]", "{}"] {
+        let events = vec![r#"{"type":"response.output_item.added","item":{"type":"function_call","name":"lookup"}}"#.to_owned(),
+            r#"{"type":"response.function_call_arguments.delta","delta":"{\"x\":1}"}"#.to_owned(),
+            format!(r#"{{"type":"response.function_call_arguments.done","arguments":{arguments}}}"#)];
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let error = run
+            .outcome
+            .err()
+            .ok_or("selected argument assignment fails")?;
+        assert_ne!(
+            error.message,
+            "Response stream ended before a terminal event"
+        );
+        assert_eq!(
+            serde_json::to_value(&run.message.content)?[0]["arguments"],
+            json!({"x":1})
+        );
+        assert_eq!(
+            run.events,
+            [
+                json!({"type":"toolcall_start","contentIndex":0}),
+                json!({"type":"toolcall_delta","contentIndex":0,"delta":"{\"x\":1}"})
+            ]
+        );
     }
     Ok(())
 }
