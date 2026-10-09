@@ -1,10 +1,12 @@
 # Completion
 
-`CombinedAutocompleteProvider` suggests command names, command arguments and direct
-file paths. The editor supplies lines, a UTF-8 byte cursor and a borrowed signal.
+`CombinedAutocompleteProvider` suggests command names, command arguments, direct
+file paths and recursive attachment paths. The editor supplies lines, a UTF-8 byte
+cursor and a borrowed signal.
 Callers await the suggestion future; the provider does not schedule editor updates.
 
 ```rust
+use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{
     Command, CompletionError, CompletionOptions, CursorPosition,
     NativeAutocompleteOperations,
@@ -21,13 +23,14 @@ async fn complete() -> Result<(), CompletionError> {
     let provider = CombinedAutocompleteProvider::new(
         vec![Command::SlashCommand(command)],
         "/work".into(),
+        Some("fd".into()),
         NativeAutocompleteOperations::default(),
     );
     let lines = vec!["/he".into()];
     let suggestions = provider.get_suggestions(
         &lines,
         CursorPosition { line: 0, col: 3 },
-        CompletionOptions { signal: &(), force: None },
+        CompletionOptions { signal: &Cancellation::new(), force: None },
     ).await?;
     if let Some(suggestions) = suggestions {
         let item = &suggestions.items[0];
@@ -54,12 +57,13 @@ suggestions. Command completion does not suppress callbacks based on the signal.
 
 ## Paths and host operations
 
-Attachment tokens take precedence, but recursive attachment search is not yet
-implemented: these requests return no suggestions. Unforced leading slash queries
-select commands; forced queries bypass commands for direct path completion.
+Attachment tokens take precedence over commands and forced direct completion.
+Unforced leading slash queries select commands; forced queries bypass commands for
+direct path completion.
 
-`AutocompleteOperations` supplies home lookup, directory enumeration, link metadata
-and label comparison. Implement it for an in-memory, remote or browser filesystem;
+`AutocompleteOperations` supplies home lookup, directory enumeration, link metadata,
+label comparison, cancellation reads and search execution. Implement it for an
+in-memory, remote or browser filesystem;
 matching and candidate construction remain in the same provider. Native operations
 are available only outside the browser target. Their locale reader can be replaced
 with `NativeAutocompleteOperations::with_environment` independently of home lookup.
@@ -79,6 +83,29 @@ candidate ends in a quote. Command insertion adds a slash and trailing space unl
 the value, after removing its opening display quote if present, starts with a slash.
 Attachment-file insertion adds a trailing space; directory
 insertion keeps the cursor inside a closing quote when one is present.
+
+## Recursive attachment paths
+
+The caller supplies the optional search executable to the constructor. An absent or
+empty executable disables attachment suggestions. Native operations use
+`Cancellation` as their signal and run that executable directly, with null stdin
+and captured stdout/stderr; stderr is consumed without display.
+
+A directory before the last native separator scopes the search when metadata
+identifies it as a directory. Failed metadata falls back to unscoped search; a
+failed home lookup ends the attachment request. Display prefixes retain authored
+spelling. The search executable receives literal basename queries or escaped
+full-path queries, includes hidden files and directories, follows links and applies
+its ignore rules. It is asked for 100 results; NUL-delimited records preserve
+filename whitespace and Unix backslashes, excluding exact `.git` components.
+
+Nonempty queries rank by whole-string lowercase basename equality, basename
+prefix, basename substring, then path substring; matching directories receive a
+bonus. Empty queries keep process order. Stable score ties retain duplicates and
+only the first 20 ranked candidates are returned. Attachment host failures and
+observed cancellation return no suggestions. Native cancellation checks child
+status, then kills and waits when the child remains running; status or kill
+failures return I/O errors to the provider.
 
 ## Shared fuzzy ranking
 

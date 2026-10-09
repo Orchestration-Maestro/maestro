@@ -1,0 +1,883 @@
+[
+  {
+    "id": "literal_plus",
+    "group": "literal",
+    "text": "@a+b",
+    "names": [
+      "a+b.txt",
+      "ab.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a+b.txt",
+          "label": "a+b.txt",
+          "description": "a+b.txt"
+        }
+      ],
+      "prefix": "@a+b"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@a+b.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "literal_bracket",
+    "group": "literal",
+    "text": "@[",
+    "names": [
+      "[x].txt",
+      "x.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@[x].txt",
+          "label": "[x].txt",
+          "description": "[x].txt"
+        }
+      ],
+      "prefix": "@["
+    },
+    "applications": [
+      {
+        "lines": [
+          "@[x].txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "literal_parens",
+    "group": "literal",
+    "text": "@(x)",
+    "names": [
+      "(x).txt",
+      "x.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@(x).txt",
+          "label": "(x).txt",
+          "description": "(x).txt"
+        }
+      ],
+      "prefix": "@(x)"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@(x).txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "literal_question",
+    "group": "literal",
+    "text": "@a?b",
+    "names": [
+      "a?b.txt",
+      "ab.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a?b.txt",
+          "label": "a?b.txt",
+          "description": "a?b.txt"
+        }
+      ],
+      "prefix": "@a?b"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@a?b.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "literal_pipe",
+    "group": "literal",
+    "text": "@x|y",
+    "names": [
+      "x|y.txt",
+      "x.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@x|y.txt",
+          "label": "x|y.txt",
+          "description": "x|y.txt"
+        }
+      ],
+      "prefix": "@x|y"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@x|y.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "literal_dot",
+    "group": "literal",
+    "text": "@file.txt",
+    "names": [
+      "file.txt",
+      "fileXtxt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@file.txt",
+          "label": "file.txt",
+          "description": "file.txt"
+        }
+      ],
+      "prefix": "@file.txt"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@file.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 10
+      }
+    ]
+  },
+  {
+    "id": "leading_dash",
+    "group": "literal",
+    "text": "@-x",
+    "names": [
+      "-x.txt",
+      "x.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@./-x.txt",
+          "label": "-x.txt",
+          "description": "./-x.txt"
+        }
+      ],
+      "prefix": "@-x"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@./-x.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 10
+      }
+    ]
+  },
+  {
+    "id": "uppercase",
+    "group": "literal",
+    "text": "@REA",
+    "names": [
+      "readme.md",
+      "README.md"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@README.md",
+          "label": "README.md",
+          "description": "README.md"
+        },
+        {
+          "value": "@readme.md",
+          "label": "readme.md",
+          "description": "readme.md"
+        }
+      ],
+      "prefix": "@REA"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@README.md "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 11
+      },
+      {
+        "lines": [
+          "@readme.md "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 11
+      }
+    ]
+  },
+  {
+    "id": "scope_plus",
+    "group": "literal",
+    "text": "@dir/a+b",
+    "names": [
+      "dir/a+b.txt",
+      "dir/ab.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/a+b.txt",
+          "label": "a+b.txt",
+          "description": "dir/a+b.txt"
+        }
+      ],
+      "prefix": "@dir/a+b"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@dir/a+b.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 13
+      }
+    ]
+  },
+  {
+    "id": "full_path_literal",
+    "group": "literal",
+    "text": "@dir/a+b",
+    "names": [
+      "top/dir/a+b.txt",
+      "top/dir/ab.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/dir/a+b.txt",
+          "label": "a+b.txt",
+          "description": "top/dir/a+b.txt"
+        }
+      ],
+      "prefix": "@dir/a+b"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@top/dir/a+b.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 17
+      }
+    ]
+  },
+  {
+    "id": "repeated_full_path",
+    "group": "literal",
+    "text": "@dir//file",
+    "names": [
+      "top/dir/file.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/dir/file.txt",
+          "label": "file.txt",
+          "description": "top/dir/file.txt"
+        }
+      ],
+      "prefix": "@dir//file"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@top/dir/file.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 18
+      }
+    ]
+  },
+  {
+    "id": "backslash_full_path",
+    "group": "literal",
+    "text": "@dir\\file",
+    "names": [
+      "top/dir/file.txt"
+    ],
+    "result": null,
+    "applications": []
+  },
+  {
+    "id": "unix_backslash",
+    "group": "identity",
+    "text": "@slash",
+    "names": [
+      "slash\\name.txt",
+      "slash/name.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@slash/",
+          "label": "slash/",
+          "description": "slash"
+        },
+        {
+          "value": "@slash\\name.txt",
+          "label": "slash\\name.txt",
+          "description": "slash\\name.txt"
+        }
+      ],
+      "prefix": "@slash"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@slash/"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 7
+      },
+      {
+        "lines": [
+          "@slash\\name.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 16
+      }
+    ]
+  },
+  {
+    "id": "whitespace_name",
+    "group": "identity",
+    "text": "@",
+    "names": [
+      " leading.txt",
+      "trailing.txt "
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\" leading.txt\"",
+          "label": " leading.txt",
+          "description": " leading.txt"
+        },
+        {
+          "value": "@\"trailing.txt \"",
+          "label": "trailing.txt ",
+          "description": "trailing.txt "
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@\" leading.txt\" "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 16
+      },
+      {
+        "lines": [
+          "@\"trailing.txt \" "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 17
+      }
+    ]
+  },
+  {
+    "id": "newline_name",
+    "group": "identity",
+    "text": "@",
+    "names": [
+      "a\nb.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a\nb.txt",
+          "label": "a\nb.txt",
+          "description": "a\nb.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@a\nb.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "carriage_name",
+    "group": "identity",
+    "text": "@",
+    "names": [
+      "a\rb.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a\rb.txt",
+          "label": "a\rb.txt",
+          "description": "a\rb.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@a\rb.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "bom_name",
+    "group": "identity",
+    "text": "@",
+    "names": [
+      "﻿file"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@﻿file",
+          "label": "﻿file",
+          "description": "﻿file"
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@﻿file "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      }
+    ]
+  },
+  {
+    "id": "tab_name",
+    "group": "identity",
+    "text": "@",
+    "names": [
+      "a\tb"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@a\tb",
+          "label": "a\tb",
+          "description": "a\tb"
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@a\tb "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 5
+      }
+    ]
+  },
+  {
+    "id": "quote_name",
+    "group": "identity",
+    "text": "@quo",
+    "names": [
+      "quo\"te.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@quo\"te.txt",
+          "label": "quo\"te.txt",
+          "description": "quo\"te.txt"
+        }
+      ],
+      "prefix": "@quo"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@quo\"te.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 12
+      }
+    ]
+  },
+  {
+    "id": "quoted_quote_name",
+    "group": "identity",
+    "text": "@\"quo",
+    "names": [
+      "quo\"te.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@\"quo\"te.txt\"",
+          "label": "quo\"te.txt",
+          "description": "quo\"te.txt"
+        }
+      ],
+      "prefix": "@\"quo"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@\"quo\"te.txt\" "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 14
+      }
+    ]
+  },
+  {
+    "id": "greek_case",
+    "group": "literal",
+    "text": "@ΟΣ",
+    "names": [
+      "ΟΣ",
+      "ος",
+      "οσ"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@ΟΣ",
+          "label": "ΟΣ",
+          "description": "ΟΣ"
+        },
+        {
+          "value": "@ος",
+          "label": "ος",
+          "description": "ος"
+        }
+      ],
+      "prefix": "@ΟΣ"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@ΟΣ "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 6
+      },
+      {
+        "lines": [
+          "@ος "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 6
+      }
+    ]
+  },
+  {
+    "id": "dotted_case",
+    "group": "literal",
+    "text": "@İ",
+    "names": [
+      "İ",
+      "i̇"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@İ",
+          "label": "İ",
+          "description": "İ"
+        }
+      ],
+      "prefix": "@İ"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@İ "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 4
+      }
+    ]
+  },
+  {
+    "id": "hidden_git",
+    "group": "ignore",
+    "text": "@",
+    "names": [
+      ".maestro/config",
+      ".github/workflows/job",
+      ".git/config",
+      "inner/.git",
+      ".gitignore"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@.github/",
+          "label": ".github/",
+          "description": ".github"
+        },
+        {
+          "value": "@.github/workflows/",
+          "label": "workflows/",
+          "description": ".github/workflows"
+        },
+        {
+          "value": "@.github/workflows/job",
+          "label": "job",
+          "description": ".github/workflows/job"
+        },
+        {
+          "value": "@.gitignore",
+          "label": ".gitignore",
+          "description": ".gitignore"
+        },
+        {
+          "value": "@.maestro/",
+          "label": ".maestro/",
+          "description": ".maestro"
+        },
+        {
+          "value": "@.maestro/config",
+          "label": "config",
+          "description": ".maestro/config"
+        },
+        {
+          "value": "@inner/",
+          "label": "inner/",
+          "description": "inner"
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@.github/"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 9
+      },
+      {
+        "lines": [
+          "@.github/workflows/"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 19
+      },
+      {
+        "lines": [
+          "@.github/workflows/job "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 23
+      },
+      {
+        "lines": [
+          "@.gitignore "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 12
+      },
+      {
+        "lines": [
+          "@.maestro/"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 10
+      },
+      {
+        "lines": [
+          "@.maestro/config "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 17
+      },
+      {
+        "lines": [
+          "@inner/"
+        ],
+        "cursorLine": 0,
+        "cursorCol": 7
+      }
+    ]
+  },
+  {
+    "id": "ignored",
+    "group": "ignore",
+    "text": "@",
+    "names": [
+      ".git/HEAD",
+      ".gitignore",
+      "ignored.txt",
+      "kept.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@.gitignore",
+          "label": ".gitignore",
+          "description": ".gitignore"
+        },
+        {
+          "value": "@kept.txt",
+          "label": "kept.txt",
+          "description": "kept.txt"
+        }
+      ],
+      "prefix": "@"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@.gitignore "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 12
+      },
+      {
+        "lines": [
+          "@kept.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 10
+      }
+    ]
+  },
+  {
+    "id": "full_path_metacharacters",
+    "group": "literal",
+    "text": "@dir/a^$.*+?()|[]{}",
+    "names": [
+      "top/dir/a^$.*+?()|[]{}.txt",
+      "top/dir/decoy.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/dir/a^$.*+?()|[]{}.txt",
+          "label": "a^$.*+?()|[]{}.txt",
+          "description": "top/dir/a^$.*+?()|[]{}.txt"
+        }
+      ],
+      "prefix": "@dir/a^$.*+?()|[]{}"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@top/dir/a^$.*+?()|[]{}.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 28
+      }
+    ]
+  },
+  {
+    "id": "unix_backslash_path",
+    "group": "literal",
+    "text": "@dir\\x/a+b",
+    "names": [
+      "top/dir\\x/a+b.txt",
+      "top/dir/x/a+b.txt"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@top/dir\\x/a+b.txt",
+          "label": "a+b.txt",
+          "description": "top/dir\\x/a+b.txt"
+        }
+      ],
+      "prefix": "@dir\\x/a+b"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@top/dir\\x/a+b.txt "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 19
+      }
+    ]
+  },
+  {
+    "id": "case_scope",
+    "group": "literal",
+    "text": "@dir/REA",
+    "names": [
+      "dir/readme.md",
+      "dir/README.md"
+    ],
+    "result": {
+      "items": [
+        {
+          "value": "@dir/README.md",
+          "label": "README.md",
+          "description": "dir/README.md"
+        },
+        {
+          "value": "@dir/readme.md",
+          "label": "readme.md",
+          "description": "dir/readme.md"
+        }
+      ],
+      "prefix": "@dir/REA"
+    },
+    "applications": [
+      {
+        "lines": [
+          "@dir/README.md "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 15
+      },
+      {
+        "lines": [
+          "@dir/readme.md "
+        ],
+        "cursorLine": 0,
+        "cursorCol": 15
+      }
+    ]
+  }
+]

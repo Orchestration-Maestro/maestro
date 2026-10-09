@@ -23,7 +23,7 @@ fn query<E: Fn(&str) -> Option<String>>(
             col: text.len(),
         },
         CompletionOptions {
-            signal: &(),
+            signal: &maestro_cancellation::Cancellation::new(),
             force: Some(true),
         },
     ))
@@ -36,6 +36,7 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
         let provider = CombinedAutocompleteProvider::new(
             vec![],
             "/missing".into(),
+            None,
             NativeAutocompleteOperations::default(),
         );
         let found = query(&provider, "~/").expect("provider succeeds").unwrap();
@@ -49,6 +50,7 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
     let provider = CombinedAutocompleteProvider::new(
         vec![],
         tree.authored(),
+        None,
         NativeAutocompleteOperations::default(),
     );
     assert!(
@@ -99,6 +101,7 @@ fn native_directories_follow_links_without_filtering_hidden_entries() {
     let provider = CombinedAutocompleteProvider::new(
         vec![],
         tree.authored(),
+        None,
         NativeAutocompleteOperations::with_environment(|_| Some("en_US".into())),
     );
     for (text, expected) in NATIVE_PATHS {
@@ -185,6 +188,17 @@ impl<E: Fn(&str) -> Option<String>> maestro_tui::autocomplete::AutocompleteOpera
     for LocaleFiles<E>
 {
     type Signal = ();
+    fn is_aborted(&self, (): &Self::Signal) -> bool {
+        false
+    }
+    fn run_fd<'a>(
+        &'a self,
+        _: &'a str,
+        _: &'a [String],
+        (): &'a Self::Signal,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = std::io::Result<Vec<u8>>> + 'a>> {
+        Box::pin(async { Err(std::io::Error::other("no executable")) })
+    }
     fn home_dir(&self) -> std::io::Result<String> {
         self.native.home_dir()
     }
@@ -251,7 +265,7 @@ fn native_collation_matches_locale_ordering() {
                 .collect(),
             fail_listing: false,
         };
-        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), operations);
+        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), None, operations);
         let found = locale_query(&provider, "", true)
             .expect("provider succeeds")
             .unwrap();
@@ -821,7 +835,7 @@ fn locale_selection_is_lazy_cached_and_uses_the_first_present_variable() {
             .collect(),
         fail_listing: false,
     };
-    let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), operations);
+    let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), None, operations);
     let first = locale_query(&provider, "", true)
         .expect("provider succeeds")
         .unwrap();
@@ -882,6 +896,7 @@ fn assert_locale_reads_avoided() -> Result<(), maestro_tui::autocomplete::Comple
                 description: None,
             })],
             "/work".into(),
+            None,
             operations,
         );
         assert_eq!(

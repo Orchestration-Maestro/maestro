@@ -34,6 +34,17 @@ pub struct Files {
 
 impl AutocompleteOperations for Files {
     type Signal = Cell<bool>;
+    fn is_aborted(&self, signal: &Self::Signal) -> bool {
+        signal.get()
+    }
+    fn run_fd<'a>(
+        &'a self,
+        _: &'a str,
+        _: &'a [String],
+        _: &'a Self::Signal,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = io::Result<Vec<u8>>> + 'a>> {
+        Box::pin(async { Err(io::Error::other("no executable")) })
+    }
     fn home_dir(&self) -> io::Result<String> {
         self.trace.borrow_mut().push(vec!["home".into()]);
         if self.home_error {
@@ -226,7 +237,7 @@ pub fn run_suggestions(cases: &[SuggestionCase]) {
             CommandInput::Empty => vec![],
             CommandInput::EmptyName => vec![slash("", None, None, None)],
         };
-        let provider = CombinedAutocompleteProvider::new(commands, "/work".into(), files);
+        let provider = CombinedAutocompleteProvider::new(commands, "/work".into(), None, files);
         let lines: Vec<_> = case.lines.iter().map(|s| (*s).to_owned()).collect();
         let signal = Cell::new(case.aborted);
         let result = super::futures::block_on(provider.get_suggestions(
@@ -295,7 +306,8 @@ pub type ApplicationCase = (
 pub fn run_applications(cases: &[ApplicationCase]) {
     use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
     for (id, input, cursor, prefix, chosen, expected, line, col) in cases.iter().copied() {
-        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), Files::default());
+        let provider =
+            CombinedAutocompleteProvider::new(vec![], "/work".into(), None, Files::default());
         let input: Vec<_> = input.iter().map(|s| (*s).to_owned()).collect();
         let applied =
             provider.apply_completion(&input, cursor, &item(chosen.0, chosen.1, chosen.2), prefix);

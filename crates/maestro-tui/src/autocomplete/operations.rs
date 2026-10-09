@@ -1,4 +1,4 @@
-//! Host operations consumed by direct path completion.
+//! Host operations consumed by filesystem completion.
 
 use std::cmp::Ordering;
 use std::io;
@@ -22,10 +22,22 @@ pub enum DirectoryEntryKind {
     Other,
 }
 
-/// Replaceable filesystem and collation effects.
+/// Replaceable filesystem, collation and search effects.
 pub trait AutocompleteOperations {
     /// The caller's cancellation signal type.
     type Signal: ?Sized;
+    /// Read request cancellation without changing the signal.
+    fn is_aborted(&self, signal: &Self::Signal) -> bool;
+    /// Run the supplied search executable and return successful stdout bytes.
+    ///
+    /// # Errors
+    /// Returns process, pipe or cancellation failure.
+    fn run_fd<'a>(
+        &'a self,
+        executable: &'a str,
+        args: &'a [String],
+        signal: &'a Self::Signal,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = io::Result<Vec<u8>>> + 'a>>;
     /// Read the native home directory.
     ///
     /// # Errors
@@ -100,7 +112,20 @@ impl<E: Fn(&str) -> Option<String>> NativeAutocompleteOperations<E> {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocompleteOperations<E> {
-    type Signal = ();
+    type Signal = maestro_cancellation::Cancellation;
+
+    fn is_aborted(&self, signal: &Self::Signal) -> bool {
+        signal.is_aborted()
+    }
+
+    fn run_fd<'a>(
+        &'a self,
+        executable: &'a str,
+        args: &'a [String],
+        signal: &'a Self::Signal,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = io::Result<Vec<u8>>> + 'a>> {
+        Box::pin(super::fd::run(executable, args, signal))
+    }
 
     fn home_dir(&self) -> io::Result<String> {
         std::env::home_dir()

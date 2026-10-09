@@ -50,7 +50,8 @@ fn tab_trigger_keeps_its_distinct_slash_rule() {
         ("/model a", true),
     ] {
         let lines = [text.to_owned()];
-        let provider = CombinedAutocompleteProvider::new(vec![], "/work".into(), Files::default());
+        let provider =
+            CombinedAutocompleteProvider::new(vec![], "/work".into(), None, Files::default());
         assert_eq!(
             provider.should_trigger_file_completion(
                 &lines,
@@ -98,6 +99,7 @@ fn observe_argument_completion(
             get_argument_completions: Some(complete),
         })],
         "/work".into(),
+        None,
         files,
     );
     let lines = ["/load a".into()];

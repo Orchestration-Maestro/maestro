@@ -13,3 +13,6 @@ prek = { version = "0.5.4", matching = "x86_64-unknown-linux-musl" }
 
 # Watches compiler inputs with native argument forwarding.
 watchexec = "2.8.0"
+
+# Finds attachment paths in native completion tests.
+fd = "10.5.0"
