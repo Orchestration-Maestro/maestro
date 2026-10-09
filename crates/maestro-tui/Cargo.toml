@@ -16,6 +16,8 @@ regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
 
+pulldown-cmark = { version = "=0.13.4", default-features = false }
+
 [lints]
 workspace = true
 

@@ -1508,6 +1508,7 @@ dependencies = [
  "icu_locale_core",
  "maestro-cancellation",
  "maestro-path",
+ "pulldown-cmark",
  "rand",
  "regress",
  "serde",

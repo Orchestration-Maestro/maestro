@@ -34,3 +34,5 @@ pub use settings_list::{SettingItem, SettingsList, SettingsListTheme};
 pub mod editor;
 pub use editor::{Editor, EditorOptions, EditorTheme};
 mod cursor;
+pub mod markdown;
+pub use markdown::{DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TextDecoration};

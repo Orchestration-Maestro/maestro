@@ -1,0 +1,58 @@
+[
+  {
+    "text": "```\na\n```",
+    "code": "a",
+    "info": "",
+    "lines": [
+      "```                           ",
+      "  CUSTOM                      ",
+      "  line2                       ",
+      "```                           "
+    ]
+  },
+  {
+    "text": "```\n\n```",
+    "code": "",
+    "info": "",
+    "lines": [
+      "```                           ",
+      "  CUSTOM                      ",
+      "  line2                       ",
+      "```                           "
+    ]
+  },
+  {
+    "text": "```rust info\nx\n```",
+    "code": "x",
+    "info": "rust info",
+    "lines": [
+      "```rust info                  ",
+      "  CUSTOM                      ",
+      "  line2                       ",
+      "```                           "
+    ]
+  },
+  {
+    "text": "    x",
+    "code": "x",
+    "info": null,
+    "lines": [
+      "```                           ",
+      "  CUSTOM                      ",
+      "  line2                       ",
+      "```                           "
+    ]
+  },
+  {
+    "text": "- a\n\n  ```js\n  y\n  ```",
+    "code": "y",
+    "info": "js",
+    "lines": [
+      "- a                           ",
+      "  ```js                       ",
+      "    CUSTOM                    ",
+      "    line2                     ",
+      "  ```                         "
+    ]
+  }
+]

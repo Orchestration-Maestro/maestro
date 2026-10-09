@@ -1,0 +1,175 @@
+[
+  {
+    "text": "alpha\tbeta",
+    "width": 0,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "",
+      "  a  ",
+      "  l  ",
+      "  p  ",
+      "  h  ",
+      "  a  ",
+      "  b  ",
+      "  e  ",
+      "  t  ",
+      "  a  ",
+      ""
+    ]
+  },
+  {
+    "text": "alpha\tbeta",
+    "width": 1,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      " ",
+      "  a  ",
+      "  l  ",
+      "  p  ",
+      "  h  ",
+      "  a  ",
+      "  b  ",
+      "  e  ",
+      "  t  ",
+      "  a  ",
+      " "
+    ]
+  },
+  {
+    "text": "alpha\tbeta",
+    "width": 5,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "     ",
+      "  a  ",
+      "  l  ",
+      "  p  ",
+      "  h  ",
+      "  a  ",
+      "  b  ",
+      "  e  ",
+      "  t  ",
+      "  a  ",
+      "     "
+    ]
+  },
+  {
+    "text": "alpha\tbeta",
+    "width": 20,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "                    ",
+      "  alpha   beta      ",
+      "                    "
+    ]
+  },
+  {
+    "text": "a\r\nb\rc",
+    "width": 0,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "",
+      "  a  ",
+      "  b  ",
+      "  c  ",
+      ""
+    ]
+  },
+  {
+    "text": "a\r\nb\rc",
+    "width": 1,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      " ",
+      "  a  ",
+      "  b  ",
+      "  c  ",
+      " "
+    ]
+  },
+  {
+    "text": "a\r\nb\rc",
+    "width": 5,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "     ",
+      "  a  ",
+      "  b  ",
+      "  c  ",
+      "     "
+    ]
+  },
+  {
+    "text": "a\r\nb\rc",
+    "width": 20,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "                    ",
+      "  a                 ",
+      "  b                 ",
+      "  c                 ",
+      "                    "
+    ]
+  },
+  {
+    "text": "\tcode",
+    "width": 0,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "",
+      "  c  ",
+      "  o  ",
+      "  d  ",
+      "  e  ",
+      ""
+    ]
+  },
+  {
+    "text": "\tcode",
+    "width": 1,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      " ",
+      "  c  ",
+      "  o  ",
+      "  d  ",
+      "  e  ",
+      " "
+    ]
+  },
+  {
+    "text": "\tcode",
+    "width": 5,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "     ",
+      "  c  ",
+      "  o  ",
+      "  d  ",
+      "  e  ",
+      "     "
+    ]
+  },
+  {
+    "text": "\tcode",
+    "width": 20,
+    "padding_x": 2,
+    "padding_y": 1,
+    "lines": [
+      "                    ",
+      "  code              ",
+      "                    "
+    ]
+  }
+]
