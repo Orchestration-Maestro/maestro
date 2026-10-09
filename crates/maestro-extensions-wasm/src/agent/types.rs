@@ -4,8 +4,12 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::Message;
 use crate::types::object;
+use crate::{
+    BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage, CustomMessage, Message,
+};
+/// Agent reasoning levels, including disabled reasoning.
+pub use maestro_request::types::ModelThinkingLevel as ThinkingLevel;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +19,14 @@ use serde::{Deserialize, Serialize};
 pub enum AgentMessage {
     /// A model-facing message.
     Message(Box<Message>),
+    /// Recorded shell execution.
+    BashExecution(BashExecutionMessage),
+    /// Extension-injected message.
+    Custom(CustomMessage),
+    /// Branch summary.
+    BranchSummary(BranchSummaryMessage),
+    /// Compaction summary.
+    CompactionSummary(CompactionSummaryMessage),
     /// Extension-defined data, retaining its opaque text.
     Other(CustomAgentMessages),
 }
@@ -39,9 +51,18 @@ impl<'de> Deserialize<'de> for AgentMessage {
             "user" | "assistant" | "toolResult" => serde_json::from_str(raw.get())
                 .map(Self::Message)
                 .map_err(D::Error::custom),
-            "bashExecution" | "custom" | "branchSummary" | "compactionSummary" => {
-                Err(D::Error::custom("undelivered role"))
-            }
+            "bashExecution" => serde_json::from_str(raw.get())
+                .map(Self::BashExecution)
+                .map_err(D::Error::custom),
+            "custom" => serde_json::from_str(raw.get())
+                .map(Self::Custom)
+                .map_err(D::Error::custom),
+            "branchSummary" => serde_json::from_str(raw.get())
+                .map(Self::BranchSummary)
+                .map_err(D::Error::custom),
+            "compactionSummary" => serde_json::from_str(raw.get())
+                .map(Self::CompactionSummary)
+                .map_err(D::Error::custom),
             _ => object::from_str(raw.get())
                 .map(Self::Other)
                 .map_err(D::Error::custom),

@@ -137,7 +137,15 @@ async fn open_role(driver: &mut impl Driver) -> Result<(), String> {
             .iter()
             .any(|line| line == "entry entered none")
     );
-    for role in ["user", "assistant", "toolResult"] {
+    for role in [
+        "user",
+        "assistant",
+        "toolResult",
+        "bashExecution",
+        "custom",
+        "branchSummary",
+        "compactionSummary",
+    ] {
         let entered = driver
             .transcript()
             .iter()

@@ -26,6 +26,7 @@ macro_rules! on_both_adapters {
 }
 
 mod agent_events;
+mod application_messages;
 mod author;
 mod build;
 mod component_driver;
@@ -43,7 +44,9 @@ mod host_family;
 mod join;
 mod observed;
 mod scenario;
+mod selection_events;
 mod shared_records;
+mod stream_events;
 
 use std::future::Future;
 

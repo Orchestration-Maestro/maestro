@@ -385,9 +385,15 @@ impl Probe {
             self.report()?;
         }
         if let Some(bits) = directive.result_number_bits {
-            let mut value =
-                json!({"compaction":{"summary":"s","firstKeptEntryId":"e","tokensBefore":0.0}});
-            let mut result = reply("session_before_compact", value.take())?;
+            let mut result = match &directive.ending {
+                Ending::Returns { family, value } => reply(family, value.clone())?,
+                _ => reply(
+                    "session_before_compact",
+                    json!({"compaction":{"summary":"s","firstKeptEntryId":"e","tokensBefore":0.0}}),
+                )?,
+            };
+            let number = f64::from_bits(u64::from_str_radix(&bits, 16).map_err(|e| e.to_string())?);
+            assign_result_number(&mut result, number);
             if let ExtensionEventResult::SessionBeforeCompact(compact) = &mut result
                 && let Presence::Present(compaction) = &mut compact.compaction
             {
@@ -437,10 +443,37 @@ impl Probe {
     }
 }
 
+/// Assigns a numeric field in the new result families.
+fn assign_result_number(result: &mut ExtensionEventResult, number: f64) {
+    let message = match result {
+        ExtensionEventResult::Context(context) => match &mut context.messages {
+            Presence::Present(messages) => messages.first_mut(),
+            _ => None,
+        },
+        ExtensionEventResult::MessageEnd(end) => match &mut end.message {
+            Presence::Present(message) => Some(message),
+            _ => None,
+        },
+        _ => None,
+    };
+    if let Some(maestro_extensions_wasm::AgentMessage::Message(message)) = message
+        && let maestro_extensions_wasm::Message::User(user) = message.as_mut()
+    {
+        user.timestamp = number;
+    }
+}
+
 /// Edits the field of the event that tells the kinds apart.
 fn mark(event: &mut ExtensionEvent) {
     let changed = || "changed".to_owned();
     match event {
+        ExtensionEvent::ModelSelect(event) => event.model.name = changed(),
+        ExtensionEvent::ThinkingLevelSelect(event) => {
+            event.level = maestro_extensions_wasm::ThinkingLevel::Off;
+        }
+        ExtensionEvent::ToolExecutionStart(event) => event.tool_name = changed(),
+        ExtensionEvent::ToolExecutionUpdate(event) => event.tool_name = changed(),
+        ExtensionEvent::ToolExecutionEnd(event) => event.tool_name = changed(),
         ExtensionEvent::Context(event) => event.messages.reverse(),
         ExtensionEvent::AgentEnd(event) => event.messages.reverse(),
         ExtensionEvent::BeforeAgentStart(event) => event.prompt = changed(),
@@ -448,6 +481,7 @@ fn mark(event: &mut ExtensionEvent) {
         ExtensionEvent::TurnStart(event) => event.turn_index = 99.0,
         ExtensionEvent::TurnEnd(event) => event.turn_index = 99.0,
         ExtensionEvent::MessageStart(event) => mark_message(&mut event.message),
+        ExtensionEvent::MessageUpdate(event) => mark_message(&mut event.message),
         ExtensionEvent::MessageEnd(event) => mark_message(&mut event.message),
         ExtensionEvent::ResourcesDiscover(discover) => discover.cwd = changed(),
         ExtensionEvent::Session(SessionEvent::Start(start)) => {
@@ -475,6 +509,20 @@ fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
     let tag = document["type"].as_str().unwrap_or_default().to_owned();
     let unreadable = |error: serde_json::Error| format!("unreadable event: {error}");
     Ok(match tag.as_str() {
+        "model_select" => ExtensionEvent::ModelSelect(from_value(document).map_err(unreadable)?),
+        "thinking_level_select" => {
+            ExtensionEvent::ThinkingLevelSelect(from_value(document).map_err(unreadable)?)
+        }
+        "tool_execution_start" => {
+            ExtensionEvent::ToolExecutionStart(from_value(document).map_err(unreadable)?)
+        }
+        "tool_execution_update" => {
+            ExtensionEvent::ToolExecutionUpdate(from_value(document).map_err(unreadable)?)
+        }
+        "tool_execution_end" => {
+            ExtensionEvent::ToolExecutionEnd(from_value(document).map_err(unreadable)?)
+        }
+
         "context" => ExtensionEvent::Context(from_value(document).map_err(unreadable)?),
         "before_agent_start" => {
             ExtensionEvent::BeforeAgentStart(from_value(document).map_err(unreadable)?)
@@ -484,6 +532,9 @@ fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
         "turn_start" => ExtensionEvent::TurnStart(from_value(document).map_err(unreadable)?),
         "turn_end" => ExtensionEvent::TurnEnd(from_value(document).map_err(unreadable)?),
         "message_start" => ExtensionEvent::MessageStart(from_value(document).map_err(unreadable)?),
+        "message_update" => {
+            ExtensionEvent::MessageUpdate(from_value(document).map_err(unreadable)?)
+        }
         "message_end" => ExtensionEvent::MessageEnd(from_value(document).map_err(unreadable)?),
         "resources_discover" => {
             ExtensionEvent::ResourcesDiscover(from_value(document).map_err(unreadable)?)
@@ -521,6 +572,11 @@ fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
 fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
     let unreadable = |error: serde_json::Error| format!("unreadable result: {error}");
     Ok(match family {
+        "context" => ExtensionEventResult::Context(from_value(value).map_err(unreadable)?),
+        "message_end" => ExtensionEventResult::MessageEnd(from_value(value).map_err(unreadable)?),
+        "before_agent_start" => {
+            ExtensionEventResult::BeforeAgentStart(from_value(value).map_err(unreadable)?)
+        }
         "resources_discover" => {
             ExtensionEventResult::ResourcesDiscover(from_value(value).map_err(unreadable)?)
         }
@@ -556,6 +612,24 @@ fn write_number(event: &mut ExtensionEvent, bits: &str) -> Result<(), String> {
                 return Err("not a user message".to_owned());
             };
             user.timestamp = value;
+        }
+        ExtensionEvent::MessageUpdate(event) => {
+            use maestro_extensions_wasm::AssistantMessageEvent as Event;
+            let shared = match &event.assistant_message_event {
+                Event::Start { partial }
+                | Event::TextStart { partial, .. }
+                | Event::TextDelta { partial, .. }
+                | Event::TextEnd { partial, .. }
+                | Event::ThinkingStart { partial, .. }
+                | Event::ThinkingDelta { partial, .. }
+                | Event::ThinkingEnd { partial, .. }
+                | Event::ToolcallStart { partial, .. }
+                | Event::ToolcallDelta { partial, .. }
+                | Event::ToolcallEnd { partial, .. } => partial,
+                Event::Done { message, .. } => message,
+                Event::Error { error, .. } => error,
+            };
+            shared.write().unwrap().usage.total_tokens = value;
         }
         ExtensionEvent::TurnStart(turn) => turn.timestamp = value,
         _ => return Err("unsupported number edit".to_owned()),

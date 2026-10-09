@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 
-use super::documents::{Answer, ask};
+use super::documents::{Answer, ask, product, returns, strings};
 use super::scenario::Driver;
 use serde_json::{Value, json};
 
@@ -95,6 +95,141 @@ async fn agent_events(driver: &mut impl Driver) -> Result<(), String> {
         );
     }
     provenance(driver).await
+}
+
+/// Result families retain independent missing, null and replacement fields.
+async fn results(driver: &mut impl Driver) -> Result<(), String> {
+    let user = json!({"role":"user","content":"replacement","timestamp":99.0});
+    for (kind, field, populated) in [
+        ("context", "messages", json!([user.clone(), user.clone()])),
+        (
+            "message_end",
+            "message",
+            json!({"role":"branchSummary","summary":"replacement","fromId":"ancestor","timestamp":99.0}),
+        ),
+    ] {
+        let event = super::documents::document(kind);
+        assert_eq!(
+            ask(driver, &event, &json!({})).await?,
+            Answer::returned(&event, None)
+        );
+        let mut values = vec![json!({}), json!({field:null}), json!({field:populated})];
+        if kind == "context" {
+            values.push(json!({"messages":[]}));
+        }
+        for value in values {
+            assert_eq!(
+                ask(driver, &event, &returns(kind, &value)).await?,
+                Answer::returned(&event, Some(value))
+            );
+        }
+    }
+    before_agent_results(driver).await
+}
+
+/// Before-agent custom content omits role and timestamp.
+async fn before_agent_results(driver: &mut impl Driver) -> Result<(), String> {
+    let event = super::documents::document("before_agent_start");
+    let blocks = json!({"message":{"customType":"blocks","content":[],"display":false}});
+    assert_eq!(
+        ask(driver, &event, &returns("before_agent_start", &blocks)).await?,
+        Answer::returned(&event, Some(blocks))
+    );
+    for [message, prompt] in product::<2>(&strings()) {
+        let mut value = json!({});
+        if let Some(message) = message {
+            value["message"] = if message.is_null() {
+                message
+            } else {
+                json!({"customType":"notice","content":message,"display":false,"details":" opaque "})
+            };
+        }
+        if let Some(prompt) = prompt {
+            value["systemPrompt"] = prompt;
+        }
+        assert_eq!(
+            ask(driver, &event, &returns("before_agent_start", &value)).await?,
+            Answer::returned(&event, Some(value))
+        );
+    }
+    Ok(())
+}
+
+/// Checks the numeric result independently of event serialization.
+fn assert_result_number(
+    family: &str,
+    bits: u64,
+    decision: super::scenario::Decision,
+) -> Result<(), String> {
+    use super::scenario::Decision;
+    if f64::from_bits(bits).is_finite() {
+        let Decision::Returned(Ok(Some(text))) = decision else {
+            return Err("missing result".into());
+        };
+        let value: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+        let timestamp = if family == "context" {
+            &value["messages"][0]["timestamp"]
+        } else {
+            &value["message"]["timestamp"]
+        };
+        assert_eq!(timestamp.as_f64().unwrap().to_bits(), bits);
+    } else {
+        assert_eq!(
+            decision,
+            Decision::Returned(Err(
+                "extension wrote a non-finite number (Infinity or NaN)".into()
+            ))
+        );
+    }
+    Ok(())
+}
+
+/// Nonfinite values assigned in new results fail independently of event output.
+async fn result_numbers(driver: &mut impl Driver) -> Result<(), String> {
+    use super::scenario::Decision;
+    let handler = driver.identity("event probe")?;
+    for family in ["context", "message_end"] {
+        let message = json!({"role":"user","content":"assigned","timestamp":0.0});
+        let result = if family == "context" {
+            json!({"messages":[message]})
+        } else {
+            json!({"message":message})
+        };
+        for bits in [
+            0x8000_0000_0000_0000,
+            1,
+            f64::INFINITY.to_bits(),
+            f64::NEG_INFINITY.to_bits(),
+            f64::NAN.to_bits(),
+        ] {
+            let event = super::documents::document(family);
+            let mut directive = returns(family, &result);
+            directive["resultNumberBits"] = json!(format!("{bits:016x}"));
+            let delivery = driver
+                .deliver(handler, &event.to_string(), &directive.to_string(), None)
+                .await?;
+            assert_eq!(
+                Answer::of(super::scenario::Delivery {
+                    event: delivery.event,
+                    decision: Decision::Returned(Ok(None))
+                })?
+                .event,
+                Some(event)
+            );
+            assert_result_number(family, bits, delivery.decision)?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_agent_result_numbers_validate_guest_assignments() -> Result<(), String> {
+    on_both_adapters!(result_numbers)
+}
+
+#[test]
+fn maestro_context_and_message_results_keep_presence() -> Result<(), String> {
+    on_both_adapters!(results)
 }
 
 #[test]

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::agent_events::{
     AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, ContextEvent, MessageEndEvent,
-    MessageStartEvent, TurnEndEvent, TurnStartEvent,
+    MessageStartEvent, MessageUpdateEvent, TurnEndEvent, TurnStartEvent,
 };
 use super::context::AbortSignal;
 use super::events::{
@@ -15,11 +15,27 @@ use super::events::{
     SessionStartEvent,
 };
 use super::object;
+use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
+use super::tool_events::{
+    ToolExecutionEndEvent, ToolExecutionStartEvent, ToolExecutionUpdateEvent,
+};
 
 /// The `type` tag of an event document.
 #[derive(Deserialize)]
 #[serde(variant_identifier, rename_all = "snake_case")]
 enum Kind {
+    /// Selection notification.
+    ModelSelect,
+    /// Selection notification.
+    ThinkingLevelSelect,
+
+    /// Tool execution notification.
+    ToolExecutionStart,
+    /// Tool execution notification.
+    ToolExecutionUpdate,
+    /// Tool execution notification.
+    ToolExecutionEnd,
+
     /// Context notification.
     Context,
     /// `BeforeAgentStart` notification.
@@ -34,6 +50,8 @@ enum Kind {
     TurnEnd,
     /// `MessageStart` notification.
     MessageStart,
+    /// Stream update notification.
+    MessageUpdate,
     /// `MessageEnd` notification.
     MessageEnd,
 
@@ -69,6 +87,18 @@ struct Tag {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(crate) enum EventData {
+    /// Selection notification.
+    ModelSelect(Box<ModelSelectEvent>),
+    /// Selection notification.
+    ThinkingLevelSelect(ThinkingLevelSelectEvent),
+
+    /// Tool execution notification.
+    ToolExecutionStart(ToolExecutionStartEvent),
+    /// Tool execution notification.
+    ToolExecutionUpdate(ToolExecutionUpdateEvent),
+    /// Tool execution notification.
+    ToolExecutionEnd(ToolExecutionEndEvent),
+
     /// Context notification.
     Context(Box<ContextEvent>),
     /// `BeforeAgentStart` notification.
@@ -83,6 +113,8 @@ pub(crate) enum EventData {
     TurnEnd(Box<TurnEndEvent>),
     /// `MessageStart` notification.
     MessageStart(Box<MessageStartEvent>),
+    /// Stream update notification.
+    MessageUpdate(Box<MessageUpdateEvent>),
     /// `MessageEnd` notification.
     MessageEnd(Box<MessageEndEvent>),
 
@@ -118,6 +150,13 @@ impl EventData {
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
         let Tag { kind } = object::from_str(text)?;
         Ok(match kind {
+            Kind::ModelSelect => Self::ModelSelect(object::from_str(text)?),
+            Kind::ThinkingLevelSelect => Self::ThinkingLevelSelect(object::from_str(text)?),
+
+            Kind::ToolExecutionStart => Self::ToolExecutionStart(object::from_str(text)?),
+            Kind::ToolExecutionUpdate => Self::ToolExecutionUpdate(object::from_str(text)?),
+            Kind::ToolExecutionEnd => Self::ToolExecutionEnd(object::from_str(text)?),
+
             Kind::Context => Self::Context(object::from_str(text)?),
             Kind::BeforeAgentStart => Self::BeforeAgentStart(object::from_str(text)?),
             Kind::AgentStart => Self::AgentStart(object::from_str(text)?),
@@ -125,6 +164,7 @@ impl EventData {
             Kind::TurnStart => Self::TurnStart(object::from_str(text)?),
             Kind::TurnEnd => Self::TurnEnd(object::from_str(text)?),
             Kind::MessageStart => Self::MessageStart(object::from_str(text)?),
+            Kind::MessageUpdate => Self::MessageUpdate(object::from_str(text)?),
             Kind::MessageEnd => Self::MessageEnd(object::from_str(text)?),
 
             Kind::ResourcesDiscover => Self::ResourcesDiscover(object::from_str(text)?),
@@ -146,6 +186,13 @@ impl EventData {
     /// Returns an error when a compaction has no signal.
     pub(crate) fn attach(self, signal: Option<AbortSignal>) -> Result<ExtensionEvent, String> {
         Ok(match self {
+            Self::ModelSelect(event) => ExtensionEvent::ModelSelect(event),
+            Self::ThinkingLevelSelect(event) => ExtensionEvent::ThinkingLevelSelect(event),
+
+            Self::ToolExecutionStart(event) => ExtensionEvent::ToolExecutionStart(event),
+            Self::ToolExecutionUpdate(event) => ExtensionEvent::ToolExecutionUpdate(event),
+            Self::ToolExecutionEnd(event) => ExtensionEvent::ToolExecutionEnd(event),
+
             Self::Context(event) => ExtensionEvent::Context(event),
             Self::BeforeAgentStart(event) => ExtensionEvent::BeforeAgentStart(event),
             Self::AgentStart(event) => ExtensionEvent::AgentStart(event),
@@ -153,6 +200,7 @@ impl EventData {
             Self::TurnStart(event) => ExtensionEvent::TurnStart(event),
             Self::TurnEnd(event) => ExtensionEvent::TurnEnd(event),
             Self::MessageStart(event) => ExtensionEvent::MessageStart(event),
+            Self::MessageUpdate(event) => ExtensionEvent::MessageUpdate(event),
             Self::MessageEnd(event) => ExtensionEvent::MessageEnd(event),
 
             Self::ResourcesDiscover(event) => ExtensionEvent::ResourcesDiscover(event),
@@ -182,6 +230,13 @@ impl From<ExtensionEvent> for EventData {
     /// The data of an event; a compaction's signal is dropped.
     fn from(event: ExtensionEvent) -> Self {
         match event {
+            ExtensionEvent::ModelSelect(event) => Self::ModelSelect(event),
+            ExtensionEvent::ThinkingLevelSelect(event) => Self::ThinkingLevelSelect(event),
+
+            ExtensionEvent::ToolExecutionStart(event) => Self::ToolExecutionStart(event),
+            ExtensionEvent::ToolExecutionUpdate(event) => Self::ToolExecutionUpdate(event),
+            ExtensionEvent::ToolExecutionEnd(event) => Self::ToolExecutionEnd(event),
+
             ExtensionEvent::Context(event) => Self::Context(event),
             ExtensionEvent::BeforeAgentStart(event) => Self::BeforeAgentStart(event),
             ExtensionEvent::AgentStart(event) => Self::AgentStart(event),
@@ -189,6 +244,10 @@ impl From<ExtensionEvent> for EventData {
             ExtensionEvent::TurnStart(event) => Self::TurnStart(event),
             ExtensionEvent::TurnEnd(event) => Self::TurnEnd(event),
             ExtensionEvent::MessageStart(event) => Self::MessageStart(event),
+            ExtensionEvent::MessageUpdate(mut event) => {
+                event.snapshot();
+                Self::MessageUpdate(event)
+            }
             ExtensionEvent::MessageEnd(event) => Self::MessageEnd(event),
 
             ExtensionEvent::ResourcesDiscover(event) => Self::ResourcesDiscover(event),

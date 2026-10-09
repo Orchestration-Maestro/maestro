@@ -4,8 +4,8 @@
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
-This page describes what is delivered so far: registration, seventeen events and the
-results of six of them, command contexts and session continuations.
+This page describes what is delivered so far: registration, 23 events and nine result
+families, command contexts and session continuations.
 
 ## Build a component
 
@@ -61,6 +61,12 @@ differs from a result whose properties are all omitted.
 | `turn_end` | `TurnEndEvent` | `turnIndex`, `message`, `toolResults` |
 | `message_start` | `MessageStartEvent` | `message` |
 | `message_end` | `MessageEndEvent` | `message` |
+| `message_update` | `MessageUpdateEvent` | `message`, `assistantMessageEvent` |
+| `tool_execution_start` | `ToolExecutionStartEvent` | `toolCallId`, `toolName`, `args` |
+| `tool_execution_update` | `ToolExecutionUpdateEvent` | `toolCallId`, `toolName`, `args`, `partialResult` |
+| `tool_execution_end` | `ToolExecutionEndEvent` | `toolCallId`, `toolName`, `result`, `isError` |
+| `model_select` | `ModelSelectEvent` | `model`, `previousModel?`, `source` (`set`, `cycle`, `restore`) |
+| `thinking_level_select` | `ThinkingLevelSelectEvent` | `level`, `previousLevel` (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`) |
 | `resources_discover` | `ResourcesDiscoverEvent` | `cwd`, `reason` (`startup`, `reload`) |
 | `session_start` | `SessionStartEvent` | `reason` (`startup`, `reload`, `new`, `resume`, `fork`), `previousSessionFile?` |
 | `session_before_switch` | `SessionBeforeSwitchEvent` | `reason` (`new`, `resume`), `targetSessionFile?` |
@@ -76,10 +82,19 @@ The five session events are variants of `SessionEvent`. `images` is a list of `d
 `mimeType` records tagged with `type: "image"`, and `headers` a list of name and value pairs in the order the host gave
 them; nothing trims, folds, sorts or combines them.
 
-The agent payloads use shared user, assistant and tool-result messages. Unknown roles
-use `CustomAgentMessages` with a role and opaque `data` string. Known model roles decode
-through the shared records' Serde derives; a decoding failure does not fall back to custom
-data. Application-defined bash, custom and summary roles are not delivered yet.
+The agent payloads use shared user, assistant and tool-result messages plus application
+`bashExecution`, `custom`, `branchSummary` and `compactionSummary` messages. Unknown roles
+use `CustomAgentMessages` with a role and opaque `data` string. A decoding failure for a
+known role does not fall back to custom data.
+
+`message_update` carries all twelve shared model-stream variants. Its outer agent message
+is independent of the stream message. The stream handle is detached after the callback,
+before output validation and encoding; retained handles cannot change that output snapshot.
+Guest snapshots do not provide live identity propagation between component values.
+Model selection uses shared descriptors and their host decoding; see
+[`ModelCompat`](https://docs.rs/maestro-request/latest/maestro_request/types/enum.ModelCompat.html)
+for compatibility decoding.
+Reasoning selection carries the current and previous levels without checking model support.
 
 `BuildSystemPromptOptions` carries `cwd` and optional `customPrompt`, `selectedTools`,
 `toolSnippets`, `promptGuidelines`, `appendSystemPrompt`, `contextFiles` and `skills`.
@@ -88,6 +103,9 @@ the guest does not discover resources or build the prompt.
 
 | Event | Result | Properties of the result |
 | --- | --- | --- |
+| `context` | `ContextEventResult` | `messages?` |
+| `message_end` | `MessageEndEventResult` | `message?` |
+| `before_agent_start` | `BeforeAgentStartEventResult` | `message?`, `systemPrompt?` |
 | `resources_discover` | `ResourcesDiscoverResult` | `skillPaths?`, `promptPaths?`, `themePaths?` |
 | `session_before_switch` | `SessionBeforeSwitchResult` | `cancel?` |
 | `session_before_fork` | `SessionBeforeForkResult` | `cancel?`, `skipConversationRestore?` |
@@ -97,9 +115,11 @@ the guest does not discover resources or build the prompt.
 
 `compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`. A compaction
 currently carries only the fields listed here. Session start, session shutdown and provider
-responses have no result type delivered here; the added agent events also have
-no result types delivered here, and the adapter does not check that a result belongs to the family
-of the event it answers: the host reads it.
+responses have no result type delivered here. The adapter does not check that a result
+belongs to the family of the event it answers: the host reads it. A message-end replacement
+may carry a different role; host reduction policy is not applied in the guest.
+The before-agent result's custom message has `customType`, `content`, `display` and
+optional opaque `details`, without a role or timestamp.
 
 An `AbortSignal` is a capability, not a snapshot: keep it past the callback and read
 `aborted()` later. Keeping the `ExtensionContext` works the same way. Both continue to read
@@ -130,8 +150,9 @@ may reject. An extension-assigned Infinity or NaN fails encoding with
 `extension wrote a non-finite number (Infinity or NaN)`; the independent callback
 failure or other encoded part is retained. Numeric-looking text remains text.
 
-The request body of `before_provider_request`, its replacement, and the `details` of a
-compaction are JSON text carried as a string. The adapter never parses or reformats it, so
+The request body of `before_provider_request`, its replacement, tool arguments and
+partial/final results, and application-message or compaction `details` are opaque text
+carried as a string. The adapter never parses or reformats it, so
 duplicate keys, spacing, exponents and any nesting depth reach the handler as authored. A
 replacement `null` is text and differs from returning no result; `details` text `null` differs
 from `details` null.
