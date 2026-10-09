@@ -227,10 +227,12 @@ The helper does not parse or normalize the supplied endpoint text.
 
 `GITHUB_COPILOT_OAUTH_PROVIDER` reports `github-copilot` and `GitHub Copilot`,
 borrows the access key and delegates login and refresh. Its model modifier
-normalizes enterprise metadata and changes only matching-provider base URLs,
-preserving descriptor order and other fields. Provider metadata absent or null
-means no domain; other non-string values return a native decoding error before
-refresh effects or model modification. These exports are also available through
+normalizes truthy enterprise metadata and changes only matching-provider base URLs,
+preserving descriptor order and other fields. Absent, null, false, zero or empty
+enterprise metadata skips modifier normalization. Refresh retains supplied string
+or null metadata; absent metadata remains absent. Other non-string values fail
+before refresh effects; truthy non-string values fail before model modification
+with a native decoding error. These exports are also available through
 `oauth::device::github_copilot` and `oauth`.
 
 ### Controlled refresh example

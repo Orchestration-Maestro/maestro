@@ -1,7 +1,7 @@
 //! Single-attempt device-account HTTP requests and service-token exchange.
 use crate::providers::http::decode_utf8;
 use crate::providers::json_text::{member, raw_json, raw_number};
-use crate::{Fetch, FetchError, HttpRequest, OAuthCredentials, OAuthError};
+use crate::{Fetch, HttpRequest, OAuthCredentials, OAuthError};
 use futures_util::StreamExt as _;
 use indexmap::IndexMap;
 use serde_json::value::RawValue;
@@ -32,10 +32,10 @@ fn account_headers(first: (&str, &str), token: &str) -> IndexMap<String, String>
 
 /// Read the whole response before checking status; transport diagnostics remain native.
 pub(super) async fn fetch_json(request: HttpRequest, fetch: &Fetch) -> Result<String, OAuthError> {
-    let mut response = fetch(request).await.map_err(fetch_error)?;
+    let mut response = fetch(request).await.map_err(OAuthError::from)?;
     let mut bytes = Vec::new();
     while let Some(chunk) = response.body.next().await {
-        bytes.extend(chunk.map_err(fetch_error)?);
+        bytes.extend(chunk.map_err(OAuthError::from)?);
     }
     let text = decode_utf8(&bytes).into_owned();
     if !(200..300).contains(&response.status) {
@@ -45,14 +45,6 @@ pub(super) async fn fetch_json(request: HttpRequest, fetch: &Fetch) -> Result<St
         )));
     }
     Ok(text)
-}
-
-/// Preserve a supplied diagnostic when an attempt or body stream fails.
-fn fetch_error(error: FetchError) -> OAuthError {
-    match error {
-        FetchError::Connection(diagnostic) => diagnostic.into(),
-        other => OAuthError::message(other.to_string()),
-    }
 }
 
 /// Decode one selected required string without inspecting other members.

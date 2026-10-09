@@ -854,6 +854,7 @@ async fn device_refresh_delegation_keeps_raw_enterprise_domain_scenario() {
         if let Some(domain) = domain {
             credentials.extra.insert("enterpriseUrl".into(), domain);
         }
+        let expected_metadata = credentials.extra.get("enterpriseUrl").cloned();
         let expected_domain = credentials
             .extra
             .get("enterpriseUrl")
@@ -874,7 +875,7 @@ async fn device_refresh_delegation_keeps_raw_enterprise_domain_scenario() {
             .unwrap();
         assert_eq!(
             result.extra.get("enterpriseUrl"),
-            expected_domain.map(serde_json::Value::String).as_ref()
+            expected_metadata.as_ref()
         );
     }
     refresh_rejects_metadata().await;
@@ -931,20 +932,19 @@ fn device_provider_changes_only_matching_models() {
         assert_eq!(result, expected_models);
         assert_eq!(models, original);
     }
+    modifier_accepts_falsy_metadata(&models);
     modifier_rejects_metadata(&models);
 }
 
-#[test]
-fn maestro_device_tokens_enable_catalog_models() {
-    run(maestro_device_tokens_enable_catalog_models_scenario());
-}
+/// A policy request paired with the sender controlling its eventual response.
+type HeldPolicy = (
+    maestro_models::HttpRequest,
+    tokio::sync::oneshot::Sender<Result<maestro_models::HttpResponse, maestro_models::FetchError>>,
+);
 
-/// Controlled scenario for the named authorization behavior.
-async fn maestro_device_tokens_enable_catalog_models_scenario() {
-    let models = maestro_models::get_models("github-copilot");
-    assert!(!models.is_empty());
-    let (started, mut requests) = tokio::sync::mpsc::unbounded_channel();
-    let fetch: Fetch = Arc::new(move |request| {
+/// Hold every policy response while preceding account requests complete normally.
+fn catalog_policy_fetch(started: tokio::sync::mpsc::UnboundedSender<HeldPolicy>) -> Fetch {
+    Arc::new(move |request| {
         if request.url.ends_with("/policy") {
             let (release, response) = tokio::sync::oneshot::channel();
             started.send((request, release)).unwrap();
@@ -959,9 +959,22 @@ async fn maestro_device_tokens_enable_catalog_models_scenario() {
             };
             Box::pin(async move { Ok(response(text)) })
         }
-    });
+    })
+}
+
+#[test]
+fn maestro_device_tokens_enable_catalog_models() {
+    run(maestro_device_tokens_enable_catalog_models_scenario());
+}
+
+/// Controlled scenario for the named authorization behavior.
+async fn maestro_device_tokens_enable_catalog_models_scenario() {
+    let models = maestro_models::get_models("github-copilot");
+    assert!(!models.is_empty());
+    let (started, mut requests) = tokio::sync::mpsc::unbounded_channel();
+    let fetch = catalog_policy_fetch(started);
     let interaction = Arc::new(Interaction::default());
-    let login = tokio::spawn(maestro_models::login_github_copilot(
+    let mut login = Box::pin(maestro_models::login_github_copilot(
         interaction.clone(),
         Some(fetch),
     ));
@@ -971,20 +984,32 @@ async fn maestro_device_tokens_enable_catalog_models_scenario() {
         .map(|model| format!("https://api.test/models/{}/policy", model.id))
         .collect();
     for _ in &models {
-        let (request, release) = requests.recv().await.expect("all-policy-started barrier");
+        let (request, release) =
+            match futures_util::future::select(Box::pin(requests.recv()), login.as_mut()).await {
+                futures_util::future::Either::Left((request, _)) => {
+                    request.expect("all-policy-started barrier")
+                }
+                futures_util::future::Either::Right((result, _)) => {
+                    panic!("login settled before all policies started: {result:?}")
+                }
+            };
         assert!(expected.remove(&request.url));
         check_policy_wire(&request);
         releases.push(release);
     }
     assert!(expected.is_empty());
-    assert!(!login.is_finished());
+    let final_response = releases.pop().unwrap();
     for (index, release) in releases.into_iter().rev().enumerate() {
         let result = policy_outcome(index);
         release
             .send(result)
             .unwrap_or_else(|_| panic!("login dropped a policy attempt"));
     }
-    let credentials = login.await.unwrap().unwrap();
+    assert!(login.as_mut().now_or_never().is_none());
+    final_response
+        .send(policy_outcome(models.len() - 1))
+        .unwrap_or_else(|_| panic!("login dropped the final policy attempt"));
+    let credentials = login.await.unwrap();
     assert_eq!(credentials.access, "proxy-ep=proxy.test;");
     assert!(requests.recv().await.is_none());
     assert_eq!(
@@ -1285,11 +1310,33 @@ fn check_refresh_wire(request: &maestro_models::HttpRequest) {
     assert_eq!(request.headers.len(), 6);
 }
 
+/// Falsy enterprise operands preserve token-selected endpoints and other descriptor fields.
+fn modifier_accepts_falsy_metadata(models: &[maestro_models::Model]) {
+    for domain in [
+        serde_json::json!(false),
+        serde_json::json!(0),
+        serde_json::json!(""),
+    ] {
+        let credentials = OAuthCredentials {
+            access: "proxy-ep=proxy.token;".into(),
+            refresh: "r".into(),
+            expires: 0.0,
+            extra: maestro_models::JsonObject::from_iter([("enterpriseUrl".into(), domain)]),
+        };
+        let result = maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER
+            .modify_models(models.to_vec(), &credentials)
+            .unwrap();
+        let mut expected = models.to_vec();
+        expected[0].base_url = "https://api.token".into();
+        expected[2].base_url = "https://api.token".into();
+        assert_eq!(result, expected);
+    }
+}
+
 /// Malformed metadata fails before descriptor transformation.
 fn modifier_rejects_metadata(models: &[maestro_models::Model]) {
     for domain in [
-        serde_json::json!(0),
-        serde_json::json!(false),
+        serde_json::json!(true),
         serde_json::json!(12),
         serde_json::json!({}),
         serde_json::json!([]),

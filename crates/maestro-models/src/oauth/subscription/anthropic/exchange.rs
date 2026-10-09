@@ -126,10 +126,10 @@ pub(super) async fn post_json(body: Vec<u8>, fetch: Fetch) -> Result<String, OAu
         signal: Some(signal.clone()),
     };
     let work = async {
-        let mut response = fetch(request).await.map_err(fetch_error)?;
+        let mut response = fetch(request).await.map_err(OAuthError::from)?;
         let mut bytes = Vec::new();
         while let Some(chunk) = response.body.next().await {
-            bytes.extend(chunk.map_err(fetch_error)?);
+            bytes.extend(chunk.map_err(OAuthError::from)?);
         }
         let text = decode_utf8(&bytes).into_owned();
         if !(200..300).contains(&response.status) {
@@ -144,16 +144,8 @@ pub(super) async fn post_json(body: Vec<u8>, fetch: Fetch) -> Result<String, OAu
         Raced::Done(result) => result,
         Raced::TimedOut | Raced::Cancelled => {
             signal.abort();
-            Err(fetch_error(FetchError::Timeout))
+            Err(FetchError::Timeout.into())
         }
-    }
-}
-
-/// Preserve supplied Fetch diagnostics instead of manufacturing native engine details.
-fn fetch_error(error: FetchError) -> OAuthError {
-    match error {
-        FetchError::Connection(diagnostic) => diagnostic.into(),
-        other => OAuthError::message(other.to_string()),
     }
 }
 

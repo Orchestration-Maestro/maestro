@@ -138,17 +138,21 @@ impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
     }
     fn refresh_token(
         &self,
-        credentials: OAuthCredentials,
+        mut credentials: OAuthCredentials,
         fetch: Option<Fetch>,
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
         let domain = enterprise_domain(&credentials).map(|domain| domain.map(str::to_owned));
         Box::pin(async move {
-            token::refresh(
+            let mut refreshed = token::refresh(
                 credentials.refresh,
                 domain?,
                 fetch.unwrap_or_else(default_fetch),
             )
-            .await
+            .await?;
+            if let Some(domain) = credentials.extra.remove("enterpriseUrl") {
+                refreshed.extra.insert("enterpriseUrl".into(), domain);
+            }
+            Ok(refreshed)
         })
     }
     fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
@@ -159,7 +163,12 @@ impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
         models: Vec<Model>,
         credentials: &OAuthCredentials,
     ) -> Result<Vec<Model>, OAuthError> {
-        let domain = enterprise_domain(credentials)?.and_then(normalize_domain);
+        let domain = match credentials.extra.get("enterpriseUrl") {
+            None | Some(serde_json::Value::Null | serde_json::Value::Bool(false)) => None,
+            Some(serde_json::Value::Number(number)) if number.as_f64() == Some(0.0) => None,
+            Some(serde_json::Value::String(domain)) if domain.is_empty() => None,
+            _ => enterprise_domain(credentials)?.and_then(normalize_domain),
+        };
         let base = get_github_copilot_base_url(Some(&credentials.access), domain.as_deref());
         Ok(models
             .into_iter()
