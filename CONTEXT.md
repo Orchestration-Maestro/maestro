@@ -138,6 +138,7 @@ are later scope, not active foundation concepts.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
 
 - **Input:** The single-line editable terminal component.
+- **Editor:** The multiline editable terminal component.
 - **Kill ring:** Shared deleted-text history for yank and rotation.
 - **Undo stack:** Shared clone-on-push snapshots for restoring editable state.
 

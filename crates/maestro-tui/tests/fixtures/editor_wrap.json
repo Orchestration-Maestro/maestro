@@ -1,0 +1,2009 @@
+[
+  {
+    "test": "wrap_empty_fit_and_zero_width",
+    "id": "empty",
+    "line": "",
+    "width": 10,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "",
+        "startIndex": 0,
+        "endIndex": 0
+      }
+    ]
+  },
+  {
+    "test": "wrap_empty_fit_and_zero_width",
+    "id": "zero",
+    "line": "abc",
+    "width": 0,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "",
+        "startIndex": 0,
+        "endIndex": 0
+      }
+    ]
+  },
+  {
+    "test": "wrap_empty_fit_and_zero_width",
+    "id": "fit",
+    "line": "abc",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "abc",
+        "startIndex": 0,
+        "endIndex": 3
+      }
+    ]
+  },
+  {
+    "test": "wrap_empty_fit_and_zero_width",
+    "id": "below",
+    "line": "abc",
+    "width": 2,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "c",
+        "startIndex": 2,
+        "endIndex": 3
+      }
+    ]
+  },
+  {
+    "test": "wrap_empty_fit_and_zero_width",
+    "id": "above",
+    "line": "abc",
+    "width": 4,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "abc",
+        "startIndex": 0,
+        "endIndex": 3
+      }
+    ]
+  },
+  {
+    "test": "wrap_empty_fit_and_zero_width",
+    "id": "zero-width",
+    "line": "​",
+    "width": 1,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "​",
+        "startIndex": 0,
+        "endIndex": 3
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "word-boundary",
+    "line": "hello world test",
+    "width": 11,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "hello ",
+        "startIndex": 0,
+        "endIndex": 6
+      },
+      {
+        "text": "world test",
+        "startIndex": 6,
+        "endIndex": 16
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "space-boundary",
+    "line": "hello world test",
+    "width": 12,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "hello world ",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": "test",
+        "startIndex": 12,
+        "endIndex": 16
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "long-word",
+    "line": "aaaaaaaaaaaa aaaa",
+    "width": 12,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "aaaaaaaaaaaa",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": " aaaa",
+        "startIndex": 12,
+        "endIndex": 17
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "leading-space",
+    "line": "      aaaaaaaaaaaa",
+    "width": 12,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "      ",
+        "startIndex": 0,
+        "endIndex": 6
+      },
+      {
+        "text": "aaaaaaaaaaaa",
+        "startIndex": 6,
+        "endIndex": 18
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "spaces-4",
+    "line": "Lorem ipsum dolor sit amet,    consectetur",
+    "width": 30,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Lorem ipsum dolor sit ",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "amet,    consectetur",
+        "startIndex": 22,
+        "endIndex": 42
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "spaces-14",
+    "line": "Lorem ipsum dolor sit amet,              consectetur",
+    "width": 30,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Lorem ipsum dolor sit ",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "amet,              consectetur",
+        "startIndex": 22,
+        "endIndex": 52
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "spaces-15",
+    "line": "Lorem ipsum dolor sit amet,               consectetur",
+    "width": 30,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Lorem ipsum dolor sit ",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "amet,               ",
+        "startIndex": 22,
+        "endIndex": 42
+      },
+      {
+        "text": "consectetur",
+        "startIndex": 42,
+        "endIndex": 53
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "spaces-25",
+    "line": "Lorem ipsum dolor sit amet,                         consectetur",
+    "width": 30,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Lorem ipsum dolor sit ",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "amet,                         ",
+        "startIndex": 22,
+        "endIndex": 52
+      },
+      {
+        "text": "consectetur",
+        "startIndex": 52,
+        "endIndex": 63
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "spaces-26",
+    "line": "Lorem ipsum dolor sit amet,                          consectetur",
+    "width": 30,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Lorem ipsum dolor sit ",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "amet,                         ",
+        "startIndex": 22,
+        "endIndex": 52
+      },
+      {
+        "text": " consectetur",
+        "startIndex": 52,
+        "endIndex": 64
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "spaces-37",
+    "line": "Lorem ipsum dolor sit amet,                                     consectetur",
+    "width": 30,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Lorem ipsum dolor sit ",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "amet,                         ",
+        "startIndex": 22,
+        "endIndex": 52
+      },
+      {
+        "text": "            consectetur",
+        "startIndex": 52,
+        "endIndex": 75
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "url",
+    "line": "Check https://example.com/very/long/path/that/exceeds/width here",
+    "width": 29,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "Check ",
+        "startIndex": 0,
+        "endIndex": 6
+      },
+      {
+        "text": "https://example.com/very/long",
+        "startIndex": 6,
+        "endIndex": 35
+      },
+      {
+        "text": "/path/that/exceeds/width here",
+        "startIndex": 35,
+        "endIndex": 64
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "all-spaces",
+    "line": "                    ",
+    "width": 7,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "       ",
+        "startIndex": 0,
+        "endIndex": 7
+      },
+      {
+        "text": "       ",
+        "startIndex": 7,
+        "endIndex": 14
+      },
+      {
+        "text": "      ",
+        "startIndex": 14,
+        "endIndex": 20
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "wide-backtrack",
+    "line": " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa你",
+    "width": 187,
+    "parts": null,
+    "chunks": [
+      {
+        "text": " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "startIndex": 0,
+        "endIndex": 187
+      },
+      {
+        "text": "你",
+        "startIndex": 187,
+        "endIndex": 190
+      }
+    ]
+  },
+  {
+    "test": "wrap_breaks_keep_original_ranges",
+    "id": "repeat-finite",
+    "line": "a a a a a a",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "a ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "a ",
+        "startIndex": 2,
+        "endIndex": 4
+      },
+      {
+        "text": "a ",
+        "startIndex": 4,
+        "endIndex": 6
+      },
+      {
+        "text": "a ",
+        "startIndex": 6,
+        "endIndex": 8
+      },
+      {
+        "text": "a a",
+        "startIndex": 8,
+        "endIndex": 11
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-0",
+    "line": "ab\tcde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "\t",
+        "startIndex": 2,
+        "endIndex": 3
+      },
+      {
+        "text": "cde",
+        "startIndex": 3,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-1",
+    "line": "ab\ncde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab\n",
+        "startIndex": 0,
+        "endIndex": 3
+      },
+      {
+        "text": "cde",
+        "startIndex": 3,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-2",
+    "line": "ab\rcde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab\r",
+        "startIndex": 0,
+        "endIndex": 3
+      },
+      {
+        "text": "cde",
+        "startIndex": 3,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-3",
+    "line": "ab\u000bcde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab\u000b",
+        "startIndex": 0,
+        "endIndex": 3
+      },
+      {
+        "text": "cde",
+        "startIndex": 3,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-4",
+    "line": "ab\fcde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab\f",
+        "startIndex": 0,
+        "endIndex": 3
+      },
+      {
+        "text": "cde",
+        "startIndex": 3,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-5",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 3
+      },
+      {
+        "text": "cde",
+        "startIndex": 3,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-6",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 4
+      },
+      {
+        "text": "cde",
+        "startIndex": 4,
+        "endIndex": 7
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-7",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-8",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-9",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-10",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-11",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-12",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-13",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-14",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-15",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-16",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-17",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-18",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-19",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-20",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-21",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-22",
+    "line": "ab cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab ",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-23",
+    "line": "ab　cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "　",
+        "startIndex": 2,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-24",
+    "line": "ab﻿cde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ab﻿",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "cde",
+        "startIndex": 5,
+        "endIndex": 8
+      }
+    ]
+  },
+  {
+    "test": "wrap_reuses_whitespace_classification",
+    "id": "white-25",
+    "line": "abcde",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "abc",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "de",
+        "startIndex": 5,
+        "endIndex": 7
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "cjk",
+    "line": "日本語テスト",
+    "width": 5,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "日本",
+        "startIndex": 0,
+        "endIndex": 6
+      },
+      {
+        "text": "語テ",
+        "startIndex": 6,
+        "endIndex": 12
+      },
+      {
+        "text": "スト",
+        "startIndex": 12,
+        "endIndex": 18
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "emoji",
+    "line": "A😀B👍C",
+    "width": 4,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "A😀B",
+        "startIndex": 0,
+        "endIndex": 6
+      },
+      {
+        "text": "👍C",
+        "startIndex": 6,
+        "endIndex": 11
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "combining",
+    "line": "aébéc",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "aéb",
+        "startIndex": 0,
+        "endIndex": 5
+      },
+      {
+        "text": "éc",
+        "startIndex": 5,
+        "endIndex": 9
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "zwj",
+    "line": "a👩‍💻b👩‍💻c",
+    "width": 4,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "a👩‍💻b",
+        "startIndex": 0,
+        "endIndex": 13
+      },
+      {
+        "text": "👩‍💻c",
+        "startIndex": 13,
+        "endIndex": 25
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "flag",
+    "line": "a🇨🇦b",
+    "width": 3,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "a🇨🇦",
+        "startIndex": 0,
+        "endIndex": 9
+      },
+      {
+        "text": "b",
+        "startIndex": 9,
+        "endIndex": 10
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "thai",
+    "line": "ำabc",
+    "width": 2,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ำa",
+        "startIndex": 0,
+        "endIndex": 4
+      },
+      {
+        "text": "bc",
+        "startIndex": 4,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_preserves_grapheme_boundaries",
+    "id": "lao",
+    "line": "ຳabc",
+    "width": 2,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "ຳa",
+        "startIndex": 0,
+        "endIndex": 4
+      },
+      {
+        "text": "bc",
+        "startIndex": 4,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "middle",
+    "line": "A[paste #1 +20 lines]B",
+    "width": 10,
+    "parts": [
+      "A",
+      "[paste #1 +20 lines]",
+      "B"
+    ],
+    "chunks": [
+      {
+        "text": "A",
+        "startIndex": 0,
+        "endIndex": 1
+      },
+      {
+        "text": "[paste #1 ",
+        "startIndex": 1,
+        "endIndex": 11
+      },
+      {
+        "text": "+20 lines]",
+        "startIndex": 11,
+        "endIndex": 21
+      },
+      {
+        "text": "B",
+        "startIndex": 21,
+        "endIndex": 22
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "start",
+    "line": "[paste #1 +20 lines]B",
+    "width": 10,
+    "parts": [
+      "[paste #1 +20 lines]",
+      "B"
+    ],
+    "chunks": [
+      {
+        "text": "[paste #1 ",
+        "startIndex": 0,
+        "endIndex": 10
+      },
+      {
+        "text": "+20 lines]",
+        "startIndex": 10,
+        "endIndex": 20
+      },
+      {
+        "text": "B",
+        "startIndex": 20,
+        "endIndex": 21
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "end",
+    "line": "A[paste #1 +20 lines]",
+    "width": 10,
+    "parts": [
+      "A",
+      "[paste #1 +20 lines]"
+    ],
+    "chunks": [
+      {
+        "text": "A",
+        "startIndex": 0,
+        "endIndex": 1
+      },
+      {
+        "text": "[paste #1 ",
+        "startIndex": 1,
+        "endIndex": 11
+      },
+      {
+        "text": "+20 lines]",
+        "startIndex": 11,
+        "endIndex": 21
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "consecutive",
+    "line": "[paste #1 +20 lines][paste #2 +30 lines]",
+    "width": 10,
+    "parts": [
+      "[paste #1 +20 lines]",
+      "[paste #2 +30 lines]"
+    ],
+    "chunks": [
+      {
+        "text": "[paste #1 ",
+        "startIndex": 0,
+        "endIndex": 10
+      },
+      {
+        "text": "+20 lines]",
+        "startIndex": 10,
+        "endIndex": 20
+      },
+      {
+        "text": "[paste #2 ",
+        "startIndex": 20,
+        "endIndex": 30
+      },
+      {
+        "text": "+30 lines]",
+        "startIndex": 30,
+        "endIndex": 40
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "after",
+    "line": "[paste #1 +20 lines] hello world",
+    "width": 10,
+    "parts": [
+      "[paste #1 +20 lines]",
+      " ",
+      "h",
+      "e",
+      "l",
+      "l",
+      "o",
+      " ",
+      "w",
+      "o",
+      "r",
+      "l",
+      "d"
+    ],
+    "chunks": [
+      {
+        "text": "[paste #1 ",
+        "startIndex": 0,
+        "endIndex": 10
+      },
+      {
+        "text": "+20 lines]",
+        "startIndex": 10,
+        "endIndex": 20
+      },
+      {
+        "text": " hello ",
+        "startIndex": 20,
+        "endIndex": 27
+      },
+      {
+        "text": "world",
+        "startIndex": 27,
+        "endIndex": 32
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "fits",
+    "line": "A[paste #1]B",
+    "width": 11,
+    "parts": [
+      "A",
+      "[paste #1]",
+      "B"
+    ],
+    "chunks": [
+      {
+        "text": "A[paste #1]",
+        "startIndex": 0,
+        "endIndex": 11
+      },
+      {
+        "text": "B",
+        "startIndex": 11,
+        "endIndex": 12
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "wider",
+    "line": "A[paste #1 +20 lines]B",
+    "width": 30,
+    "parts": [
+      "A",
+      "[paste #1 +20 lines]",
+      "B"
+    ],
+    "chunks": [
+      {
+        "text": "A[paste #1 +20 lines]B",
+        "startIndex": 0,
+        "endIndex": 22
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "nonmarker",
+    "line": "Along words hereB",
+    "width": 8,
+    "parts": [
+      "A",
+      "long words here",
+      "B"
+    ],
+    "chunks": [
+      {
+        "text": "A",
+        "startIndex": 0,
+        "endIndex": 1
+      },
+      {
+        "text": "long ",
+        "startIndex": 1,
+        "endIndex": 6
+      },
+      {
+        "text": "words ",
+        "startIndex": 6,
+        "endIndex": 12
+      },
+      {
+        "text": "hereB",
+        "startIndex": 12,
+        "endIndex": 17
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "no-segments",
+    "line": "",
+    "width": 2,
+    "parts": [],
+    "chunks": [
+      {
+        "text": "",
+        "startIndex": 0,
+        "endIndex": 0
+      }
+    ]
+  },
+  {
+    "test": "wrap_oversized_grapheme_terminates",
+    "id": "wide-cjk",
+    "line": "界",
+    "width": 1,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "界",
+        "startIndex": 0,
+        "endIndex": 3
+      }
+    ]
+  },
+  {
+    "test": "wrap_oversized_grapheme_terminates",
+    "id": "wide-emoji",
+    "line": "😀",
+    "width": 1,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "😀",
+        "startIndex": 0,
+        "endIndex": 4
+      }
+    ]
+  },
+  {
+    "test": "wrap_oversized_grapheme_terminates",
+    "id": "tab-too-wide",
+    "line": "\t",
+    "width": 2,
+    "parts": null,
+    "chunks": [
+      {
+        "text": "\t",
+        "startIndex": 0,
+        "endIndex": 1
+      }
+    ]
+  },
+  {
+    "test": "wrap_supplied_segments_keep_atomic_boundaries",
+    "id": "explicit-empty-nonempty",
+    "line": "abcdef",
+    "width": 2,
+    "parts": [],
+    "chunks": [
+      {
+        "text": "abcdef",
+        "startIndex": 0,
+        "endIndex": 6
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "bare",
+    "line": "a[paste #1]bc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #1]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1]b",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": "c",
+        "startIndex": 12,
+        "endIndex": 13
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "zero-id",
+    "line": "a[paste #0]bc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #0]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #0]b",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": "c",
+        "startIndex": 12,
+        "endIndex": 13
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "large-id",
+    "line": "a[paste #9999999999999999999999999999999999999999]bc",
+    "width": 51,
+    "parts": [
+      "a",
+      "[paste #9999999999999999999999999999999999999999]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #9999999999999999999999999999999999999999]b",
+        "startIndex": 0,
+        "endIndex": 51
+      },
+      {
+        "text": "c",
+        "startIndex": 51,
+        "endIndex": 52
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "final-lf",
+    "line": "a[paste #1]\nbc",
+    "width": 13,
+    "parts": [
+      "a",
+      "[paste #1]\n",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1]\nbc",
+        "startIndex": 0,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "leading-zero",
+    "line": "a[paste #01]bc",
+    "width": 13,
+    "parts": [
+      "a",
+      "[paste #01]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #01]b",
+        "startIndex": 0,
+        "endIndex": 13
+      },
+      {
+        "text": "c",
+        "startIndex": 13,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "chars",
+    "line": "a[paste #2 1001 chars]bc",
+    "width": 23,
+    "parts": [
+      "a",
+      "[paste #2 1001 chars]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #2 1001 chars]b",
+        "startIndex": 0,
+        "endIndex": 23
+      },
+      {
+        "text": "c",
+        "startIndex": 23,
+        "endIndex": 24
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "lines",
+    "line": "a[paste #3 +11 lines]bc",
+    "width": 22,
+    "parts": [
+      "a",
+      "[paste #3 +11 lines]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #3 +11 lines]b",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": "c",
+        "startIndex": 22,
+        "endIndex": 23
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "invalid-minus",
+    "line": "a[paste #-1]bc",
+    "width": 13,
+    "parts": [
+      "a",
+      "[paste #-1]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #-1]",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": "bc",
+        "startIndex": 12,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "invalid-digit",
+    "line": "a[paste #１]bc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #１]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #１]",
+        "startIndex": 0,
+        "endIndex": 13
+      },
+      {
+        "text": "bc",
+        "startIndex": 13,
+        "endIndex": 15
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "invalid-unit",
+    "line": "a[paste #2 +11 chars]bc",
+    "width": 22,
+    "parts": [
+      "a",
+      "[paste #2 +11 chars]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #2 +11 chars]",
+        "startIndex": 0,
+        "endIndex": 21
+      },
+      {
+        "text": "bc",
+        "startIndex": 21,
+        "endIndex": 23
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "invalid-space",
+    "line": "a[paste #2  11 chars]bc",
+    "width": 22,
+    "parts": [
+      "a",
+      "[paste #2  11 chars]",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #2  11 chars]",
+        "startIndex": 0,
+        "endIndex": 21
+      },
+      {
+        "text": "bc",
+        "startIndex": 21,
+        "endIndex": 23
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #1] y",
+    "width": 12,
+    "parts": [
+      "x",
+      " ",
+      "[paste #1]",
+      " ",
+      "y"
+    ],
+    "id": "original-bare",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #1] y",
+        "startIndex": 2,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #0] y",
+    "width": 12,
+    "parts": [
+      "x",
+      " ",
+      "[paste #0]",
+      " ",
+      "y"
+    ],
+    "id": "original-zero-id",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #0] y",
+        "startIndex": 2,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #9999999999999999999999999999999999999999] y",
+    "width": 51,
+    "parts": [
+      "x",
+      " ",
+      "[paste #9999999999999999999999999999999999999999]",
+      " ",
+      "y"
+    ],
+    "id": "original-large-id",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #9999999999999999999999999999999999999999] y",
+        "startIndex": 2,
+        "endIndex": 53
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #1]\n y",
+    "width": 13,
+    "parts": [
+      "x",
+      " ",
+      "[paste #1]\n",
+      " ",
+      "y"
+    ],
+    "id": "original-final-lf",
+    "chunks": [
+      {
+        "text": "x [paste #1]\n ",
+        "startIndex": 0,
+        "endIndex": 14
+      },
+      {
+        "text": "y",
+        "startIndex": 14,
+        "endIndex": 15
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #01] y",
+    "width": 13,
+    "parts": [
+      "x",
+      " ",
+      "[paste #01]",
+      " ",
+      "y"
+    ],
+    "id": "original-leading-zero",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #01] y",
+        "startIndex": 2,
+        "endIndex": 15
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #2 1001 chars] y",
+    "width": 23,
+    "parts": [
+      "x",
+      " ",
+      "[paste #2 1001 chars]",
+      " ",
+      "y"
+    ],
+    "id": "original-chars",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #2 1001 chars] y",
+        "startIndex": 2,
+        "endIndex": 25
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #3 +11 lines] y",
+    "width": 22,
+    "parts": [
+      "x",
+      " ",
+      "[paste #3 +11 lines]",
+      " ",
+      "y"
+    ],
+    "id": "original-lines",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #3 +11 lines] y",
+        "startIndex": 2,
+        "endIndex": 24
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #-1] y",
+    "width": 13,
+    "parts": [
+      "x",
+      " ",
+      "[paste #-1]",
+      " ",
+      "y"
+    ],
+    "id": "original-invalid-minus",
+    "chunks": [
+      {
+        "text": "x [paste #-1]",
+        "startIndex": 0,
+        "endIndex": 13
+      },
+      {
+        "text": " y",
+        "startIndex": 13,
+        "endIndex": 15
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #１] y",
+    "width": 12,
+    "parts": [
+      "x",
+      " ",
+      "[paste #１]",
+      " ",
+      "y"
+    ],
+    "id": "original-invalid-digit",
+    "chunks": [
+      {
+        "text": "x ",
+        "startIndex": 0,
+        "endIndex": 2
+      },
+      {
+        "text": "[paste #１] ",
+        "startIndex": 2,
+        "endIndex": 15
+      },
+      {
+        "text": "y",
+        "startIndex": 15,
+        "endIndex": 16
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #2 +11 chars] y",
+    "width": 22,
+    "parts": [
+      "x",
+      " ",
+      "[paste #2 +11 chars]",
+      " ",
+      "y"
+    ],
+    "id": "original-invalid-unit",
+    "chunks": [
+      {
+        "text": "x [paste #2 +11 chars]",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": " y",
+        "startIndex": 22,
+        "endIndex": 24
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "line": "x [paste #2  11 chars] y",
+    "width": 22,
+    "parts": [
+      "x",
+      " ",
+      "[paste #2  11 chars]",
+      " ",
+      "y"
+    ],
+    "id": "original-invalid-space",
+    "chunks": [
+      {
+        "text": "x [paste #2  11 chars]",
+        "startIndex": 0,
+        "endIndex": 22
+      },
+      {
+        "text": " y",
+        "startIndex": 22,
+        "endIndex": 24
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "anchor-\"\\n\"",
+    "line": "a[paste #1]\nbc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #1]\n",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1]\n",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": "bc",
+        "startIndex": 12,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "anchor-\"\\r\"",
+    "line": "a[paste #1]\rbc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #1]\r",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1]\r",
+        "startIndex": 0,
+        "endIndex": 12
+      },
+      {
+        "text": "bc",
+        "startIndex": 12,
+        "endIndex": 14
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "anchor-\" \"",
+    "line": "a[paste #1] bc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #1] ",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1] ",
+        "startIndex": 0,
+        "endIndex": 14
+      },
+      {
+        "text": "bc",
+        "startIndex": 14,
+        "endIndex": 16
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "anchor-\" \"",
+    "line": "a[paste #1] bc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #1] ",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1] ",
+        "startIndex": 0,
+        "endIndex": 14
+      },
+      {
+        "text": "bc",
+        "startIndex": 14,
+        "endIndex": 16
+      }
+    ]
+  },
+  {
+    "test": "wrap_marker_spelling_controls_word_breaks",
+    "id": "anchor-\"\\r\\n\"",
+    "line": "a[paste #1]\r\nbc",
+    "width": 12,
+    "parts": [
+      "a",
+      "[paste #1]\r\n",
+      "b",
+      "c"
+    ],
+    "chunks": [
+      {
+        "text": "a[paste #1]\r\n",
+        "startIndex": 0,
+        "endIndex": 13
+      },
+      {
+        "text": "bc",
+        "startIndex": 13,
+        "endIndex": 15
+      }
+    ]
+  }
+]

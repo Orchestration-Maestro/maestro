@@ -29,3 +29,8 @@ pub use select_list::{
 /// Searchable settings component.
 pub mod settings_list;
 pub use settings_list::{SettingItem, SettingsList, SettingsListTheme};
+
+/// Multiline editable terminal text.
+pub mod editor;
+pub use editor::{Editor, EditorOptions, EditorTheme};
+mod cursor;

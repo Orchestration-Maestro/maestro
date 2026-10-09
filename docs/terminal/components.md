@@ -1,7 +1,7 @@
 # Terminal components
 
 `maestro-tui` defines what a renderable component is and ships the pieces that need
-no terminal: container, box, text, spacer, input, loader, image, command-selection
+no terminal: container, box, text, spacer, input, multiline editor, loader, image, command-selection
 and settings components; contracts for overlays, terminals, editors and completion;
 and the `TUI` frame writer that draws
 components to a terminal. It performs no terminal I/O and starts no timers; whatever
@@ -106,6 +106,10 @@ unchanged. `drain_input` takes optional limits and returns a future; an adapter
 applies its own defaults, 1000 ms at most and 50 ms idle, when they are omitted.
 
 ## Editors and completion
+
+The concrete [Editor](editor.md) provides multiline prompt editing and rendering.
+It exposes component, input and focus capabilities; its optional editor facade
+is not yet delivered.
 
 An `EditorComponent` is a component that must also handle input. Its text accessors
 are required. History, insertion, the completion provider, padding and the visible
