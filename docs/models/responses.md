@@ -32,7 +32,8 @@ hook disables streaming, the response body is consumed before the response hook;
 a non-event response cannot feed the event reducer.
 Transport, metadata and maximum retry-delay preferences are unused here. The
 endpoint uses the shared [HTTP transport](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport)
-and the conversion and reduction described below.
+and the conversion and reduction described below. Streaming uses the
+[shared event reader](chat-completions.md#stream-and-result).
 
 ### Controlled example
 

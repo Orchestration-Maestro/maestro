@@ -129,10 +129,11 @@ is such a value, and is written as `null`.
 
 ## Stream and result
 
-The body is read as server-sent events the way the `OpenAI` client library reads them; a
-recorded corpus of that library's results is part of the tests, and the reader belongs to
-`maestro-models`, which depends on no event-stream library. Lines end at `\r\n`, `\r`
-or `\n`, wherever the chunks are cut. Each line is decoded as text on its own: bytes that
+The body uses the shared server-sent event reader in `maestro-models`, with no
+event-stream library. The recorded event corpus is part of the tests. Lines end
+at `\r\n`, `\r` or `\n`, wherever the chunks are cut. A carriage return ends its
+line immediately; one following line feed is skipped, including across chunks.
+Each line is decoded as text on its own: bytes that
 are not valid UTF-8 become U+FFFD, a character cut by the end of a chunk is completed by
 the next one before its line is read, and one leading byte-order mark is dropped from the
 line. A second mark stays in the line, so a line that starts with two reads the second as

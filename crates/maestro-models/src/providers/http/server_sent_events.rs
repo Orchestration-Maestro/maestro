@@ -1,6 +1,6 @@
 //! Reads a response body as server-sent events.
 
-use super::line_decoder::{LineDecoder, find_double_newline};
+use super::line_decoder::LineDecoder;
 
 #[cfg(test)]
 mod tests;
@@ -50,16 +50,12 @@ impl SseDecoder {
 
 /// Reads server-sent events from body chunks.
 ///
-/// Bytes are held until a blank line (`\n\n`, `\r\r` or `\r\n\r\n`) completes them or the body
-/// ends, then split into lines and read one line at a time, so a character cut by a chunk
-/// boundary is whole by the time its line is read. A line that ends at a carriage return waits
-/// for the next line ending, so an event ended by a lone carriage return is delivered when the
-/// next message completes or the body ends.
+/// Completed lines are read as each chunk arrives. CR, LF and CRLF end a line; CR ends its
+/// line immediately and one following LF is skipped, even across chunks. UTF-8 bytes stay buffered
+/// until their line ends. A blank line dispatches the collected event.
 #[derive(Default)]
 pub(crate) struct SseMessages {
-    /// Bytes received since the last blank line.
-    pending: Vec<u8>,
-    /// Splits completed messages into lines.
+    /// Splits body chunks into lines.
     lines: LineDecoder,
     /// Collects the fields of the lines.
     fields: SseDecoder,
@@ -68,13 +64,8 @@ pub(crate) struct SseMessages {
 impl SseMessages {
     /// Add a body chunk and return the events it completes.
     pub(crate) fn push(&mut self, chunk: &[u8]) -> Vec<ServerSentEvent> {
-        self.pending.extend_from_slice(chunk);
         let mut events = Vec::new();
-        while let Some(end) = find_double_newline(&self.pending) {
-            let rest = self.pending.split_off(end);
-            let message = std::mem::replace(&mut self.pending, rest);
-            self.read(&message, &mut events);
-        }
+        self.read(chunk, &mut events);
         events
     }
 
@@ -82,8 +73,6 @@ impl SseMessages {
     /// never arrived is not delivered.
     pub(crate) fn finish(&mut self) -> Vec<ServerSentEvent> {
         let mut events = Vec::new();
-        let rest = std::mem::take(&mut self.pending);
-        self.read(&rest, &mut events);
         for line in self.lines.flush() {
             events.extend(self.fields.decode(&line));
         }
