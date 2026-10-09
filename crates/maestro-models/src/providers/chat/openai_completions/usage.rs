@@ -1,12 +1,8 @@
 //! Token accounting for provider usage reports.
 
 use super::chunk::RawUsage;
+use crate::providers::json_text::or_zero;
 use crate::{Model, Usage, UsageCost, calculate_cost};
-
-/// A reported count where an absent or zero report means zero; negative zero becomes zero.
-fn or_zero(count: Option<f64>) -> f64 {
-    count.filter(|count| *count != 0.0).unwrap_or(0.0)
-}
 
 /// A count raised to zero when it is zero or less; not-a-number stays not-a-number.
 fn nonnegative(count: f64) -> f64 {

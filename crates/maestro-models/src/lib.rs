@@ -35,6 +35,10 @@ pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
     AnthropicThinkingDisplay, stream_anthropic, stream_simple_anthropic,
 };
+pub use providers::responses::openai_responses_shared::{
+    ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, OpenAIResponsesStreamOptions,
+    convert_responses_messages, convert_responses_tools, process_responses_stream,
+};
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
     get_api_providers, register_api_provider, unregister_api_providers,
