@@ -14,7 +14,7 @@ use crate::{
 use maestro_path::{SEP, basename, dirname, is_absolute, join};
 #[cfg(not(target_arch = "wasm32"))]
 pub use operations::NativeResourceOperations;
-use operations::ProcessContext;
+pub(crate) use operations::ProcessContext;
 pub use operations::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::{io, path::Path};
 pub use validation::SkillFrontmatter;

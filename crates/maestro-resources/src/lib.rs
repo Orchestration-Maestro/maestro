@@ -5,6 +5,11 @@ pub mod diagnostics;
 pub use diagnostics::{DiagnosticType, ResourceCollision, ResourceDiagnostic};
 pub mod frontmatter;
 pub mod paths;
+pub mod prompt_templates;
+pub use prompt_templates::{
+    LoadPromptTemplatesOptions, PromptTemplate, expand_prompt_template, load_prompt_templates,
+    parse_command_args, substitute_args,
+};
 pub mod skills;
 pub mod source_info;
 pub use frontmatter::{
