@@ -1,25 +1,25 @@
 //! Controlled public response invocations with finite producers and consumed observations.
 use crate::chat::{TestResult, context, model};
 use crate::child_process::{child_case, rerun};
-use maestro_models::providers::responses::openai_responses::{
-    OpenAIResponsesReasoningSummary, OpenAIResponsesServiceTier, stream_openai_responses,
-    stream_simple_openai_responses,
+use maestro_models::providers::responses::azure_openai_responses::{
+    stream_azure_openai_responses, stream_simple_azure_openai_responses,
 };
+use maestro_models::providers::responses::openai_responses::OpenAIResponsesReasoningSummary;
 use maestro_models::{
-    AssistantMessageEventStream, Cancellation, Fetch, FetchError, HttpResponse, OnPayload,
-    OnResponse, OpenAIResponsesOptions, StreamOptions,
+    AssistantMessageEventStream, AzureOpenAIResponsesOptions, Cancellation, Fetch, FetchError,
+    HttpResponse, OnPayload, OnResponse, StreamOptions,
 };
 use serde_json::{Value, json};
 use std::fmt::Write as _;
 use std::sync::{Arc, Mutex, PoisonError};
 
 /// Reduced recorded cases.
-pub const FIXTURE: &str = include_str!("../fixtures/response_endpoint_cases.json");
+pub const FIXTURE: &str = include_str!("../fixtures/azure_endpoint_cases.json");
 /// Finish event used by request-only cases.
-pub const COMPLETE: &str = "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r-final\",\"status\":\"completed\",\"usage\":{\"input_tokens\":1000000,\"output_tokens\":2000000,\"total_tokens\":3000000,\"input_tokens_details\":{\"cached_tokens\":250000}}}}\n\n";
+pub const COMPLETE: &str = "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r-final\",\"status\":\"completed\",\"usage\":{\"input_tokens\":1000,\"output_tokens\":80,\"total_tokens\":1080,\"input_tokens_details\":{\"cached_tokens\":200}}}}\n\n";
 /// Model with the recording's rates and limits.
 fn target(case: &Value) -> TestResult<maestro_models::Model> {
-    let mut descriptor = json!({"id":"gpt-5.4","name":"Controlled","api":"openai-responses","provider":"openai","baseUrl":"https://controlled.invalid/v1","cost":{"input":2,"output":7,"cacheRead":0.3,"cacheWrite":0.9},"contextWindow":100_000,"maxTokens":64_000});
+    let mut descriptor = json!({"id":"gpt-4o-mini","name":"Controlled","api":"azure-openai-responses","provider":"azure-openai-responses","baseUrl":"https://controlled.invalid/v1","cost":{"input":2,"output":7,"cacheRead":0.3,"cacheWrite":0.9},"contextWindow":100_000,"maxTokens":64_000});
     if let Some(changes) = case["model"].as_object() {
         descriptor
             .as_object_mut()
@@ -94,24 +94,18 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
     );
     let body_abort = case["cancel"] == "body";
     let body_failure = case["cancel"] == "body_failure";
-    let ordered = case["hook"] == "order";
-    let scalar = case["hook"] == "scalar";
     let content_type = case["contentType"]
         .as_str()
         .unwrap_or("text/event-stream")
         .to_owned();
     Ok(Arc::new(move |request| {
         let mut captured = json!({"url":request.url,"headers":request.headers,"body":serde_json::from_slice::<Value>(&request.body).unwrap_or(Value::Null)});
-        if ordered {
+        {
             captured["bodyKeys"] = json!(
                 captured["body"]
                     .as_object()
                     .map(|body| body.keys().collect::<Vec<_>>())
             );
-            captured["wire"] = json!(std::str::from_utf8(&request.body).ok());
-        }
-        if scalar {
-            captured["wire"] = json!(request.body);
         }
         sent.lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -145,33 +139,23 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         Arc::clone(&log.hooks),
         case["hook"].as_str().unwrap_or_default().to_owned(),
     );
-    let replacement = case["payload"].clone();
-    Arc::new(move |mut payload, _| {
-        let label = if hook == "order" {
-            json!(
-                payload
-                    .as_object()
-                    .map(|payload| payload.keys().collect::<Vec<_>>())
-            )
-        } else {
-            json!("payload")
-        };
+    Arc::new(move |mut payload, model| {
+        let label = json!({"kind":"payload","model":model.id,"keys":payload.as_object().map(|v|v.keys().collect::<Vec<_>>()),"payload":payload});
         recorded
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(label);
         let result = match hook.as_str() {
             "payload_failure" => Err(failure("payload failed")),
-            "null" => Ok(Value::Null),
-            "array" => Ok(json!(["replacement", {"retained":true} ])),
-            "scalar" => Ok(replacement.clone()),
             "nonstream" => {
                 payload["stream"] = json!(false);
                 Ok(payload)
             }
-            "replace" => Ok(json!({"stream":true,"marker":"replacement"})),
+            "replace" => {
+                Ok(json!({"model":"hook-model","input":[],"stream":true,"marker":"replacement"}))
+            }
             "mutate" => {
-                payload["marker"] = json!("mutated");
+                payload["model"] = json!("mutated-model");
                 Ok(payload)
             }
             _ => Ok(payload),
@@ -186,8 +170,8 @@ fn response_hook(case: &Value, log: &Log, signal: Cancellation) -> OnResponse {
         case["hook"].as_str().unwrap_or_default().to_owned(),
         case["cancel"] == "response",
     );
-    Arc::new(move |response, _| {
-        let observation = json!(["response", response]);
+    Arc::new(move |response, model| {
+        let observation = json!({"kind":"response","model":model.id,"response":response});
         recorded
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -226,22 +210,11 @@ fn common(case: &Value, log: &Log) -> TestResult<StreamOptions> {
         transport: option(spec, "transport")?,
         metadata: option(spec, "metadata")?,
         max_retry_delay_ms: spec["maxRetryDelayMs"].as_f64(),
+        timeout_ms: spec["timeoutMs"].as_f64(),
         fetch: Some(fetch(case, log, signal.clone())?),
         on_payload: Some(payload_hook(case, log)),
         on_response: Some(response_hook(case, log, signal)),
-        ..Default::default()
     })
-}
-/// The three request states of the tier field.
-fn tier(value: &Value) -> Option<OpenAIResponsesServiceTier> {
-    match value.as_str() {
-        Some("auto") => Some(OpenAIResponsesServiceTier::Auto),
-        Some("default") => Some(OpenAIResponsesServiceTier::Default),
-        Some("flex") => Some(OpenAIResponsesServiceTier::Flex),
-        Some("scale") => Some(OpenAIResponsesServiceTier::Scale),
-        Some("priority") => Some(OpenAIResponsesServiceTier::Priority),
-        _ => None,
-    }
 }
 /// Choose the public raw or simple entry point.
 fn start(
@@ -250,7 +223,7 @@ fn start(
 ) -> TestResult<Result<AssistantMessageEventStream, String>> {
     let spec = &case["options"];
     if case["entry"] == "simple" {
-        return Ok(stream_simple_openai_responses(
+        return Ok(stream_simple_azure_openai_responses(
             target(case)?,
             history(case)?,
             Some(maestro_models::SimpleStreamOptions {
@@ -267,19 +240,20 @@ fn start(
         Some("concise") => Some(OpenAIResponsesReasoningSummary::Concise),
         _ => None,
     };
-    Ok(Ok(stream_openai_responses(
+    Ok(Ok(stream_azure_openai_responses(
         target(case)?,
         history(case)?,
-        Some(OpenAIResponsesOptions {
+        Some(AzureOpenAIResponsesOptions {
             common,
-            service_tier: spec.get("serviceTier").map(tier),
+            azure_base_url: option(spec, "azureBaseUrl")?,
+            azure_resource_name: option(spec, "azureResourceName")?,
+            azure_api_version: option(spec, "azureApiVersion")?,
+            azure_deployment_name: option(spec, "azureDeploymentName")?,
             reasoning_effort: option(spec, "reasoningEffort")?,
             reasoning_summary,
         }),
     )))
 }
-/// Shared output identity observations.
-pub use crate::response_output::collect;
 /// Run one operation until its finite source and stream close.
 pub async fn run_case(case: &Value) -> TestResult<Value> {
     let log = Log::default();
@@ -287,7 +261,14 @@ pub async fn run_case(case: &Value) -> TestResult<Value> {
         Ok(s) => s,
         Err(e) => return Ok(json!({"thrown":e})),
     };
-    let (events, result) = collect(&stream).await?;
+    let (events, result) = crate::response_output::collect(&stream).await?;
+    if case["status"] == 400 {
+        let message = stream.result().await;
+        assert!(maestro_models::is_context_overflow(
+            &*message.read().map_err(|e| e.to_string())?,
+            None
+        ));
+    }
     let requests = log.requests.lock().map_err(|e| e.to_string())?.clone();
     let hooks = log.hooks.lock().map_err(|e| e.to_string())?.clone();
     Ok(json!({"requests":requests,"hooks":hooks,"events":events,"result":result}))
@@ -297,7 +278,7 @@ fn compare(row: &Value, mut actual: Value) {
     if row["case"]["hook"] == "replace" {
         assert_eq!(
             actual["requests"][0]["body"],
-            json!({"stream":true,"marker":"replacement"})
+            json!({"model":"hook-model","input":[],"stream":true,"marker":"replacement"})
         );
     }
     if row["expected"]["result"]["errorMessage"] == json!({"nativeDiagnostic":true}) {
@@ -326,7 +307,7 @@ fn environment(case: &Value) -> TestResult<Vec<(&str, &str)>> {
 }
 /// Run each query in an isolated child with its explicit environment.
 pub async fn assert_rows(test: &str) -> TestResult {
-    let decoded = crate::response_cases::rows(FIXTURE)?;
+    let decoded = crate::azure_cases::rows(FIXTURE)?;
     let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
     assert!(!rows.is_empty(), "{test} owns cases");
     let Some(selected) = child_case() else {

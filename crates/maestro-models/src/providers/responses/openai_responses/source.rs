@@ -12,19 +12,19 @@ use futures_util::StreamExt;
 use std::collections::VecDeque;
 
 /// Framing state for one body.
-pub(super) struct Source {
+pub(in crate::providers::responses) struct Source {
     /// Underlying transport body.
-    pub(super) body: HttpBody,
+    pub(in crate::providers::responses) body: HttpBody,
     /// Shared frame reader.
-    pub(super) messages: SseMessages,
+    pub(in crate::providers::responses) messages: SseMessages,
     /// Completed event data awaiting reduction.
-    pub(super) pending: VecDeque<ServerSentEvent>,
+    pub(in crate::providers::responses) pending: VecDeque<ServerSentEvent>,
     /// Whether the body ended.
-    pub(super) ended: bool,
+    pub(in crate::providers::responses) ended: bool,
     /// Whether a DONE prefix has suppressed further parsing.
-    pub(super) done: bool,
+    pub(in crate::providers::responses) done: bool,
     /// Cancellation of body consumption.
-    pub(super) signal: Option<Cancellation>,
+    pub(in crate::providers::responses) signal: Option<Cancellation>,
 }
 impl Source {
     /// Validate one frame; DONE suppresses parsing while the body continues to drain.
@@ -52,7 +52,9 @@ impl Source {
     }
 
     /// Read the next framed event or source failure.
-    pub(super) async fn next(&mut self) -> Option<Result<String, DiagnosticErrorInfo>> {
+    pub(in crate::providers::responses) async fn next(
+        &mut self,
+    ) -> Option<Result<String, DiagnosticErrorInfo>> {
         loop {
             if let Some(event) = self.pending.pop_front() {
                 match self.frame(event) {
@@ -86,7 +88,7 @@ impl Source {
 }
 
 /// Response ready for the invocation's processing branch.
-pub(super) enum Prepared {
+pub(in crate::providers::responses) enum Prepared {
     /// Streaming bodies remain unread until after the response hook.
     Stream(HttpBody),
     /// A consumed non-event response cannot feed the event reducer.
@@ -94,7 +96,7 @@ pub(super) enum Prepared {
 }
 
 /// The edited stream flag's truthiness.
-pub(super) fn streaming(value: &serde_json::Value) -> bool {
+pub(in crate::providers::responses) fn streaming(value: &serde_json::Value) -> bool {
     match value {
         serde_json::Value::Null => false,
         serde_json::Value::Bool(flag) => *flag,
@@ -105,7 +107,7 @@ pub(super) fn streaming(value: &serde_json::Value) -> bool {
 }
 
 /// Consume non-event responses before exposing them to the response hook.
-pub(super) async fn prepare(
+pub(in crate::providers::responses) async fn prepare(
     response: HttpResponse,
     streaming: bool,
     signal: Option<&Cancellation>,

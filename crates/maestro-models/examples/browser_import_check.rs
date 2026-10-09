@@ -1,3 +1,6 @@
+use maestro_models::providers::responses::azure_openai_responses::{
+    stream_azure_openai_responses, stream_simple_azure_openai_responses,
+};
 use maestro_models::providers::responses::openai_responses::{
     stream_openai_responses, stream_simple_openai_responses,
 };
@@ -11,6 +14,9 @@ fn main() {
     std::hint::black_box((
         model,
         complete,
+        stream_azure_openai_responses,
+        stream_simple_azure_openai_responses,
+        maestro_models::AzureOpenAIResponsesOptions::default(),
         stream_openai_responses,
         stream_simple_openai_responses,
         maestro_models::OpenAIResponsesOptions::default(),

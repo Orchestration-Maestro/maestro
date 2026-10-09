@@ -208,3 +208,6 @@ fn responses_preserve_payload_insertion_order_at_hook_and_wire() -> chat::TestRe
         Ok(())
     })
 }
+
+#[path = "support/response_output.rs"]
+mod response_output;

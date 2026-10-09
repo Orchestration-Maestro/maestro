@@ -1,6 +1,6 @@
 //! Standard response endpoint invocation.
 
-mod source;
+pub(super) mod source;
 use source::{Prepared, Source};
 
 use super::openai_responses_shared::{
@@ -158,7 +158,7 @@ pub fn stream_simple_openai_responses(
 }
 
 /// Failure text carried by the stream source or simple key boundary.
-fn diagnostic(message: impl Into<String>) -> DiagnosticErrorInfo {
+pub(super) fn diagnostic(message: impl Into<String>) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {
         name: Some("Error".to_owned()),
         message: message.into(),
@@ -206,12 +206,12 @@ struct Payload<'a> {
 
 /// Requested reasoning effort.
 #[derive(Serialize)]
-struct Reasoning<'a> {
+pub(super) struct Reasoning<'a> {
     /// Wire effort.
-    effort: &'a str,
+    pub(super) effort: &'a str,
     /// Summary included only for requested reasoning.
     #[serde(skip_serializing_if = "Option::is_none")]
-    summary: Option<OpenAIResponsesReasoningSummary>,
+    pub(super) summary: Option<OpenAIResponsesReasoningSummary>,
 }
 
 /// Request inputs with their resolved cache policy.
@@ -293,7 +293,17 @@ impl Request<'_> {
             ]),
             None,
         )?;
-        let reasoning = reasoning(self.model, self.options);
+        let requested =
+            self.options.reasoning_effort.is_some() || self.options.reasoning_summary.is_some();
+        let reasoning = if self.model.provider == "github-copilot" && !requested {
+            None
+        } else {
+            reasoning(
+                self.model,
+                self.options.reasoning_effort,
+                self.options.reasoning_summary,
+            )
+        };
         let include = reasoning
             .as_ref()
             .is_some_and(|r| r.summary.is_some())
@@ -451,7 +461,7 @@ fn price(usage: &mut crate::Usage, tier: Option<&str>, model: &str) {
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.
-fn conclude(
+pub(super) fn conclude(
     events: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
@@ -479,29 +489,26 @@ fn conclude(
     Ok(())
 }
 
-/// Select requested effort or the provider's unrequested reasoning policy.
-fn reasoning<'a>(model: &'a Model, options: &OpenAIResponsesOptions) -> Option<Reasoning<'a>> {
+/// Select requested effort or the model's unrequested reasoning mapping.
+pub(super) fn reasoning(
+    model: &Model,
+    effort: Option<ThinkingLevel>,
+    summary: Option<OpenAIResponsesReasoningSummary>,
+) -> Option<Reasoning<'_>> {
     if !model.reasoning {
         return None;
     }
     let map = model.thinking_level_map.as_ref();
-    if options.reasoning_effort.is_some() || options.reasoning_summary.is_some() {
-        let effort = options.reasoning_effort.map_or("medium", |level| {
+    if effort.is_some() || summary.is_some() {
+        let effort = effort.map_or("medium", |level| {
             map.and_then(|m| m.get(&level.into()))
                 .and_then(Option::as_deref)
                 .unwrap_or_else(|| level_name(level))
         });
         return Some(Reasoning {
             effort,
-            summary: Some(
-                options
-                    .reasoning_summary
-                    .unwrap_or(OpenAIResponsesReasoningSummary::Auto),
-            ),
+            summary: Some(summary.unwrap_or(OpenAIResponsesReasoningSummary::Auto)),
         });
-    }
-    if model.provider == "github-copilot" {
-        return None;
     }
     let effort = match map.and_then(|m| m.get(&ModelThinkingLevel::Off)) {
         Some(None) => return None,
