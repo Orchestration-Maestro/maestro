@@ -1,5 +1,6 @@
 //! An optional animated indicator beside a styled message.
 
+use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
@@ -153,9 +154,9 @@ impl State {
         let frames = Rc::clone(&self.frames.borrow());
         let frame = frames.get(self.index.get()).map_or("", String::as_str);
         let rendered = if self.verbatim.get() {
-            frame.to_owned()
+            Cow::Borrowed(frame)
         } else {
-            (self.spinner_color)(frame)
+            Cow::Owned((self.spinner_color)(frame))
         };
         let indicator = if frame.is_empty() {
             String::new()

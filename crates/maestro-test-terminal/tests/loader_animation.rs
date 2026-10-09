@@ -211,8 +211,6 @@ fn loader_positive_intervals_use_native_duration_limits() {
         let (tui, _, runtime) = writer();
         succeeds(tui.stop());
         let widget = loader(tui, Some(options(&["A", "B"], interval)));
-        // Complete the constructor's ordinary render request, not an animation tick.
-        all_succeed(runtime.run_due());
         assert_eq!(runtime.next_deadline(), expected, "{interval}");
         shown(&widget, "A M");
         if let Some(delay) = expected.filter(|delay| *delay < ms(1000)) {
@@ -228,7 +226,6 @@ fn loader_positive_intervals_use_native_duration_limits() {
             let (tui, _, runtime) = writer();
             succeeds(tui.stop());
             let widget = loader(tui, Some(options(frames, interval)));
-            all_succeed(runtime.run_due());
             assert_eq!(runtime.pending(), 0);
             shown(&widget, if frames.is_empty() { "M" } else { "* M" });
         }

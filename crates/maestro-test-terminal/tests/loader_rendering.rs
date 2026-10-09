@@ -49,7 +49,7 @@ enum Style {
     /// Cyan spinner and dim message.
     #[default]
     Colored,
-    /// No escape sequences.
+    /// Returns supplied text unchanged.
     Identity,
     /// Spinner callback returns no text.
     EmptySpinner,
@@ -133,7 +133,7 @@ fn loader_narrow_rows_reuse_bounded_text_layout() {
     cases("loader_narrow_rows_reuse_bounded_text_layout", 20);
 }
 
-/// Constructs the widget with recorded callbacks and all supplied input fields.
+/// Constructs the widget with supplied construction options and recorded callbacks.
 fn construct(tui: TUI, input: Input, calls: &Rc<RefCell<Vec<[String; 2]>>>) -> Loader {
     let spinner_calls = Rc::clone(calls);
     let message_calls = Rc::clone(calls);
