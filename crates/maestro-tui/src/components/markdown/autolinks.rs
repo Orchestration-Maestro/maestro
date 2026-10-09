@@ -17,12 +17,19 @@ static DOMAIN: LazyLock<Option<Regex>> =
 fn links(run: &Run) -> Vec<(Range<usize>, String)> {
     let mut candidates = Vec::new();
     for (regex, email) in [(WEB.as_ref(), false), (EMAIL.as_ref(), true)] {
-        if let Some(regex) = regex {
-            candidates.extend(
-                regex
-                    .find_iter(&run.authored)
-                    .filter_map(|matched| candidate(run, matched.range(), email)),
-            );
+        let Some(regex) = regex else {
+            continue;
+        };
+        let mut offset = 0;
+        while let Some(matched) = regex.find_from(&run.authored, offset).next() {
+            let range = matched.range();
+            let start = run.recognition_start(range.start);
+            if start != range.start {
+                offset = start;
+                continue;
+            }
+            offset = range.end;
+            candidates.extend(candidate(run, range, email));
         }
     }
     candidates.sort_by_key(|(range, _)| range.start);
@@ -164,6 +171,23 @@ impl Run {
             decoded += display_len;
             authored += literal_len;
         }
+    }
+    /// Advances a candidate start past punctuation already consumed as an escape.
+    fn recognition_start(&self, offset: usize) -> usize {
+        let index = self
+            .units
+            .partition_point(|unit| unit.authored.end <= offset);
+        self.units.get(index).map_or(offset, |unit| {
+            if unit.authored.start < offset
+                && unit.authored.len() == 2
+                && unit.decoded.len() == 1
+                && self.authored.as_bytes()[unit.authored.start] == b'\\'
+            {
+                unit.authored.end
+            } else {
+                offset
+            }
+        })
     }
     /// Maps literal boundaries through the same ordered spans as display text.
     fn decoded_offset(&self, offset: usize) -> usize {

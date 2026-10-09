@@ -782,6 +782,21 @@ fn assert_mixed_escape_link(input: &str, expected: &str) {
 }
 
 #[test]
+fn markdown_escaped_email_prefixes_stay_outside_hyperlinks() {
+    for punctuation in ['+', '.', '-', '_'] {
+        for prefix in ["", "before ", "before"] {
+            assert_mixed_escape_link(
+                &format!(r"{prefix}\{punctuation}foo@example.com"),
+                &format!(
+                    "{prefix}{punctuation}{}",
+                    maestro_tui::hyperlink("foo@example.com", "mailto:foo@example.com")
+                ),
+            );
+        }
+    }
+}
+
+#[test]
 fn markdown_autolinks_keep_internal_authored_entities() {
     for target in ["https://example.com/a&lt;b", "https://example.com/a&nbsp;b"] {
         assert_mixed_escape_link(target, &maestro_tui::hyperlink(target, target));
