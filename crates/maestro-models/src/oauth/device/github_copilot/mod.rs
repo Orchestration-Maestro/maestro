@@ -121,7 +121,7 @@ fn enterprise_domain(credentials: &OAuthCredentials) -> Result<Option<&str>, OAu
 }
 
 /// Device-account provider using the shared interaction and transport interfaces.
-struct GitHubCopilotOAuthProvider;
+pub(crate) struct GitHubCopilotOAuthProvider;
 impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
     fn id(&self) -> &'static str {
         "github-copilot"
