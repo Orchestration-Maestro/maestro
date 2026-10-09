@@ -128,8 +128,8 @@ cannot fail an event.
 Content blocks are addressed by the position the service gives them, which is kept apart from their
 position in the message content. Positions match as strict equality matches: a missing position only
 a missing one, `null` only `null`, numbers as doubles (`0` and `-0` match), text only equal text,
-`true` and `false` only themselves, and an array or object nothing at all; text with a lone
-surrogate, which Rust strings cannot hold, also matches nothing. Updates for another kind of block,
+`true` and `false` only themselves, and an array or object nothing at all. Text positions retain
+unpaired UTF-16 units, so equivalent escaped spellings match. Updates for another kind of block,
 an unknown or a closed position are ignored, and so is an update that lacks its text, reasoning,
 signature or argument fragment. Signature fragments of a reasoning block accumulate without an
 update. A redacted reasoning block reads `[Reasoning redacted]` and keeps its opaque payload and the
@@ -171,7 +171,9 @@ ends the call with `{status} {message}`, where the message is that of the parsed
 body's own `message` when it is truthy, as text when it is text and otherwise as compact JSON; the
 whole body as compact JSON when `message` is missing, `null`, `false`, zero or empty), `{status}
 {body}` for a body that is not JSON or is `null`, `false`, zero or an empty JSON string, and
-`{status} status code (no body)` for an empty body.
+`{status} status code (no body)` for an empty body. If compact conversion of the selected `message`
+or whole body fails, its detail is empty, leaving `{status} `. The shared
+[full-value conversion contract](chat-completions.md#whole-value-conversion) owns those conversion bounds.
 
 ## Example
 

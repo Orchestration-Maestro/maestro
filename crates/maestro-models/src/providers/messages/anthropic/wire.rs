@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::value::RawValue;
 
 use crate::providers::json_text::{
-    lenient, member, number, raw_number, required, try_object_record,
+    EntryKey, lenient, member, number, raw_number, required, try_object_record,
 };
 
 /// A decoded event of a message stream.
@@ -129,11 +129,11 @@ pub(super) enum Position {
     Null,
     /// A number, as the double it rounds to.
     Number(f64),
-    /// Text.
-    Text(String),
+    /// Decoded text, retaining unpaired UTF-16 units.
+    Text(EntryKey),
     /// A boolean.
     Flag(bool),
-    /// An array, an object, or text that Rust strings cannot hold (a lone surrogate).
+    /// An array or an object.
     Distinct,
 }
 

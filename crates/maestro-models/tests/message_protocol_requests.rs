@@ -275,6 +275,25 @@ fn messages_keep_http_error_envelopes() -> TestResult {
     )
 }
 
+/// Both selected error-detail branches leave empty text when conversion exceeds its bound.
+#[test]
+fn messages_keep_empty_error_detail_at_conversion_boundary() -> TestResult {
+    block_on(false, async {
+        let nested = format!("{}0{}", "[".repeat(128), "]".repeat(128));
+        for body in [format!(r#"{{"message":{nested}}}"#), nested] {
+            let case = messages::Case {
+                status: Some(400),
+                chunks: Some(vec![messages::Chunk::Text(body)]),
+                ..messages::Case::default()
+            };
+            let run = messages::run_case(&case).await?;
+            assert_eq!(run.result["errorMessage"], json!("400 "));
+            assert_eq!(run.result["stopReason"], json!("error"));
+        }
+        Ok(())
+    })
+}
+
 /// Called outside any Tokio runtime, the call still returns its stream, which ends at once with
 /// an error update.
 fn call_outside_a_runtime_ends_in_error() -> TestResult {
