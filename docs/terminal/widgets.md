@@ -1,6 +1,6 @@
-# Box, Text and Spacer widgets
+# Terminal widgets
 
-`maestro-tui` ships three passive widgets that implement the [component
+The passive `Box`, `Text` and `Spacer` widgets implement the [component
 contract](components.md): `Box` lays its children out inside padding over an optional
 background, `Text` shows word-wrapped text, and `Spacer` shows empty rows. None of them
 accepts input, takes focus or wants key-release events. `Box` here is
@@ -132,3 +132,56 @@ assert_eq!(spacer.render(80), ["", ""]);
 spacer.set_lines(0);
 assert!(spacer.render(80).is_empty());
 ```
+
+## Input
+
+`Input` edits a single line with horizontal scrolling. It uses the existing
+[keybindings](keybindings.md) and [styled-text helpers](text.md).
+
+```rust
+use std::{cell::RefCell, rc::Rc};
+use maestro_tui::{Input, tui::InputHandler};
+
+let input = Input::new();
+input.set_value("initial".into());
+assert_eq!(input.get_value(), "initial");
+let submitted = Rc::new(RefCell::new(String::new()));
+let output = submitted.clone();
+input.set_on_submit(Some(Rc::new(move |value| *output.borrow_mut() = value.into())));
+input.handle_input("\r");
+assert_eq!(*submitted.borrow(), "initial");
+```
+
+Default bindings:
+
+- Enter submits.
+- Ctrl+A / Ctrl+E move to the start / end.
+- Ctrl+W or Alt+Backspace kills the preceding word.
+- Ctrl+U kills to the start.
+- Ctrl+K kills to the end.
+- Ctrl+Left / Ctrl+Right move by word.
+- Alt+Left / Alt+Right move by word.
+- Left/Right arrows, Backspace and Delete move or delete a grapheme at the cursor.
+
+Submit and cancel callbacks run synchronously; nested calls read the current
+callbacks. Replacing the value retains or clamps its logical cursor position and
+preserves history and pending paste; changing the value ends an active yank chain.
+Edits segment the prefix or suffix at the cursor, including cross-boundary joins.
+A completed paste removes CR/LF, expands tabs to four spaces and captures one undo
+snapshot before dispatching its suffix. Rendering returns one string; widths at
+most two show only the clipped prompt without a cursor, and a focused wider view
+emits the hardware cursor marker. Input has no rendering cache.
+
+### Shared editing history
+
+`kill_ring::KillRing` stores deleted text: `push` ignores empty strings, and its
+explicit `KillRingOptions` select prepending or appending to the newest entry when
+accumulating. `peek` borrows that entry; `rotate` moves it to the front only when
+there are at least two entries; `length` counts entries. Ctrl+Y yanks and Alt+Y
+rotates an active yank.
+
+`undo_stack::UndoStack<S>` stores `S::clone()` on `push` and transfers the newest
+snapshot on `pop`. `clear` drops snapshots and `length` counts them. Input's
+snapshots own their text; an arbitrary shared-handle `Clone` is not a deep copy.
+Ctrl+- restores an input snapshot without rewinding the kill ring. Consecutive
+non-whitespace typing shares a snapshot; a whitespace-containing chunk starts one.
