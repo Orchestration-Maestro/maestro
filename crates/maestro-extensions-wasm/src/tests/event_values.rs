@@ -395,12 +395,19 @@ fn bits_of(document: Option<&Value>) -> Result<u64, String> {
     .ok_or_else(|| format!("{document:?} is not a number document"))
 }
 
-/// The bits of the status that came back after the number `bits` went in beside `headers`.
+/// The bits of the status that came back after the number `bits` went in beside `headers`,
+/// which come back unchanged, order included.
 async fn status_back(driver: &mut impl Driver, bits: u64, headers: &Value) -> Result<u64, String> {
     let response =
         json!({ "type": "after_provider_response", "status": number_of(bits), "headers": headers });
     let answer = ask(driver, &response, &json!({})).await?;
-    bits_of(answer.event.as_ref().map(|event| &event["status"]))
+    let event = answer.event.as_ref();
+    assert_eq!(
+        event.map(|event| &event["headers"]),
+        Some(headers),
+        "incoming headers beside status bits {bits:016x}"
+    );
+    bits_of(event.map(|event| &event["status"]))
 }
 
 /// The bits of the preparation tokens and of the result tokens that came back after the number
@@ -435,8 +442,8 @@ async fn tokens_back(driver: &mut impl Driver, bits: u64) -> Result<[u64; 2], St
     ])
 }
 
-/// Every pattern keeps its bits in the status beside an empty and a populated header list, in
-/// the preparation tokens and in the result tokens.
+/// Every pattern keeps its bits in the status beside an empty and a populated header list, which
+/// stay as they came, in the preparation tokens and in the result tokens.
 async fn numbers(driver: &mut impl Driver) -> Result<(), String> {
     let [empty, mixed, _] = header_lists();
     for bits in PATTERNS {
@@ -469,7 +476,8 @@ fn decode(document: &Value) -> Result<f64, String> {
 }
 
 /// The codec accepts the spelling of a nonfinite value in either letter case, writes it in
-/// lower case, and rejects every other spelling or document.
+/// lower case, and rejects every other text and every document that is neither text nor a
+/// number.
 fn malformed_encodings() {
     let upper = decode(&json!("f64:7FF0000000000000"));
     assert_eq!(upper.map(f64::to_bits), Ok(f64::INFINITY.to_bits()));

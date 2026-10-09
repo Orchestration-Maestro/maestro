@@ -105,7 +105,8 @@ pub fn with(mut document: Value, key: &str, class: &Class) -> Value {
 pub fn document(kind: &str) -> Value {
     match kind {
         "resources_discover" => json!({ "type": kind, "cwd": "/work", "reason": "startup" }),
-        "session_start" | "session_shutdown" => json!({ "type": kind, "reason": "new" }),
+        "session_start" => json!({ "type": kind, "reason": "new" }),
+        "session_shutdown" => json!({ "type": kind, "reason": "quit" }),
         "session_before_switch" => json!({ "type": kind, "reason": "resume" }),
         "session_before_fork" => json!({ "type": kind, "entryId": "e1", "position": "at" }),
         "session_before_compact" => json!({

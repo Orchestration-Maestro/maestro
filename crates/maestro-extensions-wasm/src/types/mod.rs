@@ -12,6 +12,7 @@ mod event_data;
 mod events;
 mod extension_result;
 pub(crate) mod number;
+mod object;
 mod presence;
 
 pub use api::{CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost};

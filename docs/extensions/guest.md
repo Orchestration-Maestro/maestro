@@ -98,8 +98,8 @@ event is dropped. Resources never appear in the document.
 Optional properties keep three states apart: omitted, explicitly `null`, and present, including
 empty strings, empty lists and `false`. In the delivered records such a field is a
 `Presence<T>`: it defaults to `Missing` when the property is absent and is skipped on
-serialization only while it is `Missing`. Serializing a `Presence` outside a property is an
-error.
+serialization only while it is `Missing`. Serializing `Missing` on its own, outside a property,
+is an error; `Null` serializes as `null` and `Present` as its value.
 
 Three properties hold a number that a handler may edit: `status`, `tokensBefore` of the
 preparation and `tokensBefore` of a compaction. A finite value is a JSON number, negative zero
@@ -114,10 +114,13 @@ duplicate keys, spacing, exponents and any nesting depth reach the handler as au
 replacement `null` is text and differs from returning no result; `details` text `null` differs
 from `details` null.
 
-The export decodes the document before it enters the handler. Malformed JSON, an unknown `type`
-or word, a missing or mistyped required property, and a compaction without its signal make the
-export fail with an error message; the handler is not entered. Properties the author's
-types do not declare are ignored. A callback identity that is unknown, or registered for a
+The export decodes the document before it enters the handler. The event, the `preparation` and
+each element of `images` are read from JSON objects only; a positional array is refused. Malformed
+JSON, a record that is not an object, an unknown `type` or word, a missing required property, a
+mistyped property (optional ones included), and a compaction without its signal make the export
+fail with an error message; the handler is not entered. Properties the author's types do not
+declare are skipped without being stored wherever they occur in the event, the `preparation` or an
+image, however deeply nested. A callback identity that is unknown, or registered for a
 command, does not fail the export: the outcome reports the lookup message as the decision.
 
 The outcome has two independent parts. `event` is the event as the handler left it, whether

@@ -10,9 +10,42 @@ use super::events::{
     SessionBeforeForkEvent, SessionBeforeSwitchEvent, SessionEvent, SessionShutdownEvent,
     SessionStartEvent,
 };
+use super::object;
+
+/// The `type` tag of an event document.
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Kind {
+    /// Resources are being discovered.
+    ResourcesDiscover,
+    /// A session started.
+    SessionStart,
+    /// The session is about to switch.
+    SessionBeforeSwitch,
+    /// The session is about to fork.
+    SessionBeforeFork,
+    /// A compaction is about to happen.
+    SessionBeforeCompact,
+    /// A runtime is shutting down.
+    SessionShutdown,
+    /// A provider request is about to be sent.
+    BeforeProviderRequest,
+    /// A provider answered.
+    AfterProviderResponse,
+    /// A user input before agent processing.
+    Input,
+}
+
+/// The only property read before the record of the event is.
+#[derive(Deserialize)]
+struct Tag {
+    /// The kind of the event.
+    #[serde(rename = "type")]
+    kind: Kind,
+}
 
 /// The data of one event. Each case holds the single public payload record.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(crate) enum EventData {
     /// Resources are being discovered.
@@ -36,6 +69,29 @@ pub(crate) enum EventData {
 }
 
 impl EventData {
+    /// The data a JSON document holds. The tag is read first, with every other property
+    /// skipped; the record the tag selects is then read from the same text, so properties it
+    /// does not declare are skipped too, however deeply nested.
+    ///
+    /// # Errors
+    /// Returns an error when the text is malformed, is not a JSON object, has a missing or
+    /// unknown tag, or holds a record that is not an object, lacks a required property or
+    /// mistypes a property.
+    pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
+        let Tag { kind } = object::from_str(text)?;
+        Ok(match kind {
+            Kind::ResourcesDiscover => Self::ResourcesDiscover(object::from_str(text)?),
+            Kind::SessionStart => Self::SessionStart(object::from_str(text)?),
+            Kind::SessionBeforeSwitch => Self::SessionBeforeSwitch(object::from_str(text)?),
+            Kind::SessionBeforeFork => Self::SessionBeforeFork(object::from_str(text)?),
+            Kind::SessionBeforeCompact => Self::SessionBeforeCompact(object::from_str(text)?),
+            Kind::SessionShutdown => Self::SessionShutdown(object::from_str(text)?),
+            Kind::BeforeProviderRequest => Self::BeforeProviderRequest(object::from_str(text)?),
+            Kind::AfterProviderResponse => Self::AfterProviderResponse(object::from_str(text)?),
+            Kind::Input => Self::Input(object::from_str(text)?),
+        })
+    }
+
     /// The author's event for this data. The signal joins a compaction; every other kind
     /// drops it.
     ///

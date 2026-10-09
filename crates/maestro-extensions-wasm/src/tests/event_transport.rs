@@ -160,7 +160,7 @@ fn foreign_result(kind: &str) -> (&'static str, Value) {
 }
 
 /// An edit made before an error, a result or none survives in the event; a handler that
-/// replaces its event with one of another kind leaves no event to return.
+/// replaces its event with one of any other kind leaves no event to return.
 async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> {
     for (kind, field) in MARKED {
         let event = document(kind);
@@ -187,9 +187,7 @@ async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> 
         }
     }
     for kind in KINDS {
-        for target in KINDS {
-            let event = document(kind);
-            let kept = (kind == target).then(|| document(target));
+        for target in KINDS.into_iter().filter(|target| *target != kind) {
             for (directive, ended) in [
                 (json!({}), Ended::Returned(None)),
                 (
@@ -198,11 +196,8 @@ async fn edits_and_replacements(driver: &mut impl Driver) -> Result<(), String> 
                 ),
             ] {
                 let directive = replacing(directive, document(target));
-                let answer = ask(driver, &event, &directive).await?;
-                let expected = Answer {
-                    event: kept.clone(),
-                    ended,
-                };
+                let answer = ask(driver, &document(kind), &directive).await?;
+                let expected = Answer { event: None, ended };
                 assert_eq!(
                     answer, expected,
                     "{kind} replaced by {target}, directive {directive}"
@@ -239,6 +234,16 @@ const REQUIRED: [(&str, &[&str]); 9] = [
     ("input", &["text", "source"]),
 ];
 
+/// The optional properties that hold text or a list.
+const OPTIONAL: [(&str, &str); 6] = [
+    ("session_start", "previousSessionFile"),
+    ("session_before_switch", "targetSessionFile"),
+    ("session_before_compact", "customInstructions"),
+    ("session_before_compact", "preparation.previousSummary"),
+    ("session_shutdown", "targetSessionFile"),
+    ("input", "images"),
+];
+
 /// The properties that hold one of a fixed set of words.
 const WORDS: [(&str, &str); 6] = [
     ("resources_discover", "reason"),
@@ -267,23 +272,34 @@ fn at(document: &Value, path: &str, value: Option<Value>) -> Value {
     changed
 }
 
-/// Every document the decoder must refuse, labelled.
-fn undecodable() -> Vec<(String, String)> {
-    let mut found: Vec<(String, String)> = ["", "{", "[]", "null", "42", r#"{"type":"input""#]
-        .into_iter()
-        .map(|text| (format!("text {text:?}"), text.to_owned()))
-        .collect();
+/// A document the decoder must refuse, as text, with what is wrong with it.
+type Refusal = (String, String);
+
+/// The documents that lack a tag or a required property, or mistype or misword a property.
+fn wrong_properties() -> Vec<Refusal> {
+    let mut found = Vec::new();
     let mut add = |label: String, document: Value| found.push((label, document.to_string()));
     for (kind, paths) in REQUIRED {
         let valid = document(kind);
         add(format!("{kind} without a tag"), at(&valid, "type", None));
         for path in paths {
+            let wrong = if *path == "preparation" {
+                json!("not a record")
+            } else {
+                json!({})
+            };
             add(format!("{kind} without {path}"), at(&valid, path, None));
             add(
                 format!("{kind} with {path} of the wrong type"),
-                at(&valid, path, Some(json!({}))),
+                at(&valid, path, Some(wrong)),
             );
         }
+    }
+    for (kind, path) in OPTIONAL {
+        add(
+            format!("{kind} with {path} of the wrong type"),
+            at(&document(kind), path, Some(json!({}))),
+        );
     }
     add(
         "an unknown kind".to_owned(),
@@ -295,10 +311,52 @@ fn undecodable() -> Vec<(String, String)> {
             at(&document(kind), word, Some(json!("unknown"))),
         );
     }
+    found
+}
+
+/// The documents with an image, a header pair or a nested record that is malformed, and the
+/// ones that give a record as a positional array.
+fn wrong_records() -> Vec<Refusal> {
+    let mut found = Vec::new();
+    let mut add = |label: String, document: Value| found.push((label, document.to_string()));
+    for (what, image) in [
+        ("without data", json!({ "mimeType": "image/png" })),
+        ("without mimeType", json!({ "data": "AA==" })),
+        (
+            "with data of the wrong type",
+            json!({ "data": {}, "mimeType": "image/png" }),
+        ),
+        (
+            "with mimeType of the wrong type",
+            json!({ "data": "AA==", "mimeType": {} }),
+        ),
+    ] {
+        let input = at(&document("input"), "images", Some(json!([image])));
+        add(format!("an image {what}"), input);
+    }
+    let image = at(
+        &document("input"),
+        "images",
+        Some(json!([["AA==", "image/png"]])),
+    );
+    let preparation = json!(["e2", false, 1234.0, null]);
+    let compaction = at(
+        &document("session_before_compact"),
+        "preparation",
+        Some(preparation),
+    );
+    for (what, positional) in [
+        ("an event", json!(["input", "hello", null, "rpc"])),
+        ("an image", image),
+        ("a preparation", compaction),
+    ] {
+        add(format!("{what} as a positional array"), positional);
+    }
     for pair in [
         json!(["a"]),
         json!(["a", "b", "c"]),
         json!([1, "b"]),
+        json!(["a", 1]),
         json!("ab"),
     ] {
         let headers = at(
@@ -311,9 +369,19 @@ fn undecodable() -> Vec<(String, String)> {
     found
 }
 
+/// Every document the decoder must refuse, labelled.
+fn undecodable() -> Vec<Refusal> {
+    ["", "{", "[]", "null", "42", r#"{"type":"input""#]
+        .into_iter()
+        .map(|text| (format!("text {text:?}"), text.to_owned()))
+        .chain(wrong_properties())
+        .chain(wrong_records())
+        .collect()
+}
+
 /// The message the pinned decoder gives for `text`.
 fn decoder_error(text: &str) -> Result<String, String> {
-    match serde_json::from_str::<EventData>(text) {
+    match EventData::decode(text) {
         Ok(_) => Err(format!("the decoder accepts {text}")),
         Err(error) => Ok(error.to_string()),
     }
@@ -328,9 +396,9 @@ fn entered(driver: &impl Driver) -> usize {
         .count()
 }
 
-/// Documents that cannot be decoded, and a compaction without its signal, are refused with
-/// the decoder's message before the handler is entered; a handler of another kind is
-/// reported; an unknown property is ignored.
+/// Documents that cannot be decoded are refused with the decoder's message, and a compaction
+/// without its signal with the attachment's message, before the handler is entered; a callback
+/// of another kind is reported.
 async fn decode_phases(driver: &mut impl Driver) -> Result<(), String> {
     let probe = driver.identity("event probe")?;
     for (label, text) in undecodable() {
@@ -360,24 +428,48 @@ async fn decode_phases(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 
-/// Unknown properties anywhere in a valid document are ignored.
+/// A value nested in more arrays than the JSON reader's recursion limit of 128 allows.
+fn nested() -> Value {
+    (0..130).fold(json!(1), |inner, _| json!([inner]))
+}
+
+/// The valid document of `kind` and the same document with the unknown property `top` on the
+/// event and `inner` on the nested record of the kinds that have one.
+fn with_unknown(kind: &str, top: &Value, inner: &Value) -> (Value, Value) {
+    let image = json!([{ "data": "AA==", "mimeType": "image/png" }]);
+    let event = match kind {
+        "input" => at(&document(kind), "images", Some(image)),
+        _ => document(kind),
+    };
+    let mut extended = at(&event, "extra", Some(top.clone()));
+    let record = match kind {
+        "session_before_compact" => Some("preparation.extra"),
+        "input" => Some("images.0.extra"),
+        _ => None,
+    };
+    if let Some(path) = record {
+        extended = at(&extended, path, Some(inner.clone()));
+    }
+    (event, extended)
+}
+
+/// Unknown properties on an event, on the preparation of a compaction and on the images of an
+/// input are ignored, also when they are nested deeper than the reader's recursion limit.
 async fn unknown_properties(driver: &mut impl Driver) -> Result<(), String> {
     for (kind, _) in REQUIRED {
-        let event = document(kind);
-        let mut extended = at(&event, "extra", Some(json!(true)));
-        if kind == "session_before_compact" {
-            extended = at(&extended, "preparation.extra", Some(json!([1])));
+        for (top, inner) in [(json!(true), json!([1])), (nested(), nested())] {
+            let (event, extended) = with_unknown(kind, &top, &inner);
+            let answer = ask(driver, &extended, &json!({})).await?;
+            assert_eq!(
+                answer,
+                Answer::returned(&event, None),
+                "{kind} with unknown properties {top}"
+            );
         }
-        let answer = ask(driver, &extended, &json!({})).await?;
-        assert_eq!(
-            answer,
-            Answer::returned(&event, None),
-            "{kind} with unknown properties"
-        );
     }
     assert_eq!(
         entered(driver),
-        KINDS.len(),
+        2 * KINDS.len(),
         "each of them entered the handler once"
     );
     Ok(())
@@ -457,7 +549,7 @@ fn maestro_event_failures_keep_decode_callback_and_encoding_phases() -> Result<(
 /// One way a delivery can end, and the delivery that takes it.
 struct Exit {
     /// What the delivery does.
-    label: &'static str,
+    label: String,
     /// The handler it is addressed to.
     handler: u32,
     /// The event document text.
@@ -471,12 +563,12 @@ struct Exit {
 }
 
 /// The deliveries that end every way a delivery can, each lent a context and, when it says so,
-/// a signal.
+/// a signal; every event kind but the compaction is lent a signal it must not retain.
 fn exits(probe: u32, unregistered: u32, command: u32) -> Vec<Exit> {
     let compact = document("session_before_compact").to_string();
     let input = document("input");
-    let exit = |label, handler, event: &str, directive: Value, refused| Exit {
-        label,
+    let exit = |label: &str, handler, event: &str, directive: Value, refused| Exit {
+        label: label.to_owned(),
         handler,
         event: event.to_owned(),
         signal: true,
@@ -510,13 +602,6 @@ fn exits(probe: u32, unregistered: u32, command: u32) -> Vec<Exit> {
             false,
         ),
         exit("success with a signal", probe, &compact, json!({}), false),
-        exit(
-            "success ignoring a signal",
-            probe,
-            &input.to_string(),
-            json!({}),
-            false,
-        ),
         exit("failure", probe, &compact, fails(AUTHORED_FAILURE), false),
         exit(
             "replacement by another kind",
@@ -526,10 +611,22 @@ fn exits(probe: u32, unregistered: u32, command: u32) -> Vec<Exit> {
             false,
         ),
     ]
+    .into_iter()
+    .chain(
+        KINDS
+            .into_iter()
+            .filter(|kind| *kind != "session_before_compact")
+            .map(|kind| {
+                let label = format!("success ignoring a signal on {kind}");
+                exit(&label, probe, &document(kind).to_string(), json!({}), false)
+            }),
+    )
+    .collect()
 }
 
 /// Every owner the host lent for a delivery is dropped when the delivery has ended, unless the
-/// handler kept it, and dropped when the handler that kept it is released.
+/// handler kept it, and dropped when the handler that kept it is released; releasing every
+/// handler leaves no owner behind.
 async fn lifetimes(driver: &mut impl Driver) -> Result<(), String> {
     let probe = driver.identity("event probe")?;
     let unregistered = driver.unregistered()?;
@@ -565,6 +662,12 @@ async fn lifetimes(driver: &mut impl Driver) -> Result<(), String> {
         baseline - 1,
         "only the identity of the released handler is gone"
     );
+    driver.release_all().await;
+    assert_eq!(
+        driver.live(),
+        0,
+        "releasing every handler left no resource behind"
+    );
     Ok(())
 }
 
@@ -583,8 +686,9 @@ fn kept_report(kept: &[(&str, bool)]) -> String {
 }
 
 /// A handler that kept the context and signal of its first invocation reads those after a
-/// second invocation with other resources: the first signal, cancelled in between, reads as
-/// cancelled and the first context still reports its own directory.
+/// second invocation with other resources: the first signal, cancelled after both invocations,
+/// reads as cancelled and the first context still reports its own directory. Releasing every
+/// handler then leaves no resource behind.
 async fn retained_capabilities(driver: &mut impl Driver) -> Result<(), String> {
     let baseline = driver.live();
     let compact = document("session_before_compact");
@@ -618,6 +722,12 @@ async fn retained_capabilities(driver: &mut impl Driver) -> Result<(), String> {
         driver.live(),
         baseline - 1,
         "releasing the handler dropped what it kept"
+    );
+    driver.release_all().await;
+    assert_eq!(
+        driver.live(),
+        0,
+        "releasing every handler left no resource behind"
     );
     Ok(())
 }

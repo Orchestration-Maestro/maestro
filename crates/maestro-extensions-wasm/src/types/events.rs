@@ -17,8 +17,8 @@ use serde::{Deserialize, Serialize};
 
 use super::context::{AbortSignal, ExtensionContext};
 use super::extension_result::ExtensionFuture;
-use super::number;
 use super::presence::Presence;
+use super::{number, object};
 use crate::compaction::{CompactionPreparation, CompactionResult};
 use crate::models::ImageContent;
 
@@ -212,7 +212,11 @@ pub struct InputEvent {
     /// The input text.
     pub text: String,
     /// The attached images.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    #[serde(
+        default,
+        skip_serializing_if = "Presence::is_missing",
+        deserialize_with = "object::records"
+    )]
     pub images: Presence<Vec<ImageContent>>,
     /// Where the input came from.
     pub source: InputSource,
@@ -245,6 +249,7 @@ pub enum InputEventResult {
 #[serde(rename_all = "camelCase")]
 pub struct SessionBeforeCompactEventData {
     /// What the compaction is about to summarize.
+    #[serde(deserialize_with = "object::record")]
     pub preparation: CompactionPreparation,
     /// Instructions the user gave the compaction.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]

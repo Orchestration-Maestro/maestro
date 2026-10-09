@@ -162,6 +162,14 @@ impl Observed {
             .ok_or_else(|| format!("nothing registered as {name}"))
     }
 
+    /// Takes the registration under `name` out of the line for release, so that releasing every
+    /// registration afterwards does not release it twice. Returns its key, or none when nothing
+    /// is registered under `name`.
+    pub fn take_registration(&mut self, name: &str) -> Option<u32> {
+        let position = self.order.iter().position(|(queued, _)| queued == name)?;
+        self.order.remove(position).map(|(_, key)| key)
+    }
+
     /// Takes the registration next in line for release, in registration order; registrations
     /// made while earlier ones are released queue up behind them.
     pub fn next_to_release(&mut self) -> Option<(String, u32)> {

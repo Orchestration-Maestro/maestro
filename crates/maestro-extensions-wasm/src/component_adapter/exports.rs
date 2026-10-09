@@ -91,8 +91,8 @@ impl<I: Imports> Exports<I> {
     /// decision. The handler runs at most once.
     ///
     /// # Errors
-    /// Returns the decoding message when the document is not an event, or when a compaction
-    /// arrives without its signal; the handler has not run.
+    /// Returns the decoder's message when the document is not an event, and the message of
+    /// the attachment when a compaction arrives without its signal; the handler has not run.
     pub(crate) async fn invoke_event(
         &self,
         handler: u32,
@@ -100,7 +100,7 @@ impl<I: Imports> Exports<I> {
         resources: Capabilities<I>,
     ) -> Result<EventOutcome, String> {
         let Capabilities { ctx, signal } = resources;
-        let data: EventData = serde_json::from_str(&event).map_err(|error| error.to_string())?;
+        let data = EventData::decode(&event).map_err(|error| error.to_string())?;
         let kind = discriminant(&data);
         let signal = signal.map(|signal| contexts::signal(&self.imports, signal));
         let mut event = data.attach(signal)?;

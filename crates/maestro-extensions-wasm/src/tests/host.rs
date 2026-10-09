@@ -322,9 +322,10 @@ impl Harness {
         self.store.data_mut().push(Ordinary(Session::new(cwd)))
     }
 
-    /// A fresh identity the component never registered.
+    /// A fresh identity the component never registered. The host keeps it and only lends
+    /// borrows of it, so it is not counted as handed to the extension.
     pub fn identity(&mut self, id: u32) -> wasmtime::Result<u32> {
-        Ok(self.store.data_mut().push(Identity(id))?.rep())
+        Ok(self.store.data_mut().table.push(Identity(id))?.rep())
     }
 
     /// A fresh replacement context in `cwd`.

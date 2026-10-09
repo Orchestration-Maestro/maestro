@@ -241,9 +241,10 @@ impl Driver for ComponentDriver {
         let Ok(harness) = started(&mut self.harness) else {
             return false;
         };
-        match harness.callback(name) {
-            Ok(key) => harness.release(key).await.is_ok(),
-            Err(_) => false,
+        let key = harness.observed().take_registration(name);
+        match key {
+            Some(key) => harness.release(key).await.is_ok(),
+            None => false,
         }
     }
 

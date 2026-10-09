@@ -174,8 +174,8 @@ impl Driver for ControlledDriver {
     }
 
     fn release(&mut self, name: &str) -> impl Future<Output = bool> {
-        let key = self.identity(name);
-        std::future::ready(key.map(release).is_ok())
+        let key = self.host.observe().take_registration(name);
+        std::future::ready(key.map(release).is_some())
     }
 
     fn reject_next_session(&mut self) {
