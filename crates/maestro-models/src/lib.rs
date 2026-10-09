@@ -38,6 +38,7 @@ pub use providers::messages::anthropic::{
 pub use providers::reasoning::mistral::{
     MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice,
 };
+pub use providers::responses::openai_responses::OpenAIResponsesOptions;
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
     get_api_providers, register_api_provider, unregister_api_providers,

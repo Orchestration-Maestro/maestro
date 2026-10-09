@@ -27,6 +27,7 @@ use crate::{
 };
 use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
+pub(crate) use request::{copied, layer, level_name, resolve_cache_retention, scope_headers};
 use sse::consume;
 
 /// Text of the failure that ends an aborted invocation.
