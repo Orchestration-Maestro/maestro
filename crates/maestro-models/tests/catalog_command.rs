@@ -7,7 +7,9 @@ use maestro_models::{
     ModelThinkingLevel, OpenAICompletionsCompat, ThinkingFormat,
 };
 use std::{
-    fs, io,
+    fs,
+    future::Future,
+    io,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
@@ -33,6 +35,14 @@ impl Drop for Scratch {
 }
 /// Build a controlled fetch whose request occurs after the previous body closes.
 fn controlled(fail: Option<usize>) -> (Fetch, Arc<Mutex<Vec<String>>>) {
+    controlled_with_bodies(fail, Vec::new())
+}
+/// Hold body completion until each caller-controlled release.
+fn controlled_with_bodies(
+    fail: Option<usize>,
+    gates: Vec<tokio::sync::oneshot::Receiver<()>>,
+) -> (Fetch, Arc<Mutex<Vec<String>>>) {
+    let gates = Mutex::new(std::collections::VecDeque::from(gates));
     let events = Arc::new(Mutex::new(Vec::new()));
     let recorded = Arc::clone(&events);
     let fetch: Fetch = Arc::new(move |request| {
@@ -43,6 +53,7 @@ fn controlled(fail: Option<usize>) -> (Fetch, Arc<Mutex<Vec<String>>>) {
             events.len() / 2
         };
         let recorded = Arc::clone(&recorded);
+        let gate = gates.lock().unwrap().pop_front();
         Box::pin(async move {
             if fail == Some(position) {
                 recorded.lock().unwrap().push("failed".into());
@@ -65,7 +76,7 @@ fn controlled(fail: Option<usize>) -> (Fetch, Arc<Mutex<Vec<String>>>) {
                 status: 200,
                 status_text: String::new(),
                 headers: std::collections::BTreeMap::new(),
-                body: completed_body(body.take().unwrap(), recorded),
+                body: completed_body(body.take().unwrap(), recorded, gate),
             })
         })
     });
@@ -107,13 +118,19 @@ impl io::Write for ObserveFiles<'_> {
 fn catalog_command_fetches_sequentially_and_reports_after_writes() {
     let scratch = Scratch::new();
     let destination = scratch.0.join("generated");
-    let (fetch, events) = controlled(None);
+    let (release_dev, dev) = tokio::sync::oneshot::channel();
+    let (release_router, router) = tokio::sync::oneshot::channel();
+    let (fetch, events) = controlled_with_bodies(None, vec![dev, router]);
     let mut output = ObserveFiles {
         destination: &destination,
         bytes: Vec::new(),
     };
     let mut errors = Vec::new();
-    run(&fetch, &destination, &mut output, &mut errors).unwrap();
+    observe_pending_bodies(
+        generate_models(&fetch, &destination, &mut output, &mut errors),
+        &events,
+        [release_dev, release_router],
+    );
     assert!(errors.is_empty());
     assert_eq!(
         *events.lock().unwrap(),
@@ -130,6 +147,35 @@ fn catalog_command_fetches_sequentially_and_reports_after_writes() {
         String::from_utf8(output.bytes).unwrap(),
         "Fetching models from models.dev API...\nLoaded 0 tool-capable models from models.dev\nFetching models from OpenRouter API...\nFetched 0 tool-capable models from OpenRouter\nFetching models from Vercel AI Gateway API...\nFetched 0 tool-capable models from Vercel AI Gateway\nGenerated src/catalog/models_generated/\n\nModel Statistics:\n  Total tool-capable models: 43\n  Reasoning-capable models: 36\n  amazon-bedrock: 1 models\n  anthropic: 3 models\n  google: 1 models\n  openai: 5 models\n  deepseek: 2 models\n  openai-codex: 10 models\n  xai: 1 models\n  mistral: 1 models\n  openrouter: 1 models\n  google-vertex: 13 models\n  azure-openai-responses: 5 models\n"
     );
+}
+
+/// Poll the same command through two explicitly held body-completion boundaries.
+fn observe_pending_bodies(
+    command: impl Future<Output = io::Result<()>>,
+    events: &Mutex<Vec<String>>,
+    releases: [tokio::sync::oneshot::Sender<()>; 2],
+) {
+    let [release_dev, release_router] = releases;
+    let mut command = std::pin::pin!(command);
+    let waker = futures_util::task::noop_waker();
+    let mut context = std::task::Context::from_waker(&waker);
+    assert!(command.as_mut().poll(&mut context).is_pending());
+    assert_eq!(*events.lock().unwrap(), ["https://models.dev/api.json"]);
+    release_dev.send(()).unwrap();
+    assert!(command.as_mut().poll(&mut context).is_pending());
+    assert_eq!(
+        *events.lock().unwrap(),
+        [
+            "https://models.dev/api.json",
+            "body-complete",
+            "https://openrouter.ai/api/v1/models"
+        ]
+    );
+    release_router.send(()).unwrap();
+    assert!(matches!(
+        command.as_mut().poll(&mut context),
+        std::task::Poll::Ready(Ok(()))
+    ));
 }
 
 #[test]
@@ -314,7 +360,7 @@ fn generated_catalog_source_compiles_and_reconstructs_descriptors() {
         .1;
     let fixture = include_str!("fixtures/catalog_boundary.rs");
     let body = fixture
-        .split("id: \"boundary/")
+        .split("fn model_22() -> crate::Model {\n")
         .nth(1)
         .unwrap()
         .split("\n}\n}")
@@ -323,18 +369,29 @@ fn generated_catalog_source_compiles_and_reconstructs_descriptors() {
     assert!(
         fs::read_to_string(destination.join("provider_openrouter.rs"))
             .unwrap()
-            .contains(body)
+            .contains(&format!("{body}\n}}"))
     );
     let expected: Model = serde_json::from_value(serde_json::json!({"id": identity, "name": "Name \"\\\n\u{0}😀", "api": "openai-completions", "provider": "openrouter", "baseUrl": "https://openrouter.ai/api/v1", "reasoning": false, "input": ["text", "image"], "cost": {"input": 1, "output": 2, "cacheRead": 0, "cacheWrite": 0}, "contextWindow": 4096, "maxTokens": 4096})).unwrap();
     assert_eq!(model, expected);
 }
 
 /// Close the body before recording the completion used by subsequent requests.
-fn completed_body(bytes: Vec<u8>, recorded: Arc<Mutex<Vec<String>>>) -> maestro_models::HttpBody {
+fn completed_body(
+    bytes: Vec<u8>,
+    recorded: Arc<Mutex<Vec<String>>>,
+    mut gate: Option<tokio::sync::oneshot::Receiver<()>>,
+) -> maestro_models::HttpBody {
     let mut body = Some(bytes);
-    Box::pin(futures_util::stream::poll_fn(move |_| {
+    Box::pin(futures_util::stream::poll_fn(move |context| {
         if let Some(bytes) = body.take() {
             return std::task::Poll::Ready(Some(Ok(bytes)));
+        }
+        if let Some(receiver) = &mut gate {
+            match std::pin::Pin::new(receiver).poll(context) {
+                std::task::Poll::Pending => return std::task::Poll::Pending,
+                std::task::Poll::Ready(result) => result.unwrap(),
+            }
+            gate = None;
         }
         recorded.lock().unwrap().push("body-complete".into());
         std::task::Poll::Ready(None)
