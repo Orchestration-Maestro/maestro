@@ -275,6 +275,7 @@ fn hooks(options: &mut AnthropicOptions, row: &Row, seen: &Arc<Mutex<Seen>>) {
 fn response(wire: &str, status: u16) -> HttpResponse {
     HttpResponse {
         status,
+        status_text: String::new(),
         headers: [
             ("content-type".into(), "text/plain;charset=UTF-8".into()),
             ("x-controlled".into(), "yes".into()),

@@ -202,6 +202,7 @@ async fn subscription_name_is_visible_at_open() -> chat::TestResult {
             })?;
             Ok(HttpResponse {
                 status: 200,
+                status_text: String::new(),
                 headers: std::collections::BTreeMap::default(),
                 body,
             })
