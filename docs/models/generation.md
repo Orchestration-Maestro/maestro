@@ -76,6 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(request.url, "https://openrouter.ai/api/v1/models");
         Box::pin(async {
             Ok(HttpResponse {
+                status_text: String::new(),
                 status: 200,
                 headers: std::collections::BTreeMap::new(),
                 body: Box::pin(futures_util::stream::iter([

@@ -256,6 +256,7 @@ fn response(status: u16, bytes: Vec<u8>) -> Fetch {
         let bytes = bytes.clone();
         Box::pin(async move {
             Ok(HttpResponse {
+                status_text: String::new(),
                 status,
                 headers: BTreeMap::new(),
                 body: Box::pin(futures_util::stream::iter(
@@ -529,6 +530,7 @@ fn token_expiry_uses_completion_clock() {
         let fetch: Fetch = Arc::new(|_| {
             Box::pin(async {
                 Ok(HttpResponse {
+                    status_text: String::new(),
                     status: 200,
                     headers: BTreeMap::new(),
                     body: Box::pin(futures_util::stream::once(delayed_bytes())),
@@ -578,6 +580,7 @@ fn token_status_is_checked_after_body() {
         let fetch: Fetch = Arc::new(|_| {
             Box::pin(async {
                 Ok(HttpResponse {
+                    status_text: String::new(),
                     status: 500,
                     headers: BTreeMap::new(),
                     body: Box::pin(futures_util::stream::iter([Err(FetchError::Connection(
@@ -1287,6 +1290,7 @@ async fn check_response_attempt(mode: Mode, status: u16) {
                 Ok(b"denied".to_vec())
             };
             Ok(HttpResponse {
+                status_text: String::new(),
                 status,
                 headers: BTreeMap::new(),
                 body: Box::pin(futures_util::stream::iter([chunk])),
@@ -1307,6 +1311,7 @@ fn gated_body_response(
     gate: crate::EventStream<(), ()>,
 ) -> std::future::Ready<Result<HttpResponse, FetchError>> {
     std::future::ready(Ok(HttpResponse {
+        status_text: String::new(),
         status: 200,
         headers: BTreeMap::new(),
         body: Box::pin(futures_util::stream::once(async move {
@@ -1320,6 +1325,7 @@ fn gated_body_response(
 async fn pending_body(delay: u64) -> Result<HttpResponse, FetchError> {
     tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
     Ok(HttpResponse {
+        status_text: String::new(),
         status: 200,
         headers: BTreeMap::new(),
         body: Box::pin(futures_util::stream::pending()),
@@ -1411,6 +1417,7 @@ async fn held_token(
         return released_headers(release, request, failure).await;
     };
     Ok(HttpResponse {
+        status_text: String::new(),
         status: 200,
         headers: BTreeMap::new(),
         body: Box::pin(futures_util::stream::once(async move {

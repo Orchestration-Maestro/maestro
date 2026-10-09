@@ -437,6 +437,7 @@ fn answering_client(order: &Order, sent: &Arc<Mutex<Option<Value>>>) -> Anthropi
             *kept = Some(payload);
         }
         Box::pin(std::future::ready(Ok(HttpResponse {
+            status_text: String::new(),
             status: 201,
             headers: [("x-custom".to_owned(), "yes".to_owned())].into(),
             body: Box::pin(futures_util::stream::iter([Ok(short_answer())])),
@@ -607,6 +608,7 @@ fn recording_client(
             calls.push((payload, settings));
         }
         Box::pin(std::future::ready(Ok(HttpResponse {
+            status_text: String::new(),
             status: 200,
             headers: std::collections::BTreeMap::new(),
             body: Box::pin(futures_util::stream::iter([Ok(messages::STOP

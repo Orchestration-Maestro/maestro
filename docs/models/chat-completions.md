@@ -199,6 +199,8 @@ exact integer budget, so even a very large count is used up one retry at a time.
 the signal interrupts a pending request, the read of an error body or a retry wait, and on
 browser targets the timers of requests that finish, fail or are aborted are cleared.
 
+HTTP responses carry `status_text`; see [`default_fetch`](https://docs.rs/maestro-models/latest/maestro_models/fn.default_fetch.html) for the default client's platform policy.
+
 Response headers reach `on_response` and the retry rules as one text per name. The default
 client reads each native byte of a value as the character of that number (the byte E9 is
 `é`), joins repeated values with `, ` (`cookie` values with `; `), keeps empty values and
@@ -270,6 +272,7 @@ let options = OpenAICompletionsOptions {
         fetch: Some(Arc::new(move |request| {
             assert_eq!(request.url, "https://example.invalid/v1/chat/completions");
             Box::pin(std::future::ready(Ok(HttpResponse {
+                status_text: String::new(),
                 status: 200,
                 headers: Default::default(),
                 body: Box::pin(stream::iter([Ok(answer.as_bytes().to_vec())])),

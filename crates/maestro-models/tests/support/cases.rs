@@ -124,6 +124,7 @@ fn controlled_fetch(case: &Value, log: &Log) -> TestResult<Fetch> {
             vec![Ok(body.clone())]
         };
         Box::pin(std::future::ready(Ok(HttpResponse {
+            status_text: String::new(),
             status,
             headers: [("content-type".to_owned(), "text/event-stream".to_owned())].into(),
             body: Box::pin(futures_util::stream::iter(chunks)),

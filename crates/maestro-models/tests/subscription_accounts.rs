@@ -13,7 +13,7 @@ fn subscription_refresh_omits_scope() {
         assert_eq!(request.headers["content-type"], "application/json");
         assert_eq!(request.headers["accept"], "application/json");
         assert_eq!(String::from_utf8(request.body).unwrap(), r#"{"grant_type":"refresh_token","client_id":"9d1c250a-e61b-44d9-88ed-5944d1962f5e","refresh_token":"old"}"#);
-        Box::pin(async { Ok(HttpResponse { status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"rotated-access","refresh_token":"rotated-refresh","expires_in":3600,"scope":"discard"}"#.to_vec())])) }) })
+        Box::pin(async { Ok(HttpResponse { status_text: String::new(), status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"rotated-access","refresh_token":"rotated-refresh","expires_in":3600,"scope":"discard"}"#.to_vec())])) }) })
     });
     let before = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64() * 1000.0;
     let credentials = refresh_anthropic_token("old".into(), Some(fetch)).await.unwrap();
@@ -104,6 +104,7 @@ fn subscription_manual_login_uses_localhost_redirect() {
                 assert_eq!(body["redirect_uri"], "http://localhost:53692/callback");
                 Box::pin(async {
                     Ok(HttpResponse {
+                        status_text: String::new(),
                         status: 200,
                         headers: BTreeMap::new(),
                         body: Box::pin(futures_util::stream::iter([Ok(
@@ -189,7 +190,7 @@ fn subscription_callback_login_rejects_then_accepts() {
         let fetch: Fetch = Arc::new(|request| {
             let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
             assert_eq!(body["code"], "callback-code");
-            Box::pin(async { Ok(HttpResponse { status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#.to_vec())])) }) })
+            Box::pin(async { Ok(HttpResponse { status_text: String::new(), status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#.to_vec())])) }) })
         });
         let callbacks = Arc::new(Callback { peer: maestro_models::EventStream::new(|_| false, |_| ()) });
         let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch)).await.unwrap();
@@ -221,6 +222,7 @@ fn subscription_provider_delegates_without_model_changes() {
                 ));
                 Box::pin(async {
                     Ok(HttpResponse {
+                        status_text: String::new(),
                         status: 200,
                         headers: BTreeMap::new(),
                         body: Box::pin(futures_util::stream::iter([Ok(

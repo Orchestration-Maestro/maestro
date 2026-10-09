@@ -50,6 +50,9 @@ pub struct HttpRequest {
 pub struct HttpResponse {
     /// HTTP status code.
     pub status: u16,
+    /// Status text supplied by the selected client. The default client uses native parsed text
+    /// and empty browser text; see [`default_fetch`] for its platform policy.
+    pub status_text: String,
     /// Response headers with lowercase names, one text per name. The default client reads each
     /// native value byte by byte as a character, joins repeated values with `, ` (`cookie`
     /// values with `; `) and keeps only the last `set-cookie`. In a browser the platform has
@@ -104,6 +107,12 @@ pub type Fetch = Arc<dyn Fn(HttpRequest) -> BoxFuture<Result<HttpResponse, Fetch
 /// cannot send (see [`HttpRequest::headers`]; the client also refuses a control character other
 /// than tab, and DEL) is reported as a connection failure of that attempt, which a sender
 /// retries. On native targets it needs a Tokio runtime with the I/O driver enabled.
+///
+/// Native HTTP/1.0 and HTTP/1.1 responses carry the parsed reason phrase, including an explicitly
+/// empty phrase. Only an absent reason extension falls back to the status's canonical reason,
+/// or empty when there is none. Other native versions return empty status text. The native parser
+/// discards a phrase containing non-ASCII bytes; the default browser client returns empty status
+/// text until its platform adapter supplies it.
 #[must_use]
 pub fn default_fetch() -> Fetch {
     Arc::new(client::fetch)

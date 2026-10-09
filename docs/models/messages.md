@@ -208,6 +208,7 @@ let answer = concat!(
 let client: AnthropicClient = Arc::new(move |payload, _| {
     assert_eq!(payload["stream"], true);
     Box::pin(std::future::ready(Ok(HttpResponse {
+        status_text: String::new(),
         status: 200,
         headers: Default::default(),
         body: Box::pin(stream::iter([Ok(answer.as_bytes().to_vec())])),

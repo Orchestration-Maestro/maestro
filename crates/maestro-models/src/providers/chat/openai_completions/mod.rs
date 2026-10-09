@@ -165,6 +165,7 @@ async fn invoke(
         status,
         headers: response_headers,
         body: response_body,
+        ..
     } = send(request, &options.common).await?;
     if let Some(hook) = &options.common.on_response {
         let observed = ProviderResponse {
