@@ -8,6 +8,7 @@ use maestro_tui::{Component, Editor, EditorOptions, EditorTheme, TUI};
 
 fn edit(tui: &TUI, theme: EditorTheme) -> Vec<String> {
     let editor = Editor::new(tui, theme, EditorOptions::default());
+    editor.add_to_history("previous prompt");
     editor.set_text("first\nsecond");
     editor.insert_text_at_cursor("!");
     editor.render(40)
@@ -39,7 +40,17 @@ a cursor marker. Both scroll labels are clipped before border styling. Caller
 styling may add visible text. Display tabs expand outside recognized escapes;
 escape-safe cursor decoration never changes the stored edit position.
 
-History, vertical and word navigation, kill/yank, bracketed paste and completion
-are not delivered here. Selection styling is retained, not invoked. See
+Up starts browsing when the editor is empty; while browsing, Up and Down choose
+older and newer entries at the first and last visual rows. Callers add history
+explicitly; submission does not add it. Page keys use the live terminal row count;
+visual movement uses terminal-cell columns. Literal character jumps search stored
+text at scalar boundaries, separately from visual movement.
+
+Directional kills retain deleted text for yank; yank-pop rotates the ring after
+notifying the deletion, then notifies the replacement. Reentrant edits during yank
+notification invalidate that insertion's later replacement eligibility.
+
+Bracketed paste and completion are not delivered here. Selection styling is
+retained, not invoked. See
 [text helpers](text.md), [keybindings](keybindings.md) and
 [rendering](rendering.md) for shared behavior.

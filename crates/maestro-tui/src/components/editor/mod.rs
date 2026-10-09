@@ -1,5 +1,8 @@
 #![doc = include_str!("../../../../../docs/terminal/editor.md")]
+mod history;
 mod input;
+mod kill;
+mod navigation;
 mod render;
 mod text;
 mod wrapping;
@@ -58,6 +61,8 @@ pub struct Editor {
     maximum: Cell<usize>,
     /// First visible layout line.
     scroll: Cell<usize>,
+    /// Layout width committed by the latest render.
+    width: Cell<usize>,
 }
 /// Text and byte cursor captured together.
 #[derive(Clone)]
@@ -75,6 +80,19 @@ impl Default for Buffer {
         }
     }
 }
+/// Previous editing action used for coalescing and replacement eligibility.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum LastAction {
+    /// No coalescing action.
+    #[default]
+    None,
+    /// Consecutive typed word.
+    TypeWord,
+    /// Accumulating deleted text.
+    Kill,
+    /// Eligible inserted ring text.
+    Yank,
+}
 /// Mutable editing transitions.
 #[derive(Default)]
 struct Editing {
@@ -83,7 +101,21 @@ struct Editing {
     /// Shared snapshot owner.
     undo: UndoStack<Buffer>,
     /// Whether consecutive word typing coalesces.
-    typing: bool,
+    action: LastAction,
+    /// Preferred cell column across shorter visual rows.
+    preferred: Option<usize>,
+    /// Unrounded absolute cell position before snapping to an atom.
+    snapped: Option<usize>,
+    /// Prompts retained newest first.
+    history: Vec<String>,
+    /// Selected history entry, or the current prompt.
+    history_index: Option<usize>,
+    /// Retained deleted strings.
+    ring: crate::kill_ring::KillRing,
+    /// Invalidates completion after reentrant editing.
+    revision: u64,
+    /// Pending direction for a literal jump.
+    jump: Option<navigation::Direction>,
 }
 impl Editor {
     /// Creates an empty editor retaining live terminal dimensions without retaining its writer.
@@ -107,6 +139,7 @@ impl Editor {
                 5,
             )),
             scroll: Cell::new(0),
+            width: Cell::new(80),
         }
     }
     /// Returns the requested horizontal padding.

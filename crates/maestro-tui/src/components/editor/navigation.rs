@@ -1,0 +1,324 @@
+//! Original-byte visual positions with retained cell-column intent.
+use super::{
+    Editing, Editor, LastAction,
+    wrapping::{atoms, word_wrap_line},
+};
+use crate::autocomplete::CursorPosition;
+use std::ops::Range;
+/// One wrapped row in its logical line's byte and cell coordinates.
+struct VisualRow {
+    /// Owning logical line.
+    line: usize,
+    /// Original byte interval.
+    bytes: Range<usize>,
+    /// Absolute visible cell interval.
+    cells: Range<usize>,
+    /// Whether the logical endpoint belongs to this row.
+    final_row: bool,
+}
+impl VisualRow {
+    /// Largest admitted local cell position.
+    fn maximum(&self) -> usize {
+        let width = self.cells.end - self.cells.start;
+        if self.final_row {
+            width
+        } else {
+            width.saturating_sub(1)
+        }
+    }
+}
+impl Editor {
+    /// Chooses history only at its admitted empty or visual-edge branches.
+    pub(super) fn vertical_input(&self, down: bool) {
+        let history = {
+            let state = self.state.borrow();
+            let rows = state.visual_rows(self.width.get());
+            let index = state.visual_index(&rows);
+            let empty = state.current.lines.len() == 1 && state.current.lines[0].is_empty();
+            if down {
+                state.history_index.is_some() && index + 1 == rows.len()
+            } else {
+                empty || (state.history_index.is_some() && index == 0)
+            }
+        };
+        if history {
+            self.browse_history(down);
+        } else {
+            self.state.borrow_mut().vertical(
+                self.width.get(),
+                if down {
+                    Direction::Forward
+                } else {
+                    Direction::Backward
+                },
+                1,
+                false,
+            );
+        }
+    }
+}
+impl Editing {
+    /// Reuses drawing's original wrapping and visible atoms for visual identity.
+    fn visual_rows(&self, width: usize) -> Vec<VisualRow> {
+        let mut rows = Vec::new();
+        for (line, text) in self.current.lines.iter().enumerate() {
+            let atoms = atoms(text);
+            let mut remaining = atoms.as_slice();
+            let chunks = word_wrap_line(text, width, None);
+            let last = chunks.len() - 1;
+            let mut cell = 0;
+            for (index, chunk) in chunks.into_iter().enumerate() {
+                let start = cell;
+                let boundary = remaining.partition_point(|atom| atom.start < chunk.end_index);
+                let (selected, rest) = remaining.split_at(boundary);
+                remaining = rest;
+                cell += selected.iter().map(|atom| atom.cells).sum::<usize>();
+                rows.push(VisualRow {
+                    line,
+                    bytes: chunk.start_index..chunk.end_index,
+                    cells: start..cell,
+                    final_row: index == last,
+                });
+            }
+        }
+        rows
+    }
+    /// Locates the byte cursor; nonfinal endpoints belong to the following row.
+    fn visual_index(&self, rows: &[VisualRow]) -> usize {
+        let cursor = self.current.cursor;
+        rows.iter()
+            .position(|row| {
+                row.line == cursor.line
+                    && cursor.col >= row.bytes.start
+                    && (cursor.col < row.bytes.end || row.final_row)
+            })
+            .unwrap_or(rows.len() - 1)
+    }
+    /// Retains the current visible column after Right at the document endpoint.
+    pub(super) fn remember_visual_column(&mut self, width: usize) {
+        let rows = self.visual_rows(width);
+        self.preferred = Some(
+            self.cursor_cell()
+                .saturating_sub(rows[self.visual_index(&rows)].cells.start),
+        );
+    }
+    /// Resolves a stored byte position to its visible atom's absolute cell start.
+    fn cursor_cell(&self) -> usize {
+        let cursor = self.current.cursor;
+        atoms(&self.current.lines[cursor.line])
+            .iter()
+            .take_while(|atom| atom.end <= cursor.col)
+            .map(|atom| atom.cells)
+            .sum()
+    }
+    /// Moves to a visual neighbor or page target without normalizing stored text.
+    pub(super) fn vertical(
+        &mut self,
+        width: usize,
+        direction: Direction,
+        count: usize,
+        page: bool,
+    ) {
+        self.reset_action();
+        let down = matches!(direction, Direction::Forward);
+        let rows = self.visual_rows(width);
+        let source = self.visual_index(&rows);
+        let target = if down {
+            (source + count).min(rows.len() - 1)
+        } else {
+            source.saturating_sub(count)
+        };
+        if source == target && !page {
+            let col = if down {
+                self.current.lines[self.current.cursor.line].len()
+            } else {
+                0
+            };
+            self.set_col(col);
+            return;
+        }
+        self.move_to_row(&rows, source, target);
+    }
+    /// Applies the sticky-column decision before snapping a target to its visible atom.
+    fn move_to_row(&mut self, rows: &[VisualRow], source: usize, target: usize) {
+        let row = &rows[source];
+        let absolute = self.snapped.unwrap_or_else(|| self.cursor_cell());
+        let resolved = rows
+            .iter()
+            .find(|candidate| {
+                candidate.line == row.line
+                    && absolute >= candidate.cells.start
+                    && (absolute < candidate.cells.end || candidate.final_row)
+            })
+            .unwrap_or(row);
+        let current = absolute.saturating_sub(resolved.cells.start);
+        let destination = &rows[target];
+        let column = self.vertical_column(current, row.maximum(), destination.maximum());
+        let absolute = destination.cells.start + column;
+        let text = &self.current.lines[destination.line];
+        let mut cells = 0;
+        let mut col = text.len();
+        self.snapped = None;
+        for atom in atoms(text) {
+            if absolute < cells + atom.cells {
+                col = atom.start;
+                self.snapped = (absolute > cells).then_some(absolute);
+                break;
+            }
+            cells += atom.cells;
+        }
+        self.current.cursor = CursorPosition {
+            line: destination.line,
+            col,
+        };
+    }
+    /// Restores preferred columns only from a clamped source row.
+    fn vertical_column(
+        &mut self,
+        current: usize,
+        source_maximum: usize,
+        target_maximum: usize,
+    ) -> usize {
+        let Some(preferred) = self.preferred.filter(|_| current >= source_maximum) else {
+            self.preferred = (target_maximum < current).then_some(current);
+            return current.min(target_maximum);
+        };
+        if target_maximum < current || target_maximum < preferred {
+            return target_maximum;
+        }
+        self.preferred = None;
+        preferred
+    }
+    /// Changes the byte column and invalidates visual-column intent.
+    pub(super) fn set_col(&mut self, col: usize) {
+        self.revision = self.revision.wrapping_add(1);
+        self.current.cursor.col = col;
+        self.preferred = None;
+        self.snapped = None;
+    }
+}
+impl Editing {
+    /// Moves across one whitespace prefix and one punctuation or word run.
+    pub(super) fn word(&mut self, forward: bool) {
+        self.reset_action();
+        let cursor = self.current.cursor;
+        let text = &self.current.lines[cursor.line];
+        if forward && cursor.col == text.len() {
+            if cursor.line + 1 < self.current.lines.len() {
+                self.current.cursor.line += 1;
+                self.set_col(0);
+            }
+        } else if !forward && cursor.col == 0 {
+            if cursor.line > 0 {
+                self.current.cursor.line -= 1;
+                self.set_col(self.current.lines[cursor.line - 1].len());
+            }
+        } else {
+            let parts = if forward {
+                crate::get_segmenter(&text[cursor.col..])
+                    .map(|(_, text)| text)
+                    .collect::<Vec<_>>()
+            } else {
+                let mut parts = crate::get_segmenter(&text[..cursor.col])
+                    .map(|(_, text)| text)
+                    .collect::<Vec<_>>();
+                parts.reverse();
+                parts
+            };
+            let length = word_length(&parts);
+            self.set_col(if forward {
+                cursor.col + length
+            } else {
+                cursor.col - length
+            });
+        }
+    }
+}
+/// Consumes leading whitespace then one homogeneous punctuation or word run.
+fn word_length(parts: &[&str]) -> usize {
+    let spaces = parts
+        .iter()
+        .position(|text| !crate::is_whitespace_char(text))
+        .unwrap_or(parts.len());
+    let punctuation = parts
+        .get(spaces)
+        .is_some_and(|text| crate::is_punctuation_char(text));
+    parts[..spaces].iter().map(|text| text.len()).sum::<usize>()
+        + parts[spaces..]
+            .iter()
+            .take_while(|text| {
+                !crate::is_whitespace_char(text) && crate::is_punctuation_char(text) == punctuation
+            })
+            .map(|text| text.len())
+            .sum::<usize>()
+}
+
+impl Editing {
+    /// Invalidates pending action completion without changing visual intent.
+    pub(super) fn reset_action(&mut self) {
+        self.action = LastAction::None;
+        self.revision = self.revision.wrapping_add(1);
+    }
+}
+/// Literal search direction.
+#[derive(Clone, Copy)]
+pub(super) enum Direction {
+    /// Later scalar starts and logical lines.
+    Forward,
+    /// Earlier scalar starts and logical lines.
+    Backward,
+}
+impl Editor {
+    /// Consumes pending printable searches; other controls cancel and fall through.
+    pub(super) fn pending_jump(&self, data: &str, bindings: &crate::KeybindingsManager) -> bool {
+        let Some(direction) = self.state.borrow_mut().jump.take() else {
+            return false;
+        };
+        if bindings.matches(data, "tui.editor.jumpForward")
+            || bindings.matches(data, "tui.editor.jumpBackward")
+        {
+            return true;
+        }
+        if let Some(scalar) = crate::keys::decode_printable_key(data) {
+            self.state
+                .borrow_mut()
+                .jump_to(scalar.encode_utf8(&mut [0; 4]), direction);
+            return true;
+        }
+        if data.chars().next().is_some_and(|scalar| scalar >= ' ') {
+            self.state.borrow_mut().jump_to(data, direction);
+            return true;
+        }
+        false
+    }
+}
+impl Editing {
+    /// Searches literal chunks at scalar starts, excluding the current byte position.
+    fn jump_to(&mut self, text: &str, direction: Direction) {
+        self.reset_action();
+        let cursor = self.current.cursor;
+        let forward = matches!(direction, Direction::Forward);
+        let indices: Box<dyn Iterator<Item = usize>> = if forward {
+            Box::new(cursor.line..self.current.lines.len())
+        } else {
+            Box::new((0..=cursor.line).rev())
+        };
+        for line in indices {
+            let value = &self.current.lines[line];
+            let mut starts = value.char_indices().map(|(at, _)| at).filter(|&at| {
+                let admitted = (forward && at > cursor.col) || (!forward && at < cursor.col);
+                (line != cursor.line || admitted) && value[at..].starts_with(text)
+            });
+            let found = if forward {
+                starts.next()
+            } else {
+                starts.next_back()
+            };
+            if let Some(col) = found {
+                self.current.cursor.line = line;
+                self.set_col(col);
+                return;
+            }
+        }
+    }
+}

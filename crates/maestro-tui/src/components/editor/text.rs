@@ -1,5 +1,5 @@
 //! Buffer normalization and cursor-local edits.
-use super::{Buffer, Editing, Editor};
+use super::{Buffer, Editing, Editor, LastAction};
 use crate::{autocomplete::CursorPosition, get_segmenter, is_whitespace_char};
 impl Editor {
     /// Replaces normalized text, captures changed content and always notifies.
@@ -7,7 +7,8 @@ impl Editor {
         let text = normalize(text);
         {
             let mut state = self.state.borrow_mut();
-            state.typing = false;
+            state.reset_action();
+            state.history_index = None;
             if state.current.lines.join("\n") != text {
                 state.snapshot();
             }
@@ -18,6 +19,7 @@ impl Editor {
                 lines,
                 cursor: CursorPosition { line, col },
             };
+            state.set_col(col);
         }
         self.scroll.set(0);
         self.notify();
@@ -30,7 +32,8 @@ impl Editor {
         {
             let mut state = self.state.borrow_mut();
             state.snapshot();
-            state.typing = false;
+            state.reset_action();
+            state.history_index = None;
             state.splice(&normalize(text));
         }
         self.notify();
@@ -39,13 +42,16 @@ impl Editor {
     pub(super) fn type_text(&self, text: &str) {
         {
             let mut state = self.state.borrow_mut();
-            if is_whitespace_char(text) || !state.typing {
+            if is_whitespace_char(text) || state.action != LastAction::TypeWord {
                 state.snapshot();
             }
-            state.typing = true;
+            state.action = LastAction::TypeWord;
+            state.history_index = None;
+            state.revision = state.revision.wrapping_add(1);
             let cursor = state.current.cursor;
             state.current.lines[cursor.line].insert_str(cursor.col, text);
-            state.current.cursor.col += text.len();
+            let col = state.current.cursor.col + text.len();
+            state.set_col(col);
         }
         self.notify();
     }
@@ -53,11 +59,13 @@ impl Editor {
 impl Editing {
     /// Restores a snapshot, leaving empty undo silent.
     pub(super) fn undo(&mut self) -> bool {
+        self.history_index = None;
         let Some(snapshot) = self.undo.pop() else {
             return false;
         };
         self.current = snapshot;
-        self.typing = false;
+        self.set_col(self.current.cursor.col);
+        self.reset_action();
         true
     }
     /// Captures owned text and cursor through the shared undo stack.
@@ -66,23 +74,13 @@ impl Editing {
     }
     /// Inserts logical lines while preserving the current suffix.
     pub(super) fn splice(&mut self, text: &str) {
-        let cursor = self.current.cursor;
-        let suffix = self.current.lines[cursor.line].split_off(cursor.col);
-        let mut inserted = text.split('\n');
-        self.current.lines[cursor.line].push_str(inserted.next().unwrap_or(""));
-        self.current.cursor.col = self.current.lines[cursor.line].len();
-        for line in inserted {
-            self.current.cursor.line += 1;
-            self.current
-                .lines
-                .insert(self.current.cursor.line, line.to_owned());
-            self.current.cursor.col = line.len();
-        }
-        self.current.lines[self.current.cursor.line].push_str(&suffix);
+        self.current.splice(text);
+        self.set_col(self.current.cursor.col);
     }
     /// Deletes a cursor-local grapheme or joins the preceding logical line.
     pub(super) fn backspace(&mut self) {
-        self.typing = false;
+        self.history_index = None;
+        self.reset_action();
         let cursor = self.current.cursor;
         if cursor.col > 0 {
             self.snapshot();
@@ -91,7 +89,7 @@ impl Editing {
                 .last()
                 .map_or(0, |(at, _)| at);
             line.replace_range(start..cursor.col, "");
-            self.current.cursor.col = start;
+            self.set_col(start);
         } else if cursor.line > 0 {
             self.snapshot();
             let removed = self.current.lines.remove(cursor.line);
@@ -99,11 +97,13 @@ impl Editing {
             self.current.cursor.col = previous.len();
             previous.push_str(&removed);
             self.current.cursor.line -= 1;
+            self.set_col(self.current.cursor.col);
         }
     }
     /// Deletes the following grapheme or joins the following logical line.
     pub(super) fn delete(&mut self) {
-        self.typing = false;
+        self.history_index = None;
+        self.reset_action();
         let cursor = self.current.cursor;
         let line = &self.current.lines[cursor.line];
         if cursor.col < line.len() {
@@ -119,8 +119,9 @@ impl Editing {
         }
     }
     /// Moves one grapheme right, crossing logical lines.
-    pub(super) fn right(&mut self) {
-        self.typing = false;
+    pub(super) fn right(&mut self, width: usize) {
+        self.reset_action();
+        let previous = self.current.cursor;
         let cursor = &mut self.current.cursor;
         let line = &self.current.lines[cursor.line];
         if cursor.col < line.len() {
@@ -131,10 +132,16 @@ impl Editing {
             cursor.line += 1;
             cursor.col = 0;
         }
+        if self.current.cursor == previous {
+            self.remember_visual_column(width);
+        } else {
+            self.set_col(self.current.cursor.col);
+        }
     }
     /// Moves one grapheme left, crossing logical lines.
     pub(super) fn left(&mut self) {
-        self.typing = false;
+        self.reset_action();
+        let previous = self.current.cursor;
         let cursor = &mut self.current.cursor;
         if cursor.col > 0 {
             cursor.col = get_segmenter(&self.current.lines[cursor.line][..cursor.col])
@@ -144,6 +151,9 @@ impl Editing {
             cursor.line -= 1;
             cursor.col = self.current.lines[cursor.line].len();
         }
+        if self.current.cursor != previous {
+            self.set_col(self.current.cursor.col);
+        }
     }
 }
 /// Normalizes programmatic storage, not ordinary input.
@@ -151,4 +161,21 @@ fn normalize(text: &str) -> String {
     text.replace("\r\n", "\n")
         .replace('\r', "\n")
         .replace('\t', "    ")
+}
+
+impl Buffer {
+    /// Splices raw logical lines while retaining the current suffix.
+    pub(super) fn splice(&mut self, text: &str) {
+        let cursor = self.cursor;
+        let suffix = self.lines[cursor.line].split_off(cursor.col);
+        let mut inserted = text.split('\n');
+        self.lines[cursor.line].push_str(inserted.next().unwrap_or(""));
+        self.cursor.col = self.lines[cursor.line].len();
+        for line in inserted {
+            self.cursor.line += 1;
+            self.lines.insert(self.cursor.line, line.to_owned());
+            self.cursor.col = line.len();
+        }
+        self.lines[self.cursor.line].push_str(&suffix);
+    }
 }
