@@ -1,7 +1,7 @@
 #![doc = include_str!("../../../../../../docs/models/responses.md")]
 
 mod events;
-mod messages;
+pub(crate) mod messages;
 mod wire;
 
 use futures_util::StreamExt;
@@ -10,13 +10,12 @@ use crate::{
     AssistantMessageEventStream, DiagnosticErrorInfo, Model, SharedAssistantMessage, Usage,
 };
 use events::Reducer;
-pub use messages::{convert_responses_messages, convert_responses_tools};
 
-/// Options for [`convert_responses_messages`].
+/// Options for [`messages::convert_responses_messages`].
 #[derive(Clone, Copy, Debug)]
-pub struct ConvertResponsesMessagesOptions {
+pub(crate) struct ConvertResponsesMessagesOptions {
     /// Whether the system prompt leads the converted items; `true` by default.
-    pub include_system_prompt: bool,
+    pub(crate) include_system_prompt: bool,
 }
 
 impl Default for ConvertResponsesMessagesOptions {
@@ -27,11 +26,11 @@ impl Default for ConvertResponsesMessagesOptions {
     }
 }
 
-/// Options for [`convert_responses_tools`].
+/// Options for [`messages::convert_responses_tools`].
 #[derive(Clone, Copy, Debug)]
-pub struct ConvertResponsesToolsOptions {
+pub(crate) struct ConvertResponsesToolsOptions {
     /// The strict setting of every tool: `Some(false)` by default, and `None` sends `null`.
-    pub strict: Option<bool>,
+    pub(crate) strict: Option<bool>,
 }
 
 impl Default for ConvertResponsesToolsOptions {
@@ -60,15 +59,15 @@ type ApplyServiceTierPricing<'a> = dyn Fn(&mut Usage, Option<&str>) + 'a;
 
 /// Options for [`process_responses_stream`]; every field is absent by default.
 #[derive(Default)]
-pub struct OpenAIResponsesStreamOptions<'a> {
+pub(crate) struct OpenAIResponsesStreamOptions<'a> {
     /// The service tier the request asked for.
-    pub service_tier: Option<&'a str>,
+    pub(crate) service_tier: Option<&'a str>,
     /// Chooses the tier to price from the echoed and the requested tier; it is called only
     /// when `apply_service_tier_pricing` is present.
-    pub resolve_service_tier: Option<&'a ResolveServiceTier<'a>>,
+    pub(crate) resolve_service_tier: Option<&'a ResolveServiceTier<'a>>,
     /// Adjusts the cost of a finished response for the chosen tier, after the model's own
     /// rates were applied.
-    pub apply_service_tier_pricing: Option<&'a ApplyServiceTierPricing<'a>>,
+    pub(crate) apply_service_tier_pricing: Option<&'a ApplyServiceTierPricing<'a>>,
 }
 
 /// A failure with the given message, as a thrown error reports it.
@@ -103,7 +102,7 @@ fn native(error: &serde_json::Error) -> DiagnosticErrorInfo {
 /// response, an unknown response status, a signature nested beyond the conversion bound, or
 /// `Response stream ended before a terminal event` when the source ends first. Content
 /// reduced before the failure stays in `output`.
-pub async fn process_responses_stream<S>(
+pub(crate) async fn process_responses_stream<S>(
     mut events: S,
     output: &SharedAssistantMessage,
     stream: &AssistantMessageEventStream,
@@ -119,3 +118,6 @@ where
     }
     reducer.finish()
 }
+
+#[cfg(test)]
+mod tests;

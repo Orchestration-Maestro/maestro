@@ -1,32 +1,21 @@
 //! Reduction of response events into the shared assistant message.
 
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the shared helpers."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the shared helpers."
-)]
-#[path = "support/responses.rs"]
-mod responses;
-
+use super::super::{OpenAIResponsesStreamOptions, process_responses_stream};
+use super::{TestResult, block_on, responses};
+use crate as maestro_models;
 use std::sync::{Arc, Mutex};
 
-use chat::{TestResult, block_on};
 use futures_core::Stream;
 use futures_util::FutureExt;
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject,
-    SharedAssistantMessage, process_responses_stream,
+    SharedAssistantMessage,
 };
 use responses::Script;
 use serde_json::{Value, json};
 
 /// Rows of reduction cases and the expectations they carry.
-const EVENTS: &str = include_str!("fixtures/responses/events.json");
+const EVENTS: &str = include_str!("fixtures/events.json");
 
 /// Reduce every event row a test owns.
 fn event_rows(test: &str, count: usize) -> TestResult {
@@ -75,7 +64,7 @@ fn maestro_responses_events_choose_final_reasoning_text() -> TestResult {
 
 #[test]
 fn maestro_responses_events_preserve_reasoning_item_json() -> TestResult {
-    event_rows("maestro_responses_events_preserve_reasoning_item_json", 1)
+    event_rows("maestro_responses_events_preserve_reasoning_item_json", 2)
 }
 
 #[test]
@@ -85,7 +74,7 @@ fn maestro_responses_events_finish_argument_suffix() -> TestResult {
 
 #[test]
 fn maestro_responses_events_remove_tool_scratch() -> TestResult {
-    event_rows("maestro_responses_events_remove_tool_scratch", 1)
+    event_rows("maestro_responses_events_remove_tool_scratch", 2)
 }
 
 #[test]
@@ -135,12 +124,12 @@ fn maestro_responses_events_skip_resolver_without_pricing() -> TestResult {
 
 #[test]
 fn maestro_responses_events_render_direct_errors() -> TestResult {
-    event_rows("maestro_responses_events_render_direct_errors", 5)
+    event_rows("maestro_responses_events_render_direct_errors", 17)
 }
 
 #[test]
 fn maestro_responses_events_render_failed_details() -> TestResult {
-    event_rows("maestro_responses_events_render_failed_details", 7)
+    event_rows("maestro_responses_events_render_failed_details", 25)
 }
 
 #[test]
@@ -185,7 +174,7 @@ fn maestro_responses_events_reject_malformed_json() -> TestResult {
 
 #[test]
 fn maestro_responses_events_reject_lone_surrogates() -> TestResult {
-    event_rows("maestro_responses_events_reject_lone_surrogates", 1)
+    event_rows("maestro_responses_events_reject_lone_surrogates", 8)
 }
 
 #[test]
@@ -377,5 +366,253 @@ fn maestro_responses_events_share_live_output() -> TestResult {
     };
     assert!(Arc::ptr_eq(&partial, &output));
     assert_eq!(content, "final");
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
+    event_rows(
+        "maestro_responses_events_ignore_malformed_unselected_fields",
+        33,
+    )?;
+    let events = [
+        r#"{"type":"future.event","delta":"\ud800","response":{"id":"\ud800"}}"#,
+        r#"{"type":"response.output_item.added","item":{"type":"future.item","name":"\ud800","content":[{"text":"\ud800"}]}}"#,
+        r#"{"type":"response.created","response":{"id":"first","type":"\ud800","usage":{"input_tokens":"\ud800"}}}"#,
+        r#"{"type":"response.output_item.added","item":{"type":"message","id":"\ud800","content":[{"type":"output_text","text":"\ud800"}]}}"#,
+        r#"{"type":"response.content_part.added","part":{"type":"output_text","text":"\ud800"}}"#,
+        r#"{"type":"response.output_item.done","item":{"type":"message","id":"m","content":[{"type":"output_text","text":"kept","refusal":"\ud800"}]}}"#,
+        r#"{"type":"response.function_call_arguments.done","arguments":"\ud800"}"#,
+        r#"{"type":"response.completed","response":{"id":"kept","service_tier":"\ud800"}}"#,
+    ].map(str::to_owned);
+    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    run.outcome?;
+    assert_eq!(run.message.response_id.as_deref(), Some("kept"));
+    let message = serde_json::to_value(&run.message)?;
+    assert_eq!(message["content"][0]["text"], "kept");
+    assert_eq!(run.events.len(), 2);
+    Ok(())
+}
+
+/// Append through the acknowledged start's own partial handle before the next event.
+async fn append_caller_block(queue: &AssistantMessageEventStream, output: &SharedAssistantMessage) {
+    let first = queue.next().await;
+    let partial = match first {
+        Some(
+            AssistantMessageEvent::TextStart { partial, .. }
+            | AssistantMessageEvent::ThinkingStart { partial, .. }
+            | AssistantMessageEvent::ToolcallStart { partial, .. },
+        ) => partial,
+        other => panic!("start precedes producer acknowledgement: {other:?}"),
+    };
+    assert!(Arc::ptr_eq(&partial, output));
+    partial
+        .write()
+        .unwrap()
+        .content
+        .push(maestro_models::AssistantContent::Text(
+            maestro_models::TextContent {
+                text: "caller".to_owned(),
+                text_signature: None,
+            },
+        ));
+}
+
+/// A producer whose second poll acknowledges the already-published start.
+fn appending_source<'a>(
+    events: &'a [String],
+    output: &'a SharedAssistantMessage,
+    queue: &'a AssistantMessageEventStream,
+) -> impl Stream<Item = Result<String, DiagnosticErrorInfo>> + Unpin + 'a {
+    Box::pin(futures_util::stream::unfold(
+        0_usize,
+        move |step| async move {
+            if step == 1 {
+                append_caller_block(queue, output).await;
+            }
+            events.get(step).map(|event| (Ok(event.clone()), step + 1))
+        },
+    ))
+}
+
+#[test]
+fn maestro_responses_events_keep_started_block_identity() -> TestResult {
+    for (item, delta, done, key, expected) in [
+        (
+            json!({"type":"message","content":[{"type":"output_text"}]}),
+            json!({"type":"response.output_text.delta","delta":"provisional"}),
+            json!({"type":"message","id":"final","content":[{"type":"output_text","text":"original"}]}),
+            "text",
+            json!("original"),
+        ),
+        (
+            json!({"type":"reasoning","summary":[]}),
+            json!({"type":"response.reasoning_text.delta","delta":"provisional"}),
+            json!({"type":"reasoning","summary":[{"text":"original"}]}),
+            "thinking",
+            json!("original"),
+        ),
+        (
+            json!({"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":""}),
+            json!({"type":"response.function_call_arguments.delta","delta":"{\"x\":1}"}),
+            json!({"type":"function_call","arguments":"{\"decoy\":2}"}),
+            "arguments",
+            json!({"x":1}),
+        ),
+    ] {
+        let model = responses::model(None)?;
+        let output = responses::shared_output(&model, &responses::zero_usage())?;
+        let queue = AssistantMessageEventStream::new();
+        let events = [
+            json!({"type":"response.output_item.added","item":item}),
+            delta,
+            json!({"type":"response.output_item.done","item":done}),
+            json!({"type":"response.completed"}),
+        ]
+        .map(|event| event.to_string());
+        let source = appending_source(&events, &output, &queue);
+        block_on(false, async {
+            process_responses_stream(source, &output, &queue, &model, None).await?;
+            Ok(())
+        })?;
+        let message = serde_json::to_value(&*output.read().unwrap())?;
+        assert_eq!(message["content"][0][key], expected);
+        assert_eq!(message["content"][1]["text"], "caller");
+        queue.end(None);
+        let mut updates = Vec::new();
+        while let Some(update) = queue.next().now_or_never().flatten() {
+            updates.push(serde_json::to_value(update)?);
+        }
+        assert_eq!(updates.len(), 2);
+        for update in updates {
+            assert_eq!(update["contentIndex"], 0);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_publish_completion_before_callbacks() -> TestResult {
+    for status in [r#""completed""#, r#""unknown""#, r#""\ud800""#] {
+        let model = responses::model(None)?;
+        let output = responses::shared_output(&model, &responses::zero_usage())?;
+        let updates = AssistantMessageEventStream::new();
+        let observed = Mutex::new(Vec::new());
+        let observe = |phase| {
+            let message = output.read().unwrap();
+            assert_eq!(message.response_id.as_deref(), Some("final"));
+            assert_eq!(message.usage.input.to_bits(), 10.0_f64.to_bits());
+            assert_eq!(
+                message.usage.cost.input.to_bits(),
+                1.999_999_999_999_999_8e-5_f64.to_bits()
+            );
+            observed.lock().unwrap().push(phase);
+        };
+        let resolve = |echoed: Option<&str>, requested: Option<&str>| {
+            assert_eq!(echoed, Some("flex"));
+            assert_eq!(requested, Some("priority"));
+            observe("resolve");
+            Some("chosen".to_owned())
+        };
+        let price = |usage: &mut maestro_models::Usage, tier: Option<&str>| {
+            assert_eq!(tier, Some("chosen"));
+            observe("price");
+            usage.cost.input *= 2.0;
+        };
+        let options = OpenAIResponsesStreamOptions {
+            service_tier: Some("priority"),
+            resolve_service_tier: Some(&resolve),
+            apply_service_tier_pricing: Some(&price),
+        };
+        let event = format!(
+            r#"{{"type":"response.completed","response":{{"id":"final","status":{status},"usage":{{"input_tokens":10}},"service_tier":"flex"}}}}"#
+        );
+        let source = futures_util::stream::iter([Ok(event)]);
+        let outcome = block_on(false, async {
+            Ok(process_responses_stream(source, &output, &updates, &model, Some(&options)).await)
+        })?;
+        match status {
+            r#""completed""# => outcome?,
+            r#""unknown""# => assert_eq!(
+                outcome.unwrap_err().message,
+                "Unhandled stop reason: unknown"
+            ),
+            _ => assert_eq!(outcome.unwrap_err().name, None),
+        }
+        assert_eq!(*observed.lock().unwrap(), vec!["resolve", "price"]);
+        assert_eq!(
+            output.read().unwrap().usage.cost.input.to_bits(),
+            3.999_999_999_999_999_6e-5_f64.to_bits()
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_render_objects_without_decoding_members() -> TestResult {
+    event_rows(
+        "maestro_responses_events_render_objects_without_decoding_members",
+        3,
+    )?;
+    let deep = nested(100_000);
+    let events = vec![format!(
+        r#"{{"type":"error","code":{{"unread":{deep}}},"message":"kept"}}"#
+    )];
+    let run = block_on(false, responses::reduce(Script::of(events)?))?;
+    assert_eq!(
+        run.outcome.unwrap_err().message,
+        "Error Code [object Object]: kept"
+    );
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_ignore_unused_final_call_members() -> TestResult {
+    event_rows(
+        "maestro_responses_events_ignore_unused_final_call_members",
+        2,
+    )?;
+    let events = [
+        r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":"{\"x\":1}"}}"#,
+        r#"{"type":"response.output_item.done","item":{"type":"function_call","id":"\ud800","name":"\ud800","arguments":"\ud800"}}"#,
+        r#"{"type":"response.completed"}"#,
+    ].map(str::to_owned);
+    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    run.outcome?;
+    let message = serde_json::to_value(&run.message)?;
+    assert_eq!(message["content"][0]["arguments"], json!({"x":1}));
+    assert_eq!(run.events[1]["toolCall"], message["content"][0]);
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_defer_initial_part_decoding() -> TestResult {
+    let start = r#"{"type":"response.output_item.added","item":{"type":"message","content":[{"type":"\ud800"}]}}"#;
+    for selected in [false, true] {
+        let mut events = vec![start.to_owned()];
+        if selected {
+            events.push(r#"{"type":"response.output_text.delta","delta":"selected"}"#.to_owned());
+        }
+        events.push(r#"{"type":"response.completed"}"#.to_owned());
+        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        if selected {
+            assert_eq!(run.outcome.unwrap_err().name, None);
+        } else {
+            run.outcome?;
+        }
+        assert_eq!(run.events.len(), 1);
+        assert_eq!(serde_json::to_value(run.message)?["content"][0]["text"], "");
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_responses_events_render_nested_error_arrays() -> TestResult {
+    for depth in [127, 128, 1024] {
+        let value = format!("{}null{}", "[".repeat(depth), "]".repeat(depth));
+        let event = format!(r#"{{"type":"error","code":{value},"message":"nested"}}"#);
+        let run = block_on(false, responses::reduce(Script::of(vec![event])?))?;
+        assert_eq!(run.outcome.unwrap_err().message, "Error Code : nested");
+    }
     Ok(())
 }

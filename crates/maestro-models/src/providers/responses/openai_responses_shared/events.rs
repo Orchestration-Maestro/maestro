@@ -1,32 +1,42 @@
 //! Reduction of response events into the shared assistant message.
 
 use std::borrow::Cow;
-use std::mem;
 use std::sync::{Arc, PoisonError};
 
 use serde_json::value::RawValue;
 
-use super::wire::{self, Item, ItemKind, Kind, Part, PartKind, Response};
+use super::wire::{array, field, joined, spelled, text};
 use super::{OpenAIResponsesStreamOptions, failure, native};
-use crate::providers::json_text::{compact_raw, or_zero, parsed_arguments};
+use crate::providers::json_text::{
+    compact_raw, is_truthy, member, or_zero, parsed_arguments, raw_json, raw_number,
+};
 use crate::{
     AssistantContent as Block, AssistantMessage, AssistantMessageEvent as Update,
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
     StopReason, TextContent, TextSignatureV1, ThinkingContent, ToolCall, Usage, calculate_cost,
 };
 
-/// The output item being reduced; the content block it fills is the message's last one.
+/// The open item and the block position captured when it started.
 enum Current {
     /// No item is open.
     Idle,
-    /// A reasoning item, with whether its last summary part is an object; summary deltas
-    /// apply only while it is.
-    Reasoning(bool),
-    /// A message, with the kind of its last content part once it has one; a text delta applies
-    /// only to a part of its kind.
-    Message(Option<PartKind>),
-    /// A function call, with the argument text received so far, which the message never holds.
-    Function(String),
+    /// Thinking block and whether a summary part permits deltas.
+    Reasoning(usize, bool),
+    /// Text block and its last raw content part.
+    Message(usize, Option<Box<RawValue>>),
+    /// Call block and accumulated argument text.
+    Function(usize, String),
+}
+impl Current {
+    /// Position of the open block, independent of later appends.
+    fn index(&self) -> Option<usize> {
+        match self {
+            Self::Idle => None,
+            Self::Reasoning(index, _) | Self::Message(index, _) | Self::Function(index, _) => {
+                Some(*index)
+            }
+        }
+    }
 }
 
 /// Reduces response events into the shared message, announcing each content change.
@@ -80,7 +90,7 @@ impl<'a> Reducer<'a> {
         edit(&mut self.output.write().unwrap_or_else(PoisonError::into_inner))
     }
 
-    /// Edit the last content block, then announce the update the edit describes. The edit gets
+    /// Edit the captured content block, then announce the update the edit describes. The edit gets
     /// the block, its content position and the shared message.
     fn publish(
         &self,
@@ -88,7 +98,7 @@ impl<'a> Reducer<'a> {
     ) {
         let partial = Arc::clone(self.output);
         let update = self.change(|message| {
-            let position = message.content.len().checked_sub(1)?;
+            let position = self.current.index()?;
             edit(message.content.get_mut(position)?, position, partial)
         });
         if let Some(update) = update {
@@ -97,9 +107,9 @@ impl<'a> Reducer<'a> {
     }
 
     /// Append a block to the message and announce that it started.
-    fn open(&self, block: Block) {
+    fn open(&self, block: Block) -> usize {
         let partial = Arc::clone(self.output);
-        let update = self.change(|message| {
+        let (index, update) = self.change(|message| {
             let content_index = message.content.len();
             let update = match block {
                 Block::Thinking(_) => Update::ThinkingStart {
@@ -116,12 +126,13 @@ impl<'a> Reducer<'a> {
                 },
             };
             message.content.push(block);
-            update
+            (content_index, update)
         });
         self.stream.push(update);
+        index
     }
 
-    /// Add text to the last block, which is a thinking or a text block, and announce it.
+    /// Append text to the captured thinking or text block and announce it.
     fn append(&self, text: &str) {
         self.publish(|block, content_index, partial| match block {
             Block::Thinking(block) => {
@@ -144,9 +155,9 @@ impl<'a> Reducer<'a> {
         });
     }
 
-    /// Store the arguments parsed so far on the last block, a tool call, and announce `delta`
+    /// Store the arguments parsed so far on the captured block, a tool call, and announce `delta`
     /// when there is one.
-    fn set_arguments(&self, arguments: JsonObject, delta: Option<&str>) {
+    fn set_arguments(&self, arguments: JsonObject, delta: Option<String>) {
         self.publish(|block, content_index, partial| {
             let Block::ToolCall(call) = block else {
                 return None;
@@ -154,13 +165,13 @@ impl<'a> Reducer<'a> {
             call.arguments = arguments;
             delta.map(|delta| Update::ToolcallDelta {
                 content_index,
-                delta: delta.to_owned(),
+                delta,
                 partial,
             })
         });
     }
 
-    /// Replace the text of the last block, a thinking or a text block, with the final one,
+    /// Replace the text of the captured block, a thinking or a text block, with the final one,
     /// keep the signature, and announce the end. Final thinking text may be absent.
     fn end(&self, text: Option<String>, signature: String) {
         self.publish(|block, content_index, partial| match block {
@@ -190,223 +201,193 @@ impl<'a> Reducer<'a> {
         });
     }
 
-    /// Reduce one event given as JSON text. Events of kinds not known, and events that are not
-    /// objects, are ignored.
-    ///
-    /// # Errors
-    /// Fails on malformed text, a failed or errored response, an unknown response status, or
-    /// a signature nested beyond the conversion bound.
-    pub(super) fn event(&mut self, text: &str) -> Result<(), DiagnosticErrorInfo> {
-        let Some(event) = wire::event(text)? else {
-            return Ok(());
-        };
-        let delta = event.delta.as_deref();
-        match event.kind {
-            Some(Kind::Created) => {
-                let id = event.response.and_then(|response| response.id);
+    /// Select one event before reading the members its branch consumes.
+    pub(super) fn event(&mut self, input: &str) -> Result<(), DiagnosticErrorInfo> {
+        let raw = raw_json(input).map_err(|error| native(&error))?;
+        match text(raw, "type")?.as_str() {
+            "response.created" => {
+                let id = member(raw, "response")
+                    .map(|response| field(response, "id"))
+                    .transpose()?
+                    .flatten();
                 self.change(|message| message.response_id = id);
             }
-            Some(Kind::ItemAdded) => event
-                .item
-                .as_deref()
-                .map_or(Ok(()), |raw| self.item_added(raw))?,
-            Some(Kind::ItemDone) => event
-                .item
-                .as_deref()
-                .map_or(Ok(()), |raw| self.item_done(raw))?,
-            Some(Kind::SummaryPartAdded) => {
-                if let Current::Reasoning(open) = &mut self.current {
-                    *open = event.part.is_some();
+            "response.output_item.added" => {
+                if let Some(item) = member(raw, "item") {
+                    self.item_added(item)?;
                 }
             }
-            Some(Kind::SummaryTextDelta) => self.reasoning_text(delta, true),
-            Some(Kind::SummaryPartDone) => self.reasoning_text(Some("\n\n"), true),
-            Some(Kind::ReasoningTextDelta) => self.reasoning_text(delta, false),
-            Some(Kind::ContentPartAdded) => self.content_part_added(event.part.as_ref()),
-            Some(Kind::OutputTextDelta) => self.message_text(delta, PartKind::OutputText),
-            Some(Kind::RefusalDelta) => self.message_text(delta, PartKind::Refusal),
-            Some(Kind::ArgumentsDelta) => self.arguments_delta(delta),
-            Some(Kind::ArgumentsDone) => self.arguments_done(event.arguments.as_deref()),
-            Some(Kind::Completed | Kind::Incomplete) => self.completed(event.response.as_ref())?,
-            Some(Kind::Error) => {
-                let (code, message) = (&event.code, &event.message);
-                return Err(failure(format!("Error Code {code}: {message}")));
+            "response.output_item.done" => {
+                if let Some(item) = member(raw, "item") {
+                    self.item_done(item)?;
+                }
             }
-            Some(Kind::Failed) => return Err(failed_error(event.response.as_ref())),
-            Some(Kind::Other) | None => {}
+            "response.completed" | "response.incomplete" => {
+                self.completed(member(raw, "response"))?;
+            }
+            "error" => {
+                return Err(failure(format!(
+                    "Error Code {}: {}",
+                    spelled(member(raw, "code"))?,
+                    spelled(member(raw, "message"))?
+                )));
+            }
+            "response.failed" => return Err(failed_error(member(raw, "response"))?),
+            kind => self.delta(raw, kind)?,
         }
         Ok(())
     }
 
-    /// Open the block of a new item.
+    /// Open a canonical block, retaining only later selection state.
     fn item_added(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
-        let Some(item) = wire::item(raw)? else {
-            return Ok(());
-        };
-        let (block, current) = match item.kind {
-            Some(ItemKind::Reasoning) => {
-                let thinking = Block::Thinking(ThinkingContent {
-                    thinking: String::new(),
-                    thinking_signature: None,
-                    redacted: None,
-                });
-                let summary_open = item.summary.last().is_some_and(Option::is_some);
-                (thinking, Current::Reasoning(summary_open))
-            }
-            Some(ItemKind::Message) => {
-                let text = Block::Text(TextContent {
-                    text: String::new(),
-                    text_signature: None,
-                });
-                let kind = |part: &Option<Part>| part.as_ref().and_then(|part| part.kind);
-                let last_part = item
-                    .content
+        self.current = match text(raw, "type")?.as_str() {
+            "reasoning" => {
+                let open = array(member(raw, "summary"))
                     .last()
-                    .map(|part| kind(part).unwrap_or(PartKind::Other));
-                (text, Current::Message(last_part))
+                    .is_some_and(|part| is_truthy(part));
+                Current::Reasoning(
+                    self.open(Block::Thinking(ThinkingContent {
+                        thinking: String::new(),
+                        thinking_signature: None,
+                        redacted: None,
+                    })),
+                    open,
+                )
             }
-            Some(ItemKind::FunctionCall) => {
-                let call = Block::ToolCall(ToolCall {
-                    id: call_id(&item),
-                    name: item.name.unwrap_or_default(),
-                    arguments: JsonObject::new(),
-                    thought_signature: None,
-                });
-                (call, Current::Function(item.arguments.unwrap_or_default()))
+            "message" => {
+                let part = array(member(raw, "content"))
+                    .last()
+                    .map(|part| (*part).to_owned());
+                Current::Message(
+                    self.open(Block::Text(TextContent {
+                        text: String::new(),
+                        text_signature: None,
+                    })),
+                    part,
+                )
             }
-            Some(ItemKind::Other) | None => return Ok(()),
+            "function_call" => {
+                let call = call(raw, JsonObject::new())?;
+                let scratch = text(raw, "arguments")?;
+                Current::Function(self.open(Block::ToolCall(call)), scratch)
+            }
+            _ => return Ok(()),
         };
-        self.open(block);
-        self.current = current;
         Ok(())
     }
 
-    /// Add text to the open thinking block. Summary text applies only while the last summary
-    /// part is an object.
-    fn reasoning_text(&self, text: Option<&str>, in_summary: bool) {
-        if let (&Current::Reasoning(summary_open), Some(text)) = (&self.current, text)
-            && (summary_open || !in_summary)
-        {
-            self.append(text);
+    /// Apply guarded part and delta events without reading rejected inputs.
+    fn delta(&mut self, raw: &RawValue, kind: &str) -> Result<(), DiagnosticErrorInfo> {
+        match (&mut self.current, kind) {
+            (Current::Reasoning(_, open), "response.reasoning_summary_part.added") => {
+                *open = member(raw, "part").is_some_and(is_truthy);
+            }
+            (Current::Reasoning(_, true), "response.reasoning_summary_part.done") => {
+                self.append("\n\n");
+            }
+            (Current::Reasoning(_, true), "response.reasoning_summary_text.delta")
+            | (Current::Reasoning(_, _), "response.reasoning_text.delta") => {
+                self.append(&text(raw, "delta")?);
+            }
+            (Current::Message(_, last), "response.content_part.added") => {
+                if let Some(part) = member(raw, "part")
+                    && matches!(text(part, "type")?.as_str(), "output_text" | "refusal")
+                {
+                    *last = Some(part.to_owned());
+                }
+            }
+            (
+                Current::Message(_, Some(part)),
+                "response.output_text.delta" | "response.refusal.delta",
+            ) => {
+                let expected = if kind == "response.output_text.delta" {
+                    "output_text"
+                } else {
+                    "refusal"
+                };
+                if text(part, "type")? == expected {
+                    self.append(&text(raw, "delta")?);
+                }
+            }
+            (Current::Function(_, scratch), "response.function_call_arguments.delta") => {
+                let delta = text(raw, "delta")?;
+                scratch.push_str(&delta);
+                let arguments = parsed_arguments(scratch);
+                self.set_arguments(arguments, Some(delta));
+            }
+            (Current::Function(_, scratch), "response.function_call_arguments.done") => {
+                let complete = text(raw, "arguments")?;
+                let suffix = complete
+                    .strip_prefix(scratch.as_str())
+                    .filter(|suffix| !suffix.is_empty())
+                    .map(str::to_owned);
+                let arguments = parsed_arguments(&complete);
+                *scratch = complete;
+                self.set_arguments(arguments, suffix);
+            }
+            _ => {}
         }
+        Ok(())
     }
 
-    /// Remember the kind of the last content part of the open message; only answer text and
-    /// refusals count.
-    fn content_part_added(&mut self, part: Option<&Part>) {
-        if let (
-            Current::Message(last_part),
-            Some(kind @ (PartKind::OutputText | PartKind::Refusal)),
-        ) = (&mut self.current, part.and_then(|part| part.kind))
-        {
-            *last_part = Some(kind);
-        }
-    }
-
-    /// Add text to the open text block when the last content part is of the kind the delta
-    /// belongs to.
-    fn message_text(&self, delta: Option<&str>, kind: PartKind) {
-        if let (&Current::Message(Some(last)), Some(delta)) = (&self.current, delta)
-            && last == kind
-        {
-            self.append(delta);
-        }
-    }
-
-    /// Add argument text to the open function call and parse what arrived so far.
-    fn arguments_delta(&mut self, delta: Option<&str>) {
-        if let (Current::Function(scratch), Some(delta)) = (&mut self.current, delta) {
-            scratch.push_str(delta);
-            let arguments = parsed_arguments(scratch);
-            self.set_arguments(arguments, Some(delta));
-        }
-    }
-
-    /// Replace the argument text of the open function call with the complete text, announcing
-    /// the part that extends what arrived.
-    fn arguments_done(&mut self, complete: Option<&str>) {
-        if let (Current::Function(scratch), Some(complete)) = (&mut self.current, complete) {
-            let previous = mem::replace(scratch, complete.to_owned());
-            let suffix = complete
-                .strip_prefix(previous.as_str())
-                .filter(|suffix| !suffix.is_empty());
-            self.set_arguments(parsed_arguments(complete), suffix);
-        }
-    }
-
-    /// Finish the open item with the complete item the service reports. A reasoning item is
-    /// kept whole as the signature.
+    /// Replace final content on the captured block and clear the open state.
     fn item_done(&mut self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
-        let Some(item) = wire::item(raw)? else {
-            return Ok(());
-        };
-        match (item.kind, &self.current) {
-            (Some(ItemKind::Reasoning), Current::Reasoning(_)) => {
+        match (text(raw, "type")?.as_str(), &self.current) {
+            ("reasoning", Current::Reasoning(_, _)) => {
+                let summary = joined(raw, "summary", false)?;
+                let content = joined(raw, "content", false)?;
                 let signature = compact_raw(raw).map_err(|error| native(&error))?;
-                let summary = joined(&item.summary, "\n\n", |part| part.text.as_deref());
-                let content = joined(&item.content, "\n\n", |part| part.text.as_deref());
                 self.end(
                     [summary, content].into_iter().find(|text| !text.is_empty()),
                     signature,
                 );
             }
-            (Some(ItemKind::Message), Current::Message(_)) => {
-                let id = item.id.unwrap_or_default();
+            ("message", Current::Message(_, _)) => {
+                let content = joined(raw, "content", true)?;
                 let signature = TextSignatureV1 {
                     v: 1,
-                    id,
-                    phase: item.phase,
+                    id: text(raw, "id")?,
+                    phase: field(raw, "phase")?,
                 };
-                let signature =
-                    serde_json::to_string(&signature).map_err(|error| native(&error))?;
-                let text = joined(&item.content, "", |part| match part.kind {
-                    Some(PartKind::OutputText) => part.text.as_deref(),
-                    _ => part.refusal.as_deref(),
-                });
-                self.end(Some(text), signature);
+                self.end(
+                    Some(content),
+                    serde_json::to_string(&signature).map_err(|error| native(&error))?,
+                );
             }
-            (Some(ItemKind::FunctionCall), _) => {
-                self.function_done(item);
-                return Ok(());
-            }
+            ("function_call", _) => self.function_done(raw)?,
             _ => return Ok(()),
         }
         self.current = Current::Idle;
         Ok(())
     }
 
-    /// Finish a function call. The streamed argument text wins over the final item's; a call
-    /// the stream never opened is added to the message with its end.
-    fn function_done(&mut self, item: Item) {
-        let streamed = match mem::replace(&mut self.current, Current::Idle) {
-            Current::Function(scratch) => Some(scratch),
-            _ => None,
+    /// Finalize existing calls without reading unused identity, or insert a final-only call.
+    fn function_done(&self, raw: &RawValue) -> Result<(), DiagnosticErrorInfo> {
+        let arguments = match &self.current {
+            Current::Function(_, scratch) if !scratch.is_empty() => parsed_arguments(scratch),
+            _ => parsed_arguments(&text(raw, "arguments")?),
         };
-        let text = streamed.as_deref().filter(|text| !text.is_empty());
-        let arguments = parsed_arguments(text.or(item.arguments.as_deref()).unwrap_or_default());
-        if streamed.is_some() {
+        if matches!(self.current, Current::Function(_, _)) {
             self.end_call(arguments);
-            return;
-        }
-        let tool_call = ToolCall {
-            id: call_id(&item),
-            name: item.name.unwrap_or_default(),
-            arguments,
-            thought_signature: None,
-        };
-        let partial = Arc::clone(self.output);
-        let update = self.change(|message| {
-            message.content.push(Block::ToolCall(tool_call.clone()));
-            Update::ToolcallEnd {
-                content_index: message.content.len() - 1,
+        } else {
+            let tool_call = call(raw, arguments)?;
+            let block = Block::ToolCall(tool_call.clone());
+            let partial = Arc::clone(self.output);
+            let index = self.change(|message| {
+                let index = message.content.len();
+                message.content.push(block);
+                index
+            });
+            self.stream.push(Update::ToolcallEnd {
+                content_index: index,
                 tool_call,
                 partial,
-            }
-        });
-        self.stream.push(update);
+            });
+        }
+        Ok(())
     }
 
-    /// Set the final arguments of the last block, a tool call, and announce its end.
+    /// Set the final arguments of the captured block, a tool call, and announce its end.
     fn end_call(&self, arguments: JsonObject) {
         self.publish(|block, content_index, partial| {
             let Block::ToolCall(call) = block else {
@@ -421,37 +402,46 @@ impl<'a> Reducer<'a> {
         });
     }
 
-    /// Take the final identity, usage and outcome of a completed or incomplete response.
-    fn completed(&mut self, response: Option<&Response>) -> Result<(), DiagnosticErrorInfo> {
+    /// Publish completion effects before callbacks and status selection.
+    fn completed(&mut self, response: Option<&RawValue>) -> Result<(), DiagnosticErrorInfo> {
+        if let Some(response) = response {
+            let id = field::<String>(response, "id")?.filter(|id| !id.is_empty());
+            if let Some(id) = id {
+                self.change(|message| message.response_id = Some(id));
+            }
+        }
         let mut usage = self.change(|message| message.usage.clone());
-        if let Some(reported) = response.and_then(|response| response.usage.as_ref()) {
-            let cached = or_zero(
-                reported
-                    .input_tokens_details
-                    .as_ref()
-                    .and_then(|d| d.cached_tokens),
-            );
-            usage.input = or_zero(reported.input_tokens) - cached;
-            usage.output = or_zero(reported.output_tokens);
+        if let Some(reported) = response
+            .and_then(|response| member(response, "usage"))
+            .filter(|raw| is_truthy(raw))
+        {
+            let count = |raw, key| or_zero(member(raw, key).and_then(raw_number));
+            let cached = member(reported, "input_tokens_details")
+                .map_or(0.0, |details| count(details, "cached_tokens"));
+            usage.input = count(reported, "input_tokens") - cached;
+            usage.output = count(reported, "output_tokens");
             usage.cache_read = cached;
             usage.cache_write = 0.0;
-            usage.total_tokens = or_zero(reported.total_tokens);
+            usage.total_tokens = count(reported, "total_tokens");
         }
         calculate_cost(self.model, &mut usage);
-        self.price(
-            &mut usage,
-            response.and_then(|response| response.service_tier.as_deref()),
-        );
-        let id = response
-            .and_then(|response| response.id.as_deref())
-            .filter(|id| !id.is_empty());
-        self.change(|message| {
-            if let Some(id) = id {
-                message.response_id = Some(id.to_owned());
-            }
-            message.usage = usage;
-        });
-        let reason = stop_reason(response.and_then(|response| response.status.as_deref()))?;
+        self.change(|message| message.usage = usage.clone());
+        if self
+            .options
+            .is_some_and(|options| options.apply_service_tier_pricing.is_some())
+        {
+            let echoed = response
+                .map(|raw| field::<String>(raw, "service_tier"))
+                .transpose()?
+                .flatten();
+            self.price(&mut usage, echoed.as_deref());
+            self.change(|message| message.usage = usage);
+        }
+        let status = response
+            .map(|raw| field::<String>(raw, "status"))
+            .transpose()?
+            .flatten();
+        let reason = stop_reason(status.as_deref())?;
         self.change(|message| {
             let calls_tool = message
                 .content
@@ -483,23 +473,14 @@ impl<'a> Reducer<'a> {
     }
 }
 
-/// The identifier of a function call: its call identifier, then its item identifier.
-fn call_id(item: &Item) -> String {
-    let (call, id) = (item.call_id.as_deref(), item.id.as_deref());
-    format!("{}|{}", call.unwrap_or_default(), id.unwrap_or_default())
-}
-
-/// Join the text of parts, a part without text contributing an empty one.
-fn joined<'a>(
-    parts: &'a [Option<Part>],
-    separator: &str,
-    text: impl Fn(&'a Part) -> Option<&'a str>,
-) -> String {
-    let texts: Vec<&str> = parts
-        .iter()
-        .map(|part| part.as_ref().and_then(&text).unwrap_or_default())
-        .collect();
-    texts.join(separator)
+/// Build a final call from the selected identity and already-parsed arguments.
+fn call(raw: &RawValue, arguments: JsonObject) -> Result<ToolCall, DiagnosticErrorInfo> {
+    Ok(ToolCall {
+        id: format!("{}|{}", text(raw, "call_id")?, text(raw, "id")?),
+        name: text(raw, "name")?,
+        arguments,
+        thought_signature: None,
+    })
 }
 
 /// The outcome a response status stands for.
@@ -512,27 +493,27 @@ fn stop_reason(status: Option<&str>) -> Result<StopReason, DiagnosticErrorInfo> 
     }
 }
 
-/// The text of an optional member when it is nonempty.
-fn nonempty(text: Option<&String>) -> Option<&str> {
-    text.map(String::as_str).filter(|text| !text.is_empty())
-}
-
-/// The failure of a failed response: its error, else why it stopped, else a notice.
-fn failed_error(response: Option<&Response>) -> DiagnosticErrorInfo {
-    let reason = response
-        .and_then(|response| response.incomplete_details.as_ref())
-        .and_then(|details| nonempty(details.reason.as_ref()));
-    let message = match (
-        response.and_then(|response| response.error.as_ref()),
-        reason,
-    ) {
-        (Some(error), _) => format!(
+/// Render the selected failed-response detail, preserving truthy raw fallbacks.
+fn failed_error(response: Option<&RawValue>) -> Result<DiagnosticErrorInfo, DiagnosticErrorInfo> {
+    let error = response
+        .and_then(|raw| member(raw, "error"))
+        .filter(|raw| is_truthy(raw));
+    let message = if let Some(error) = error {
+        let code = member(error, "code").filter(|raw| is_truthy(raw));
+        let message = member(error, "message").filter(|raw| is_truthy(raw));
+        format!(
             "{}: {}",
-            nonempty(error.code.as_ref()).unwrap_or("unknown"),
-            nonempty(error.message.as_ref()).unwrap_or("no message")
-        ),
-        (None, Some(reason)) => format!("incomplete: {reason}"),
-        (None, None) => "Unknown error (no error details in response)".to_owned(),
+            code.map_or_else(|| Ok("unknown".to_owned()), |raw| spelled(Some(raw)))?,
+            message.map_or_else(|| Ok("no message".to_owned()), |raw| spelled(Some(raw)))?
+        )
+    } else if let Some(reason) = response
+        .and_then(|raw| member(raw, "incomplete_details"))
+        .and_then(|raw| member(raw, "reason"))
+        .filter(|raw| is_truthy(raw))
+    {
+        format!("incomplete: {}", spelled(Some(reason))?)
+    } else {
+        "Unknown error (no error details in response)".to_owned()
     };
-    failure(message)
+    Ok(failure(message))
 }

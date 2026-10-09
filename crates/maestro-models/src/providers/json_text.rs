@@ -167,26 +167,6 @@ where
     try_object_record(<&RawValue>::deserialize(deserializer)?).map_err(D::Error::custom)
 }
 
-/// Read an object as a record like [`object_record`], keeping the failure of a member that the
-/// record reads and cannot decode, such as a string with a lone surrogate. A value that is not an
-/// object is `Ok(None)`; members the record does not read are never decoded.
-///
-/// # Errors
-/// Returns the failure the record reports for a member it reads.
-pub(crate) fn object_fields<T: DeserializeOwned>(
-    raw: &RawValue,
-) -> Result<Option<T>, serde_json::Error> {
-    let Ok(members) = serde_json::from_str::<Members<'_>>(raw.get()) else {
-        return Ok(None);
-    };
-    T::deserialize(MapDeserializer::<_, serde_json::Error>::new(
-        members
-            .into_iter()
-            .filter_map(|(key, value)| String::from_utf8(key.0).ok().map(|key| (key, value))),
-    ))
-    .map(Some)
-}
-
 /// Parse streamed argument text into the object of a tool call; any other value becomes empty.
 pub(crate) fn parsed_arguments(partial: &str) -> JsonObject {
     match parse_streaming_json(Some(partial)) {

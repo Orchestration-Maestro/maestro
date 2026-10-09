@@ -3,15 +3,19 @@
 use std::collections::{BTreeSet, HashSet};
 use std::sync::{Arc, Mutex, RwLock};
 
+use super::super::messages::{convert_responses_messages, convert_responses_tools};
+use super::super::{
+    ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, OpenAIResponsesStreamOptions,
+    process_responses_stream,
+};
+use crate as maestro_models;
 use maestro_models::{
-    AssistantMessage, AssistantMessageEventStream, Context, ConvertResponsesMessagesOptions,
-    ConvertResponsesToolsOptions, DiagnosticCode, DiagnosticErrorInfo, Model,
-    OpenAIResponsesStreamOptions, SharedAssistantMessage, Tool, Usage, convert_responses_messages,
-    convert_responses_tools, process_responses_stream,
+    AssistantMessage, AssistantMessageEventStream, Context, DiagnosticCode, DiagnosticErrorInfo,
+    Model, SharedAssistantMessage, Tool, Usage,
 };
 use serde_json::{Map, Value, json};
 
-use crate::chat::TestResult;
+use super::TestResult;
 
 /// A fixture object whose members must all be read before the row is accepted.
 pub struct Fields {
@@ -476,11 +480,14 @@ pub async fn check_events(mut row: Fields) -> TestResult {
         .as_array()
         .ok_or("events are a list")?
         .iter()
-        .map(|event| match event {
-            Value::String(raw) => raw.clone(),
-            other => other.to_string(),
+        .map(|event| {
+            audit_event(event, "event")?;
+            Ok(match event {
+                Value::String(raw) => raw.clone(),
+                other => other.to_string(),
+            })
         })
-        .collect();
+        .collect::<TestResult<Vec<_>>>()?;
     script.failure = row.take("failure").map(|message| DiagnosticErrorInfo {
         name: Some("Error".to_owned()),
         message: message.as_str().unwrap_or_default().to_owned(),
@@ -502,4 +509,100 @@ pub async fn check_events(mut row: Fields) -> TestResult {
     let expected = Fields::new(&id, row.require("expected")?)?;
     check_reduction(&run, &initial, expected)?;
     row.finish()
+}
+
+/// Reject fixture members that the selected event branch does not consume.
+fn audit_event(value: &Value, path: &str) -> TestResult {
+    let Some(members) = value.as_object() else {
+        return Ok(());
+    };
+    let kind = value["type"].as_str().unwrap_or_default();
+    let Some(allowed) = consumed_fields(path, kind) else {
+        return Ok(());
+    };
+    for (key, child) in members {
+        if !allowed.contains(&key.as_str()) {
+            return Err(format!("{path} has unread members [{key}]").into());
+        }
+        let next = audit_path(path, kind, key);
+        if let Some(items) = child.as_array() {
+            for item in items {
+                audit_event(item, &next)?;
+            }
+        } else {
+            audit_event(child, &next)?;
+        }
+    }
+    Ok(())
+}
+
+/// Fields that each selected branch consumes; dynamic data is compared whole.
+fn consumed_fields<'a>(path: &str, kind: &str) -> Option<&'a [&'a str]> {
+    Some(match path {
+        "event" => match kind {
+            "response.created"
+            | "response.completed"
+            | "response.incomplete"
+            | "response.failed" => &["type", "response"],
+            "response.output_item.added" | "response.output_item.done" => &["type", "item"],
+            "response.content_part.added" | "response.reasoning_summary_part.added" => {
+                &["type", "part"]
+            }
+            "response.function_call_arguments.done" => &["type", "arguments"],
+            "error" => &["type", "code", "message"],
+            _ if kind.rsplit('.').next() == Some("delta") => &["type", "delta"],
+            _ => &["type"],
+        },
+        "created" => &["id"],
+        "completed" => &["id", "status", "usage", "service_tier"],
+        "failed" => &["error", "incomplete_details"],
+        "error" => &["code", "message"],
+        "incomplete_details" => &["reason"],
+        "usage" => &[
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "input_tokens_details",
+        ],
+        "input_tokens_details" => &["cached_tokens"],
+        "added" => match kind {
+            "reasoning" => &["type", "summary"],
+            "message" => &["type", "content"],
+            "function_call" => &["type", "id", "call_id", "name", "arguments"],
+            _ => &["type"],
+        },
+        "done" => match kind {
+            "reasoning" => return None, // Every member is compared in the persisted signature.
+            "message" => &["type", "id", "phase", "content"],
+            "function_call" => &["type", "id", "call_id", "name", "arguments"],
+            _ => &["type"],
+        },
+        "part" | "added-content" => &["type"],
+        "summary-part" | "added-summary" => &[],
+        "content" if kind == "output_text" => &["type", "text"],
+        "content" => &["type", "refusal"],
+        _ => return None, // Dynamic arguments and interpolation values are compared whole.
+    })
+}
+
+/// The consumer of a nested fixture record selected by its parent's branch.
+fn audit_path(path: &str, kind: &str, key: &str) -> String {
+    match (path, key) {
+        ("event", "response") => kind
+            .strip_prefix("response.")
+            .unwrap_or_default()
+            .to_owned(),
+        ("event", "item") => if kind == "response.output_item.added" {
+            "added"
+        } else {
+            "done"
+        }
+        .to_owned(),
+        ("event", "part") if kind == "response.reasoning_summary_part.added" => {
+            "summary-part".to_owned()
+        }
+        ("added", "content") => "added-content".to_owned(),
+        ("added", "summary") => "added-summary".to_owned(),
+        _ => key.to_owned(),
+    }
 }

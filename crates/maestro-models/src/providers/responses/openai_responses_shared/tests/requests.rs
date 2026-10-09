@@ -1,27 +1,17 @@
 //! Conversion of conversation history and tool declarations into response wire items.
 
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the shared helpers."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the shared helpers."
-)]
-#[path = "support/responses.rs"]
-mod responses;
-
-use chat::{TestResult, block_on};
-use maestro_models::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, Tool};
+use super::super::messages::{convert_responses_messages, convert_responses_tools};
+use super::super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions};
+use super::{TestResult, block_on, responses};
+use crate as maestro_models;
+use maestro_models::Tool;
 use responses::{Fields, Script};
 use serde_json::{Value, json};
 
 /// Rows of conversion cases and the expectations they carry.
-const REQUESTS: &str = include_str!("fixtures/responses/requests.json");
+const REQUESTS: &str = include_str!("fixtures/requests.json");
 /// Rows of reduction cases, checked here only for unique questions.
-const EVENTS: &str = include_str!("fixtures/responses/events.json");
+const EVENTS: &str = include_str!("fixtures/events.json");
 
 /// Convert every message row a test owns.
 fn message_rows(test: &str, count: usize) -> TestResult {
@@ -92,7 +82,24 @@ fn maestro_responses_messages_keep_tool_association() -> TestResult {
 
 #[test]
 fn maestro_responses_messages_write_argument_json() -> TestResult {
-    message_rows("maestro_responses_messages_write_argument_json", 1)
+    message_rows("maestro_responses_messages_write_argument_json", 1)?;
+    let arguments: Value =
+        serde_json::from_str(r#"{"10":10,"2":2,"z":9007199254740993,"zero":-0,"tiny":1e-7}"#)?;
+    let history = responses::context(json!({"messages":[
+        {"role":"assistant","content":[{"type":"toolCall","id":"c|fc_i","name":"lookup","arguments":arguments}]},
+        {"role":"toolResult","toolCallId":"c|fc_i","content":[{"type":"text","text":"ok"}]}
+    ]}))?;
+    let items = convert_responses_messages(
+        &responses::model(None)?,
+        &history,
+        &responses::allowed_providers(),
+        None,
+    )?;
+    assert_eq!(
+        items[0]["arguments"],
+        r#"{"2":2,"10":10,"z":9007199254740992,"zero":0,"tiny":1e-7}"#
+    );
+    Ok(())
 }
 
 #[test]
@@ -119,14 +126,13 @@ fn maestro_responses_options_default_to_prompt_and_strict_false() -> TestResult 
     }))?;
     let model = responses::model(None)?;
     let providers = responses::allowed_providers();
-    let by_default = maestro_models::convert_responses_messages(
+    let by_default = convert_responses_messages(
         &model,
         &history,
         &providers,
         Some(&ConvertResponsesMessagesOptions::default()),
     )?;
-    let unspecified =
-        maestro_models::convert_responses_messages(&model, &history, &providers, None)?;
+    let unspecified = convert_responses_messages(&model, &history, &providers, None)?;
     assert_eq!(by_default, unspecified);
     assert_eq!(
         by_default[0],
@@ -136,10 +142,7 @@ fn maestro_responses_options_default_to_prompt_and_strict_false() -> TestResult 
     let tools: Vec<Tool> = serde_json::from_value(json!([
         {"name": "lookup", "description": "find", "parameters": {"type": "object"}}
     ]))?;
-    let declared = maestro_models::convert_responses_tools(
-        &tools,
-        Some(&ConvertResponsesToolsOptions::default()),
-    );
+    let declared = convert_responses_tools(&tools, Some(&ConvertResponsesToolsOptions::default()));
     assert_eq!(declared[0]["strict"], json!(false));
     Ok(())
 }
@@ -157,7 +160,7 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
             "role": "assistant",
             "content": [{"type": "thinking", "thinking": "", "thinkingSignature": signature}]
         }]}))?;
-        let items = maestro_models::convert_responses_messages(
+        let items = convert_responses_messages(
             &responses::model(None)?,
             &history,
             &responses::allowed_providers(),
@@ -223,6 +226,12 @@ fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() ->
         block_on(false, responses::check_events(fields))
     };
     consume(sample.clone())?;
+    let mut nested = sample.clone();
+    nested["events"][0]["response"]["unused"] = json!(1);
+    let failure = consume(nested)
+        .err()
+        .ok_or("the unread nested member is rejected")?;
+    assert!(failure.to_string().contains("unread members"), "{failure}");
     let mut extended = sample;
     extended["unused"] = json!(1);
     let failure = consume(extended)

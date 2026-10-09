@@ -28,7 +28,7 @@ const ID_LIMIT: usize = 64;
 /// # Errors
 /// Fails when a reasoning signature is not JSON, or nests more than 127 containers, or when a
 /// tool call's arguments cannot be written.
-pub fn convert_responses_messages<S: BuildHasher>(
+pub(crate) fn convert_responses_messages<S: BuildHasher>(
     model: &Model,
     context: &Context,
     allowed_tool_call_providers: &HashSet<String, S>,
@@ -70,7 +70,7 @@ pub fn convert_responses_messages<S: BuildHasher>(
 
 /// Convert tool declarations; `strict` defaults to `false` and `None` sends `null`.
 #[must_use]
-pub fn convert_responses_tools(
+pub(crate) fn convert_responses_tools(
     tools: &[Tool],
     options: Option<&ConvertResponsesToolsOptions>,
 ) -> Vec<Value> {
@@ -237,7 +237,7 @@ fn output_message(text: &TextContent, retained: usize) -> Value {
 }
 
 /// Convert a tool call. The item identifier follows the first `|`, and is dropped when another
-/// model of the same provider made a call whose identifier starts with `fc_`, so the service
+/// model of the same provider and API made a call whose item identifier starts with `fc_`, so the service
 /// does not look for the reasoning item it was paired with.
 fn function_call(call: &ToolCall, other_model: bool) -> Result<Value, DiagnosticErrorInfo> {
     let mut parts = call.id.split('|');
