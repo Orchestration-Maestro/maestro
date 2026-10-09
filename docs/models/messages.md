@@ -44,6 +44,8 @@ Subscription payloads prepend the required identity block before a nonempty call
 prompt. Matching tool declarations, replayed calls and named selections use canonical wire
 names. Incoming lowercase matches use the first declared spelling. Matching uses Unicode
 lowercasing, not case folding or whitespace trimming; unknown names remain unchanged.
+With nonempty declarations, a missing or non-string incoming subscription tool name ends the
+stream with an error before opening that block.
 
 `AnthropicOptions::client` replaces the key, the endpoint and the HTTP transport with one
 function from the payload and an `AnthropicRequestOptions` to an `HttpResponse`. The client
@@ -52,8 +54,8 @@ exactly the signal, timeout and retry count the call was given, each absent when
 given. The client owns authentication, retries and status handling: a response it returns is
 read as an event stream whatever its status, and a failure it reports ends the call with the
 failure's `message` as it is, even when that is empty. An injected client bypasses internal
-authorization and endpoint setup. Payload construction, `on_payload`,
-`on_response`, cache markers and the reduction of the answer are the same as without a client.
+authorization and endpoint setup, including subscription identity and tool-name conversion.
+Thinking, cache markers, hooks and the other answer reduction rules still apply.
 
 ## Request
 
@@ -64,11 +66,12 @@ Headers are layered case-insensitively: protocol defaults and selected credentia
 model headers, account dynamic headers when applicable, then caller headers. The body encoding
 sets `content-type: application/json` last. For nongateway requests, a nonempty `x-api-key` or
 `authorization` after edge trimming is required; validation runs after `on_payload` and before
-sending. Gateway requests suppress that default authentication check, but model/caller headers
-may reintroduce either authentication field.
+sending. Gateway requests retain this exemption only while at least one default authentication
+omission survives: when model/caller headers supply both fields, the same nonempty check applies.
 
-Subscription requests prepend `claude-code-20250219,oauth-2025-04-20` to the optional betas.
-`anthropic-beta` names `interleaved-thinking-2025-05-14` unless the caller sets
+Subscription defaults prepend `claude-code-20250219,oauth-2025-04-20` to the optional betas;
+model/caller headers can replace `anthropic-beta`. Before these overrides, `anthropic-beta` names
+`interleaved-thinking-2025-05-14` unless the caller sets
 `interleaved_thinking` to `false` or the model ID contains `opus-4-6`, `opus-4.6`, `opus-4-7`,
 `opus-4.7`, `sonnet-4-6` or `sonnet-4.6`, and `fine-grained-tool-streaming-2025-05-14` when
 tools are declared and the model's compatibility turns eager input streaming off. With eager

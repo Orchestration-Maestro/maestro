@@ -475,6 +475,61 @@ fn assert_run(row: &Row, seen: &Seen, events: &[Value], mut result: Value) -> Te
     Ok(())
 }
 
+/// Identify the typed invocation before attaching its controlled callbacks.
+fn normalized_query(row: &Row) -> TestResult<String> {
+    let options = options(&row.input)?;
+    let common = &options.common;
+    let mut selected = json!({
+        "apiKey": common.api_key,
+        "temperature": common.temperature.map(f64::to_bits),
+        "maxTokens": common.max_tokens.map(f64::to_bits),
+        "maxRetries": common.max_retries.map(f64::to_bits),
+        "timeoutMs": common.timeout_ms.map(f64::to_bits),
+        "cacheRetention": common.cache_retention,
+        "headers": common.headers,
+        "metadata": common.metadata,
+        "sessionId": common.session_id,
+    });
+    if row.simple {
+        selected["reasoning"] = serde_json::to_value(decode::<maestro_models::ThinkingLevel>(
+            &row.input.options,
+            "reasoning",
+        )?)?;
+        let budgets = &row.input.options["thinkingBudgets"];
+        selected["thinkingBudgets"] = if budgets.is_null() {
+            Value::Null
+        } else {
+            json!(
+                ["minimal", "low", "medium", "high"]
+                    .map(|level| number(&budgets[level]).map(f64::to_bits))
+            )
+        };
+        selected["toolChoice"] = serde_json::to_value(options.tool_choice)?;
+    } else {
+        selected["raw"] = json!({
+            "thinkingEnabled": options.thinking_enabled,
+            "thinkingBudgetTokens": options.thinking_budget_tokens.map(f64::to_bits),
+            "effort": format!("{:?}", options.effort),
+            "thinkingDisplay": format!("{:?}", options.thinking_display),
+            "interleavedThinking": options.interleaved_thinking,
+            "toolChoice": options.tool_choice,
+        });
+    }
+    let query = json!({
+        "simple": row.simple,
+        "options": selected,
+        "model": controlled_model(&row.input.model)?,
+        "context": messages::context(&without_undefined(row.input.context.clone()))?,
+        "env": row.input.env,
+        "replacement": row.input.replacement,
+        "injected": row.input.injected,
+        "fail": row.input.fail,
+        "error": row.input.fail.as_ref().map(|_| row.input.error.as_deref().unwrap_or_default()),
+        "answer": answer(&row.input),
+    });
+    Ok(serde_json::to_string(&query)?)
+}
+
 /// Dispatch each unique fixture query to its owning test in an isolated process.
 pub async fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> =
@@ -488,7 +543,11 @@ pub async fn assert_rows(test: &str) -> TestResult {
             row.test
         );
         assert!(ids.insert(row.id));
-        assert!(queries.insert(serde_json::to_string(&json!({"simple":row.simple,"entry":matches!(row.expected, Expected::Entry(_)),"input":row.input.options,"model":row.input.model,"context":row.input.context,"env":row.input.env,"names":row.input.names,"replacement":row.input.replacement,"injected":row.input.injected,"fail":row.input.fail,"error":row.input.error,"answer":row.input.answer}))?), "duplicate row {}",row.id);
+        assert!(
+            queries.insert(normalized_query(row)?),
+            "duplicate row {}",
+            row.id
+        );
     }
     let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty());

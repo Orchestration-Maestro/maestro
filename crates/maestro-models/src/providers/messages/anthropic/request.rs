@@ -166,7 +166,7 @@ pub(super) struct Invocation<'a> {
     /// Effective cache retention.
     retention: CacheRetention,
     /// Frozen endpoint, expanded before the payload hook.
-    base_url: String,
+    base_url: Cow<'a, str>,
     /// Frozen header layers, validated when sending.
     headers: IndexMap<String, String>,
     /// Whether default authentication was deliberately suppressed.
@@ -197,7 +197,7 @@ impl<'a> Invocation<'a> {
             options,
             retention,
             thinking: &call.thinking,
-            base_url: model.base_url.clone(),
+            base_url: Cow::Borrowed(&model.base_url),
             headers: IndexMap::new(),
             gateway: false,
             naming: Naming::Plain,
@@ -403,8 +403,10 @@ impl<'a> Invocation<'a> {
             ("anthropic-version".to_owned(), API_VERSION.to_owned()),
         ]);
         if self.gateway {
-            self.base_url = resolve_cloudflare_base_url(self.model)
-                .map_err(|error| RequestFailure::new(error.message))?;
+            self.base_url = Cow::Owned(
+                resolve_cloudflare_base_url(self.model)
+                    .map_err(|error| RequestFailure::new(error.message))?,
+            );
             headers.insert("cf-aig-authorization".to_owned(), format!("Bearer {key}"));
         } else if account || subscription {
             headers.insert("authorization".to_owned(), format!("Bearer {key}"));
@@ -448,14 +450,18 @@ impl<'a> Invocation<'a> {
         }
     }
 
-    /// Validate the captured nongateway authentication only when preparing the send.
+    /// Require authentication unless a gateway default omission survives the header layers.
     fn headers(&self) -> Result<IndexMap<String, String>, RequestFailure> {
         let authenticated = ["x-api-key", "authorization"].iter().any(|name| {
             self.headers
                 .get(*name)
                 .is_some_and(|value| !value.trim_matches(edge_whitespace).is_empty())
         });
-        if !self.gateway && !authenticated {
+        let omitted = self.gateway
+            && ["x-api-key", "authorization"]
+                .iter()
+                .any(|name| !self.headers.contains_key(*name));
+        if !omitted && !authenticated {
             return Err(RequestFailure::new(MISSING_AUTHENTICATION_TEXT));
         }
         Ok(self.headers.clone())
@@ -464,10 +470,10 @@ impl<'a> Invocation<'a> {
     /// Build the request that posts the payload to the model's endpoint.
     ///
     /// # Errors
-    /// Fails when the endpoint is not a URL, nongateway headers hold no authentication or the payload
-    /// cannot be written as JSON.
+    /// Fails when the endpoint is not a URL, headers neither authenticate nor retain a gateway
+    /// omission, or the payload cannot be written as JSON.
     pub(super) fn request(&self, payload: &Value) -> Result<HttpRequest, RequestFailure> {
-        let base = match self.base_url.as_str() {
+        let base = match self.base_url.as_ref() {
             "" => DEFAULT_BASE_URL,
             supplied => supplied,
         };

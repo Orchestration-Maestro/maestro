@@ -96,11 +96,12 @@ impl<'a> Reducer<'a> {
     ///
     /// # Errors
     /// Fails on a stop reason that names no known outcome and on usage that a reduction needs
-    /// and the event lacks or does not write as an object.
+    /// and the event lacks or does not write as an object, or on an invalid subscription tool name
+    /// when declarations are nonempty.
     pub(super) fn event(&mut self, event: Event) -> Result<Progress, RequestFailure> {
         match event {
             Event::MessageStart(start) => self.start_message(start)?,
-            Event::ContentBlockStart(start) => self.start_block(start),
+            Event::ContentBlockStart(start) => self.start_block(start)?,
             Event::ContentBlockDelta(delta) => self.delta(delta),
             Event::ContentBlockStop(stop) => self.stop_block(&stop),
             Event::MessageDelta(delta) => self.message_delta(&delta)?,
@@ -168,8 +169,8 @@ impl<'a> Reducer<'a> {
         })
     }
 
-    /// Open the block a start event describes; kinds the message has no block for are ignored.
-    fn start_block(&mut self, start: ContentBlockStart) {
+    /// Open a recognized block, rejecting invalid subscription names when tools are declared.
+    fn start_block(&mut self, start: ContentBlockStart) -> Result<(), RequestFailure> {
         let (kind, content, announced): (Kind, AssistantContent, StartEvent) =
             match start.content_block {
                 OpenedBlock::Text => (
@@ -194,11 +195,12 @@ impl<'a> Reducer<'a> {
                     thinking_start,
                 ),
                 OpenedBlock::ToolUse(mut call) => {
-                    if let Some(tools) = self.tools {
-                        call.name = Some(super::tool_names::inbound(
-                            call.name.unwrap_or_default(),
-                            tools,
-                        ));
+                    if let Some(tools) = self.tools.filter(|tools| !tools.is_empty()) {
+                        let name = call
+                            .name
+                            .take()
+                            .ok_or_else(|| RequestFailure::new("Tool name must be a string"))?;
+                        call.name = Some(super::tool_names::inbound(name, tools));
                     }
                     (
                         Kind::Tool(None),
@@ -209,10 +211,11 @@ impl<'a> Reducer<'a> {
                         },
                     )
                 }
-                OpenedBlock::Other => return,
+                OpenedBlock::Other => return Ok(()),
             };
         let position = self.push_block(start.index, kind, content);
         self.announce(|partial| announced(position, partial));
+        Ok(())
     }
 
     /// Find the open block that carries a wire position, with its content position.

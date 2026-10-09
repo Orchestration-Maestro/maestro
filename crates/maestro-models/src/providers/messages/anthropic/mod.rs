@@ -176,13 +176,12 @@ pub fn stream_simple_anthropic(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let options = options.unwrap_or_default();
+    let mut options = options.unwrap_or_default();
     let key = options
         .common
         .api_key
-        .as_deref()
+        .take()
         .filter(|key| !key.is_empty())
-        .map(str::to_owned)
         .or_else(|| get_env_api_key(&model.provider))
         .filter(|key| !key.is_empty())
         .ok_or_else(|| DiagnosticErrorInfo {
