@@ -5,7 +5,7 @@ reasoning effort. The options are available from `maestro_models` and
 `maestro_models::providers::reasoning::mistral`, together with `stream_mistral`
 and `stream_simple_mistral`. These operations expose cumulative updates from
 independently owned work: dropping the reader does not cancel the producer.
-Native calls need a running Tokio runtime with its I/O and timer drivers enabled.
+Native calls need a running Tokio runtime.
 Missing credentials produce a terminal error for raw calls and an immediate
 error for simple calls. Text, thinking and tool updates retain the same message
 handle through the terminal result.
