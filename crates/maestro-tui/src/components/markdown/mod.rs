@@ -158,12 +158,12 @@ impl Markdown {
         };
         let content: Vec<String> = renderer
             .blocks(&parse::parse(text), content_width, inline::Style::Default)
-            .iter()
+            .into_iter()
             .flat_map(|line| {
-                if crate::is_image_line(line) {
-                    vec![line.clone()]
+                if crate::is_image_line(&line) {
+                    vec![line]
                 } else {
-                    wrap_text_with_ansi(line, content_width)
+                    wrap_text_with_ansi(&line, content_width)
                 }
             })
             .map(|row| {

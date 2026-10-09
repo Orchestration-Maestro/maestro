@@ -142,6 +142,7 @@ fn domain(label: &str) -> bool {
     let text = label
         .strip_prefix("https://")
         .or_else(|| label.strip_prefix("http://"))
+        .or_else(|| label.strip_prefix("www."))
         .unwrap_or(label);
     regex.find(text).is_some_and(|domain| {
         !text[domain.range()]

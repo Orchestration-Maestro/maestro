@@ -458,3 +458,113 @@ fn markdown_http_prefixed_email_locals_use_mailto_hyperlinks() {
         ]
     );
 }
+
+#[test]
+fn markdown_authored_labels_exclude_container_markers_and_keep_escapes() {
+    let rows: Vec<Vec<String>> = [
+        r"![\*a](u)",
+        r"[\*a](*a)",
+        r"- # \*a",
+        "> ![a\n> b](u)",
+        "> - > a\n>   > b",
+        "> - ![a\n>   b](u)",
+        "- [ab]\n  ===",
+        "  - ![a\n    b](u)",
+        "-\n  ![a\n  b](u)",
+    ]
+    .into_iter()
+    .map(|text| {
+        Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        )
+        .render(30)
+    })
+    .collect();
+    let expected: Vec<Vec<String>> = [
+        vec![r"\*a"],
+        vec!["*a (*a)"],
+        vec![r"- \*a"],
+        vec!["│ a", "│ b"],
+        vec!["│ - a", "│ b"],
+        vec!["│ - a", "│ b"],
+        vec!["- [ab]"],
+        vec!["- a", "b"],
+        vec!["- a", "b"],
+    ]
+    .into_iter()
+    .map(|lines| lines.into_iter().map(|line| format!("{line:30}")).collect())
+    .collect();
+    assert_eq!(rows, expected);
+}
+
+#[test]
+fn markdown_list_html_retains_literal_text_and_parent_style() {
+    let rows: Vec<Vec<String>> = [
+        "- <div>x</div>",
+        "1. <div>x</div>",
+        "> - <div>x</div>",
+        "- a\n  - <div>x</div>",
+    ]
+    .into_iter()
+    .map(|text| {
+        Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: Some(DefaultTextStyle {
+                    color: Some(Box::new(|text| format!("\x1b[32m{text}\x1b[39m"))),
+                    ..DefaultTextStyle::default()
+                }),
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        )
+        .render(30)
+    })
+    .collect();
+    assert_eq!(
+        rows,
+        vec![
+            vec![format!("- \x1b[32m<div>x</div>\x1b[39m{}", " ".repeat(16))],
+            vec![format!("1. \x1b[32m<div>x</div>\x1b[39m{}", " ".repeat(15))],
+            vec![format!("│ - <div>x</div>{}", " ".repeat(14))],
+            vec![
+                format!("- \x1b[32ma\x1b[39m{}", " ".repeat(27)),
+                format!("  - \x1b[32m<div>x</div>\x1b[39m{}", " ".repeat(14))
+            ],
+        ]
+    );
+}
+
+#[test]
+fn markdown_www_requires_a_period_after_the_prefix() {
+    let terminal = TerminalImage::new(|_| None, || 1);
+    let mut capabilities = terminal.get_capabilities();
+    capabilities.hyperlinks = true;
+    terminal.set_capabilities(capabilities);
+    let component = Markdown::new(
+        "www.a www.com www.a.com www.com.org http://www.a".to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        terminal,
+    );
+    let expected = format!(
+        "www.a www.com {} {} {}",
+        maestro_tui::hyperlink("www.a.com", "http://www.a.com"),
+        maestro_tui::hyperlink("www.com.org", "http://www.com.org"),
+        maestro_tui::hyperlink("http://www.a", "http://www.a")
+    );
+    assert_eq!(component.render(48), [expected]);
+}

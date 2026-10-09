@@ -577,3 +577,52 @@ fn markdown_quote_prefix_is_shared_across_paragraphs_and_items() {
     );
     assert_eq!(samples.get(), 1);
 }
+
+#[test]
+fn markdown_heading_callbacks_render_children_before_hashes() {
+    let calls = Rc::new(RefCell::new(Vec::new()));
+    let recording = Rc::clone(&calls);
+    let mut theme = markdown::plain();
+    theme.heading = Box::new(move |text| {
+        recording.borrow_mut().push(text.to_owned());
+        text.to_owned()
+    });
+    assert_eq!(component("### x", theme, None).render(5), ["### x"]);
+    assert_eq!(*calls.borrow(), ["\0", "x", "### "]);
+}
+
+#[test]
+fn markdown_list_literal_fallbacks_sample_default_context() {
+    for (input, text) in [("- # x", "x"), ("- > x", "x")] {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let recording = Rc::clone(&calls);
+        let style = DefaultTextStyle {
+            color: Some(Box::new(move |text| {
+                recording.borrow_mut().push(text.to_owned());
+                text.to_owned()
+            })),
+            ..DefaultTextStyle::default()
+        };
+        assert_eq!(
+            component(input, markdown::plain(), Some(style)).render(3),
+            ["- x"]
+        );
+        assert_eq!(*calls.borrow(), ["\0", text], "{input}");
+    }
+}
+
+#[test]
+fn markdown_list_html_callbacks_receive_untrimmed_lines() {
+    let calls = Rc::new(RefCell::new(Vec::new()));
+    let recording = Rc::clone(&calls);
+    let style = DefaultTextStyle {
+        color: Some(Box::new(move |text| {
+            recording.borrow_mut().push(text.to_owned());
+            text.to_owned()
+        })),
+        ..DefaultTextStyle::default()
+    };
+    let rows = component("- <div>x</div>  \n", markdown::plain(), Some(style)).render(20);
+    assert_eq!(rows[0], "- <div>x</div>      ");
+    assert_eq!(*calls.borrow(), ["\0", "<div>x</div>  ", ""]);
+}

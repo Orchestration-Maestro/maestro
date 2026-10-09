@@ -48,6 +48,64 @@ pub(super) enum Kind {
     /// A visible line break.
     Break,
 }
+/// Authored source and the native containers enclosing the current events.
+struct Source<'a> {
+    /// Normalized original input.
+    text: &'a str,
+    /// Container prefixes removed by the native parser on continuation lines.
+    frame: Option<&'a Frame<'a>>,
+}
+/// One enclosing native block's continuation prefix.
+struct Frame<'a> {
+    /// Outer block, stripped before this block.
+    parent: Option<&'a Frame<'a>>,
+    /// Quote marker or list continuation indentation.
+    kind: Prefix,
+}
+/// Native block framing relevant to authored inline spans.
+enum Prefix {
+    /// One quote marker with its optional following space.
+    Quote,
+    /// List marker width on the item's first line.
+    Item(usize),
+}
+impl Frame<'_> {
+    /// Removes only prefixes belonging to the captured container path.
+    fn strip<'a>(&self, line: &'a str) -> &'a str {
+        let line = self.parent.map_or(line, |parent| parent.strip(line));
+        match self.kind {
+            Prefix::Quote => strip_quote(line),
+            Prefix::Item(width) => {
+                let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
+                &line[spaces.min(width)..]
+            }
+        }
+    }
+}
+impl Source<'_> {
+    /// Retains authored bytes while removing enclosing continuation prefixes.
+    fn authored(&self, range: Range<usize>) -> String {
+        self.text[range]
+            .split('\n')
+            .enumerate()
+            .map(|(index, line)| {
+                if index == 0 {
+                    line
+                } else {
+                    self.frame.map_or(line, |frame| frame.strip(line))
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
+/// Removes a native quote prefix, leaving lazy continuation text intact.
+fn strip_quote(line: &str) -> &str {
+    let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(3);
+    line[spaces..]
+        .strip_prefix('>')
+        .map_or(line, |line| line.strip_prefix(' ').unwrap_or(line))
+}
 /// Normalizes text before native parsing.
 pub(super) fn parse(text: &str) -> Vec<Node> {
     let source = text
@@ -61,7 +119,14 @@ pub(super) fn parse(text: &str) -> Vec<Node> {
     )
     .into_offset_iter();
     gaps(
-        children(&mut events, &source, false),
+        children(
+            &mut events,
+            &Source {
+                text: &source,
+                frame: None,
+            },
+            false,
+        ),
         &source,
         0..source.len(),
     )
@@ -69,7 +134,7 @@ pub(super) fn parse(text: &str) -> Vec<Node> {
 /// Consumes the current native container without rebuilding its source.
 fn children<'a>(
     events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>,
-    source: &str,
+    source: &Source<'_>,
     blocked: bool,
 ) -> Vec<Node> {
     let mut nodes = Vec::new();
@@ -87,7 +152,11 @@ fn children<'a>(
         };
         nodes.push(Node { kind, range });
     }
-    if blocked { nodes } else { runs(nodes, source) }
+    if blocked {
+        nodes
+    } else {
+        runs(nodes, source.text)
+    }
 }
 /// Retains blank source gaps around top-level blocks.
 fn gaps(nodes: Vec<Node>, source: &str, extent: Range<usize>) -> Vec<Node> {
@@ -116,14 +185,24 @@ fn gaps(nodes: Vec<Node>, source: &str, extent: Range<usize>) -> Vec<Node> {
     result
 }
 
-/// Retrieves authored label markup from the native child extents.
-fn label(nodes: &[Node], source: &str) -> String {
-    match (nodes.first(), nodes.last()) {
-        (Some(first), Some(last)) => source[first.range.start..last.range.end]
-            .replace("\\[", "[")
-            .replace("\\]", "]"),
-        _ => String::new(),
-    }
+/// Retrieves authored labels using native delimiters or heading child bounds.
+fn label(nodes: &[Node], source: &Source<'_>, range: &Range<usize>, opener: usize) -> String {
+    let Some(last) = nodes.last() else {
+        return String::new();
+    };
+    let start = if opener > 0 {
+        range.start + opener
+    } else {
+        let mut start = nodes[0].range.start;
+        while start > range.start && source.text.as_bytes()[start - 1] == b'\\' {
+            start -= 1;
+        }
+        start
+    };
+    source
+        .authored(start..last.range.end)
+        .replace("\\[", "[")
+        .replace("\\]", "]")
 }
 
 /// Scans only contiguous eligible text children of the same container.
@@ -146,7 +225,7 @@ fn runs(nodes: Vec<Node>, source: &str) -> Vec<Node> {
 fn container<'a>(
     tag: Tag<'a>,
     events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>,
-    source: &str,
+    source: &Source<'_>,
     blocked: bool,
     range: &Range<usize>,
 ) -> Kind {
@@ -162,36 +241,17 @@ fn container<'a>(
             } else {
                 dest_url.into_string()
             };
-            let authored = label(&children, source);
+            let authored = label(&children, source, range, 1);
             Kind::Link(children, authored, href)
         }
-        Tag::Image { .. } => Kind::Image(label(&children(events, source, true), source)),
+        Tag::Image { .. } => Kind::Image(label(&children(events, source, true), source, range, 2)),
         Tag::Strong => Kind::Strong(children(events, source, blocked)),
         Tag::Strikethrough => Kind::Strike(children(events, source, blocked)),
         Tag::Emphasis => Kind::Emphasis(children(events, source, blocked)),
-        Tag::BlockQuote(_) => {
-            let children = children(events, source, blocked);
-            let extent = children
-                .first()
-                .zip(children.last())
-                .map_or(range.start..range.start, |(first, last)| {
-                    first.range.start..last.range.end
-                });
-            let children = gaps(children, source, extent);
-            let authored = source[range.clone()]
-                .lines()
-                .map(|line| {
-                    let line = line.trim_start_matches(' ');
-                    line.strip_prefix('>')
-                        .map_or(line, |line| line.strip_prefix(' ').unwrap_or(line))
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-            Kind::Quote(children, authored)
-        }
+        Tag::BlockQuote(_) => quote(events, source, blocked, range),
         Tag::Heading { level, .. } => {
             let children = children(events, source, blocked);
-            let authored = label(&children, source);
+            let authored = label(&children, source, range, 0);
             Kind::Heading(level as usize, children, authored)
         }
         Tag::CodeBlock(info) => code_block(info, events, source),
@@ -205,16 +265,77 @@ fn container<'a>(
                 .collect(),
         ),
         Tag::List(start) => Kind::List(start, children(events, source, blocked)),
-        Tag::Item => Kind::Item(children(events, source, blocked)),
+        Tag::Item => item(events, source, blocked, range),
         _ => Kind::Paragraph(children(events, source, blocked)),
     }
+}
+
+/// Captures quote framing for child labels and the literal item fallback.
+fn quote<'a>(
+    events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>,
+    source: &Source<'_>,
+    blocked: bool,
+    range: &Range<usize>,
+) -> Kind {
+    let frame = Frame {
+        parent: source.frame,
+        kind: Prefix::Quote,
+    };
+    let nested = Source {
+        text: source.text,
+        frame: Some(&frame),
+    };
+    let children = children(events, &nested, blocked);
+    let extent = children
+        .first()
+        .zip(children.last())
+        .map_or(range.start..range.start, |(first, last)| {
+            first.range.start..last.range.end
+        });
+    let children = gaps(children, source.text, extent);
+    let authored = source
+        .authored(range.clone())
+        .lines()
+        .map(strip_quote)
+        .collect::<Vec<_>>()
+        .join("\n");
+    Kind::Quote(children, authored)
+}
+
+/// Captures list continuation framing from the native item marker.
+fn item<'a>(
+    events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>,
+    source: &Source<'_>,
+    blocked: bool,
+    range: &Range<usize>,
+) -> Kind {
+    let raw = &source.text[range.clone()];
+    let leading = raw.bytes().take_while(|byte| *byte == b' ').count();
+    let marker = leading
+        + raw[leading..]
+            .bytes()
+            .take_while(|byte| !byte.is_ascii_whitespace())
+            .count();
+    let spaces = raw[marker..]
+        .bytes()
+        .take_while(|byte| *byte == b' ')
+        .count();
+    let frame = Frame {
+        parent: source.frame,
+        kind: Prefix::Item(marker + if (1..=4).contains(&spaces) { spaces } else { 1 }),
+    };
+    let nested = Source {
+        text: source.text,
+        frame: Some(&frame),
+    };
+    Kind::Item(children(events, &nested, blocked))
 }
 
 /// Retains native code information and removes the parser's terminal newline.
 fn code_block<'a>(
     info: CodeBlockKind<'a>,
     events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>,
-    source: &str,
+    source: &Source<'_>,
 ) -> Kind {
     let text: String = children(events, source, true)
         .into_iter()

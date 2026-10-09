@@ -61,6 +61,7 @@ impl Renderer<'_> {
                     | Kind::Link(..)
                     | Kind::Image(_)
                     | Kind::Html(_)
+                    | Kind::HtmlBlock(_)
             ) {
                 inline.push(node);
                 continue;
@@ -76,14 +77,8 @@ impl Renderer<'_> {
                         .map(Row::Nested),
                 ),
                 Kind::Paragraph(children) => rows.push(Row::Content(self.inline(children, style))),
-                Kind::Heading(_, _, authored) | Kind::Quote(_, authored) => {
-                    rows.push(Row::Content(
-                        authored
-                            .split('\n')
-                            .map(|part| self.style(part, style))
-                            .collect::<Vec<_>>()
-                            .join("\n"),
-                    ));
+                Kind::Heading(..) | Kind::Quote(..) => {
+                    rows.push(Row::Content(self.inline(std::iter::once(node), style)));
                 }
                 Kind::CodeBlock(text, info) => rows.extend(
                     self.code_block(text, info.as_deref())

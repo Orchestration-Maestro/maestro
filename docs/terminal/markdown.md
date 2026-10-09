@@ -3,8 +3,11 @@
 `Markdown` renders headings, paragraphs, code blocks, rules, quotes and lists
 through supplied `MarkdownTheme` callbacks. Inline formatting includes emphasis,
 strong text, strikethrough, code and links. The native `CommonMark` parser owns the
-grammar; bare HTTP/HTTPS, www and email links use the extended-link rules. HTML is
-literal text, and images display their authored labels. Table layout is not provided.
+grammar; bare HTTP/HTTPS, www and email links use the extended-link rules. A www
+link requires a period in the domain after its prefix. HTML is literal text,
+including inside lists. Images display authored label markup without enclosing
+quote/list prefixes, unescaping brackets but retaining other escapes.
+Table layout is not provided.
 
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
 `DefaultTextStyle`. Its `decorations` select `TextDecoration` values; they apply in

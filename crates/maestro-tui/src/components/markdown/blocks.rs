@@ -72,12 +72,13 @@ impl Renderer<'_> {
     /// Formats a heading with hashes only for levels three and higher.
     fn heading(&self, level: usize, children: &[Node]) -> String {
         let style = Style::Heading(level);
+        let content = self.inline(children, style);
         let prefix = if level >= 3 {
             self.style(&format!("{} ", "#".repeat(level)), style)
         } else {
             String::new()
         };
-        format!("{prefix}{}", self.inline(children, style))
+        format!("{prefix}{content}")
     }
 }
 
