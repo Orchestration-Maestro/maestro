@@ -135,3 +135,7 @@ are later scope, not active foundation concepts.
 - **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
+
+- **Input:** The single-line editable terminal component.
+- **Kill ring:** Shared deleted-text history for yank and rotation.
+- **Undo stack:** Shared clone-on-push snapshots for restoring editable state.

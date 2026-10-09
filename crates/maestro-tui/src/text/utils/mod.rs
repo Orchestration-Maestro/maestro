@@ -3,6 +3,8 @@
 mod columns;
 mod measure;
 mod parsed;
+
+pub(crate) use parsed::Endings;
 mod render;
 mod style;
 mod truncation;

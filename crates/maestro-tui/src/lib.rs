@@ -6,15 +6,17 @@ pub mod editor_component;
 pub mod images;
 pub mod keybindings;
 pub mod keys;
+pub mod kill_ring;
 pub mod stdin_buffer;
 pub mod terminal;
 pub mod text;
 pub mod tui;
+pub mod undo_stack;
 
 pub use autocomplete::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, SlashCommand,
 };
-pub use components::{Box, Image, ImageOptions, ImageTheme, Spacer, Text, TruncatedText};
+pub use components::{Box, Image, ImageOptions, ImageTheme, Input, Spacer, Text, TruncatedText};
 pub use editor_component::EditorComponent;
 pub use keys::{
     Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
