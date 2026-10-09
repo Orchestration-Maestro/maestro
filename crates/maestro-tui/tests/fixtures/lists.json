@@ -1,0 +1,4953 @@
+{
+  "select_descriptions_collapse_breaks": [
+    {
+      "case": "sl-multiline",
+      "input": {
+        "items": [
+          {
+            "value": "test",
+            "label": "test",
+            "description": "Line one\nLine two\nLine three"
+          }
+        ],
+        "width": 100
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ test                            Line one Line two Line three"
+          ]
+        ],
+        "selected": "test",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_columns_keep_alignment": [
+    {
+      "case": "sl-aligned",
+      "input": {
+        "items": [
+          {
+            "value": "short",
+            "label": "short",
+            "description": "short description"
+          },
+          {
+            "value": "very-long-command-name-that-needs-truncation",
+            "label": "very-long-command-name-that-needs-truncation",
+            "description": "long description"
+          }
+        ],
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ short                           short description",
+            "  very-long-command-name-that-ne\u001b[0m  long description"
+          ]
+        ],
+        "selected": "short",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_bounds_choose_minimum": [
+    {
+      "case": "sl-min",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "a",
+            "description": "first"
+          },
+          {
+            "value": "bb",
+            "label": "bb",
+            "description": "second"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 12,
+          "maxPrimaryColumnWidth": 20
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ a           first",
+            "  bb          second"
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_bounds_choose_maximum": [
+    {
+      "case": "sl-max",
+      "input": {
+        "items": [
+          {
+            "value": "very-long-command-name-that-needs-truncation",
+            "label": "very-long-command-name-that-needs-truncation",
+            "description": "first"
+          },
+          {
+            "value": "short",
+            "label": "short",
+            "description": "second"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 12,
+          "maxPrimaryColumnWidth": 20
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ very-long-command-\u001b[0m  first",
+            "  short               second"
+          ]
+        ],
+        "selected": "very-long-command-name-that-needs-truncation",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_custom_truncation_keeps_context": [
+    {
+      "case": "sl-custom",
+      "input": {
+        "items": [
+          {
+            "value": "very-long-command-name-that-needs-truncation",
+            "label": "very-long-command-name-that-needs-truncation",
+            "description": "first"
+          },
+          {
+            "value": "short",
+            "label": "short",
+            "description": "second"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 12,
+          "maxPrimaryColumnWidth": 12
+        },
+        "custom": "ellipsis",
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ very-long…  first",
+            "  short       second"
+          ]
+        ],
+        "selected": "very-long-command-name-that-needs-truncation",
+        "events": [],
+        "calls": [
+          [
+            "truncate",
+            "very-long-command-name-that-needs-truncation",
+            10,
+            12,
+            0,
+            true
+          ],
+          [
+            "truncate",
+            "short",
+            10,
+            12,
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-custom-negative",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "A"
+          }
+        ],
+        "custom": "\u001b[31m界é\u001b[0m",
+        "width": 0
+      },
+      "expected": {
+        "frames": [
+          [
+            ""
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": [
+          [
+            "truncate",
+            "A",
+            -4,
+            -4,
+            0,
+            true
+          ]
+        ]
+      }
+    }
+  ],
+  "select_descriptions_normalize_before_layout": [
+    {
+      "case": "sl-normalize-whitespace",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": " L\nR ",
+            "description": "﻿ \r\n\nA\rB\n ﻿"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→  L\nR                             A B\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→  L\nR                             A B"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-normalize-nel",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": " L\nR ",
+            "description": "A"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→  L\nR                             A\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→  L\nR                             A"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-normalize-empty",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": " L\nR ",
+            "description": "\r\n \t﻿"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→  L\nR \u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→  L\nR "
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-normalize-ansi",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": " L\nR ",
+            "description": "\u001b[31m A\r\nB \u001b[0m"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→  L\nR                             \u001b[31m A B \u001b[0m\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→  L\nR                             \u001b[31m A B \u001b[0m"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-normalize-osc",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": " L\nR ",
+            "description": "\u001b]8;;https://x/\nq\u0007A\u001b]8;;\u0007"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→  L\nR                             \u001b]8;;https://x/ q\u0007A\u001b]8;;\u0007\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→  L\nR                             \u001b]8;;https://x/ q\u0007A\u001b]8;;\u0007"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-description-absent",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "A"
+          },
+          {
+            "value": "b",
+            "label": "B",
+            "description": ""
+          },
+          {
+            "value": "c",
+            "label": "C",
+            "description": "   "
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ A\u001b[0m",
+            "  B",
+            "  C"
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ A"
+          ]
+        ]
+      }
+    }
+  ],
+  "lists_clip_empty_messages_and_prefixes": [
+    {
+      "case": "sl-width-0",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 0,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "",
+            ""
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ "
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-1",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 1,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→\u001b[0m",
+            " \u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ "
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-80",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ Command                         desc\u001b[0m",
+            "  Other\u001b[31m                           unselected\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ Command                         desc"
+          ],
+          [
+            "description",
+            "                           unselected"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-empty",
+      "input": {
+        "items": [],
+        "width": 0,
+        "ops": [
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u001b"
+          },
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "invalidate": true
+          }
+        ],
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            ""
+          ]
+        ],
+        "selected": null,
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "noMatch",
+            "  No matching commands"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-false-0",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 0,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            ""
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-false-1",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 1,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[32m \u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-false-80",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 80,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[32m  No settings available\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-empty-bounded-1",
+      "input": {
+        "items": [],
+        "width": 1,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m \u001b[0m"
+          ]
+        ],
+        "selected": null,
+        "events": [],
+        "calls": [
+          [
+            "noMatch",
+            "  No matching commands"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-empty-bounded-80",
+      "input": {
+        "items": [],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m  No matching commands\u001b[0m"
+          ]
+        ],
+        "selected": null,
+        "events": [],
+        "calls": [
+          [
+            "noMatch",
+            "  No matching commands"
+          ]
+        ]
+      }
+    }
+  ],
+  "select_description_thresholds_and_narrow_widths": [
+    {
+      "case": "sl-width-2",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 2,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ \u001b[0m",
+            "  "
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ "
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-3",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 3,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ \u001b[0m",
+            "  "
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ "
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-4",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 4,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ \u001b[0m",
+            "  "
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ "
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-5",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 5,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ C\u001b[0m\u001b[0m",
+            "  O\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ C\u001b[0m"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-40",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 40,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ Command\u001b[0m",
+            "  Other"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ Command"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-41",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 41,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ Command\u001b[0m",
+            "  Other"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ Command"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-46",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 46,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ Command\u001b[0m",
+            "  Other"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ Command"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-width-47",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "Command",
+            "description": "desc"
+          },
+          {
+            "value": "w",
+            "label": "Other",
+            "description": "unselected"
+          }
+        ],
+        "width": 47,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ Command                         desc\u001b[0m",
+            "  Other\u001b[31m                           unselected\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ Command                         desc"
+          ],
+          [
+            "description",
+            "                           unselected"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-threshold-small-40",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "A",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 8
+        },
+        "width": 40,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ A\u001b[0m"
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ A"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-threshold-small-41",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "A",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 8
+        },
+        "width": 41,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ A       D\u001b[0m"
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": [
+          [
+            "selectedText",
+            "→ A       D"
+          ]
+        ]
+      }
+    }
+  ],
+  "select_bounds_fallback_swap_and_clamp": [
+    {
+      "case": "sl-bounds-default",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "abcdefghijklmn",
+            "description": "D"
+          }
+        ],
+        "layout": {},
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ abcdefghijklmn                  D"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-bounds-min",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "abcdefghijklmn",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 12
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ abcdefghij\u001b[0m  D"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-bounds-max",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "abcdefghijklmn",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "maxPrimaryColumnWidth": 20
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ abcdefghijklmn      D"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-bounds-swapped",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "abcdefghijklmn",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 20,
+          "maxPrimaryColumnWidth": 12
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ abcdefghijklmn  D"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-bounds-zero",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "abcdefghijklmn",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 0,
+          "maxPrimaryColumnWidth": 0
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ a\u001b[0m D"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-bounds-negative",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "abcdefghijklmn",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": -3,
+          "maxPrimaryColumnWidth": -1
+        },
+        "width": 80
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ a\u001b[0m D"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_custom_output_is_clipped_twice": [
+    {
+      "case": "sl-clamp-custom",
+      "input": {
+        "items": [
+          {
+            "value": "v",
+            "label": "L",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 32
+        },
+        "custom": "界界界界界界界界界界界界界界界界界界界界",
+        "width": 41,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[31m→ 界界界界界界界界界界界界界界界界界界\u001b[0m\u001b[0m"
+          ]
+        ],
+        "selected": "v",
+        "events": [],
+        "calls": [
+          [
+            "truncate",
+            "L",
+            30,
+            32,
+            0,
+            true
+          ],
+          [
+            "truncate",
+            "L",
+            37,
+            37,
+            0,
+            true
+          ],
+          [
+            "selectedText",
+            "→ 界界界界界界界界界界界界界界界界界界\u001b[0m"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "sl-effective-clamp",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "A",
+            "description": "D"
+          }
+        ],
+        "layout": {
+          "minPrimaryColumnWidth": 80
+        },
+        "custom": "ellipsis",
+        "width": 41
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ A"
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": [
+          [
+            "truncate",
+            "A",
+            33,
+            35,
+            0,
+            true
+          ],
+          [
+            "truncate",
+            "A",
+            37,
+            37,
+            0,
+            true
+          ]
+        ]
+      }
+    }
+  ],
+  "select_label_fallback_preserves_value_identity": [
+    {
+      "case": "sl-fallback",
+      "input": {
+        "items": [
+          {
+            "value": "same",
+            "label": "",
+            "description": "D"
+          },
+          {
+            "value": "other",
+            "label": "same"
+          }
+        ],
+        "width": 80,
+        "ops": [
+          {
+            "index": 1
+          },
+          {
+            "key": "\r"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "  same                            D",
+            "→ same"
+          ]
+        ],
+        "selected": "other",
+        "events": [
+          [
+            "select",
+            1,
+            "other"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "select_filter_uses_value_prefix_and_resets": [
+    {
+      "case": "sl-filter",
+      "input": {
+        "ops": [
+          {
+            "index": 4
+          },
+          {
+            "filter": "AL"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "filter": "One"
+          },
+          {
+            "width": 10
+          },
+          {
+            "filter": ""
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ One                             first",
+            "  Two                             second"
+          ],
+          [
+            "  No match\u001b[0m"
+          ],
+          [
+            "→ One                             first",
+            "  Two                             second",
+            "  Three                           third",
+            "  Four",
+            "  Five",
+            "  (1/6)"
+          ]
+        ],
+        "selected": "Alpha",
+        "events": [
+          [
+            "move",
+            1,
+            "alpine"
+          ],
+          [
+            "select",
+            1,
+            "alpine"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "select_case_matching_preserves_unicode": [
+    {
+      "case": "sl-case",
+      "input": {
+        "items": [
+          {
+            "value": "İtem",
+            "label": "Dotted"
+          },
+          {
+            "value": "ΟΣ",
+            "label": "Greek"
+          },
+          {
+            "value": "😀A",
+            "label": "Astral"
+          }
+        ],
+        "ops": [
+          {
+            "filter": "i̇"
+          },
+          {
+            "width": 80
+          },
+          {
+            "filter": "ος"
+          },
+          {
+            "width": 80
+          },
+          {
+            "filter": "😀a"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ Dotted"
+          ],
+          [
+            "→ Greek"
+          ],
+          [
+            "→ Astral"
+          ]
+        ],
+        "selected": "😀A",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_navigation_wraps_and_centers": [
+    {
+      "case": "sl-navigation",
+      "input": {
+        "maxVisible": 3,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "width": 80
+          },
+          {
+            "index": 3
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u001b[6~"
+          },
+          {
+            "key": "\u001b[5~"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "  Four",
+            "  Five",
+            "→ Six",
+            "  (6/6)"
+          ],
+          [
+            "→ One                             first",
+            "  Two                             second",
+            "  Three                           third",
+            "  (1/6)"
+          ],
+          [
+            "  Three                           third",
+            "→ Four",
+            "  Five",
+            "  (4/6)"
+          ],
+          [
+            "  Three                           third",
+            "→ Four",
+            "  Five",
+            "  (4/6)"
+          ]
+        ],
+        "selected": "gamma",
+        "events": [
+          [
+            "move",
+            5,
+            "zeta"
+          ],
+          [
+            "move",
+            0,
+            "Alpha"
+          ],
+          [
+            "select",
+            3,
+            "gamma"
+          ],
+          [
+            "cancel"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "select_index_clamps_without_notifications": [
+    {
+      "case": "sl-index",
+      "input": {
+        "ops": [
+          {
+            "index": -9
+          },
+          {
+            "width": 20
+          },
+          {
+            "index": 999
+          },
+          {
+            "width": 20
+          },
+          {
+            "filter": "zz"
+          },
+          {
+            "index": 2
+          },
+          {
+            "width": 20
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ One",
+            "  Two",
+            "  Three",
+            "  Four",
+            "  Five",
+            "  (1/6)"
+          ],
+          [
+            "  Two",
+            "  Three",
+            "  Four",
+            "  Five",
+            "→ Six",
+            "  (6/6)"
+          ],
+          [
+            "  No matching comma\u006e\u001b[0m"
+          ]
+        ],
+        "selected": null,
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "list_visible_limits_keep_scroll_counters": [
+    {
+      "case": "sl-visible-0",
+      "input": {
+        "maxVisible": 0,
+        "ops": [
+          {
+            "index": 3
+          }
+        ],
+        "width": 7
+      },
+      "expected": {
+        "frames": [
+          [
+            "  (4/\u001b[0m"
+          ]
+        ],
+        "selected": "gamma",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-visible-1",
+      "input": {
+        "maxVisible": 1,
+        "ops": [
+          {
+            "index": 3
+          }
+        ],
+        "width": 7
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ Fou\u001b[0m",
+            "  (4/\u001b[0m"
+          ]
+        ],
+        "selected": "gamma",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-visible-2",
+      "input": {
+        "maxVisible": 2,
+        "ops": [
+          {
+            "index": 3
+          }
+        ],
+        "width": 7
+      },
+      "expected": {
+        "frames": [
+          [
+            "  Th\u0072\u001b[0m",
+            "→ Fou\u001b[0m",
+            "  (4/\u001b[0m"
+          ]
+        ],
+        "selected": "gamma",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-visible-5",
+      "input": {
+        "maxVisible": 5,
+        "ops": [
+          {
+            "index": 3
+          }
+        ],
+        "width": 7
+      },
+      "expected": {
+        "frames": [
+          [
+            "  Two",
+            "  Th\u0072\u001b[0m",
+            "→ Fou\u001b[0m",
+            "  Fiv\u001b[0m",
+            "  Six",
+            "  (4/\u001b[0m"
+          ]
+        ],
+        "selected": "gamma",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "sl-visible-10",
+      "input": {
+        "maxVisible": 10,
+        "ops": [
+          {
+            "index": 3
+          }
+        ],
+        "width": 7
+      },
+      "expected": {
+        "frames": [
+          [
+            "  One",
+            "  Two",
+            "  Th\u0072\u001b[0m",
+            "→ Fou\u001b[0m",
+            "  Fiv\u001b[0m",
+            "  Six"
+          ]
+        ],
+        "selected": "gamma",
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-visible-0",
+      "input": {
+        "maxVisible": 0,
+        "width": 9
+      },
+      "expected": {
+        "frames": [
+          [
+            "  (1/4)",
+            "",
+            "  first",
+            "  parag",
+            "  raph",
+            "  next",
+            "  parag",
+            "  raph",
+            "",
+            "  Ente\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-visible-1",
+      "input": {
+        "maxVisible": 1,
+        "width": 9
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ Alp\u0068\u001b[0m...\u001b[0m",
+            "  (1/4)",
+            "",
+            "  first",
+            "  parag",
+            "  raph",
+            "  next",
+            "  parag",
+            "  raph",
+            "",
+            "  Ente\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-visible-2",
+      "input": {
+        "maxVisible": 2,
+        "width": 9
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ Alp\u0068\u001b[0m...\u001b[0m",
+            "  Beta\u001b[0m...\u001b[0m",
+            "  (1/4)",
+            "",
+            "  first",
+            "  parag",
+            "  raph",
+            "  next",
+            "  parag",
+            "  raph",
+            "",
+            "  Ente\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-visible-5",
+      "input": {
+        "maxVisible": 5,
+        "width": 9
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ Alp\u0068\u001b[0m...\u001b[0m",
+            "  Beta\u001b[0m...\u001b[0m",
+            "  Gamm\u001b[0m...\u001b[0m",
+            "  Del\u0074\u001b[0m...\u001b[0m",
+            "",
+            "  first",
+            "  parag",
+            "  raph",
+            "  next",
+            "  parag",
+            "  raph",
+            "",
+            "  Ente\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "select_render_reentry_reads_live_filtered_collection": [
+    {
+      "case": "sl-render-reentry",
+      "input": {},
+      "expected": {
+        "first": [
+          "→ One                             first"
+        ],
+        "second": [
+          "→ Three                           third"
+        ],
+        "selected": "beta"
+      }
+    }
+  ],
+  "select_callbacks_keep_identity_and_reenter": [
+    {
+      "case": "sl-callbacks",
+      "input": {},
+      "expected": {
+        "events": [
+          [
+            "old",
+            true
+          ],
+          [
+            "old",
+            true
+          ],
+          [
+            "new",
+            true
+          ]
+        ],
+        "selected": "beta"
+      }
+    },
+    {
+      "case": "sl-replace-callbacks",
+      "input": {},
+      "expected": {
+        "events": [
+          [
+            "new",
+            "Alpha"
+          ],
+          [
+            "old",
+            "Alpha"
+          ],
+          [
+            "cancel"
+          ]
+        ],
+        "selected": "alpine"
+      }
+    }
+  ],
+  "settings_empty_states_keep_hint_order": [
+    {
+      "case": "st-empty-false-2",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 2,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[32m  \u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-false-4",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 4,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[32m  No\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-false-5",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 5,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[32m  No \u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-false-20",
+      "input": {
+        "items": [],
+        "search": false,
+        "width": 20,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[32m  No settings availa\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-0",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 0,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-1",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 1,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            ">",
+            "",
+            "\u001b[32m \u001b[0m",
+            "",
+            "\u001b[0m.\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-2",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 2,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> ",
+            "",
+            "\u001b[32m  \u001b[0m",
+            "",
+            "\u001b[0m..\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-4",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 4,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m ",
+            "",
+            "\u001b[32m  No\u001b[0m",
+            "",
+            "\u001b[32m \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-5",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 5,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m  ",
+            "",
+            "\u001b[32m  No \u001b[0m",
+            "",
+            "\u001b[32m  \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-20",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 20,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m                 ",
+            "",
+            "\u001b[32m  No settings availa\u001b[0m",
+            "",
+            "\u001b[32m  Type to search \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-empty-true-80",
+      "input": {
+        "items": [],
+        "search": true,
+        "width": 80,
+        "trace": true,
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "\u001b[32m  No settings available\u001b[0m",
+            "",
+            "\u001b[32m  Type to search · Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": [
+          [
+            "hint",
+            "  No settings available"
+          ],
+          [
+            "hint",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    }
+  ],
+  "settings_search_filters_labels_and_resets": [
+    {
+      "case": "st-search",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "a"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": ""
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "nomatch"
+          },
+          {
+            "width": 20
+          },
+          {
+            "key": "\u001b"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> a\u001b[7m \u001b[27m                                                                            ",
+            "",
+            "  Alpha       off",
+            "→ Gamma       read only",
+            "  Beta label  2",
+            "  (2/4)",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> nomatch\u001b[7m \u001b[27m          ",
+            "",
+            "  No matching set\u001b[0m...\u001b[0m",
+            "",
+            "  Type to search \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-label-not-id",
+      "input": {
+        "items": [
+          {
+            "id": "needle",
+            "label": "Alpha",
+            "description": "needle",
+            "currentValue": "needle"
+          }
+        ],
+        "search": true,
+        "ops": [
+          {
+            "key": "needle"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> needle\u001b[7m \u001b[27m                                                                       ",
+            "",
+            "  No matching settings",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> needle\u001b[7m \u001b[27m                                                                       ",
+            "",
+            "  No matching settings",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "settings_spaces_activate_or_are_removed": [
+    {
+      "case": "st-spaces",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": " "
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "   "
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": " A l p "
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  Alpha       on",
+            "→ Beta label  2",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  Alpha       on",
+            "→ Beta label  2",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> Alp\u001b[7m \u001b[27m                                                                          ",
+            "",
+            "→ Alpha       on",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> Alp\u001b[7m \u001b[27m                                                                          ",
+            "",
+            "→ Alpha       off",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [
+          [
+            "change",
+            "a",
+            "on"
+          ],
+          [
+            "change",
+            "a",
+            "off"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "settings_search_reuses_input_decoding": [
+    {
+      "case": "st-input-tab",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "\t"
+          },
+          {
+            "width": 40
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m                                     ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-input-nbsp",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": " "
+          },
+          {
+            "width": 40
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            ">  \u001b[7m \u001b[27m                                    ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-input-bom",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "﻿"
+          },
+          {
+            "width": 40
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> ﻿\u001b[7m \u001b[27m                                     ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-input-nel",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": ""
+          },
+          {
+            "width": 40
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m                                     ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-input-kitty",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "\u001b[97u"
+          },
+          {
+            "width": 40
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> a\u001b[7m \u001b[27m                                    ",
+            "",
+            "→ Alpha       off",
+            "  Gamma       read only",
+            "  Beta label  2",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-input-paste",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "\u001b[200~B e t a\u001b[201~"
+          },
+          {
+            "width": 40
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> Beta\u001b[7m \u001b[27m                                 ",
+            "",
+            "→ Beta label  2",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "settings_search_retains_cursor_and_edit_history": [
+    {
+      "case": "st-history",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "Be"
+          },
+          {
+            "key": "\u001b[D"
+          },
+          {
+            "key": "\u001b[D"
+          },
+          {
+            "width": 8
+          },
+          {
+            "key": "t"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001f"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7mB\u001b[27me    ",
+            "",
+            "→ Bet\u001b[0m...\u001b[0m",
+            "",
+            "  Typ\u001b[0m...\u001b[0m"
+          ],
+          [
+            "> t\u001b[7mB\u001b[27me                                                                           ",
+            "",
+            "→ Beta label  2",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> \u001b[7mB\u001b[27me                                                                            ",
+            "",
+            "→ Beta label  2",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-kill-yank",
+      "input": {
+        "search": true,
+        "ops": [
+          {
+            "key": "Beta"
+          },
+          {
+            "key": "\u0015"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u0019"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001f"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> Beta\u001b[7m \u001b[27m                                                                         ",
+            "",
+            "→ Beta label  2",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-display-edit",
+      "input": {
+        "search": true,
+        "items": [
+          {
+            "id": "a",
+            "label": "กำ界",
+            "currentValue": "yes"
+          }
+        ],
+        "ops": [
+          {
+            "key": "กำ界"
+          },
+          {
+            "width": 4
+          },
+          {
+            "key": "\u001b[D"
+          },
+          {
+            "width": 4
+          },
+          {
+            "key": "x"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> \u001b[7m \u001b[27m ",
+            "",
+            "→\u001b[0m...\u001b[0m",
+            "",
+            " \u001b[0m...\u001b[0m"
+          ],
+          [
+            "> \u001b[7m \u001b[27m ",
+            "",
+            "→\u001b[0m...\u001b[0m",
+            "",
+            " \u001b[0m...\u001b[0m"
+          ],
+          [
+            "> กำx\u001b[7m界\u001b[27m                                                                         ",
+            "",
+            "  No matching settings",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "settings_cycle_handles_absent_duplicate_and_empty_values": [
+    {
+      "case": "st-cycle",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "A",
+            "currentValue": "absent",
+            "values": [
+              "",
+              "x",
+              "x"
+            ]
+          },
+          {
+            "id": "b",
+            "label": "B",
+            "currentValue": "b",
+            "values": []
+          },
+          {
+            "id": "c",
+            "label": "C",
+            "currentValue": "c"
+          },
+          {
+            "id": "d",
+            "label": "D",
+            "currentValue": "x",
+            "values": [
+              "x",
+              "x"
+            ]
+          }
+        ],
+        "ops": [
+          {
+            "key": "\r"
+          },
+          {
+            "key": " "
+          },
+          {
+            "key": " "
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": " "
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "key": "\r"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "  B  b",
+            "  C  c",
+            "→ D  x",
+            "  (4/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [
+          [
+            "change",
+            "a",
+            ""
+          ],
+          [
+            "change",
+            "a",
+            "x"
+          ],
+          [
+            "change",
+            "a",
+            "x"
+          ],
+          [
+            "change",
+            "d",
+            "x"
+          ]
+        ],
+        "calls": []
+      }
+    },
+    {
+      "case": "st-singleton",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "A",
+            "currentValue": "x",
+            "values": [
+              "x"
+            ]
+          }
+        ],
+        "ops": [
+          {
+            "key": "\r"
+          },
+          {
+            "key": " "
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ A  x",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [
+          [
+            "change",
+            "a",
+            "x"
+          ],
+          [
+            "change",
+            "a",
+            "x"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "settings_updates_first_id_without_change_callback": [
+    {
+      "case": "st-update",
+      "input": {
+        "items": [
+          {
+            "id": "same",
+            "label": "A",
+            "currentValue": "a"
+          },
+          {
+            "id": "same",
+            "label": "B",
+            "currentValue": "b"
+          }
+        ],
+        "ops": [
+          {
+            "update": [
+              "missing",
+              "x"
+            ]
+          },
+          {
+            "width": 80
+          },
+          {
+            "update": [
+              "same",
+              ""
+            ]
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ A  a",
+            "  B  b",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "→ A  ",
+            "  B  b",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "settings_navigation_wraps_and_keeps_selection": [
+    {
+      "case": "st-navigation",
+      "input": {
+        "ops": [
+          {
+            "key": "\u001b[A"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b[B"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b[6~"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u001b[5~"
+          },
+          {
+            "width": 80
+          },
+          {
+            "key": "\u0003"
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "  Beta label  2",
+            "  Gamma       read only",
+            "→ Delta       unknown",
+            "  (4/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "→ Alpha       off",
+            "  Beta label  2",
+            "  Gamma       read only",
+            "  (1/4)",
+            "",
+            "  first paragraph",
+            "  next paragraph",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "  Alpha       off",
+            "→ Beta label  2",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "  Alpha       off",
+            "→ Beta label  2",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "  Alpha       off",
+            "→ Beta label  2",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [
+          [
+            "cancel"
+          ]
+        ],
+        "calls": []
+      }
+    }
+  ],
+  "settings_layout_clips_after_styling": [
+    {
+      "case": "st-width-0",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 0,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31mn"
+          ],
+          [
+            "description",
+            "  \u001b[31me"
+          ],
+          [
+            "description",
+            "  \u001b[31mt"
+          ],
+          [
+            "description",
+            "  \u001b[31mw"
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31m界"
+          ],
+          [
+            "description",
+            "  \u001b[31m三"
+          ],
+          [
+            "description",
+            "  \u001b[31m四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-1",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 1,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[0m.\u001b[0m",
+            "\u001b[0m.\u001b[0m",
+            "",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "\u001b[32m \u001b[0m",
+            "",
+            "\u001b[0m.\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31mn"
+          ],
+          [
+            "description",
+            "  \u001b[31me"
+          ],
+          [
+            "description",
+            "  \u001b[31mt"
+          ],
+          [
+            "description",
+            "  \u001b[31mw"
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31m界"
+          ],
+          [
+            "description",
+            "  \u001b[31m三"
+          ],
+          [
+            "description",
+            "  \u001b[31m四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-2",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 2,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[0m..\u001b[0m",
+            "\u001b[0m..\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "",
+            "\u001b[0m..\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31mn"
+          ],
+          [
+            "description",
+            "  \u001b[31me"
+          ],
+          [
+            "description",
+            "  \u001b[31mt"
+          ],
+          [
+            "description",
+            "  \u001b[31mw"
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31m界"
+          ],
+          [
+            "description",
+            "  \u001b[31m三"
+          ],
+          [
+            "description",
+            "  \u001b[31m四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-3",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 3,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[0m...\u001b[0m",
+            "\u001b[0m...\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[31mo\u001b[0m",
+            "\u001b[32m  \u001b[31mn\u001b[0m",
+            "\u001b[32m  \u001b[31me\u001b[0m",
+            "\u001b[32m  \u001b[31mt\u001b[0m",
+            "\u001b[32m  \u001b[31mw\u001b[0m",
+            "\u001b[32m  \u001b[31mo\u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "",
+            "\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31mn"
+          ],
+          [
+            "description",
+            "  \u001b[31me"
+          ],
+          [
+            "description",
+            "  \u001b[31mt"
+          ],
+          [
+            "description",
+            "  \u001b[31mw"
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31m界"
+          ],
+          [
+            "description",
+            "  \u001b[31m三"
+          ],
+          [
+            "description",
+            "  \u001b[31m四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-4",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 4,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[35m▶\u001b[0m...\u001b[0m",
+            " \u001b[0m...\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[31mo\u001b[0m",
+            "\u001b[32m  \u001b[31mn\u001b[0m",
+            "\u001b[32m  \u001b[31me\u001b[0m",
+            "\u001b[32m  \u001b[31mt\u001b[0m",
+            "\u001b[32m  \u001b[31mw\u001b[0m",
+            "\u001b[32m  \u001b[31mo\u001b[0m",
+            "\u001b[32m  \u001b[31m界\u001b[0m",
+            "\u001b[32m  \u001b[31m三\u001b[0m",
+            "\u001b[32m  \u001b[31m四\u001b[0m\u001b[0m",
+            "",
+            "\u001b[32m \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31mn"
+          ],
+          [
+            "description",
+            "  \u001b[31me"
+          ],
+          [
+            "description",
+            "  \u001b[31mt"
+          ],
+          [
+            "description",
+            "  \u001b[31mw"
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31m界"
+          ],
+          [
+            "description",
+            "  \u001b[31m三"
+          ],
+          [
+            "description",
+            "  \u001b[31m四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-5",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 5,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[35m▶\u001b[0m \u001b[0m...\u001b[0m",
+            "  \u001b[0m...\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[31mo\u001b[0m",
+            "\u001b[32m  \u001b[31mn\u001b[0m",
+            "\u001b[32m  \u001b[31me\u001b[0m",
+            "\u001b[32m  \u001b[31mt\u001b[0m",
+            "\u001b[32m  \u001b[31mw\u001b[0m",
+            "\u001b[32m  \u001b[31mo\u001b[0m",
+            "\u001b[32m  \u001b[31m界\u001b[0m",
+            "\u001b[32m  \u001b[31m三\u001b[0m",
+            "\u001b[32m  \u001b[31m四\u001b[0m\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31mn"
+          ],
+          [
+            "description",
+            "  \u001b[31me"
+          ],
+          [
+            "description",
+            "  \u001b[31mt"
+          ],
+          [
+            "description",
+            "  \u001b[31mw"
+          ],
+          [
+            "description",
+            "  \u001b[31mo"
+          ],
+          [
+            "description",
+            "  \u001b[31m界"
+          ],
+          [
+            "description",
+            "  \u001b[31m三"
+          ],
+          [
+            "description",
+            "  \u001b[31m四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-20",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 20,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[35m▶\u001b[0m \u001b[32m界界界界界界界\u001b[0m...\u001b[0m",
+            "  \u001b[32mé              \u001b[0m...\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[31\u006done two\u001b[0m",
+            "\u001b[32m  \u001b[31m界三四\u001b[0m\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to \u001b[0m...\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31\u006done two"
+          ],
+          [
+            "description",
+            "  \u001b[31m界三四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-40",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 40,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[35m▶\u001b[0m \u001b[32m界界界界界界界界界界界界界界界界界\u001b[0m...\u001b[0m",
+            "  \u001b[32mé                             \u001b[0m  \u001b[32m😀z\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[31\u006done two\u001b[0m",
+            "\u001b[32m  \u001b[31m界三四\u001b[0m\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "long\u001b[0m",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "😀z",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31\u006done two"
+          ],
+          [
+            "description",
+            "  \u001b[31m界三四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-width-80",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "界界界界界界界界界界界界界界界界界界界界",
+            "currentValue": "long\tvalue",
+            "description": "\u001b[31\u006done two\n界三四\u001b[0m"
+          },
+          {
+            "id": "b",
+            "label": "é",
+            "currentValue": "😀z"
+          }
+        ],
+        "cursor": "\u001b[35m▶\u001b[0m ",
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "\u001b[35m▶\u001b[0m \u001b[32m界界界界界界界界界界界界界界界界界界界界\u001b[0m  \u001b[32mlong\tvalue\u001b[0m",
+            "  \u001b[32mé                             \u001b[0m  \u001b[32m😀z\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[31\u006done two\u001b[0m",
+            "\u001b[32m  \u001b[31m界三四\u001b[0m\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "界界界界界界界界界界界界界界界界界界界界",
+            true
+          ],
+          [
+            "value",
+            "long\tvalue",
+            true
+          ],
+          [
+            "label",
+            "é                             ",
+            false
+          ],
+          [
+            "value",
+            "😀z",
+            false
+          ],
+          [
+            "description",
+            "  \u001b[31\u006done two"
+          ],
+          [
+            "description",
+            "  \u001b[31m界三四\u001b[0m"
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-description-empty",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "A",
+            "currentValue": "v",
+            "description": ""
+          }
+        ],
+        "width": 40,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ \u001b[32mA\u001b[0m  \u001b[32mv\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "A",
+            true
+          ],
+          [
+            "value",
+            "v",
+            true
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-description-spaces",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "A",
+            "currentValue": "v",
+            "description": "   "
+          }
+        ],
+        "width": 40,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ \u001b[32mA\u001b[0m  \u001b[32mv\u001b[0m",
+            "",
+            "\u001b[32m     \u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "A",
+            true
+          ],
+          [
+            "value",
+            "v",
+            true
+          ],
+          [
+            "description",
+            "     "
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-description-breaks",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "A",
+            "currentValue": "v",
+            "description": "\n\n"
+          }
+        ],
+        "width": 40,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ \u001b[32mA\u001b[0m  \u001b[32mv\u001b[0m",
+            "",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "\u001b[32m  \u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "A",
+            true
+          ],
+          [
+            "value",
+            "v",
+            true
+          ],
+          [
+            "description",
+            "  "
+          ],
+          [
+            "description",
+            "  "
+          ],
+          [
+            "description",
+            "  "
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-label-cap-29",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+            "currentValue": "V"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ \u001b[32mLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\u001b[0m  \u001b[32mV\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "LLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+            true
+          ],
+          [
+            "value",
+            "V",
+            true
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-label-cap-30",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+            "currentValue": "V"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ \u001b[32mLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\u001b[0m  \u001b[32mV\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+            true
+          ],
+          [
+            "value",
+            "V",
+            true
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "st-label-cap-31",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+            "currentValue": "V"
+          }
+        ],
+        "width": 80,
+        "trace": true
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ \u001b[32mLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\u001b[0m  \u001b[32mV\u001b[0m",
+            "",
+            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+          ]
+        ],
+        "events": [],
+        "calls": [
+          [
+            "label",
+            "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+            true
+          ],
+          [
+            "value",
+            "V",
+            true
+          ],
+          [
+            "hint",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ]
+      }
+    }
+  ],
+  "settings_alignment_uses_all_original_labels": [
+    {
+      "case": "st-global-width",
+      "input": {
+        "search": true,
+        "items": [
+          {
+            "id": "a",
+            "label": "Z",
+            "currentValue": "one"
+          },
+          {
+            "id": "b",
+            "label": "VeryLongLabel",
+            "currentValue": "two"
+          }
+        ],
+        "ops": [
+          {
+            "key": "Z"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> Z\u001b[7m \u001b[27m                                                                            ",
+            "",
+            "→ Z              one",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "settings_submenu_delegates_and_done_restores": [
+    {
+      "case": "st-submenu",
+      "input": {},
+      "expected": {
+        "frames": [
+          [
+            "child"
+          ],
+          [
+            "  Alpha       off",
+            "→ Beta label  ",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ],
+          [
+            "  Alpha       off",
+            "→ Beta label  ",
+            "  Gamma       read only",
+            "  (2/4)",
+            "",
+            "  Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [
+          [
+            "open",
+            "2"
+          ],
+          [
+            "render",
+            20
+          ],
+          [
+            "invalidate"
+          ],
+          [
+            "input",
+            "\u001b"
+          ],
+          [
+            "render",
+            80
+          ],
+          [
+            "change",
+            "b",
+            "",
+            [
+              "child"
+            ]
+          ],
+          [
+            "open",
+            ""
+          ],
+          [
+            "change",
+            "b",
+            "late",
+            [
+              "  Alpha       off",
+              "→ Beta label  late",
+              "  Gamma       read only",
+              "  (2/4)",
+              "",
+              "  Enter/Space to change · Esc to cancel"
+            ]
+          ]
+        ],
+        "final": [
+          "  Alpha       off",
+          "→ Beta label  late",
+          "  Gamma       read only",
+          "  (2/4)",
+          "",
+          "  Enter/Space to change · Esc to cancel"
+        ]
+      }
+    }
+  ],
+  "settings_submenu_optional_input_is_a_noop": [
+    {
+      "case": "st-child-no-input",
+      "input": {},
+      "expected": {
+        "lines": [
+          "only"
+        ],
+        "cancels": 0
+      }
+    }
+  ],
+  "settings_change_callback_can_reenter": [
+    {
+      "case": "st-change-reentry",
+      "input": {},
+      "expected": {
+        "events": [
+          [
+            "a",
+            "on",
+            [
+              "→ Alpha       on",
+              "  Beta label  2",
+              "  Gamma       read only",
+              "  (1/4)",
+              "",
+              "  first paragraph",
+              "  next paragraph",
+              "",
+              "  Enter/Space to change · Esc to cancel"
+            ]
+          ]
+        ],
+        "lines": [
+          "  Alpha       callback",
+          "→ Beta label  2",
+          "  Gamma       read only",
+          "  (2/4)",
+          "",
+          "  Enter/Space to change · Esc to cancel"
+        ]
+      }
+    }
+  ],
+  "settings_synchronous_done_does_not_reopen_submenu": [
+    {
+      "case": "st-sync-done",
+      "input": {},
+      "expected": {
+        "lines": [
+          "→ X  new",
+          "",
+          "  Enter/Space to change · Esc to cancel"
+        ],
+        "events": [
+          [
+            "x",
+            "new"
+          ]
+        ]
+      }
+    }
+  ],
+  "lists_respect_rebound_key_precedence": [
+    {
+      "case": "keys-rebound",
+      "input": {},
+      "expected": {
+        "select": "zeta",
+        "settings": [
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "  Beta label  2",
+          "  Gamma       read only",
+          "→ Delta       x",
+          "  (4/4)",
+          "",
+          "  Type to search · Enter/Space to change · Esc to cancel"
+        ],
+        "events": [
+          [
+            "select",
+            "zeta"
+          ],
+          [
+            "cancel"
+          ],
+          [
+            "change",
+            "d",
+            "x"
+          ],
+          [
+            "cancel-setting"
+          ]
+        ]
+      }
+    },
+    {
+      "case": "list-capabilities",
+      "input": {},
+      "expected": {
+        "select": [
+          true,
+          false
+        ],
+        "settings": [
+          true,
+          false
+        ]
+      }
+    }
+  ],
+  "select_column_measurement_includes_hidden_rows": [
+    {
+      "case": "sl-hidden-width",
+      "input": {
+        "items": [
+          {
+            "value": "a",
+            "label": "A",
+            "description": "D"
+          },
+          {
+            "value": "b",
+            "label": "abcdefghijklmnopqrstuvwxy",
+            "description": "E"
+          }
+        ],
+        "maxVisible": 1,
+        "layout": {
+          "minPrimaryColumnWidth": 1,
+          "maxPrimaryColumnWidth": 30
+        },
+        "ops": [
+          {
+            "width": 80
+          },
+          {
+            "filter": "a"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "→ A                          D",
+            "  (1/2)"
+          ],
+          [
+            "→ A  D"
+          ]
+        ],
+        "selected": "a",
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "settings_search_reuses_fuzzy_ranking": [
+    {
+      "case": "st-ranking",
+      "input": {
+        "items": [
+          {
+            "id": "a",
+            "label": "Alpha Beta",
+            "currentValue": "a"
+          },
+          {
+            "id": "b",
+            "label": "Alpha Beta",
+            "currentValue": "b"
+          },
+          {
+            "id": "c",
+            "label": "Beta Alpha",
+            "currentValue": "c"
+          },
+          {
+            "id": "d",
+            "label": "Gamma",
+            "currentValue": "d"
+          }
+        ],
+        "search": true,
+        "ops": [
+          {
+            "key": "al bt"
+          },
+          {
+            "width": 80
+          }
+        ]
+      },
+      "expected": {
+        "frames": [
+          [
+            "> al bt\u001b[7m \u001b[27m                                                                        ",
+            "",
+            "→ Alpha Beta  a",
+            "  Alpha Beta  b",
+            "  Beta Alpha  c",
+            "",
+            "  Type to search · Enter/Space to change · Esc to cancel"
+          ]
+        ],
+        "events": [],
+        "calls": []
+      }
+    }
+  ],
+  "settings_render_reads_updates_through_original_items": [
+    {
+      "case": "st-internal-alias",
+      "input": {},
+      "expected": {
+        "first": [
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "→ Alpha       changed",
+          "  Beta label  2",
+          "  Gamma       later",
+          "  (1/4)",
+          "",
+          "  first paragraph",
+          "  next paragraph",
+          "",
+          "  Type to search · Enter/Space to change · Esc to cancel"
+        ],
+        "second": [
+          "> gm\u001b[7m \u001b[27m                                                                           ",
+          "",
+          "→ Gamma       later",
+          "",
+          "  Type to search · Enter/Space to change · Esc to cancel"
+        ]
+      }
+    }
+  ],
+  "select_callbacks_and_context_share_selected_item": [
+    {
+      "case": "sl-internal-identity",
+      "input": {},
+      "expected": {
+        "calls": [
+          [
+            "context",
+            true
+          ],
+          [
+            "context",
+            false
+          ],
+          [
+            "context",
+            false
+          ],
+          [
+            "selected",
+            true
+          ]
+        ],
+        "retained": true
+      }
+    }
+  ],
+  "lists_theme_closures_read_live_captured_state": [
+    {
+      "case": "themes-live",
+      "input": {},
+      "expected": {
+        "before": [
+          [
+            "  X",
+            "a:→ Y"
+          ],
+          [
+            "> X\u001b[7m \u001b[27m                                    ",
+            "",
+            "  X   a:V",
+            "→ XY  a:W",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ],
+        "after": [
+          [
+            "  X",
+            "b:→ Y"
+          ],
+          [
+            "> X\u001b[7m \u001b[27m                                    ",
+            "",
+            "  X   b:V",
+            "→ XY  b:W",
+            "",
+            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+          ]
+        ]
+      }
+    }
+  ],
+  "settings_done_updates_captured_item_after_filter_changes": [
+    {
+      "case": "st-done-filter",
+      "input": {},
+      "expected": {
+        "events": [
+          [
+            "a",
+            "retained"
+          ]
+        ],
+        "lines": [
+          "> \u001b[7m \u001b[27m                                                                             ",
+          "",
+          "→ Alpha       retained",
+          "  Beta label  2",
+          "  Gamma       read only",
+          "  (1/4)",
+          "",
+          "  first paragraph",
+          "  next paragraph",
+          "",
+          "  Type to search · Enter/Space to change · Esc to cancel"
+        ]
+      }
+    },
+    {
+      "case": "st-detached-done",
+      "input": {},
+      "expected": {
+        "events": [
+          [
+            "x",
+            "later"
+          ],
+          [
+            "x",
+            "again"
+          ]
+        ]
+      }
+    }
+  ],
+  "settings_done_closes_after_reentrant_change": [
+    {
+      "case": "st-done-order",
+      "input": {},
+      "expected": {
+        "events": [
+          [
+            "child"
+          ]
+        ],
+        "lines": [
+          "→ Alpha       override",
+          "  Beta label  2",
+          "  Gamma       read only",
+          "  (1/4)",
+          "",
+          "  first paragraph",
+          "  next paragraph",
+          "",
+          "  Enter/Space to change · Esc to cancel"
+        ]
+      }
+    }
+  ]
+}

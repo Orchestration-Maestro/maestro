@@ -245,3 +245,49 @@ fn first_frame_overflow_is_rejected() {
     );
     assert_eq!(rig.runtime.files(), [crash_report()]);
 }
+
+#[test]
+fn settings_description_rows_fit_the_frame_viewport() {
+    use maestro_tui::components::settings_list::SettingsListOptions;
+    use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme};
+
+    for width in [1, 2, 3, 4, 8] {
+        let terminal = RecordingTerminal::new(width, 20);
+        let runtime = ManualRuntime::new();
+        let tui = TUI::new(
+            terminal.handle(),
+            runtime.handle(),
+            TerminalImage::new(|_| None, || 1),
+            None,
+        );
+        let list = Rc::new(SettingsList::new(
+            vec![SettingItem {
+                id: "a".into(),
+                label: "A".into(),
+                current_value: "v".into(),
+                description: Some("a界".into()),
+                values: None,
+                submenu: None,
+            }],
+            1,
+            SettingsListTheme {
+                label: Rc::new(|text, _| text.into()),
+                value: Rc::new(|text, _| text.into()),
+                description: Rc::new(|text| format!("\x1b[31m{text}!\x1b[0m")),
+                cursor: "→ ".into(),
+                hint: Rc::new(str::to_owned),
+            },
+            (Rc::new(|_, _| {}), Rc::new(|| {})),
+            SettingsListOptions::default(),
+        ));
+        let lines = list.render(width);
+        assert!(!lines[2].is_empty(), "description at width {width}");
+        tui.add_child(list);
+        tui.request_render(false);
+        runtime.settle().unwrap_or_else(|error| {
+            panic!("description must fit the frame at width {width}: {error}")
+        });
+        assert!(runtime.files().is_empty());
+        assert!(!terminal.writes().is_empty());
+    }
+}
