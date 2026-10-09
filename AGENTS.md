@@ -29,6 +29,13 @@ The commit hook formats the code, re-stages the staged files and runs
 merge-conflict markers and invalid TOML or YAML. Commit messages need a
 conventional header and every line must be at most 80 columns.
 
+The conventions check requires `workspace.dependencies.serde_json` to name
+`serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
+including aliases, targets and optional entries, must inherit a workspace entry
+that enables it. Dev/build declarations are outside member inheritance enforcement
+and do not supply the required workspace feature; test feature unification can
+otherwise hide missing normal precision.
+
 ## Code quality limits
 
 `just check` enforces at most 5 parameters (at most 1 boolean), 60 lines per

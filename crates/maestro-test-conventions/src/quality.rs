@@ -9,6 +9,7 @@ use crate::source::{Member, Source, cfg_test, test_layout};
 /// Verify protected lint settings and production source size for every member.
 pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     check_protected_lints(root)?;
+    check_json_dependencies(root, members)?;
     for member in members {
         let manifest = member.directory.join("Cargo.toml");
         if member.name == generated::GUEST {
@@ -199,11 +200,7 @@ fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
 
 /// Require each crate to enable workspace lint inheritance.
 fn check_inheritance(name: &str, manifest: &Path) -> Result<(), String> {
-    let contents = std::fs::read_to_string(manifest)
-        .map_err(|error| format!("{}: {error}", manifest.display()))?;
-    let document: toml::Table = contents
-        .parse()
-        .map_err(|error| format!("{}: {error}", manifest.display()))?;
+    let document = read_manifest(manifest)?;
     if document
         .get("lints")
         .and_then(toml::Value::as_table)
@@ -219,11 +216,7 @@ fn check_inheritance(name: &str, manifest: &Path) -> Result<(), String> {
 /// Require every protected lint to retain its forbid level.
 fn check_protected_lints(root: &Path) -> Result<(), String> {
     let manifest = root.join("Cargo.toml");
-    let contents = std::fs::read_to_string(&manifest)
-        .map_err(|error| format!("{}: {error}", manifest.display()))?;
-    let document: toml::Table = contents
-        .parse()
-        .map_err(|error| format!("{}: {error}", manifest.display()))?;
+    let document = read_manifest(&manifest)?;
     for (group, name) in PROTECTED {
         let lint = document
             .get("workspace")
@@ -257,3 +250,99 @@ const PROTECTED: &[(&str, &str)] = &[
     ("clippy", "expect_used"),
     ("clippy", "panic"),
 ];
+
+/// Read a Cargo manifest through the existing native TOML parser.
+fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {
+    let contents = std::fs::read_to_string(manifest)
+        .map_err(|error| format!("{}: {error}", manifest.display()))?;
+    contents
+        .parse()
+        .map_err(|error| format!("{}: {error}", manifest.display()))
+}
+
+/// Require canonical workspace JSON precision and normal members' inheritance of precise entries.
+/// Dev/build declarations are excluded: their feature union can hide missing normal precision.
+fn check_json_dependencies(root: &Path, members: &[Member]) -> Result<(), String> {
+    let manifest = root.join("Cargo.toml");
+    let document = read_manifest(&manifest)?;
+    let dependencies = document
+        .get("workspace")
+        .and_then(|workspace| workspace.get("dependencies"));
+    let json = dependencies.and_then(|dependencies| dependencies.get("serde_json"));
+    if !json.is_some_and(|entry| {
+        entry
+            .get("package")
+            .and_then(toml::Value::as_str)
+            .unwrap_or("serde_json")
+            == "serde_json"
+            && has_json_precision(entry)
+    }) {
+        return Err(format!(
+            "{}: workspace.dependencies.serde_json must declare serde_json with float_roundtrip on the normal dependency path",
+            manifest.display()
+        ));
+    }
+    for member in members {
+        let manifest = member.directory.join("Cargo.toml");
+        let document = read_manifest(&manifest)?;
+        let normal = std::iter::once(("dependencies".to_owned(), document.get("dependencies")));
+        let targets = document
+            .get("target")
+            .and_then(toml::Value::as_table)
+            .into_iter()
+            .flatten()
+            .map(|(selector, target)| {
+                (
+                    format!("target.{selector:?}.dependencies"),
+                    target.get("dependencies"),
+                )
+            });
+        for (section, entries) in normal.chain(targets) {
+            let violation = entries
+                .and_then(toml::Value::as_table)
+                .into_iter()
+                .flatten()
+                .find(|(alias, entry)| json_precision_missing(alias, entry, dependencies));
+            if let Some((alias, _)) = violation {
+                return Err(format!(
+                    "{}: {section}.{alias} must inherit workspace.dependencies.{alias} with float_roundtrip on the normal dependency path",
+                    manifest.display()
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Identify an explicit exact-decimal feature in one dependency entry.
+fn has_json_precision(entry: &toml::Value) -> bool {
+    entry
+        .get("features")
+        .and_then(toml::Value::as_array)
+        .is_some_and(|features| {
+            features
+                .iter()
+                .any(|feature| feature.as_str() == Some("float_roundtrip"))
+        })
+}
+
+/// Select JSON by its actual package and test its own inherited workspace feature declaration.
+fn json_precision_missing(
+    alias: &str,
+    entry: &toml::Value,
+    dependencies: Option<&toml::Value>,
+) -> bool {
+    let inherited = entry.get("workspace").and_then(toml::Value::as_bool) == Some(true);
+    let identity = if inherited {
+        dependencies
+            .and_then(|dependencies| dependencies.get(alias))
+            .unwrap_or(entry)
+    } else {
+        entry
+    };
+    let package = identity
+        .get("package")
+        .and_then(toml::Value::as_str)
+        .unwrap_or(alias);
+    package == "serde_json" && (!inherited || !has_json_precision(identity))
+}
