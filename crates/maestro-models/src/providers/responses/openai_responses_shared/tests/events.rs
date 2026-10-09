@@ -115,7 +115,7 @@ fn maestro_responses_events_map_completion_status() -> TestResult {
         ("false", None),
         ("null", None),
         ("0", None),
-        (r#""complet\u0065d""#, None),
+        (r#""complete\u0064""#, None),
         ("[]", Some("Unhandled stop reason: ")),
         ("{}", Some("Unhandled stop reason: [object Object]")),
         (r#"["completed"]"#, Some("Unhandled stop reason: completed")),
