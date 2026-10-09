@@ -579,3 +579,142 @@ async fn assert_open_terminal(kind: &str, status: Value) {
         }
     );
 }
+
+/// Deliver one chunk, then acknowledge the next read before waiting for cancellation.
+struct PausedBody {
+    /// Initial partial text events.
+    chunk: Option<Vec<u8>>,
+    /// Producer guarantee that the first chunk has already been reduced.
+    reading: Option<tokio::sync::oneshot::Sender<()>>,
+    /// Same-body release witness.
+    dropped: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl futures_core::Stream for PausedBody {
+    type Item = Result<Vec<u8>, crate::FetchError>;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        if let Some(bytes) = self.chunk.take() {
+            return std::task::Poll::Ready(Some(Ok(bytes)));
+        }
+        if let Some(sender) = self.reading.take() {
+            sender.send(()).unwrap();
+        }
+        std::task::Poll::Pending
+    }
+}
+
+impl Drop for PausedBody {
+    fn drop(&mut self) {
+        self.dropped
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+#[test]
+fn maestro_response_sessions_cancel_body_reads() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        assert_cancelled_read().await;
+        for error in [
+            crate::FetchError::Connection(super::super::request::diagnostic(
+                "body connection cause",
+            )),
+            crate::FetchError::Connection(crate::DiagnosticErrorInfo {
+                name: Some("AbortError".to_owned()),
+                ..super::super::request::diagnostic("source abort cause")
+            }),
+        ] {
+            let expected = match &error {
+                crate::FetchError::Connection(info) => info.clone(),
+                _ => unreachable!(),
+            };
+            let (result, output, _) = invoke_body(Box::pin(stream::iter([Err(error)])), None).await;
+            assert_eq!(result.unwrap_err().diagnostic(), &expected);
+            assert_eq!(output.read().unwrap().stop_reason, crate::StopReason::Stop);
+        }
+    });
+}
+
+/// Abort only after the producer acknowledges a read after the retained text delta.
+async fn assert_cancelled_read() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    let signal = crate::Cancellation::new();
+    let dropped = Arc::new(AtomicBool::new(false));
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let bytes = event_bytes(&[
+        serde_json::json!({"type":"response.output_item.added","item":{"type":"message","content":[{"type":"output_text"}]}}),
+        serde_json::json!({"type":"response.output_text.delta","delta":"before cancellation"}),
+    ]);
+    let body = PausedBody {
+        chunk: Some(bytes),
+        reading: Some(sender),
+        dropped: Arc::clone(&dropped),
+    };
+    let abort = async {
+        receiver.await.unwrap();
+        signal.abort();
+    };
+    let (observed, ()) =
+        futures_util::future::join(invoke_body(Box::pin(body), Some(signal.clone())), abort).await;
+    let (result, output, _) = observed;
+    assert_eq!(
+        result.unwrap_err().diagnostic().message,
+        "Request was aborted"
+    );
+    assert_eq!(
+        serde_json::to_value(&output.read().unwrap().content).unwrap()[0]["text"],
+        "before cancellation"
+    );
+    assert!(dropped.load(Ordering::SeqCst));
+}
+
+/// Invoke one controlled body with no setup replay permitted.
+async fn invoke_body(
+    body: crate::HttpBody,
+    signal: Option<crate::Cancellation>,
+) -> (
+    Result<(), super::super::CodexError>,
+    crate::SharedAssistantMessage,
+    crate::AssistantMessageEventStream,
+) {
+    use std::sync::{Arc, Mutex, RwLock};
+    let (model, context, mut options) = super::invocation();
+    options.common.signal = signal;
+    let slot = Arc::new(Mutex::new(Some(body)));
+    options.common.fetch = Some(Arc::new(move |_| {
+        let body = slot
+            .lock()
+            .unwrap()
+            .take()
+            .expect("body failure must not replay setup");
+        Box::pin(async move {
+            Ok(crate::HttpResponse {
+                status: 200,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::new(),
+                body,
+            })
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    let result =
+        super::super::http::invoke_sse(&prepared, &model, &options, &output, &events).await;
+    (result, output, events)
+}
