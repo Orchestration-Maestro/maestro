@@ -26,9 +26,11 @@ Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
 explicit thinking nulls remain null. Compatibility overlays merge a router or
 gateway slot one level only when either side is truthy (a null, false, zero or
-empty-text slot with no truthy partner is kept as written); nested prices and lists are replaced, not recursively
-merged. Custom descriptors omit request headers. Members the descriptors do
-not read are skipped whatever their nesting depth.
+empty-text slot with no truthy partner is kept as written); nested prices and
+lists are replaced, not recursively merged. Custom descriptors omit request
+headers. After schema checking, descriptor selection consumes only declared
+metadata; unused members are dropped without copying or decoding them. File
+parsing uses the standard JSON reader recursion limit.
 
 ## Observations and reload
 

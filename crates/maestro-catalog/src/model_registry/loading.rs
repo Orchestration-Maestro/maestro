@@ -4,7 +4,6 @@ use super::{
     composition::{self, ProviderConfig},
 };
 use maestro_models::arguments::validation::validate_schema;
-use serde::Deserialize;
 use serde_json::Value;
 use std::sync::LazyLock;
 
@@ -22,7 +21,7 @@ pub(super) fn load(
     let text = operations
         .read_to_string(path)
         .map_err(|e| envelope("Failed to load models.json", &e.to_string(), path))?;
-    let value = parse(&strip_comments(&text))
+    let value = serde_json::from_str(&strip_comments(&text))
         .map_err(|e| envelope("Failed to parse models.json", &e.to_string(), path))?;
     let schema = SCHEMA
         .as_ref()
@@ -36,18 +35,10 @@ pub(super) fn load(
             path,
         ));
     }
-    let providers = composition::providers(&value)
+    let providers = composition::providers(value)
         .map_err(|e| envelope("Failed to load models.json", &e.to_string(), path))?;
     validate(&providers).map_err(|e| envelope("Failed to load models.json", &e, path))?;
     Ok(Some(providers))
-}
-/// Parse a complete document; discarded members never hit the decoder's default depth bound.
-fn parse(text: &str) -> Result<Value, serde_json::Error> {
-    let mut decoder = serde_json::Deserializer::from_str(text);
-    decoder.disable_recursion_limit();
-    let value = Value::deserialize(&mut decoder)?;
-    decoder.end()?;
-    Ok(value)
 }
 /// Remove line comments first, then recognize trailing commas on the resulting text.
 fn strip_comments(text: &str) -> String {
@@ -124,7 +115,7 @@ fn validate_provider(name: &str, config: &ProviderConfig, builtin: bool) -> Resu
     } else if !builtin {
         for (field, present) in [
             ("baseUrl", config.base_url.is_some()),
-            ("apiKey", config.api_key.is_some()),
+            ("apiKey", config.api_key),
         ] {
             if !present {
                 return Err(format!(
@@ -141,8 +132,8 @@ fn validate_provider(name: &str, config: &ProviderConfig, builtin: bool) -> Resu
             ));
         }
         for (field, value) in [
-            ("contextWindow", model.fields.context_window),
-            ("maxTokens", model.fields.max_tokens),
+            ("contextWindow", model.context_window),
+            ("maxTokens", model.max_tokens),
         ] {
             if value.is_some_and(|n| n <= 0.0) {
                 return Err(format!(

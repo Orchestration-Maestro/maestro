@@ -18,7 +18,8 @@ pub(super) struct ProviderConfig {
     /// Protocol default.
     pub api: Option<String>,
     /// Presence of a configured key, used only by additional validation.
-    pub api_key: Option<String>,
+    #[serde(skip)]
+    pub api_key: bool,
     /// Header presence, without retaining unconsumed values.
     pub headers: Option<serde::de::IgnoredAny>,
     /// Open compatibility defaults.
@@ -40,12 +41,26 @@ pub(super) struct ModelDefinition {
     pub api: Option<String>,
     /// Model-specific endpoint.
     base_url: Option<String>,
-    /// Selected metadata, also used by built-in overrides.
-    #[serde(flatten)]
-    pub fields: ModelOverride,
+    /// Display name.
+    name: Option<String>,
+    /// Reasoning capability.
+    reasoning: Option<bool>,
+    /// Declared reasoning levels, retaining explicit null.
+    #[serde(default, deserialize_with = "thinking")]
+    thinking_level_map: Option<ThinkingLevelMap>,
+    /// Accepted input kinds in authored order.
+    input: Option<Vec<ModelInput>>,
+    /// Selected partial prices.
+    cost: Option<CostOverride>,
+    /// Context size.
+    pub context_window: Option<f64>,
+    /// Output limit.
+    pub max_tokens: Option<f64>,
+    /// Open compatibility metadata.
+    compat: Option<ModelCompat>,
 }
 /// Optional metadata actually consumed by model composition.
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct ModelOverride {
     /// Display name.
@@ -114,23 +129,31 @@ fn thinking<'de, D: serde::Deserializer<'de>>(
     decoder.deserialize_map(Selected).map(Some)
 }
 /// Enumerate provider keys with canonical numeric indices before other keys.
-pub(super) fn providers(value: &Value) -> Result<Vec<(String, ProviderConfig)>, serde_json::Error> {
-    let mut entries: Vec<_> = value
-        .as_object()
-        .and_then(|v| v.get("providers"))
-        .and_then(Value::as_object)
-        .into_iter()
-        .flat_map(Map::iter)
-        .collect();
+pub(super) fn providers(value: Value) -> Result<Vec<(String, ProviderConfig)>, serde_json::Error> {
+    let mut root = match value {
+        Value::Object(root) => root,
+        value => serde_json::from_value(value)?,
+    };
+    let mut entries: Vec<_> = match root.remove("providers") {
+        Some(Value::Object(providers)) => providers.into_iter().collect(),
+        _ => Vec::new(),
+    };
     entries.sort_by_key(|(key, _)| {
         key.parse::<u32>()
             .ok()
-            .filter(|n| *n < u32::MAX && n.to_string() == **key)
+            .filter(|n| *n < u32::MAX && n.to_string() == *key)
             .map_or((1, 0), |n| (0, n))
     });
     entries
         .into_iter()
-        .map(|(key, value)| ProviderConfig::deserialize(value).map(|config| (key.clone(), config)))
+        .map(|(key, value)| {
+            let api_key = value
+                .as_object()
+                .is_some_and(|map| map.contains_key("apiKey"));
+            let mut config: ProviderConfig = serde_json::from_value(value)?;
+            config.api_key = api_key;
+            Ok((key, config))
+        })
         .collect()
 }
 /// Apply custom defaults and replace exact identities without moving their first slot.
@@ -213,7 +236,19 @@ fn custom(
         headers: None,
         compat: config.compat.clone(),
     };
-    apply(&mut model, definition.fields);
+    apply(
+        &mut model,
+        ModelOverride {
+            name: definition.name,
+            reasoning: definition.reasoning,
+            thinking_level_map: definition.thinking_level_map,
+            input: definition.input,
+            cost: definition.cost,
+            context_window: definition.context_window,
+            max_tokens: definition.max_tokens,
+            compat: definition.compat,
+        },
+    );
     Some(model)
 }
 /// Overlay selected metadata without applying undeclared API or endpoint fields.
