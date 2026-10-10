@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -126,7 +126,7 @@ impl TuiRuntime for ProcessTuiRuntime {
                 u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
             });
         LogContext {
-            home: std::env::home_dir().unwrap_or_default(),
+            home: home_directory(),
             iso_time: timestamp(unix_ms),
             unix_ms,
             nonce: format!("{:x}", rand::random::<u64>()),
@@ -150,6 +150,16 @@ impl TuiRuntime for ProcessTuiRuntime {
         }
         fs::write(path, contents)
     }
+}
+
+/// The home directory: on Unix the `HOME` variable verbatim, empty included,
+/// and the account directory only when it is unset.
+fn home_directory() -> PathBuf {
+    #[cfg(unix)]
+    if let Some(home) = std::env::var_os("HOME") {
+        return PathBuf::from(home);
+    }
+    std::env::home_dir().unwrap_or_default()
 }
 
 #[cfg(test)]

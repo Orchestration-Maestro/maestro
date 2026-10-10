@@ -460,7 +460,11 @@ fn log_context_uses_native_home_and_current_wall_time() {
         run_set(true, |local| async move {
             let context = checked_context(&ProcessTuiRuntime::new(local));
             match std::env::var_os("MAESTRO_EXPECT_HOME") {
-                Some(home) => assert_eq!(context.home, Path::new(&home)),
+                Some(home) => {
+                    assert_eq!(context.home, Path::new(&home));
+                    let destination = context.home.join(".maestro").join("agent");
+                    assert_eq!(destination.is_relative(), !Path::new(&home).is_absolute());
+                }
                 None => assert_eq!(context.home, std::env::home_dir().unwrap_or_default()),
             }
         });
@@ -486,7 +490,7 @@ fn log_context_uses_native_home_and_current_wall_time() {
                     Some(home) => command.env("HOME", home),
                     None => command.env_remove("HOME"),
                 };
-                if let Some(exact) = home.filter(|home| !home.is_empty()) {
+                if let Some(exact) = home {
                     command.env("MAESTRO_EXPECT_HOME", exact);
                 }
             },
