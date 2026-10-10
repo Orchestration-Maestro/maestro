@@ -8,7 +8,28 @@ mod streams;
 mod sockets;
 
 #[cfg(not(target_arch = "wasm32"))]
-mod socket_transport;
+pub(super) mod socket_transport;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod loopback;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod cache_continuation;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod socket_sessions;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod socket_debug;
+
+/// Serializes tests that touch session-keyed process state: cached sockets, counters and
+/// fallback flags. A test takes it before spawning any peer or task and holds it until they finish.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn exclusive() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
 
 /// Build the controlled request descriptor without consulting a catalog or environment.
 fn invocation() -> (

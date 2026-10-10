@@ -40,9 +40,9 @@ to its caller; no public dispatch caller is delivered yet.
 
 ## Native socket request
 
-The internal socket operation sends one full request over a fresh native
-connection and always releases it afterwards, with or without a session
-identifier; reuse and continuation are not delivered yet. Socket headers derive
+The internal socket operation sends one request over a native connection.
+Without a session identifier it opens a fresh connection and releases it after
+the request. Socket headers derive
 from the validated request headers: accept and content type are removed, the
 `openai-beta` field selects the socket beta, and the supplied request identifier
 replaces both affinity fields. Header bytes keep their one-byte-per-character
@@ -69,3 +69,32 @@ cancellation reports `Request was aborted`; an earlier preparation or endpoint
 failure is reported instead. The connector rejects an endpoint with a fragment
 or a scheme other than `ws` and `wss` before connecting. Dropping the operation
 releases the connection.
+
+## Session connections
+
+With a session identifier, a healthy connection stays cached for 300,000
+milliseconds after its request and serves the next request whose endpoint and
+effective headers are equal (header names compare case-insensitively); a request
+with different values replaces it. While another operation holds the session's
+connection, a new request uses an uncached connection and releases it afterwards.
+An idle connection answers pings and discards application messages without
+reducing them, and leaves the cache when the peer closes it, the period elapses
+(close reason `idle_timeout`) or the session is closed. A failed request,
+including one cancelled before it completes, closes its connection and clears
+the session's context; a request cancelled after it completed closes its
+connection and keeps the context.
+
+The `websocket-cached` and `auto` transports keep, per cached connection, the
+last completed request body, its response identifier and the input items the
+response contributes. The next request sends only the input items that follow
+those, with `previous_response_id`, when every other member is equal and the
+earlier input and response items are a prefix of the new input; otherwise it
+sends the full request and the context is dropped. Each selected request is
+counted in the session's debug statistics.
+
+Closing a session (one or all) removes it from the cache and closes its
+connection with reason `debug_close`; statistics and fallback state stay. A
+request in flight sends that close, keeps reading, reduces the messages the
+peer still delivers, and ends with its own result or the peer's close, so a
+queued terminal response still completes it. A connection released without a
+close request reports reason `done`.

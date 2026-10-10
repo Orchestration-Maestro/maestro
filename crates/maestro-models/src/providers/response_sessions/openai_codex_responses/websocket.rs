@@ -1,28 +1,34 @@
-//! Native response-session socket: authenticated upgrade, full request and ordered reduction.
+//! Native response-session socket: authenticated upgrade, the selected request and ordered
+//! reduction.
 
+use super::continuation::{Request, retain, select};
+use super::debug::count_request;
 use super::events::{map_codex_event, reduce};
 use super::headers::build_web_socket_headers;
 use super::request::{PreparedRequest, diagnostic, resolve_codex_url};
+use super::sessions::{CloseReason, Identity, Socket, acquire, lock};
 use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{Raced, client_pairs, decode_utf8, race};
-use crate::providers::json_text::{compact_members, raw_json};
+use crate::providers::json_text::{BorrowedJson, compact_members, raw_json};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
-    DiagnosticErrorInfo, Model, SharedAssistantMessage,
+    DiagnosticErrorInfo, Model, SharedAssistantMessage, Transport,
 };
+use futures_util::future::{Either, select as select_first};
 use futures_util::{FutureExt, Sink, SinkExt, Stream, StreamExt};
 use indexmap::IndexMap;
 use serde_json::Value;
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::pin::pin;
+use std::sync::{Arc, LazyLock};
+use tokio_tungstenite::connect_async_with_config;
 use tokio_tungstenite::tungstenite::{
     Error, Message,
     client::IntoClientRequest,
     error::ProtocolError,
     protocol::{CloseFrame, WebSocketConfig, frame::coding::CloseCode},
 };
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async_with_config};
 use url::Url;
 
 /// Close code reported for a close frame that carries no status.
@@ -31,6 +37,9 @@ const NO_STATUS_CLOSE: u16 = 1005;
 const ABNORMAL_CLOSE: u16 = 1006;
 /// Close code whose empty reason is described as an oversized message.
 const MESSAGE_TOO_BIG_CLOSE: u16 = 1009;
+
+/// The `type` of a request that names none.
+static REQUEST_TYPE: LazyLock<Value> = LazyLock::new(|| Value::from("response.create"));
 
 /// The partial message, event producer and start notification one socket operation drives.
 pub(crate) struct WebSocketOutput<'a> {
@@ -116,11 +125,16 @@ pub(super) struct Receiver<'s, 'o, S> {
     ended: bool,
     /// Failure category recovered after the reducer sees its diagnostic view.
     pub(super) failure: Option<CodexError>,
+    /// An explicit close of the session, sent once while reading goes on.
+    closed: Option<Closed>,
 }
+
+/// Resolves when the session is explicitly closed.
+pub(super) type Closed = tokio::sync::watch::Receiver<Option<CloseReason>>;
 
 impl<'s, 'o, S> Receiver<'s, 'o, S>
 where
-    S: Stream<Item = Result<Message, Error>> + Unpin,
+    S: Stream<Item = Result<Message, Error>> + Sink<Message, Error = Error> + Unpin,
 {
     /// Begin selecting events from an open socket.
     pub(super) fn new(
@@ -135,7 +149,32 @@ where
             started: false,
             ended: false,
             failure: None,
+            closed: None,
         }
+    }
+
+    /// Read the next message. An explicit session close is sent as a close frame, after which
+    /// reading continues: the peer may still deliver response messages before it answers.
+    async fn read(&mut self) -> Raced<Option<Result<Message, Error>>> {
+        while let Some(closed) = self.closed.as_mut() {
+            let read = race(self.socket.next(), None, self.signal);
+            let closing = closed.wait_for(Option::is_some);
+            let reason = match select_first(pin!(read), pin!(closing)).await {
+                Either::Left((raced, _)) => return raced,
+                Either::Right((reason, _)) => reason
+                    .ok()
+                    .and_then(|reason| *reason)
+                    .unwrap_or(CloseReason::Done),
+            };
+            self.closed = None;
+            let frame = close_message(reason);
+            if let Raced::Cancelled | Raced::TimedOut =
+                race(self.socket.send(frame), None, self.signal).await
+            {
+                return Raced::Cancelled;
+            }
+        }
+        race(self.socket.next(), None, self.signal).await
     }
 
     /// Keep the category while exposing the reducer's diagnostic item.
@@ -198,7 +237,7 @@ where
             let received = if self.signal.is_some_and(Cancellation::is_aborted) {
                 Err(aborted())
             } else {
-                match race(self.socket.next(), None, self.signal).await {
+                match self.read().await {
                     Raced::Done(Some(Ok(message))) => self.select(message),
                     Raced::Done(Some(Err(error))) => Err(transport_error(&error)),
                     Raced::Done(None) => Err(close_error(ABNORMAL_CLOSE, "")),
@@ -223,26 +262,43 @@ pub(super) fn message_text(message: &Message) -> Option<Cow<'_, str>> {
     }
 }
 
-/// The request object: `type` holds the first non-index position with the body's own value
-/// when it has one; the body's other members follow. Member order and number spelling are
-/// those of [`compact_members`].
+/// The request object for a body: see [`wire_members`].
 pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
-    let own = body.as_object();
-    let default = Value::from("response.create");
-    let kind = own.and_then(|own| own.get("type")).unwrap_or(&default);
-    let rest = own
-        .into_iter()
-        .flatten()
-        .filter(|(name, _)| *name != "type")
-        .map(|(name, value)| (name.as_str(), value));
+    wire_members(
+        body.as_object()
+            .into_iter()
+            .flatten()
+            .map(|(name, value)| (name.as_str(), BorrowedJson::Value(value))),
+    )
+}
+
+/// The request object: `type` holds the first non-index position with the members' own value
+/// when they have one; the other members follow. Member order and number spelling are
+/// those of [`compact_members`].
+pub(super) fn wire_members<'a>(
+    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)> + Clone,
+) -> Result<String, CodexError> {
+    let kind = members
+        .clone()
+        .find_map(|(name, value)| (name == "type").then_some(value))
+        .unwrap_or(BorrowedJson::Value(&REQUEST_TYPE));
+    let rest = members.filter(|(name, _)| *name != "type");
     compact_members(std::iter::once(("type", kind)).chain(rest))
         .map_err(|error| CodexError::Transport(diagnostic(error.to_string())))
+}
+
+/// A request's socket message text, and the explicit close that may interrupt its response.
+pub(super) struct Outgoing {
+    /// Socket message text.
+    pub(super) wire: String,
+    /// Resolves when the session is explicitly closed.
+    pub(super) closed: Option<Closed>,
 }
 
 /// Send the request and reduce the response, owning every receive from the first message.
 async fn exchange<S>(
     socket: &mut S,
-    body: String,
+    outgoing: Outgoing,
     model: &Model,
     options: &OpenAICodexResponsesOptions,
     output: WebSocketOutput<'_>,
@@ -251,13 +307,14 @@ where
     S: Stream<Item = Result<Message, Error>> + Sink<Message, Error = Error> + Unpin,
 {
     let signal = options.common.signal.as_ref();
-    match race(socket.send(Message::text(body)), None, signal).await {
+    match race(socket.send(Message::text(outgoing.wire)), None, signal).await {
         Raced::Done(Ok(())) => {}
         Raced::Done(Err(error)) => return Err(transport_error(&error)),
         Raced::Cancelled | Raced::TimedOut => return Err(aborted()),
     }
     let (message, stream) = (output.output, output.stream);
     let mut receiver = Receiver::new(socket, signal, output);
+    receiver.closed = outgoing.closed;
     let view = futures_util::stream::unfold(&mut receiver, |receiver| async move {
         receiver.next().await.map(|event| (event, receiver))
     });
@@ -271,6 +328,7 @@ where
 }
 
 /// Run one request on an open socket, then send a best-effort close and release it.
+#[cfg(test)]
 pub(super) async fn run_released<S>(
     mut socket: S,
     body: String,
@@ -281,14 +339,30 @@ pub(super) async fn run_released<S>(
 where
     S: Stream<Item = Result<Message, Error>> + Sink<Message, Error = Error> + Unpin,
 {
-    let result = exchange(&mut socket, body, model, options, output).await;
-    let close = Message::Close(Some(CloseFrame {
-        code: CloseCode::Normal,
-        reason: "done".into(),
-    }));
-    // A close that cannot be written at once is dropped with the socket.
-    let _ = socket.send(close).now_or_never();
+    let outgoing = Outgoing {
+        wire: body,
+        closed: None,
+    };
+    let result = exchange(&mut socket, outgoing, model, options, output).await;
+    close_now(&mut socket, CloseReason::Done);
     result
+}
+
+/// The normal close frame carrying the reason text.
+fn close_message(reason: CloseReason) -> Message {
+    Message::Close(Some(CloseFrame {
+        code: CloseCode::Normal,
+        reason: reason.as_str().into(),
+    }))
+}
+
+/// Send a normal close with the reason; a close that cannot be written at once is dropped
+/// with the socket.
+pub(super) fn close_now<S>(socket: &mut S, reason: CloseReason)
+where
+    S: Sink<Message, Error = Error> + Unpin,
+{
+    let _ = socket.send(close_message(reason)).now_or_never();
 }
 
 /// Reject, before any connection, an endpoint with a fragment or a scheme other than `ws`/`wss`.
@@ -312,7 +386,7 @@ async fn connect(
     url: &str,
     headers: &mut IndexMap<String, String>,
     signal: Option<&Cancellation>,
-) -> Result<WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>, CodexError> {
+) -> Result<Socket, CodexError> {
     let pairs = client_pairs(headers).map_err(|error| CodexError::Transport(diagnostic(error)))?;
     admit(url)?;
     let mut request = url.into_client_request().map_err(|error| native(&error))?;
@@ -336,7 +410,10 @@ async fn connect(
     }
 }
 
-/// Send one full request over a fresh authenticated socket and release it afterwards.
+/// Send one request over the session's cached socket or a new one: the input suffix with the
+/// previous response identifier when the cached-context transport is selected and [`select`]
+/// accepts the retained context, otherwise the full request. The result decides what the lease
+/// keeps: see [`retain`] and `Lease::keep`; a failure clears the context.
 pub(crate) async fn process_web_socket_stream(
     prepared: &PreparedRequest,
     model: &Arc<Model>,
@@ -347,7 +424,50 @@ pub(crate) async fn process_web_socket_stream(
     let mut headers =
         build_web_socket_headers(&prepared.headers, request_id).map_err(CodexError::Transport)?;
     let url = resolve_codex_web_socket_url(&model.base_url)?;
-    let body = wire_body(&prepared.body)?;
-    let socket = connect(&url, &mut headers, options.common.signal.as_ref()).await?;
-    run_released(socket, body, model, options, output).await
+    let signal = options.common.signal.as_ref();
+    let session = options
+        .common
+        .session_id
+        .as_deref()
+        .filter(|session| !session.is_empty());
+    let identity = Identity::new(&url, &headers);
+    let mut lease = acquire(session, identity, connect(&url, &mut headers, signal)).await?;
+    let cached = matches!(
+        options.common.transport,
+        Some(Transport::WebsocketCached | Transport::Auto)
+    );
+    let delta = lease
+        .continuation()
+        .filter(|_| cached)
+        .and_then(|slot| select(slot, &prepared.body));
+    let request = delta.map_or_else(|| Request::full(&prepared.body), Ok)?;
+    count_request(&request, &options.common, lease.reused);
+    let message = output.output;
+    let outgoing = Outgoing {
+        wire: request.wire,
+        closed: lease.closed(),
+    };
+    let Some(socket) = lease.socket.as_mut() else {
+        return Err(close_error(ABNORMAL_CLOSE, ""));
+    };
+    let result = exchange(socket, outgoing, model, options, output).await;
+    let settled = result.and_then(|()| {
+        if signal.is_some_and(Cancellation::is_aborted) {
+            return Ok(false);
+        }
+        if let Some(slot) = lease.continuation().filter(|_| cached) {
+            retain(slot, &prepared.body, message, model)?;
+        }
+        Ok(true)
+    });
+    match &settled {
+        Ok(true) => lease.keep(),
+        Ok(false) => {}
+        Err(_) => {
+            if let Some(slot) = lease.continuation() {
+                *lock(slot) = None;
+            }
+        }
+    }
+    settled.map(drop)
 }

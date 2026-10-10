@@ -1,9 +1,14 @@
 //! Internal response-session request preparation.
 
+#[cfg(not(target_arch = "wasm32"))]
+mod continuation;
+mod debug;
 mod events;
 mod headers;
 mod http;
 mod request;
+#[cfg(not(target_arch = "wasm32"))]
+mod sessions;
 #[cfg(not(target_arch = "wasm32"))]
 mod websocket;
 

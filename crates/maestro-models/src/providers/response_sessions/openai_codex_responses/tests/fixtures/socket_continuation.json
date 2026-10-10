@@ -1,0 +1,292 @@
+[
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"r1\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[],\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"r1\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"changed\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"changed\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"different\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"different\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":true,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":true,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":3,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":3,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"a\":2,\"z\":1}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"a\":2,\"z\":1}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"unknown\":{\"z\":1,\"a\":2},\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"unknown\":{\"z\":1,\"a\":2},\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}]}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"model\":\"m\",\"store\":false,\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"input\":[{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"model\":\"m\",\"store\":false,\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"r1\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"caller\"}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"r1\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"ignored\"},\"lastResponseId\":\"r1\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2},\"previous_response_id\":\"r1\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"}],\"unknown\":{\"z\":1,\"a\":2}},\"lastResponseId\":\"\",\"lastResponseItems\":[{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuation": null
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"store\":false,\"input\":[{\"role\":\"user\",\"content\":\"first\"},{\"type\":\"message\",\"id\":\"a\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]},{\"role\":\"user\",\"content\":\"next\"},{\"role\":\"user\",\"content\":\"next\"}],\"unknown\":{\"z\":1,\"a\":2}}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\"}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\"},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"previous_response_id\":\"r\",\"input\":[]}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":null}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":null},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":[],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"x\"}]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"x\"}],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"2\":2,\"1\":1,\"model\":\"m\",\"input\":[]}",
+      "continuation": "{\"lastRequestBody\":{\"1\":1,\"2\":2,\"model\":\"m\",\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"1\":1,\"2\":2,\"model\":\"m\",\"input\":[],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"temperature\":1e-7,\"input\":[]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"temperature\":0.0000001,\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"temperature\":1e-7,\"input\":[],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"temperature\":-0,\"input\":[]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"temperature\":0,\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"temperature\":0,\"input\":[],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"extra\":[2,1,2],\"input\":[]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"extra\":[2,1],\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"extra\":[2,1,2],\"input\":[]}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"extra\":null,\"input\":[]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"extra\":null,\"input\":[]}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":[{\"x\":1},{\"x\":1},{\"x\":2}]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":[{\"x\":1},{\"x\":1}]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":[{\"x\":2}],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":[{\"text\":\"\\u03a9\\ud83d\\ude00﻿\"},{\"text\":\"next\"}]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":[{\"text\":\"Ω😀﻿\"}]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":[{\"text\":\"next\"}],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":\"Ω😀\"}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":\"Ω😀\"}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"next\"}]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":\"old\"},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"next\"}]}",
+      "continuationRetained": false
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"next\"}]}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":\"\"},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"next\"}],\"previous_response_id\":\"r\"}",
+      "continuationRetained": true
+    }
+  },
+  {
+    "input": {
+      "body": "{\"model\":\"m\",\"input\":\"\"}",
+      "continuation": "{\"lastRequestBody\":{\"model\":\"m\",\"input\":[]},\"lastResponseId\":\"r\",\"lastResponseItems\":[]}"
+    },
+    "expected": {
+      "body": "{\"model\":\"m\",\"input\":\"\"}",
+      "continuationRetained": false
+    }
+  }
+]
