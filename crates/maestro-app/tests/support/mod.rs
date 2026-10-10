@@ -45,8 +45,8 @@ pub struct FakeOps {
     pub current_dir_calls: Cell<usize>,
 }
 
-/// A fixture path spelled for the target: Windows paths take a drive and
-/// backslashes, because its path joining roots and separates that way.
+/// A fixture path spelled for the target: on Windows, slash-rooted paths gain
+/// `C:` and separators become backslashes; relative paths stay relative.
 pub fn target(path: &str) -> String {
     if cfg!(windows) {
         let separated = path.replace('/', "\\");
