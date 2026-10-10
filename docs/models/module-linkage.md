@@ -34,7 +34,8 @@ which the functions of the same names in the provider modules report as `Err`, e
 it with an error update carrying the adapter's text, an empty message with the
 descriptor's identity and zero usage, and the error stop reason even when the
 signal was already aborted. Every other failure follows the adapter's own stream
-path; see each provider page.
+path; see the provider pages: [messages](messages.md), [chat completions](chat-completions.md),
+[reasoning conversations](reasoning-conversations.md) and [responses](responses.md).
 
 `stream`, `stream_simple`, `complete` and `complete_simple` resolve the registry.
 An unregistered `api` returns `No API provider registered for api: {api}`. A
@@ -47,7 +48,9 @@ settled error streams.
 `ProviderStreamOptions.common` reaches the adapter unchanged. A bundled raw
 callback reads these optional members of `ProviderStreamOptions.extra`, ignores
 all others and ends the stream with the decoder's error text when a listed member
-has the wrong shape. Only the two members marked nullable accept `null`.
+has the wrong shape. Enum members and tool-choice discriminators must be JSON
+strings, a named function must be an object, and only the two members marked
+nullable accept `null`.
 
 | Protocol | Members |
 |---|---|
@@ -57,8 +60,10 @@ has the wrong shape. Only the two members marked nullable accept `null`.
 | `openai-responses` | `reasoningEffort`, `reasoningSummary` (`auto`, `detailed`, `concise`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable) |
 | `azure-openai-responses` | `reasoningEffort`, `reasoningSummary`, `azureApiVersion`, `azureResourceName`, `azureBaseUrl`, `azureDeploymentName` |
 
-A `null` summary and a missing summary both request no explicit summary. A
-`null` service tier is sent as `null`; a missing one is omitted.
+A `null` summary and a missing summary both reach the adapter as no summary. A
+`null` service tier reaches the adapter as an explicit null tier and a missing
+one as no tier; the [responses page](responses.md) describes the payload built
+from them, including what a payload hook may change.
 
 ## Objects that are not JSON
 

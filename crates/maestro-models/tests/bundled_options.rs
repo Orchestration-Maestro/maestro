@@ -17,12 +17,21 @@ use maestro_models::{
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+/// Tests that own fixture rows.
+const OWNERS: [&str; 5] = [
+    "maestro_anthropic_extras_reach_requests",
+    "maestro_chat_extras_reach_requests",
+    "maestro_mistral_extras_reach_requests",
+    "maestro_response_extras_keep_presence",
+    "maestro_azure_extras_select_target",
+];
 
 /// The outcome of one controlled invocation.
 struct Sent {
-    /// The request that reached the transport, if any.
-    request: Option<Seen>,
+    /// Every request that reached the transport.
+    requests: Vec<Seen>,
     /// The terminal error text, if the invocation failed.
     error: Option<String>,
 }
@@ -79,7 +88,7 @@ fn sent_while_registered(api: &str, overrides: &Value, extra: &Value) -> TestRes
             .await)
     })?;
     Ok(Sent {
-        request: bundled::recorded(&requests).into_iter().next(),
+        requests: bundled::recorded(&requests),
         error: bundled::error_of(&result),
     })
 }
@@ -117,12 +126,33 @@ struct Row {
     error: Option<String>,
 }
 
+/// Every case of the fixture, checked for ownership and duplicate inputs.
+fn all_rows() -> TestResult<Vec<Row>> {
+    let rows: Vec<Row> = serde_json::from_str(include_str!("fixtures/bundled_options.json"))?;
+    let mut inputs = BTreeSet::new();
+    for row in &rows {
+        assert!(
+            OWNERS.contains(&row.test.as_str()),
+            "{}: unknown owner",
+            row.label
+        );
+        let input = (&row.test, &row.api, &row.model, &row.extra);
+        assert!(
+            inputs.insert(serde_json::to_string(&input)?),
+            "{} / {}: duplicate input",
+            row.test,
+            row.label
+        );
+    }
+    Ok(rows)
+}
+
 /// Check every recorded case of `test`.
 fn assert_rows(test: &str) -> TestResult {
-    let rows: Vec<Row> = chat::rows(include_str!("fixtures/bundled_options.json"), test)?
+    let rows: Vec<Row> = all_rows()?
         .into_iter()
-        .map(serde_json::from_value)
-        .collect::<Result<_, _>>()?;
+        .filter(|row| row.test == test)
+        .collect();
     assert!(!rows.is_empty(), "{test} has recorded cases");
     for row in rows {
         assert_row(&row)?;
@@ -134,17 +164,18 @@ fn assert_rows(test: &str) -> TestResult {
 fn assert_row(row: &Row) -> TestResult {
     let label = format!("{} / {}", row.test, row.label);
     let seen = sent(&row.api, &row.model, &row.extra)?;
-    let Some(request) = seen.request else {
-        assert_eq!(
-            seen.error, row.error,
-            "{label}: no request without a recorded error"
+    if row.error.is_some() {
+        assert!(
+            seen.requests.is_empty(),
+            "{label}: a rejected case reached the transport"
         );
+        assert_eq!(seen.error, row.error, "{label}");
         return Ok(());
+    }
+    assert_eq!(seen.error, None, "{label}: a successful case failed");
+    let [request] = seen.requests.as_slice() else {
+        return Err(format!("{label}: expected one request, got {}", seen.requests.len()).into());
     };
-    assert_eq!(
-        row.error, None,
-        "{label}: a rejected case reached the transport"
-    );
     if let Some(url) = &row.url {
         assert_eq!(&request.url, url, "{label}");
     }
@@ -333,7 +364,7 @@ fn maestro_simple_dispatch_keeps_adapter_policy() -> TestResult {
     );
     let raw = sent_while_registered(chat.api, &overrides, &json!({"reasoningEffort": "xhigh"}))?;
     assert_eq!(
-        raw.request.ok_or("raw request")?.body["reasoning_effort"],
+        raw.requests.first().ok_or("raw request")?.body["reasoning_effort"],
         "xhigh",
         "raw effort is not clamped"
     );

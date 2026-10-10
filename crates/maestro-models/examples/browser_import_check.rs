@@ -6,6 +6,28 @@ use maestro_models::{
     stream_simple_mistral, stream_simple_openai_completions, stream_simple_openai_responses,
 };
 
+/// A client holding single-threaded state, with that state's call counter.
+#[cfg(target_arch = "wasm32")]
+fn local_client() -> (
+    maestro_models::AnthropicClient,
+    std::rc::Rc<std::cell::Cell<u8>>,
+) {
+    let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
+    let seen = std::rc::Rc::clone(&calls);
+    let client: maestro_models::AnthropicClient = std::sync::Arc::new(move |_, _| {
+        seen.set(seen.get() + 1);
+        Box::pin(std::future::ready(Err(
+            maestro_models::DiagnosticErrorInfo {
+                name: None,
+                message: String::new(),
+                stack: None,
+                code: None,
+            },
+        )))
+    });
+    (client, calls)
+}
+
 fn main() {
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
@@ -37,8 +59,10 @@ fn main() {
     #[cfg(target_arch = "wasm32")]
     {
         let mut objects = ProviderObjects::default();
-        objects.insert(std::rc::Rc::new(1_u8));
-        assert!(objects.get::<std::rc::Rc<u8>>().is_some());
+        let (client, calls) = local_client();
+        objects.insert(client);
+        assert!(objects.get::<maestro_models::AnthropicClient>().is_some());
+        assert_eq!(calls.get(), 0);
     }
     #[cfg(not(target_arch = "wasm32"))]
     drop(ProviderObjects::default());

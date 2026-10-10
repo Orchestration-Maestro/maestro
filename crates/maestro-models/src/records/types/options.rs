@@ -3,8 +3,9 @@ use super::ThinkingLevel;
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
 use crate::providers::http::Fetch;
 use indexmap::IndexMap;
+use serde::de::IntoDeserializer;
 use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// Carry optional per-level token budgets.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -185,11 +186,11 @@ pub enum ToolChoice {
 #[serde(untagged)]
 enum ToolChoiceWire {
     /// Mode string.
-    Mode(ToolChoiceMode),
+    Mode(Literal<ToolChoiceMode>),
     /// Named function object.
     Function {
         /// Constant discriminator.
-        r#type: FunctionTag,
+        r#type: Literal<FunctionTag>,
         /// Function reference.
         function: FunctionName,
     },
@@ -215,11 +216,33 @@ pub(crate) enum FunctionTag {
     Function,
 }
 
-/// Function reference inside a named tool choice.
-#[derive(Deserialize)]
+/// An enum read only from a JSON string; maps such as `{"high": null}` are rejected.
+pub(crate) struct Literal<T>(pub(crate) T);
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Literal<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        T::deserialize(text.into_deserializer()).map(Self)
+    }
+}
+
+/// Function reference inside a named tool choice, read only from a JSON object.
 pub(crate) struct FunctionName {
     /// Function name.
     pub(crate) name: String,
+}
+
+impl<'de> Deserialize<'de> for FunctionName {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct Fields {
+            name: String,
+        }
+        let fields = serde_json::Map::<String, serde_json::Value>::deserialize(deserializer)?;
+        Fields::deserialize(serde_json::Value::Object(fields))
+            .map(|Fields { name }| Self { name })
+            .map_err(serde::de::Error::custom)
+    }
 }
 
 /// Borrowed function reference written inside a named tool choice.
@@ -232,11 +255,11 @@ struct FunctionNameRef<'a> {
 impl From<ToolChoiceWire> for ToolChoice {
     fn from(wire: ToolChoiceWire) -> Self {
         match wire {
-            ToolChoiceWire::Mode(ToolChoiceMode::Auto) => Self::Auto,
-            ToolChoiceWire::Mode(ToolChoiceMode::None) => Self::None,
-            ToolChoiceWire::Mode(ToolChoiceMode::Required) => Self::Required,
+            ToolChoiceWire::Mode(Literal(ToolChoiceMode::Auto)) => Self::Auto,
+            ToolChoiceWire::Mode(Literal(ToolChoiceMode::None)) => Self::None,
+            ToolChoiceWire::Mode(Literal(ToolChoiceMode::Required)) => Self::Required,
             ToolChoiceWire::Function {
-                r#type: FunctionTag::Function,
+                r#type: Literal(FunctionTag::Function),
                 function,
             } => Self::Function {
                 name: function.name,

@@ -6,7 +6,7 @@ use crate::providers::{
     reasoning::mistral::{MistralPromptMode, MistralReasoningEffort},
     responses::openai_responses::{OpenAIResponsesReasoningSummary, OpenAIResponsesServiceTier},
 };
-use crate::records::types::{FunctionName, FunctionTag};
+use crate::records::types::{FunctionName, FunctionTag, Literal};
 use crate::{
     AnthropicOptions, AzureOpenAIResponsesOptions, MistralOptions, MistralToolChoice,
     OpenAICompletionsOptions, OpenAIResponsesOptions, ProviderStreamOptions, ThinkingLevel,
@@ -20,6 +20,20 @@ fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error> {
     T::deserialize(deserializer).map(Some)
+}
+
+/// Read an enum field that, when present, must be a JSON string naming a variant.
+fn literal<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    Literal::<T>::deserialize(deserializer).map(|Literal(value)| Some(value))
+}
+
+/// Read an enum field like [`literal`], where an explicit null means omitted.
+fn literal_or_null<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    Option::<Literal<T>>::deserialize(deserializer).map(|value| value.map(|Literal(value)| value))
 }
 
 /// Read a field whose explicit null is distinct from omission.
@@ -41,12 +55,12 @@ fn extras<T: serde::de::DeserializeOwned>(
 #[serde(untagged)]
 enum MessageChoice {
     /// Mode string.
-    Mode(MessageMode),
+    Mode(Literal<MessageMode>),
     /// Named tool object.
     Named {
         /// Constant discriminator.
         #[serde(rename = "type")]
-        _tag: NamedTool,
+        _tag: Literal<NamedTool>,
         /// Tool name.
         name: String,
     },
@@ -75,9 +89,9 @@ enum NamedTool {
 impl From<MessageChoice> for ToolChoice {
     fn from(choice: MessageChoice) -> Self {
         match choice {
-            MessageChoice::Mode(MessageMode::Auto) => Self::Auto,
-            MessageChoice::Mode(MessageMode::Any) => Self::Required,
-            MessageChoice::Mode(MessageMode::None) => Self::None,
+            MessageChoice::Mode(Literal(MessageMode::Auto)) => Self::Auto,
+            MessageChoice::Mode(Literal(MessageMode::Any)) => Self::Required,
+            MessageChoice::Mode(Literal(MessageMode::None)) => Self::None,
             MessageChoice::Named { name, .. } => Self::Function { name },
         }
     }
@@ -94,10 +108,10 @@ struct MessageExtras {
     #[serde(default, deserialize_with = "present")]
     thinking_budget_tokens: Option<f64>,
     /// Adaptive effort.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     effort: Option<AnthropicEffort>,
     /// Thinking display mode.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     thinking_display: Option<AnthropicThinkingDisplay>,
     /// Whether the interleaved-reasoning beta may be requested.
     #[serde(default, deserialize_with = "present")]
@@ -129,7 +143,7 @@ pub(super) fn anthropic(
 #[serde(rename_all = "camelCase")]
 struct ChatExtras {
     /// Reasoning effort.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     reasoning_effort: Option<ThinkingLevel>,
     /// Tool selection.
     #[serde(default, deserialize_with = "present")]
@@ -153,12 +167,12 @@ pub(super) fn chat(
 #[serde(untagged)]
 enum ConversationChoice {
     /// Mode string.
-    Mode(ConversationMode),
+    Mode(Literal<ConversationMode>),
     /// Named function object.
     Function {
         /// Constant discriminator.
         #[serde(rename = "type")]
-        _tag: FunctionTag,
+        _tag: Literal<FunctionTag>,
         /// Function reference.
         function: FunctionName,
     },
@@ -181,10 +195,10 @@ enum ConversationMode {
 impl From<ConversationChoice> for MistralToolChoice {
     fn from(choice: ConversationChoice) -> Self {
         match choice {
-            ConversationChoice::Mode(ConversationMode::Auto) => Self::Auto,
-            ConversationChoice::Mode(ConversationMode::None) => Self::None,
-            ConversationChoice::Mode(ConversationMode::Any) => Self::Any,
-            ConversationChoice::Mode(ConversationMode::Required) => Self::Required,
+            ConversationChoice::Mode(Literal(ConversationMode::Auto)) => Self::Auto,
+            ConversationChoice::Mode(Literal(ConversationMode::None)) => Self::None,
+            ConversationChoice::Mode(Literal(ConversationMode::Any)) => Self::Any,
+            ConversationChoice::Mode(Literal(ConversationMode::Required)) => Self::Required,
             ConversationChoice::Function { function, .. } => Self::Function {
                 name: function.name,
             },
@@ -197,10 +211,10 @@ impl From<ConversationChoice> for MistralToolChoice {
 #[serde(rename_all = "camelCase")]
 struct ConversationExtras {
     /// Reasoning effort.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     reasoning_effort: Option<MistralReasoningEffort>,
     /// Prompt mode.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     prompt_mode: Option<MistralPromptMode>,
     /// Tool selection.
     #[serde(default, deserialize_with = "present")]
@@ -225,14 +239,14 @@ pub(super) fn conversation(
 #[serde(rename_all = "camelCase")]
 struct ResponseExtras {
     /// Reasoning effort.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     reasoning_effort: Option<ThinkingLevel>,
     /// Summary style; null and omission both mean none requested.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "literal_or_null")]
     reasoning_summary: Option<OpenAIResponsesReasoningSummary>,
-    /// Service tier; null is sent and omission is not.
+    /// Service tier; the adapter receives null distinct from omission.
     #[serde(default, deserialize_with = "nullable")]
-    service_tier: Option<Nullable<OpenAIResponsesServiceTier>>,
+    service_tier: Option<Nullable<Literal<OpenAIResponsesServiceTier>>>,
 }
 
 /// Decode the standard response protocol's options.
@@ -246,7 +260,7 @@ pub(super) fn responses(
         reasoning_summary: extra.reasoning_summary,
         service_tier: extra.service_tier.map(|tier| match tier {
             Nullable::Null => None,
-            Nullable::Value(tier) => Some(tier),
+            Nullable::Value(Literal(tier)) => Some(tier),
         }),
     })
 }
@@ -256,10 +270,10 @@ pub(super) fn responses(
 #[serde(rename_all = "camelCase")]
 struct CloudExtras {
     /// Reasoning effort.
-    #[serde(default, deserialize_with = "present")]
+    #[serde(default, deserialize_with = "literal")]
     reasoning_effort: Option<ThinkingLevel>,
     /// Summary style; null and omission both mean none requested.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "literal_or_null")]
     reasoning_summary: Option<OpenAIResponsesReasoningSummary>,
     /// API version.
     #[serde(default, deserialize_with = "present")]

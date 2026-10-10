@@ -681,27 +681,19 @@ fn maestro_root_hooks_keep_shared_results() -> TestResult {
     })
 }
 
-/// A cloud body that publishes one text delta, waits for `acknowledged`, then breaks.
-fn broken_body(
-    acknowledged: tokio::sync::oneshot::Receiver<()>,
-) -> TestResult<maestro_models::HttpBody> {
+/// A cloud body that publishes one text delta, then breaks.
+fn broken_body() -> TestResult<maestro_models::HttpBody> {
     let frames = String::from_utf8(bundled::text_body("azure-openai-responses", "partial"))?;
     let delta_end = frames
         .match_indices("\n\n")
         .nth(2)
         .map_or(frames.len(), |(at, _)| at + 2);
     let first = frames.as_bytes()[..delta_end].to_vec();
-    Ok(Box::pin(futures_util::stream::unfold(
-        (Some(first), Some(acknowledged)),
-        |(first, acknowledged)| async move {
-            if let Some(bytes) = first {
-                return Some((Ok(bytes), (None, acknowledged)));
-            }
-            acknowledged?.await.ok();
-            let broken = maestro_models::FetchError::Connection(failure("transport reset"));
-            Some((Err(broken), (None, None)))
-        },
-    )))
+    let broken = maestro_models::FetchError::Connection(failure("transport reset"));
+    Ok(Box::pin(futures_util::stream::iter([
+        Ok(first),
+        Err(broken),
+    ])))
 }
 
 /// A transport that answers once with `body`.
@@ -727,10 +719,9 @@ fn maestro_cloud_partial_failure_settles() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     block_on(false, async {
-        let (acknowledge, acknowledged) = tokio::sync::oneshot::channel::<()>();
         let common = StreamOptions {
             api_key: Some("controlled-key".into()),
-            fetch: Some(single_body_fetch(broken_body(acknowledged)?)),
+            fetch: Some(single_body_fetch(broken_body()?)),
             ..StreamOptions::default()
         };
         let options = ProviderStreamOptions {
@@ -740,17 +731,13 @@ fn maestro_cloud_partial_failure_settles() -> TestResult {
         let model = bundled::protocol_model(&PROTOCOLS[4])?;
         let started = stream(model, bundled::conversation()?, Some(options))?;
         let result = started.result();
-        let mut acknowledge = Some(acknowledge);
         let mut last = None;
+        let mut deltas = 0;
         while let Some(event) = started.next().await {
-            let delta = matches!(event, AssistantMessageEvent::TextDelta { .. });
-            if let Some(acknowledge) = acknowledge.take_if(|_| delta) {
-                acknowledge
-                    .send(())
-                    .map_err(|()| "reader acknowledgement")?;
-            }
+            deltas += usize::from(matches!(event, AssistantMessageEvent::TextDelta { .. }));
             last = Some(event);
         }
+        assert_eq!(deltas, 1);
         assert!(matches!(last, Some(AssistantMessageEvent::Error { .. })));
         let settled = result.await;
         assert_eq!(bundled::stop_of(&settled), StopReason::Error);
@@ -787,6 +774,52 @@ fn rejected_extras() -> [(&'static str, serde_json::Value); 12] {
     ]
 }
 
+/// Known extras written as maps or arrays where a string or an object is required.
+fn rejected_shapes() -> [(&'static str, serde_json::Value); 13] {
+    [
+        ("openai-responses", json!({"serviceTier": {"auto": null}})),
+        ("anthropic-messages", json!({"effort": {"high": null}})),
+        (
+            "anthropic-messages",
+            json!({"thinkingDisplay": {"omitted": null}}),
+        ),
+        ("anthropic-messages", json!({"toolChoice": {"auto": null}})),
+        (
+            "anthropic-messages",
+            json!({"toolChoice": {"type": {"tool": null}, "name": "lookup"}}),
+        ),
+        (
+            "openai-completions",
+            json!({"reasoningEffort": {"high": null}}),
+        ),
+        ("openai-completions", json!({"toolChoice": {"auto": null}})),
+        (
+            "openai-completions",
+            json!({"toolChoice": {"type": "function", "function": ["lookup"]}}),
+        ),
+        (
+            "openai-completions",
+            json!({"toolChoice": {"type": {"function": null}, "function": {"name": "f"}}}),
+        ),
+        (
+            "mistral-conversations",
+            json!({"promptMode": {"reasoning": null}}),
+        ),
+        (
+            "mistral-conversations",
+            json!({"reasoningEffort": {"high": null}}),
+        ),
+        (
+            "mistral-conversations",
+            json!({"toolChoice": {"type": "function", "function": ["lookup"]}}),
+        ),
+        (
+            "openai-responses",
+            json!({"reasoningSummary": {"auto": null}}),
+        ),
+    ]
+}
+
 /// Hook log shared with the options that fill it.
 type Hooks = Arc<Mutex<Vec<String>>>;
 /// Raw options, the requests they send and the hooks they run.
@@ -816,7 +849,11 @@ fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     block_on(false, async {
-        for (index, (api, extra)) in rejected_extras().iter().enumerate() {
+        for (index, (api, extra)) in rejected_extras()
+            .iter()
+            .chain(&rejected_shapes())
+            .enumerate()
+        {
             let protocol = PROTOCOLS
                 .iter()
                 .find(|protocol| protocol.api == *api)
@@ -993,6 +1030,19 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
         };
         let generic = stream(model.clone(), bundled::conversation()?, Some(raw))?;
         assert_eq!(bundled::text_of(&generic.result().await), "injected");
+        let mut objects = maestro_models::ProviderObjects::default();
+        objects.insert(Arc::clone(&client));
+        let completed = maestro_models::complete(
+            model.clone(),
+            bundled::conversation()?,
+            Some(ProviderStreamOptions {
+                common: common.clone(),
+                objects,
+                ..ProviderStreamOptions::default()
+            }),
+        )
+        .await?;
+        assert_eq!(bundled::text_of(&completed), "injected");
         let typed = AnthropicOptions {
             common,
             client: Some(client),
@@ -1003,7 +1053,7 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
         Ok(())
     })?;
     let sent = sent.lock().map_err(|_| "poisoned")?;
-    assert_eq!(sent.len(), 2);
+    assert_eq!(sent.len(), 3);
     for (payload, retries) in sent.iter() {
         assert!(
             !payload.to_string().contains("Claude Code"),
