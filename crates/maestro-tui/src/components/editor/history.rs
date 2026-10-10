@@ -25,11 +25,9 @@ impl Editor {
                 (None, false) => Some(0),
                 (Some(0), true) => None,
                 (Some(index), true) => Some(index - 1),
+                (Some(index), false) if index + 1 >= state.history.len() => return,
                 (Some(index), false) => Some(index + 1),
             };
-            if index.is_some_and(|index| index >= state.history.len()) {
-                return;
-            }
             if state.history_index.is_none() && index.is_some() {
                 state.snapshot();
             }

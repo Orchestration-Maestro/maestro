@@ -38,9 +38,9 @@ enum Action {
     Left,
     /// Insert a literal space.
     Space,
-    /// Previous prompt.
+    /// Previous visual row or admitted history selection.
     Up,
-    /// Next prompt.
+    /// Next visual row or admitted history selection.
     Down,
     /// Previous visual page.
     PageUp,

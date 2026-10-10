@@ -2,6 +2,9 @@
 //! Editor navigation through public operations.
 #[path = "fixtures/editor_support/mod.rs"]
 mod support;
+use maestro_tui::{
+    Component, Editor, EditorOptions, autocomplete::CursorPosition, tui::InputHandler,
+};
 
 #[test]
 fn vertical_edges_select_logical_endpoints() {
@@ -325,4 +328,31 @@ fn navigation_width_is_saved_before_border_callback() {
         [maestro_tui::autocomplete::CursorPosition { line: 1, col: 6 }]
     );
     editor.set_border_color(Rc::new(str::to_owned));
+}
+
+#[test]
+fn vertical_selection_preserves_leading_zero_cell_position() {
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(24);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    editor.set_text("\u{200b}abc\nx");
+    editor.handle_input("\u{1b}[H");
+    editor.handle_input("\u{1b}[A");
+    editor.insert_text_at_cursor("|");
+    assert_eq!(editor.get_text(), "|\u{200b}abc\nx");
+}
+
+#[test]
+fn vertical_selection_reaches_zero_cell_wrapped_row() {
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(24);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    editor.set_text("\u{200b}界\nx");
+    editor.render(2);
+    editor.handle_input("\u{1b}[A");
+    assert_eq!(editor.get_cursor(), CursorPosition { line: 0, col: 3 });
+    editor.handle_input("\u{1b}[A");
+    assert_eq!(editor.get_cursor(), CursorPosition { line: 0, col: 0 });
+    editor.insert_text_at_cursor("|");
+    assert_eq!(editor.get_text(), "|\u{200b}界\nx");
 }

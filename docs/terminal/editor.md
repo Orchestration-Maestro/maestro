@@ -40,8 +40,10 @@ a cursor marker. Both scroll labels are clipped before border styling. Caller
 styling may add visible text. Display tabs expand outside recognized escapes;
 escape-safe cursor decoration never changes the stored edit position.
 
-Up starts browsing when the editor is empty; while browsing, Up and Down choose
-older and newer entries at the first and last visual rows. Callers add history
+With available history, Up starts browsing when the editor is empty. While
+browsing, Up and Down select admitted older and newer entries at the first and
+last visual rows. Unavailable selections leave the prompt unchanged. Outside
+these history-selection branches, they move within the current prompt. Callers add history
 explicitly; submission does not add it. Page keys use the live terminal row count;
 visual movement uses terminal-cell columns. Literal character jumps search stored
 text at scalar boundaries, separately from visual movement.

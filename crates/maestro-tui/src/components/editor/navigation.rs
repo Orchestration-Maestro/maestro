@@ -156,12 +156,12 @@ impl Editing {
         let column = self.vertical_column(current, row.maximum(), destination.maximum());
         let absolute = destination.cells.start + column;
         let text = &self.current.lines[destination.line];
-        let mut cells = 0;
-        let mut col = text.len();
+        let mut cells = destination.cells.start;
+        let mut col = destination.bytes.end;
         self.snapped = None;
-        for atom in atoms(text) {
-            if absolute < cells + atom.cells {
-                col = atom.start;
+        for atom in atoms(&text[destination.bytes.clone()]) {
+            if absolute == cells || absolute < cells + atom.cells {
+                col = destination.bytes.start + atom.start;
                 self.snapped = (absolute > cells).then_some(absolute);
                 break;
             }
@@ -214,18 +214,15 @@ impl Editing {
                 self.set_col(self.current.lines[cursor.line - 1].len());
             }
         } else {
-            let parts = if forward {
-                crate::get_segmenter(&text[cursor.col..])
-                    .map(|(_, text)| text)
-                    .collect::<Vec<_>>()
+            let length = if forward {
+                word_length(crate::get_segmenter(&text[cursor.col..]).map(|(_, text)| text))
             } else {
                 let mut parts = crate::get_segmenter(&text[..cursor.col])
                     .map(|(_, text)| text)
                     .collect::<Vec<_>>();
                 parts.reverse();
-                parts
+                word_length(parts.into_iter())
             };
-            let length = word_length(&parts);
             self.set_col(if forward {
                 cursor.col + length
             } else {
@@ -235,21 +232,24 @@ impl Editing {
     }
 }
 /// Consumes leading whitespace then one homogeneous punctuation or word run.
-fn word_length(parts: &[&str]) -> usize {
-    let spaces = parts
-        .iter()
-        .position(|text| !crate::is_whitespace_char(text))
-        .unwrap_or(parts.len());
+fn word_length<'a>(parts: impl Iterator<Item = &'a str>) -> usize {
+    let mut parts = parts.peekable();
+    let mut length = 0;
+    while parts
+        .peek()
+        .is_some_and(|text| crate::is_whitespace_char(text))
+    {
+        length += parts.next().map_or(0, str::len);
+    }
     let punctuation = parts
-        .get(spaces)
+        .peek()
         .is_some_and(|text| crate::is_punctuation_char(text));
-    parts[..spaces].iter().map(|text| text.len()).sum::<usize>()
-        + parts[spaces..]
-            .iter()
+    length
+        + parts
             .take_while(|text| {
                 !crate::is_whitespace_char(text) && crate::is_punctuation_char(text) == punctuation
             })
-            .map(|text| text.len())
+            .map(str::len)
             .sum::<usize>()
 }
 
@@ -305,10 +305,21 @@ impl Editing {
         };
         for line in indices {
             let value = &self.current.lines[line];
-            let mut starts = value.char_indices().map(|(at, _)| at).filter(|&at| {
-                let admitted = (forward && at > cursor.col) || (!forward && at < cursor.col);
-                (line != cursor.line || admitted) && value[at..].starts_with(text)
-            });
+            let region = if line != cursor.line {
+                0..value.len()
+            } else if forward {
+                let after = value[cursor.col..]
+                    .chars()
+                    .next()
+                    .map_or(cursor.col, |scalar| cursor.col + scalar.len_utf8());
+                after..value.len()
+            } else {
+                0..cursor.col
+            };
+            let mut starts = value[region.clone()]
+                .char_indices()
+                .map(|(at, _)| region.start + at)
+                .filter(|&at| value[at..].starts_with(text));
             let found = if forward {
                 starts.next()
             } else {
