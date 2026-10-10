@@ -1,4 +1,4 @@
-{"source":"Recorded by running the server-sent-event iterator of the OpenAI client library 6.26.0 in Node 24 over each chunked body. Chunks are hexadecimal bytes. emitted[i] is the number of events delivered before chunk i + 1 is requested, with immediate carriage-return dispatch; final events retain the recorded values. event is null when the event had no name.","cases":[{"name":"bom-then-event","chunks":["efbbbf646174613a207b2261223a317d0a0a"],"emitted":[1],"events":[{"event":null,"data":"{\"a\":1}"}]},
+{"cases":[{"name":"bom-then-event","chunks":["efbbbf646174613a207b2261223a317d0a0a"],"emitted":[1],"events":[{"event":null,"data":"{\"a\":1}"}]},
 {"name":"bom-then-event@0","chunks":["","efbbbf646174613a207b2261223a317d0a0a"],"emitted":[0,1],"events":[{"event":null,"data":"{\"a\":1}"}]},
 {"name":"bom-then-event@1","chunks":["ef","bbbf646174613a207b2261223a317d0a0a"],"emitted":[0,1],"events":[{"event":null,"data":"{\"a\":1}"}]},
 {"name":"bom-then-event@2","chunks":["efbb","bf646174613a207b2261223a317d0a0a"],"emitted":[0,1],"events":[{"event":null,"data":"{\"a\":1}"}]},
