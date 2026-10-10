@@ -55,6 +55,15 @@ assert_eq!(completed, json!({"label":"ready\n"}));
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
+## Checking without conversion
+
+`maestro_models::arguments::validation::validate_schema` checks an original JSON
+value without converting it or changing the schema. It returns diagnostic lines
+for invalid values, an empty list for admitted values, or `DiagnosticErrorInfo`
+when schema preparation fails. It uses the checker described under
+[Invocation checking](#invocation-checking), without the invocation envelope or
+received-arguments rendering.
+
 ## Invocation checking
 
 `validate_tool_call` selects the first declaration with the invocation's exact

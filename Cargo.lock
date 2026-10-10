@@ -1629,6 +1629,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-catalog"
+version = "0.1.0"
+dependencies = [
+ "maestro-credentials",
+ "maestro-models",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [

@@ -2,6 +2,7 @@
   "maestro-agent": "core",
   "maestro-app": "core",
   "maestro-cancellation": "core",
+  "maestro-catalog": "core",
   "maestro-credentials": "core",
   "maestro-extensions": "core",
   "maestro-extensions-wasm": "core",
