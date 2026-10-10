@@ -21,7 +21,7 @@ mod tests;
 use crate::StreamOptions;
 pub use crate::providers::nullable::Nullable;
 use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Raw invocation settings.
 #[derive(Clone, Default)]
@@ -39,7 +39,7 @@ pub struct OpenAICodexResponsesOptions {
 }
 
 /// Requested text detail.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenAICodexTextVerbosity {
     /// Brief text.
@@ -51,7 +51,7 @@ pub enum OpenAICodexTextVerbosity {
 }
 
 /// Requested reasoning summary style.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenAICodexReasoningSummary {
     /// Provider-selected summary.

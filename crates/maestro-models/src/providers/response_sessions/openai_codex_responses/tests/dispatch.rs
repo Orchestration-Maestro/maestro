@@ -41,8 +41,8 @@ fn maestro_response_sessions_default_auto_reuses_context() {
 
 /// Execute the controlled public-operation scenario.
 async fn maestro_response_sessions_default_auto_reuses_context_scenario() {
-    for simple in [false, true] {
-        default_context_case(simple).await;
+    for route in 0..4 {
+        default_context_case(route).await;
     }
 }
 
@@ -601,11 +601,12 @@ fn assert_started_diagnostic(output: &crate::SharedAssistantMessage) {
 }
 
 /// Observe three default calls on the same retained context.
-async fn default_context_case(simple: bool) {
+async fn default_context_case(route: u8) {
     super::super::reset_openai_codex_web_socket_debug_stats(None);
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let (model, mut context, mut options) = super::invocation();
     let mut model = (*model).clone();
+    model.id = "controlled-session".into();
     model.base_url = format!("http://{}", listener.local_addr().unwrap());
     options.common.session_id = Some("default-context".into());
     let peer = tokio::spawn(async move {
@@ -619,21 +620,7 @@ async fn default_context_case(simple: bool) {
         while socket.next().await.is_some() {}
         sent
     });
-    let invoke = |context| {
-        if simple {
-            super::super::stream_simple_openai_codex_responses(
-                model.clone(),
-                context,
-                Some(crate::SimpleStreamOptions {
-                    common: options.common.clone(),
-                    ..Default::default()
-                }),
-            )
-            .unwrap()
-        } else {
-            stream_openai_codex_responses(model.clone(), context, Some(options.clone()))
-        }
-    };
+    let invoke = |context| context_stream(&model, context, &options, route);
     let first = invoke(context.clone()).result().await;
     context
         .messages
@@ -650,6 +637,10 @@ async fn default_context_case(simple: bool) {
         .push(crate::Message::Assistant(second.read().unwrap().clone()));
     let third = invoke(context).result().await;
     assert_eq!(third.read().unwrap().stop_reason, StopReason::Stop);
+    assert_eq!(
+        serde_json::to_value(&*third.read().unwrap()).unwrap()["content"][0]["text"],
+        "reply"
+    );
     super::super::close_openai_codex_web_socket_sessions(Some("default-context"));
     let sent = peer.await.unwrap();
     assert_default_context(&sent);
@@ -907,4 +898,32 @@ async fn cached_failure_peer(listener: TcpListener) -> String {
     socket.close(None).await.unwrap();
     while socket.next().await.is_some() {}
     delta
+}
+
+/// Invoke the same descriptor through a dedicated or generic raw/simple path.
+fn context_stream(
+    model: &crate::Model,
+    context: crate::Context,
+    options: &super::super::OpenAICodexResponsesOptions,
+    route: u8,
+) -> crate::AssistantMessageEventStream {
+    let simple = Some(crate::SimpleStreamOptions {
+        common: options.common.clone(),
+        ..Default::default()
+    });
+    match route {
+        0 => stream_openai_codex_responses(model.clone(), context, Some(options.clone())),
+        1 => super::super::stream_simple_openai_codex_responses(model.clone(), context, simple)
+            .unwrap(),
+        2 => crate::stream(
+            model.clone(),
+            context,
+            Some(crate::ProviderStreamOptions {
+                common: options.common.clone(),
+                ..Default::default()
+            }),
+        )
+        .unwrap(),
+        _ => crate::stream_simple(model.clone(), context, simple).unwrap(),
+    }
 }

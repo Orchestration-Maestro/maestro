@@ -1,6 +1,9 @@
 //! Decoding of the JSON extras each bundled raw protocol accepts.
 
 use crate::providers::nullable::Nullable;
+use crate::providers::response_sessions::openai_codex_responses::{
+    OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
+};
 use crate::providers::{
     messages::anthropic::{AnthropicClient, AnthropicEffort, AnthropicThinkingDisplay},
     reasoning::mistral::{MistralPromptMode, MistralReasoningEffort},
@@ -9,8 +12,8 @@ use crate::providers::{
 use crate::records::types::{FunctionName, FunctionTag, Literal};
 use crate::{
     AnthropicOptions, AzureOpenAIResponsesOptions, MistralOptions, MistralToolChoice,
-    OpenAICompletionsOptions, OpenAIResponsesOptions, ProviderStreamOptions, ThinkingLevel,
-    ToolChoice,
+    ModelThinkingLevel, OpenAICodexResponsesOptions, OpenAICompletionsOptions,
+    OpenAIResponsesOptions, ProviderStreamOptions, ThinkingLevel, ToolChoice,
 };
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
@@ -302,5 +305,53 @@ pub(super) fn cloud_responses(
         azure_resource_name: extra.azure_resource_name,
         azure_base_url: extra.azure_base_url,
         azure_deployment_name: extra.azure_deployment_name,
+    })
+}
+
+/// Read raw effort without admitting the descriptor-only spelling for disabled reasoning.
+fn session_effort<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<ModelThinkingLevel>, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value == "none" {
+        Ok(Some(ModelThinkingLevel::Off))
+    } else {
+        ThinkingLevel::deserialize(serde::de::value::StrDeserializer::<D::Error>::new(&value))
+            .map(|level| Some(level.into()))
+    }
+}
+
+/// Selected raw fields of the response-session protocol.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SessionExtras {
+    /// Explicit raw effort.
+    #[serde(default, deserialize_with = "session_effort")]
+    reasoning_effort: Option<ModelThinkingLevel>,
+    /// Summary style; null and omission mean no explicit summary.
+    #[serde(default, deserialize_with = "literal_or_null")]
+    reasoning_summary: Option<OpenAICodexReasoningSummary>,
+    /// Tier retaining explicit null.
+    #[serde(default, deserialize_with = "nullable")]
+    service_tier: Option<Nullable<Literal<OpenAIResponsesServiceTier>>>,
+    /// Requested text detail.
+    #[serde(default, deserialize_with = "literal")]
+    text_verbosity: Option<OpenAICodexTextVerbosity>,
+}
+
+/// Decode response-session fields while moving the common invocation options unchanged.
+pub(super) fn response_sessions(
+    options: ProviderStreamOptions,
+) -> Result<OpenAICodexResponsesOptions, serde_json::Error> {
+    let extra: SessionExtras = extras(options.extra)?;
+    Ok(OpenAICodexResponsesOptions {
+        common: options.common,
+        reasoning_effort: extra.reasoning_effort,
+        reasoning_summary: extra.reasoning_summary,
+        service_tier: extra.service_tier.map(|tier| match tier {
+            Nullable::Null => Nullable::Null,
+            Nullable::Value(Literal(tier)) => Nullable::Value(tier),
+        }),
+        text_verbosity: extra.text_verbosity,
     })
 }
