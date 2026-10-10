@@ -847,3 +847,59 @@ fn theme_native_watch_stop_releases_operations_and_task_set_without_reads() {
     assert_eq!(Rc::weak_count(&state), 0);
     assert_eq!(published(&state), "a");
 }
+
+#[test]
+fn theme_watch_imports_are_shared_types() {
+    use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
+    fn watches(value: Box<dyn FsWatcher>) -> Box<dyn FsWatcher> {
+        let root: Box<dyn maestro_theme::ThemeWatcher> = value;
+        let module: Box<dyn maestro_theme::theme::ThemeWatcher> = root;
+        let facade: Box<dyn maestro_theme::theme::fs_watch::ThemeWatcher> = module;
+        facade
+    }
+    fn timers(value: Box<dyn WatchTimer>) -> Box<dyn WatchTimer> {
+        let root: Box<dyn maestro_theme::ThemeReloadTimer> = value;
+        let module: Box<dyn maestro_theme::theme::ThemeReloadTimer> = root;
+        let facade: Box<dyn maestro_theme::theme::fs_watch::ThemeReloadTimer> = module;
+        facade
+    }
+    fn operations(value: Rc<dyn WatchOperations>) -> Rc<dyn WatchOperations> {
+        let root: Rc<dyn maestro_theme::ThemeWatchOperations> = value;
+        let module: Rc<dyn maestro_theme::theme::ThemeWatchOperations> = root;
+        let facade: Rc<dyn maestro_theme::theme::fs_watch::ThemeWatchOperations> = module;
+        facade
+    }
+    let fake = Rc::new(Fake::default());
+    let shared = operations(Rc::clone(&fake) as Rc<dyn WatchOperations>);
+    let watcher = shared
+        .watch("directory", Rc::new(|_| {}), Rc::new(|| {}))
+        .unwrap();
+    watches(watcher).close().unwrap();
+    assert!(fake.watches.borrow()[0].closed.get());
+    let calls = Rc::new(Cell::new(0));
+    let counted = Rc::clone(&calls);
+    let timer = shared.schedule(
+        std::time::Duration::from_millis(100),
+        Box::new(move || counted.set(counted.get() + 1)),
+    );
+    timers(timer).cancel();
+    fake.advance(100);
+    assert_eq!(calls.get(), 0);
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::any::TypeId;
+        let shared = TypeId::of::<maestro_watch::fs_watch::NativeWatchOperations>();
+        assert_eq!(
+            shared,
+            TypeId::of::<maestro_theme::NativeThemeWatchOperations>()
+        );
+        assert_eq!(
+            shared,
+            TypeId::of::<maestro_theme::theme::NativeThemeWatchOperations>()
+        );
+        assert_eq!(
+            shared,
+            TypeId::of::<maestro_theme::theme::fs_watch::NativeThemeWatchOperations>()
+        );
+    }
+}

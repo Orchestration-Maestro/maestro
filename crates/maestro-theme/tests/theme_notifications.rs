@@ -57,6 +57,11 @@ fn theme_native_notification_reloads_selected_file() {
         )
         .unwrap();
         published(&state, &changed, "replaced").await;
+        scratch.write(
+            "custom/a.json",
+            &custom_json("edited-after-replacement", "#8899aa").to_string(),
+        );
+        published(&state, &changed, "edited-after-replacement").await;
         state.stop_theme_watcher();
     });
     assert_eq!(

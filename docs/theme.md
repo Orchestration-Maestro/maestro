@@ -145,13 +145,9 @@ or invalid file keeps the last good theme and is not reported; a callback failur
 is not reported either and nothing the callback changed is rolled back. A watch failure closes only the watch; a pending reload still runs and
 nothing rewatches. `stop_theme_watcher` cancels both and keeps the published theme.
 
-`ThemeWatchOperations` supplies the directory watch and the timer;
-`NativeThemeWatchOperations` (not built for browsers) uses operating-system
-notifications and Tokio timers on a `LocalSet` that the caller creates and drives.
-Dropping the state or closing or dropping a native watch or timer handle cancels
-its pending work; a closed or dropped watch dispatches no queued notification. The native
-watch resolves the directory against the working directory once, as the notifier
-does.
+`ThemeWatchOperations` and `NativeThemeWatchOperations` are same-type aliases of
+[the shared filesystem-watch effects](filesystem-watch.md). Dropping the theme
+state cancels its watch and pending reload.
 
 ## Resolved colors for export
 
