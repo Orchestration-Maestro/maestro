@@ -95,7 +95,7 @@ fn state<C: CustomAgentMessages>(state: &AgentState<C>) -> Value {
         .iter()
         .map(|entry| {
             let guard = entry.read().unwrap();
-            let tool = guard.downcast_ref::<Value, Value>().unwrap();
+            let tool = &*guard;
             let mut value = json!({"name": tool.definition.name, "label": tool.label,
             "description": tool.definition.description, "parameters": tool.definition.parameters});
             if let Some(mode) = tool.execution_mode {
@@ -358,7 +358,7 @@ fn tool(
     let calls = Arc::new(AtomicUsize::new(0));
     let preparation = Arc::clone(&calls);
     let execution = Arc::clone(&calls);
-    let entry: SharedAgentTool = Arc::new(RwLock::new(AgentTool::<Value, Value> {
+    let entry: SharedAgentTool = Arc::new(RwLock::new(AgentTool {
         definition: maestro_models::Tool {
             name: name.into(),
             description: format!("{name} tool"),
@@ -439,7 +439,7 @@ fn maestro_tool_collections_retain_executable_entries() {
             .iter()
             .map(|entry| {
                 let guard = entry.read().unwrap();
-                guard.downcast_ref::<Value, Value>().unwrap().label.clone()
+                guard.label.clone()
             })
             .collect();
         let mut replacement = vec![Arc::clone(&entry)];
@@ -455,9 +455,9 @@ fn maestro_tool_collections_retain_executable_entries() {
         let current = Arc::clone(agent.state().read().unwrap().tools());
         let current_guard = current.read().unwrap();
         let stored_guard = current_guard[0].read().unwrap();
-        let stored = stored_guard.downcast_ref::<Value, Value>().unwrap();
+        let stored = &*stored_guard;
         let supplied_guard = entry.read().unwrap();
-        let supplied = supplied_guard.downcast_ref::<Value, Value>().unwrap();
+        let supplied = &*supplied_guard;
         check(
             case,
             json!({"called":calls.load(Ordering::SeqCst),"copiedOuter":captured.read().unwrap().len()!=original.len(),
@@ -472,13 +472,7 @@ fn maestro_tool_collections_retain_executable_entries() {
 }
 /// Mutate a retained default-typed tool through its shared handle.
 fn with_tool(entry: &SharedAgentTool, change: impl FnOnce(&mut AgentTool)) {
-    change(
-        entry
-            .write()
-            .unwrap()
-            .downcast_mut::<Value, Value>()
-            .unwrap(),
-    );
+    change(&mut entry.write().unwrap());
 }
 /// Tools with different parameter and detail types share one collection and keep their identity.
 #[test]
@@ -488,20 +482,16 @@ fn maestro_heterogeneous_typed_tools_are_retained_by_identity() {
         description: String::new(),
         parameters: json!({}),
     };
-    let numeric: SharedAgentTool = Arc::new(RwLock::new(AgentTool::<u32, String> {
-        definition: typed("numeric"),
-        label: "Numeric".into(),
-        prepare_arguments: None,
-        execute: Arc::new(|_, _, _, _| panic!("unexpected execution")),
-        execution_mode: None,
-    }));
-    let textual: SharedAgentTool = Arc::new(RwLock::new(AgentTool::<String, Vec<u8>> {
-        definition: typed("textual"),
-        label: "Textual".into(),
-        prepare_arguments: None,
-        execute: Arc::new(|_, _, _, _| panic!("unexpected execution")),
-        execution_mode: None,
-    }));
+    let numeric: SharedAgentTool = Arc::new(RwLock::new(AgentTool::typed::<u32, String>(
+        typed("numeric"),
+        "Numeric".into(),
+        Arc::new(|_, _, _, _| panic!("unexpected execution")),
+    )));
+    let textual: SharedAgentTool = Arc::new(RwLock::new(AgentTool::typed::<String, Vec<u8>>(
+        typed("textual"),
+        "Textual".into(),
+        Arc::new(|_, _, _, _| panic!("unexpected execution")),
+    )));
     let agent: Agent = Agent::new(AgentOptions {
         initial_state: AgentInitialState {
             tools: vec![Arc::clone(&numeric), Arc::clone(&textual)],
@@ -517,16 +507,28 @@ fn maestro_heterogeneous_typed_tools_are_retained_by_identity() {
     let live = agent.state().read().unwrap();
     let tools = live.tools().read().unwrap();
     assert!(Arc::ptr_eq(&tools[0], &textual) && Arc::ptr_eq(&tools[1], &numeric));
-    let first = tools[0].read().unwrap();
-    assert!(first.downcast_ref::<u32, String>().is_none());
+    let names: Vec<_> = tools
+        .iter()
+        .map(|entry| {
+            let tool = entry.read().unwrap();
+            (tool.definition.name.clone(), tool.label.clone())
+        })
+        .collect();
     assert_eq!(
-        first.downcast_ref::<String, Vec<u8>>().unwrap().label,
-        "Textual"
+        names,
+        [
+            ("textual".into(), "Textual".into()),
+            ("numeric".into(), "Numeric".into())
+        ]
     );
-    let second = tools[1].read().unwrap();
+    let mut first = tools[0].write().unwrap();
+    first.label = "Edited".into();
+    first.execution_mode = Some(ToolExecutionMode::Sequential);
+    drop(first);
+    assert_eq!(textual.read().unwrap().label, "Edited");
     assert_eq!(
-        second.downcast_ref::<u32, String>().unwrap().label,
-        "Numeric"
+        textual.read().unwrap().execution_mode,
+        Some(ToolExecutionMode::Sequential)
     );
 }
 /// Parse the admitted tool scheduling preferences.
@@ -791,12 +793,7 @@ fn assert_tool_order_and_duplicates() {
             .iter()
             .map(|entry| {
                 let guard = entry.read().unwrap();
-                guard
-                    .downcast_ref::<Value, Value>()
-                    .unwrap()
-                    .definition
-                    .name
-                    .clone()
+                guard.definition.name.clone()
             })
             .collect();
         assert_eq!(names, ["zulu", "alpha", "zulu"]);

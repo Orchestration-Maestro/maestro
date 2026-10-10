@@ -5,8 +5,13 @@ entries, and independent steering and follow-up input queues. Execution is
 tracked in [the awaited loop](https://github.com/Orchestration-Maestro/maestro/issues/476)
 and [the Agent lifecycle](https://github.com/Orchestration-Maestro/maestro/issues/477).
 
-Tools of any parameter and detail types are retained as `SharedAgentTool`
-entries and recovered with `downcast_ref`.
+`SharedAgentTool` entries expose declarations, labels, callbacks and scheduling
+preferences directly, including mutable access through the shared handle.
+`AgentTool::typed` adapts a typed callback to JSON arguments and details;
+argument decoding failures return without invoking its body. Typed results can
+be read with `serde_json::from_value`. Preparation remains JSON-to-JSON.
+Details serialization uses ordinary host JSON semantics, including null for
+nonfinite numbers; serialization failures return through the tool error channel.
 
 State collection replacement retains the supplied entry handles in new outer
 storage. A retained history handle keeps its collection after the state slot is

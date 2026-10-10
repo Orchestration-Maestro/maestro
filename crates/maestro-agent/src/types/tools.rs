@@ -1,9 +1,6 @@
 //! Stored executable tool declarations.
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Tool, UserBlock};
-use std::{
-    any::Any,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 /// Tool scheduling preference.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ToolExecutionMode {
@@ -29,14 +26,14 @@ pub type AgentToolUpdateCallback<TDetails = serde_json::Value> =
 #[cfg(target_arch = "wasm32")]
 pub type AgentToolUpdateCallback<TDetails = serde_json::Value> =
     Arc<dyn Fn(AgentToolResult<TDetails>)>;
-/// Convert raw arguments into the tool's parameter type.
+/// Prepare raw arguments as JSON before schema validation.
 #[cfg(not(target_arch = "wasm32"))]
-pub type PrepareArguments<TParameters = serde_json::Value> =
-    Arc<dyn Fn(serde_json::Value) -> Result<TParameters, DiagnosticErrorInfo> + Send + Sync>;
-/// Convert raw arguments into the browser tool's parameter type.
+pub type PrepareArguments =
+    Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, DiagnosticErrorInfo> + Send + Sync>;
+/// Prepare raw browser arguments as JSON before schema validation.
 #[cfg(target_arch = "wasm32")]
-pub type PrepareArguments<TParameters = serde_json::Value> =
-    Arc<dyn Fn(serde_json::Value) -> Result<TParameters, DiagnosticErrorInfo>>;
+pub type PrepareArguments =
+    Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, DiagnosticErrorInfo>>;
 /// Execute a tool with its call id, arguments, cancellation and progress observer.
 #[cfg(not(target_arch = "wasm32"))]
 pub type ExecuteTool<TParameters = serde_json::Value, TDetails = serde_json::Value> = Arc<
@@ -60,53 +57,89 @@ pub type ExecuteTool<TParameters = serde_json::Value, TDetails = serde_json::Val
     ) -> BoxFuture<Result<AgentToolResult<TDetails>, DiagnosticErrorInfo>>,
 >;
 /// An executable tool retained in conversation state.
-pub struct AgentTool<TParameters = serde_json::Value, TDetails = serde_json::Value> {
+pub struct AgentTool {
     /// Model-facing tool declaration.
     pub definition: Tool,
     /// Display label.
     pub label: String,
     /// Optional argument preparation.
-    pub prepare_arguments: Option<PrepareArguments<TParameters>>,
+    pub prepare_arguments: Option<PrepareArguments>,
     /// Execution callback, retained without invocation by state operations.
-    pub execute: ExecuteTool<TParameters, TDetails>,
+    pub execute: ExecuteTool,
     /// Optional scheduling preference.
     pub execution_mode: Option<ToolExecutionMode>,
 }
-/// Type-erased view that lets one collection retain tools of different parameter and detail types.
-#[cfg(not(target_arch = "wasm32"))]
-pub trait AnyAgentTool: Any + Send + Sync {
-    /// The tool as `Any`.
-    fn as_any(&self) -> &dyn Any;
-    /// The tool as mutable `Any`.
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-/// Type-erased view that lets one collection retain browser tools of different types.
-#[cfg(target_arch = "wasm32")]
-pub trait AnyAgentTool: Any {
-    /// The tool as `Any`.
-    fn as_any(&self) -> &dyn Any;
-    /// The tool as mutable `Any`.
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-impl<P: 'static, D: 'static> AnyAgentTool for AgentTool<P, D> {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
-impl dyn AnyAgentTool {
-    /// The retained tool when its parameter and detail types are `P` and `D`.
+/// A shared, mutable executable tool entry.
+pub type SharedAgentTool = Arc<RwLock<AgentTool>>;
+
+impl AgentTool {
+    /// Wrap a typed callback in the common JSON tool interface.
+    ///
+    /// Argument decoding errors do not invoke the callback. Details and progress
+    /// details use ordinary JSON serialization; nonfinite numbers become null.
     #[must_use]
-    pub fn downcast_ref<P: 'static, D: 'static>(&self) -> Option<&AgentTool<P, D>> {
-        self.as_any().downcast_ref()
-    }
-    /// The retained tool, mutably, when its parameter and detail types are `P` and `D`.
-    #[must_use]
-    pub fn downcast_mut<P: 'static, D: 'static>(&mut self) -> Option<&mut AgentTool<P, D>> {
-        self.as_any_mut().downcast_mut()
+    pub fn typed<P: serde::de::DeserializeOwned + 'static, D: serde::Serialize + 'static>(
+        definition: Tool,
+        label: String,
+        execute: ExecuteTool<P, D>,
+    ) -> Self {
+        Self {
+            definition,
+            label,
+            prepare_arguments: None,
+            execution_mode: None,
+            execute: erase_execute(execute),
+        }
     }
 }
-/// A shared, mutable tool entry of any parameter and detail types.
-pub type SharedAgentTool = Arc<RwLock<dyn AnyAgentTool>>;
+/// Adapt the typed callback while keeping the retained record independent of its types.
+fn erase_execute<P: serde::de::DeserializeOwned + 'static, D: serde::Serialize + 'static>(
+    execute: ExecuteTool<P, D>,
+) -> ExecuteTool {
+    Arc::new(move |id, args, signal, update| {
+        let parameters = match serde_json::from_value(args) {
+            Ok(parameters) => parameters,
+            Err(error) => return Box::pin(async move { Err(json_error(&error)) }),
+        };
+        let failure = Arc::new(RwLock::new(None));
+        let progress_failure = Arc::clone(&failure);
+        let progress = update.map(|update| {
+            Arc::new(move |result| match encode_result(result) {
+                Ok(result) => update(result),
+                Err(error) => {
+                    *progress_failure
+                        .write()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(error);
+                }
+            }) as AgentToolUpdateCallback<D>
+        });
+        let result = execute(id, parameters, signal, progress);
+        Box::pin(async move {
+            let result = result.await?;
+            if let Some(error) = failure
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .take()
+            {
+                return Err(error);
+            }
+            encode_result(result)
+        })
+    })
+}
+/// Encode typed final or partial details without changing content or termination.
+fn encode_result<D: serde::Serialize>(
+    result: AgentToolResult<D>,
+) -> Result<AgentToolResult, DiagnosticErrorInfo> {
+    Ok(AgentToolResult {
+        content: result.content,
+        details: serde_json::to_value(result.details).map_err(|error| json_error(&error))?,
+        terminate: result.terminate,
+    })
+}
+/// Preserve the JSON boundary's failure text in the tool error channel.
+fn json_error(error: &serde_json::Error) -> DiagnosticErrorInfo {
+    maestro_models::extract_diagnostic_error(maestro_models::DiagnosticInput::Text(
+        &error.to_string(),
+    ))
+}

@@ -9,7 +9,6 @@ repository.workspace = true
 maestro-models = { path = "../maestro-models" }
 serde_json.workspace = true
 
-[dev-dependencies]
 serde.workspace = true
 
 [lints]
