@@ -2,7 +2,7 @@
 //! reduction.
 
 use super::continuation::{Request, retain, select};
-use super::debug::{Mode, count_request};
+use super::debug::count_request;
 use super::events::{map_codex_event, reduce};
 use super::headers::build_web_socket_headers;
 use super::request::{PreparedRequest, diagnostic, resolve_codex_url};
@@ -10,7 +10,7 @@ use super::sessions::{CloseReason, Identity, Socket, acquire, lock};
 use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{Raced, client_pairs, decode_utf8, race};
-use crate::providers::json_text::{CompactJson, compact_members, raw_json};
+use crate::providers::json_text::{BorrowedJson, compact_members, raw_json};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     DiagnosticErrorInfo, Model, SharedAssistantMessage, Transport,
@@ -20,8 +20,7 @@ use futures_util::{FutureExt, Sink, SinkExt, Stream, StreamExt};
 use indexmap::IndexMap;
 use serde_json::Value;
 use std::borrow::Cow;
-use std::future::Future;
-use std::pin::{Pin, pin};
+use std::pin::pin;
 use std::sync::{Arc, LazyLock};
 use tokio_tungstenite::connect_async_with_config;
 use tokio_tungstenite::tungstenite::{
@@ -92,14 +91,6 @@ pub(super) fn close_error(code: u16, reason: &str) -> CodexError {
     })
 }
 
-/// The failure a received close frame reports.
-fn close_frame_error(frame: Option<CloseFrame>) -> CodexError {
-    frame.map_or_else(
-        || close_error(NO_STATUS_CLOSE, ""),
-        |frame| close_error(frame.code.into(), frame.reason.as_str()),
-    )
-}
-
 /// A library failure of a live socket; a closed socket or a reset without a closing handshake
 /// is an abnormal close, and any other failure keeps the library's wording.
 fn transport_error(error: &Error) -> CodexError {
@@ -139,7 +130,7 @@ pub(super) struct Receiver<'s, 'o, S> {
 }
 
 /// Resolves when the session is explicitly closed.
-pub(super) type Closed = Pin<Box<dyn Future<Output = CloseReason> + Send>>;
+pub(super) type Closed = tokio::sync::watch::Receiver<Option<CloseReason>>;
 
 impl<'s, 'o, S> Receiver<'s, 'o, S>
 where
@@ -167,9 +158,13 @@ where
     async fn read(&mut self) -> Raced<Option<Result<Message, Error>>> {
         while let Some(closed) = self.closed.as_mut() {
             let read = race(self.socket.next(), None, self.signal);
-            let reason = match select_first(pin!(read), closed.as_mut()).await {
+            let closing = closed.wait_for(Option::is_some);
+            let reason = match select_first(pin!(read), pin!(closing)).await {
                 Either::Left((raced, _)) => return raced,
-                Either::Right((reason, _)) => reason,
+                Either::Right((reason, _)) => reason
+                    .ok()
+                    .and_then(|reason| *reason)
+                    .unwrap_or(CloseReason::Done),
             };
             self.closed = None;
             let frame = close_message(reason);
@@ -225,7 +220,10 @@ where
             return self.event(&text);
         }
         match message {
-            Message::Close(frame) => Err(close_frame_error(frame)),
+            Message::Close(frame) => Err(frame.map_or_else(
+                || close_error(NO_STATUS_CLOSE, ""),
+                |frame| close_error(frame.code.into(), frame.reason.as_str()),
+            )),
             _ => Ok(None),
         }
     }
@@ -270,7 +268,7 @@ pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
         body.as_object()
             .into_iter()
             .flatten()
-            .map(|(name, value)| (name.as_str(), value as &dyn CompactJson)),
+            .map(|(name, value)| (name.as_str(), BorrowedJson::Value(value))),
     )
 }
 
@@ -278,12 +276,12 @@ pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
 /// when they have one; the other members follow. Member order and number spelling are
 /// those of [`compact_members`].
 pub(super) fn wire_members<'a>(
-    members: impl Iterator<Item = (&'a str, &'a dyn CompactJson)> + Clone,
+    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)> + Clone,
 ) -> Result<String, CodexError> {
     let kind = members
         .clone()
         .find_map(|(name, value)| (name == "type").then_some(value))
-        .unwrap_or(&*REQUEST_TYPE);
+        .unwrap_or(BorrowedJson::Value(&REQUEST_TYPE));
     let rest = members.filter(|(name, _)| *name != "type");
     compact_members(std::iter::once(("type", kind)).chain(rest))
         .map_err(|error| CodexError::Transport(diagnostic(error.to_string())))
@@ -443,19 +441,16 @@ pub(crate) async fn process_web_socket_stream(
         .filter(|_| cached)
         .and_then(|slot| select(slot, &prepared.body));
     let request = delta.map_or_else(|| Request::full(&prepared.body), Ok)?;
-    if let Some(session) = session {
-        let mode = Mode {
-            reused: lease.reused,
-            cached,
-        };
-        count_request(session, &request, mode);
-    }
+    count_request(&request, &options.common, lease.reused);
     let message = output.output;
     let outgoing = Outgoing {
         wire: request.wire,
-        closed: Some(Box::pin(lease.closed())),
+        closed: lease.closed(),
     };
-    let result = exchange(&mut lease.socket, outgoing, model, options, output).await;
+    let Some(socket) = lease.socket.as_mut() else {
+        return Err(close_error(ABNORMAL_CLOSE, ""));
+    };
+    let result = exchange(socket, outgoing, model, options, output).await;
     let settled = result.and_then(|()| {
         if signal.is_some_and(Cancellation::is_aborted) {
             return Ok(false);

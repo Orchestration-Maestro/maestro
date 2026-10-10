@@ -158,15 +158,14 @@ async fn restarts_the_idle_period_at_release(listener: &TcpListener, url: &str) 
 async fn yields_expiry_to_a_claimed_handoff(listener: &TcpListener, url: &str) {
     let chat = Conversation::new(url, Some("expire-claimed"), CACHED).await;
     let (mut peer, _) = completed(&chat, listener).await;
-    let Claim::Idle(entry, idle) = claim("expire-claimed", &identity_of(&chat)) else {
+    let Claim::Idle(held) = claim("expire-claimed", &identity_of(&chat)) else {
         panic!("an idle entry for the same identity");
     };
     advance(secs(300)).await;
-    let held = idle.task.await.unwrap();
     assert!(cached_entry("expire-claimed").is_some());
-    drop(held.expect("a claimed handoff wins over expiry"));
+    assert!(held.reused, "a claimed handoff wins over expiry");
+    drop(held);
     assert_eq!(close_seen(&mut peer).await, closed("done"));
-    drop(entry);
     close(Some("expire-claimed"));
 }
 
@@ -389,6 +388,13 @@ async fn busy_mismatch_and_other_session(listener: &TcpListener, url: &str) {
 fn maestro_response_sessions_bind_socket_identity() {
     let _isolated = super::exclusive();
     run_native(async {
+        let (socket, mut peer) = pair().await;
+        publish("identity-boundary", endpoint("a"), socket).keep();
+        assert!(
+            matches!(claim("identity-boundary", &endpoint("b")), Claim::Absent),
+            "a changed endpoint cannot claim the earlier socket"
+        );
+        assert_eq!(close_seen(&mut peer).await, closed("done"));
         let (listener, url) = listen().await;
         equivalent_headers_reuse(&listener, &url).await;
         changed_headers_replace_the_socket(&listener, &url).await;
@@ -884,7 +890,7 @@ fn maestro_response_sessions_clear_failed_socket_continuation() {
     });
 }
 
-/// A handoff future dropped while the idle owner is still passing the socket on.
+/// A synchronously claimed socket is released when its acquisition result is dropped.
 async fn dropped_handoff(listener: &TcpListener, url: &str) {
     let chat = Conversation::new(url, Some("drop-handoff"), CACHED).await;
     let (mut peer, _) = completed(&chat, listener).await;
@@ -893,10 +899,12 @@ async fn dropped_handoff(listener: &TcpListener, url: &str) {
         identity_of(&chat),
         std::future::pending(),
     );
-    assert!(
-        pending.now_or_never().is_none(),
-        "the handoff is still pending"
-    );
+    let held = pending
+        .now_or_never()
+        .expect("synchronous ownership")
+        .unwrap();
+    assert!(held.reused);
+    drop(held);
     assert!(
         cached_entry("drop-handoff").is_none(),
         "no permanently busy slot"
@@ -947,14 +955,15 @@ async fn dropped_connect(listener: &TcpListener, url: &str) {
     assert!(cached_entry("drop-connect").is_none());
 }
 
-/// The cache owner drops its claim sender, which releases the idle socket.
+/// The final claimed owner releases its socket despite a surviving entry alias.
 async fn dropped_cache_owner(listener: &TcpListener, url: &str) {
     let chat = Conversation::new(url, Some("drop-owner"), CACHED).await;
     let (mut peer, _) = completed(&chat, listener).await;
-    let Claim::Idle(entry, idle) = claim("drop-owner", &identity_of(&chat)) else {
+    let entry = cached_entry("drop-owner").unwrap();
+    let Claim::Idle(held) = claim("drop-owner", &identity_of(&chat)) else {
         panic!("an idle entry for the same identity");
     };
-    drop(idle);
+    drop(held);
     assert_eq!(close_seen(&mut peer).await, closed("done"));
     drop(entry);
     close(Some("drop-owner"));
@@ -1083,7 +1092,10 @@ async fn close_while_connecting() {
         "a connect pending at close may publish"
     );
     close(Some("close-connecting"));
-    assert_eq!(lease.closed().now_or_never(), Some(CloseReason::DebugClose));
+    assert_eq!(
+        *lease.closed().unwrap().borrow(),
+        Some(CloseReason::DebugClose)
+    );
     drop(lease);
     assert_eq!(close_seen(&mut peer).await, closed("debug_close"));
 }
@@ -1284,5 +1296,26 @@ fn maestro_response_sessions_discard_idle_application_frames() {
         assert_eq!(response_id.as_deref(), Some("r2"));
         assert_eq!(text_of(&second.output), "second");
         close(Some("idle-frames"));
+    });
+}
+
+#[test]
+fn maestro_response_sessions_claim_idle_socket_synchronously() {
+    let _isolated = super::exclusive();
+    run_native(async {
+        let (listener, url) = listen().await;
+        let chat = Conversation::new(&url, Some("sync-claim"), CACHED).await;
+        let (mut peer, _) = completed(&chat, &listener).await;
+        let Claim::Idle(lease) = claim("sync-claim", &identity_of(&chat)) else {
+            panic!("a matching idle socket is owned synchronously");
+        };
+        assert!(lease.reused);
+        assert!(matches!(
+            claim("sync-claim", &identity_of(&chat)),
+            Claim::Busy
+        ));
+        drop(lease);
+        assert!(cached_entry("sync-claim").is_none());
+        assert_eq!(close_seen(&mut peer).await, closed("done"));
     });
 }

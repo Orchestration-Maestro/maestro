@@ -21,7 +21,7 @@ use tokio_tungstenite::tungstenite::{Message, handshake::derive_accept_key};
 use tokio_tungstenite::{WebSocketStream, accept_async};
 
 /// Run on a real-time runtime so loopback readiness is never mistaken for idleness.
-pub(super) fn run_native<F: std::future::Future>(future: F) -> F::Output {
+pub(in super::super) fn run_native<F: std::future::Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

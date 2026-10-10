@@ -39,30 +39,21 @@ pub(crate) fn compact_object(members: &Map<String, Value>) -> Result<String, ser
 ///
 /// # Errors
 /// Returns the serializer failure when a string cannot be written.
-pub(crate) fn compact_members<'a, V: CompactJson + ?Sized + 'a>(
-    members: impl Iterator<Item = (&'a str, &'a V)>,
+pub(crate) fn compact_members<'a>(
+    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)>,
 ) -> Result<String, serde_json::Error> {
     let mut text = String::new();
     write_members(members, &mut text)?;
     Ok(text)
 }
 
-/// Something written as compact JSON: a value, or a slice of values as an array.
-pub(crate) trait CompactJson {
-    /// Append the compact text.
-    fn write(&self, text: &mut String) -> Result<(), serde_json::Error>;
-}
-
-impl CompactJson for Value {
-    fn write(&self, text: &mut String) -> Result<(), serde_json::Error> {
-        write_value(self, text)
-    }
-}
-
-impl CompactJson for &[Value] {
-    fn write(&self, text: &mut String) -> Result<(), serde_json::Error> {
-        write_items(self, text)
-    }
+/// A borrowed value or array slice written without allocating a JSON container.
+#[derive(Clone, Copy)]
+pub(crate) enum BorrowedJson<'a> {
+    /// One complete value.
+    Value(&'a Value),
+    /// Array elements.
+    Slice(&'a [Value]),
 }
 
 /// Append values as an array.
@@ -100,17 +91,19 @@ fn write_number(number: &Number, text: &mut String) {
 /// Append an object with array-index keys first.
 fn write_object(members: &Map<String, Value>, text: &mut String) -> Result<(), serde_json::Error> {
     write_members(
-        members.iter().map(|(key, value)| (key.as_str(), value)),
+        members
+            .iter()
+            .map(|(key, value)| (key.as_str(), BorrowedJson::Value(value))),
         text,
     )
 }
 
 /// Append members with array-index keys first.
-fn write_members<'a, V: CompactJson + ?Sized + 'a>(
-    members: impl Iterator<Item = (&'a str, &'a V)>,
+fn write_members<'a>(
+    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)>,
     text: &mut String,
 ) -> Result<(), serde_json::Error> {
-    let mut ordered: Vec<(&str, &V)> = members.collect();
+    let mut ordered: Vec<_> = members.collect();
     ordered.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
     text.push('{');
     for (position, (key, value)) in ordered.into_iter().enumerate() {
@@ -119,7 +112,10 @@ fn write_members<'a, V: CompactJson + ?Sized + 'a>(
         }
         text.push_str(&serde_json::to_string(key)?);
         text.push(':');
-        value.write(text)?;
+        match value {
+            BorrowedJson::Value(value) => write_value(value, text)?,
+            BorrowedJson::Slice(items) => write_items(items, text)?,
+        }
     }
     text.push('}');
     Ok(())

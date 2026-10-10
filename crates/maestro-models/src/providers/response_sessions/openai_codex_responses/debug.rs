@@ -1,10 +1,13 @@
 //! Per-session socket counters and the fallback flag; none of it needs native I/O.
 
-#[cfg(not(target_arch = "wasm32"))]
-use super::continuation::Request;
 use crate::{DiagnosticInput, format_thrown_value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Mutex, MutexGuard, PoisonError};
+#[cfg(not(target_arch = "wasm32"))]
+use {
+    super::continuation::Request,
+    crate::{StreamOptions, Transport},
+};
 
 /// What one session's requests did; optional fields stay absent until a request or a recorded
 /// outcome sets them.
@@ -40,16 +43,6 @@ pub(crate) struct OpenAICodexWebSocketDebugStats {
     pub(crate) last_web_socket_error: Option<String>,
 }
 
-/// How a request obtained its connection and which transport it selected.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Clone, Copy)]
-pub(super) struct Mode {
-    /// An idle cached connection served the request.
-    pub(super) reused: bool,
-    /// The cached-context transport was selected.
-    pub(super) cached: bool,
-}
-
 /// Statistics and fallback flags, keyed by session.
 struct DebugState {
     /// Counters of sessions that selected a request or recorded an outcome.
@@ -71,16 +64,19 @@ fn lock() -> MutexGuard<'static, DebugState> {
 
 /// Count one selected request attempt before it is sent.
 #[cfg(not(target_arch = "wasm32"))]
-pub(super) fn count_request(session_id: &str, request: &Request, mode: Mode) {
+pub(super) fn count_request(request: &Request, options: &StreamOptions, reused: bool) {
+    let Some(id) = options.session_id.as_deref().filter(|id| !id.is_empty()) else {
+        return;
+    };
     let mut guard = lock();
-    let stats = guard.stats.entry(session_id.to_owned()).or_default();
+    let stats = guard.stats.entry(id.to_owned()).or_default();
     stats.requests += 1;
-    if mode.reused {
-        stats.connections_reused += 1;
-    } else {
-        stats.connections_created += 1;
-    }
-    stats.cached_context_requests += u64::from(mode.cached);
+    stats.connections_reused += u64::from(reused);
+    stats.connections_created += u64::from(!reused);
+    stats.cached_context_requests += u64::from(matches!(
+        options.transport,
+        Some(Transport::WebsocketCached | Transport::Auto)
+    ));
     stats.store_true_requests += u64::from(request.store_true);
     stats.last_input_items = request.input_items;
     if request.previous_response_id.is_some() {

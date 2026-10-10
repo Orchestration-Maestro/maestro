@@ -2,7 +2,7 @@
 
 use super::super::continuation::Request;
 use super::super::debug::{
-    Mode, OpenAICodexWebSocketDebugStats as Stats, count_request,
+    OpenAICodexWebSocketDebugStats as Stats, count_request,
     get_openai_codex_web_socket_debug_stats as stats_of,
     is_web_socket_sse_fallback_active as active, record_web_socket_failure,
     record_web_socket_sse_fallback, reset_openai_codex_web_socket_debug_stats as reset,
@@ -272,12 +272,12 @@ fn fallback_then_failure() -> (Stats, Stats) {
         store_true: false,
     };
     count_request(
-        "snapshot",
         &request,
-        Mode {
-            reused: false,
-            cached: false,
+        &crate::StreamOptions {
+            session_id: Some("snapshot".to_owned()),
+            ..crate::StreamOptions::default()
         },
+        false,
     );
     let counted = stats("snapshot");
     assert_eq!(counted.websocket_fallback_active, None);

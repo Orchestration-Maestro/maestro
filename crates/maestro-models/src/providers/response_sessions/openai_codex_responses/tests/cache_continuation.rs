@@ -253,7 +253,7 @@ fn maestro_response_sessions_project_socket_response_items() {
             .filter(|block| block["type"] == "toolCall")
             .count();
         let output = Arc::new(std::sync::RwLock::new(message.clone()));
-        let borrowed = project(&output, &model).unwrap();
+        let borrowed = project(&output.read().unwrap(), &model).unwrap();
         let text = compact_json(&Value::Array(borrowed.clone())).unwrap();
         assert_eq!(text, row.expected.items, "case {index}");
         let (all, filtered) = full_conversion(&model, &message);

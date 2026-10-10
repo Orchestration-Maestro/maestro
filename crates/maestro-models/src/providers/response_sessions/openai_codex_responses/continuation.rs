@@ -3,9 +3,9 @@
 use super::CodexError;
 use super::sessions::lock;
 use super::websocket::{wire_body, wire_members};
-use crate::providers::json_text::{CompactJson, compact_json, compact_members};
+use crate::providers::json_text::{BorrowedJson, compact_json, compact_members};
 use crate::providers::responses::openai_responses_shared::messages::convert_assistant;
-use crate::{DiagnosticErrorInfo, Model, SharedAssistantMessage, StopReason};
+use crate::{AssistantMessage, DiagnosticErrorInfo, Model, SharedAssistantMessage, StopReason};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::{Mutex, PoisonError};
@@ -61,7 +61,7 @@ fn without_input(body: &Value) -> Result<String, serde_json::Error> {
             .into_iter()
             .flatten()
             .filter(|(name, _)| !matches!(name.as_str(), "input" | "previous_response_id"))
-            .map(|(name, value)| (name.as_str(), value)),
+            .map(|(name, value)| (name.as_str(), BorrowedJson::Value(value))),
     )
 }
 
@@ -85,16 +85,16 @@ fn spread(input: Option<&Value>) -> Option<Vec<Cow<'_, Value>>> {
 fn delta_wire(body: &Value, id: &Value, input: &[Value]) -> Result<String, CodexError> {
     let own = body.as_object();
     let replaced = own.into_iter().flatten().map(|(name, value)| {
-        let value: &dyn CompactJson = match name.as_str() {
-            "previous_response_id" => id,
-            "input" => &input,
-            _ => value,
+        let value = match name.as_str() {
+            "previous_response_id" => BorrowedJson::Value(id),
+            "input" => BorrowedJson::Slice(input),
+            _ => BorrowedJson::Value(value),
         };
         (name.as_str(), value)
     });
     let appended = [
-        ("previous_response_id", id as &dyn CompactJson),
-        ("input", &input),
+        ("previous_response_id", BorrowedJson::Value(id)),
+        ("input", BorrowedJson::Slice(input)),
     ]
     .into_iter()
     .filter(|(name, _)| own.is_none_or(|own| !own.contains_key(*name)));
@@ -103,6 +103,7 @@ fn delta_wire(body: &Value, id: &Value, input: &[Value]) -> Result<String, Codex
 
 impl Continuation {
     /// Retain `body` with the response it produced; `None` when its text cannot be written.
+    #[cfg(test)]
     pub(super) fn new(body: &Value, response_id: &str, items: Vec<Value>) -> Option<Self> {
         Some(Self {
             rest: without_input(body).ok()?,
@@ -155,15 +156,14 @@ pub(super) fn select(slot: &Mutex<Option<Continuation>>, body: &Value) -> Option
 
 /// Input items a finished response contributes to the next request.
 pub(super) fn project(
-    output: &SharedAssistantMessage,
+    message: &AssistantMessage,
     model: &Model,
 ) -> Result<Vec<Value>, DiagnosticErrorInfo> {
-    let message = output.read().unwrap_or_else(PoisonError::into_inner);
     if matches!(message.stop_reason, StopReason::Error | StopReason::Aborted) {
         return Ok(Vec::new());
     }
     // This freshly reduced message belongs to this model, so projection needs no cross-model rewrite.
-    let mut items = convert_assistant(&message, model, 0)?;
+    let mut items = convert_assistant(message, model, 0)?;
     items.retain(|item| item["type"] != "function_call_output");
     Ok(items)
 }
@@ -175,14 +175,15 @@ pub(super) fn retain(
     output: &SharedAssistantMessage,
     model: &Model,
 ) -> Result<(), DiagnosticErrorInfo> {
-    let id = output
-        .read()
-        .unwrap_or_else(PoisonError::into_inner)
-        .response_id
-        .clone()
-        .filter(|id| !id.is_empty());
-    if let Some(id) = id {
-        *lock(slot) = Continuation::new(body, &id, project(output, model)?);
+    let message = output.read().unwrap_or_else(PoisonError::into_inner);
+    if let Some(id) = message.response_id.as_ref().filter(|id| !id.is_empty()) {
+        let items = project(&message, model)?;
+        *lock(slot) = without_input(body).ok().map(|rest| Continuation {
+            rest,
+            body: body.clone(),
+            response_id: id.clone(),
+            items,
+        });
     }
     Ok(())
 }
