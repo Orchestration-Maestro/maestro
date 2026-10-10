@@ -180,8 +180,8 @@ impl Editing {
     /// Chooses the byte column and remembered cell for an absolute cell of the target row.
     ///
     /// Moving down onto a row that continues a marker, the first row past that marker is returned
-    /// as the error when one exists; otherwise, and in every other case, the cursor lands on the
-    /// start of the unit under the target cell.
+    /// as the error when one exists. Otherwise the cursor lands on the start of the unit under the
+    /// target cell, or on the row's endpoint when no unit covers that cell.
     fn land(
         &self,
         rows: &[VisualRow],
@@ -269,7 +269,7 @@ fn past_continuation(rows: &[VisualRow], target: usize, end: usize) -> Option<us
     (next < rows.len()).then_some(next)
 }
 impl Editing {
-    /// Moves across one whitespace prefix and one punctuation or word run.
+    /// Moves across one whitespace prefix and one owned marker, punctuation run or word run.
     pub(super) fn word(&mut self, forward: bool) {
         self.reset_action();
         let cursor = self.current.cursor;
