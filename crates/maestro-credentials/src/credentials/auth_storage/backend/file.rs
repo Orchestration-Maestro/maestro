@@ -5,11 +5,6 @@ use std::io::{self, ErrorKind};
 use std::path::Path;
 use std::time::Duration;
 
-/// Attempts made on a contended lock.
-const LOCK_ATTEMPTS: u32 = 10;
-/// Wait between two contended attempts.
-const LOCK_RETRY_DELAY: Duration = Duration::from_millis(20);
-
 /// Waits between contended attempts of the asynchronous acquisition, in milliseconds.
 const ASYNC_LOCK_DELAYS_MS: [u64; 10] = [100, 200, 400, 800, 1600, 3200, 6400, 10000, 10000, 10000];
 
@@ -48,9 +43,7 @@ impl FileAuthStorageBackend {
 
     /// Lock the sidecar, retrying only while another holder has it.
     fn acquire(&self) -> Result<File, AuthStorageError> {
-        let file = self.lock_file()?;
-        retry_contended(|| file.try_lock())?;
-        Ok(file)
+        Ok(maestro_lock::acquire(self.lock_file()?)?)
     }
 
     /// Lock the sidecar, waiting the scheduled delays while another holder has it.
@@ -79,22 +72,6 @@ impl FileAuthStorageBackend {
             Err(error) => Err(error),
         }
     }
-}
-
-/// Try up to `LOCK_ATTEMPTS` times, waiting only after a contended attempt.
-fn retry_contended(
-    mut try_lock: impl FnMut() -> Result<(), TryLockError>,
-) -> Result<(), AuthStorageError> {
-    for attempt in 1..=LOCK_ATTEMPTS {
-        match try_lock() {
-            Ok(()) => return Ok(()),
-            Err(TryLockError::WouldBlock) if attempt < LOCK_ATTEMPTS => {
-                std::thread::sleep(LOCK_RETRY_DELAY);
-            }
-            Err(error) => return Err(Box::new(error)),
-        }
-    }
-    Err(Box::new(TryLockError::WouldBlock))
 }
 
 /// Create the file with `{}` only if absent, following dangling links; an existing file is never opened for writing.
@@ -165,36 +142,5 @@ impl AuthStorageBackend for FileAuthStorageBackend {
             }
             Ok(())
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn non_contention_errors_are_not_retried() {
-        let mut calls = 0;
-        let result = retry_contended(|| {
-            calls += 1;
-            Err(TryLockError::Error(io::Error::other("denied")))
-        });
-        assert!(result.is_err());
-        assert_eq!(calls, 1);
-    }
-
-    #[test]
-    fn contention_is_retried_until_the_lock_is_free() {
-        let mut calls = 0;
-        let result = retry_contended(|| {
-            calls += 1;
-            if calls < 3 {
-                Err(TryLockError::WouldBlock)
-            } else {
-                Ok(())
-            }
-        });
-        assert!(result.is_ok());
-        assert_eq!(calls, 3);
     }
 }

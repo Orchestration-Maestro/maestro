@@ -13,6 +13,7 @@ serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-lock = { path = "../maestro-lock" }
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "process", "io-util", "macros"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

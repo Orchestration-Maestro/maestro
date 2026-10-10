@@ -1633,6 +1633,7 @@ name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-lock",
  "maestro-models",
  "maestro-path",
  "serde",
@@ -1661,6 +1662,10 @@ dependencies = [
  "wasmtime-wasi",
  "wit-bindgen 0.62.0",
 ]
+
+[[package]]
+name = "maestro-lock"
+version = "0.1.0"
 
 [[package]]
 name = "maestro-models"
@@ -1748,6 +1753,7 @@ dependencies = [
 name = "maestro-settings"
 version = "0.1.0"
 dependencies = [
+ "maestro-lock",
  "maestro-path",
  "ryu-js",
  "serde",

@@ -15,6 +15,9 @@ ryu-js = "=1.0.3"
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "=0.4.79"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-lock = { path = "../maestro-lock" }
+
 [dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["sync", "rt"] }
 

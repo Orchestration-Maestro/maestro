@@ -10,7 +10,6 @@ mod tests {
     use std::fs;
     use std::path::Path;
     use std::sync::Arc;
-    use std::time::{Duration, Instant};
 
     use serde_json::json;
 
@@ -407,8 +406,8 @@ mod tests {
     }
 
     #[test]
-    fn contention_retries_ten_times() {
-        const TEST: &str = "contention_retries_ten_times";
+    fn held_sidecar_skips_update_until_released() {
+        const TEST: &str = "held_sidecar_skips_update_until_released";
         if support::run_lock_child() {
             return;
         }
@@ -419,19 +418,13 @@ mod tests {
         fs::write(agent.join("settings.json"), "global").unwrap();
         let holder = Holder::start(TEST, &agent.join("settings.json.lock"));
 
-        let started = Instant::now();
         let mut calls = 0;
         let outcome = storage.with_lock(SettingsScope::Global, &mut |_| {
             calls += 1;
             Ok(None)
         });
-        let waited = started.elapsed();
         assert!(outcome.is_err(), "a held lock exhausts the attempts");
         assert_eq!(calls, 0, "the callback never runs");
-        assert!(
-            waited >= Duration::from_millis(180),
-            "nine waits of 20 ms, got {waited:?}"
-        );
 
         holder.release();
         transact(&storage, SettingsScope::Global, Ok(None))
@@ -440,24 +433,15 @@ mod tests {
     }
 
     #[test]
-    fn non_contention_errors_return_immediately() {
+    fn sidecar_open_and_read_failures_skip_update() {
         let root = TempDir::new();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(agent.join("settings.json.lock")).unwrap();
         fs::write(agent.join("settings.json"), "global").unwrap();
-        let mut fastest = Duration::MAX;
-        for _ in 0..5 {
-            let started = Instant::now();
-            let (seen, outcome) = transact(&storage, SettingsScope::Global, Ok(None));
-            assert!(outcome.is_err(), "the sidecar cannot be opened");
-            assert_eq!(seen, None, "the callback never runs");
-            fastest = fastest.min(started.elapsed());
-        }
-        assert!(
-            fastest < Duration::from_millis(150),
-            "retrying would take at least nine waits of 20 ms, got {fastest:?}"
-        );
+        let (seen, outcome) = transact(&storage, SettingsScope::Global, Ok(None));
+        assert!(outcome.is_err(), "the sidecar cannot be opened");
+        assert_eq!(seen, None, "the callback never runs");
 
         fs::remove_dir(agent.join("settings.json.lock")).unwrap();
         fs::remove_file(agent.join("settings.json")).unwrap();

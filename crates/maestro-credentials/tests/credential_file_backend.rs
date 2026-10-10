@@ -21,7 +21,7 @@ mod tests {
     use std::fs::{File, TryLockError};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     /// Environment-free configuration operations.
     struct NoOperations;
@@ -173,9 +173,7 @@ mod tests {
         let storage = AuthStorage::create(&path);
         let initial = std::fs::read_to_string(&path).unwrap();
         let holder = hold_lock(&path);
-        let started = Instant::now();
         storage.set("openai", api_key("o"));
-        assert!(started.elapsed() >= Duration::from_millis(180));
         let errors = storage.drain_errors();
         assert!(matches!(
             errors[0].downcast_ref::<TryLockError>(),
