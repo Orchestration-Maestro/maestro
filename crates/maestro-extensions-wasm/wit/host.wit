@@ -56,14 +56,65 @@ interface host {
         label-timestamp: func() -> result<option<string>, string>;
     }
 
+
+    /// Supplied context usage estimates.
+    record context-usage {
+        /// Unknown estimates are absent.
+        tokens: option<f64>,
+        /// Supplied context capacity.
+        context-window: f64,
+        /// Supplied percentage, or an unknown estimate.
+        percent: option<f64>,
+    }
+    /// Independently retained opaque UI capability.
+    resource extension-ui-context;
+    /// Resolved credentials, retaining key and header presence.
+    record request-auth {
+        api-key: option<string>,
+        headers: option<list<tuple<string, string>>>,
+    }
+    /// Resolution outcome, separate from an import failure.
+    variant resolved-request-auth { ok(request-auth), error(string) }
+    /// Independently retained host catalog.
+    resource model-registry {
+        get-all: func() -> result<string, string>;
+        get-available: func() -> result<string, string>;
+        find: func(provider: string, model-id: string) -> result<option<string>, string>;
+        get-api-key-and-headers: async func(model: string) -> result<resolved-request-auth, string>;
+    }
+
     /// Live capabilities available to every callback.
     resource context {
+        ui: func() -> result<extension-ui-context, string>;
+        has-ui: func() -> result<bool, string>;
+        model-registry: func() -> result<model-registry, string>;
+        model: func() -> result<option<string>, string>;
+        is-idle: func() -> result<bool, string>;
+        signal: func() -> result<option<abort-signal>, string>;
+        abort: func() -> result<_, string>;
+        has-pending-messages: func() -> result<bool, string>;
+        shutdown: func() -> result<_, string>;
+        get-context-usage: func() -> result<option<context-usage>, string>;
+        get-system-prompt: func() -> result<string, string>;
+
         cwd: func() -> result<string, string>;
         session-manager: func() -> result<readonly-session-manager, string>;
     }
 
     /// Context with the session-replacing operations; only commands receive it.
     resource command-context {
+        ui: func() -> result<extension-ui-context, string>;
+        has-ui: func() -> result<bool, string>;
+        model-registry: func() -> result<model-registry, string>;
+        model: func() -> result<option<string>, string>;
+        is-idle: func() -> result<bool, string>;
+        signal: func() -> result<option<abort-signal>, string>;
+        abort: func() -> result<_, string>;
+        has-pending-messages: func() -> result<bool, string>;
+        shutdown: func() -> result<_, string>;
+        get-context-usage: func() -> result<option<context-usage>, string>;
+        get-system-prompt: func() -> result<string, string>;
+
         cwd: func() -> result<string, string>;
         session-manager: func() -> result<readonly-session-manager, string>;
         wait-for-idle: async func() -> result<_, string>;

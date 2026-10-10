@@ -5,7 +5,17 @@ use std::rc::Rc;
 use super::callbacks::Scoped;
 use super::imports::Imports;
 use super::session::reader;
-use crate::ReadonlySessionManager;
+use super::{model_registry::registry, session::decode};
+use crate::{
+    ContextUsage, ExtensionUIContext, ExtensionUIContextPort, Model, ModelRegistry,
+    ReadonlySessionManager,
+};
+/// Independently retained UI resource.
+struct Ui<I: Imports> {
+    /// The host capability owner.
+    _resource: I::Ui,
+}
+impl<I: Imports> ExtensionUIContextPort for Ui<I> {}
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
@@ -44,6 +54,52 @@ struct Ordinary<I: Imports> {
 }
 
 impl<I: Imports> ContextPort for Ordinary<I> {
+    fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
+        Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
+            _resource: self.imports.ui(&self.context)?,
+        })))
+    }
+    fn has_ui(&self) -> ExtensionResult<bool> {
+        self.imports.has_ui(&self.context)
+    }
+    fn model_registry(&self) -> ExtensionResult<ModelRegistry> {
+        Ok(registry(
+            self.imports.clone(),
+            self.imports.model_registry(&self.context)?,
+        ))
+    }
+    fn model(&self) -> ExtensionResult<Option<Model>> {
+        self.imports
+            .model(&self.context)?
+            .as_deref()
+            .map(decode)
+            .transpose()
+    }
+    fn is_idle(&self) -> ExtensionResult<bool> {
+        self.imports.is_idle(&self.context)
+    }
+    fn signal(&self) -> ExtensionResult<Option<AbortSignal>> {
+        Ok(self
+            .imports
+            .signal(&self.context)?
+            .map(|handle| signal(&self.imports, handle)))
+    }
+    fn abort(&self) -> ExtensionResult<()> {
+        self.imports.abort(&self.context)
+    }
+    fn has_pending_messages(&self) -> ExtensionResult<bool> {
+        self.imports.has_pending_messages(&self.context)
+    }
+    fn shutdown(&self) -> ExtensionResult<()> {
+        self.imports.shutdown(&self.context)
+    }
+    fn get_context_usage(&self) -> ExtensionResult<Option<ContextUsage>> {
+        self.imports.get_context_usage(&self.context)
+    }
+    fn get_system_prompt(&self) -> ExtensionResult<String> {
+        self.imports.get_system_prompt(&self.context)
+    }
+
     fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
         Ok(reader(
             self.imports.clone(),
@@ -73,6 +129,52 @@ struct Command<I: Imports> {
 }
 
 impl<I: Imports> ContextPort for Command<I> {
+    fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
+        Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
+            _resource: self.imports.command_ui(&self.context)?,
+        })))
+    }
+    fn has_ui(&self) -> ExtensionResult<bool> {
+        self.imports.command_has_ui(&self.context)
+    }
+    fn model_registry(&self) -> ExtensionResult<ModelRegistry> {
+        Ok(registry(
+            self.imports.clone(),
+            self.imports.command_model_registry(&self.context)?,
+        ))
+    }
+    fn model(&self) -> ExtensionResult<Option<Model>> {
+        self.imports
+            .command_model(&self.context)?
+            .as_deref()
+            .map(decode)
+            .transpose()
+    }
+    fn is_idle(&self) -> ExtensionResult<bool> {
+        self.imports.command_is_idle(&self.context)
+    }
+    fn signal(&self) -> ExtensionResult<Option<AbortSignal>> {
+        Ok(self
+            .imports
+            .command_signal(&self.context)?
+            .map(|handle| signal(&self.imports, handle)))
+    }
+    fn abort(&self) -> ExtensionResult<()> {
+        self.imports.command_abort(&self.context)
+    }
+    fn has_pending_messages(&self) -> ExtensionResult<bool> {
+        self.imports.command_has_pending_messages(&self.context)
+    }
+    fn shutdown(&self) -> ExtensionResult<()> {
+        self.imports.command_shutdown(&self.context)
+    }
+    fn get_context_usage(&self) -> ExtensionResult<Option<ContextUsage>> {
+        self.imports.command_get_context_usage(&self.context)
+    }
+    fn get_system_prompt(&self) -> ExtensionResult<String> {
+        self.imports.command_get_system_prompt(&self.context)
+    }
+
     fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
         Ok(reader(
             self.imports.clone(),

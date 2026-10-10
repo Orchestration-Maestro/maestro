@@ -110,6 +110,6 @@ impl<I: Imports> SessionTreeNodePort for Node<I> {
     }
 }
 /// Decodes a selected payload without an intermediate JSON value tree.
-fn decode<T: serde::de::DeserializeOwned>(text: &str) -> ExtensionResult<T> {
+pub(super) fn decode<T: serde::de::DeserializeOwned>(text: &str) -> ExtensionResult<T> {
     serde_json::from_str(text).map_err(|error| error.to_string())
 }

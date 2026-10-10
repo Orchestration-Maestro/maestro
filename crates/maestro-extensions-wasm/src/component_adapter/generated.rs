@@ -47,6 +47,121 @@ impl Imports for Generated {
     ) -> ExtensionResult<()> {
         host::start_event_tail(emitter, tail)
     }
+    type Ui = host::ExtensionUiContext;
+    type Registry = host::ModelRegistry;
+    fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String> {
+        resource.get_all()
+    }
+    fn registry_get_available(&self, resource: &Self::Registry) -> ExtensionResult<String> {
+        resource.get_available()
+    }
+    fn registry_find(
+        &self,
+        resource: &Self::Registry,
+        provider: &str,
+        model_id: &str,
+    ) -> ExtensionResult<Option<String>> {
+        resource.find(provider, model_id)
+    }
+    fn registry_get_api_key_and_headers<'a>(
+        &'a self,
+        resource: &'a Self::Registry,
+        model: String,
+    ) -> ExtensionFuture<'a, crate::ResolvedRequestAuth> {
+        Box::pin(async move {
+            Ok(match resource.get_api_key_and_headers(model).await? {
+                host::ResolvedRequestAuth::Ok(auth) => crate::ResolvedRequestAuth::Ok {
+                    api_key: auth.api_key,
+                    headers: auth.headers.map(|headers| headers.into_iter().collect()),
+                },
+                host::ResolvedRequestAuth::Error(error) => {
+                    crate::ResolvedRequestAuth::Error { error }
+                }
+            })
+        })
+    }
+    fn ui(&self, context: &Self::Context) -> ExtensionResult<Self::Ui> {
+        context.ui()
+    }
+    fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool> {
+        context.has_ui()
+    }
+    fn model_registry(&self, context: &Self::Context) -> ExtensionResult<Self::Registry> {
+        context.model_registry()
+    }
+    fn model(&self, context: &Self::Context) -> ExtensionResult<Option<String>> {
+        context.model()
+    }
+    fn is_idle(&self, context: &Self::Context) -> ExtensionResult<bool> {
+        context.is_idle()
+    }
+    fn signal(&self, context: &Self::Context) -> ExtensionResult<Option<Self::Signal>> {
+        context.signal()
+    }
+    fn abort(&self, context: &Self::Context) -> ExtensionResult<()> {
+        context.abort()
+    }
+    fn has_pending_messages(&self, context: &Self::Context) -> ExtensionResult<bool> {
+        context.has_pending_messages()
+    }
+    fn shutdown(&self, context: &Self::Context) -> ExtensionResult<()> {
+        context.shutdown()
+    }
+    fn get_context_usage(
+        &self,
+        context: &Self::Context,
+    ) -> ExtensionResult<Option<crate::ContextUsage>> {
+        context.get_context_usage()
+    }
+    fn get_system_prompt(&self, context: &Self::Context) -> ExtensionResult<String> {
+        context.get_system_prompt()
+    }
+    fn command_ui(&self, context: &Self::CommandContext) -> ExtensionResult<Self::Ui> {
+        context.ui()
+    }
+    fn command_has_ui(&self, context: &Self::CommandContext) -> ExtensionResult<bool> {
+        context.has_ui()
+    }
+    fn command_model_registry(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Self::Registry> {
+        context.model_registry()
+    }
+    fn command_model(&self, context: &Self::CommandContext) -> ExtensionResult<Option<String>> {
+        context.model()
+    }
+    fn command_is_idle(&self, context: &Self::CommandContext) -> ExtensionResult<bool> {
+        context.is_idle()
+    }
+    fn command_signal(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Option<Self::Signal>> {
+        context.signal()
+    }
+    fn command_abort(&self, context: &Self::CommandContext) -> ExtensionResult<()> {
+        context.abort()
+    }
+    fn command_has_pending_messages(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<bool> {
+        context.has_pending_messages()
+    }
+    fn command_shutdown(&self, context: &Self::CommandContext) -> ExtensionResult<()> {
+        context.shutdown()
+    }
+    fn command_get_context_usage(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Option<crate::ContextUsage>> {
+        context.get_context_usage()
+    }
+    fn command_get_system_prompt(&self, context: &Self::CommandContext) -> ExtensionResult<String> {
+        context.get_system_prompt()
+    }
+
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Signal = host::AbortSignal;

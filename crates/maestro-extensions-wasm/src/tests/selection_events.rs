@@ -273,7 +273,7 @@ struct CompatibilityCase {
     expected: Value,
 }
 /// Check retained member order recursively in the returned object.
-fn assert_order(actual: &Value, expected: &Value) {
+pub(super) fn assert_order(actual: &Value, expected: &Value) {
     match (actual, expected) {
         (Value::Object(actual), Value::Object(expected)) => {
             assert_eq!(

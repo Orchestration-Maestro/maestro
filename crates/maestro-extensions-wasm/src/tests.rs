@@ -31,7 +31,9 @@ mod author;
 mod build;
 mod bus_callbacks;
 pub(crate) mod bus_host;
+pub(crate) mod catalog_host;
 mod component_driver;
+mod context_catalog;
 mod controlled;
 mod controlled_driver;
 mod documents;
@@ -221,6 +223,17 @@ fn spell(ty: &Type, resources: &[(String, ResourceType)]) -> String {
     let optional = |ty: Option<Type>| ty.map_or_else(|| "_".to_owned(), |ty| spell(&ty, resources));
     match ty {
         Type::String => "string".to_owned(),
+        Type::Float64 => "f64".to_owned(),
+        Type::Bool => "bool".to_owned(),
+        Type::List(list) => format!("list<{}>", spell(&list.ty(), resources)),
+        Type::Tuple(tuple) => format!(
+            "tuple<{}>",
+            tuple
+                .types()
+                .map(|ty| spell(&ty, resources))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
         Type::Own(resource) => format!("own<{}>", named(resource)),
         Type::Borrow(resource) => format!("borrow<{}>", named(resource)),
         Type::Option(option) => format!("option<{}>", spell(&option.ty(), resources)),
@@ -293,6 +306,8 @@ struct Contract {
     event_params: Vec<String>,
     /// The results of `invoke-event`.
     event_results: Vec<String>,
+    /// Signatures of the new retained-capability and usage routes.
+    catalog_signatures: Vec<Vec<String>>,
 }
 
 /// Reads the contract of the built component.
@@ -321,6 +336,18 @@ fn contract() -> Result<Contract, String> {
             .imports(&engine)
             .map(|(name, _)| name.to_owned())
             .collect(),
+        catalog_signatures: [
+            "[method]context.ui",
+            "[method]context.model-registry",
+            "[method]context.signal",
+            "[method]context.get-context-usage",
+            "[method]model-registry.get-api-key-and-headers",
+        ]
+        .into_iter()
+        .map(|name| {
+            signature(&engine, &host, name, &resources(&engine, &host)).map(|(_, result)| result)
+        })
+        .collect::<Result<_, _>>()?,
         event_params,
         event_results,
     })
@@ -391,6 +418,51 @@ fn assert_reader_imports(contract: &Contract) {
     );
 }
 
+/// The new scalar routes are synchronous; usage and retained resources have typed results.
+fn assert_catalog_imports(contract: &Contract) {
+    let context_methods = [
+        "ui",
+        "has-ui",
+        "model-registry",
+        "model",
+        "is-idle",
+        "signal",
+        "abort",
+        "has-pending-messages",
+        "shutdown",
+        "get-context-usage",
+        "get-system-prompt",
+    ];
+    let mut expected = ["context", "command-context"]
+        .into_iter()
+        .flat_map(|resource| context_methods.map(|method| format!("[method]{resource}.{method}")))
+        .collect::<Vec<_>>();
+    expected.extend(
+        ["get-all", "get-available", "find"]
+            .map(|method| format!("[method]model-registry.{method}")),
+    );
+    expected.sort_unstable();
+    let actual = names(&contract.imports, false)
+        .into_iter()
+        .filter(|name| expected.iter().any(|route| route == name))
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+    assert_eq!(
+        contract.catalog_signatures,
+        [
+            vec!["result<own<extension-ui-context>, string>"],
+            vec!["result<own<model-registry>, string>"],
+            vec!["result<option<own<abort-signal>>, string>"],
+            vec![
+                "result<option<record {tokens: option<f64>, context-window: f64, percent: option<f64>}>, string>"
+            ],
+            vec![
+                "result<variant {ok(record {api-key: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
+            ],
+        ]
+    );
+}
+
 #[test]
 fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String> {
     let contract = contract()?;
@@ -413,11 +485,13 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     );
     assert_typed_event_export(&contract);
     assert_reader_imports(&contract);
+    assert_catalog_imports(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [
             "[method]command-context.new-session",
             "[method]command-context.wait-for-idle",
+            "[method]model-registry.get-api-key-and-headers",
             "callback-emit",
             "event-emit",
         ]

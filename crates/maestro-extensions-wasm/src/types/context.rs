@@ -5,7 +5,23 @@
     clippy::excessive_nesting
 )]
 
-use crate::ReadonlySessionManager;
+pub use crate::bindings::maestro::extension::host::ContextUsage;
+use crate::{Model, ModelRegistry, ReadonlySessionManager};
+/// Retained opaque UI capability supplied by the host.
+pub trait ExtensionUIContextPort {}
+/// UI capability; clones share its host owner.
+#[derive(Clone)]
+pub struct ExtensionUIContext {
+    /// Independently retained host capability.
+    _port: Rc<dyn ExtensionUIContextPort>,
+}
+impl ExtensionUIContext {
+    /// Wraps the supplied UI capability.
+    #[must_use]
+    pub fn new(port: Rc<dyn ExtensionUIContextPort>) -> Self {
+        Self { _port: port }
+    }
+}
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -52,6 +68,29 @@ port! {
     ContextPort for ExtensionContext via 0 {
         /// The working directory of the current session.
         fn cwd() -> String;
+        /// Acquires the currently bound UI capability.
+        fn ui() -> ExtensionUIContext;
+        /// Reads the host UI availability flag.
+        fn has_ui() -> bool;
+        /// Acquires the currently bound catalog.
+        fn model_registry() -> ModelRegistry;
+        /// Reads the current model through the bound host context.
+        fn model() -> Option<Model>;
+        /// Reads the host idle flag.
+        fn is_idle() -> bool;
+        /// Acquires the current operation cancellation flag.
+        fn signal() -> Option<AbortSignal>;
+        /// Forwards abort to the bound host context.
+        fn abort() -> ();
+        /// Reads the host queued-message flag.
+        fn has_pending_messages() -> bool;
+        /// Forwards shutdown to the bound host context.
+        fn shutdown() -> ();
+        /// Reads the supplied context usage estimate.
+        fn get_context_usage() -> Option<ContextUsage>;
+        /// Reads the literal effective system prompt.
+        fn get_system_prompt() -> String;
+
         /// Acquires the reader currently bound to this context.
         fn session_manager() -> ReadonlySessionManager;
     }

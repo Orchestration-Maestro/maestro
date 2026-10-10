@@ -5,7 +5,8 @@ canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
-families, tool callbacks, command contexts, session continuations, session readers and event channels.
+families, tool callbacks, command contexts, session continuations, session readers,
+event channels, live context observations and model catalog queries.
 
 ## Build a component
 
@@ -207,6 +208,38 @@ An `AbortSignal` is a capability, not a snapshot: keep it past the callback and 
 the host resources lent for the invocation that delivered them, whatever later invocations
 receive. What a handler does not keep is dropped when the invocation ends, including when
 the delivery is refused.
+
+## Live context and catalog capabilities
+
+`ExtensionContext` forwards `ui`, `has_ui`, `model_registry`, `model`, `is_idle`,
+`signal`, `abort`, `has_pending_messages`, `shutdown`, `get_context_usage` and
+`get_system_prompt` to its bound host context on each call. Command and replacement
+contexts inherit these methods. Getter and action failures are recoverable
+`ExtensionResult` errors; the guest does not implement host shutdown or queue policy.
+
+`ExtensionUIContext`, `ModelRegistry` and `AbortSignal` retain their acquired host
+resource independently of the context. Cloning shares the owner; its final alias
+drops that resource. A later acquisition can return a different resource. Whether
+an acquisition or retained query is allowed remains the host's decision. The UI
+capability currently has no author methods.
+
+`ModelRegistry::get_all`, `get_available` and `find` forward the host's results;
+`find` passes literal provider and model identifiers. The guest does not filter,
+sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
+operation for the supplied descriptor, without checking catalog membership.
+`ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
+present empty strings; `Error` carries a structured denial, distinct from an
+outer host-call failure.
+
+`model` and the catalog queries reuse the [shared model records](../records.md).
+`ContextUsage` carries optional token and percentage estimates and the supplied
+floating-point context window without recalculation. No usage is distinct from
+usage whose two estimates are unknown.
+
+The component example's controlled compaction handler reads the supplied preparation
+and branch entries, queries the session reader and catalog, and returns compaction
+content whose opaque details depend on those live query results. Summary formatting
+remains in its existing author helper.
 
 ## How an event travels
 

@@ -19,14 +19,14 @@ use crate::bindings::host_side::maestro::extension::{host, session};
 /// Host identity of one guest closure.
 pub struct Identity(u32);
 /// Cancellation flag.
-pub struct Flag(bool);
+pub struct Flag(pub std::sync::Arc<std::sync::atomic::AtomicBool>);
 /// Progress resource owned by one execution.
 pub struct Update;
 
 /// Host type of the ordinary context resource.
-pub struct Ordinary(Session);
+pub struct Ordinary(Session, super::reader_host::Reader);
 /// Host type of the command context resource.
-pub struct Command(Session);
+pub struct Command(Session, super::reader_host::Reader);
 /// Host type of the replacement context resource.
 pub struct Replaced(Session);
 
@@ -64,7 +64,10 @@ impl State {
 
     /// Cancels a retained resource by its table key.
     pub fn abort(&mut self, flag: u32) -> wasmtime::Result<()> {
-        self.table.get_mut(&Resource::<Flag>::new_borrow(flag))?.0 = true;
+        self.table
+            .get_mut(&Resource::<Flag>::new_borrow(flag))?
+            .0
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         Ok(())
     }
 
@@ -122,7 +125,11 @@ impl host::HostToolUpdate for State {
 
 impl host::HostAbortSignal for State {
     fn aborted(&mut self, this: Resource<Flag>) -> wasmtime::Result<bool> {
-        Ok(self.table.get(&this)?.0)
+        Ok(self
+            .table
+            .get(&this)?
+            .0
+            .load(std::sync::atomic::Ordering::SeqCst))
     }
 
     fn drop(&mut self, this: Resource<Flag>) -> wasmtime::Result<()> {
@@ -133,6 +140,118 @@ impl host::HostAbortSignal for State {
 /// Methods every session-bound context resource shares.
 macro_rules! context_methods {
     ($kind:ident) => {
+        fn ui(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<Resource<super::catalog_host::Ui>, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(Ok(self.push(super::catalog_host::Ui)?))
+        }
+        fn has_ui(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<bool, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(Ok(self.observed.catalog.data.has_ui))
+        }
+        fn model_registry(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            let data = self.observed.catalog.registry.clone();
+            Ok(Ok(self.push(data)?))
+        }
+        fn model(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<Option<String>, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(self
+                .observed
+                .catalog
+                .selected_model(&self.table.get(&this)?.1))
+        }
+        fn is_idle(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<bool, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(Ok(self.observed.catalog.data.idle))
+        }
+        fn signal(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<Option<Resource<Flag>>, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            let flag = self.observed.catalog.flag.clone();
+            Ok(Ok(flag.map(|flag| self.push(Flag(flag))).transpose()?))
+        }
+        fn abort(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<(), String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            self.observed.log("context abort");
+            Ok(Ok(()))
+        }
+        fn has_pending_messages(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<bool, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(Ok(self.observed.catalog.data.queued))
+        }
+        fn shutdown(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<(), String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            self.observed.log("context shutdown");
+            Ok(Ok(()))
+        }
+        fn get_context_usage(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<Option<host::ContextUsage>, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(Ok(self.observed.catalog.data.usage.as_ref().map(|u| {
+                host::ContextUsage {
+                    tokens: u.tokens,
+                    context_window: u.context_window,
+                    percent: u.percent,
+                }
+            })))
+        }
+        fn get_system_prompt(
+            &mut self,
+            this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<String, String>> {
+            let _ = &this;
+            if let Err(e) = self.observed.catalog.check() {
+                return Ok(Err(e));
+            }
+            Ok(Ok(self.observed.catalog.data.prompt.clone()))
+        }
+
         fn cwd(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<String, String>> {
             Ok(self.table.get(&this)?.0.cwd())
         }
@@ -164,7 +283,10 @@ impl host::HostCommandContext for State {
 impl host::HostReplacedSessionContext for State {
     fn command(&mut self, this: Resource<Replaced>) -> wasmtime::Result<Resource<Command>> {
         let cwd = self.table.get(&this)?.0.cwd.clone();
-        self.push(Command(Session::new(&cwd)))
+        self.push(Command(
+            Session::new(&cwd),
+            self.observed.catalog.model.clone(),
+        ))
     }
 
     fn drop(&mut self, this: Resource<Replaced>) -> wasmtime::Result<()> {
@@ -254,7 +376,7 @@ impl host::Host for State {
 }
 
 /// Selects the host state as the data every import runs against.
-struct Imports;
+pub(super) struct Imports;
 
 impl HasData for Imports {
     type Data<'a> = &'a mut State;
@@ -408,7 +530,12 @@ impl Harness {
 
     /// A fresh ordinary context in `cwd`.
     pub fn ordinary(&mut self, cwd: &str) -> wasmtime::Result<Resource<Ordinary>> {
-        self.store.data_mut().push(Ordinary(Session::new(cwd)))
+        {
+            let model = self.store.data().observed.catalog.model.clone();
+            self.store
+                .data_mut()
+                .push(Ordinary(Session::new(cwd), model))
+        }
     }
 
     /// A fresh progress resource.
@@ -429,12 +556,23 @@ impl Harness {
 
     /// A fresh command context in `cwd`.
     pub fn command_context(&mut self, cwd: &str) -> wasmtime::Result<Resource<Command>> {
-        self.store.data_mut().push(Command(Session::new(cwd)))
+        {
+            let model = self.store.data().observed.catalog.model.clone();
+            self.store
+                .data_mut()
+                .push(Command(Session::new(cwd), model))
+        }
     }
 
     /// A fresh cancellation flag, already cancelled when `aborted`.
     pub fn flag(&mut self, aborted: bool) -> wasmtime::Result<u32> {
-        Ok(self.store.data_mut().push(Flag(aborted))?.rep())
+        Ok(self
+            .store
+            .data_mut()
+            .push(Flag(std::sync::Arc::new(
+                std::sync::atomic::AtomicBool::new(aborted),
+            )))?
+            .rep())
     }
 
     /// Cancels a flag the component may have retained.
@@ -443,7 +581,8 @@ impl Harness {
             .data_mut()
             .table
             .get_mut(&Resource::<Flag>::new_borrow(flag))?
-            .0 = true;
+            .0
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         Ok(())
     }
 
