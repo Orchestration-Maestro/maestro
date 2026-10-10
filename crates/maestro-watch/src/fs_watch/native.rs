@@ -1,5 +1,5 @@
 //! Native watch and timer adapter over operating-system notifications.
-use super::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher};
+use super::{FsWatcher, WatchOperations, WatchTimer};
 use notify::event::EventKind;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{cell::Cell, io, path::Path, rc::Rc, time::Duration};
@@ -11,12 +11,12 @@ use tokio::task::{JoinHandle, LocalSet};
 /// The caller owns the local set and must drive it, for example with
 /// [`LocalSet::run_until`], inside a runtime whose timer is enabled. Closing or
 /// dropping a native watch or timer handle cancels its pending work.
-pub struct NativeThemeWatchOperations {
+pub struct NativeWatchOperations {
     /// Set that runs every dispatched callback.
     local: Rc<LocalSet>,
 }
 
-impl NativeThemeWatchOperations {
+impl NativeWatchOperations {
     /// Dispatch callbacks on `local`.
     #[must_use]
     pub fn new(local: Rc<LocalSet>) -> Self {
@@ -67,18 +67,18 @@ impl NativeThemeWatchOperations {
     }
 }
 
-impl ThemeWatchOperations for NativeThemeWatchOperations {
+impl WatchOperations for NativeWatchOperations {
     fn watch(
         &self,
         path: &str,
         listener: Rc<dyn Fn(Option<String>)>,
         on_error: Rc<dyn Fn()>,
-    ) -> io::Result<Box<dyn ThemeWatcher>> {
+    ) -> io::Result<Box<dyn FsWatcher>> {
         let (watcher, _) = self.open(path, listener, on_error)?;
         Ok(Box::new(watcher))
     }
 
-    fn schedule(&self, delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn ThemeReloadTimer> {
+    fn schedule(&self, delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn WatchTimer> {
         let task = self.local.spawn_local(async move {
             tokio::time::sleep(delay).await;
             callback();
@@ -133,7 +133,7 @@ impl NativeWatcher {
     }
 }
 
-impl ThemeWatcher for NativeWatcher {
+impl FsWatcher for NativeWatcher {
     fn close(&mut self) -> io::Result<()> {
         self.stop();
         Ok(())
@@ -146,7 +146,7 @@ impl Drop for NativeWatcher {
     }
 }
 
-impl ThemeReloadTimer for Aborting {
+impl WatchTimer for Aborting {
     fn cancel(&mut self) {
         self.0.abort();
     }

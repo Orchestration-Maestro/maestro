@@ -40,24 +40,33 @@ fn theme_native_notification_reloads_selected_file() {
     }));
 
     local.block_on(&runtime, async {
-        state.init_theme(Some("a"), Some(effects)).unwrap();
-        scratch.write(
-            "custom/a.json",
-            &custom_json("edited", "#445566").to_string(),
-        );
-        published(&state, &changed, "edited").await;
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            state.init_theme(Some("a"), Some(effects)).unwrap();
+            scratch.write(
+                "custom/a.json",
+                &custom_json("edited", "#445566").to_string(),
+            );
+            published(&state, &changed, "edited").await;
 
-        scratch.write(
-            "incoming/a.json",
-            &custom_json("replaced", "#778899").to_string(),
-        );
-        fs::rename(
-            scratch.path("incoming/a.json"),
-            scratch.path("custom/a.json"),
-        )
-        .unwrap();
-        published(&state, &changed, "replaced").await;
-        state.stop_theme_watcher();
+            scratch.write(
+                "incoming/a.json",
+                &custom_json("replaced", "#778899").to_string(),
+            );
+            fs::rename(
+                scratch.path("incoming/a.json"),
+                scratch.path("custom/a.json"),
+            )
+            .unwrap();
+            published(&state, &changed, "replaced").await;
+            scratch.write(
+                "custom/a.json",
+                &custom_json("edited-after-replacement", "#8899aa").to_string(),
+            );
+            published(&state, &changed, "edited-after-replacement").await;
+            state.stop_theme_watcher();
+        })
+        .await
+        .expect("selected theme reload completion");
     });
     assert_eq!(
         state.theme().get().unwrap().source_path(),
