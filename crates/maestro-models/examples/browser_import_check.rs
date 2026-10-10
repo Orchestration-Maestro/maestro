@@ -91,7 +91,7 @@ fn main() {
     }
 }
 
-/// Compile the dedicated provider records and function paths on either target.
+/// Compile provider records and dedicated/root function paths on either target.
 fn response_session_surface() {
     std::hint::black_box((
         maestro_models::OpenAICodexResponsesOptions::default(),
@@ -100,6 +100,18 @@ fn response_session_surface() {
         OpenAICodexTextVerbosity::Low,
         stream_openai_codex_responses,
         stream_simple_openai_codex_responses,
+        maestro_models::stream_openai_codex_responses
+            as fn(
+                maestro_models::Model,
+                maestro_models::Context,
+                Option<maestro_models::OpenAICodexResponsesOptions>,
+            ) -> maestro_models::AssistantMessageEventStream,
+        maestro_models::stream_simple_openai_codex_responses
+            as fn(
+                maestro_models::Model,
+                maestro_models::Context,
+                Option<maestro_models::SimpleStreamOptions>,
+            ) -> maestro_models::AssistantMessageEventStream,
         close_openai_codex_web_socket_sessions,
         get_openai_codex_web_socket_debug_stats,
         reset_openai_codex_web_socket_debug_stats,

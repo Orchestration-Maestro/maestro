@@ -14,6 +14,7 @@ The registry starts with these protocols, in this order:
 3. `mistral-conversations`
 4. `openai-responses`
 5. `azure-openai-responses`
+6. `openai-codex-responses`
 
 The simulated provider is never registered implicitly, and no placeholder stands in
 for a protocol whose adapter this crate does not contain.
@@ -27,7 +28,8 @@ for a protocol whose adapter this crate does not contain.
 ## Root entry points
 
 `stream_anthropic`, `stream_openai_completions`, `stream_mistral`,
-`stream_openai_responses` and `stream_azure_openai_responses` take their typed
+`stream_openai_responses`, `stream_azure_openai_responses` and
+`stream_openai_codex_responses` take their typed
 options and never consult the registry. Each `stream_simple_*` function of the
 same families takes `SimpleStreamOptions` and always returns a stream. A missing key,
 which the functions of the same names in the provider modules report as `Err`, ends
@@ -35,7 +37,8 @@ it with an error update carrying the adapter's text, an empty message with the
 descriptor's identity and zero usage, and the error stop reason even when the
 signal was already aborted. Every other failure follows the adapter's own stream
 path; see the provider pages: [messages](messages.md), [chat completions](chat-completions.md),
-[reasoning conversations](reasoning-conversations.md) and [responses](responses.md).
+[reasoning conversations](reasoning-conversations.md), [responses](responses.md)
+and [response sessions](response-sessions.md).
 
 `stream`, `stream_simple`, `complete` and `complete_simple` resolve the registry.
 An unregistered `api` returns `No API provider registered for api: {api}`. A
@@ -43,20 +46,13 @@ registered custom callback keeps returning its own setup error immediately (insi
 the future for `complete`). A bundled callback never does: its setup failures are
 settled error streams.
 
-## Dedicated response sessions
-
-The [response-session provider](response-sessions.md) exposes raw/simple streams
-through its provider module, separate from generic registration and root stream
-forwarding. Its named option/debug records are available at the crate root.
-
 ## Raw extras
 
 `ProviderStreamOptions.common` reaches the adapter unchanged. A bundled raw
 callback reads these optional members of `ProviderStreamOptions.extra`, ignores
 all others and ends the stream with the decoder's error text when a listed member
 has the wrong shape. Enum members and tool-choice discriminators must be JSON
-strings, a named function must be an object, and only the two members marked
-nullable accept `null`.
+strings and a named function must be an object. Null handling is described below.
 
 | Protocol | Members |
 |---|---|
@@ -65,11 +61,18 @@ nullable accept `null`.
 | `mistral-conversations` | `reasoningEffort` (`none`, `high`), `promptMode` (`reasoning`), `toolChoice` (`auto`, `none`, `any`, `required` or a named function) |
 | `openai-responses` | `reasoningEffort`, `reasoningSummary` (`auto`, `detailed`, `concise`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable) |
 | `azure-openai-responses` | `reasoningEffort`, `reasoningSummary`, `azureApiVersion`, `azureResourceName`, `azureBaseUrl`, `azureDeploymentName` |
+| `openai-codex-responses` | `reasoningEffort` (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`), `reasoningSummary` (`auto`, `concise`, `detailed`, `off`, `on`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable), `textVerbosity` (`low`, `medium`, `high`) |
 
 A `null` summary and a missing summary both reach the adapter as no summary. A
 `null` service tier reaches the adapter as an explicit null tier and a missing
 one as no tier; the [responses page](responses.md) describes the payload built
-from them, including what a payload hook may change.
+from them, including what a payload hook may change. Cloud response summaries also
+accept null as no summary. Other listed fields reject null.
+
+For response sessions, missing effort omits the reasoning object; a missing or
+null summary selects `auto` only with effort. Missing verbosity selects `low`.
+Missing tier omits `service_tier`, while null emits JSON null. See the
+[response-session guide](response-sessions.md) for adapter-owned request behavior.
 
 ## Objects that are not JSON
 
@@ -92,7 +95,7 @@ reset_api_providers();
 let apis: Vec<String> = get_api_providers().into_iter().map(|provider| provider.api).collect();
 assert_eq!(apis, [
     "anthropic-messages", "openai-completions", "mistral-conversations",
-    "openai-responses", "azure-openai-responses",
+    "openai-responses", "azure-openai-responses", "openai-codex-responses",
 ]);
 
 let model: Model = serde_json::from_value(serde_json::json!({

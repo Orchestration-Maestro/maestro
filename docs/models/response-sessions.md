@@ -5,7 +5,9 @@ The dedicated provider lives in
 `stream_openai_codex_responses` returns a stream whose setup failures become error
 updates. `stream_simple_openai_codex_responses` can return a missing-key error
 before creating a stream. The two option/debug records are also exported at the
-crate root; this provider is not yet part of generic protocol registration.
+crate root. Generic invocation and typed root forwarding are described in
+[bundled protocol linkage](module-linkage.md); the root simple operation settles
+missing-key errors instead of returning them immediately.
 
 Missing transport selects `auto` for both dispatch and cached-context selection.
 Explicit `sse` bypasses sockets. Otherwise, a session's sticky fallback selects

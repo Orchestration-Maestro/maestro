@@ -1,6 +1,7 @@
-//! Controlled wire bodies, models and request capture for the five bundled protocols.
+//! Controlled wire bodies, models and request capture for the six bundled protocols.
 
 use crate::chat::{TestResult, context, model};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Context, Fetch, HttpBody,
     HttpRequest, HttpResponse, Model, SharedAssistantMessage, StopReason,
@@ -19,8 +20,8 @@ pub struct Protocol {
     pub base_url: &'static str,
 }
 
-/// The five bundled protocols in registration order.
-pub const PROTOCOLS: [Protocol; 5] = [
+/// The six bundled protocols in registration order.
+pub const PROTOCOLS: [Protocol; 6] = [
     Protocol {
         api: "anthropic-messages",
         path: "/v1/messages",
@@ -45,6 +46,11 @@ pub const PROTOCOLS: [Protocol; 5] = [
         api: "azure-openai-responses",
         path: "/v1/responses",
         base_url: "https://controlled.openai.azure.com/openai/v1",
+    },
+    Protocol {
+        api: "openai-codex-responses",
+        path: "/codex/responses",
+        base_url: "https://controlled.invalid",
     },
 ];
 
@@ -103,7 +109,7 @@ pub fn text_body(api: &str, text: &str) -> Vec<u8> {
             json!({"type":"response.content_part.added","part":{"type":"output_text","text":""}}),
             json!({"type":"response.output_text.delta","delta":text}),
             json!({"type":"response.output_item.done","item":{"type":"message","id":"m","content":[{"type":"output_text","text":text}]}}),
-            json!({"type":"response.completed","response":{"id":"r","status":"completed","usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5}}}),
+            json!({"type":"response.completed","response":{"id":"r","status":"completed","usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5,"input_tokens_details":{"cached_tokens":0},"output_tokens_details":{"reasoning_tokens":0}}}}),
         ]
         .iter()
         .map(|event| format!("data: {event}\n\n"))
@@ -213,4 +219,15 @@ pub fn error_of(message: &SharedAssistantMessage) -> Option<String> {
         .unwrap_or_else(PoisonError::into_inner)
         .error_message
         .clone()
+}
+
+/// A synthetic account token for response sessions, otherwise an opaque controlled key.
+pub fn api_key(api: &str) -> String {
+    if api == "openai-codex-responses" {
+        let payload = URL_SAFE_NO_PAD
+            .encode(r#"{"https://api.openai.com/auth":{"chatgpt_account_id":"controlled"}}"#);
+        format!("a.{payload}.b")
+    } else {
+        "controlled-key".into()
+    }
 }

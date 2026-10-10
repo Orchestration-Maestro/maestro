@@ -7,7 +7,8 @@ mod builtins;
 pub use builtins::{
     find_env_keys, get_env_api_key, register_built_in_api_providers, reset_api_providers,
     stream_simple_anthropic, stream_simple_azure_openai_responses, stream_simple_mistral,
-    stream_simple_openai_completions, stream_simple_openai_responses,
+    stream_simple_openai_codex_responses, stream_simple_openai_completions,
+    stream_simple_openai_responses,
 };
 
 pub mod cancellation;
@@ -94,5 +95,5 @@ pub use oauth::{
 };
 
 pub use providers::response_sessions::openai_codex_responses::{
-    OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats,
+    OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
 };

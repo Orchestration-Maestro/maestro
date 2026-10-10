@@ -5,6 +5,7 @@ use crate::providers::chat::openai_completions as chat;
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic as messages;
 use crate::providers::reasoning::mistral as conversation;
+use crate::providers::response_sessions::openai_codex_responses as sessions;
 use crate::providers::responses::{azure_openai_responses as cloud, openai_responses as responses};
 use crate::records::api_registry::{
     ApiProvider, ApiStreamFunction, clear_api_providers, register_api_provider,
@@ -13,6 +14,7 @@ use crate::{
     AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
     ProviderStreamOptions, SimpleStreamOptions,
 };
+use sessions::stream_simple_openai_codex_responses as session_simple;
 use std::sync::{Arc, RwLock};
 
 /// Raw invocation of one protocol with its typed options.
@@ -76,7 +78,7 @@ fn provider<T: 'static>(
 }
 
 /// The bundled protocols in registration order.
-pub(crate) fn built_in_providers() -> [ApiProvider; 5] {
+pub(crate) fn built_in_providers() -> [ApiProvider; 6] {
     [
         provider(
             "anthropic-messages",
@@ -107,6 +109,12 @@ pub(crate) fn built_in_providers() -> [ApiProvider; 5] {
             raw_options::cloud_responses,
             cloud::stream_azure_openai_responses,
             stream_simple_azure_openai_responses,
+        ),
+        provider(
+            "openai-codex-responses",
+            raw_options::response_sessions,
+            sessions::stream_openai_codex_responses,
+            stream_simple_openai_codex_responses,
         ),
     ]
 }
@@ -188,4 +196,14 @@ pub fn stream_simple_azure_openai_responses(
         context,
         options,
     )
+}
+
+/// Start a response-session simple invocation; a missing key ends the stream with an error.
+#[must_use]
+pub fn stream_simple_openai_codex_responses(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions>,
+) -> AssistantMessageEventStream {
+    settle_simple(session_simple, model, context, options)
 }

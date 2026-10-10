@@ -20,12 +20,13 @@ use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Tests that own fixture rows.
-const OWNERS: [&str; 5] = [
+const OWNERS: [&str; 6] = [
     "maestro_anthropic_extras_reach_requests",
     "maestro_chat_extras_reach_requests",
     "maestro_mistral_extras_reach_requests",
     "maestro_response_extras_keep_presence",
     "maestro_azure_extras_select_target",
+    "maestro_response_session_extras_keep_domain_and_presence",
 ];
 
 /// The outcome of one controlled invocation.
@@ -58,7 +59,8 @@ fn description(api: &str, overrides: &Value) -> TestResult<maestro_models::Model
 fn common(api: &str) -> (StreamOptions, bundled::Requests) {
     let (fetch, requests) = bundled::fetch(bundled::text_body(api, "ok"));
     let options = StreamOptions {
-        api_key: Some("controlled-key".into()),
+        api_key: Some(bundled::api_key(api)),
+        transport: Some(maestro_models::Transport::Sse),
         fetch: Some(fetch),
         temperature: Some(0.0),
         ..StreamOptions::default()
@@ -277,6 +279,11 @@ fn simple_facts(api: &str, high: bool) -> Vec<(&'static str, Option<Value>)> {
             ("/max_tokens", Some(json!(3000))),
             ("/temperature", Some(json!(0.3))),
         ],
+        "openai-codex-responses" => vec![
+            ("/reasoning/effort", pick(high, None, Some(json!("high")))),
+            ("/max_output_tokens", None),
+            ("/temperature", Some(json!(0.3))),
+        ],
         _ => vec![
             ("/reasoning/effort", Some(json!(pick(high, "none", "high")))),
             ("/max_output_tokens", Some(json!(3000))),
@@ -302,7 +309,13 @@ fn root_simple(
         "openai-responses" => {
             maestro_models::stream_simple_openai_responses(model, context, options)
         }
-        _ => maestro_models::stream_simple_azure_openai_responses(model, context, options),
+        "azure-openai-responses" => {
+            maestro_models::stream_simple_azure_openai_responses(model, context, options)
+        }
+        "openai-codex-responses" => {
+            maestro_models::stream_simple_openai_codex_responses(model, context, options)
+        }
+        _ => return Err("unknown protocol".into()),
     })
 }
 
@@ -367,6 +380,38 @@ fn maestro_simple_dispatch_keeps_adapter_policy() -> TestResult {
         raw.requests.first().ok_or("raw request")?.body["reasoning_effort"],
         "xhigh",
         "raw effort is not clamped"
+    );
+    assert_session_simple_variants(&overrides)?;
+    Ok(())
+}
+
+#[test]
+fn maestro_response_session_extras_keep_domain_and_presence() -> TestResult {
+    assert_rows("maestro_response_session_extras_keep_domain_and_presence")
+}
+
+/// Compare root/generic clamping and omission with the independent raw effort route.
+fn assert_session_simple_variants(overrides: &Value) -> TestResult {
+    let session = &PROTOCOLS[5];
+    let (clamped, root) = simple_requests(
+        session,
+        Some(ThinkingLevel::Xhigh),
+        &description(session.api, overrides)?,
+    )?;
+    assert_eq!(clamped.body, root.body);
+    assert_eq!(clamped.body["reasoning"]["effort"], "high");
+    let disabled = json!({"reasoning": true, "thinkingLevelMap": {"minimal": null, "low": null, "medium": null, "high": null, "xhigh": null}});
+    let (omitted, root) = simple_requests(
+        session,
+        Some(ThinkingLevel::High),
+        &description(session.api, &disabled)?,
+    )?;
+    assert_eq!(omitted.body, root.body);
+    assert!(omitted.body.get("reasoning").is_none());
+    let raw = sent_while_registered(session.api, overrides, &json!({"reasoningEffort": "xhigh"}))?;
+    assert_eq!(
+        raw.requests.first().ok_or("raw request")?.body["reasoning"]["effort"],
+        "xhigh"
     );
     Ok(())
 }

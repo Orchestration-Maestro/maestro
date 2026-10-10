@@ -17,9 +17,9 @@ use maestro_models::records::api_registry::{get_api_provider, get_api_providers}
 use maestro_models::{
     AnthropicOptions, ApiProvider, AssistantMessageEvent, AssistantMessageEventStream,
     AzureOpenAIResponsesOptions, DiagnosticErrorInfo, MistralOptions, OnPayload, OnResponse,
-    OpenAICompletionsOptions, OpenAIResponsesOptions, ProviderStreamOptions,
-    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions, complete,
-    complete_simple, stream, stream_simple,
+    OpenAICodexResponsesOptions, OpenAICompletionsOptions, OpenAIResponsesOptions,
+    ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions,
+    complete, complete_simple, stream, stream_simple,
 };
 use maestro_models::{
     clear_api_providers, register_api_provider, reset_api_providers, unregister_api_providers,
@@ -77,7 +77,8 @@ fn common(
         Box::pin(async { Ok(()) })
     });
     let options = StreamOptions {
-        api_key: Some("controlled-key".into()),
+        api_key: Some(bundled::api_key(protocol.api)),
+        transport: Some(maestro_models::Transport::Sse),
         fetch: Some(fetch),
         on_payload: Some(on_payload),
         on_response: Some(on_response),
@@ -123,7 +124,7 @@ fn root_raw(protocol: &Protocol, common: StreamOptions) -> TestResult<AssistantM
                 ..OpenAIResponsesOptions::default()
             }),
         ),
-        _ => maestro_models::stream_azure_openai_responses(
+        "azure-openai-responses" => maestro_models::stream_azure_openai_responses(
             model,
             context,
             Some(AzureOpenAIResponsesOptions {
@@ -131,6 +132,15 @@ fn root_raw(protocol: &Protocol, common: StreamOptions) -> TestResult<AssistantM
                 ..AzureOpenAIResponsesOptions::default()
             }),
         ),
+        "openai-codex-responses" => maestro_models::stream_openai_codex_responses(
+            model,
+            context,
+            Some(OpenAICodexResponsesOptions {
+                common,
+                ..Default::default()
+            }),
+        ),
+        _ => return Err("unknown protocol".into()),
     })
 }
 
@@ -149,7 +159,13 @@ fn root_simple(
         "openai-responses" => {
             maestro_models::stream_simple_openai_responses(model, context, options)
         }
-        _ => maestro_models::stream_simple_azure_openai_responses(model, context, options),
+        "azure-openai-responses" => {
+            maestro_models::stream_simple_azure_openai_responses(model, context, options)
+        }
+        "openai-codex-responses" => {
+            maestro_models::stream_simple_openai_codex_responses(model, context, options)
+        }
+        _ => return Err("unknown protocol".into()),
     })
 }
 
@@ -215,7 +231,11 @@ fn maestro_public_routes_reach_real_adapters() -> TestResult {
                 assert!(url.ends_with(protocol.path), "{label}: {url}");
                 assert_eq!(seen.hooks, expected_hooks(protocol), "{label}");
                 let usage = seen.result.read().map_err(|_| "poisoned")?.usage.clone();
-                assert_eq!((usage.input, usage.output), (3.0, 2.0), "{label}");
+                assert_eq!(
+                    (usage.input, usage.output, usage.total_tokens),
+                    (3.0, 2.0, 5.0),
+                    "{label}"
+                );
             }
         }
         Ok(())
@@ -264,11 +284,11 @@ fn maestro_registration_keeps_custom_order() {
     reset_api_providers();
     register_api_provider(custom("custom-a", "a"), Some("extension".into()));
     register_api_provider(
-        custom("openai-responses", "replaced"),
+        custom("openai-codex-responses", "replaced"),
         Some("extension".into()),
     );
     register_api_provider(custom("custom-b", "b"), None);
-    let replaced = get_api_provider("openai-responses");
+    let replaced = get_api_provider("openai-codex-responses");
     maestro_models::register_built_in_api_providers();
     let expected: Vec<String> = bundled::apis()
         .into_iter()
@@ -284,7 +304,7 @@ fn maestro_registration_keeps_custom_order() {
         .collect();
     assert_eq!(registered(), after);
     let restored = stream_simple(
-        bundled::protocol_model(&PROTOCOLS[3]).unwrap(),
+        bundled::protocol_model(&PROTOCOLS[5]).unwrap(),
         bundled::conversation().unwrap(),
         None,
     );
@@ -294,11 +314,12 @@ fn maestro_registration_keeps_custom_order() {
     );
     assert!(replaced.is_some_and(|handle| {
         (handle.stream)(
-            bundled::protocol_model(&PROTOCOLS[3]).unwrap(),
+            bundled::protocol_model(&PROTOCOLS[5]).unwrap(),
             bundled::conversation().unwrap(),
             None,
         )
-        .is_err()
+        .err()
+        .is_some_and(|error| error.message == "replaced")
     }));
     reset_api_providers();
 }
@@ -363,8 +384,11 @@ fn maestro_clear_does_not_reactivate() -> TestResult {
             );
             let completed = complete_simple(model, bundled::conversation()?, None).await;
             assert_eq!(completed.err().map(|error| error.message), Some(missing));
-            let seen = invoke(protocol, Route::RootRaw, "unregistered").await?;
-            assert_eq!(bundled::text_of(&seen.result), "unregistered");
+            for route in [Route::RootRaw, Route::RootSimple] {
+                let seen = invoke(protocol, route, "unregistered").await?;
+                assert_eq!(bundled::text_of(&seen.result), "unregistered");
+                assert!(registered().is_empty());
+            }
         }
         Ok(())
     })?;
@@ -458,7 +482,9 @@ fn dedicated_simple(
         "openai-responses" => {
             openai_responses::stream_simple_openai_responses(model, context, options)
         }
-        _ => cloud::stream_simple_azure_openai_responses(model, context, options),
+        "azure-openai-responses" => cloud::stream_simple_azure_openai_responses(model, context, options),
+        "openai-codex-responses" => maestro_models::providers::response_sessions::openai_codex_responses::stream_simple_openai_codex_responses(model, context, options),
+        _ => return Err("unknown protocol".into()),
     })
 }
 
@@ -474,26 +500,48 @@ fn expected_setup_error(protocol: &Protocol) -> serde_json::Value {
 }
 
 /// Simple options carrying only a cancellation signal.
-fn signalled(signal: Option<&maestro_models::Cancellation>) -> SimpleStreamOptions {
+fn signalled(
+    signal: Option<&maestro_models::Cancellation>,
+    key: Option<String>,
+) -> SimpleStreamOptions {
     SimpleStreamOptions {
         common: StreamOptions {
             signal: signal.cloned(),
+            api_key: key,
             ..StreamOptions::default()
         },
         ..SimpleStreamOptions::default()
     }
 }
 
+/// One terminal error refers to the same shared result handle.
+fn assert_error_identity(
+    events: &[AssistantMessageEvent],
+    result: &SharedAssistantMessage,
+) -> TestResult {
+    let [AssistantMessageEvent::Error { error, reason }] = events else {
+        return Err("expected one terminal error".into());
+    };
+    assert!(Arc::ptr_eq(error, result));
+    assert!(matches!(
+        (reason, bundled::stop_of(result)),
+        (maestro_models::ErrorReason::Aborted, StopReason::Aborted)
+            | (maestro_models::ErrorReason::Error, StopReason::Error)
+    ));
+    Ok(())
+}
+
 /// A settled keyless failure through every public simple route of `protocol`.
 async fn assert_setup_error(
     protocol: &Protocol,
     signal: Option<maestro_models::Cancellation>,
+    key: Option<String>,
 ) -> TestResult {
     let model = bundled::protocol_model(protocol)?;
     let generic = stream_simple(
         model.clone(),
         bundled::conversation()?,
-        Some(signalled(signal.as_ref())),
+        Some(signalled(signal.as_ref(), key.clone())),
     )?;
     let events = bundled::drain(&generic).await;
     assert!(
@@ -507,17 +555,21 @@ async fn assert_setup_error(
         "{} generic events",
         protocol.api
     );
+    let result = generic.result().await;
+    assert_error_identity(&events, &result)?;
+    let root = root_simple(protocol, Some(signalled(signal.as_ref(), key.clone())))?;
+    let root_events = bundled::drain(&root).await;
+    let root_result = root.result().await;
+    assert_error_identity(&root_events, &root_result)?;
     let results = [
-        generic.result().await,
+        result,
         complete_simple(
             model,
             bundled::conversation()?,
-            Some(signalled(signal.as_ref())),
+            Some(signalled(signal.as_ref(), key.clone())),
         )
         .await?,
-        root_simple(protocol, Some(signalled(signal.as_ref())))?
-            .result()
-            .await,
+        root_result,
     ];
     for result in results {
         let mut seen = serde_json::to_value(&*result.read().map_err(|_| "poisoned")?)?;
@@ -543,8 +595,20 @@ fn maestro_builtin_setup_errors_settle() -> TestResult {
                 "{} dedicated",
                 protocol.api
             );
-            assert_setup_error(protocol, None).await?;
-            assert_setup_error(protocol, Some(aborted.clone())).await?;
+            for (key, signal) in [
+                (None, None),
+                (None, Some(aborted.clone())),
+                (Some(String::new()), None),
+                (Some(String::new()), Some(aborted.clone())),
+            ] {
+                let dedicated =
+                    dedicated_simple(protocol, Some(signalled(signal.as_ref(), key.clone())))?;
+                assert_eq!(
+                    dedicated.err().map(|error| error.message).as_deref(),
+                    Some("No API key for provider: fixture")
+                );
+                assert_setup_error(protocol, signal, key).await?;
+            }
         }
         Ok(())
     })
@@ -591,24 +655,36 @@ fn shared_deltas(events: &[AssistantMessageEvent], handle: &SharedAssistantMessa
 }
 
 /// Payload edits and one shared handle across start, deltas, terminal and results.
-async fn assert_shared_results() -> TestResult {
-    let (fetch, requests) = bundled::fetch_chunks(chat_chunks());
+async fn assert_shared_results(protocol: &Protocol, root: bool) -> TestResult {
+    let chunks = if protocol.api == "openai-completions" {
+        chat_chunks()
+    } else {
+        vec![bundled::text_body(protocol.api, "ab")]
+    };
+    let (fetch, requests) = bundled::fetch_chunks(chunks);
     let edited: OnPayload = Arc::new(|mut payload, _| {
-        payload["marker"] = json!("edited");
+        payload["marker"] = json!({"nested": ["edited", "edited"]});
         Box::pin(async move { Ok(payload) })
     });
     let common = StreamOptions {
-        api_key: Some("controlled-key".into()),
+        api_key: Some(bundled::api_key(protocol.api)),
+        transport: Some(maestro_models::Transport::Sse),
         fetch: Some(fetch),
         on_payload: Some(edited),
         ..StreamOptions::default()
     };
-    let options = ProviderStreamOptions {
-        common,
-        ..ProviderStreamOptions::default()
+    let started = if root {
+        root_raw(protocol, common)?
+    } else {
+        stream(
+            bundled::protocol_model(protocol)?,
+            bundled::conversation()?,
+            Some(ProviderStreamOptions {
+                common,
+                ..Default::default()
+            }),
+        )?
     };
-    let model = bundled::protocol_model(&PROTOCOLS[1])?;
-    let started = stream(model, bundled::conversation()?, Some(options))?;
     let independent = started.result();
     let events = bundled::drain(&started).await;
     let handle = first_handle(&events)?;
@@ -616,7 +692,10 @@ async fn assert_shared_results() -> TestResult {
     assert!(Arc::ptr_eq(&independent.await, &handle));
     assert!(Arc::ptr_eq(&started.result().await, &handle));
     assert_eq!(bundled::text_of(&handle), "ab");
-    assert_eq!(bundled::recorded(&requests)[0].body["marker"], "edited");
+    assert_eq!(
+        bundled::recorded(&requests)[0].body["marker"],
+        json!({"nested": ["edited", "edited"]})
+    );
     Ok(())
 }
 
@@ -669,11 +748,18 @@ async fn assert_hook_failure(protocol: &Protocol, fail_payload: bool) -> TestRes
 fn maestro_root_hooks_keep_shared_results() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
-        assert_shared_results().await?;
+    block_on(true, async {
+        assert_shared_results(&PROTOCOLS[1], false).await?;
+        for root in [false, true] {
+            assert_shared_results(&PROTOCOLS[5], root).await?;
+        }
+        assert_session_response_retry().await?;
         for protocol in &PROTOCOLS {
             assert_hook_failure(protocol, true).await?;
-            if protocol.api != "mistral-conversations" {
+            if !matches!(
+                protocol.api,
+                "mistral-conversations" | "openai-codex-responses"
+            ) {
                 assert_hook_failure(protocol, false).await?;
             }
         }
@@ -820,6 +906,36 @@ fn rejected_shapes() -> [(&'static str, serde_json::Value); 13] {
     ]
 }
 
+/// Invalid selected fields, including strings encoded as tagged objects or arrays.
+fn rejected_session_extras() -> Vec<(&'static str, serde_json::Value)> {
+    let mut cases = Vec::new();
+    for (field, literal) in [
+        ("reasoningEffort", "high"),
+        ("reasoningSummary", "auto"),
+        ("serviceTier", "auto"),
+        ("textVerbosity", "low"),
+    ] {
+        for value in [
+            json!("other"),
+            json!(7),
+            json!(false),
+            json!([]),
+            json!([literal]),
+            json!({literal: null}),
+        ] {
+            cases.push(("openai-codex-responses", json!({field: value})));
+        }
+    }
+    for extra in [
+        json!({"reasoningEffort": null}),
+        json!({"reasoningEffort": "off"}),
+        json!({"textVerbosity": null}),
+    ] {
+        cases.push(("openai-codex-responses", extra));
+    }
+    cases
+}
+
 /// Hook log shared with the options that fill it.
 type Hooks = Arc<Mutex<Vec<String>>>;
 /// Raw options, the requests they send and the hooks they run.
@@ -852,6 +968,7 @@ fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
         for (index, (api, extra)) in rejected_extras()
             .iter()
             .chain(&rejected_shapes())
+            .chain(&rejected_session_extras())
             .enumerate()
         {
             let protocol = PROTOCOLS
@@ -860,9 +977,13 @@ fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
                 .ok_or("protocol")?;
             let (options, requests, hooks) = extra_options(protocol, "unused", extra)?;
             let model = bundled::protocol_model(protocol)?;
-            let result = stream(model, bundled::conversation()?, Some(options))?
-                .result()
-                .await;
+            let started = stream(model, bundled::conversation()?, Some(options))?;
+            let events = bundled::drain(&started).await;
+            let result = started.result().await;
+            assert!(
+                matches!(events.as_slice(), [AssistantMessageEvent::Error { error, .. }] if Arc::ptr_eq(error, &result)),
+                "case {index} terminal identity"
+            );
             assert_eq!(bundled::stop_of(&result), StopReason::Error, "case {index}");
             let decode_failure = bundled::error_of(&result)
                 .is_some_and(|text| !text.is_empty() && !text.starts_with("No API"));
@@ -876,14 +997,16 @@ fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
                 "case {index} reached a hook"
             );
         }
-        let extra = json!({"effort": "high", "unknown": {"deep": [1, {"x": null}]}});
-        let (options, requests, _) = extra_options(&PROTOCOLS[0], "fine", &extra)?;
-        let model = bundled::protocol_model(&PROTOCOLS[0])?;
-        let result = stream(model, bundled::conversation()?, Some(options))?
-            .result()
-            .await;
-        assert_eq!(bundled::text_of(&result), "fine");
-        assert_eq!(bundled::recorded(&requests).len(), 1);
+        for protocol in [&PROTOCOLS[0], &PROTOCOLS[5]] {
+            let extra = json!({"effort": "high", "unknown": {"deep": [1, 1, {"x": [true]}]}});
+            let (options, requests, _) = extra_options(protocol, "fine", &extra)?;
+            let model = bundled::protocol_model(protocol)?;
+            let result = stream(model, bundled::conversation()?, Some(options))?
+                .result()
+                .await;
+            assert_eq!(bundled::text_of(&result), "fine");
+            assert_eq!(bundled::recorded(&requests).len(), 1);
+        }
         Ok(())
     })
 }
@@ -1086,7 +1209,7 @@ fn maestro_first_access_is_safe_across_threads() -> TestResult {
             std::thread::spawn(move || {
                 start.wait();
                 let apis = registered();
-                apis.len() >= 5
+                apis.len() >= 6
                     && bundled::apis()
                         .iter()
                         .zip(&apis)
@@ -1103,5 +1226,132 @@ fn maestro_first_access_is_safe_across_threads() -> TestResult {
         );
     }
     assert_eq!(registered().last().map(String::as_str), Some("custom-api"));
+    Ok(())
+}
+
+/// A response hook fails once, then the existing retry completes the same invocation.
+async fn assert_session_response_retry() -> TestResult {
+    let (mut common, requests, _) = common("retried", &PROTOCOLS[5]);
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let count = Arc::clone(&calls);
+    common.on_response = Some(Arc::new(move |_, _| {
+        let first = count.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0;
+        Box::pin(async move {
+            if first {
+                Err(failure("response failure"))
+            } else {
+                Ok(())
+            }
+        })
+    }));
+    let result = root_raw(&PROTOCOLS[5], common)?.result().await;
+    assert_eq!(bundled::text_of(&result), "retried");
+    assert_eq!(bundled::stop_of(&result), StopReason::Stop);
+    assert_eq!(bundled::recorded(&requests).len(), 2);
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+    let usage = &result.read().map_err(|_| "poisoned")?.usage;
+    assert_eq!(
+        (usage.input, usage.output, usage.total_tokens),
+        (3.0, 2.0, 5.0)
+    );
+    Ok(())
+}
+
+#[test]
+fn maestro_response_session_cache_affinity_completes() -> TestResult {
+    let _registry = bundled::registry();
+    reset_api_providers();
+    block_on(false, async {
+        for session in [None, Some(""), Some("affinity")] {
+            let (mut common, requests, _) = common("cache affinity e2e success", &PROTOCOLS[5]);
+            common.session_id = session.map(str::to_owned);
+            let result = complete(
+                bundled::protocol_model(&PROTOCOLS[5])?,
+                bundled::conversation()?,
+                Some(ProviderStreamOptions {
+                    common,
+                    ..Default::default()
+                }),
+            )
+            .await?;
+            assert_eq!(bundled::text_of(&result), "cache affinity e2e success");
+            assert_eq!(bundled::error_of(&result), None);
+            assert_eq!(bundled::stop_of(&result), StopReason::Stop);
+            let requests = bundled::recorded(&requests);
+            assert_eq!(requests.len(), 1);
+            let request = &requests[0];
+            assert_eq!(
+                request.body.get("prompt_cache_key"),
+                session.map(|value| json!(value)).as_ref()
+            );
+            for name in ["session_id", "x-client-request-id"] {
+                let header = request
+                    .headers
+                    .iter()
+                    .find(|(key, _)| key == name)
+                    .map(|(_, value)| value.as_str());
+                assert_eq!(header, session.filter(|value| !value.is_empty()));
+            }
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn maestro_response_session_raw_key_errors_settle() -> TestResult {
+    let _registry = bundled::registry();
+    reset_api_providers();
+    block_on(false, async {
+        for (key, aborted) in [
+            (None, false),
+            (None, true),
+            (Some(String::new()), false),
+            (Some(String::new()), true),
+        ] {
+            for route in [Route::RootRaw, Route::GenericStream, Route::GenericComplete] {
+                assert_raw_key_error(key.clone(), aborted, route).await?;
+            }
+        }
+        Ok(())
+    })
+}
+
+/// Raw key failure preserves cancellation, terminal identity and the absence of effects.
+async fn assert_raw_key_error(key: Option<String>, aborted: bool, route: Route) -> TestResult {
+    let (mut common, requests, hooks) = common("unused", &PROTOCOLS[5]);
+    common.api_key = key;
+    let signal = maestro_models::Cancellation::new();
+    if aborted {
+        signal.abort();
+    }
+    common.signal = Some(signal);
+    let model = bundled::protocol_model(&PROTOCOLS[5])?;
+    let options = Some(ProviderStreamOptions {
+        common: common.clone(),
+        ..Default::default()
+    });
+    let result = if matches!(route, Route::GenericComplete) {
+        complete(model, bundled::conversation()?, options).await?
+    } else {
+        let started = if matches!(route, Route::RootRaw) {
+            root_raw(&PROTOCOLS[5], common)?
+        } else {
+            stream(model, bundled::conversation()?, options)?
+        };
+        let events = bundled::drain(&started).await;
+        let result = started.result().await;
+        assert_error_identity(&events, &result)?;
+        result
+    };
+    let mut seen = serde_json::to_value(&*result.read().map_err(|_| "poisoned")?)?;
+    assert!(seen["timestamp"].is_number());
+    seen.as_object_mut().ok_or("object")?.remove("timestamp");
+    let mut expected = expected_setup_error(&PROTOCOLS[5]);
+    if aborted {
+        expected["stopReason"] = json!("aborted");
+    }
+    assert_eq!(seen, expected);
+    assert!(bundled::recorded(&requests).is_empty());
+    assert!(hooks.lock().map_err(|_| "poisoned")?.is_empty());
     Ok(())
 }
