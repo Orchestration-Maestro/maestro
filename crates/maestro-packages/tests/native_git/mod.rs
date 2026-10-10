@@ -26,7 +26,7 @@ pub fn git(path: &Path, args: &[&str]) -> String {
 /// A retained remote, seed and installed checkout.
 pub struct Repository {
     /// Owns the disposable directories.
-    pub scratch: super::native_support::Scratch,
+    pub scratch: super::scratch::Scratch,
     /// Writable upstream history.
     pub seed: std::path::PathBuf,
     /// Bare origin used by the installed checkout.
@@ -39,7 +39,7 @@ pub struct Repository {
 impl Repository {
     /// Creates local repositories without network access.
     pub fn new() -> Self {
-        let scratch = super::native_support::Scratch::new().unwrap();
+        let scratch = super::scratch::Scratch::new().unwrap();
         let seed = scratch.0.join("seed");
         let remote = scratch.0.join("remote.git");
         let target = scratch.0.join("agent/git/github.com/acme/tool");
