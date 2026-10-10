@@ -4,19 +4,17 @@ Four supplied Markdown instruction files cover repository development:
 
 | Prompt | Purpose | Argument hint |
 |---|---|---|
-| [cl](agents/prompts/cl.md) | Audit release metadata | none |
-| [is](agents/prompts/is.md) | Analyze issues without implementing by default | `<issue>` |
-| [pr](agents/prompts/pr.md) | Review pull requests | `<PR-URL>` |
-| [wr](agents/prompts/wr.md) | Finish the current task through protected delivery | `[instructions]` |
+| [cl](../.maestro/prompts/cl.md) | Audit release metadata | none |
+| [is](../.maestro/prompts/is.md) | Analyze issues without implementing by default | `<issue>` |
+| [pr](../.maestro/prompts/pr.md) | Review pull requests | `<PR-URL>` |
+| [wr](../.maestro/prompts/wr.md) | Finish the current task through protected delivery | `[instructions]` |
 
 The issue and completion files retain literal `$ARGUMENTS`; the review file
 retains `$@`. These are authored template inputs, not shell commands.
 
-Load these files by supplying their explicit paths to
+The files live in `.maestro/prompts/`, the project prompt directory, so
 [`load_prompt_templates`](../crates/maestro-resources/src/prompt_templates.rs)
-with `LoadPromptTemplatesOptions` and `NativeResourceOperations`. Set
-`include_defaults: false` to load only the supplied paths. The `docs/` location
-is not an automatic discovery directory. Loading and expansion behavior belongs
+finds them by default. Loading and expansion behavior belongs
 to the [prompt-template resource guide](resources/prompt-templates.md).
 
 The instructions use the repository's existing triage, approval and signed-commit
@@ -30,7 +28,7 @@ inside an ignored directory stays ignored. These rules do not hide prompt source
 
 ## Qualification
 
-The resource integration test loads the four shipped files and checks their
+The resource integration test loads the four shipped files by default discovery and checks their
 metadata and literal argument lines. The conventions integration test runs native
 Git against 19 paths: ten ignored cache paths and nine visible paths. Instruction
 paragraphs require manual review; they are not executable workflow tests.

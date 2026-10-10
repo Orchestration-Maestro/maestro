@@ -52,10 +52,10 @@ fn maestro_local_caches_keep_ignore_files_trackable() {
     let mut cases = Vec::new();
     for path in [
         ".gitignore",
-        "docs/agents/prompts/cl.md",
-        "docs/agents/prompts/is.md",
-        "docs/agents/prompts/pr.md",
-        "docs/agents/prompts/wr.md",
+        ".maestro/prompts/cl.md",
+        ".maestro/prompts/is.md",
+        ".maestro/prompts/pr.md",
+        ".maestro/prompts/wr.md",
         ".maestro/prompts/review.md",
         "crates/probe/src/lib.rs",
     ] {

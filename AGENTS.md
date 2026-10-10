@@ -169,7 +169,8 @@ assets. Consumers read brand values from the pack, never hard-code them.
 ## Agent skills
 
 [Development prompts](docs/development_prompts.md) cover release audits, issue
-analysis, PR review and task completion through the existing repository process.
+analysis, PR review and task completion through the existing repository process;
+the prompt files live in `.maestro/prompts/`.
 
 ### Issue tracker
 

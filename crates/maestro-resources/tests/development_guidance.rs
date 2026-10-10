@@ -36,27 +36,21 @@ fn maestro_development_prompts_keep_argument_fields() {
         .unwrap()
         .parent()
         .unwrap();
-    let paths: Vec<_> = EXPECTED
-        .iter()
-        .map(|(name, _, _, _)| {
-            root.join(format!("docs/agents/prompts/{name}.md"))
-                .to_str()
-                .unwrap()
-                .to_owned()
-        })
-        .collect();
-    let templates = load_prompt_templates(
+    let user_root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("development-guidance-user");
+    std::fs::create_dir_all(&user_root).unwrap();
+    let mut templates = load_prompt_templates(
         LoadPromptTemplatesOptions {
             cwd: root.to_str().unwrap(),
-            home: root.to_str().unwrap(),
-            agent_dir: root.to_str().unwrap(),
+            home: user_root.to_str().unwrap(),
+            agent_dir: user_root.to_str().unwrap(),
             config_dir_name: ".maestro",
-            prompt_paths: &paths,
-            include_defaults: false,
+            prompt_paths: &[],
+            include_defaults: true,
         },
         &NativeResourceOperations,
     )
     .unwrap();
+    templates.sort_by(|a, b| a.name.cmp(&b.name));
     assert_eq!(
         templates
             .iter()
