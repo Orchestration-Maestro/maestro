@@ -1,0 +1,98 @@
+{
+  "before": {
+    "markdown": {
+      "heading": "\u001b[38;5;17mx\u001b[39m",
+      "link": "\u001b[38;5;18mx\u001b[39m",
+      "linkUrl": "\u001b[38;5;19mx\u001b[39m",
+      "code": "\u001b[38;5;20mx\u001b[39m",
+      "codeBlock": "\u001b[38;5;21mx\u001b[39m",
+      "codeBlockBorder": "\u001b[38;5;22mx\u001b[39m",
+      "quote": "\u001b[38;5;23mx\u001b[39m",
+      "quoteBorder": "\u001b[38;5;24mx\u001b[39m",
+      "hr": "\u001b[38;5;25mx\u001b[39m",
+      "listBullet": "\u001b[38;5;26mx\u001b[39m",
+      "bold": "\u001b[1mx\u001b[22m",
+      "italic": "\u001b[3mx\u001b[23m",
+      "underline": "\u001b[4mx\u001b[24m",
+      "strikethrough": "\u001b[9mx\u001b[29m"
+    },
+    "select": {
+      "selectedPrefix": "\u001b[38;5;1mx\u001b[39m",
+      "selectedText": "\u001b[38;5;1mx\u001b[39m",
+      "description": "\u001b[38;5;8mx\u001b[39m",
+      "scrollInfo": "\u001b[38;5;8mx\u001b[39m",
+      "noMatch": "\u001b[38;5;8mx\u001b[39m"
+    },
+    "editor": {
+      "borderColor": "\u001b[38;5;4mx\u001b[39m",
+      "selectList": {
+        "selectedPrefix": "\u001b[38;5;1mx\u001b[39m",
+        "selectedText": "\u001b[38;5;1mx\u001b[39m",
+        "description": "\u001b[38;5;8mx\u001b[39m",
+        "scrollInfo": "\u001b[38;5;8mx\u001b[39m",
+        "noMatch": "\u001b[38;5;8mx\u001b[39m"
+      }
+    },
+    "settings": {
+      "cursor": "\u001b[38;5;1m→ \u001b[39m",
+      "description": "\u001b[38;5;9mx\u001b[39m",
+      "hint": "\u001b[38;5;9mx\u001b[39m",
+      "label": [
+        "x",
+        "\u001b[38;5;1mx\u001b[39m"
+      ],
+      "value": [
+        "\u001b[38;5;8mx\u001b[39m",
+        "\u001b[38;5;1mx\u001b[39m"
+      ]
+    }
+  },
+  "after": {
+    "markdown": {
+      "heading": "\u001b[38;5;117mx\u001b[39m",
+      "link": "\u001b[38;5;118mx\u001b[39m",
+      "linkUrl": "\u001b[38;5;119mx\u001b[39m",
+      "code": "\u001b[38;5;120mx\u001b[39m",
+      "codeBlock": "\u001b[38;5;121mx\u001b[39m",
+      "codeBlockBorder": "\u001b[38;5;122mx\u001b[39m",
+      "quote": "\u001b[38;5;123mx\u001b[39m",
+      "quoteBorder": "\u001b[38;5;124mx\u001b[39m",
+      "hr": "\u001b[38;5;125mx\u001b[39m",
+      "listBullet": "\u001b[38;5;126mx\u001b[39m",
+      "bold": "\u001b[1mx\u001b[22m",
+      "italic": "\u001b[3mx\u001b[23m",
+      "underline": "\u001b[4mx\u001b[24m",
+      "strikethrough": "\u001b[9mx\u001b[29m"
+    },
+    "select": {
+      "selectedPrefix": "\u001b[38;5;101mx\u001b[39m",
+      "selectedText": "\u001b[38;5;101mx\u001b[39m",
+      "description": "\u001b[38;5;108mx\u001b[39m",
+      "scrollInfo": "\u001b[38;5;108mx\u001b[39m",
+      "noMatch": "\u001b[38;5;108mx\u001b[39m"
+    },
+    "editor": {
+      "borderColor": "\u001b[38;5;104mx\u001b[39m",
+      "selectList": {
+        "selectedPrefix": "\u001b[38;5;101mx\u001b[39m",
+        "selectedText": "\u001b[38;5;101mx\u001b[39m",
+        "description": "\u001b[38;5;108mx\u001b[39m",
+        "scrollInfo": "\u001b[38;5;108mx\u001b[39m",
+        "noMatch": "\u001b[38;5;108mx\u001b[39m"
+      }
+    },
+    "settings": {
+      "cursor": "\u001b[38;5;1m→ \u001b[39m",
+      "description": "\u001b[38;5;109mx\u001b[39m",
+      "hint": "\u001b[38;5;109mx\u001b[39m",
+      "label": [
+        "x",
+        "\u001b[38;5;101mx\u001b[39m"
+      ],
+      "value": [
+        "\u001b[38;5;108mx\u001b[39m",
+        "\u001b[38;5;101mx\u001b[39m"
+      ]
+    }
+  }
+}
