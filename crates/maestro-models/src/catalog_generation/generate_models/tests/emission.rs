@@ -34,7 +34,7 @@ fn boundary_inputs() -> Vec<(String, Model)> {
     records.push(("open-compatibility".into(), open));
     records
 }
-/// Emit a small constructor capsule, reusing identical zero-normalized expressions.
+/// Emit a small constructor capsule, reusing identical emitted expressions.
 fn boundary_source(records: &[(String, Model)]) -> String {
     let mut source = String::from("// Generated typed boundary constructors.\n");
     let mut expressions = Vec::new();

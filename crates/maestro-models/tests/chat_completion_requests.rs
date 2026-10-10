@@ -843,13 +843,14 @@ async fn open_chat_options(wrong_types: bool) -> TestResult {
         ] {
             assert_eq!(body[key], row.expected[key], "row {index} {key}");
         }
-        for (key, expected) in row.expected["affinity"]
+        let expected = row.expected["affinity"]
             .as_object()
-            .ok_or("expected object")?
-        {
+            .ok_or("expected object")?;
+        for key in ["session_id", "x-client-request-id", "x-session-affinity"] {
             assert_eq!(
-                observed.requests[0]["headers"][key], *expected,
-                "row {index} header"
+                observed.requests[0]["headers"].get(key),
+                expected.get(key),
+                "row {index} header {key}"
             );
         }
     }
@@ -866,6 +867,22 @@ fn chat_open_options_control_flags_and_literals() -> TestResult {
 #[test]
 fn chat_open_options_keep_nullish_and_strict_decisions() -> TestResult {
     chat::block_on(false, open_chat_options(true))
+}
+
+fn key_paths(value: &Value) -> Vec<String> {
+    match value {
+        Value::Object(map) => map
+            .iter()
+            .flat_map(|(key, child)| {
+                std::iter::once(key.clone()).chain(
+                    key_paths(child)
+                        .into_iter()
+                        .map(move |path| format!("{key}.{path}")),
+                )
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
 }
 
 async fn routing_options(gateway: bool) -> TestResult {
@@ -886,16 +903,11 @@ async fn routing_options(gateway: bool) -> TestResult {
                 observed.requests[0]["body"][key], row.expected[key],
                 "routing row {index} {key}"
             );
-            if let Some(expected) = row.expected[key].as_object() {
-                assert_eq!(
-                    observed.requests[0]["body"][key]
-                        .as_object()
-                        .ok_or("returned object")?
-                        .keys()
-                        .collect::<Vec<_>>(),
-                    expected.keys().collect::<Vec<_>>()
-                );
-            }
+            assert_eq!(
+                key_paths(&observed.requests[0]["body"][key]),
+                key_paths(&row.expected[key]),
+                "routing row {index} {key} key order"
+            );
         }
     }
     Ok(())

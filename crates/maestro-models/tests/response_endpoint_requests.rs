@@ -241,6 +241,15 @@ fn responses_open_options_keep_affinity_and_retention() -> chat::TestResult {
                 request["body"]["prompt_cache_retention"], row.expected["promptCacheRetention"],
                 "row {index} retention"
             );
+            let key_expected = if row.input["retention"] == "none" {
+                serde_json::Value::Null
+            } else {
+                serde_json::json!("session")
+            };
+            assert_eq!(
+                request["body"]["prompt_cache_key"], key_expected,
+                "row {index} cache key"
+            );
         }
         Ok(())
     })
