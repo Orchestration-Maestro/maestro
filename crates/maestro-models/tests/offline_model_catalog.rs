@@ -22,6 +22,20 @@ fn assert_descriptor(actual: &Value, expected: &Value) {
     }
 }
 
+/// Collect every object's key sequence, depth first, to prove key order.
+fn key_sequences(value: &Value, out: &mut Vec<Vec<String>>) {
+    match value {
+        Value::Object(map) => {
+            out.push(map.keys().cloned().collect());
+            for child in map.values() {
+                key_sequences(child, out);
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|item| key_sequences(item, out)),
+        _ => {}
+    }
+}
+
 fn assert_exact_misses() {
     for missing in ["", "unknown", "GOOGLE"] {
         assert!(get_models(missing).is_empty());
@@ -62,7 +76,15 @@ fn maestro_catalog_retains_every_descriptor() {
         assert_eq!(models.len(), records.len());
         for ((key, expected), model) in records.iter().zip(models) {
             assert_eq!(model.id, *key);
-            assert_descriptor(&serde_json::to_value(&model).unwrap(), expected);
+            let actual = serde_json::to_value(&model).unwrap();
+            assert_descriptor(&actual, expected);
+            let (mut actual_keys, mut expected_keys) = (Vec::new(), Vec::new());
+            key_sequences(&actual["compat"], &mut actual_keys);
+            key_sequences(&expected["compat"], &mut expected_keys);
+            assert_eq!(
+                actual_keys, expected_keys,
+                "{provider}/{key} compat key order"
+            );
             assert_eq!(get_model(provider, key).unwrap(), model);
             protocols.insert(model.api);
             counts[0] += 1;
