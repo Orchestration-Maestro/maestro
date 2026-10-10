@@ -76,7 +76,7 @@ fn maestro_response_sessions_claim_drains_ready_idle_close() {
         }
         peer.send(Message::text("{malformed")).await.unwrap();
         peer.send(Message::Close(None)).await.unwrap();
-        // Descriptor readiness closes the producer set without an idle receive consuming it.
+        // Peeking leaves the bytes unread: wait until both whole frames (12 + 2 bytes) are buffered.
         poll_fn(|context| {
             let state = lock(&entry.state);
             let State::Idle(idle) = &*state else {
@@ -85,11 +85,64 @@ fn maestro_response_sessions_claim_drains_ready_idle_close() {
             let MaybeTlsStream::Plain(stream) = idle.socket.get_ref() else {
                 panic!("plain loopback")
             };
-            stream.poll_read_ready(context)
+            let mut bytes = [0; 14];
+            let mut buffer = tokio::io::ReadBuf::new(&mut bytes);
+            match stream.poll_peek(context, &mut buffer) {
+                Poll::Ready(Ok(14)) => Poll::Ready(()),
+                Poll::Ready(Ok(_)) => {
+                    context.waker().wake_by_ref();
+                    Poll::Pending
+                }
+                Poll::Ready(Err(error)) => panic!("{error}"),
+                Poll::Pending => Poll::Pending,
+            }
         })
-        .await
-        .unwrap();
+        .await;
         assert!(matches!(claim("ready-close", &identity()), Claim::Absent));
         assert!(cached_entry("ready-close").is_none());
+    });
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn maestro_response_sessions_keep_registers_observer_inside_publication_lock() {
+    let _isolated = exclusive();
+    run_native(async {
+        let (socket, _peer) = pair().await;
+        let lease = publish("keep-lock", identity(), socket);
+        let entry = cached_entry("keep-lock").unwrap();
+        let metrics = tokio::runtime::Handle::current().metrics();
+        let alive = metrics.num_alive_tasks();
+        let runtime = tokio::runtime::Handle::current();
+        let state = lock(&entry.state);
+        let (thread_id, thread) = std::sync::mpsc::channel();
+        let keeper = std::thread::spawn(move || {
+            let _entered = runtime.enter();
+            let id = std::fs::read_link("/proc/thread-self").unwrap();
+            thread_id.send(id.file_name().unwrap().to_owned()).unwrap();
+            lease.keep();
+        });
+        let id = thread.recv().unwrap();
+        let stat = std::path::Path::new("/proc/self/task")
+            .join(id)
+            .join("stat");
+        // A thread parked on the held lock reports state S after its command name.
+        while !std::fs::read_to_string(&stat)
+            .unwrap()
+            .rsplit(") ")
+            .next()
+            .is_some_and(|rest| rest.starts_with('S'))
+        {
+            std::thread::yield_now();
+        }
+        assert_eq!(
+            metrics.num_alive_tasks(),
+            alive,
+            "no observer exists before the idle state is published"
+        );
+        drop(state);
+        keeper.join().unwrap();
+        assert!(matches!(claim("keep-lock", &identity()), Claim::Idle(_)));
+        close_openai_codex_web_socket_sessions(Some("keep-lock"));
     });
 }
