@@ -189,14 +189,17 @@ fn check_declarations(
         } else {
             continue;
         };
-        if member.name != owner {
+        let guest_tool = name == "ToolDefinition"
+            && member.name == "maestro-extensions-wasm"
+            && source.path == member.directory.join("src/types/tools.rs");
+        if member.name != owner && !guest_tool {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",
                 source.path.display(),
                 member.name
             ));
         }
-        if owner == "maestro-tools" && !declarations.insert(name.clone()) {
+        if owner == "maestro-tools" && !declarations.insert(format!("{}::{name}", member.name)) {
             return Err(format!(
                 "{}:{line}: duplicate declaration {name}",
                 source.path.display()

@@ -30,6 +30,22 @@ pub struct Delivery {
 /// The identity of a handler no extension registered.
 pub const UNKNOWN: u32 = 4242;
 
+/// Resources and values requested for one tool invocation.
+pub struct ToolRun<'a> {
+    /// Registered tool name.
+    pub name: &'a str,
+    /// Invocation identity.
+    pub id: &'a str,
+    /// JSON parameters.
+    pub params: &'a str,
+    /// Optional lent cancellation handle.
+    pub signal: Option<usize>,
+    /// Whether progress is supplied.
+    pub update: bool,
+    /// Holds execution until its wait is observed, cancelling the supplied signal.
+    pub held: bool,
+}
+
 /// One adapter driven through the scenario. A delivery resolves to the description of what the
 /// handler answered, or to the message it failed with, and the scenario writes it to the
 /// transcript.
@@ -79,6 +95,21 @@ pub trait Driver {
     fn abort_signal(&mut self, signal: usize) -> Result<(), String>;
     /// The handle of the flag lent for the most recent compaction.
     fn previous_signal(&mut self) -> &mut Option<usize>;
+    /// Synchronously invokes a registered preparation callback.
+    async fn prepare(&mut self, name: &str, args: &str) -> Result<String, String> {
+        self.prepare_key(self.identity(&format!("prepare {name}"))?, args)
+            .await
+    }
+    /// Invokes preparation through a supplied identity.
+    async fn prepare_key(&mut self, handler: u32, args: &str) -> Result<String, String>;
+    /// Lends a callback identity with the specified logical key.
+    fn reborrow(&mut self, id: u32) -> Result<u32, String>;
+    /// Awaits a tool callback with selected resources.
+    async fn tool(&mut self, run: ToolRun<'_>) -> Result<String, String>;
+    /// Registered tool metadata.
+    fn tools(&self) -> Vec<String>;
+    /// Partial outputs received by this host.
+    fn updates(&self) -> Vec<String>;
     /// Runs the command registered as `name` against a command context in `/work`.
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String>;
     /// Runs the command that starts a new session; its continuation waits for idle, and the

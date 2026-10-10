@@ -88,6 +88,8 @@ kinds! {
     shared {
         Event(ExtensionHandler),
         Command(CommandHandler),
+        Prepare(crate::PrepareArguments),
+        Tool(crate::ToolExecute),
     }
     once {
         WithSession(WithSession),

@@ -1,0 +1,1092 @@
+[
+  {
+    "content": []
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ]
+  },
+  {
+    "content": [],
+    "details": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": null
+  },
+  {
+    "content": [],
+    "details": "false"
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "false"
+  },
+  {
+    "content": [],
+    "details": "0.0"
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "0.0"
+  },
+  {
+    "content": [],
+    "details": "\"\""
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "\"\""
+  },
+  {
+    "content": [],
+    "details": "[]"
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[]"
+  },
+  {
+    "content": [],
+    "details": "{}"
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{}"
+  },
+  {
+    "content": [],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}"
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}"
+  },
+  {
+    "content": [],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]"
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]"
+  },
+  {
+    "content": [],
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": null,
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": null,
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "false",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "false",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "0.0",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "0.0",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "\"\"",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "\"\"",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "[]",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[]",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "{}",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{}",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]",
+    "terminate": null
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]",
+    "terminate": null
+  },
+  {
+    "content": [],
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": null,
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": null,
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "false",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "false",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "0.0",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "0.0",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "\"\"",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "\"\"",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "[]",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[]",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "{}",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{}",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]",
+    "terminate": false
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]",
+    "terminate": false
+  },
+  {
+    "content": [],
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": null,
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": null,
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "false",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "false",
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "0.0",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "0.0",
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "\"\"",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "\"\"",
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "[]",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[]",
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "{}",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{}",
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}",
+    "terminate": true
+  },
+  {
+    "content": [],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]",
+    "terminate": true
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      },
+      {
+        "type": "image",
+        "data": "AQI=",
+        "mimeType": "image/png"
+      },
+      {
+        "type": "text",
+        "text": "a",
+        "textSignature": "different"
+      },
+      {
+        "type": "text",
+        "text": "z",
+        "textSignature": "sig-Ω"
+      }
+    ],
+    "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]",
+    "terminate": true
+  }
+]

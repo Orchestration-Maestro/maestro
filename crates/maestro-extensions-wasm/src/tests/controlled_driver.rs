@@ -152,6 +152,51 @@ impl Driver for ControlledDriver {
         &mut self.previous
     }
 
+    fn prepare_key(
+        &mut self,
+        handler: u32,
+        args: &str,
+    ) -> impl Future<Output = Result<String, String>> {
+        std::future::ready(Exports::<Controlled>::invoke_prepare(handler, args))
+    }
+    fn reborrow(&mut self, id: u32) -> Result<u32, String> {
+        Ok(id)
+    }
+
+    async fn tool(&mut self, run: super::scenario::ToolRun<'_>) -> Result<String, String> {
+        let handler = self.identity(&format!("tool {}", run.name))?;
+        let invocation = crate::bindings::exports::maestro::extension::guest::ToolInvocation {
+            tool_call_id: run.id.into(),
+            params: run.params.into(),
+        };
+        let resources = crate::component_adapter::ToolCapabilities {
+            ctx: self.host.context("/work"),
+            signal: run
+                .signal
+                .map(|s| self.flag(s).map(|f| self.host.signal(f)))
+                .transpose()?,
+            update: run.update.then(|| self.host.update()),
+        };
+        let exports = self.exports();
+        if run.held {
+            let (hold, entered, open) = gate();
+            self.host.observe().hold_next_idle(hold);
+            let flag = run.signal.map(|s| self.flag(s).cloned()).transpose()?;
+            let resume = cancel_after_entered(entered, flag, open);
+            super::join::alongside(exports.invoke_tool(handler, invocation, resources), resume)
+                .await
+        } else {
+            exports.invoke_tool(handler, invocation, resources).await
+        }
+    }
+
+    fn tools(&self) -> Vec<String> {
+        self.host.observed().tools.clone()
+    }
+    fn updates(&self) -> Vec<String> {
+        self.host.observed().updates.clone()
+    }
+
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
         let handler = self.identity(&format!("command {name}"))?;
         let ctx = self.host.command_context("/work");
@@ -203,4 +248,17 @@ impl Driver for ControlledDriver {
     fn live(&self) -> usize {
         self.host.observed().live
     }
+}
+
+/// Cancels only after the execution's entered barrier, then opens its release gate.
+async fn cancel_after_entered(
+    entered: tokio::sync::oneshot::Receiver<()>,
+    flag: Option<Flag>,
+    open: tokio::sync::oneshot::Sender<()>,
+) {
+    entered.await.expect("execution entered its wait");
+    if let Some(flag) = flag {
+        flag.abort();
+    }
+    open.send(()).expect("execution still pending");
 }

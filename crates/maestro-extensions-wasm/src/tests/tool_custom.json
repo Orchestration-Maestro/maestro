@@ -1,0 +1,34 @@
+[
+  {
+    "input": "{\"z\":null,\"a\":\"after\"}",
+    "edited": "{\"z\":null,\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":false,\"a\":\"after\"}",
+    "edited": "{\"z\":false,\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":0.0,\"a\":\"after\"}",
+    "edited": "{\"z\":0.0,\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":\"\",\"a\":\"after\"}",
+    "edited": "{\"z\":\"\",\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":[],\"a\":\"after\"}",
+    "edited": "{\"z\":[],\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":{},\"a\":\"after\"}",
+    "edited": "{\"z\":{},\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]},\"a\":\"after\"}",
+    "edited": "{\"z\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]},\"a\":\"changed\"}"
+  },
+  {
+    "input": "{\"z\":[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"],\"a\":\"after\"}",
+    "edited": "{\"z\":[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"],\"a\":\"changed\"}"
+  }
+]

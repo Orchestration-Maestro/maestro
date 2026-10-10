@@ -1,0 +1,220 @@
+[
+  {
+    "family": "tool_result",
+    "result": {}
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": null
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "false"
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "0.0"
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "\"\""
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "[]"
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "{}"
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1.0,\"a\":[false,null,\"Ω😀﻿\\\\literal\"]}"
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "details": "[\"Ω😀﻿\\\\literal\",\"Ω😀﻿\\\\literal\",\"tail\"]"
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "content": null
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "content": []
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ]
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "isError": null
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "isError": false
+    }
+  },
+  {
+    "family": "tool_result",
+    "result": {
+      "isError": true
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {}
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "reason": null
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "reason": ""
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "reason": "reason Ω"
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": null
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": null,
+      "reason": null
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": null,
+      "reason": ""
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": null,
+      "reason": "reason Ω"
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": false
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": false,
+      "reason": null
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": false,
+      "reason": ""
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": false,
+      "reason": "reason Ω"
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": true
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": true,
+      "reason": null
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": true,
+      "reason": ""
+    }
+  },
+  {
+    "family": "tool_call",
+    "result": {
+      "block": true,
+      "reason": "reason Ω"
+    }
+  },
+  {
+    "family": "tool_call"
+  },
+  {
+    "family": "tool_result"
+  }
+]

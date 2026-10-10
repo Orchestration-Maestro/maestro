@@ -1,0 +1,6689 @@
+[
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "timeout": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "bash",
+      "input": {
+        "command": "printf Ω",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "offset": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "limit": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "read",
+      "input": {
+        "path": "notes/Ω",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "edit",
+      "input": {
+        "path": "f",
+        "edits": [
+          {
+            "oldText": "before",
+            "newText": "after"
+          },
+          {
+            "oldText": "same",
+            "newText": "same"
+          },
+          {
+            "oldText": "Ω old",
+            "newText": "Ω new"
+          },
+          {
+            "oldText": "before",
+            "newText": "after"
+          }
+        ]
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "edit",
+      "input": {
+        "path": "f",
+        "edits": [
+          {
+            "oldText": "before",
+            "newText": "after"
+          },
+          {
+            "oldText": "same",
+            "newText": "same"
+          },
+          {
+            "oldText": "Ω old",
+            "newText": "Ω new"
+          },
+          {
+            "oldText": "before",
+            "newText": "after"
+          }
+        ],
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "edit",
+      "input": {
+        "path": "f",
+        "edits": [
+          {
+            "oldText": "before",
+            "newText": "after"
+          },
+          {
+            "oldText": "same",
+            "newText": "same"
+          },
+          {
+            "oldText": "Ω old",
+            "newText": "Ω new"
+          },
+          {
+            "oldText": "before",
+            "newText": "after"
+          }
+        ],
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "edit",
+      "input": {
+        "path": "f",
+        "edits": [
+          {
+            "oldText": "before",
+            "newText": "after"
+          },
+          {
+            "oldText": "same",
+            "newText": "same"
+          },
+          {
+            "oldText": "Ω old",
+            "newText": "Ω new"
+          },
+          {
+            "oldText": "before",
+            "newText": "after"
+          }
+        ],
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "edit",
+      "input": {
+        "path": "",
+        "edits": []
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "edit",
+      "input": {
+        "path": "",
+        "edits": [],
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "write",
+      "input": {
+        "path": "f",
+        "content": "Ω😀﻿\\literal"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "write",
+      "input": {
+        "path": "f",
+        "content": "Ω😀﻿\\literal",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "write",
+      "input": {
+        "path": "f",
+        "content": "Ω😀﻿\\literal",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "write",
+      "input": {
+        "path": "f",
+        "content": "Ω😀﻿\\literal",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "path": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "path": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "path": ""
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "path": "",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "path": "Ω😀﻿\\literal"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "path": "Ω😀﻿\\literal",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "glob": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "glob": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "glob": ""
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "glob": "",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "glob": "Ω😀﻿\\literal"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "glob": "Ω😀﻿\\literal",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "ignoreCase": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "ignoreCase": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "ignoreCase": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "ignoreCase": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "ignoreCase": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "ignoreCase": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "literal": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "literal": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "literal": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "literal": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "literal": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "literal": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "context": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "limit": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "a.*",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "literal": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "literal": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "literal": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "literal": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "literal": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "literal": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "literal": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "literal": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "literal": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "literal": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "literal": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": null,
+        "literal": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "literal": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "literal": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "literal": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "literal": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "literal": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": false,
+        "literal": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "literal": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "literal": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "literal": false
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "literal": false,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "literal": true
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "grep",
+      "input": {
+        "pattern": "p",
+        "ignoreCase": true,
+        "literal": true,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "path": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "path": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "path": ""
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "path": "",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "path": "Ω😀﻿\\literal"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "path": "Ω😀﻿\\literal",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "limit": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "find",
+      "input": {
+        "pattern": "**/*.rs",
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {}
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "path": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "path": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "path": ""
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "path": "",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "path": "Ω😀﻿\\literal"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "path": "Ω😀﻿\\literal",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": null
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": null,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": -0.0,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": -1.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 0.5,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 5e-324,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "limit": 1.7976931348623157e+308,
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second"
+      }
+    },
+    "edited": {
+      "type": "tool_call",
+      "toolCallId": "call-Ω",
+      "toolName": "ls",
+      "input": {
+        "z": {
+          "a": [
+            false,
+            null,
+            "Ω😀﻿\\literal"
+          ]
+        },
+        "a": "second",
+        "mark": "changed"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "fullOutputPath": null
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "fullOutputPath": ""
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "fullOutputPath": ""
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "fullOutputPath": "Ω😀﻿\\literal"
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "fullOutputPath": "Ω😀﻿\\literal"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "bash",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "read",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after"
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": null
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": -0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": -1.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 0.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 5e-324
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "diff": "-before\n+after",
+        "firstChangedLine": 1.7976931348623157e+308
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "edit",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "write",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "write",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "write",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "write",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": null
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": -0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": -1.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 0.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 5e-324
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "matchLimitReached": 1.7976931348623157e+308
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "linesTruncated": null
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "linesTruncated": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "linesTruncated": false
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "linesTruncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "linesTruncated": true
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "linesTruncated": true
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "grep",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": null
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": -0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": -1.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 0.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 5e-324
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "resultLimitReached": 1.7976931348623157e+308
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "find",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {}
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": null
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": -0.0
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": -0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": -1.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": -1.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 0.5
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 0.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 5e-324
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 5e-324
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 1.7976931348623157e+308
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "entryLimitReached": 1.7976931348623157e+308
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": null
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": null,
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    },
+    "edited": {
+      "type": "tool_result",
+      "toolCallId": "r-Ω",
+      "toolName": "ls",
+      "input": "{\"z\":1.0,\"a\":false}",
+      "content": [
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        },
+        {
+          "type": "image",
+          "data": "AQI=",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "a",
+          "textSignature": "different"
+        },
+        {
+          "type": "text",
+          "text": "z",
+          "textSignature": "sig-Ω"
+        }
+      ],
+      "isError": true,
+      "details": {
+        "truncation": {
+          "content": "Ω😀﻿\\literal",
+          "truncated": true,
+          "truncatedBy": "bytes",
+          "totalLines": 4.0,
+          "totalBytes": 35.0,
+          "outputLines": 2.0,
+          "outputBytes": 12.0,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 20.0,
+          "maxBytes": 12.0
+        }
+      }
+    }
+  }
+]

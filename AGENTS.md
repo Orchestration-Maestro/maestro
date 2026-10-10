@@ -122,6 +122,9 @@ toward an exact set. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic; the internal dev-target
 allowlist is empty. The scenario harness is not a general dev-dependency target.
 
+The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
+its domain owner; renderer declarations retain their domain ownership.
+
 Bounded source/build checks enforce tool/selector ownership, direct runtime-engine
 and toolkit library placement, canonical guest-owned WIT inputs and planning-comment
 policy. They ignore literals/comments when finding declarations. Dynamic WIT inputs

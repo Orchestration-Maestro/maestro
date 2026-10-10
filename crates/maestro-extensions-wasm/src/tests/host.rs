@@ -20,6 +20,8 @@ use crate::bindings::host_side::maestro::extension::{host, session};
 pub struct Identity(u32);
 /// Cancellation flag.
 pub struct Flag(bool);
+/// Progress resource owned by one execution.
+pub struct Update;
 
 /// Host type of the ordinary context resource.
 pub struct Ordinary(Session);
@@ -60,6 +62,12 @@ impl State {
         }
     }
 
+    /// Cancels a retained resource by its table key.
+    pub fn abort(&mut self, flag: u32) -> wasmtime::Result<()> {
+        self.table.get_mut(&Resource::<Flag>::new_borrow(flag))?.0 = true;
+        Ok(())
+    }
+
     /// Adds a resource to the table and counts it as lent to the extension.
     fn push<T: Send + 'static>(&mut self, value: T) -> wasmtime::Result<Resource<T>> {
         self.observed.lend();
@@ -90,6 +98,25 @@ impl host::HostCallback for State {
         let identity = self.table.delete(this)?.0;
         self.observed.drop_identity(identity);
         Ok(())
+    }
+}
+
+impl host::HostToolUpdate for State {
+    fn update(
+        &mut self,
+        _this: Resource<Update>,
+        partial: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let value: serde_json::Value = serde_json::from_str(&partial)?;
+        self.observed.updates.push(partial);
+        Ok(if value["details"] == "fail update" {
+            Err("failed update: Ω".into())
+        } else {
+            Ok(())
+        })
+    }
+    fn drop(&mut self, this: Resource<Update>) -> wasmtime::Result<()> {
+        self.release(this)
     }
 }
 
@@ -152,6 +179,17 @@ impl host::Host for State {
     ) -> wasmtime::Result<Result<(), String>> {
         self.observed.register_command(&name, handler.rep());
         Ok(Ok(()))
+    }
+
+    fn register_tool(
+        &mut self,
+        metadata: String,
+        prepare: Option<Resource<Identity>>,
+        execute: Resource<Identity>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(self
+            .observed
+            .register_tool(&metadata, prepare.map(|p| p.rep()), execute.rep()))
     }
 
     fn append_entry(
@@ -322,6 +360,11 @@ impl Harness {
         self.store.data_mut().push(Ordinary(Session::new(cwd)))
     }
 
+    /// A fresh progress resource.
+    pub fn update(&mut self) -> wasmtime::Result<Resource<Update>> {
+        self.store.data_mut().push(Update)
+    }
+
     /// A fresh identity the component never registered. The host keeps it and only lends
     /// borrows of it, so it is not counted as handed to the extension.
     pub fn identity(&mut self, id: u32) -> wasmtime::Result<u32> {
@@ -360,4 +403,20 @@ impl Harness {
             .call_async(&mut self.store, (borrow(rep),))
             .await
     }
+}
+
+/// Cancels the retained tool signal after its entered barrier and releases execution.
+pub async fn cancel_held(
+    accessor: &Accessor<State>,
+    held: Option<(oneshot::Receiver<()>, oneshot::Sender<()>)>,
+    flag: Option<u32>,
+) {
+    let Some((entered, open)) = held else { return };
+    entered.await.expect("execution entered its wait");
+    if let Some(flag) = flag {
+        accessor
+            .with(|mut a| a.get().abort(flag))
+            .expect("retained flag exists");
+    }
+    open.send(()).expect("execution still pending");
 }

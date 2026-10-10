@@ -65,6 +65,14 @@ pub struct Signal {
     _lease: Lease,
 }
 
+/// Progress resource lent to tool execution.
+pub struct Update {
+    /// Observations shared with the host.
+    observed: Rc<RefCell<Observed>>,
+    /// Counts its owned lifetime.
+    _lease: Lease,
+}
+
 /// Ordinary context lent to the extension.
 pub struct Context {
     /// The session the context is bound to.
@@ -123,6 +131,14 @@ impl Controlled {
         }
     }
 
+    /// A progress resource sharing this host's observations.
+    pub fn update(&self) -> Update {
+        Update {
+            observed: Rc::clone(&self.observed),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+
     /// A command context in `cwd`.
     pub fn command_context(&self, cwd: &str) -> CommandContext {
         CommandContext {
@@ -148,6 +164,7 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type Update = Update;
     type Callback = Callback;
     type Signal = Signal;
     type Context = Context;
@@ -178,6 +195,26 @@ impl Imports for Controlled {
         self.observed
             .borrow_mut()
             .register_command(name, handler.id);
+        Ok(())
+    }
+
+    fn register_tool(
+        &self,
+        metadata: &str,
+        prepare: Option<&Callback>,
+        execute: &Callback,
+    ) -> ExtensionResult<()> {
+        self.observed
+            .borrow_mut()
+            .register_tool(metadata, prepare.map(|p| p.id), execute.id)
+    }
+
+    fn tool_update(&self, update: &Update, partial: &str) -> ExtensionResult<()> {
+        let value: serde_json::Value = serde_json::from_str(partial).map_err(|e| e.to_string())?;
+        update.observed.borrow_mut().updates.push(partial.into());
+        if value["details"] == "fail update" {
+            return Err("failed update: Ω".into());
+        }
         Ok(())
     }
 

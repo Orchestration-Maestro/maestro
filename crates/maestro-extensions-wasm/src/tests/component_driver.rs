@@ -210,6 +210,72 @@ impl Driver for ComponentDriver {
         &mut self.previous
     }
 
+    async fn prepare_key(&mut self, handler: u32, args: &str) -> Result<String, String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        harness
+            .exports
+            .func_invoke_prepare()
+            .call_async(&mut harness.store, (borrow(handler), args))
+            .await
+            .map_err(|e| e.to_string())?
+            .0
+    }
+    fn reborrow(&mut self, id: u32) -> Result<u32, String> {
+        started(&mut self.harness)
+            .and_then(|h| h.identity(id))
+            .map_err(|e| e.to_string())
+    }
+
+    async fn tool(&mut self, run: super::scenario::ToolRun<'_>) -> Result<String, String> {
+        let signal = run
+            .signal
+            .map(|s| self.key(s).map(Resource::new_own))
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let handler = harness
+            .callback(&format!("tool {}", run.name))
+            .map_err(|e| e.to_string())?;
+        let resources = fixtures::guest::ToolCapabilities {
+            ctx: harness.ordinary("/work").map_err(|e| e.to_string())?,
+            signal,
+            update: if run.update {
+                Some(harness.update().map_err(|e| e.to_string())?)
+            } else {
+                None
+            },
+        };
+        let invocation = fixtures::guest::ToolInvocation {
+            tool_call_id: run.id.into(),
+            params: run.params.into(),
+        };
+        let exports = harness.exports.clone();
+        let (hold, entered, open) = gate();
+        if run.held {
+            harness.observed().hold_next_idle(hold);
+        }
+        let flag = run.signal.map(|s| self.flags[s]);
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let call =
+                    exports.call_invoke_tool(accessor, borrow(handler), invocation, resources);
+                let resume =
+                    super::host::cancel_held(accessor, run.held.then_some((entered, open)), flag);
+                super::join::alongside(call, resume).await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+
+    fn tools(&self) -> Vec<String> {
+        self.observed(|o| o.tools.clone())
+    }
+    fn updates(&self) -> Vec<String> {
+        self.observed(|o| o.updates.clone())
+    }
+
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
         self.run_command(name, args, false)
             .await

@@ -3,7 +3,9 @@
 
 use std::marker::PhantomData;
 
+use super::tools::ToolCapabilities;
 use super::{Capabilities, Exports, Imports, release};
+use crate::bindings::exports::maestro::extension::guest::ToolInvocation;
 use crate::bindings::exports::maestro::extension::guest::{self, Guest};
 use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
@@ -15,6 +17,7 @@ use crate::types::{ExtensionFuture, ExtensionResult};
 struct Generated;
 
 impl Imports for Generated {
+    type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Signal = host::AbortSignal;
     type Context = host::Context;
@@ -39,6 +42,17 @@ impl Imports for Generated {
         host::register_command(name, description, handler)
     }
 
+    fn register_tool(
+        &self,
+        metadata: &str,
+        prepare: Option<&host::Callback>,
+        execute: &host::Callback,
+    ) -> ExtensionResult<()> {
+        host::register_tool(metadata, prepare, execute)
+    }
+    fn tool_update(&self, update: &host::ToolUpdate, partial: &str) -> ExtensionResult<()> {
+        update.update(partial)
+    }
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()> {
         host::append_entry(custom_type, data)
     }
@@ -86,6 +100,31 @@ impl<E: Extension> Guest for Glue<E> {
         release(handler.id());
     }
 
+    fn invoke_prepare(handler: &host::Callback, args: String) -> ExtensionResult<String> {
+        Exports::<Generated>::invoke_prepare(handler.id(), &args)
+    }
+    async fn invoke_tool(
+        handler: &host::Callback,
+        invocation: ToolInvocation,
+        resources: guest::ToolCapabilities,
+    ) -> ExtensionResult<String> {
+        let guest::ToolCapabilities {
+            ctx,
+            signal,
+            update,
+        } = resources;
+        Exports::new(Generated)
+            .invoke_tool(
+                handler.id(),
+                invocation,
+                ToolCapabilities {
+                    ctx,
+                    signal,
+                    update,
+                },
+            )
+            .await
+    }
     async fn invoke_command(
         handler: &host::Callback,
         args: String,

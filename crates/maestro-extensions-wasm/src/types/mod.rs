@@ -20,6 +20,10 @@ mod presence;
 mod selection_events;
 mod session_events;
 mod tool_events;
+mod tool_results;
+pub use tool_results::*;
+mod tools;
+pub use tools::*;
 
 pub use agent_events::*;
 pub use agent_results::*;

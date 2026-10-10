@@ -18,7 +18,7 @@ use crate::types::{
 /// Serves the exports an extension component provides on top of its host.
 pub(crate) struct Exports<I: Imports> {
     /// The host the extension runs against.
-    imports: I,
+    pub(super) imports: I,
 }
 
 /// The host resources lent to one event callback.
@@ -31,13 +31,7 @@ pub(crate) struct Capabilities<I: Imports> {
 
 /// Encodes an optional document, or the message the encoding failed with.
 fn encode<T: Serialize>(value: Option<T>) -> Encoded {
-    value
-        .map(|value| {
-            value.serialize(crate::types::finite::Finite)?;
-            serde_json::to_string(&value)
-        })
-        .transpose()
-        .map_err(|error| error.to_string())
+    value.map(|value| encode_value(&value)).transpose()
 }
 
 /// The outcome the host receives: the edited event and the decision, each encoded
@@ -115,4 +109,12 @@ impl<I: Imports> Exports<I> {
         let edited = (discriminant(&edited) == kind).then_some(edited);
         Ok(outcome(edited, decision))
     }
+}
+
+/// Encodes authored data after rejecting nonfinite typed numbers.
+pub(super) fn encode_value<T: Serialize>(value: &T) -> Result<String, String> {
+    value
+        .serialize(crate::types::finite::Finite)
+        .map_err(|error| error.to_string())?;
+    serde_json::to_string(value).map_err(|error| error.to_string())
 }

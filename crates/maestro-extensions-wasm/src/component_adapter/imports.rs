@@ -10,6 +10,8 @@ use crate::types::{ExtensionFuture, ExtensionResult};
 pub trait Imports: Clone + 'static {
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
+    /// Host-owned progress resource.
+    type Update: 'static;
     /// Host-owned cancellation flag.
     type Signal: 'static;
     /// Context with the live capabilities every callback receives.
@@ -39,6 +41,23 @@ pub trait Imports: Clone + 'static {
         description: Option<&str>,
         handler: &Self::Callback,
     ) -> ExtensionResult<()>;
+
+    /// Registers authored metadata with optional preparation and required execution.
+    ///
+    /// # Errors
+    /// Returns the host's rejection unchanged.
+    fn register_tool(
+        &self,
+        metadata: &str,
+        prepare: Option<&Self::Callback>,
+        execute: &Self::Callback,
+    ) -> ExtensionResult<()>;
+
+    /// Delivers a partial output to a progress resource.
+    ///
+    /// # Errors
+    /// Returns the host's failure unchanged.
+    fn tool_update(&self, update: &Self::Update, partial: &str) -> ExtensionResult<()>;
 
     /// Appends a custom entry to the session; `data` is JSON text.
     ///
