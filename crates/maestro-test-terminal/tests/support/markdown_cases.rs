@@ -94,39 +94,57 @@ pub struct Case {
     pub lines: Vec<String>,
 }
 
+/// Recorded component invocations for a named behavior, from either corpus.
+pub fn corpus(name: &str) -> Vec<Case> {
+    let mut found = None;
+    for json in [
+        include_str!("../fixtures/markdown_core.json"),
+        include_str!("../fixtures/markdown_tables.json"),
+    ] {
+        let decoded: Result<std::collections::BTreeMap<String, Vec<Case>>, _> =
+            serde_json::from_str(json);
+        assert!(
+            decoded.is_ok(),
+            "invalid fixture: {:?}",
+            decoded.as_ref().err()
+        );
+        found = found.or_else(|| decoded.unwrap_or_default().remove(name));
+    }
+    assert!(found.is_some(), "no recorded cases for {name}");
+    found.unwrap_or_default()
+}
+
+/// Builds the component a recorded case describes.
+pub fn component(case: &Case) -> maestro_tui::Markdown {
+    use maestro_tui::{Markdown, MarkdownOptions, TerminalCapabilities, TerminalImage};
+    let mut theme = if case.profile == "plain" {
+        plain()
+    } else {
+        ansi()
+    };
+    theme.code_block_indent.clone_from(&case.indent);
+    let terminal = TerminalImage::new(|_| None, || 1);
+    terminal.set_capabilities(TerminalCapabilities {
+        hyperlinks: case.hyperlinks,
+        ..TerminalCapabilities::default()
+    });
+    Markdown::new(
+        case.text.clone(),
+        MarkdownOptions {
+            padding_x: case.padding_x,
+            padding_y: case.padding_y,
+            default_text_style: default_style(&case.profile),
+        },
+        std::rc::Rc::new(theme),
+        terminal,
+    )
+}
+
 /// Asserts every recorded component invocation for a named behavior.
 pub fn cases(name: &str) {
-    use maestro_tui::{Component, Markdown, MarkdownOptions, TerminalCapabilities, TerminalImage};
-    let decoded = serde_json::from_str(include_str!("../fixtures/markdown_core.json"));
-    assert!(
-        decoded.is_ok(),
-        "invalid fixture: {:?}",
-        decoded.as_ref().err()
-    );
-    let corpus: std::collections::BTreeMap<String, Vec<Case>> = decoded.unwrap_or_default();
-    for case in &corpus[name] {
-        let mut theme = if case.profile == "plain" {
-            plain()
-        } else {
-            ansi()
-        };
-        theme.code_block_indent.clone_from(&case.indent);
-        let terminal = TerminalImage::new(|_| None, || 1);
-        terminal.set_capabilities(TerminalCapabilities {
-            hyperlinks: case.hyperlinks,
-            ..TerminalCapabilities::default()
-        });
-        let component = Markdown::new(
-            case.text.clone(),
-            MarkdownOptions {
-                padding_x: case.padding_x,
-                padding_y: case.padding_y,
-                default_text_style: default_style(&case.profile),
-            },
-            std::rc::Rc::new(theme),
-            terminal,
-        );
-        let rows = component.render(case.width);
+    use maestro_tui::Component;
+    for case in corpus(name) {
+        let rows = component(&case).render(case.width);
         let suppressed = match case.profile.as_str() {
             "quote-magenta" => Some("\x1b[35m"),
             "quote-cyan" => Some("\x1b[36m"),

@@ -1,6 +1,6 @@
 # Terminal Markdown
 
-`Markdown` renders headings, paragraphs, code blocks, rules, quotes and lists
+`Markdown` renders headings, paragraphs, code blocks, rules, quotes, lists and tables
 through supplied `MarkdownTheme` callbacks. Inline formatting includes emphasis,
 strong text, strikethrough, code and links. The native `CommonMark` parser owns the
 grammar; bare HTTP/HTTPS, www and email links are recognized in authored text,
@@ -11,7 +11,17 @@ after its prefix. HTML is literal text,
 including inside lists; quoted HTML suppresses the message foreground, like other
 quote text. Images display authored label markup without enclosing
 quote/list prefixes, unescaping brackets but retaining other escapes.
-Table layout is not provided.
+Tables draw box borders, bold header cells and a rule between body rows. When the
+widest cell of every column fits, each column takes that width, at least one cell.
+Otherwise each column starts from its longest word, counted up to thirty cells over
+the visible text (terminal escapes such as link destinations are not words), and
+the remaining width is shared by how much more each column needs; if even those
+words do not fit, each column starts from one cell and the width is shared by word
+length. In a cell, `\|` is a literal pipe in text, autolinks, link and image labels, and inline HTML. A drawn
+table runs each cell's callbacks once to measure and again to draw, header first and
+then each body row in turn, so stateful callbacks see both passes in source order. Cell text wraps at its column width. Alignment markers are
+accepted but do not align text. When the width cannot give every column one cell, the
+table's source rows are shown instead; a table inside a list item also shows its source rows.
 
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
 `DefaultTextStyle`. Its `decorations` select `TextDecoration` values; they apply in
