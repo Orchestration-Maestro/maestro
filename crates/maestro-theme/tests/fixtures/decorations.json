@@ -1,0 +1,1142 @@
+[
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "plain",
+    "expected": "plain"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\nb",
+    "expected": "a\nb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\n",
+    "expected": "a\n"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\n\nb",
+    "expected": "a\n\nb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\rb",
+    "expected": "a\rb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[0mb",
+    "expected": "a\u001b[0mb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[22mb",
+    "expected": "a\u001b[22mb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[23mb",
+    "expected": "a\u001b[23mb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[24mb",
+    "expected": "a\u001b[24mb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[27mb",
+    "expected": "a\u001b[27mb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[29mb",
+    "expected": "a\u001b[29mb"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "a\u001b[22mb\u001b[22mc"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "a\u001b[23mb\u001b[23mc"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "a\u001b[24mb\u001b[24mc"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "a\u001b[27mb\u001b[27mc"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "a\u001b[29mb\u001b[29mc"
+  },
+  {
+    "enabled": false,
+    "style": "bold",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\t雪 é 👩‍💻"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "plain",
+    "expected": "plain"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\nb",
+    "expected": "a\nb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\n",
+    "expected": "a\n"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\n\nb",
+    "expected": "a\n\nb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\rb",
+    "expected": "a\rb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[0mb",
+    "expected": "a\u001b[0mb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[22mb",
+    "expected": "a\u001b[22mb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[23mb",
+    "expected": "a\u001b[23mb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[24mb",
+    "expected": "a\u001b[24mb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[27mb",
+    "expected": "a\u001b[27mb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[29mb",
+    "expected": "a\u001b[29mb"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "a\u001b[22mb\u001b[22mc"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "a\u001b[23mb\u001b[23mc"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "a\u001b[24mb\u001b[24mc"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "a\u001b[27mb\u001b[27mc"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "a\u001b[29mb\u001b[29mc"
+  },
+  {
+    "enabled": false,
+    "style": "italic",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\t雪 é 👩‍💻"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "plain",
+    "expected": "plain"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\nb",
+    "expected": "a\nb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\n",
+    "expected": "a\n"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\n\nb",
+    "expected": "a\n\nb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\rb",
+    "expected": "a\rb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[0mb",
+    "expected": "a\u001b[0mb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[22mb",
+    "expected": "a\u001b[22mb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[23mb",
+    "expected": "a\u001b[23mb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[24mb",
+    "expected": "a\u001b[24mb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[27mb",
+    "expected": "a\u001b[27mb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[29mb",
+    "expected": "a\u001b[29mb"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "a\u001b[22mb\u001b[22mc"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "a\u001b[23mb\u001b[23mc"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "a\u001b[24mb\u001b[24mc"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "a\u001b[27mb\u001b[27mc"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "a\u001b[29mb\u001b[29mc"
+  },
+  {
+    "enabled": false,
+    "style": "underline",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\t雪 é 👩‍💻"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "plain",
+    "expected": "plain"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\nb",
+    "expected": "a\nb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\n",
+    "expected": "a\n"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\n\nb",
+    "expected": "a\n\nb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\rb",
+    "expected": "a\rb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[0mb",
+    "expected": "a\u001b[0mb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[22mb",
+    "expected": "a\u001b[22mb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[23mb",
+    "expected": "a\u001b[23mb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[24mb",
+    "expected": "a\u001b[24mb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[27mb",
+    "expected": "a\u001b[27mb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[29mb",
+    "expected": "a\u001b[29mb"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "a\u001b[22mb\u001b[22mc"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "a\u001b[23mb\u001b[23mc"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "a\u001b[24mb\u001b[24mc"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "a\u001b[27mb\u001b[27mc"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "a\u001b[29mb\u001b[29mc"
+  },
+  {
+    "enabled": false,
+    "style": "inverse",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\t雪 é 👩‍💻"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "plain",
+    "expected": "plain"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\nb",
+    "expected": "a\nb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\r\nb",
+    "expected": "a\r\nb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\n",
+    "expected": "a\n"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\n\nb",
+    "expected": "a\n\nb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\rb",
+    "expected": "a\rb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[0mb",
+    "expected": "a\u001b[0mb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[22mb",
+    "expected": "a\u001b[22mb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[23mb",
+    "expected": "a\u001b[23mb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[24mb",
+    "expected": "a\u001b[24mb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[27mb",
+    "expected": "a\u001b[27mb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[29mb",
+    "expected": "a\u001b[29mb"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "a\u001b[22mb\u001b[22mc"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "a\u001b[23mb\u001b[23mc"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "a\u001b[24mb\u001b[24mc"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "a\u001b[27mb\u001b[27mc"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "a\u001b[29mb\u001b[29mc"
+  },
+  {
+    "enabled": false,
+    "style": "strikethrough",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\t雪 é 👩‍💻"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "plain",
+    "expected": "\u001b[1mplain\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\nb",
+    "expected": "\u001b[1ma\u001b[22m\n\u001b[1mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\r\nb",
+    "expected": "\u001b[1ma\u001b[22m\r\n\u001b[1mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\n",
+    "expected": "\u001b[1ma\u001b[22m\n\u001b[1m\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\n\nb",
+    "expected": "\u001b[1ma\u001b[22m\n\u001b[1m\u001b[22m\n\u001b[1mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\rb",
+    "expected": "\u001b[1ma\rb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[0mb",
+    "expected": "\u001b[1ma\u001b[0mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[22mb",
+    "expected": "\u001b[1ma\u001b[22m\u001b[1mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[23mb",
+    "expected": "\u001b[1ma\u001b[23mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[24mb",
+    "expected": "\u001b[1ma\u001b[24mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[27mb",
+    "expected": "\u001b[1ma\u001b[27mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[29mb",
+    "expected": "\u001b[1ma\u001b[29mb\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "\u001b[1ma\u001b[22m\u001b[1mb\u001b[22m\u001b[1mc\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "\u001b[1ma\u001b[23mb\u001b[23mc\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "\u001b[1ma\u001b[24mb\u001b[24mc\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "\u001b[1ma\u001b[27mb\u001b[27mc\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "\u001b[1ma\u001b[29mb\u001b[29mc\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "bold",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\u001b[1m\t雪 é 👩‍💻\u001b[22m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "plain",
+    "expected": "\u001b[3mplain\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\nb",
+    "expected": "\u001b[3ma\u001b[23m\n\u001b[3mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\r\nb",
+    "expected": "\u001b[3ma\u001b[23m\r\n\u001b[3mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\n",
+    "expected": "\u001b[3ma\u001b[23m\n\u001b[3m\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\n\nb",
+    "expected": "\u001b[3ma\u001b[23m\n\u001b[3m\u001b[23m\n\u001b[3mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\rb",
+    "expected": "\u001b[3ma\rb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[0mb",
+    "expected": "\u001b[3ma\u001b[0mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[22mb",
+    "expected": "\u001b[3ma\u001b[22mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[23mb",
+    "expected": "\u001b[3ma\u001b[23m\u001b[3mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[24mb",
+    "expected": "\u001b[3ma\u001b[24mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[27mb",
+    "expected": "\u001b[3ma\u001b[27mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[29mb",
+    "expected": "\u001b[3ma\u001b[29mb\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "\u001b[3ma\u001b[22mb\u001b[22mc\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "\u001b[3ma\u001b[23m\u001b[3mb\u001b[23m\u001b[3mc\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "\u001b[3ma\u001b[24mb\u001b[24mc\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "\u001b[3ma\u001b[27mb\u001b[27mc\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "\u001b[3ma\u001b[29mb\u001b[29mc\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "italic",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\u001b[3m\t雪 é 👩‍💻\u001b[23m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "plain",
+    "expected": "\u001b[4mplain\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\nb",
+    "expected": "\u001b[4ma\u001b[24m\n\u001b[4mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\r\nb",
+    "expected": "\u001b[4ma\u001b[24m\r\n\u001b[4mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\n",
+    "expected": "\u001b[4ma\u001b[24m\n\u001b[4m\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\n\nb",
+    "expected": "\u001b[4ma\u001b[24m\n\u001b[4m\u001b[24m\n\u001b[4mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\rb",
+    "expected": "\u001b[4ma\rb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[0mb",
+    "expected": "\u001b[4ma\u001b[0mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[22mb",
+    "expected": "\u001b[4ma\u001b[22mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[23mb",
+    "expected": "\u001b[4ma\u001b[23mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[24mb",
+    "expected": "\u001b[4ma\u001b[24m\u001b[4mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[27mb",
+    "expected": "\u001b[4ma\u001b[27mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[29mb",
+    "expected": "\u001b[4ma\u001b[29mb\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "\u001b[4ma\u001b[22mb\u001b[22mc\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "\u001b[4ma\u001b[23mb\u001b[23mc\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "\u001b[4ma\u001b[24m\u001b[4mb\u001b[24m\u001b[4mc\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "\u001b[4ma\u001b[27mb\u001b[27mc\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "\u001b[4ma\u001b[29mb\u001b[29mc\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "underline",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\u001b[4m\t雪 é 👩‍💻\u001b[24m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "plain",
+    "expected": "\u001b[7mplain\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\nb",
+    "expected": "\u001b[7ma\u001b[27m\n\u001b[7mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\r\nb",
+    "expected": "\u001b[7ma\u001b[27m\r\n\u001b[7mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\n",
+    "expected": "\u001b[7ma\u001b[27m\n\u001b[7m\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\n\nb",
+    "expected": "\u001b[7ma\u001b[27m\n\u001b[7m\u001b[27m\n\u001b[7mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\rb",
+    "expected": "\u001b[7ma\rb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[0mb",
+    "expected": "\u001b[7ma\u001b[0mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[22mb",
+    "expected": "\u001b[7ma\u001b[22mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[23mb",
+    "expected": "\u001b[7ma\u001b[23mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[24mb",
+    "expected": "\u001b[7ma\u001b[24mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[27mb",
+    "expected": "\u001b[7ma\u001b[27m\u001b[7mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[29mb",
+    "expected": "\u001b[7ma\u001b[29mb\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "\u001b[7ma\u001b[22mb\u001b[22mc\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "\u001b[7ma\u001b[23mb\u001b[23mc\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "\u001b[7ma\u001b[24mb\u001b[24mc\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "\u001b[7ma\u001b[27m\u001b[7mb\u001b[27m\u001b[7mc\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "\u001b[7ma\u001b[29mb\u001b[29mc\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "inverse",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\u001b[7m\t雪 é 👩‍💻\u001b[27m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "",
+    "expected": ""
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "plain",
+    "expected": "\u001b[9mplain\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\nb",
+    "expected": "\u001b[9ma\u001b[29m\n\u001b[9mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\r\nb",
+    "expected": "\u001b[9ma\u001b[29m\r\n\u001b[9mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\n",
+    "expected": "\u001b[9ma\u001b[29m\n\u001b[9m\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\n\nb",
+    "expected": "\u001b[9ma\u001b[29m\n\u001b[9m\u001b[29m\n\u001b[9mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\rb",
+    "expected": "\u001b[9ma\rb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[0mb",
+    "expected": "\u001b[9ma\u001b[0mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[22mb",
+    "expected": "\u001b[9ma\u001b[22mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[23mb",
+    "expected": "\u001b[9ma\u001b[23mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[24mb",
+    "expected": "\u001b[9ma\u001b[24mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[27mb",
+    "expected": "\u001b[9ma\u001b[27mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[29mb",
+    "expected": "\u001b[9ma\u001b[29m\u001b[9mb\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[22mb\u001b[22mc",
+    "expected": "\u001b[9ma\u001b[22mb\u001b[22mc\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[23mb\u001b[23mc",
+    "expected": "\u001b[9ma\u001b[23mb\u001b[23mc\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[24mb\u001b[24mc",
+    "expected": "\u001b[9ma\u001b[24mb\u001b[24mc\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[27mb\u001b[27mc",
+    "expected": "\u001b[9ma\u001b[27mb\u001b[27mc\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "a\u001b[29mb\u001b[29mc",
+    "expected": "\u001b[9ma\u001b[29m\u001b[9mb\u001b[29m\u001b[9mc\u001b[29m"
+  },
+  {
+    "enabled": true,
+    "style": "strikethrough",
+    "text": "\t雪 é 👩‍💻",
+    "expected": "\u001b[9m\t雪 é 👩‍💻\u001b[29m"
+  }
+]

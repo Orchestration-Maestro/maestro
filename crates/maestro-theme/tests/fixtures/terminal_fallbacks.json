@@ -1,0 +1,522 @@
+[
+  {
+    "text": "const answer = 42;\nconsole.log(answer);\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mconst answer = 42;\u001b[39m",
+      "\u001b[38;5;21mconsole.log(answer);\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "const answer = 42;\nconsole.log(answer);\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mconst answer = 42;\u001b[39m",
+      "\u001b[38;5;21mconsole.log(answer);\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "def greet(name):\n    return f\"Hello, {name}\"\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mdef greet(name):\u001b[39m",
+      "\u001b[38;5;21m    return f\"Hello, {name}\"\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "def greet(name):\n    return f\"Hello, {name}\"\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mdef greet(name):\u001b[39m",
+      "\u001b[38;5;21m    return f\"Hello, {name}\"\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "SELECT name, COUNT(*) FROM users WHERE active = true GROUP BY name;",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mSELECT name, COUNT(*) FROM users WHERE active = true GROUP BY name;\u001b[39m"
+    ]
+  },
+  {
+    "text": "SELECT name, COUNT(*) FROM users WHERE active = true GROUP BY name;",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mSELECT name, COUNT(*) FROM users WHERE active = true GROUP BY name;\u001b[39m"
+    ]
+  },
+  {
+    "text": "{\"name\":\"Maestro\", \"active\":true, \"count\":42}",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m{\"name\":\"Maestro\", \"active\":true, \"count\":42}\u001b[39m"
+    ]
+  },
+  {
+    "text": "{\"name\":\"Maestro\", \"active\":true, \"count\":42}",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m{\"name\":\"Maestro\", \"active\":true, \"count\":42}\u001b[39m"
+    ]
+  },
+  {
+    "text": "<div class=\"note\">Hello &amp; <b>world</b></div>",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m<div class=\"note\">Hello &amp; <b>world</b></div>\u001b[39m"
+    ]
+  },
+  {
+    "text": "<div class=\"note\">Hello &amp; <b>world</b></div>",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m<div class=\"note\">Hello &amp; <b>world</b></div>\u001b[39m"
+    ]
+  },
+  {
+    "text": ".notice { color: red; margin: 1px 2px; }",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m.notice { color: red; margin: 1px 2px; }\u001b[39m"
+    ]
+  },
+  {
+    "text": ".notice { color: red; margin: 1px 2px; }",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m.notice { color: red; margin: 1px 2px; }\u001b[39m"
+    ]
+  },
+  {
+    "text": "interface User { name: string; age: number; }\nconst user: User = { name: \"A\", age: 2 };",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21minterface User { name: string; age: number; }\u001b[39m",
+      "\u001b[38;5;21mconst user: User = { name: \"A\", age: 2 };\u001b[39m"
+    ]
+  },
+  {
+    "text": "interface User { name: string; age: number; }\nconst user: User = { name: \"A\", age: 2 };",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21minterface User { name: string; age: number; }\u001b[39m",
+      "\u001b[38;5;21mconst user: User = { name: \"A\", age: 2 };\u001b[39m"
+    ]
+  },
+  {
+    "text": "fn main() { let answer: u32 = 42; println!(\"{}\", answer); }",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mfn main() { let answer: u32 = 42; println!(\"{}\", answer); }\u001b[39m"
+    ]
+  },
+  {
+    "text": "fn main() { let answer: u32 = 42; println!(\"{}\", answer); }",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mfn main() { let answer: u32 = 42; println!(\"{}\", answer); }\u001b[39m"
+    ]
+  },
+  {
+    "text": "for f in *.rs; do echo \"$f\"; done",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mfor f in *.rs; do echo \"$f\"; done\u001b[39m"
+    ]
+  },
+  {
+    "text": "for f in *.rs; do echo \"$f\"; done",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mfor f in *.rs; do echo \"$f\"; done\u001b[39m"
+    ]
+  },
+  {
+    "text": "name: Maestro\nsteps:\n  - run: cargo test\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mname: Maestro\u001b[39m",
+      "\u001b[38;5;21msteps:\u001b[39m",
+      "\u001b[38;5;21m  - run: cargo test\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "name: Maestro\nsteps:\n  - run: cargo test\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mname: Maestro\u001b[39m",
+      "\u001b[38;5;21msteps:\u001b[39m",
+      "\u001b[38;5;21m  - run: cargo test\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "[package]\nname = \"maestro\"\nversion = \"0.1.0\"\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m[package]\u001b[39m",
+      "\u001b[38;5;21mname = \"maestro\"\u001b[39m",
+      "\u001b[38;5;21mversion = \"0.1.0\"\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "[package]\nname = \"maestro\"\nversion = \"0.1.0\"\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m[package]\u001b[39m",
+      "\u001b[38;5;21mname = \"maestro\"\u001b[39m",
+      "\u001b[38;5;21mversion = \"0.1.0\"\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "FROM alpine:3\nRUN echo hello\nCMD [\"sh\"]\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mFROM alpine:3\u001b[39m",
+      "\u001b[38;5;21mRUN echo hello\u001b[39m",
+      "\u001b[38;5;21mCMD [\"sh\"]\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "FROM alpine:3\nRUN echo hello\nCMD [\"sh\"]\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mFROM alpine:3\u001b[39m",
+      "\u001b[38;5;21mRUN echo hello\u001b[39m",
+      "\u001b[38;5;21mCMD [\"sh\"]\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "fun main() { val message: String = \"hello\"; println(message) }",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mfun main() { val message: String = \"hello\"; println(message) }\u001b[39m"
+    ]
+  },
+  {
+    "text": "fun main() { val message: String = \"hello\"; println(message) }",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mfun main() { val message: String = \"hello\"; println(message) }\u001b[39m"
+    ]
+  },
+  {
+    "text": "import Foundation\nlet message: String = \"hello\"\nprint(message)",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mimport Foundation\u001b[39m",
+      "\u001b[38;5;21mlet message: String = \"hello\"\u001b[39m",
+      "\u001b[38;5;21mprint(message)\u001b[39m"
+    ]
+  },
+  {
+    "text": "import Foundation\nlet message: String = \"hello\"\nprint(message)",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mimport Foundation\u001b[39m",
+      "\u001b[38;5;21mlet message: String = \"hello\"\u001b[39m",
+      "\u001b[38;5;21mprint(message)\u001b[39m"
+    ]
+  },
+  {
+    "text": "[server]\nport=8081\nhost=localhost\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m[server]\u001b[39m",
+      "\u001b[38;5;21mport=8081\u001b[39m",
+      "\u001b[38;5;21mhost=localhost\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "[server]\nport=8081\nhost=localhost\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m[server]\u001b[39m",
+      "\u001b[38;5;21mport=8081\u001b[39m",
+      "\u001b[38;5;21mhost=localhost\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "const std = @import(\"std\");\npub fn main() void { std.debug.print(\"hello\", .{}); }",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mconst std = @import(\"std\");\u001b[39m",
+      "\u001b[38;5;21mpub fn main() void { std.debug.print(\"hello\", .{}); }\u001b[39m"
+    ]
+  },
+  {
+    "text": "const std = @import(\"std\");\npub fn main() void { std.debug.print(\"hello\", .{}); }",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mconst std = @import(\"std\");\u001b[39m",
+      "\u001b[38;5;21mpub fn main() void { std.debug.print(\"hello\", .{}); }\u001b[39m"
+    ]
+  },
+  {
+    "text": "server { listen 80; location / { return 200 \"ok\"; } }",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mserver { listen 80; location / { return 200 \"ok\"; } }\u001b[39m"
+    ]
+  },
+  {
+    "text": "server { listen 80; location / { return 200 \"ok\"; } }",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mserver { listen 80; location / { return 200 \"ok\"; } }\u001b[39m"
+    ]
+  },
+  {
+    "text": "let square x = x * x\nprintfn \"%d\" (square 5)",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mlet square x = x * x\u001b[39m",
+      "\u001b[38;5;21mprintfn \"%d\" (square 5)\u001b[39m"
+    ]
+  },
+  {
+    "text": "let square x = x * x\nprintfn \"%d\" (square 5)",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mlet square x = x * x\u001b[39m",
+      "\u001b[38;5;21mprintfn \"%d\" (square 5)\u001b[39m"
+    ]
+  },
+  {
+    "text": "const App = () => <div>Hello</div>;",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mconst App = () => <div>Hello</div>;\u001b[39m"
+    ]
+  },
+  {
+    "text": "const App = () => <div>Hello</div>;",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mconst App = () => <div>Hello</div>;\u001b[39m"
+    ]
+  },
+  {
+    "text": "struct point { int x; int y; };",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mstruct point { int x; int y; };\u001b[39m"
+    ]
+  },
+  {
+    "text": "struct point { int x; int y; };",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mstruct point { int x; int y; };\u001b[39m"
+    ]
+  },
+  {
+    "text": "This is an ordinary sentence about a quiet room.",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mThis is an ordinary sentence about a quiet room.\u001b[39m"
+    ]
+  },
+  {
+    "text": "This is an ordinary sentence about a quiet room.",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mThis is an ordinary sentence about a quiet room.\u001b[39m"
+    ]
+  },
+  {
+    "text": "",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": " \t\n\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m \t\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": " \t\n\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m \t\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "<tag title=\"a&b\">'quoted' & literal &lt;</tag>",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m<tag title=\"a&b\">'quoted' & literal &lt;</tag>\u001b[39m"
+    ]
+  },
+  {
+    "text": "<tag title=\"a&b\">'quoted' & literal &lt;</tag>",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m<tag title=\"a&b\">'quoted' & literal &lt;</tag>\u001b[39m"
+    ]
+  },
+  {
+    "text": "const café = \"雪 é 👩‍💻\";\n\t// λ\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mconst café = \"雪 é 👩‍💻\";\u001b[39m",
+      "\u001b[38;5;21m\t// λ\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "const café = \"雪 é 👩‍💻\";\n\t// λ\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mconst café = \"雪 é 👩‍💻\";\u001b[39m",
+      "\u001b[38;5;21m\t// λ\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "const n = 1;\r\n\t// end\r\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mconst n = 1;\r\u001b[39m",
+      "\u001b[38;5;21m\t// end\r\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "const n = 1;\r\n\t// end\r\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mconst n = 1;\r\u001b[39m",
+      "\u001b[38;5;21m\t// end\r\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "#!/usr/bin/env python3\nprint(\"hello\")\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m#!/usr/bin/env python3\u001b[39m",
+      "\u001b[38;5;21mprint(\"hello\")\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "#!/usr/bin/env python3\nprint(\"hello\")\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m#!/usr/bin/env python3\u001b[39m",
+      "\u001b[38;5;21mprint(\"hello\")\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "\n\n// application\nfunction greet(name) { return `hi ${name}`; }",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m// application\u001b[39m",
+      "\u001b[38;5;21mfunction greet(name) { return `hi ${name}`; }\u001b[39m"
+    ]
+  },
+  {
+    "text": "\n\n// application\nfunction greet(name) { return `hi ${name}`; }",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m// application\u001b[39m",
+      "\u001b[38;5;21mfunction greet(name) { return `hi ${name}`; }\u001b[39m"
+    ]
+  },
+  {
+    "text": "\n\nSELECT user_id FROM events WHERE kind = 'login';",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21mSELECT user_id FROM events WHERE kind = 'login';\u001b[39m"
+    ]
+  },
+  {
+    "text": "\n\nSELECT user_id FROM events WHERE kind = 'login';",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21mSELECT user_id FROM events WHERE kind = 'login';\u001b[39m"
+    ]
+  },
+  {
+    "text": "<div title=\"unterminated",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m<div title=\"unterminated\u001b[39m"
+    ]
+  },
+  {
+    "text": "<div title=\"unterminated",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m<div title=\"unterminated\u001b[39m"
+    ]
+  },
+  {
+    "text": "x\n\n",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21mx\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "x\n\n",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21mx\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m",
+      "\u001b[38;5;21m\u001b[39m"
+    ]
+  },
+  {
+    "text": "@#$%^&* 𝄞",
+    "language": null,
+    "expected": [
+      "\u001b[38;5;21m@#$%^&* 𝄞\u001b[39m"
+    ]
+  },
+  {
+    "text": "@#$%^&* 𝄞",
+    "language": "unknown-syntax",
+    "expected": [
+      "\u001b[38;5;21m@#$%^&* 𝄞\u001b[39m"
+    ]
+  }
+]
