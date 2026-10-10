@@ -92,14 +92,19 @@ fn register_command(api: &ExtensionAPI, kept: Rc<RefCell<Kept>>) -> ExtensionRes
         },
     )
 }
-/// Invoke the inherited ordinary view from an actual replacement continuation.
+/// Invoke the inherited ordinary view or catalog from an actual replacement continuation.
 async fn replacement(
     log: ExtensionAPI,
     kept: Rc<RefCell<Kept>>,
     mut request: Request,
     ctx: ExtensionCommandContext,
 ) -> ExtensionResult<()> {
-    request.action = "context".into();
+    request.action = if matches!(request.method.as_str(), "getAll" | "getAvailable" | "find") {
+        "catalog"
+    } else {
+        "context"
+    }
+    .into();
     ctx.new_session(Some(NewSessionCommandOptions {
         data: NewSessionCommandData {
             parent_session: None,

@@ -130,6 +130,83 @@ async fn default_getters(driver: &mut impl Driver) -> Result<(), String> {
     );
     Ok(())
 }
+/// Run one public operation on the ordinary, command or replacement view.
+async fn view(driver: &mut impl Driver, request: Value, kind: usize) -> Result<Value, String> {
+    if kind == 2 {
+        let mut request = request;
+        request["action"] = json!("replacement");
+        return ask(driver, request, true).await;
+    }
+    ask(driver, request, kind == 1).await
+}
+/// Present model, signal and catalog results differ per view and are not defaults.
+async fn present_views(driver: &mut impl Driver) -> Result<(), String> {
+    install(driver).await?;
+    for (kind, name) in ["ordinary", "command", "replacement"]
+        .into_iter()
+        .enumerate()
+    {
+        let id = format!("{name} model");
+        let flag = kind == 1;
+        let tokens = f64::from(u8::try_from(kind).map_err(|e| e.to_string())?) + 0.5;
+        control(
+            driver,
+            json!({"state":{"signal":flag,"prompt":name,"usage":{"tokens":tokens,"contextWindow":8192.0,"percent":null}},"model":{"replies":[reply("model",json!([]),model(&id))]}}),
+        )
+        .await?;
+        for (method, expected) in [
+            ("model", model(&id)),
+            ("signal", json!(flag)),
+            ("getSystemPrompt", json!(name)),
+            (
+                "getContextUsage",
+                json!({"tokens":tokens,"contextWindow":8192.0,"percent":null,"signs":[false,false,null]}),
+            ),
+        ] {
+            assert_eq!(
+                view(driver, json!({"action":"context","method":method}), kind).await?,
+                json!({"ok":expected}),
+                "{name} {method}"
+            );
+        }
+        view_catalog(driver, kind, name).await?;
+    }
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0);
+    Ok(())
+}
+/// Each view acquires its own catalog; duplicates survive in every list.
+async fn view_catalog(driver: &mut impl Driver, kind: usize, name: &str) -> Result<(), String> {
+    let (a, b) = (model(&format!("{name} a")), model(&format!("{name} b")));
+    let found = model(&format!("{name} found"));
+    let args = json!(["provider 雪", "id"]);
+    for (method, call, value) in [
+        ("getAll", json!([]), json!([a, b, a, a])),
+        ("getAvailable", json!([]), json!([b, a, b, b])),
+        ("find", args.clone(), found),
+    ] {
+        control(
+            driver,
+            json!({"registry":{"replies":[reply(method,call.clone(),value.clone())]}}),
+        )
+        .await?;
+        assert_eq!(
+            view(
+                driver,
+                json!({"action":"catalog","method":method,"args":call}),
+                kind
+            )
+            .await?,
+            json!({"ok":value}),
+            "{name} {method}"
+        );
+    }
+    Ok(())
+}
+#[test]
+fn maestro_present_values_reach_every_context_view() -> Result<(), String> {
+    on_both_adapters!(present_views)
+}
 /// Repeated getters read current state, with independently supplied booleans.
 async fn live_getters(driver: &mut impl Driver) -> Result<(), String> {
     for command in [false, true] {
