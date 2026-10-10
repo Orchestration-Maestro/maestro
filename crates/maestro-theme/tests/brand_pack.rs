@@ -581,7 +581,7 @@ const FIELDS: [(&str, char); 35] = [
     ("/terminal/truecolor", 'o'),
 ];
 
-/// Map entries whose absence is a consumer error rather than a decoding error.
+/// Named map entries whose presence is not required by field decoding.
 #[cfg(test)]
 const MAP_MEMBERS: [&str; 4] = [
     "/modes/dark",
