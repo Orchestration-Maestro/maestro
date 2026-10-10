@@ -1,4 +1,5 @@
-//! Configuration resolution and user-facing authentication guidance.
+//! Configuration resolution, stored credentials and user-facing authentication guidance.
+pub mod auth_storage;
 pub mod resolve_config_value;
 
 #[cfg(test)]

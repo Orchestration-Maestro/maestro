@@ -1559,7 +1559,10 @@ name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-models",
  "maestro-path",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

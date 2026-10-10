@@ -1,7 +1,19 @@
 # Maestro credentials
 
-Resolve configured credential values and ordered headers; format login guidance.
-Credential storage and refresh are not provided by this crate yet.
+Resolve configured credential values and ordered headers, keep stored
+credentials behind a replaceable file or memory backend, and format login guidance.
+Key selection and OAuth refresh are not provided by this crate yet.
+
+```rust
+use maestro_credentials::{
+    ApiKeyCredential, AuthCredential, AuthSource, AuthStorage, AuthStorageData,
+};
+
+let storage = AuthStorage::in_memory(AuthStorageData::new());
+storage.set("openai", AuthCredential::ApiKey(ApiKeyCredential { key: "OPENAI_KEY".into() }));
+assert_eq!(storage.list(), ["openai"]);
+assert_eq!(storage.get_auth_status("openai").source, Some(AuthSource::Stored));
+```
 
 ```rust
 use maestro_credentials::{ConfigValueOperations, resolve_config_value};
@@ -16,5 +28,5 @@ impl ConfigValueOperations for Supplied {
 assert_eq!(resolve_config_value("SERVICE_KEY", &Supplied).as_deref(), Some("supplied-key"));
 ```
 
-See [configured credentials](../../docs/credentials.md) for cache, header and
+See [credentials](../../docs/credentials.md) for storage, cache, header and
 native helper behavior. Authored documentation paths use `maestro-path`.

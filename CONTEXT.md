@@ -83,7 +83,7 @@ are later scope, not active foundation concepts.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
-- **Read-only credential storage:** A storage adapter that permits reads but rejects every replacement; it does not contain helper effects.
+- **AuthStorage:** The owner of accepted stored credentials, their ordered listing, drainable errors and per-provider persistence through a replaceable raw-text backend.
 
 ### Extensibility
 
