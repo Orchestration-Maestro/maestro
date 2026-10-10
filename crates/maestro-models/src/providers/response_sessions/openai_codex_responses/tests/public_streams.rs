@@ -40,13 +40,25 @@ fn maestro_response_sessions_stream_public_sse() {
 async fn maestro_response_sessions_stream_public_sse_scenario() {
     let (model, context, mut options) = super::invocation();
     options.common.transport = Some(crate::Transport::Sse);
-    options.common.fetch = Some(std::sync::Arc::new(|request| {
+    let token = options.common.api_key.clone().unwrap();
+    options.common.fetch = Some(std::sync::Arc::new(move |request| {
+        let bearer = format!("Bearer {token}");
         Box::pin(async move {
             assert_eq!(request.method, "POST");
+            for (name, value) in [
+                ("authorization", bearer.as_str()),
+                ("chatgpt-account-id", "acc_test"),
+                ("openai-beta", "responses=experimental"),
+                ("originator", "maestro"),
+                ("accept", "text/event-stream"),
+            ] {
+                assert_eq!(request.headers.get(name).map(String::as_str), Some(value));
+            }
+            assert!(!request.headers.contains_key("x-api-key"));
             let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
             assert_eq!(body["model"], "gpt-5.1-codex");
             assert_eq!(body["store"], false);
-            Ok(response())
+            Ok(usage_response())
         })
     }));
     let stream = stream_openai_codex_responses((*model).clone(), context, Some(options));
@@ -64,10 +76,28 @@ async fn maestro_response_sessions_stream_public_sse_scenario() {
         ["start", "text_start", "text_delta", "text_end", "done"]
     );
     let output = stream.result().await;
-    assert_eq!(
-        serde_json::to_value(&*output.read().unwrap()).unwrap()["content"][0]["text"],
-        "Visible Ω😀"
-    );
+    let output = serde_json::to_value(&*output.read().unwrap()).unwrap();
+    assert_eq!(output["content"][0]["text"], "Visible Ω😀");
+    assert_eq!(output["usage"]["input"], 10.0);
+    assert_eq!(output["usage"]["output"], 5.0);
+    assert_eq!(output["usage"]["totalTokens"], 15.0);
+}
+
+/// A finite controlled HTTP response whose completion reports token usage.
+fn usage_response() -> crate::HttpResponse {
+    let mut frames = super::loopback::response_events(Some("r_public"), "Visible Ω😀");
+    let mut completed: serde_json::Value = serde_json::from_str(frames.last().unwrap()).unwrap();
+    completed["response"]["usage"] = serde_json::json!({
+        "input_tokens": 10,
+        "output_tokens": 5,
+        "total_tokens": 15,
+        "input_tokens_details": {"cached_tokens": 0}
+    });
+    *frames.last_mut().unwrap() = completed.to_string();
+    crate::HttpResponse {
+        body: Box::pin(futures_util::stream::iter([Ok(frames_bytes(&frames))])),
+        ..response()
+    }
 }
 
 #[test]
@@ -314,6 +344,77 @@ async fn maestro_response_sessions_retain_shared_output_until_finalization_scena
         }
     }
     assert_eq!(terminals, 1);
+}
+
+#[test]
+fn maestro_response_sessions_finalize_partial_tool_on_error_and_abort() {
+    super::socket_transport::run_native(
+        maestro_response_sessions_finalize_partial_tool_on_error_and_abort_scenario(),
+    );
+}
+
+/// Execute the controlled public-operation scenario.
+async fn maestro_response_sessions_finalize_partial_tool_on_error_and_abort_scenario() {
+    for aborted in [false, true] {
+        partial_tool_case(aborted).await;
+    }
+}
+
+/// Count terminal errors, requiring each to share the retained message.
+async fn count_errors(
+    stream: &crate::AssistantMessageEventStream,
+    early: &crate::SharedAssistantMessage,
+) -> usize {
+    let mut errors = 0;
+    while let Some(event) = stream.next().await {
+        match event {
+            AssistantMessageEvent::Error { error, .. } => {
+                assert!(std::sync::Arc::ptr_eq(&error, early));
+                errors += 1;
+            }
+            AssistantMessageEvent::Done { .. } => panic!("unexpected done"),
+            _ => {}
+        }
+    }
+    errors
+}
+
+/// Finalize one failed or aborted stream that holds a partial tool call.
+async fn partial_tool_case(aborted: bool) {
+    {
+        let first = b"data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"function_call\",\"id\":\"fc\",\"call_id\":\"call\",\"name\":\"lookup\",\"arguments\":\"\"}}\n\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"{\\\"value\\\":17\"}\n\n".to_vec();
+        let last = b"data: {\"type\":\"response.failed\",\"response\":{\"error\":{\"code\":\"boom\",\"message\":\"failed late\"}}}\n\n".to_vec();
+        let (mut options, release) = gated_options(first, last);
+        let signal = Cancellation::new();
+        options.common.signal = Some(signal.clone());
+        let (model, context, _) = super::invocation();
+        let stream = stream_openai_codex_responses((*model).clone(), context, Some(options));
+        let early = loop {
+            if let Some(AssistantMessageEvent::ToolcallDelta { partial, .. }) = stream.next().await
+            {
+                break partial;
+            }
+        };
+        if aborted {
+            signal.abort();
+        }
+        release.send(()).unwrap();
+        let result = stream.result().await;
+        assert!(std::sync::Arc::ptr_eq(&early, &result));
+        let errors = count_errors(&stream, &early).await;
+        assert_eq!(errors, 1);
+        let value = serde_json::to_value(&*early.read().unwrap()).unwrap();
+        assert_eq!(
+            value["stopReason"],
+            if aborted { "aborted" } else { "error" }
+        );
+        assert_eq!(
+            value["content"][0]["arguments"],
+            serde_json::json!({"value":17})
+        );
+        assert!(value["content"][0].get("partialJson").is_none());
+        assert!(value["content"][0].get("index").is_none());
+    }
 }
 
 #[test]

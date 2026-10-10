@@ -366,6 +366,38 @@ async fn maestro_response_sessions_simple_common_options_scenario() {
 }
 
 #[test]
+fn maestro_response_sessions_simple_signal_reaches_execution() {
+    super::socket_transport::run_native(async {
+        let (model, context, mut options) = corpus_setup();
+        let signal = crate::Cancellation::new();
+        signal.abort();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let count = Arc::clone(&calls);
+        options.common.signal = Some(signal);
+        options.common.fetch = Some(Arc::new(move |_| {
+            count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Box::pin(async { Ok(super::public_streams::response()) })
+        }));
+        let output = stream_simple_openai_codex_responses(
+            model,
+            context,
+            Some(SimpleStreamOptions {
+                common: options.common,
+                ..Default::default()
+            }),
+        )
+        .unwrap()
+        .result()
+        .await;
+        assert_eq!(
+            output.read().unwrap().stop_reason,
+            crate::StopReason::Aborted
+        );
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    });
+}
+
+#[test]
 fn maestro_response_sessions_preparation_order() {
     super::socket_transport::run_native(maestro_response_sessions_preparation_order_scenario());
 }

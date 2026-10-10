@@ -32,8 +32,8 @@ browser socket unavailability follows the pre-start fallback path.
 Preparation resolves a nonempty explicit key before the provider environment
 key, extracts the account claim, converts the conversation, awaits the payload
 hook once and validates headers. The retained payload-hook result is the SSE wire
-body. See [response conversion](responses.md) for history and tool conversion
-and [JSON records](../records.md) for the shared record types.
+body. See [response conversion](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/responses.md) for history and tool conversion
+and [JSON records](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/records.md) for the shared record types.
 
 Initial model header names combine case-insensitively in encounter order:
 cookies use `; ` and other fields use `, `. Additional headers replace earlier values. Each incoming value is validated
@@ -60,7 +60,7 @@ this provider's setup policy.
 
 Usable success bodies publish `start`. Provider event selection trims each data
 field, skips empty data and exact `[DONE]`, and normalizes terminal event names
-before delegating content reduction to the [shared response reducer](responses.md).
+before delegating content reduction to the [shared response reducer](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/responses.md).
 The transport operation delegates final done/error publication to the dedicated
 invocation caller.
 

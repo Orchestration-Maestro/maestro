@@ -8,6 +8,22 @@ fn maestro_response_sessions_request_ids_and_host_identity() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn maestro_host_identity_uses_node_os_spellings() {
+    use super::super::host::node_names;
+    for (os, arch, platform, node_arch) in [
+        ("linux", "powerpc64", "linux", "ppc64"),
+        ("linux", "loongarch64", "linux", "loong64"),
+        ("solaris", "x86_64", "sunos", "x64"),
+        ("illumos", "aarch64", "sunos", "arm64"),
+        ("macos", "x86", "darwin", "ia32"),
+        ("windows", "riscv64", "win32", "riscv64"),
+    ] {
+        assert_eq!(node_names(os, arch), (platform, node_arch));
+    }
+}
+
 /// Execute the controlled public-operation scenario.
 async fn maestro_response_sessions_request_ids_and_host_identity_scenario() {
     let (model, context, mut options) = super::invocation();

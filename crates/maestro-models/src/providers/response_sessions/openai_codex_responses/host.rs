@@ -8,19 +8,29 @@ pub(super) fn user_agent() -> String {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let platform = match std::env::consts::OS {
-            "macos" => "darwin",
-            "windows" => "win32",
-            os => os,
-        };
-        let arch = match std::env::consts::ARCH {
-            "x86_64" => "x64",
-            "x86" => "ia32",
-            "aarch64" => "arm64",
-            arch => arch,
-        };
+        let (platform, arch) = node_names(std::env::consts::OS, std::env::consts::ARCH);
         format!("maestro ({platform} {}; {arch})", release())
     }
+}
+
+/// Spelling of a Rust target operating system and architecture in `node:os`.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn node_names<'a>(os: &'a str, arch: &'a str) -> (&'a str, &'a str) {
+    let platform = match os {
+        "macos" => "darwin",
+        "windows" => "win32",
+        "solaris" | "illumos" => "sunos",
+        os => os,
+    };
+    let arch = match arch {
+        "x86_64" => "x64",
+        "x86" => "ia32",
+        "aarch64" => "arm64",
+        "powerpc64" => "ppc64",
+        "loongarch64" => "loong64",
+        arch => arch,
+    };
+    (platform, arch)
 }
 
 /// Kernel release in the native operating system's spelling.

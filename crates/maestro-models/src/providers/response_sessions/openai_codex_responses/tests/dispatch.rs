@@ -573,6 +573,7 @@ async fn started_case(mode: Transport, text: bool) {
         "started socket must not replay over HTTP"
     );
     assert_eq!(output.read().unwrap().stop_reason, StopReason::Error);
+    assert_started_diagnostic(&output);
     if text {
         assert_eq!(
             serde_json::to_value(&*output.read().unwrap()).unwrap()["content"][0]["text"],
@@ -584,6 +585,19 @@ async fn started_case(mode: Transport, text: bool) {
         starts += usize::from(matches!(event, crate::AssistantMessageEvent::Start { .. }));
     }
     assert_eq!(starts, 1);
+}
+
+/// A started transport failure is attributed after the stream start and never falls back.
+fn assert_started_diagnostic(output: &crate::SharedAssistantMessage) {
+    let output = output.read().unwrap();
+    let details = output.diagnostics.as_ref().unwrap()[0]
+        .details
+        .as_ref()
+        .unwrap();
+    assert_eq!(output.diagnostics.as_ref().unwrap().len(), 1);
+    assert_eq!(details["eventsEmitted"], true);
+    assert_eq!(details["phase"], "after_message_stream_start");
+    assert!(!details.contains_key("fallbackTransport"));
 }
 
 /// Observe three default calls on the same retained context.

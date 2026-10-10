@@ -113,6 +113,57 @@ async fn maestro_response_sessions_sticky_fallback_reset_and_close_scenario() {
 }
 
 #[test]
+fn maestro_response_sessions_failure_creates_sticky_fallback() {
+    let _guard = super::exclusive();
+    super::socket_transport::run_native(async {
+        reset_openai_codex_web_socket_debug_stats(None);
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let (model, context, mut options) = super::invocation();
+        let mut model = (*model).clone();
+        model.base_url = format!("http://{}", listener.local_addr().unwrap());
+        options.common.session_id = Some("sticky-real".into());
+        options.common.transport = Some(Transport::Auto);
+        let http_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let count = std::sync::Arc::clone(&http_calls);
+        options.common.fetch = Some(std::sync::Arc::new(move |_| {
+            count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Box::pin(async { Ok(super::public_streams::response()) })
+        }));
+        let run = || async {
+            stream_openai_codex_responses(model.clone(), context.clone(), Some(options.clone()))
+                .result()
+                .await
+        };
+        let peer = tokio::spawn(async move {
+            let mut peer = accept_async(listener.accept().await.unwrap().0)
+                .await
+                .unwrap();
+            super::loopback::read_request(&mut peer).await;
+            let _ = peer.close(None).await;
+            while peer.next().await.is_some() {}
+            let mut peer = accept_async(listener.accept().await.unwrap().0)
+                .await
+                .unwrap();
+            super::loopback::answer(&mut peer, "restored", "back").await;
+            while peer.next().await.is_some() {}
+        });
+        let stats = || get_openai_codex_web_socket_debug_stats("sticky-real").unwrap();
+        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+        let first = stats();
+        assert_eq!((first.websocket_failures, first.sse_fallbacks), (1, 1));
+        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+        let second = stats();
+        assert_eq!((second.websocket_failures, second.sse_fallbacks), (1, 2));
+        assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+        reset_openai_codex_web_socket_debug_stats(Some("sticky-real"));
+        assert_eq!(run().await.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(http_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+        close_openai_codex_web_socket_sessions(Some("sticky-real"));
+        peer.await.unwrap();
+    });
+}
+
+#[test]
 fn maestro_response_sessions_cleanup_registered_sockets() {
     let _guard = super::exclusive();
     super::socket_transport::run_native(
