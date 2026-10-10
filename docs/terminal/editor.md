@@ -50,8 +50,9 @@ lands at the line end, after any trailing zero-width text. Literal character jum
 text at scalar boundaries, separately from visual movement.
 
 Directional kills retain deleted text for yank; yank-pop rotates the ring after
-notifying the deletion, then notifies the replacement. A yank-pop requested
-from the deletion notification does nothing. Reentrant edits during yank
+notifying the deletion, then notifies the replacement. An immediate nested
+yank-pop requested from the deletion notification is ignored while the deleted
+insertion remains ineligible. Reentrant edits during yank
 notification invalidate that insertion's later replacement eligibility.
 
 Bracketed paste and completion are not delivered here. Selection styling is
