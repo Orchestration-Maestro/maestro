@@ -167,26 +167,87 @@ fn editor_wraps_escape_interleaved_clusters_without_splitting_storage() {
     }
 }
 
+/// Literal clipped labels per `(count, width)`; `R` is the reset sequence and `{d}` the arrow.
+const CLIPPED_LABELS: [(usize, usize, &str); 12] = [
+    (2, 0, ""),
+    (2, 1, "R.R"),
+    (2, 2, "R..R"),
+    (2, 3, "R...R"),
+    (2, 4, "─R...R"),
+    (2, 10, "─── {d} 2R...R"),
+    (2, 12, "─── {d} 2 mR...R"),
+    (2, 13, "─── {d} 2 more "),
+    (2, 14, "─── {d} 2 more ─"),
+    (12, 13, "─── {d} 12 mR...R"),
+    (12, 14, "─── {d} 12 more "),
+    (12, 15, "─── {d} 12 more ─"),
+];
+
+fn recording_border(
+    editor: &maestro_tui::Editor,
+    prefix: &'static str,
+) -> std::rc::Rc<std::cell::RefCell<Vec<String>>> {
+    let calls = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let record = std::rc::Rc::clone(&calls);
+    editor.set_border_color(std::rc::Rc::new(move |text| {
+        record.borrow_mut().push(text.to_owned());
+        format!("{prefix}{text}")
+    }));
+    calls
+}
+
+fn check_clipped_case(
+    tui: &maestro_tui::tui::TUI,
+    prefix: &'static str,
+    case: (usize, usize, &str, bool),
+) {
+    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    let (count, width, template, upper) = case;
+    let arrow = if upper { "↑" } else { "↓" };
+    let editor = Editor::new(tui, support::theme(), EditorOptions::default());
+    let calls = recording_border(&editor, prefix);
+    editor.set_text(&vec!["x"; count + 5].join("\n"));
+    editor.render(width);
+    if !upper {
+        for _ in 0..count + 4 {
+            editor.handle_input("\x1b[A");
+        }
+        editor.render(width);
+    }
+    calls.borrow_mut().clear();
+    let rows = editor.render(width);
+    let label = template.replace('R', "\x1b[0m").replace("{d}", arrow);
+    let (scrolled, ordinary) = if upper {
+        (&rows[0], &rows[rows.len() - 1])
+    } else {
+        (&rows[rows.len() - 1], &rows[0])
+    };
+    let case = format!("{prefix:?} {count} {width} {arrow}");
+    assert_eq!(*scrolled, format!("{prefix}{label}"), "{case}");
+    assert_eq!(*ordinary, format!("{prefix}─").repeat(width), "{case}");
+    assert_eq!(*calls.borrow(), ["─".to_owned(), label], "{case}");
+}
+
 #[test]
 fn editor_clipped_scroll_borders_keep_resets() {
-    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    use maestro_tui::{Component, Editor, EditorOptions};
     let _guard = support::globals();
     let (tui, _, _) = support::host(16);
-    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
-    editor.set_text(&["x"; 7].join("\n"));
-    let reset = "\x1b[0m";
-    let rows = editor.render(10);
-    assert_eq!(rows[0], format!("─── ↑ 2{reset}...{reset}"));
-    for _ in 0..6 {
-        editor.handle_input("\x1b[A");
+    for prefix in ["", "\x1b[31m"] {
+        for (count, width, template) in CLIPPED_LABELS {
+            for upper in [true, false] {
+                check_clipped_case(&tui, prefix, (count, width, template, upper));
+            }
+        }
+        for width in [0, 10] {
+            let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+            let calls = recording_border(&editor, prefix);
+            editor.set_text(&["x"; 5].join("\n"));
+            let rows = editor.render(width);
+            let plain = format!("{prefix}─").repeat(width);
+            assert_eq!(rows[0], plain, "{prefix:?} {width}");
+            assert_eq!(rows[rows.len() - 1], plain, "{prefix:?} {width}");
+            assert_eq!(*calls.borrow(), ["─"], "{prefix:?} {width}");
+        }
     }
-    let rows = editor.render(10);
-    assert_eq!(rows[0], "──────────");
-    assert_eq!(rows[rows.len() - 1], format!("─── ↓ 2{reset}...{reset}"));
-    editor.set_border_color(std::rc::Rc::new(|text| format!("\x1b[31m{text}")));
-    let rows = editor.render(10);
-    assert_eq!(
-        rows[rows.len() - 1],
-        format!("\x1b[31m─── ↓ 2{reset}...{reset}")
-    );
 }
