@@ -160,6 +160,7 @@ fn poll(
                 continue;
             }
             listener(current.unwrap_or_default(), previous);
+            tokio::task::yield_now().await;
             previous = current.unwrap_or(previous);
             last = current;
         }

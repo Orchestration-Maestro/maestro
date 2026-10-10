@@ -818,6 +818,8 @@ fn footer_native_poll_detects_change_time() {
     native_poll_milliseconds();
     native_poll_callback_teardown(true);
     native_poll_callback_teardown(false);
+    native_poll_overdue_teardown(true);
+    native_poll_overdue_teardown(false);
 }
 #[cfg(unix)]
 fn native_query(
@@ -994,4 +996,59 @@ fn cwd_plain_completion() {
 fn finish_native(runtime: &tokio::runtime::Runtime, local: Rc<tokio::task::LocalSet>) {
     let local = Rc::try_unwrap(local).expect("all native effect owners released");
     runtime.block_on(local);
+}
+
+#[cfg(unix)]
+fn native_poll_overdue_teardown(close: bool) {
+    use maestro_watch::fs_watch::FsWatcher;
+    let root = native::Scratch::new();
+    let path = root.join("table");
+    std::fs::write(&path, "initial").unwrap();
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let ops = NativeFooterOperations::new(local.clone());
+    let slot = Rc::new(RefCell::new(None::<Box<dyn FsWatcher>>));
+    let captured = slot.clone();
+    let count = Rc::new(Cell::new(0));
+    let observed = count.clone();
+    let (start, entered) = tokio::sync::oneshot::channel();
+    let start = RefCell::new(Some(start));
+    let (ack, elapsed) = std::sync::mpsc::channel();
+    let helper = runtime.spawn(async move {
+        tokio::time::sleep_until(entered.await.unwrap()).await;
+        ack.send(()).unwrap();
+    });
+    let changed = path.clone();
+    let listener = Rc::new(move |_: FooterFileStats, _: FooterFileStats| {
+        observed.set(observed.get() + 1);
+        let registration = captured.borrow_mut().take();
+        if let Some(mut registration) = registration {
+            if close {
+                registration.close().unwrap();
+            }
+            drop(registration);
+            std::fs::write(&changed, "changed again after registration ended").unwrap();
+            let deadline = tokio::time::Instant::now() + Duration::from_millis(250);
+            let sender = start.borrow_mut().take().unwrap();
+            sender.send(deadline).unwrap();
+            elapsed.recv().unwrap();
+        }
+    });
+    let weak = Rc::downgrade(&listener);
+    *slot.borrow_mut() = Some(ops.watch_file(&path, Duration::from_millis(250), listener));
+    std::fs::write(&path, "first changed content").unwrap();
+    local.block_on(&runtime, helper).unwrap();
+    drop(ops);
+    finish_native(&runtime, local);
+    assert!(slot.borrow().is_none());
+    assert!(weak.upgrade().is_none());
+    assert_eq!(
+        count.get(),
+        1,
+        "closing callback must stop delivery before the already-due next tick"
+    );
 }
