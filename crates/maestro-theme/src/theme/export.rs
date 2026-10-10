@@ -49,10 +49,11 @@ impl ThemeState {
         entries
             .into_iter()
             .map(|(key, value)| {
-                let color = match resolve(value, &document["vars"])? {
-                    ColorValue::Index(index) => ansi256_hex(index),
-                    ColorValue::String(color) if color.is_empty() => default_text.to_owned(),
-                    ColorValue::String(color) => color,
+                let color = hex(resolve(value, &document["vars"])?);
+                let color = if color.is_empty() {
+                    default_text.to_owned()
+                } else {
+                    color
                 };
                 Ok((key.clone(), color))
             })
@@ -92,11 +93,7 @@ fn export_color(value: Option<&Value>, vars: &Value) -> Result<Option<String>, T
     let Some(value) = value else {
         return Ok(None);
     };
-    Ok(match resolve(value, vars)? {
-        ColorValue::Index(index) => Some(ansi256_hex(index)),
-        ColorValue::String(color) if color.is_empty() => None,
-        ColorValue::String(color) => Some(color),
-    })
+    Ok(Some(hex(resolve(value, vars)?)).filter(|color| !color.is_empty()))
 }
 
 /// Parse a canonical array index: no sign, no leading zero, below 2^32 - 1.
@@ -115,17 +112,18 @@ const BASIC: [&str; 16] = [
     "#808080", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff",
 ];
 
-/// Expand a palette index to a hex color.
-fn ansi256_hex(index: u8) -> String {
-    match index {
-        0..=15 => BASIC[usize::from(index)].to_owned(),
-        16..=231 => {
+/// Authored color as written, or a palette index expanded to a hex color.
+fn hex(value: ColorValue) -> String {
+    match value {
+        ColorValue::String(color) => color,
+        ColorValue::Index(index @ 0..=15) => BASIC[usize::from(index)].to_owned(),
+        ColorValue::Index(index @ 16..=231) => {
             let cube = index - 16;
             let level = |n: u8| if n == 0 { 0 } else { 55 + n * 40 };
             let [r, g, b] = [cube / 36, cube % 36 / 6, cube % 6].map(level);
             format!("#{r:02x}{g:02x}{b:02x}")
         }
-        _ => {
+        ColorValue::Index(index) => {
             let gray = 8 + (index - 232) * 10;
             format!("#{gray:02x}{gray:02x}{gray:02x}")
         }

@@ -62,11 +62,6 @@ pub fn watch_with_error_handler(
 ) -> Option<Box<dyn ThemeWatcher>> {
     operations
         .watch(path, listener, Rc::clone(&on_error))
-        .map_or_else(
-            move |_| {
-                on_error();
-                None
-            },
-            Some,
-        )
+        .map_err(move |_| on_error())
+        .ok()
 }

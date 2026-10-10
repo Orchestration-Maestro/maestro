@@ -2,11 +2,7 @@
 use super::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher};
 use notify::event::EventKind;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
-use std::cell::Cell;
-use std::io;
-use std::path::Path;
-use std::rc::Rc;
-use std::time::Duration;
+use std::{cell::Cell, io, path::Path, rc::Rc, time::Duration};
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 use tokio::task::{JoinHandle, LocalSet};
 
@@ -38,28 +34,36 @@ impl NativeThemeWatchOperations {
         on_error: Rc<dyn Fn()>,
     ) -> io::Result<(NativeWatcher, UnboundedSender<notify::Result<Event>>)> {
         let root = std::path::absolute(path)?;
-        let (tx, mut rx) = unbounded_channel();
-        let sender = tx.clone();
-        let mut watcher = notify::recommended_watcher(move |result| {
+        let (results, mut rx) = unbounded_channel();
+        let sender = results.clone();
+        let notifier = notify::recommended_watcher(move |result| {
             let _ = sender.send(result);
         })
+        .and_then(|mut notifier| {
+            notifier.watch(&root, RecursiveMode::NonRecursive)?;
+            Ok(notifier)
+        })
         .map_err(io::Error::other)?;
-        watcher
-            .watch(&root, RecursiveMode::NonRecursive)
-            .map_err(io::Error::other)?;
         let closed = Rc::new(Cell::new(false));
         let stopped = Rc::clone(&closed);
         let task = self.local.spawn_local(async move {
             while let Some(result) = rx.recv().await {
-                dispatch(result, &root, &stopped, &*listener, &*on_error);
+                match result {
+                    Ok(event) => entry_names(&event, &root)
+                        .into_iter()
+                        .take_while(|_| !stopped.get())
+                        .for_each(|name| listener(name)),
+                    Err(_) if !stopped.get() => on_error(),
+                    Err(_) => (),
+                }
             }
         });
         let watcher = NativeWatcher {
-            watcher: Some(watcher),
+            notifier: Some(notifier),
             task: Aborting(task),
             closed,
         };
-        Ok((watcher, tx))
+        Ok((watcher, results))
     }
 }
 
@@ -83,28 +87,6 @@ impl ThemeWatchOperations for NativeThemeWatchOperations {
     }
 }
 
-/// Deliver one notifier result unless the watch was closed, even by an earlier name.
-fn dispatch(
-    result: notify::Result<Event>,
-    root: &Path,
-    stopped: &Cell<bool>,
-    listener: &dyn Fn(Option<String>),
-    on_error: &dyn Fn(),
-) {
-    match result {
-        Ok(event) => {
-            for name in entry_names(&event, root) {
-                if stopped.get() {
-                    return;
-                }
-                listener(name);
-            }
-        }
-        Err(_) if !stopped.get() => on_error(),
-        Err(_) => {}
-    }
-}
-
 /// Entry names an event changed, excluding reads; `None` marks an unknown name.
 pub(super) fn entry_names(event: &Event, dir: &Path) -> Vec<Option<String>> {
     if matches!(event.kind, EventKind::Access(_)) {
@@ -116,11 +98,9 @@ pub(super) fn entry_names(event: &Event, dir: &Path) -> Vec<Option<String>> {
     event
         .paths
         .iter()
-        .map(|path| match path.strip_prefix(dir) {
-            Ok(relative) if !relative.as_os_str().is_empty() => {
-                Some(relative.to_string_lossy().into_owned())
-            }
-            _ => None,
+        .map(|path| {
+            let relative = path.strip_prefix(dir).ok()?;
+            (!relative.as_os_str().is_empty()).then(|| relative.to_string_lossy().into_owned())
         })
         .collect()
 }
@@ -137,7 +117,7 @@ impl Drop for Aborting {
 /// A native watch; once closed, no further notification is dispatched.
 pub(super) struct NativeWatcher {
     /// Library watch; dropping it stops the notifier.
-    watcher: Option<RecommendedWatcher>,
+    notifier: Option<RecommendedWatcher>,
     /// Task that dispatches notifications.
     task: Aborting,
     /// Checked before every dispatch, because aborting cannot interrupt a running callback.
@@ -147,8 +127,8 @@ pub(super) struct NativeWatcher {
 impl ThemeWatcher for NativeWatcher {
     fn close(&mut self) -> io::Result<()> {
         self.closed.set(true);
-        self.watcher = None;
-        self.task.0.abort();
+        self.notifier = None;
+        self.task.cancel();
         Ok(())
     }
 }

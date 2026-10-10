@@ -7,7 +7,6 @@ use notify::{Event, EventKind};
 use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::LocalSet;
 
 /// An event of `kind` about the given paths.
@@ -83,8 +82,6 @@ impl Harness {
     }
 }
 
-type Results = UnboundedSender<notify::Result<Event>>;
-
 #[test]
 fn theme_native_relative_root_projects_absolute_event_paths_to_names() {
     let dir = format!("maestro-watch-relative-{}", std::process::id());
@@ -92,7 +89,7 @@ fn theme_native_relative_root_projects_absolute_event_paths_to_names() {
     let harness = Harness::new();
     let names = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&names);
-    let (mut watcher, results): (_, Results) = harness
+    let (mut watcher, results) = harness
         .operations
         .open(
             &dir,
@@ -128,7 +125,7 @@ fn theme_native_close_inside_a_callback_stops_queued_notifications() {
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let delivered = Rc::new(Cell::new(0));
     let (close, count) = (Rc::clone(&slot), Rc::clone(&delivered));
-    let (watcher, results): (_, Results) = harness
+    let (watcher, results) = harness
         .operations
         .open(
             dir.to_str().unwrap(),
@@ -165,7 +162,7 @@ fn theme_native_error_closes_through_the_handler_and_releases_the_listener() {
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let delivered = Rc::new(Cell::new(0));
     let (close, count) = (Rc::clone(&slot), Rc::clone(&delivered));
-    let (watcher, results): (_, Results) = harness
+    let (watcher, results) = harness
         .operations
         .open(
             dir.to_str().unwrap(),

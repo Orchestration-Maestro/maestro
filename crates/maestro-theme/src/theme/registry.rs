@@ -98,11 +98,12 @@ impl ThemeState {
 
     /// Return the registered instance, else a new instance from shipped or custom data.
     pub(super) fn load_named(&self, name: &str) -> Result<Rc<Theme>, ThemeError> {
-        let registered = self.registered.borrow().get(name).cloned();
-        match registered {
-            Some(theme) => Ok(theme),
-            None => self.load_theme(name).map(Rc::new),
+        if let Some(theme) = self.registered.borrow().get(name) {
+            return Ok(Rc::clone(theme));
         }
+        let document = self.document(name)?;
+        let options = ThemeOptions::default();
+        build_theme(&document, None, self.operations.as_ref(), options).map(Rc::new)
     }
 
     /// Select each name's first owner: shipped, then custom entry, then registration.
@@ -158,15 +159,6 @@ impl ThemeState {
         serde_json::from_str(&content)
             .map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))
     }
-    /// Construct a new instance from the document that [`Self::document`] selects.
-    fn load_theme(&self, name: &str) -> Result<Theme, ThemeError> {
-        build_theme(
-            &*self.document(name)?,
-            None,
-            self.operations.as_ref(),
-            ThemeOptions::default(),
-        )
-    }
     /// Select the document of a name: shipped data, then a registration's source file,
     /// then the custom entry. Shipped data is borrowed from the cache; files are reread.
     ///
@@ -178,25 +170,25 @@ impl ThemeState {
         if let Some(index) = BUILTIN_NAMES.iter().position(|builtin| *builtin == name) {
             return Ok(Cow::Borrowed(&builtins[index]));
         }
-        let registered = self.registered.borrow().get(name).map(|theme| {
-            theme
-                .source_path()
-                .filter(|path| !path.is_empty())
-                .map(str::to_owned)
-        });
-        let (path, label): (String, Option<&str>) = if let Some(path) = registered {
-            let path = path.ok_or_else(|| {
-                ThemeError::message(format!(
+        let source = self
+            .registered
+            .borrow()
+            .get(name)
+            .map(|theme| theme.source_path().unwrap_or_default().to_owned());
+        let (path, label) = match source {
+            Some(path) if path.is_empty() => {
+                return Err(ThemeError::message(format!(
                     "Theme \"{name}\" does not have a source path for export"
-                ))
-            })?;
-            (path, None)
-        } else {
-            let path = join(&[&self.directories.custom_themes_dir, &format!("{name}.json")]);
-            if !self.operations.exists(&path) {
-                return Err(ThemeError::message(format!("Theme not found: {name}")));
+                )));
             }
-            (path, Some(name))
+            Some(path) => (path, None),
+            None => {
+                let path = join(&[&self.directories.custom_themes_dir, &format!("{name}.json")]);
+                if !self.operations.exists(&path) {
+                    return Err(ThemeError::message(format!("Theme not found: {name}")));
+                }
+                (path, Some(name))
+            }
         };
         let content = self
             .operations

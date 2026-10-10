@@ -25,16 +25,11 @@ impl ThemeState {
     /// Cancel the pending reload and close the watch; the published theme and the
     /// change callback stay.
     pub fn stop_theme_watcher(&self) {
-        let Watch {
-            watcher,
-            timer,
-            operations,
-        } = std::mem::take(&mut *self.lifecycle.watch.borrow_mut());
-        if let Some(mut timer) = timer {
+        let watch = std::mem::take(&mut *self.lifecycle.watch.borrow_mut());
+        if let Some(mut timer) = watch.timer {
             timer.cancel();
         }
-        close_watcher(watcher);
-        drop(operations);
+        close_watcher(watch.watcher);
     }
 
     /// Replace the watch with one on the selected custom theme's file, when it exists.
@@ -46,10 +41,8 @@ impl ThemeState {
             return;
         };
         self.stop_theme_watcher();
-        let Some(name) = self.lifecycle.name.borrow().clone() else {
-            return;
-        };
-        if name.is_empty() || name == "dark" || name == "light" {
+        let name = self.lifecycle.name.borrow().clone().unwrap_or_default();
+        if matches!(name.as_str(), "" | "dark" | "light") {
             return;
         }
         let dir = &self.directories.custom_themes_dir;
@@ -57,13 +50,13 @@ impl ThemeState {
         if !self.operations.exists(&join(&[dir, &file])) {
             return;
         }
-        let (state, effects) = (Rc::downgrade(self), Rc::downgrade(&operations));
+        let state = Rc::downgrade(self);
         let on_error = Weak::clone(&state);
         let watcher = watch_with_error_handler(
             dir,
             Rc::new(move |changed| {
-                if let (Some(state), Some(effects)) = (state.upgrade(), effects.upgrade()) {
-                    state.notified(&effects, &name, &file, changed.as_deref());
+                if let Some(state) = state.upgrade() {
+                    state.notified(&name, &file, changed.as_deref());
                 }
             }),
             Rc::new(move || {
@@ -81,19 +74,16 @@ impl ThemeState {
 
     /// Schedule a reload of `file` for a notification about it or an unknown entry,
     /// while `name` is still the selected theme.
-    fn notified(
-        self: &Rc<Self>,
-        operations: &Rc<dyn ThemeWatchOperations>,
-        name: &str,
-        file: &str,
-        changed: Option<&str>,
-    ) {
+    fn notified(self: &Rc<Self>, name: &str, file: &str, changed: Option<&str>) {
         if self.lifecycle.name.borrow().as_deref() != Some(name) {
             return;
         }
         if changed.is_some_and(|changed| !changed.is_empty() && changed != file) {
             return;
         }
+        let Some(operations) = self.lifecycle.watch.borrow().operations.clone() else {
+            return;
+        };
         let previous = self.lifecycle.watch.borrow_mut().timer.take();
         if let Some(mut previous) = previous {
             previous.cancel();
@@ -111,13 +101,10 @@ impl ThemeState {
         );
         self.lifecycle.watch.borrow_mut().timer = Some(timer);
     }
-}
 
-impl ThemeState {
     /// Reread the selected file and publish it; any failure keeps the last good theme.
     fn reload(&self, name: &str, path: &str) {
-        let fired = self.lifecycle.watch.borrow_mut().timer.take();
-        drop(fired);
+        let _fired = self.lifecycle.watch.borrow_mut().timer.take();
         if self.lifecycle.name.borrow().as_deref() != Some(name) || !self.operations.exists(path) {
             return;
         }
