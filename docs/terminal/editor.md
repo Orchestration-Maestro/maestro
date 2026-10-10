@@ -18,7 +18,7 @@ fn edit(tui: &TUI, theme: EditorTheme) -> Vec<String> {
 Replacement and programmatic insertion normalize line endings and expand tabs
 for storage. Raw typed chunks remain literal. Getters return owned text, logical
 lines and a byte cursor. Left and Right cross logical lines at their endpoints; Home and End select
-endpoints of the current logical line. Character deletion uses graphemes of the cursor-local prefix or suffix.
+endpoints of the current logical line. Character deletion removes the cursor-local edit unit: a grapheme of the prefix or suffix, or an owned marker.
 Undo restores text and cursor, coalescing consecutive nonwhitespace typing.
 
 Change callbacks run after edits. Submission clears the buffer and undo stack
@@ -60,8 +60,9 @@ marker is handled as ordinary input and a new start marker discards an
 unfinished paste. A paste decodes `ESC [ code ; 5 u` control letters, then
 converts CRLF and CR to LF, expands tabs to four spaces and drops other
 controls below U+0020. A paste starting with `/`, `~` or `.` gains one leading
-space after an ASCII letter, digit or underscore. It is one undoable edit that
-also leaves history browsing, even when filtering leaves nothing to insert.
+space after an ASCII letter, digit or underscore. A nonempty raw payload is one
+undoable edit that also leaves history browsing, even when filtering leaves
+nothing to insert; an empty frame changes nothing.
 
 A paste above 10 lines or 1000 Unicode scalars is stored and replaced by one
 marker, `[paste #ID +N lines]` or `[paste #ID N chars]`; the line label wins
@@ -71,8 +72,11 @@ history, so a marker typed again later still names its content. A marker whose
 identifier names a stored paste, including leading zeros, is one edit unit for
 character, word and vertical movement and for deletion, and wrapping may split
 it across rows without splitting the unit; other marker-like text is ordinary
-text. A grapheme that touches a marker joins its unit. `get_expanded_text`
-and submission replace each canonical marker with its content, one literal pass
+text. When a movement or deletion starts at a marker boundary, graphemes that
+intersect the marker (a combining mark or a joiner after it, or a prepend
+mark before it) join its unit; a literal character jump may still place the
+cursor inside a marker. `get_expanded_text`
+and submission replace each canonical marker (leading-zero spellings stay unexpanded) with its content, one literal pass
 per stored paste in creation order, so text inserted by a pass is eligible only
 for later passes.
 

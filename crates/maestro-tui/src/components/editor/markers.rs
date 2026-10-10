@@ -61,7 +61,7 @@ fn label_length(rest: &str) -> Option<usize> {
         .then_some(1 + usize::from(plus) + digits + word.len())
 }
 
-/// Whether `text` is a marker spelling plus only the non-whitespace graphemes merged with it.
+/// Whether `text` holds a marker spelling and no whitespace outside its first spelling.
 pub(super) fn is_marker(text: &str) -> bool {
     text.contains(PREFIX)
         && find(text).first().is_some_and(|marker| {
@@ -137,7 +137,7 @@ pub(super) fn units(line: &str, owned: usize) -> Vec<Atom> {
     result
 }
 
-/// One literal replacement pass: each spelling of paste `id` becomes `content`.
+/// One literal replacement pass: each canonical spelling of paste `id` becomes `content`.
 pub(super) fn expand(text: &str, id: usize, content: &str) -> String {
     let id = id.to_string();
     let mut result = String::with_capacity(text.len());

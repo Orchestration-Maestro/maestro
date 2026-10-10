@@ -12,7 +12,7 @@ const MAX_LINES: usize = 10;
 const MAX_SCALARS: usize = 1000;
 
 impl Editor {
-    /// Returns the text with each stored paste substituted for its markers.
+    /// Returns the text with each stored paste substituted for its canonical markers.
     ///
     /// Every stored paste gets one literal replacement pass in creation order,
     /// so text a pass inserts is eligible only for later passes.
@@ -51,7 +51,7 @@ impl Editor {
         true
     }
 
-    /// Inserts one cleaned paste as a single undoable edit.
+    /// Inserts one nonempty raw paste as a single undoable edit, even when cleaning leaves no text.
     fn paste(&self, raw: &str) {
         {
             let mut state = self.state.borrow_mut();

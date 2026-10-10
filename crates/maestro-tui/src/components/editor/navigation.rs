@@ -179,8 +179,9 @@ impl Editing {
     }
     /// Chooses the byte column and remembered cell for an absolute cell of the target row.
     ///
-    /// A target inside the tail of a marker already entered from above is replaced by the
-    /// first row past that marker, returned as the error.
+    /// Moving down onto a row that continues a marker, the first row past that marker is returned
+    /// as the error when one exists; otherwise, and in every other case, the cursor lands on the
+    /// start of the unit under the target cell.
     fn land(
         &self,
         rows: &[VisualRow],

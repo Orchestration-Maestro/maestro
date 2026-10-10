@@ -77,7 +77,7 @@ impl Editing {
         self.current.splice(text);
         self.set_col(self.current.cursor.col);
     }
-    /// Deletes a cursor-local grapheme or joins the preceding logical line.
+    /// Deletes the cursor-local edit unit (a grapheme or an owned marker) or joins the preceding logical line.
     pub(super) fn backspace(&mut self) {
         self.history_index = None;
         self.reset_action();
@@ -100,7 +100,7 @@ impl Editing {
             self.set_col(self.current.cursor.col);
         }
     }
-    /// Deletes the following grapheme or joins the following logical line.
+    /// Deletes the following edit unit (a grapheme or an owned marker) or joins the following logical line.
     pub(super) fn delete(&mut self) {
         self.history_index = None;
         self.reset_action();
@@ -118,7 +118,7 @@ impl Editing {
             self.current.lines[cursor.line].push_str(&removed);
         }
     }
-    /// Moves one grapheme right, crossing logical lines.
+    /// Moves one edit unit right (a grapheme or an owned marker), crossing logical lines.
     pub(super) fn right(&mut self, width: usize) {
         self.reset_action();
         let previous = self.current.cursor;
@@ -139,7 +139,7 @@ impl Editing {
             self.set_col(self.current.cursor.col);
         }
     }
-    /// Moves one grapheme left, crossing logical lines.
+    /// Moves one edit unit left (a grapheme or an owned marker), crossing logical lines.
     pub(super) fn left(&mut self) {
         self.reset_action();
         let previous = self.current.cursor;
