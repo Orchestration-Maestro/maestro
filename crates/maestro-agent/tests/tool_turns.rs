@@ -572,3 +572,97 @@ fn ordered_tools(
         })
         .collect()
 }
+
+/// A synchronous observer already entered must settle before tool finalization.
+#[test]
+fn reserved_progress_waits_for_synchronous_observer_and_future() {
+    run(reserved_progress_case());
+}
+
+/// Hold the callback thread inside the observer while execution completes.
+async fn reserved_progress_case() {
+    use futures_util::FutureExt;
+    use std::sync::{
+        Barrier,
+        atomic::{AtomicBool, Ordering},
+    };
+    let gate = Arc::new(Barrier::new(2));
+    let effect = Arc::new(AtomicBool::new(false));
+    let ended = Arc::new(AtomicBool::new(false));
+    let (entered, entry) = std::sync::mpsc::channel();
+    let observer_gate = Arc::clone(&gate);
+    let observer_effect = Arc::clone(&effect);
+    let observer_end = Arc::clone(&ended);
+    let emit = Arc::new(move |event| {
+        reserved_progress_sink(
+            &event,
+            &entered,
+            &observer_gate,
+            &observer_effect,
+            &observer_end,
+        )
+    });
+    let entry = Arc::new(Mutex::new(entry));
+    let thread = Arc::new(Mutex::new(None));
+    let callback_thread = Arc::clone(&thread);
+    let context = with_execute(Arc::new(move |_, _, _, update| {
+        *callback_thread.lock().unwrap() =
+            Some(std::thread::spawn(move || update.unwrap()(result())));
+        entry.lock().unwrap().recv().unwrap();
+        ready(Ok(result()))
+    }));
+    let config = config();
+    let mut operation = Box::pin(run_agent_loop_continue(
+        context,
+        &config,
+        emit,
+        responses(vec![tool_call()]),
+    ));
+    let first = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        operation.as_mut().now_or_never()
+    }));
+    let ended_before_release = ended.load(Ordering::SeqCst);
+    gate.wait();
+    thread.lock().unwrap().take().unwrap().join().unwrap();
+    let first = first.unwrap();
+    assert!(
+        first.is_none(),
+        "reserved synchronous observer must remain awaited"
+    );
+    assert!(!ended_before_release);
+    operation.await.unwrap();
+    assert!(effect.load(Ordering::SeqCst));
+    assert!(ended.load(Ordering::SeqCst));
+}
+
+/// Gate synchronous entry and assert the awaited effect at both end observations.
+fn reserved_progress_sink(
+    event: &maestro_agent::AgentEvent,
+    entered: &std::sync::mpsc::Sender<()>,
+    gate: &std::sync::Barrier,
+    effect: &Arc<std::sync::atomic::AtomicBool>,
+    ended: &std::sync::atomic::AtomicBool,
+) -> maestro_models::BoxFuture<Result<(), maestro_models::DiagnosticErrorInfo>> {
+    use maestro_agent::AgentEvent;
+    use std::sync::atomic::Ordering;
+    match event {
+        AgentEvent::ToolExecutionUpdate { .. } => {
+            entered.send(()).unwrap();
+            gate.wait();
+            let effect = Arc::clone(effect);
+            Box::pin(async move {
+                effect.store(true, Ordering::SeqCst);
+                Ok(())
+            }) as maestro_models::BoxFuture<_>
+        }
+        AgentEvent::ToolExecutionEnd { .. } | AgentEvent::AgentEnd { .. } => {
+            assert!(
+                effect.load(Ordering::SeqCst),
+                "progress effect precedes end"
+            );
+            ended.store(true, Ordering::SeqCst);
+            ready(Ok(()))
+        }
+        _ => ready(Ok(())),
+    }
+}

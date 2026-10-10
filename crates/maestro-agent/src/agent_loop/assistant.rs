@@ -118,7 +118,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         drop(old);
     }
 }
-/// Capture the source's explicit assistant snapshot without changing its live handle.
+/// Capture an independent assistant observation without changing its live handle.
 fn snapshot(message: &SharedAssistantMessage) -> SharedAssistantMessage {
     Arc::new(RwLock::new(read(message).clone()))
 }

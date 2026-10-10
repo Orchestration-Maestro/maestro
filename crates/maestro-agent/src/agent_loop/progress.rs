@@ -5,10 +5,16 @@ use crate::{
 };
 use futures_util::{StreamExt, future::join};
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, EventStream, ToolCall};
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::{Arc, Mutex};
+
+/// Reservations spanning synchronous observation and future admission.
+#[derive(Default)]
+struct Admission {
+    /// Whether execution has settled and no new observation may enter.
+    closed: bool,
+    /// Observers that reserved entry but have not yet queued their future.
+    pending: usize,
+}
 
 impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
     /// Close progress admission at execution completion and settle admitted effects.
@@ -22,20 +28,9 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             |_: &BoxFuture<Result<(), DiagnosticErrorInfo>>| false,
             |_| (),
         );
-        let admitted = updates.clone();
-        let emit = Arc::clone(&self.emit);
-        let update_call = call.clone();
-        let closed = Arc::new(AtomicBool::new(false));
-        let admission = Arc::clone(&closed);
-        let callback: AgentToolUpdateCallback = Arc::new(move |partial_result| {
-            if admission.load(Ordering::Acquire) {
-                return;
-            }
-            admitted.push(emit(AgentEvent::ToolExecutionUpdate {
-                tool_call: update_call.clone(),
-                partial_result,
-            }));
-        });
+        let admission = Arc::new(Mutex::new(Admission::default()));
+        let callback =
+            self.progress_callback(call.clone(), updates.clone(), Arc::clone(&admission));
         let execution = execute(
             call.id.clone(),
             arguments,
@@ -51,8 +46,13 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         let (result, progress) = join(
             async {
                 let result = execution.await;
-                closed.store(true, Ordering::Release);
-                updates.end(Some(()));
+                let mut state = admission
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                state.closed = true;
+                if state.pending == 0 {
+                    updates.end(Some(()));
+                }
                 result
             },
             progress,
@@ -62,5 +62,35 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             settled?;
         }
         Ok(result)
+    }
+    /// Reserve observation entry before invoking foreign code without a lock.
+    fn progress_callback(
+        &self,
+        update_call: ToolCall,
+        admitted: EventStream<BoxFuture<Result<(), DiagnosticErrorInfo>>, ()>,
+        reservation: Arc<Mutex<Admission>>,
+    ) -> AgentToolUpdateCallback {
+        let emit = Arc::clone(&self.emit);
+        Arc::new(move |partial_result| {
+            let mut state = reservation
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if state.closed {
+                return;
+            }
+            state.pending += 1;
+            drop(state);
+            admitted.push(emit(AgentEvent::ToolExecutionUpdate {
+                tool_call: update_call.clone(),
+                partial_result,
+            }));
+            let mut state = reservation
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            state.pending -= 1;
+            if state.closed && state.pending == 0 {
+                admitted.end(Some(()));
+            }
+        })
     }
 }

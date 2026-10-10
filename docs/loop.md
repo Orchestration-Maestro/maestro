@@ -19,10 +19,12 @@ precedes [argument validation](models/arguments.md). Preparation and execution
 failures become tool-error artifacts; request callback and observation failures
 reject the operation at their callback boundary.
 
-Progress futures run alongside execution and may overlap. Execution completion
-closes progress admission, so a retained update callback invoked later does
-not run the observer; admitted futures settle before finalization or a
-progress failure is returned. The first observed progress failure wins over an
+Progress futures run alongside execution and may overlap. A callback reserves
+admission before invoking the synchronous observer outside locks. Execution
+completion closes admission to new callbacks; reserved observations finish their
+synchronous calls and settle their returned futures before finalization or a
+progress failure is returned. A retained callback invoked after admission closes
+does not run the observer. The first observed progress failure wins over an
 execution failure. Execution-end is awaited before the artifact timestamp is
 assigned. Artifact observations retain the entry subsequently appended to history;
 turn-end tool results are owned snapshots. Batch results enter history after every
