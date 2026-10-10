@@ -84,7 +84,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn missing_credentials_file_is_initialized_privately() {
-        let dir = TempDir::new("initialize");
+        let dir = TempDir::without_forks("initialize");
         let path = dir.path("nested/agent/auth.json");
         let storage = AuthStorage::create(&path);
         assert_eq!(std::fs::read_to_string(&path).unwrap(), "{}");
@@ -99,7 +99,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn zero_byte_file_left_by_interrupted_creation_stays_usable() {
-        let dir = TempDir::new("zero-byte");
+        let dir = TempDir::without_forks("zero-byte");
         let path = dir.path("agent/auth.json");
         std::fs::create_dir(dir.path("agent")).unwrap();
         set_mode(&dir.path("agent"), 0o755);
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn competing_creator_cannot_truncate_locked_winner() {
-        let dir = TempDir::new("competing");
+        let dir = TempDir::without_forks("competing");
         let path = dir.path("auth.json");
         let holder = hold_lock(&path);
         let storage = AuthStorage::create(&path);
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn contended_lock_retries_then_records_failure() {
-        let dir = TempDir::new("contended");
+        let dir = TempDir::without_forks("contended");
         let path = dir.path("auth.json");
         let storage = AuthStorage::create(&path);
         let initial = std::fs::read_to_string(&path).unwrap();
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn lock_acquisition_failure_skips_the_callback() {
-        let dir = TempDir::new("acquire-failure");
+        let dir = TempDir::without_forks("acquire-failure");
         let path = dir.path("auth.json");
         std::fs::create_dir(format!("{path}.lock")).unwrap();
         let backend = FileAuthStorageBackend::new(&path);
@@ -209,7 +209,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn missing_symlink_target_is_initialized_and_live_link_is_kept() {
-        let dir = TempDir::new("symlink");
+        let dir = TempDir::without_forks("symlink");
         let target = dir.path("real.json");
         let link = dir.path("auth.json");
         std::os::unix::fs::symlink(&target, &link).unwrap();
@@ -233,7 +233,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn dangling_link_chain_creates_final_target_and_existing_file_is_kept() {
-        let dir = TempDir::new("chain");
+        let dir = TempDir::without_forks("chain");
         let target = dir.path("final.json");
         let middle = dir.path("middle.json");
         let link = dir.path("auth.json");
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn callback_read_and_write_failures_release_the_lock() {
-        let dir = TempDir::new("release");
+        let dir = TempDir::without_forks("release");
         let path = dir.path("auth.json");
         let backend = FileAuthStorageBackend::new(&path);
         let free = || {
@@ -286,7 +286,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn writes_restrict_existing_file_to_owner() {
-        let dir = TempDir::new("restrict");
+        let dir = TempDir::without_forks("restrict");
         let path = dir.path("auth.json");
         std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
         set_mode(&path, 0o644);
@@ -299,7 +299,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn removed_or_absent_records_rewrite_the_document() {
-        let dir = TempDir::new("rewrite");
+        let dir = TempDir::without_forks("rewrite");
         let path = dir.path("auth.json");
         std::fs::write(&path, "{\"a\":{\"type\":\"api_key\",\"key\":\"1\"}}").unwrap();
         let storage = AuthStorage::create(&path);
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn lossy_utf8_and_integer_times_survive_rewrite() {
-        let dir = TempDir::new("lossy");
+        let dir = TempDir::without_forks("lossy");
         let path = dir.path("auth.json");
         let mut bytes = b"{\"p\":{\"type\":\"api_key\",\"key\":\"k".to_vec();
         bytes.extend([0xFF, 0xC3]);
@@ -473,7 +473,7 @@ mod tests {
     #[test]
     fn async_file_roundtrip_preserves_no_write_and_empty_write() {
         block_on(async {
-            let dir = TempDir::new("async-roundtrip");
+            let dir = TempDir::without_forks("async-roundtrip");
             let path = dir.path("nested/deeper/auth.json");
             let backend = FileAuthStorageBackend::new(&path);
             let seen = std::sync::Mutex::new(Vec::new());
@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn async_file_contention_obeys_bounded_schedule() {
         block_on_paused(async {
-            let dir = TempDir::new("async-schedule");
+            let dir = TempDir::without_forks("async-schedule");
             let path = dir.path("auth.json");
             let deadlines = [
                 100, 300, 700, 1500, 3100, 6300, 12_700, 22_700, 32_700, 42_700,
@@ -563,7 +563,7 @@ mod tests {
     #[test]
     fn async_file_non_contention_errors_return_immediately() {
         block_on_paused(async {
-            let dir = TempDir::new("async-immediate");
+            let dir = TempDir::without_forks("async-immediate");
             let path = dir.path("auth.json");
             std::fs::create_dir(format!("{path}.lock")).unwrap();
             let backend = FileAuthStorageBackend::new(&path);
@@ -579,7 +579,7 @@ mod tests {
     #[test]
     fn async_file_failures_release_the_lock() {
         block_on(async {
-            let dir = TempDir::new("async-release");
+            let dir = TempDir::without_forks("async-release");
             let path = dir.path("auth.json");
             let backend = FileAuthStorageBackend::new(&path);
             let free = || {
@@ -679,7 +679,7 @@ mod tests {
         let operations = NoOperations;
         let provider = ControlledProvider::new("f6-wait").register();
         let _cleanup = Unregister("f6-wait".into());
-        let dir = TempDir::new("pending-waiter");
+        let dir = TempDir::without_forks("pending-waiter");
         let path = expired_file(&dir, "f6-wait");
         let storage = AuthStorage::create(&path);
         let holder = hold_lock(&path);
@@ -717,7 +717,7 @@ mod tests {
         let behavior = pending_first_refresh(&started, &dropped);
         let provider = ControlledProvider::refreshing("f6-refresh", behavior).register();
         let _cleanup = Unregister("f6-refresh".into());
-        let dir = TempDir::new("pending-refresh");
+        let dir = TempDir::without_forks("pending-refresh");
         let path = expired_file(&dir, "f6-refresh");
         let storage = AuthStorage::create(&path);
         let mut request = storage.get_api_key("f6-refresh", true, &operations);
@@ -757,7 +757,7 @@ mod tests {
             let release = Arc::new(AtomicBool::new(false));
             let provider = gated("f7", &started, &release);
             let _cleanup = Unregister("f7".into());
-            let dir = TempDir::new("contenders");
+            let dir = TempDir::without_forks("contenders");
             let path = expired_file(&dir, "f7");
             let (first, second) = (AuthStorage::create(&path), AuthStorage::create(&path));
             let operations = NoOperations;

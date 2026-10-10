@@ -2,9 +2,15 @@
 #![allow(dead_code)] // each test binary uses a different part of these helpers
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{RwLock, RwLockReadGuard};
+
+/// Held shared by tests whose file locks must be released exactly when dropped, and
+/// exclusively while a child process is created: a forked child owns a copy of every
+/// open descriptor until it executes, so a lock released meanwhile would stay held.
+static PROCESS_CREATION: RwLock<()> = RwLock::new(());
 
 /// Disposable directory removed when dropped.
-pub struct TempDir(PathBuf);
+pub struct TempDir(PathBuf, Option<RwLockReadGuard<'static, ()>>);
 
 impl TempDir {
     /// Create an empty directory named after the test.
@@ -12,7 +18,18 @@ impl TempDir {
         let path = std::env::temp_dir().join(format!("maestro-auth-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&path);
         std::fs::create_dir_all(&path).unwrap();
-        Self(path)
+        Self(path, None)
+    }
+
+    /// Like [`TempDir::new`], and keeps [`run_child`] from creating a process while it lives;
+    /// never use it in a test that calls [`run_child`].
+    pub fn without_forks(name: &str) -> Self {
+        let guard = PROCESS_CREATION
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut dir = Self::new(name);
+        dir.1 = Some(guard);
+        dir
     }
 
     /// The directory itself.
@@ -39,14 +56,22 @@ pub fn is_child() -> bool {
 
 /// Rerun one test in this binary with only `envs` set and `cwd` as working directory.
 pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
-    let output = Command::new(std::env::current_exe().unwrap())
+    let mut command = Command::new(std::env::current_exe().unwrap());
+    command
         .args(["--exact", test, "--nocapture"])
         .env_clear()
         .env("MAESTRO_AUTH_CHILD", "1")
         .envs(envs.iter().copied())
         .current_dir(cwd)
-        .output()
-        .unwrap();
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let child = {
+        let _creation = PROCESS_CREATION
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        command.spawn().unwrap()
+    };
+    let output = child.wait_with_output().unwrap();
     assert!(
         output.status.success() && String::from_utf8_lossy(&output.stdout).contains("1 passed"),
         "{}\n{}",
