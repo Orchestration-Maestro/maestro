@@ -1,0 +1,22 @@
+[package]
+name = "maestro-packages"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-settings = { path = "../maestro-settings" }
+maestro-resources = { path = "../maestro-resources" }
+maestro-path = { path = "../maestro-path" }
+git-url-parse = "=0.6.0"
+url = "=2.5.8"
+percent-encoding = "=2.3.2"
+serde_json.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
+tokio = { version = "=1.53.2", default-features = false, features = ["rt"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,1429 @@
+[
+  {
+    "test": "https_transport_has_host_path_and_clone_url",
+    "input": "https://github.com/user/repo",
+    "expected": {
+      "repo": "https://github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "ssh_transport_keeps_user_and_clone_url",
+    "input": "ssh://git@github.com/user/repo",
+    "expected": {
+      "repo": "ssh://git@github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "protocol_ref_is_separate_from_clone_url",
+    "input": "https://github.com/user/repo@v1.0.0",
+    "expected": {
+      "repo": "https://github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "ref": "v1.0.0",
+      "pinned": true
+    }
+  },
+  {
+    "test": "protocol_ref_is_separate_from_clone_url",
+    "input": "https://github.com/user/repo@v1.2.3",
+    "expected": {
+      "repo": "https://github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "ref": "v1.2.3",
+      "pinned": true
+    }
+  },
+  {
+    "test": "prefixed_scp_keeps_ssh_clone_url",
+    "input": "git:git@github.com:user/repo",
+    "expected": {
+      "repo": "git@github.com:user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "prefixed_host_path_uses_https",
+    "input": "git:github.com/user/repo",
+    "expected": {
+      "repo": "https://github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "prefixed_scp_ref_pins_source",
+    "input": "git:git@github.com:user/repo@v1.0.0",
+    "expected": {
+      "repo": "git@github.com:user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "ref": "v1.0.0",
+      "pinned": true
+    }
+  },
+  {
+    "test": "bare_scp_is_not_a_git_url",
+    "input": "git@github.com:user/repo",
+    "expected": null
+  },
+  {
+    "test": "bare_host_path_is_not_a_git_url",
+    "input": "github.com/user/repo",
+    "expected": null
+  },
+  {
+    "test": "bare_owner_repo_is_not_a_git_url",
+    "input": "user/repo",
+    "expected": null
+  },
+  {
+    "test": "git_whitespace_and_case_follow_admission_branches",
+    "input": "",
+    "expected": null
+  },
+  {
+    "test": "git_whitespace_and_case_follow_admission_branches",
+    "input": " \t ",
+    "expected": null
+  },
+  {
+    "test": "git_whitespace_and_case_follow_admission_branches",
+    "input": "﻿ git: github.com/u/r ﻿",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_whitespace_and_case_follow_admission_branches",
+    "input": "https://github.com/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_whitespace_and_case_follow_admission_branches",
+    "input": "GIT:github.com/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "HTTPS://github.com/u/r",
+    "expected": {
+      "repo": "HTTPS://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "SSH://git@github.com/u/r",
+    "expected": {
+      "repo": "SSH://git@github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "HTTPS://example.org/u/r",
+    "expected": {
+      "repo": "HTTPS://example.org/u/r",
+      "host": "example.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "SSH://user@example.org/u/r",
+    "expected": {
+      "repo": "SSH://user@example.org/u/r",
+      "host": "example.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://github.com/u/r",
+    "expected": {
+      "repo": "git://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_whitespace_and_case_follow_admission_branches",
+    "input": "git:git://github.com/u/r",
+    "expected": {
+      "repo": "git://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://codeberg.org/u/r",
+    "expected": {
+      "repo": "git://codeberg.org/u/r",
+      "host": "codeberg.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "Git://codeberg.org/u/r",
+    "expected": {
+      "repo": "Git://codeberg.org/u/r",
+      "host": "codeberg.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:HTTP://example.org/u/r",
+    "expected": {
+      "repo": "HTTP://example.org/u/r",
+      "host": "example.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "git:https://github.com/user/repo",
+    "expected": {
+      "repo": "https://github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://github.com/user/repo.git",
+    "expected": {
+      "repo": "https://github.com/user/repo.git",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://gitlab.com/user/repo",
+    "expected": {
+      "repo": "https://gitlab.com/user/repo",
+      "host": "gitlab.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://bitbucket.org/user/repo",
+    "expected": {
+      "repo": "https://bitbucket.org/user/repo",
+      "host": "bitbucket.org",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://codeberg.org/user/repo",
+    "expected": {
+      "repo": "https://codeberg.org/user/repo",
+      "host": "codeberg.org",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://gitlab.com/g/sub/r.git",
+    "expected": {
+      "repo": "https://gitlab.com/g/sub/r.git",
+      "host": "gitlab.com",
+      "path": "g/sub/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://bitbucket.org/u/r.git",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r.git",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://git.sr.ht/~u/r.git",
+    "expected": {
+      "repo": "https://git.sr.ht/~u/r.git",
+      "host": "git.sr.ht",
+      "path": "~u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://codeberg.org/u/r.git",
+    "expected": {
+      "repo": "https://codeberg.org/u/r.git",
+      "host": "codeberg.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://www.github.com/u/r",
+    "expected": {
+      "repo": "https://www.github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://github.com/u/r/tree/main",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "main",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://github.com/u/r/tree/feature/topic",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "feature",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://github.com/u/r/issues",
+    "expected": {
+      "repo": "https://github.com/u/r/issues",
+      "host": "github.com",
+      "path": "u/r/issues",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://bitbucket.org/u/r/src/main",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://bitbucket.org/u/r/get/main",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r/get/main",
+      "host": "bitbucket.org",
+      "path": "u/r/get/main",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://gitlab.com/u/r/-/tree/main",
+    "expected": {
+      "repo": "https://gitlab.com/u/r/-/tree/main",
+      "host": "gitlab.com",
+      "path": "u/r/-/tree/main",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://gist.github.com/u/abcd",
+    "expected": {
+      "repo": "https://gist.github.com/abcd",
+      "host": "gist.github.com",
+      "path": "u/abcd",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_identities_follow_provider_paths",
+    "input": "https://gist.github.com/abcd",
+    "expected": {
+      "repo": "https://gist.github.com/abcd",
+      "host": "gist.github.com",
+      "path": "null/abcd",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:user/repo",
+    "expected": {
+      "repo": "https://github.com/user/repo",
+      "host": "github.com",
+      "path": "user/repo",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:github:u/r",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:gitlab:g/sub/r",
+    "expected": {
+      "repo": "https://gitlab.com/g/sub/r",
+      "host": "gitlab.com",
+      "path": "g/sub/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:bitbucket:u/r",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:sourcehut:~u/r",
+    "expected": {
+      "repo": "https://git.sr.ht/~u/r",
+      "host": "git.sr.ht",
+      "path": "~u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:gist:abcd",
+    "expected": {
+      "repo": "https://gist.github.com/abcd",
+      "host": "gist.github.com",
+      "path": "null/abcd",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+https://github.com/u/r",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+ssh://git@github.com/u/r",
+    "expected": {
+      "repo": "ssh://git@github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:host/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:localhost/u/r",
+    "expected": {
+      "repo": "https://localhost/u/r",
+      "host": "localhost",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:example.org/u",
+    "expected": {
+      "repo": "https://github.com/example.org/u",
+      "host": "github.com",
+      "path": "example.org/u",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:example.org/u/",
+    "expected": {
+      "repo": "https://example.org/u/",
+      "host": "example.org",
+      "path": "u/",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:example.org//u/r.git",
+    "expected": {
+      "repo": "https://example.org//u/r.git",
+      "host": "example.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:example.org/u/r.git/",
+    "expected": {
+      "repo": "https://example.org/u/r.git/",
+      "host": "example.org",
+      "path": "u/r.git/",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:example.org/u/r.git.git",
+    "expected": {
+      "repo": "https://example.org/u/r.git.git",
+      "host": "example.org",
+      "path": "u/r.git",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:git@host:u/r",
+    "expected": {
+      "repo": "git@host:u/r",
+      "host": "host",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:git@host:/u/r",
+    "expected": {
+      "repo": "git@host:/u/r",
+      "host": "host",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:git@:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:git@host/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:git@host:",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "ssh://git@host/u/r",
+    "expected": {
+      "repo": "ssh://git@host/u/r",
+      "host": "host",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "ssh://git@host/u",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "https://example.org/u/r",
+    "expected": {
+      "repo": "https://example.org/u/r",
+      "host": "example.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "https://example.org/",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "file:///tmp/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "ftp://example.org/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:ftp://example.org/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:user@host:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "https://user:pass@example.org:8443/u/r.git@topic?x=1#anchor",
+    "expected": {
+      "repo": "https://user:pass@example.org:8443/u/r.git?x=1#anchor",
+      "host": "example.org",
+      "path": "u/r",
+      "ref": "topic",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "ssh://user@host:2222/u/r@branch/sub",
+    "expected": {
+      "repo": "ssh://user@host:2222/u/r",
+      "host": "host",
+      "path": "u/r",
+      "ref": "branch/sub",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "git:git@github.com:u/r@branch@tail",
+    "expected": {
+      "repo": "git@github.com:u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch@tail",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "git:git@github.com:u/r@",
+    "expected": {
+      "repo": "git@github.com:u/r@",
+      "host": "github.com",
+      "path": "u/r@",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "https://github.com/u/r@",
+    "expected": {
+      "repo": "https://github.com/u/r@",
+      "host": "github.com",
+      "path": "u/r@",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "git:example.org/u/r@",
+    "expected": {
+      "repo": "https://example.org/u/r@",
+      "host": "example.org",
+      "path": "u/r@",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "git:example.org/@v1",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://github.com/u/r#topic",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "topic",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "https://codeberg.org/u/r#topic",
+    "expected": {
+      "repo": "https://codeberg.org/u/r#topic",
+      "host": "codeberg.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://github.com/u/r@branch#hash",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "hash#branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "https://github.com/u/r@branch?x=1",
+    "expected": {
+      "repo": "https://github.com/u/r?x=1",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "https://example.org/u/r@branch#hash",
+    "expected": {
+      "repo": "https://example.org/u/r#hash",
+      "host": "example.org",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://user:token@github.com:8443/u/r#release",
+    "expected": {
+      "repo": "https://user:token@github.com:8443/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "ssh://git@github.com:2222/u/r#release",
+    "expected": {
+      "repo": "ssh://git@github.com:2222/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://gitlab.com/g/sub/r#release",
+    "expected": {
+      "repo": "https://gitlab.com/g/sub/r",
+      "host": "gitlab.com",
+      "path": "g/sub/r",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://bitbucket.org/u/r#release",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://git.sr.ht/~u/r#release",
+    "expected": {
+      "repo": "https://git.sr.ht/~u/r",
+      "host": "git.sr.ht",
+      "path": "~u/r",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://gist.github.com/u/abcd#release",
+    "expected": {
+      "repo": "https://gist.github.com/abcd",
+      "host": "gist.github.com",
+      "path": "u/abcd",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:github:u/r@v1",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "v1",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:example.org/u#release",
+    "expected": {
+      "repo": "https://github.com/example.org/u",
+      "host": "github.com",
+      "path": "example.org/u",
+      "ref": "release",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "git:git@gitlab.com:g/sub/r@feature/topic",
+    "expected": {
+      "repo": "git@gitlab.com:g/sub/r",
+      "host": "gitlab.com",
+      "path": "g/sub/r",
+      "ref": "feature/topic",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r%20space.git",
+    "expected": {
+      "repo": "https://github.com/u/r%20space.git",
+      "host": "github.com",
+      "path": "u/r space",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://example.org/u/r%20space.git",
+    "expected": {
+      "repo": "https://example.org/u/r%20space.git",
+      "host": "example.org",
+      "path": "u/r%20space",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r%40tag",
+    "expected": {
+      "repo": "https://github.com/u/r%40tag",
+      "host": "github.com",
+      "path": "u/r@tag",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r@feature%2Ftopic",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "feature/topic",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r%ZZ",
+    "expected": {
+      "repo": "https://github.com/u/r%ZZ",
+      "host": "github.com",
+      "path": "u/r%ZZ",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r%FF",
+    "expected": {
+      "repo": "https://github.com/u/r%FF",
+      "host": "github.com",
+      "path": "u/r%FF",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/../u/r",
+    "expected": {
+      "repo": "https://github.com/u/../u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://EXAMPLE.org:443/u/r",
+    "expected": {
+      "repo": "https://EXAMPLE.org:443/u/r",
+      "host": "example.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "ssh://EXAMPLE.org/u/r",
+    "expected": {
+      "repo": "ssh://EXAMPLE.org/u/r",
+      "host": "EXAMPLE.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://[::1]:8443/u/r",
+    "expected": {
+      "repo": "https://[::1]:8443/u/r",
+      "host": "[::1]",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://bücher.example/u/r",
+    "expected": {
+      "repo": "https://bücher.example/u/r",
+      "host": "xn--bcher-kva.example",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r name",
+    "expected": {
+      "repo": "https://github.com/u/r name",
+      "host": "github.com",
+      "path": "u/r name",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r%2Fsub",
+    "expected": {
+      "repo": "https://github.com/u/r%2Fsub",
+      "host": "github.com",
+      "path": "u/r/sub",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://%zz/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://example.org:bad/u/r",
+    "expected": null
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://github.com/u/r@v%ZZ",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "v%ZZ",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "git:github.com/u/r@v%ZZ",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "v%ZZ",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "git:github:u/r%40x@tag",
+    "expected": {
+      "repo": "https://github.com/null/tag",
+      "host": "github.com",
+      "path": "null/tag",
+      "ref": "tag",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "http://gitlab.com/u/r#tag",
+    "expected": {
+      "repo": "http://gitlab.com/u/r#tag",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "ssh://git.sr.ht/~u/r#tag",
+    "expected": {
+      "repo": "ssh://git.sr.ht/~u/r#tag",
+      "host": "git.sr.ht",
+      "path": "~u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "git:https://gitlab.com/g/r/archive.tar.gz",
+    "expected": {
+      "repo": "https://gitlab.com/g/r/archive.tar.gz",
+      "host": "gitlab.com",
+      "path": "g/r/archive.tar.gz",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://gist.github.com/u/abcd/raw",
+    "expected": {
+      "repo": "https://gist.github.com/u/abcd/raw",
+      "host": "gist.github.com",
+      "path": "u/abcd/raw",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_url_escaping_uses_hosted_or_generic_identity",
+    "input": "https://git.sr.ht/~u/r/archive/main",
+    "expected": {
+      "repo": "https://git.sr.ht/~u/r/archive/main",
+      "host": "git.sr.ht",
+      "path": "~u/r/archive/main",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "http://github.com/u/r#branch",
+    "expected": {
+      "repo": "http://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://github.com/u/r#branch",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "ssh://github.com/u/r#branch",
+    "expected": {
+      "repo": "ssh://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://github.com/u/r#branch",
+    "expected": {
+      "repo": "git://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "git:git+http://github.com/u/r#branch",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+https://github.com/u/r#branch",
+    "expected": {
+      "repo": "https://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+ssh://github.com/u/r#branch",
+    "expected": {
+      "repo": "ssh://github.com/u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "http://gitlab.com/u/r#branch",
+    "expected": {
+      "repo": "http://gitlab.com/u/r#branch",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://gitlab.com/u/r#branch",
+    "expected": {
+      "repo": "https://gitlab.com/u/r",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "ssh://gitlab.com/u/r#branch",
+    "expected": {
+      "repo": "ssh://gitlab.com/u/r",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://gitlab.com/u/r#branch",
+    "expected": {
+      "repo": "git://gitlab.com/u/r#branch",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "git:git+http://gitlab.com/u/r#branch",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+https://gitlab.com/u/r#branch",
+    "expected": {
+      "repo": "https://gitlab.com/u/r",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+ssh://gitlab.com/u/r#branch",
+    "expected": {
+      "repo": "ssh://gitlab.com/u/r",
+      "host": "gitlab.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "http://bitbucket.org/u/r#branch",
+    "expected": {
+      "repo": "http://bitbucket.org/u/r#branch",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://bitbucket.org/u/r#branch",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "ssh://bitbucket.org/u/r#branch",
+    "expected": {
+      "repo": "ssh://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://bitbucket.org/u/r#branch",
+    "expected": {
+      "repo": "git://bitbucket.org/u/r#branch",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "git:git+http://bitbucket.org/u/r#branch",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+https://bitbucket.org/u/r#branch",
+    "expected": {
+      "repo": "https://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+ssh://bitbucket.org/u/r#branch",
+    "expected": {
+      "repo": "ssh://bitbucket.org/u/r",
+      "host": "bitbucket.org",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "http://gist.github.com/u/r#branch",
+    "expected": {
+      "repo": "http://gist.github.com/u/r#branch",
+      "host": "gist.github.com",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://gist.github.com/u/r#branch",
+    "expected": {
+      "repo": "https://gist.github.com/r",
+      "host": "gist.github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "ssh://gist.github.com/u/r#branch",
+    "expected": {
+      "repo": "ssh://gist.github.com/r",
+      "host": "gist.github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://gist.github.com/u/r#branch",
+    "expected": {
+      "repo": "git://gist.github.com/r",
+      "host": "gist.github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "git:git+http://gist.github.com/u/r#branch",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+https://gist.github.com/u/r#branch",
+    "expected": {
+      "repo": "https://gist.github.com/r",
+      "host": "gist.github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+ssh://gist.github.com/u/r#branch",
+    "expected": {
+      "repo": "ssh://gist.github.com/r",
+      "host": "gist.github.com",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "http://git.sr.ht/u/r#branch",
+    "expected": {
+      "repo": "http://git.sr.ht/u/r#branch",
+      "host": "git.sr.ht",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "https://git.sr.ht/u/r#branch",
+    "expected": {
+      "repo": "https://git.sr.ht/u/r",
+      "host": "git.sr.ht",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "ssh://git.sr.ht/u/r#branch",
+    "expected": {
+      "repo": "ssh://git.sr.ht/u/r#branch",
+      "host": "git.sr.ht",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git://git.sr.ht/u/r#branch",
+    "expected": {
+      "repo": "git://git.sr.ht/u/r#branch",
+      "host": "git.sr.ht",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "git:git+http://git.sr.ht/u/r#branch",
+    "expected": null
+  },
+  {
+    "test": "git_hosted_protocols_choose_provider_or_generic_rules",
+    "input": "git:git+https://git.sr.ht/u/r#branch",
+    "expected": null
+  },
+  {
+    "test": "git_clone_targets_follow_the_selected_repository",
+    "input": "git:git+ssh://git.sr.ht/u/r#branch",
+    "expected": {
+      "repo": "ssh://git.sr.ht/u/r",
+      "host": "git.sr.ht",
+      "path": "u/r",
+      "ref": "branch",
+      "pinned": true
+    }
+  },
+  {
+    "test": "git_refs_credentials_ports_and_suffixes_stay_distinct",
+    "input": "git:git@github.com:u/r#topic",
+    "expected": {
+      "repo": "git@github.com:u/r",
+      "host": "github.com",
+      "path": "u/r",
+      "ref": "topic",
+      "pinned": true
+    }
+  }
+]

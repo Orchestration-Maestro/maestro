@@ -1,0 +1,132 @@
+[
+  {
+    "input": "npm:pkg@latest",
+    "scope": "user",
+    "expected": "npm:pkg@latest"
+  },
+  {
+    "input": "npm:pkg@latest",
+    "scope": "project",
+    "expected": "npm:pkg@latest"
+  },
+  {
+    "input": "npm:pkg@2",
+    "scope": "user",
+    "expected": "npm:pkg@2"
+  },
+  {
+    "input": "npm:pkg@2",
+    "scope": "project",
+    "expected": "npm:pkg@2"
+  },
+  {
+    "input": "https://github.com/u/r@v1",
+    "scope": "user",
+    "expected": "https://github.com/u/r@v1"
+  },
+  {
+    "input": "https://github.com/u/r@v1",
+    "scope": "project",
+    "expected": "https://github.com/u/r@v1"
+  },
+  {
+    "input": "ssh://git@github.com/u/r.git",
+    "scope": "user",
+    "expected": "ssh://git@github.com/u/r.git"
+  },
+  {
+    "input": "ssh://git@github.com/u/r.git",
+    "scope": "project",
+    "expected": "ssh://git@github.com/u/r.git"
+  },
+  {
+    "input": "git:git@github.com:u/r",
+    "scope": "user",
+    "expected": "git:git@github.com:u/r"
+  },
+  {
+    "input": "git:git@github.com:u/r",
+    "scope": "project",
+    "expected": "git:git@github.com:u/r"
+  },
+  {
+    "input": "./pkg",
+    "scope": "user",
+    "expected": "../../../work/project/pkg"
+  },
+  {
+    "input": "./pkg",
+    "scope": "project",
+    "expected": "../pkg"
+  },
+  {
+    "input": "/work/project/pkg",
+    "scope": "user",
+    "expected": "../../../work/project/pkg"
+  },
+  {
+    "input": "/work/project/pkg",
+    "scope": "project",
+    "expected": "../pkg"
+  },
+  {
+    "input": " ﻿./a/../pkg/﻿ ",
+    "scope": "user",
+    "expected": "../../../work/project/pkg"
+  },
+  {
+    "input": " ﻿./a/../pkg/﻿ ",
+    "scope": "project",
+    "expected": "../pkg"
+  },
+  {
+    "input": "",
+    "scope": "user",
+    "expected": "../../../work/project"
+  },
+  {
+    "input": "",
+    "scope": "project",
+    "expected": ".."
+  },
+  {
+    "input": "~",
+    "scope": "user",
+    "expected": "../../fake"
+  },
+  {
+    "input": "~",
+    "scope": "project",
+    "expected": "../../../home/fake"
+  },
+  {
+    "input": "~/pkg",
+    "scope": "user",
+    "expected": "../../fake/pkg"
+  },
+  {
+    "input": "~/pkg",
+    "scope": "project",
+    "expected": "../../../home/fake/pkg"
+  },
+  {
+    "input": "~name",
+    "scope": "user",
+    "expected": "../../fake/name"
+  },
+  {
+    "input": "~name",
+    "scope": "project",
+    "expected": "../../../home/fake/name"
+  },
+  {
+    "input": "./pkg",
+    "scope": "user",
+    "expected": "../../../work/project/./pkg"
+  },
+  {
+    "input": "./pkg",
+    "scope": "project",
+    "expected": ".././pkg"
+  }
+]

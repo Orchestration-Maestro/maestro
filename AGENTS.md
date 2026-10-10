@@ -452,3 +452,14 @@ plus the existing `maestro-path` utility for authored documentation paths. Nativ
 only Tokio `=1.53.2`, defaults off, enables `rt`, `time`, `process`, `io-util` and
 `macros` for helper execution. Indexmap is MIT OR Apache-2.0; Tokio is MIT.
 Browser callers supply configuration operations without a native process edge.
+
+## Approved package-source libraries
+
+`maestro-packages` uses `git-url-parse =0.6.0` with defaults (`url`, MIT),
+`url =2.5.8` and `percent-encoding =2.3.2` with defaults (MIT OR Apache-2.0),
+plus inherited workspace serde_json for raw scoped settings. The selected parser
+adds `getset =0.1.7` and `nom =8.0.0` (MIT); it reuses the existing URL/IDNA
+closure and the `unicode-ident =1.0.24` hold. Serde derive and Tokio's native
+`rt` feature are test-only here. Internal dependencies are settings, resources
+and the shared path utility. Native effects use the standard library and remain
+outside the browser target; browser callers supply `PackageOperations`.
