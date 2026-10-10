@@ -57,3 +57,8 @@ still open, and must run inside a Tokio runtime with process support. It returns
 `None` when a signal ended the child, and keeps a spawn failure's native error. The
 package manager turns a nonzero or missing code into the failure
 `<command> <arguments> failed with code <N or null>`.
+
+## File patterns
+
+The pure [basic file-pattern operation](package-patterns.md) is available
+separately from package discovery.

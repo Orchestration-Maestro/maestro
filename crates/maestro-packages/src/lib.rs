@@ -24,3 +24,6 @@ pub use package_manager::{
     PackageUpdate, PackageUpdateType, ProgressAction, ProgressCallback, ProgressEvent,
     ProgressEventType,
 };
+
+mod minimatch;
+pub use minimatch::{PatternError, minimatch};

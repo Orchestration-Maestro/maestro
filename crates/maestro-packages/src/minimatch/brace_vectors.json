@@ -1,0 +1,271 @@
+[
+  {
+    "pattern": "extensions/main.ts",
+    "expected": [
+      "extensions/main.ts"
+    ]
+  },
+  {
+    "pattern": "*.ts",
+    "expected": [
+      "*.ts"
+    ]
+  },
+  {
+    "pattern": "?.ts",
+    "expected": [
+      "?.ts"
+    ]
+  },
+  {
+    "pattern": "**/*.ts",
+    "expected": [
+      "**/*.ts"
+    ]
+  },
+  {
+    "pattern": "**/.hidden.ts",
+    "expected": [
+      "**/.hidden.ts"
+    ]
+  },
+  {
+    "pattern": "[a-c].ts",
+    "expected": [
+      "[a-c].ts"
+    ]
+  },
+  {
+    "pattern": "[!a].ts",
+    "expected": [
+      "[!a].ts"
+    ]
+  },
+  {
+    "pattern": "[[:alpha:]].ts",
+    "expected": [
+      "[[:alpha:]].ts"
+    ]
+  },
+  {
+    "pattern": "*.{ts,js}",
+    "expected": [
+      "*.ts",
+      "*.js"
+    ]
+  },
+  {
+    "pattern": "{src,{lib,test}}/*.ts",
+    "expected": [
+      "src/*.ts",
+      "lib/*.ts",
+      "test/*.ts"
+    ]
+  },
+  {
+    "pattern": "plugin-{1..3}.ts",
+    "expected": [
+      "plugin-1.ts",
+      "plugin-2.ts",
+      "plugin-3.ts"
+    ]
+  },
+  {
+    "pattern": "plugin-{01..03}.ts",
+    "expected": [
+      "plugin-01.ts",
+      "plugin-02.ts",
+      "plugin-03.ts"
+    ]
+  },
+  {
+    "pattern": "plugin-{1..5..2}.ts",
+    "expected": [
+      "plugin-1.ts",
+      "plugin-3.ts",
+      "plugin-5.ts"
+    ]
+  },
+  {
+    "pattern": "plugin-{3..1}.ts",
+    "expected": [
+      "plugin-3.ts",
+      "plugin-2.ts",
+      "plugin-1.ts"
+    ]
+  },
+  {
+    "pattern": "plugin-{a..c}.ts",
+    "expected": [
+      "plugin-a.ts",
+      "plugin-b.ts",
+      "plugin-c.ts"
+    ]
+  },
+  {
+    "pattern": "@(main|extra).ts",
+    "expected": [
+      "@(main|extra).ts"
+    ]
+  },
+  {
+    "pattern": "?(test-)main.ts",
+    "expected": [
+      "?(test-)main.ts"
+    ]
+  },
+  {
+    "pattern": "*(a|b).ts",
+    "expected": [
+      "*(a|b).ts"
+    ]
+  },
+  {
+    "pattern": "+(a|b).ts",
+    "expected": [
+      "+(a|b).ts"
+    ]
+  },
+  {
+    "pattern": "extensions/!(test|spec).ts",
+    "expected": [
+      "extensions/!(test|spec).ts"
+    ]
+  },
+  {
+    "pattern": "extensions/@(main|+(a|b)).ts",
+    "expected": [
+      "extensions/@(main|+(a|b)).ts"
+    ]
+  },
+  {
+    "pattern": "a\\*.ts",
+    "expected": [
+      "a\\*.ts"
+    ]
+  },
+  {
+    "pattern": "[main.ts",
+    "expected": [
+      "[main.ts"
+    ]
+  },
+  {
+    "pattern": "{main.ts",
+    "expected": [
+      "{main.ts"
+    ]
+  },
+  {
+    "pattern": "#main.ts",
+    "expected": [
+      "#main.ts"
+    ]
+  },
+  {
+    "pattern": "!main.ts",
+    "expected": [
+      "!main.ts"
+    ]
+  },
+  {
+    "pattern": "!!main.ts",
+    "expected": [
+      "!!main.ts"
+    ]
+  },
+  {
+    "pattern": "",
+    "expected": [
+      ""
+    ]
+  },
+  {
+    "pattern": "./*.ts",
+    "expected": [
+      "./*.ts"
+    ]
+  },
+  {
+    "pattern": "src//*.ts",
+    "expected": [
+      "src//*.ts"
+    ]
+  },
+  {
+    "pattern": "src\\main.ts",
+    "expected": [
+      "src\\main.ts"
+    ]
+  },
+  {
+    "pattern": "{,src/}*.ts",
+    "expected": [
+      "*.ts",
+      "src/*.ts"
+    ]
+  },
+  {
+    "pattern": "{b,a,b}",
+    "expected": [
+      "b",
+      "a",
+      "b"
+    ]
+  },
+  {
+    "pattern": "x{,a,,b}y",
+    "expected": [
+      "xy",
+      "xay",
+      "xy",
+      "xby"
+    ]
+  },
+  {
+    "pattern": "{1..3..0}",
+    "expected": [
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  {
+    "pattern": "{03..01..2}",
+    "expected": [
+      "03",
+      "01"
+    ]
+  },
+  {
+    "pattern": "{a}",
+    "expected": [
+      "{a}"
+    ]
+  },
+  {
+    "pattern": "${a,b}",
+    "expected": [
+      "${a,b}"
+    ]
+  },
+  {
+    "pattern": "\\{a,b\\}",
+    "expected": [
+      "{a,b}"
+    ]
+  },
+  {
+    "pattern": "{}a",
+    "expected": [
+      "{}a"
+    ]
+  },
+  {
+    "pattern": "{a,\\,b}",
+    "expected": [
+      "a",
+      ",b"
+    ]
+  }
+]

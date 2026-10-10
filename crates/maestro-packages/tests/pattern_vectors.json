@@ -1,0 +1,1310 @@
+{
+  "literal_matching_is_case_sensitive": [
+    {
+      "pattern": "extensions/main.ts",
+      "input": "extensions/main.ts",
+      "expected": true
+    },
+    {
+      "pattern": "extensions/main.ts",
+      "input": "main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "extensions/main.ts",
+      "input": "extensions/Main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "a b",
+      "input": "a b",
+      "expected": true
+    },
+    {
+      "pattern": "a b",
+      "input": "a  b",
+      "expected": false
+    },
+    {
+      "pattern": "é",
+      "input": "é",
+      "expected": false
+    },
+    {
+      "pattern": "a",
+      "input": "A",
+      "expected": false
+    },
+    {
+      "pattern": "a",
+      "input": "a/",
+      "expected": true
+    },
+    {
+      "pattern": "﻿a",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a\n",
+      "input": "a\n",
+      "expected": true
+    },
+    {
+      "pattern": "a\n",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a\t",
+      "input": "a\t",
+      "expected": true
+    }
+  ],
+  "wildcards_stay_inside_nonempty_components": [
+    {
+      "pattern": "*.ts",
+      "input": "main.ts",
+      "expected": true
+    },
+    {
+      "pattern": "*.ts",
+      "input": "nested/main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "*.ts",
+      "input": ".hidden.ts",
+      "expected": false
+    },
+    {
+      "pattern": "*",
+      "input": "",
+      "expected": false
+    },
+    {
+      "pattern": "*",
+      "input": "a",
+      "expected": true
+    },
+    {
+      "pattern": "*",
+      "input": ".",
+      "expected": false
+    },
+    {
+      "pattern": "*",
+      "input": "..",
+      "expected": false
+    },
+    {
+      "pattern": "a/*",
+      "input": "a/",
+      "expected": false
+    },
+    {
+      "pattern": "a/*",
+      "input": "a/b/",
+      "expected": true
+    },
+    {
+      "pattern": "a/*",
+      "input": "a/b/c",
+      "expected": false
+    },
+    {
+      "pattern": "***",
+      "input": "x",
+      "expected": true
+    },
+    {
+      "pattern": "a**b",
+      "input": "a/x/b",
+      "expected": false
+    },
+    {
+      "pattern": "a**b",
+      "input": "axxb",
+      "expected": true
+    }
+  ],
+  "question_matches_one_unicode_scalar": [
+    {
+      "pattern": "?.ts",
+      "input": "a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "?.ts",
+      "input": "é.ts",
+      "expected": true
+    },
+    {
+      "pattern": "?.ts",
+      "input": "😀.ts",
+      "expected": true
+    },
+    {
+      "pattern": "?.ts",
+      "input": "ab.ts",
+      "expected": false
+    },
+    {
+      "pattern": "?.ts",
+      "input": ".ts",
+      "expected": false
+    },
+    {
+      "pattern": "??.ts",
+      "input": "😀.ts",
+      "expected": false
+    },
+    {
+      "pattern": "?.ts",
+      "input": "é.ts",
+      "expected": false
+    },
+    {
+      "pattern": "??.ts",
+      "input": "é.ts",
+      "expected": true
+    },
+    {
+      "pattern": "?.ts",
+      "input": "中.ts",
+      "expected": true
+    },
+    {
+      "pattern": "?.ts",
+      "input": "\n.ts",
+      "expected": true
+    },
+    {
+      "pattern": "a?b",
+      "input": "a😀b",
+      "expected": true
+    },
+    {
+      "pattern": "a??b",
+      "input": "a😀b",
+      "expected": false
+    },
+    {
+      "pattern": "a?b",
+      "input": "a/b",
+      "expected": false
+    },
+    {
+      "pattern": "a?b",
+      "input": "a.b",
+      "expected": true
+    }
+  ],
+  "globstars_span_only_allowed_components": [
+    {
+      "pattern": "**/*.ts",
+      "input": "a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "**/*.ts",
+      "input": "x/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "**/*.ts",
+      "input": "x/y/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "**/*.ts",
+      "input": ".hidden.ts",
+      "expected": false
+    },
+    {
+      "pattern": "**/*.ts",
+      "input": "x/.hidden.ts",
+      "expected": false
+    },
+    {
+      "pattern": "**/*.ts",
+      "input": "x/.hidden/a.ts",
+      "expected": false
+    },
+    {
+      "pattern": "**",
+      "input": "",
+      "expected": true
+    },
+    {
+      "pattern": "**",
+      "input": "/",
+      "expected": true
+    },
+    {
+      "pattern": "**",
+      "input": ".",
+      "expected": false
+    },
+    {
+      "pattern": "**",
+      "input": "..",
+      "expected": false
+    },
+    {
+      "pattern": "**",
+      "input": "a/.b",
+      "expected": false
+    },
+    {
+      "pattern": "a/**",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a/**",
+      "input": "a/",
+      "expected": true
+    },
+    {
+      "pattern": "a/**",
+      "input": "a/b/c/",
+      "expected": true
+    },
+    {
+      "pattern": "a/**",
+      "input": "a/.b",
+      "expected": false
+    },
+    {
+      "pattern": "a/**/b",
+      "input": "a/b",
+      "expected": true
+    },
+    {
+      "pattern": "a/**/b",
+      "input": "a/x/b",
+      "expected": true
+    },
+    {
+      "pattern": "a/**/b",
+      "input": "a/./b",
+      "expected": false
+    },
+    {
+      "pattern": "a/**/b",
+      "input": "a/../b",
+      "expected": false
+    },
+    {
+      "pattern": "a/**/.b",
+      "input": "a/x/.b",
+      "expected": true
+    },
+    {
+      "pattern": "a/**/.b",
+      "input": "a/.h/.b",
+      "expected": false
+    },
+    {
+      "pattern": "**/.*/b",
+      "input": ".h/b",
+      "expected": true
+    }
+  ],
+  "explicit_dots_and_traversal_are_distinct": [
+    {
+      "pattern": "**/.hidden.ts",
+      "input": ".hidden.ts",
+      "expected": true
+    },
+    {
+      "pattern": "**/.hidden.ts",
+      "input": "x/.hidden.ts",
+      "expected": true
+    },
+    {
+      "pattern": ".*",
+      "input": ".",
+      "expected": false
+    },
+    {
+      "pattern": ".*",
+      "input": "..",
+      "expected": false
+    },
+    {
+      "pattern": ".*",
+      "input": ".x",
+      "expected": true
+    },
+    {
+      "pattern": ".*",
+      "input": "...",
+      "expected": true
+    },
+    {
+      "pattern": ".",
+      "input": ".",
+      "expected": true
+    },
+    {
+      "pattern": "..",
+      "input": "..",
+      "expected": true
+    },
+    {
+      "pattern": ".",
+      "input": "..",
+      "expected": false
+    },
+    {
+      "pattern": "..*",
+      "input": "..",
+      "expected": false
+    },
+    {
+      "pattern": "..*",
+      "input": "...",
+      "expected": true
+    },
+    {
+      "pattern": "\\.*",
+      "input": ".x",
+      "expected": true
+    },
+    {
+      "pattern": "*.ts",
+      "input": ".ts",
+      "expected": false
+    },
+    {
+      "pattern": ".?.ts",
+      "input": ".a.ts",
+      "expected": true
+    }
+  ],
+  "brace_alternatives_and_sequences_match_end_to_end": [
+    {
+      "pattern": "*.{ts,js}",
+      "input": "a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "*.{ts,js}",
+      "input": "a.js",
+      "expected": true
+    },
+    {
+      "pattern": "*.{ts,js}",
+      "input": "a.md",
+      "expected": false
+    },
+    {
+      "pattern": "{src,{lib,test}}/*.ts",
+      "input": "src/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "{src,{lib,test}}/*.ts",
+      "input": "lib/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "{src,{lib,test}}/*.ts",
+      "input": "test/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "{src,{lib,test}}/*.ts",
+      "input": "other/a.ts",
+      "expected": false
+    },
+    {
+      "pattern": "plugin-{1..3}.ts",
+      "input": "plugin-1.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{1..3}.ts",
+      "input": "plugin-2.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{1..3}.ts",
+      "input": "plugin-3.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{1..3}.ts",
+      "input": "plugin-4.ts",
+      "expected": false
+    },
+    {
+      "pattern": "plugin-{01..03}.ts",
+      "input": "plugin-01.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{01..03}.ts",
+      "input": "plugin-02.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{01..03}.ts",
+      "input": "plugin-1.ts",
+      "expected": false
+    },
+    {
+      "pattern": "plugin-{1..5..2}.ts",
+      "input": "plugin-1.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{1..5..2}.ts",
+      "input": "plugin-2.ts",
+      "expected": false
+    },
+    {
+      "pattern": "plugin-{1..5..2}.ts",
+      "input": "plugin-3.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{1..5..2}.ts",
+      "input": "plugin-5.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{3..1}.ts",
+      "input": "plugin-3.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{3..1}.ts",
+      "input": "plugin-2.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{3..1}.ts",
+      "input": "plugin-1.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{a..c}.ts",
+      "input": "plugin-a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{a..c}.ts",
+      "input": "plugin-b.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{a..c}.ts",
+      "input": "plugin-c.ts",
+      "expected": true
+    },
+    {
+      "pattern": "plugin-{a..c}.ts",
+      "input": "plugin-d.ts",
+      "expected": false
+    },
+    {
+      "pattern": "{main.ts",
+      "input": "{main.ts",
+      "expected": true
+    },
+    {
+      "pattern": "{main.ts",
+      "input": "main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "{,src/}*.ts",
+      "input": "a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "{,src/}*.ts",
+      "input": "src/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "{,src/}*.ts",
+      "input": "lib/a.ts",
+      "expected": false
+    },
+    {
+      "pattern": "{b,a,b}",
+      "input": "b",
+      "expected": true
+    },
+    {
+      "pattern": "{b,a,b}",
+      "input": "c",
+      "expected": false
+    },
+    {
+      "pattern": "{a,a}",
+      "input": "a",
+      "expected": true
+    },
+    {
+      "pattern": "{,}",
+      "input": "",
+      "expected": false
+    },
+    {
+      "pattern": "x{,}y",
+      "input": "xy",
+      "expected": true
+    },
+    {
+      "pattern": "${a,b}",
+      "input": "${a,b}",
+      "expected": true
+    },
+    {
+      "pattern": "${a,b}",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "{a}",
+      "input": "{a}",
+      "expected": true
+    },
+    {
+      "pattern": "{}a",
+      "input": "{}a",
+      "expected": true
+    },
+    {
+      "pattern": "x{a,,b}y",
+      "input": "xy",
+      "expected": true
+    },
+    {
+      "pattern": "{3..1..2}",
+      "input": "1",
+      "expected": true
+    },
+    {
+      "pattern": "{1..3..0}",
+      "input": "2",
+      "expected": true
+    },
+    {
+      "pattern": "{01..-01}",
+      "input": "-1",
+      "expected": false
+    },
+    {
+      "pattern": "\\{a,b\\}",
+      "input": "{a,b}",
+      "expected": true
+    }
+  ],
+  "backslash_escapes_preserve_literal_intent": [
+    {
+      "pattern": "a\\*.ts",
+      "input": "a*.ts",
+      "expected": true
+    },
+    {
+      "pattern": "a\\*.ts",
+      "input": "abc.ts",
+      "expected": false
+    },
+    {
+      "pattern": "src\\main.ts",
+      "input": "srcmain.ts",
+      "expected": true
+    },
+    {
+      "pattern": "src\\main.ts",
+      "input": "src\\main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "src\\main.ts",
+      "input": "src/main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "a\\?b",
+      "input": "a?b",
+      "expected": true
+    },
+    {
+      "pattern": "a\\?b",
+      "input": "acb",
+      "expected": false
+    },
+    {
+      "pattern": "a\\/b",
+      "input": "a/b",
+      "expected": false
+    },
+    {
+      "pattern": "a\\",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a\\ b",
+      "input": "a b",
+      "expected": true
+    },
+    {
+      "pattern": "a\\#b",
+      "input": "a#b",
+      "expected": true
+    },
+    {
+      "pattern": "\\*.ts",
+      "input": "x.ts",
+      "expected": false
+    },
+    {
+      "pattern": "\\*.ts",
+      "input": "*.ts",
+      "expected": true
+    },
+    {
+      "pattern": "*\\a",
+      "input": "ba",
+      "expected": true
+    },
+    {
+      "pattern": "?\\a",
+      "input": "ba",
+      "expected": true
+    },
+    {
+      "pattern": "?\\a",
+      "input": "b\\a",
+      "expected": false
+    },
+    {
+      "pattern": "*\\.ts",
+      "input": "a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "*\\#a",
+      "input": "x#a",
+      "expected": true
+    }
+  ],
+  "unclosed_classes_remain_literal_without_hiding_wildcards": [
+    {
+      "pattern": "[main.ts",
+      "input": "[main.ts",
+      "expected": true
+    },
+    {
+      "pattern": "[main.ts",
+      "input": "main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "[abc",
+      "input": "[abc",
+      "expected": true
+    },
+    {
+      "pattern": "[a*",
+      "input": "[abc",
+      "expected": true
+    },
+    {
+      "pattern": "[a*",
+      "input": "abc",
+      "expected": false
+    },
+    {
+      "pattern": "[]",
+      "input": "[]",
+      "expected": true
+    },
+    {
+      "pattern": "[!]",
+      "input": "[!]",
+      "expected": true
+    },
+    {
+      "pattern": "[^]",
+      "input": "[^]",
+      "expected": true
+    }
+  ],
+  "comments_precede_negation_and_empty_matching": [
+    {
+      "pattern": "#main.ts",
+      "input": "#main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "#main.ts",
+      "input": "main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "!main.ts",
+      "input": "main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "!main.ts",
+      "input": "extra.ts",
+      "expected": true
+    },
+    {
+      "pattern": "!!main.ts",
+      "input": "main.ts",
+      "expected": true
+    },
+    {
+      "pattern": "!!main.ts",
+      "input": "extra.ts",
+      "expected": false
+    },
+    {
+      "pattern": "",
+      "input": "",
+      "expected": true
+    },
+    {
+      "pattern": "",
+      "input": "main.ts",
+      "expected": false
+    },
+    {
+      "pattern": "!",
+      "input": "",
+      "expected": false
+    },
+    {
+      "pattern": "!",
+      "input": "a",
+      "expected": true
+    },
+    {
+      "pattern": "!!",
+      "input": "",
+      "expected": true
+    },
+    {
+      "pattern": "!!!a",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "!!!a",
+      "input": "b",
+      "expected": true
+    },
+    {
+      "pattern": "!#a",
+      "input": "#a",
+      "expected": false
+    },
+    {
+      "pattern": "!#a",
+      "input": "a",
+      "expected": true
+    },
+    {
+      "pattern": "!!#a",
+      "input": "#a",
+      "expected": true
+    },
+    {
+      "pattern": " #a",
+      "input": " #a",
+      "expected": true
+    },
+    {
+      "pattern": "\\#a",
+      "input": "#a",
+      "expected": true
+    },
+    {
+      "pattern": "\\!a",
+      "input": "!a",
+      "expected": true
+    },
+    {
+      "pattern": "!*.ts",
+      "input": ".hidden.ts",
+      "expected": true
+    },
+    {
+      "pattern": "!*.ts",
+      "input": "x/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "!{a,b}",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "!{a,b}",
+      "input": "c",
+      "expected": true
+    },
+    {
+      "pattern": "#!a",
+      "input": "anything",
+      "expected": false
+    }
+  ],
+  "pattern_parents_reduce_without_normalizing_input": [
+    {
+      "pattern": "./*.ts",
+      "input": "./a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "./*.ts",
+      "input": "a.ts",
+      "expected": false
+    },
+    {
+      "pattern": "./*.ts",
+      "input": "./.hidden.ts",
+      "expected": false
+    },
+    {
+      "pattern": "a/../b",
+      "input": "b",
+      "expected": true
+    },
+    {
+      "pattern": "a/../b",
+      "input": "a/../b",
+      "expected": false
+    },
+    {
+      "pattern": "*/../b",
+      "input": "b",
+      "expected": true
+    },
+    {
+      "pattern": "a/../../b",
+      "input": "../b",
+      "expected": true
+    },
+    {
+      "pattern": "./a",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "./a",
+      "input": "./a",
+      "expected": true
+    },
+    {
+      "pattern": "a/./b",
+      "input": "a/b",
+      "expected": false
+    },
+    {
+      "pattern": "a/./b",
+      "input": "a/./b",
+      "expected": true
+    },
+    {
+      "pattern": "**/../b",
+      "input": "../b",
+      "expected": true
+    },
+    {
+      "pattern": "./../b",
+      "input": "../b",
+      "expected": false
+    },
+    {
+      "pattern": "a/..",
+      "input": "",
+      "expected": true
+    },
+    {
+      "pattern": "a/..",
+      "input": ".",
+      "expected": false
+    }
+  ],
+  "trailing_separators_keep_directory_semantics": [
+    {
+      "pattern": "src//*.ts",
+      "input": "src/a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "src//*.ts",
+      "input": "src//a.ts",
+      "expected": true
+    },
+    {
+      "pattern": "a/",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a/",
+      "input": "a/",
+      "expected": true
+    },
+    {
+      "pattern": "a//",
+      "input": "a/",
+      "expected": true
+    },
+    {
+      "pattern": "/a",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "/a",
+      "input": "//a",
+      "expected": true
+    },
+    {
+      "pattern": "//a",
+      "input": "/a",
+      "expected": true
+    },
+    {
+      "pattern": "a/*/",
+      "input": "a/b",
+      "expected": false
+    },
+    {
+      "pattern": "a/*/",
+      "input": "a/b/",
+      "expected": true
+    },
+    {
+      "pattern": "a/**/*",
+      "input": "a/b/",
+      "expected": true
+    },
+    {
+      "pattern": "a/**/*",
+      "input": "a/",
+      "expected": false
+    },
+    {
+      "pattern": "a/**/",
+      "input": "a/b",
+      "expected": false
+    },
+    {
+      "pattern": "a/**/",
+      "input": "a/b/",
+      "expected": true
+    },
+    {
+      "pattern": "/",
+      "input": "",
+      "expected": false
+    },
+    {
+      "pattern": "/",
+      "input": "//",
+      "expected": true
+    }
+  ],
+  "stars_backtrack_without_crossing_separators": [
+    {
+      "pattern": "*a*b",
+      "input": "aaxb",
+      "expected": true
+    },
+    {
+      "pattern": "*a*b",
+      "input": "aaxc",
+      "expected": false
+    },
+    {
+      "pattern": "a*b?c",
+      "input": "axxbxc",
+      "expected": true
+    },
+    {
+      "pattern": "a*b?c",
+      "input": "axxbbc",
+      "expected": true
+    },
+    {
+      "pattern": "a*b?c",
+      "input": "a/bxc",
+      "expected": false
+    },
+    {
+      "pattern": "*?*",
+      "input": "a",
+      "expected": true
+    },
+    {
+      "pattern": "*?*",
+      "input": "",
+      "expected": false
+    },
+    {
+      "pattern": "a*?",
+      "input": "a😀",
+      "expected": true
+    },
+    {
+      "pattern": "a*?",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "a*?",
+      "input": "a.b",
+      "expected": true
+    }
+  ],
+  "globstar_sections_keep_head_tail_and_order": [
+    {
+      "pattern": "head/**/a/**/b/**/tail",
+      "input": "head/a/b/tail",
+      "expected": true
+    },
+    {
+      "pattern": "head/**/a/**/b/**/tail",
+      "input": "head/x/a/a/x/b/z/tail",
+      "expected": true
+    },
+    {
+      "pattern": "head/**/a/**/b/**/tail",
+      "input": "head/b/a/tail",
+      "expected": false
+    },
+    {
+      "pattern": "head/**/a/**/b/**/tail",
+      "input": "other/a/b/tail",
+      "expected": false
+    },
+    {
+      "pattern": "head/**/a/**/b/**/tail",
+      "input": "head/a/b/other",
+      "expected": false
+    },
+    {
+      "pattern": "**/a/**/z",
+      "input": "x/a/.hidden/z",
+      "expected": false
+    },
+    {
+      "pattern": "**/a/**/z",
+      "input": "x/a/z/",
+      "expected": true
+    },
+    {
+      "pattern": "**/a/**",
+      "input": "a",
+      "expected": false
+    },
+    {
+      "pattern": "**/a/**",
+      "input": "a/",
+      "expected": true
+    },
+    {
+      "pattern": "**/**/a",
+      "input": "x/a",
+      "expected": true
+    },
+    {
+      "pattern": "**/a/**/a/**",
+      "input": "a/a/",
+      "expected": true
+    },
+    {
+      "pattern": "**/a/**/a/**",
+      "input": "a/",
+      "expected": false
+    },
+    {
+      "pattern": "**/a/**/.b",
+      "input": "a/.b",
+      "expected": true
+    },
+    {
+      "pattern": "**/a/**/.b",
+      "input": "a/.h/.b",
+      "expected": false
+    }
+  ],
+  "validation_counts_scalars_before_shortcuts": [
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "a",
+        "count": 65535
+      },
+      "input": "x",
+      "expected": false
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "a",
+        "count": 65536
+      },
+      "input": "x",
+      "expected": false
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "a",
+        "count": 65537
+      },
+      "input": "x",
+      "expected": {
+        "error": "pattern is too long"
+      }
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "a",
+        "count": 65536,
+        "prefix": "#"
+      },
+      "input": "x",
+      "expected": {
+        "error": "pattern is too long"
+      }
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "😀",
+        "count": 32768
+      },
+      "input": "x",
+      "expected": false
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "😀",
+        "count": 32769
+      },
+      "input": "x",
+      "expected": false
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "😀",
+        "count": 65536
+      },
+      "input": "x",
+      "expected": false
+    },
+    {
+      "pattern": {
+        "kind": "repeat",
+        "text": "😀",
+        "count": 65537
+      },
+      "input": "x",
+      "expected": {
+        "error": "pattern is too long"
+      }
+    }
+  ],
+  "globstars_do_not_have_a_recursion_false_negative": [
+    {
+      "pattern": {
+        "kind": "globstar-pattern",
+        "count": 199
+      },
+      "input": {
+        "kind": "globstar-input",
+        "count": 199
+      },
+      "expected": true
+    },
+    {
+      "pattern": {
+        "kind": "globstar-pattern",
+        "count": 200
+      },
+      "input": {
+        "kind": "globstar-input",
+        "count": 200
+      },
+      "expected": true
+    },
+    {
+      "pattern": {
+        "kind": "globstar-pattern",
+        "count": 201
+      },
+      "input": {
+        "kind": "globstar-input",
+        "count": 201
+      },
+      "expected": true
+    },
+    {
+      "pattern": {
+        "kind": "globstar-pattern",
+        "count": 202
+      },
+      "input": {
+        "kind": "globstar-input",
+        "count": 202
+      },
+      "expected": true
+    },
+    {
+      "pattern": {
+        "kind": "globstar-pattern",
+        "count": 202,
+        "suffix": "/z"
+      },
+      "input": {
+        "kind": "globstar-input",
+        "count": 202,
+        "suffix": "x"
+      },
+      "expected": false
+    }
+  ],
+  "brace_default_cap_selects_the_earlier_alternatives": [
+    {
+      "pattern": "{1..100001}",
+      "input": "99999",
+      "expected": true
+    },
+    {
+      "pattern": "{1..100001}",
+      "input": "100000",
+      "expected": true
+    },
+    {
+      "pattern": "{1..100001}",
+      "input": "100001",
+      "expected": false
+    }
+  ]
+}

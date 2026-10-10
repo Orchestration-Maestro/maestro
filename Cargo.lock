@@ -192,6 +192,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc0b364ead1874514c8c2855ab558056ebfeb775653e7ae45ff72f28f8f3166c"
 
 [[package]]
+name = "brace-expansion"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0466e75f55342d0801e7f097cb4b37e6154f54e97e5deea03a63110b98bfa6e"
+
+[[package]]
 name = "bstr"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1761,6 +1767,7 @@ dependencies = [
 name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
+ "brace-expansion",
  "git-url-parse",
  "maestro-path",
  "maestro-resources",
