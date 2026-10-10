@@ -9,6 +9,7 @@ repository.workspace = true
 maestro-path = { path = "../maestro-path" }
 maestro-request = { path = "../maestro-request" }
 indexmap = "=2.14.2"
+serde.workspace = true
 serde_json.workspace = true
 num-traits.workspace = true
 jsonschema = { version = "=0.58.5", default-features = false }

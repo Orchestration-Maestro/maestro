@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Alternate template: {{wordmark}} small mark</title>
+  <circle cx="256" cy="256" r="220" fill="none" stroke="var(--mark-ring)" stroke-width="40"/>
+  <polyline points="150,380 150,200 256,326 362,200 362,380" fill="none" stroke="var(--mark-m)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 80 L270 140 L320 154 L270 168 L256 228 L242 168 L192 154 L242 140Z" fill="var(--mark-star)"/>
+</svg>

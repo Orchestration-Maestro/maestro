@@ -1,0 +1,558 @@
+{
+ "forge-dark": {
+  "colors": {
+   "accent": "#D9A066",
+   "background": "#0E0B09",
+   "border": "#5E7383",
+   "error": "#FF6A1A",
+   "live": "#FF6A1A",
+   "mark-live": "#FF6A1A",
+   "mark-m": "#B7410E",
+   "mark-node": "#B7410E",
+   "mark-ring": "#B7410E",
+   "mark-star": "#FF6A1A",
+   "muted": "#D9A066",
+   "on-accent": "#0E0B09",
+   "panel": "#2A1F1A",
+   "success": "#FF6A1A",
+   "text": "#F2E8DC",
+   "warning": "#D9A066"
+  },
+  "css": {
+   "--maestro-color-accent": "#D9A066",
+   "--maestro-color-background": "#0E0B09",
+   "--maestro-color-border": "#5E7383",
+   "--maestro-color-error": "#FF6A1A",
+   "--maestro-color-live": "#FF6A1A",
+   "--maestro-color-mark-live": "#FF6A1A",
+   "--maestro-color-mark-m": "#B7410E",
+   "--maestro-color-mark-node": "#B7410E",
+   "--maestro-color-mark-ring": "#B7410E",
+   "--maestro-color-mark-star": "#FF6A1A",
+   "--maestro-color-muted": "#D9A066",
+   "--maestro-color-on-accent": "#0E0B09",
+   "--maestro-color-panel": "#2A1F1A",
+   "--maestro-color-success": "#FF6A1A",
+   "--maestro-color-text": "#F2E8DC",
+   "--maestro-color-warning": "#D9A066",
+   "--maestro-font-body": "\"Barlow\", system-ui, sans-serif",
+   "--maestro-font-display": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-font-mono": "\"JetBrains Mono\", ui-monospace, monospace",
+   "--maestro-radii-control": "4px",
+   "--maestro-radii-none": "0px",
+   "--maestro-radii-panel": "8px",
+   "--maestro-spacing-lg": "24px",
+   "--maestro-spacing-md": "16px",
+   "--maestro-spacing-sm": "8px",
+   "--maestro-spacing-xl": "32px",
+   "--maestro-spacing-xs": "4px",
+   "--maestro-type-body-font": "\"Barlow\", system-ui, sans-serif",
+   "--maestro-type-body-line-height": "1.55",
+   "--maestro-type-body-size": "16px",
+   "--maestro-type-body-weight": "400",
+   "--maestro-type-display-font": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-type-display-line-height": "1.1",
+   "--maestro-type-display-size": "36px",
+   "--maestro-type-display-weight": "700",
+   "--maestro-type-display-xl-font": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-type-display-xl-line-height": "1.1",
+   "--maestro-type-display-xl-size": "56px",
+   "--maestro-type-display-xl-weight": "700",
+   "--maestro-type-heading-font": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-type-heading-line-height": "1.2",
+   "--maestro-type-heading-size": "24px",
+   "--maestro-type-heading-weight": "600",
+   "--maestro-type-mono-font": "\"JetBrains Mono\", ui-monospace, monospace",
+   "--maestro-type-mono-line-height": "1.7",
+   "--maestro-type-mono-size": "14px",
+   "--maestro-type-mono-weight": "400"
+  },
+  "glyphs": {
+   "failed": {
+    "symbol": "✗",
+    "color": "#FF6A1A"
+   },
+   "idle": {
+    "symbol": "✦",
+    "color": "#D9A066"
+   },
+   "mark": {
+    "symbol": "✦",
+    "color": "#D9A066"
+   },
+   "passed": {
+    "symbol": "✓",
+    "color": "#FF6A1A"
+   },
+   "tool-step": {
+    "symbol": "┃",
+    "color": "#D9A066"
+   },
+   "working": {
+    "symbol": "✦",
+    "color": "#FF6A1A"
+   }
+  },
+  "ansi": {
+   "black": "#D9A066",
+   "red": "#FF6A1A",
+   "green": "#FF6A1A",
+   "yellow": "#D9A066",
+   "blue": "#D9A066",
+   "magenta": "#D9A066",
+   "cyan": "#FF6A1A",
+   "white": "#F2E8DC",
+   "bright-black": "#D9A066",
+   "bright-red": "#FF6A1A",
+   "bright-green": "#FF6A1A",
+   "bright-yellow": "#D9A066",
+   "bright-blue": "#D9A066",
+   "bright-magenta": "#D9A066",
+   "bright-cyan": "#FF6A1A",
+   "bright-white": "#F2E8DC"
+  },
+  "truecolor": {
+   "background": "#0E0B09",
+   "panel": "#2A1F1A",
+   "text": "#F2E8DC",
+   "muted": "#D9A066",
+   "accent": "#D9A066",
+   "live": "#FF6A1A",
+   "success": "#FF6A1A",
+   "warning": "#D9A066",
+   "error": "#FF6A1A"
+  },
+  "svg": {
+   "template": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro mark</title>\n  <rect width=\"512\" height=\"512\" fill=\"#0E0B09\"/>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"12\"/>\n  <g stroke=\"#B7410E\" stroke-width=\"12\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#B7410E\" stroke-width=\"20\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#B7410E\">\n    <circle cx=\"150\" cy=\"386\" r=\"26\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"26\"/>\n  </g>\n  <circle cx=\"256\" cy=\"326\" r=\"26\" fill=\"#FF6A1A\"/>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#FF6A1A\"/>\n</svg>\n",
+   "flat": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro flat mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"14\"/>\n  <g stroke=\"#B7410E\" stroke-width=\"14\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#B7410E\" stroke-width=\"22\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#B7410E\">\n    <circle cx=\"150\" cy=\"386\" r=\"28\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"28\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#FF6A1A\"/>\n</svg>\n",
+   "mono": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro mono mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#F2E8DC\" stroke-width=\"16\"/>\n  <g stroke=\"#F2E8DC\" stroke-width=\"16\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#F2E8DC\" stroke-width=\"26\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#F2E8DC\">\n    <circle cx=\"150\" cy=\"386\" r=\"30\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"30\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#F2E8DC\"/>\n</svg>\n",
+   "small": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro small mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"220\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"40\"/>\n  <polyline points=\"150,380 150,200 256,326 362,200 362,380\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"54\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M256 80 L270 140 L320 154 L270 168 L256 228 L242 168 L192 154 L242 140Z\" fill=\"#FF6A1A\"/>\n</svg>\n"
+  }
+ },
+ "forge-light": {
+  "colors": {
+   "accent": "#B7410E",
+   "background": "#F2E8DC",
+   "border": "#5E7383",
+   "error": "#B7410E",
+   "live": "#B7410E",
+   "mark-live": "#B7410E",
+   "mark-m": "#B7410E",
+   "mark-node": "#B7410E",
+   "mark-ring": "#B7410E",
+   "mark-star": "#B7410E",
+   "muted": "#2A1F1A",
+   "on-accent": "#F2E8DC",
+   "panel": "#F2E8DC",
+   "success": "#B7410E",
+   "text": "#0E0B09",
+   "warning": "#2A1F1A"
+  },
+  "css": {
+   "--maestro-color-accent": "#B7410E",
+   "--maestro-color-background": "#F2E8DC",
+   "--maestro-color-border": "#5E7383",
+   "--maestro-color-error": "#B7410E",
+   "--maestro-color-live": "#B7410E",
+   "--maestro-color-mark-live": "#B7410E",
+   "--maestro-color-mark-m": "#B7410E",
+   "--maestro-color-mark-node": "#B7410E",
+   "--maestro-color-mark-ring": "#B7410E",
+   "--maestro-color-mark-star": "#B7410E",
+   "--maestro-color-muted": "#2A1F1A",
+   "--maestro-color-on-accent": "#F2E8DC",
+   "--maestro-color-panel": "#F2E8DC",
+   "--maestro-color-success": "#B7410E",
+   "--maestro-color-text": "#0E0B09",
+   "--maestro-color-warning": "#2A1F1A",
+   "--maestro-font-body": "\"Barlow\", system-ui, sans-serif",
+   "--maestro-font-display": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-font-mono": "\"JetBrains Mono\", ui-monospace, monospace",
+   "--maestro-radii-control": "4px",
+   "--maestro-radii-none": "0px",
+   "--maestro-radii-panel": "8px",
+   "--maestro-spacing-lg": "24px",
+   "--maestro-spacing-md": "16px",
+   "--maestro-spacing-sm": "8px",
+   "--maestro-spacing-xl": "32px",
+   "--maestro-spacing-xs": "4px",
+   "--maestro-type-body-font": "\"Barlow\", system-ui, sans-serif",
+   "--maestro-type-body-line-height": "1.55",
+   "--maestro-type-body-size": "16px",
+   "--maestro-type-body-weight": "400",
+   "--maestro-type-display-font": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-type-display-line-height": "1.1",
+   "--maestro-type-display-size": "36px",
+   "--maestro-type-display-weight": "700",
+   "--maestro-type-display-xl-font": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-type-display-xl-line-height": "1.1",
+   "--maestro-type-display-xl-size": "56px",
+   "--maestro-type-display-xl-weight": "700",
+   "--maestro-type-heading-font": "\"Barlow Condensed\", system-ui, sans-serif",
+   "--maestro-type-heading-line-height": "1.2",
+   "--maestro-type-heading-size": "24px",
+   "--maestro-type-heading-weight": "600",
+   "--maestro-type-mono-font": "\"JetBrains Mono\", ui-monospace, monospace",
+   "--maestro-type-mono-line-height": "1.7",
+   "--maestro-type-mono-size": "14px",
+   "--maestro-type-mono-weight": "400"
+  },
+  "glyphs": {
+   "failed": {
+    "symbol": "✗",
+    "color": "#B7410E"
+   },
+   "idle": {
+    "symbol": "✦",
+    "color": "#B7410E"
+   },
+   "mark": {
+    "symbol": "✦",
+    "color": "#B7410E"
+   },
+   "passed": {
+    "symbol": "✓",
+    "color": "#B7410E"
+   },
+   "tool-step": {
+    "symbol": "┃",
+    "color": "#2A1F1A"
+   },
+   "working": {
+    "symbol": "✦",
+    "color": "#B7410E"
+   }
+  },
+  "ansi": {
+   "black": "#2A1F1A",
+   "red": "#B7410E",
+   "green": "#B7410E",
+   "yellow": "#2A1F1A",
+   "blue": "#B7410E",
+   "magenta": "#B7410E",
+   "cyan": "#B7410E",
+   "white": "#0E0B09",
+   "bright-black": "#2A1F1A",
+   "bright-red": "#B7410E",
+   "bright-green": "#B7410E",
+   "bright-yellow": "#2A1F1A",
+   "bright-blue": "#B7410E",
+   "bright-magenta": "#B7410E",
+   "bright-cyan": "#B7410E",
+   "bright-white": "#0E0B09"
+  },
+  "truecolor": {
+   "background": "#F2E8DC",
+   "panel": "#F2E8DC",
+   "text": "#0E0B09",
+   "muted": "#2A1F1A",
+   "accent": "#B7410E",
+   "live": "#B7410E",
+   "success": "#B7410E",
+   "warning": "#2A1F1A",
+   "error": "#B7410E"
+  },
+  "svg": {
+   "template": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro mark</title>\n  <rect width=\"512\" height=\"512\" fill=\"#F2E8DC\"/>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"12\"/>\n  <g stroke=\"#B7410E\" stroke-width=\"12\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#B7410E\" stroke-width=\"20\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#B7410E\">\n    <circle cx=\"150\" cy=\"386\" r=\"26\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"26\"/>\n  </g>\n  <circle cx=\"256\" cy=\"326\" r=\"26\" fill=\"#B7410E\"/>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#B7410E\"/>\n</svg>\n",
+   "flat": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro flat mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"14\"/>\n  <g stroke=\"#B7410E\" stroke-width=\"14\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#B7410E\" stroke-width=\"22\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#B7410E\">\n    <circle cx=\"150\" cy=\"386\" r=\"28\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"28\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#B7410E\"/>\n</svg>\n",
+   "mono": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro mono mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#0E0B09\" stroke-width=\"16\"/>\n  <g stroke=\"#0E0B09\" stroke-width=\"16\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#0E0B09\" stroke-width=\"26\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#0E0B09\">\n    <circle cx=\"150\" cy=\"386\" r=\"30\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"30\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#0E0B09\"/>\n</svg>\n",
+   "small": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro small mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"220\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"40\"/>\n  <polyline points=\"150,380 150,200 256,326 362,200 362,380\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"54\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M256 80 L270 140 L320 154 L270 168 L256 228 L242 168 L192 154 L242 140Z\" fill=\"#B7410E\"/>\n</svg>\n"
+  }
+ },
+ "alternate-dark": {
+  "colors": {
+   "accent": "#B6F05A",
+   "background": "#0B0D10",
+   "border": "#6C63FF",
+   "error": "#FF5C7A",
+   "live": "#B6F05A",
+   "mark-live": "#B6F05A",
+   "mark-m": "#6C63FF",
+   "mark-node": "#6C63FF",
+   "mark-ring": "#6C63FF",
+   "mark-star": "#B6F05A",
+   "muted": "#E8ECF2",
+   "note role": "#FF5C7A",
+   "note-role": "#E8ECF2",
+   "on-accent": "#0B0D10",
+   "panel": "#1A1F27",
+   "success": "#B6F05A",
+   "text": "#E8ECF2",
+   "warning": "#FF5C7A"
+  },
+  "css": {
+   "--maestro-color-accent": "#B6F05A",
+   "--maestro-color-background": "#0B0D10",
+   "--maestro-color-border": "#6C63FF",
+   "--maestro-color-error": "#FF5C7A",
+   "--maestro-color-live": "#B6F05A",
+   "--maestro-color-mark-live": "#B6F05A",
+   "--maestro-color-mark-m": "#6C63FF",
+   "--maestro-color-mark-node": "#6C63FF",
+   "--maestro-color-mark-ring": "#6C63FF",
+   "--maestro-color-mark-star": "#B6F05A",
+   "--maestro-color-muted": "#E8ECF2",
+   "--maestro-color-note-role": "#E8ECF2",
+   "--maestro-color-note\\ role": "#FF5C7A",
+   "--maestro-color-on-accent": "#0B0D10",
+   "--maestro-color-panel": "#1A1F27",
+   "--maestro-color-success": "#B6F05A",
+   "--maestro-color-text": "#E8ECF2",
+   "--maestro-color-warning": "#FF5C7A",
+   "--maestro-font-body": "\"Other Body\"",
+   "--maestro-font-caption": "\"Local Caption\", sans-serif",
+   "--maestro-font-display": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-font-mono": "\"Other Mono\", monospace, system-ui",
+   "--maestro-radii-badge": "2.5px",
+   "--maestro-radii-control": "8px",
+   "--maestro-radii-none": "2px",
+   "--maestro-radii-panel": "14px",
+   "--maestro-spacing-extra\\ gap": "3.5px",
+   "--maestro-spacing-lg": "25px",
+   "--maestro-spacing-md": "17px",
+   "--maestro-spacing-sm": "9px",
+   "--maestro-spacing-xl": "33px",
+   "--maestro-spacing-xs": "5px",
+   "--maestro-type-body-font": "\"Other Body\"",
+   "--maestro-type-body-line-height": "1.55",
+   "--maestro-type-body-size": "20px",
+   "--maestro-type-body-weight": "480",
+   "--maestro-type-caption-font": "\"Local Caption\", sans-serif",
+   "--maestro-type-caption-line-height": "1.25",
+   "--maestro-type-caption-size": "15.5px",
+   "--maestro-type-caption-weight": "450.5",
+   "--maestro-type-display-font": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-type-display-line-height": "1.35",
+   "--maestro-type-display-size": "18px",
+   "--maestro-type-display-weight": "460",
+   "--maestro-type-display-xl-font": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-type-display-xl-line-height": "1.25",
+   "--maestro-type-display-xl-size": "17px",
+   "--maestro-type-display-xl-weight": "450",
+   "--maestro-type-heading-font": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-type-heading-line-height": "1.45",
+   "--maestro-type-heading-size": "19px",
+   "--maestro-type-heading-weight": "470",
+   "--maestro-type-mono-font": "\"Other Mono\", monospace, system-ui",
+   "--maestro-type-mono-line-height": "1.65",
+   "--maestro-type-mono-size": "21px",
+   "--maestro-type-mono-weight": "490"
+  },
+  "glyphs": {
+   "failed": {
+    "symbol": "g4",
+    "color": "#FF5C7A"
+   },
+   "idle": {
+    "symbol": "g2",
+    "color": "#B6F05A"
+   },
+   "mark": {
+    "symbol": "g0",
+    "color": "#B6F05A"
+   },
+   "passed": {
+    "symbol": "g3",
+    "color": "#B6F05A"
+   },
+   "queued": {
+    "symbol": "q",
+    "color": "#FF5C7A"
+   },
+   "tool-step": {
+    "symbol": "g5",
+    "color": "#E8ECF2"
+   },
+   "working": {
+    "symbol": "g1",
+    "color": "#FF5C7A"
+   }
+  },
+  "ansi": {
+   "black": "#E8ECF2",
+   "red": "#FF5C7A",
+   "green": "#B6F05A",
+   "yellow": "#FF5C7A",
+   "blue": "#FF5C7A",
+   "magenta": "#B6F05A",
+   "cyan": "#B6F05A",
+   "white": "#E8ECF2",
+   "bright-black": "#E8ECF2",
+   "bright-red": "#FF5C7A",
+   "bright-green": "#B6F05A",
+   "bright-yellow": "#FF5C7A",
+   "bright-blue": "#B6F05A",
+   "bright-magenta": "#B6F05A",
+   "bright-cyan": "#B6F05A",
+   "bright-white": "#E8ECF2",
+   "alternate-slot": "#FF5C7A"
+  },
+  "truecolor": {
+   "background": "#0B0D10",
+   "panel": "#1A1F27",
+   "text": "#E8ECF2",
+   "muted": "#E8ECF2",
+   "accent": "#FF5C7A",
+   "live": "#B6F05A",
+   "success": "#B6F05A",
+   "warning": "#FF5C7A",
+   "error": "#FF5C7A",
+   "note": "#E8ECF2"
+  },
+  "svg": {
+   "template": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} mark</title>\n  <rect width=\"512\" height=\"512\" fill=\"#0B0D10\"/>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"12\"/>\n  <g stroke=\"#6C63FF\" stroke-width=\"12\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#6C63FF\" stroke-width=\"20\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#6C63FF\">\n    <circle cx=\"150\" cy=\"386\" r=\"26\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"26\"/>\n  </g>\n  <circle cx=\"256\" cy=\"326\" r=\"26\" fill=\"#B6F05A\"/>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#B6F05A\"/>\n</svg>\n",
+   "flat": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} flat mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"14\"/>\n  <g stroke=\"#6C63FF\" stroke-width=\"14\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#6C63FF\" stroke-width=\"22\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#6C63FF\">\n    <circle cx=\"150\" cy=\"386\" r=\"28\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"28\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#B6F05A\"/>\n</svg>\n",
+   "mono": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} mono mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#E8ECF2\" stroke-width=\"16\"/>\n  <g stroke=\"#E8ECF2\" stroke-width=\"16\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#E8ECF2\" stroke-width=\"26\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#E8ECF2\">\n    <circle cx=\"150\" cy=\"386\" r=\"30\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"30\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#E8ECF2\"/>\n</svg>\n",
+   "small": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} small mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"220\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"40\"/>\n  <polyline points=\"150,380 150,200 256,326 362,200 362,380\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"54\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M256 80 L270 140 L320 154 L270 168 L256 228 L242 168 L192 154 L242 140Z\" fill=\"#B6F05A\"/>\n</svg>\n",
+   "badge": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} badge mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"14\"/>\n  <g stroke=\"#6C63FF\" stroke-width=\"14\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#6C63FF\" stroke-width=\"22\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#6C63FF\">\n    <circle cx=\"150\" cy=\"386\" r=\"28\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"28\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#B6F05A\"/>\n</svg>\n"
+  }
+ },
+ "alternate-light": {
+  "colors": {
+   "accent": "#1A1F27",
+   "background": "#E8ECF2",
+   "border": "#6C63FF",
+   "error": "#0B0D10",
+   "live": "#1A1F27",
+   "mark-live": "#0B0D10",
+   "mark-m": "#6C63FF",
+   "mark-node": "#6C63FF",
+   "mark-ring": "#6C63FF",
+   "mark-star": "#0B0D10",
+   "muted": "#1A1F27",
+   "note role": "#FF5C7A",
+   "note-role": "#E8ECF2",
+   "on-accent": "#E8ECF2",
+   "panel": "#E8ECF2",
+   "success": "#1A1F27",
+   "text": "#0B0D10",
+   "warning": "#0B0D10"
+  },
+  "css": {
+   "--maestro-color-accent": "#1A1F27",
+   "--maestro-color-background": "#E8ECF2",
+   "--maestro-color-border": "#6C63FF",
+   "--maestro-color-error": "#0B0D10",
+   "--maestro-color-live": "#1A1F27",
+   "--maestro-color-mark-live": "#0B0D10",
+   "--maestro-color-mark-m": "#6C63FF",
+   "--maestro-color-mark-node": "#6C63FF",
+   "--maestro-color-mark-ring": "#6C63FF",
+   "--maestro-color-mark-star": "#0B0D10",
+   "--maestro-color-muted": "#1A1F27",
+   "--maestro-color-note-role": "#E8ECF2",
+   "--maestro-color-note\\ role": "#FF5C7A",
+   "--maestro-color-on-accent": "#E8ECF2",
+   "--maestro-color-panel": "#E8ECF2",
+   "--maestro-color-success": "#1A1F27",
+   "--maestro-color-text": "#0B0D10",
+   "--maestro-color-warning": "#0B0D10",
+   "--maestro-font-body": "\"Other Body\"",
+   "--maestro-font-caption": "\"Local Caption\", sans-serif",
+   "--maestro-font-display": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-font-mono": "\"Other Mono\", monospace, system-ui",
+   "--maestro-radii-badge": "2.5px",
+   "--maestro-radii-control": "8px",
+   "--maestro-radii-none": "2px",
+   "--maestro-radii-panel": "14px",
+   "--maestro-spacing-extra\\ gap": "3.5px",
+   "--maestro-spacing-lg": "25px",
+   "--maestro-spacing-md": "17px",
+   "--maestro-spacing-sm": "9px",
+   "--maestro-spacing-xl": "33px",
+   "--maestro-spacing-xs": "5px",
+   "--maestro-type-body-font": "\"Other Body\"",
+   "--maestro-type-body-line-height": "1.55",
+   "--maestro-type-body-size": "20px",
+   "--maestro-type-body-weight": "480",
+   "--maestro-type-caption-font": "\"Local Caption\", sans-serif",
+   "--maestro-type-caption-line-height": "1.25",
+   "--maestro-type-caption-size": "15.5px",
+   "--maestro-type-caption-weight": "450.5",
+   "--maestro-type-display-font": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-type-display-line-height": "1.35",
+   "--maestro-type-display-size": "18px",
+   "--maestro-type-display-weight": "460",
+   "--maestro-type-display-xl-font": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-type-display-xl-line-height": "1.25",
+   "--maestro-type-display-xl-size": "17px",
+   "--maestro-type-display-xl-weight": "450",
+   "--maestro-type-heading-font": "\" ﻿Quoted \\\"Face\\\" \\\\ Name \\3c /style>\\a  \", serif, \"Local, Fallback\", serif, ui-monospace",
+   "--maestro-type-heading-line-height": "1.45",
+   "--maestro-type-heading-size": "19px",
+   "--maestro-type-heading-weight": "470",
+   "--maestro-type-mono-font": "\"Other Mono\", monospace, system-ui",
+   "--maestro-type-mono-line-height": "1.65",
+   "--maestro-type-mono-size": "21px",
+   "--maestro-type-mono-weight": "490"
+  },
+  "glyphs": {
+   "failed": {
+    "symbol": "g4",
+    "color": "#0B0D10"
+   },
+   "idle": {
+    "symbol": "g2",
+    "color": "#1A1F27"
+   },
+   "mark": {
+    "symbol": "g0",
+    "color": "#1A1F27"
+   },
+   "passed": {
+    "symbol": "g3",
+    "color": "#1A1F27"
+   },
+   "queued": {
+    "symbol": "q",
+    "color": "#FF5C7A"
+   },
+   "tool-step": {
+    "symbol": "g5",
+    "color": "#1A1F27"
+   },
+   "working": {
+    "symbol": "g1",
+    "color": "#0B0D10"
+   }
+  },
+  "ansi": {
+   "black": "#1A1F27",
+   "red": "#0B0D10",
+   "green": "#1A1F27",
+   "yellow": "#0B0D10",
+   "blue": "#0B0D10",
+   "magenta": "#1A1F27",
+   "cyan": "#1A1F27",
+   "white": "#0B0D10",
+   "bright-black": "#1A1F27",
+   "bright-red": "#0B0D10",
+   "bright-green": "#1A1F27",
+   "bright-yellow": "#0B0D10",
+   "bright-blue": "#1A1F27",
+   "bright-magenta": "#1A1F27",
+   "bright-cyan": "#1A1F27",
+   "bright-white": "#0B0D10",
+   "alternate-slot": "#FF5C7A"
+  },
+  "truecolor": {
+   "background": "#E8ECF2",
+   "panel": "#E8ECF2",
+   "text": "#0B0D10",
+   "muted": "#1A1F27",
+   "accent": "#0B0D10",
+   "live": "#1A1F27",
+   "success": "#1A1F27",
+   "warning": "#0B0D10",
+   "error": "#0B0D10",
+   "note": "#E8ECF2"
+  },
+  "svg": {
+   "template": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} mark</title>\n  <rect width=\"512\" height=\"512\" fill=\"#E8ECF2\"/>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"12\"/>\n  <g stroke=\"#6C63FF\" stroke-width=\"12\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#6C63FF\" stroke-width=\"20\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#6C63FF\">\n    <circle cx=\"150\" cy=\"386\" r=\"26\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"26\"/>\n  </g>\n  <circle cx=\"256\" cy=\"326\" r=\"26\" fill=\"#0B0D10\"/>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#0B0D10\"/>\n</svg>\n",
+   "flat": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} flat mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"14\"/>\n  <g stroke=\"#6C63FF\" stroke-width=\"14\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#6C63FF\" stroke-width=\"22\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#6C63FF\">\n    <circle cx=\"150\" cy=\"386\" r=\"28\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"28\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#0B0D10\"/>\n</svg>\n",
+   "mono": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} mono mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#0B0D10\" stroke-width=\"16\"/>\n  <g stroke=\"#0B0D10\" stroke-width=\"16\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#0B0D10\" stroke-width=\"26\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#0B0D10\">\n    <circle cx=\"150\" cy=\"386\" r=\"30\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"30\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"30\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#0B0D10\"/>\n</svg>\n",
+   "small": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} small mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"220\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"40\"/>\n  <polyline points=\"150,380 150,200 256,326 362,200 362,380\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"54\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n  <path d=\"M256 80 L270 140 L320 154 L270 168 L256 228 L242 168 L192 154 L242 140Z\" fill=\"#0B0D10\"/>\n</svg>\n",
+   "badge": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Alternate template: R&amp;D &lt;North&gt; &quot;Star&quot; &apos; $&amp; var(--mark-star) {{wordmark}} badge mark</title>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#6C63FF\" stroke-width=\"14\"/>\n  <g stroke=\"#6C63FF\" stroke-width=\"14\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#6C63FF\" stroke-width=\"22\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#6C63FF\">\n    <circle cx=\"150\" cy=\"386\" r=\"28\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"256\" cy=\"326\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"28\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"28\"/>\n  </g>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#0B0D10\"/>\n</svg>\n"
+  }
+ }
+}

@@ -1,0 +1,223 @@
+{
+  "name": "Alternate & quoted",
+  "wordmark": "R&D <North> \"Star\" ' $& var(--mark-star) {{wordmark}}",
+  "tagline": "Next <turn> & \"quoted\"",
+  "palette": {
+    "swatch-0": "#0B0D10",
+    "swatch-1": "#1A1F27",
+    "swatch-2": "#E8ECF2",
+    "swatch-3": "#6C63FF",
+    "swatch-4": "#B6F05A",
+    "swatch-5": "#FF5C7A"
+  },
+  "fonts": {
+    "display": {
+      "family": " ﻿Quoted \"Face\" \\ Name </style>\n ",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/spacegrotesk/OFL.txt",
+      "fallbacks": [
+        "serif",
+        "Local, Fallback",
+        "serif",
+        "ui-monospace"
+      ]
+    },
+    "body": {
+      "family": "Other Body",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/spacegrotesk/OFL.txt",
+      "fallbacks": []
+    },
+    "mono": {
+      "family": "Other Mono",
+      "license": "OFL-1.1",
+      "license-url": "https://github.com/google/fonts/blob/main/ofl/jetbrainsmono/OFL.txt",
+      "fallbacks": [
+        "monospace",
+        "system-ui"
+      ]
+    },
+    "caption": {
+      "family": "Local Caption",
+      "license": "OFL-1.1",
+      "license-url": "https://example.invalid/caption-license",
+      "fallbacks": [
+        "sans-serif"
+      ]
+    }
+  },
+  "type": {
+    "display-xl": {
+      "font": "display",
+      "size": 17,
+      "line-height": 1.25,
+      "weight": 450
+    },
+    "display": {
+      "font": "display",
+      "size": 18,
+      "line-height": 1.35,
+      "weight": 460
+    },
+    "heading": {
+      "font": "display",
+      "size": 19,
+      "line-height": 1.45,
+      "weight": 470
+    },
+    "body": {
+      "font": "body",
+      "size": 20,
+      "line-height": 1.55,
+      "weight": 480
+    },
+    "mono": {
+      "font": "mono",
+      "size": 21,
+      "line-height": 1.65,
+      "weight": 490
+    },
+    "caption": {
+      "font": "caption",
+      "size": 15.5,
+      "line-height": 1.25,
+      "weight": 450.5
+    }
+  },
+  "spacing": {
+    "xs": 5,
+    "sm": 9,
+    "md": 17,
+    "lg": 25,
+    "xl": 33,
+    "extra gap": 3.5
+  },
+  "radii": {
+    "none": 2,
+    "control": 8,
+    "panel": 14,
+    "badge": 2.5
+  },
+  "mark": {
+    "template": "../marks/alternate.svg",
+    "variants": {
+      "flat": "../marks/alternate-flat.svg",
+      "mono": "../marks/alternate-mono.svg",
+      "small": "../marks/alternate-small.svg",
+      "badge": "../marks/alternate-badge.svg"
+    },
+    "minimum-size": 40,
+    "small-minimum-size": 20,
+    "clear-space": 0.125,
+    "app-icon-scale": 0.8
+  },
+  "glyphs": {
+    "mark": {
+      "symbol": "g0",
+      "color": "accent"
+    },
+    "working": {
+      "symbol": "g1",
+      "color": "warning"
+    },
+    "idle": {
+      "symbol": "g2",
+      "color": "accent"
+    },
+    "passed": {
+      "symbol": "g3",
+      "color": "success"
+    },
+    "failed": {
+      "symbol": "g4",
+      "color": "error"
+    },
+    "tool-step": {
+      "symbol": "g5",
+      "color": "muted"
+    },
+    "queued": {
+      "symbol": "q",
+      "color": "note role"
+    }
+  },
+  "modes": {
+    "dark": {
+      "colors": {
+        "background": "swatch-0",
+        "panel": "swatch-1",
+        "text": "swatch-2",
+        "muted": "swatch-2",
+        "accent": "swatch-4",
+        "on-accent": "swatch-0",
+        "live": "swatch-4",
+        "success": "swatch-4",
+        "warning": "swatch-5",
+        "error": "swatch-5",
+        "border": "swatch-3",
+        "mark-ring": "swatch-3",
+        "mark-m": "swatch-3",
+        "mark-node": "swatch-3",
+        "mark-live": "swatch-4",
+        "mark-star": "swatch-4",
+        "note role": "swatch-5",
+        "note-role": "swatch-2"
+      }
+    },
+    "light": {
+      "colors": {
+        "background": "swatch-2",
+        "panel": "swatch-2",
+        "text": "swatch-0",
+        "muted": "swatch-1",
+        "accent": "swatch-1",
+        "on-accent": "swatch-2",
+        "live": "swatch-1",
+        "success": "swatch-1",
+        "warning": "swatch-0",
+        "error": "swatch-0",
+        "border": "swatch-3",
+        "mark-ring": "swatch-3",
+        "mark-m": "swatch-3",
+        "mark-node": "swatch-3",
+        "mark-live": "swatch-0",
+        "mark-star": "swatch-0",
+        "note role": "swatch-5",
+        "note-role": "swatch-2"
+      }
+    }
+  },
+  "terminal": {
+    "ansi": {
+      "black": "muted",
+      "red": "error",
+      "green": "success",
+      "yellow": "warning",
+      "blue": "error",
+      "magenta": "accent",
+      "cyan": "live",
+      "white": "text",
+      "bright-black": "muted",
+      "bright-red": "error",
+      "bright-green": "success",
+      "bright-yellow": "warning",
+      "bright-blue": "accent",
+      "bright-magenta": "accent",
+      "bright-cyan": "live",
+      "bright-white": "text",
+      "alternate-slot": "note role"
+    },
+    "truecolor": {
+      "background": "background",
+      "panel": "panel",
+      "text": "text",
+      "muted": "muted",
+      "accent": "warning",
+      "live": "live",
+      "success": "success",
+      "warning": "warning",
+      "error": "error",
+      "note": "note-role"
+    }
+  }
+}
