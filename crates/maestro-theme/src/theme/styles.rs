@@ -5,9 +5,9 @@ use std::rc::Rc;
 
 /// Wrap `text` in `open` and `close`, keeping every nested `close` effective.
 ///
-/// A matching close inside the text is followed by `open`, and each line break is
-/// preceded by `close` and followed by `open`, with a carriage return kept before its
-/// line feed.
+/// Enabled, nonempty text is changed: a matching close inside it is followed by `open`, and
+/// each line feed is preceded by `close` and followed by `open`, with a carriage return
+/// directly before the line feed kept before it. Other text is returned unchanged.
 fn decorate(text: &str, enabled: bool, open: Style, close: &str) -> String {
     if !enabled || text.is_empty() {
         return text.to_owned();

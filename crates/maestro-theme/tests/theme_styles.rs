@@ -177,7 +177,7 @@ fn select_fields(select: &SelectListTheme) -> Value {
     })
 }
 
-/// Output of every callback and the cursor, in the shape of the recorded fixture.
+/// Output of the recorded style fields and the cursor, in the shape of the recorded fixture.
 #[cfg(test)]
 fn snapshot(h: &Helpers) -> Value {
     let (m, s) = (&h.markdown, &h.settings);

@@ -5,8 +5,8 @@ const PATH_LANGUAGES: &str = include_str!("../../assets/path-languages.tsv");
 
 /// The language label for the text after the last `.` of `file_path`, compared in lowercase.
 ///
-/// A path without a dot is compared whole, so only a bare `Dockerfile` or `Makefile`
-/// matches a name; `Path::extension`, base names and trimming play no part.
+/// A path without a dot is compared whole, so `Dockerfile`, `Makefile` or any other table
+/// suffix matches by its full text; `Path::extension`, base names and trimming play no part.
 #[must_use]
 pub fn get_language_from_path(file_path: &str) -> Option<&'static str> {
     let suffix = file_path.rsplit('.').next()?.to_lowercase();
