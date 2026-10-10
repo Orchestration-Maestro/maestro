@@ -96,14 +96,28 @@ fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
     let script = format!(
         r#"HELD='{held}'; DONE='{done}'; export HELD DONE; ( cat < "$HELD" > /dev/null; echo done > "$DONE" ) & exit 0 #"#
     );
-    let manager = manager_running(&script, &root);
-    runtime.block_on(manager.install("npm:x", None)).unwrap();
-    drop(std::fs::OpenOptions::new().write(true).open(&held).unwrap());
+    let (finished, outcome) = std::sync::mpsc::channel();
     let mut text = String::new();
-    std::fs::File::open(&done)
-        .unwrap()
-        .read_to_string(&mut text)
-        .unwrap();
+    let finished_in_time = std::thread::scope(|scope| {
+        scope.spawn(|| {
+            let manager = manager_running(&script, &root);
+            let result = self::runtime().block_on(manager.install("npm:x", None));
+            finished.send(result.is_ok()).unwrap();
+        });
+        let verdict = outcome.recv_timeout(std::time::Duration::from_secs(20));
+        // Release and drain the background holder so the scope can join even when the wait failed.
+        drop(std::fs::OpenOptions::new().write(true).open(&held).unwrap());
+        std::fs::File::open(&done)
+            .unwrap()
+            .read_to_string(&mut text)
+            .unwrap();
+        verdict
+    });
+    assert_eq!(
+        finished_in_time,
+        Ok(true),
+        "install must settle at child exit while a background process holds its streams"
+    );
     assert_eq!(text, "done\n");
 }
 

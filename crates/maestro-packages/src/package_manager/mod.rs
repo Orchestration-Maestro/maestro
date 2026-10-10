@@ -108,7 +108,8 @@ pub trait PackageManager {
     /// Acquires or validates a source's contents; `None` means user scope.
     ///
     /// A failing start callback stops the operation; later failures, including the
-    /// completion callback's, are reported as error events and returned.
+    /// completion callback's, are reported as error events and returned, except that
+    /// a failing error callback's failure is returned in place of the original.
     /// # Errors
     /// Returns callback, path, filesystem, settings or command failures.
     fn install<'a>(

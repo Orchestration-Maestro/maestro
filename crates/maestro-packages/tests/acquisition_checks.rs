@@ -16,8 +16,9 @@ use std::{
     io,
     rc::Rc,
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
+        mpsc::{Receiver, Sender, channel},
     },
 };
 
@@ -437,14 +438,20 @@ fn git_project_paths_preserve_parent_and_ignore_files() {
 }
 
 #[test]
-fn git_failures_stop_after_the_completed_effect() {
+fn git_preparation_failures_keep_exactly_the_completed_effects() {
     let source = "https://github.com/user/repo#v1";
     let root_failures = [
         (Op::Create, "/agent/git"),
         (Op::Write, ".gitignore"),
         (Op::Create, "github.com/user"),
     ];
-    for (op, suffix) in root_failures {
+    // Surviving state per failure: (git root, .gitignore, parent directory).
+    let survivors = [
+        (false, false, false),
+        (true, false, false),
+        (true, true, false),
+    ];
+    for ((op, suffix), (root, ignore, parent)) in root_failures.into_iter().zip(survivors) {
         let fixture = Fixture::new(&json!({}));
         fixture
             .script
@@ -453,11 +460,28 @@ fn git_failures_stop_after_the_completed_effect() {
             .push((op, suffix.into()));
         assert!(block_on(fixture.manager.install(source, None)).is_err());
         assert!(fixture.calls().is_empty(), "case {suffix}");
+        let exists = |path: &str| std::path::Path::new(&fixture.agent(path)).exists();
+        assert_eq!(exists("git"), root, "root after {suffix}");
+        assert_eq!(exists("git/.gitignore"), ignore, "ignore after {suffix}");
+        assert_eq!(
+            exists("git/github.com/user"),
+            parent,
+            "parent after {suffix}"
+        );
+        assert!(!exists("git/github.com/user/repo"));
     }
+}
+
+#[test]
+fn git_failures_stop_after_the_completed_effect() {
+    let source = "https://github.com/user/repo#v1";
     let fixture = Fixture::new(&json!({}));
     fixture.script.results.borrow_mut().push_back(Ok(Some(128)));
     assert!(block_on(fixture.manager.install(source, None)).is_err());
     assert_eq!(fixture.calls().len(), 1);
+    assert_eq!(sandbox::read(&fixture.agent("git/.gitignore")), IGNORE);
+    assert!(std::path::Path::new(&fixture.agent("git/github.com/user")).is_dir());
+    assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
 
     let fixture = Fixture::new(&json!({}));
     clone_creates_target(&fixture, true);
@@ -469,6 +493,11 @@ fn git_failures_stop_after_the_completed_effect() {
     let error = block_on(fixture.manager.install(source, None)).unwrap_err();
     assert!(error.to_string().ends_with("failed with code 1"));
     assert_eq!(fixture.calls().len(), 2);
+    assert_eq!(sandbox::read(&fixture.agent("git/.gitignore")), IGNORE);
+    assert_eq!(
+        sandbox::read(&fixture.agent("git/github.com/user/repo/package.json")),
+        "not json"
+    );
 
     let fixture = Fixture::new(&json!({}));
     clone_creates_target(&fixture, true);
@@ -857,6 +886,34 @@ fn replaced_progress_callback_releases_its_last_handle() {
     assert!(dropped.get());
 }
 
+#[test]
+fn replaced_progress_callback_without_alias_is_dropped_after_its_call_returns() {
+    struct Sentinel(Rc<Cell<bool>>);
+    impl Drop for Sentinel {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+    let fixture = Fixture::new(&json!({}));
+    let dropped = Rc::new(Cell::new(false));
+    let dropped_in_flight = Rc::new(Cell::new(true));
+    let (sentinel, seen, weak) = (
+        Sentinel(dropped.clone()),
+        dropped_in_flight.clone(),
+        Rc::downgrade(&fixture.manager),
+    );
+    fixture
+        .manager
+        .set_progress_callback(Some(Rc::new(move |_| {
+            weak.upgrade().unwrap().set_progress_callback(None);
+            seen.set(sentinel.0.get());
+            Ok(())
+        })));
+    block_on(fixture.manager.install("npm:pkg", None)).unwrap();
+    assert!(!dropped_in_flight.get());
+    assert!(dropped.get());
+}
+
 /// Packages of the global settings.
 fn stored(fixture: &Fixture) -> serde_json::Value {
     fixture
@@ -976,9 +1033,21 @@ fn persistence_happens_after_completed_acquisition() {
 fn persistence_failure_does_not_undo_completed_contents() {
     let source = "https://github.com/user/repo";
     let fixture = Fixture::new(&json!({"packages": [5]}));
+    fixture
+        .script
+        .hooks
+        .borrow_mut()
+        .push_back(Box::new(|call| {
+            let target = call.args.last().unwrap();
+            sandbox::write(&format!("{target}/kept"), "cloned");
+        }));
     let error = block_on(fixture.manager.install_and_persist(source, None)).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
     assert_eq!(fixture.calls().len(), 1);
+    assert_eq!(
+        sandbox::read(&fixture.agent("git/github.com/user/repo/kept")),
+        "cloned"
+    );
     assert_eq!(fixture.phases().last().unwrap().0, Phase::Complete);
     assert_eq!(fixture.phases().len(), 2);
 
@@ -1056,16 +1125,24 @@ fn persistence_reads_settings_after_acquisition() {
 
 #[test]
 fn persistence_publishes_without_waiting_for_flush() {
-    let storage = Arc::new(Storage::default());
+    let (storage, admission, release) = Storage::gated();
     let fixture = Fixture::with_storage(storage.clone());
     block_on(fixture.manager.install_and_persist("npm:pkg", None)).unwrap();
+    admission.recv().unwrap();
     assert_eq!(stored(&fixture), json!(["npm:pkg"]));
     assert_eq!(storage.writes.load(Ordering::SeqCst), 0);
+    assert_eq!(storage.document(), None);
+    release.send(()).unwrap();
     fixture.flush();
     assert_eq!(storage.writes.load(Ordering::SeqCst), 1);
+    assert!(storage.document().unwrap().contains("npm:pkg"));
     assert!(block_on(fixture.manager.remove_and_persist("npm:pkg", None)).unwrap());
+    admission.recv().unwrap();
+    assert_eq!(storage.writes.load(Ordering::SeqCst), 1);
+    release.send(()).unwrap();
     fixture.flush();
     assert_eq!(storage.writes.load(Ordering::SeqCst), 2);
+    assert!(!storage.document().unwrap().contains("npm:pkg"));
 }
 
 #[test]
@@ -1097,13 +1174,55 @@ fn local_install_reads_ambient_paths_only_when_needed() {
     assert_eq!(*relative.script.reads.borrow(), ["cwd", "home"]);
 }
 
-/// Storage that counts completed writes.
+/// Admission and release of one held write.
+struct Gate {
+    /// Signals that a write reached the storage.
+    admitted: Mutex<Sender<()>>,
+    /// Blocks the write until the test releases it.
+    release: Mutex<Receiver<()>>,
+}
+/// Storage that counts published writes and can hold a write before it publishes.
 #[derive(Default)]
 struct Storage {
     /// The raw-text storage.
     inner: InMemorySettingsStorage,
-    /// Completed writes.
+    /// Writes published to the inner storage.
     writes: AtomicUsize,
+    /// Holds every write until released, when present.
+    gate: Option<Gate>,
+}
+impl Storage {
+    /// Storage whose writes wait for the returned sender after signalling the receiver.
+    fn gated() -> (Arc<Self>, Receiver<()>, Sender<()>) {
+        let (admitted, admission) = channel();
+        let (release, released) = channel();
+        let storage = Self {
+            gate: Some(Gate {
+                admitted: Mutex::new(admitted),
+                release: Mutex::new(released),
+            }),
+            ..Self::default()
+        };
+        (Arc::new(storage), admission, release)
+    }
+    /// Signals admission, then blocks until the test releases the write.
+    fn hold_write(&self) {
+        if let Some(gate) = &self.gate {
+            gate.admitted.lock().unwrap().send(()).unwrap();
+            gate.release.lock().unwrap().recv().unwrap();
+        }
+    }
+    /// The global document as stored.
+    fn document(&self) -> Option<String> {
+        let mut text = None;
+        self.inner
+            .with_lock(SettingsScope::Global, &mut |current| {
+                text = current.map(str::to_owned);
+                Ok(None)
+            })
+            .unwrap();
+        text
+    }
 }
 impl SettingsStorage for Storage {
     fn with_lock(
@@ -1111,13 +1230,19 @@ impl SettingsStorage for Storage {
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> Result<(), SettingsStorageError> {
+        let mut wrote = false;
         self.inner.with_lock(scope, &mut |current| {
             let next = update(current)?;
             if next.is_some() {
-                self.writes.fetch_add(1, Ordering::SeqCst);
+                wrote = true;
+                self.hold_write();
             }
             Ok(next)
-        })
+        })?;
+        if wrote {
+            self.writes.fetch_add(1, Ordering::SeqCst);
+        }
+        Ok(())
     }
 }
 
@@ -1133,6 +1258,14 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
     assert!(std::path::Path::new(&fixture.agent("git")).is_dir());
+    assert_eq!(*fixture.script.reads.borrow(), ["cwd"]);
+
+    let fixture = Fixture::new(&json!({}));
+    sandbox::write(&fixture.agent("git/github.com/user/repo/file"), "x");
+    fixture.script.ambient_fails.set(true);
+    block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
+    assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
+    assert!(fixture.script.reads.borrow().is_empty());
 
     let fixture = Fixture::new(&json!({}));
     sandbox::write(&fixture.agent("git-cache/team/repo/file"), "x");
@@ -1154,8 +1287,5 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     )
     .unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
-    assert!(
-        std::path::Path::new(&fixture.agent("git")).is_dir()
-            || !std::path::Path::new(&fixture.agent("git")).exists()
-    );
+    assert!(std::path::Path::new(&fixture.agent("git")).is_dir());
 }

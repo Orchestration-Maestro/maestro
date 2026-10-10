@@ -13,16 +13,17 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
   install first creates the root, a `.gitignore` of `*` and `!.gitignore`, and a
   `package.json` naming `maestro-extensions`, each only when missing, then runs
   `install <spec> --prefix <root>`; removal runs `uninstall <name> --prefix <root>`
-  only when the root exists. The command is `npm` unless settings configure
-  `npmCommand`, whose leading arguments come first. An empty first entry fails with
+  only when the root exists. The command is `npm` unless settings configure a
+  nonempty `npmCommand` array, whose leading arguments come first (an empty array
+  selects `npm`). An empty first entry fails with
   `Invalid npmCommand: first array entry must be a non-empty command`.
-- **Git**: an existing target directory ends installation at once. Otherwise the
-  repository is cloned below the scope's `git` root (with a `.gitignore` there),
+- **Git**: a target that already exists, directory or file, ends installation at
+  once. Otherwise the repository is cloned below the scope's `git` root (with a `.gitignore` there),
   checked out when a ref was given, and its dependencies installed when it has a
-  `package.json` (`install --omit=dev`, or plain `install` when `npmCommand` is
-  configured). The settings are read after the clone. Removal deletes the target and
+  `package.json` (`install --omit=dev`, or plain `install` when a nonempty
+  `npmCommand` is configured). The settings are read after the clone. Removal deletes the target and
   then empty ancestors strictly inside the Git root, comparing path components after
-  resolving both against the same base; a failed ancestor removal ends the cleanup.
+  resolving both against one working-directory read taken only for a relative base; a failed ancestor removal ends the cleanup.
 - **Local paths**: installation only checks that the path, resolved against the input
   base, exists (`Path does not exist: <path>` otherwise); removal does nothing.
 
@@ -51,6 +52,7 @@ installed contents when the settings edit fails.
 `NativePackageOperations::run_command` runs a child with inherited streams, or, while
 the supplied query reports stdout taken over, with stdin ignored and output sent to
 standard error. It completes when the child exits, whether or not its streams are
-still open, and must run inside a Tokio runtime with process support. A nonzero or
-missing exit code fails with `<command> <arguments> failed with code <N or null>`;
-a spawn failure keeps its native error.
+still open, and must run inside a Tokio runtime with process support. It returns the exit code,
+`None` when a signal ended the child, and keeps a spawn failure's native error. The
+package manager turns a nonzero or missing code into the failure
+`<command> <arguments> failed with code <N or null>`.

@@ -58,12 +58,16 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Removes empty ancestors of the target that lie strictly inside the root.
     ///
-    /// Root and ancestors are resolved together and compared by path components, so a
+    /// Root and ancestors are resolved with at most one ambient read and compared by path components, so a
     /// relative base prunes and a similarly named sibling directory does not. A failed
     /// removal ends the cleanup without failing the operation.
     fn prune_empty_parents(&self, target: &str, root: &str) -> io::Result<()> {
-        let root = self.resolve_operands(&[root])?;
-        let mut current = self.resolve_operands(&[&dirname(target)])?;
+        let mut paths = self
+            .resolve_together(&[&[root], &[&dirname(target)]])?
+            .into_iter();
+        let (Some(root), Some(mut current)) = (paths.next(), paths.next()) else {
+            return Ok(());
+        };
         while is_inside(&root, &current) {
             if self.operations.exists(&current) && !self.removed_if_empty(&current)? {
                 break;
