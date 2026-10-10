@@ -242,6 +242,34 @@ struct HeaderCase {
 }
 
 #[test]
+fn maestro_response_sessions_join_initial_cookie_headers() {
+    let mut model = body_cases("defaults").unwrap().remove(0).model;
+    model.headers = Some(indexmap::IndexMap::from([
+        ("cookie".to_owned(), "a=1".to_owned()),
+        ("Cookie".to_owned(), "b=2".to_owned()),
+        ("X-Other".to_owned(), "left".to_owned()),
+        ("x-other".to_owned(), "right".to_owned()),
+    ]));
+    for (additional, expected) in [(None, "a=1; b=2"), (Some("c=3"), "c=3")] {
+        let options = crate::StreamOptions {
+            headers: additional
+                .map(|value| indexmap::IndexMap::from([("COOKIE".to_owned(), value.to_owned())])),
+            ..Default::default()
+        };
+        let headers = super::super::headers::build_sse_headers(
+            &model,
+            &options,
+            "account",
+            "token",
+            "maestro (browser)",
+        )
+        .unwrap();
+        assert_eq!(headers["cookie"], expected);
+        assert_eq!(headers["x-other"], "left, right");
+    }
+}
+
+#[test]
 fn maestro_response_sessions_apply_sse_headers() {
     let rows: Vec<HeaderCase> =
         super::fixture_rows(include_str!("fixtures/headers.json"), &["input"]).unwrap();

@@ -15,8 +15,9 @@ fn layer(
         let mut entry = IndexMap::from([(name.to_ascii_lowercase(), value.to_owned())]);
         normalize_request(&mut entry).map_err(diagnostic)?;
         for (name, value) in entry {
+            let separator = if name == "cookie" { "; " } else { ", " };
             if initial && let Some(previous) = target.get_mut(&name) {
-                previous.push_str(", ");
+                previous.push_str(separator);
                 previous.push_str(&value);
             } else {
                 target.insert(name, value);

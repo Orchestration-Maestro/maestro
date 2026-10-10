@@ -9,8 +9,8 @@ hook once and validates headers. The retained payload-hook result is the wire
 body. See [response conversion](responses.md) for history and tool conversion
 and [JSON records](../records.md) for the shared record types.
 
-Initial model header names combine case-insensitively in encounter order.
-Additional headers replace earlier values. Each incoming value is validated
+Initial model header names combine case-insensitively in encounter order:
+cookies use `; ` and other fields use `, `. Additional headers replace earlier values. Each incoming value is validated
 before it can be overwritten. Provider authentication, host identity and SSE
 fields are applied last. A nonempty session replaces both affinity headers;
 an absent or empty session leaves caller-supplied affinity headers intact.
