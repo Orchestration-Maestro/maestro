@@ -14,18 +14,19 @@ use tokio::time::{Instant, sleep_until};
 
 /// Runs the toolkit's timers and futures on the [`LocalSet`] its caller drives.
 ///
-/// Available on every native target; [`ProcessTerminal`](crate::ProcessTerminal) exists on Unix
-/// only. Creating the host starts no runtime, thread or task. Work runs only while the caller
-/// drives the set inside a Tokio runtime with the time driver enabled, and dropping the set
-/// after the host and its timers are released drops the work still pending. Tasks capture
-/// their inputs, never the host, so the host keeps nothing alive.
+/// Available on every native target; `ProcessTerminal` exists on Unix only. Creating the host
+/// starts no runtime, thread or task. Work runs only while the caller drives the set inside a
+/// Tokio runtime with the time driver enabled, and dropping the set drops the work still
+/// pending. The tasks the host spawns hold no handle to the host itself; what a caller's
+/// callback or future captures stays alive until that work finishes, is cancelled or is
+/// dropped with the set.
 ///
 /// [`schedule`](TuiRuntime::schedule) measures its delay from the call, and the callback runs
-/// once, never inline. Dropping a timer handle leaves the callback scheduled; only
-/// [`cancel`](RenderTimer::cancel) prevents it and releases what it captured. A callback or
-/// future that returns an error has its message and then each source error printed to
-/// standard error, one per line; the host then keeps running. A failure to write there is
-/// ignored.
+/// once, never inline. Dropping a timer handle leaves the callback scheduled;
+/// [`cancel`](RenderTimer::cancel) prevents it, and its captures are released once the set
+/// next processes the cancellation. A callback or future that returns an error has the
+/// `Display` text of the error and then of each source error written to standard error, each
+/// followed by a newline; the host then keeps running. A failure to write there is ignored.
 ///
 /// [`log_context`](TuiRuntime::log_context) reports the process's home directory (empty when
 /// the platform has none), the current UTC time and a random lowercase hexadecimal nonce.
@@ -72,7 +73,7 @@ impl RenderTimer for Timer {
     }
 }
 
-/// Prints `error` and each of its sources, one per line, ignoring a failing standard error.
+/// Prints `error` and each of its sources, each followed by a newline, ignoring a failing standard error.
 fn report(error: &dyn Error) {
     let mut sink = io::stderr().lock();
     let mut next = Some(error);

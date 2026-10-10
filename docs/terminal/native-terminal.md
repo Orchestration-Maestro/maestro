@@ -51,11 +51,12 @@ Tokio runtime with the time driver enabled.
 - `now` is the monotonic time since the host was created, on Tokio's clock.
 - `schedule` measures its delay from the call and runs the callback once, never before the
   call returns, even for a zero delay. Dropping the returned handle leaves the callback
-  scheduled; only `cancel` prevents it and releases what it captured.
+  scheduled; `cancel` prevents it, and what it captured is released once the set next
+  processes the cancellation.
 - `spawn_local` queues a future on the set; it is not polled before the call returns.
-- A callback or future that returns an error has its message and then each source error
-  printed to standard error, one per line; the host then keeps running. A failure to write
-  to standard error is ignored.
+- A callback or future that returns an error has the `Display` text of the error and then of
+  each source error written to standard error, each followed by a newline; the host then
+  keeps running. A failure to write to standard error is ignored.
 - `environment` returns the value as the platform holds it, with invalid text converted
   lossily; it does not trim or interpret the value.
 - `log_context` reports the home directory (empty when the platform has none), the current
@@ -64,8 +65,8 @@ Tokio runtime with the time driver enabled.
   Append creates the file but not its directory; write creates the directory and replaces the
   file. Both return the operating system's errors.
 
-Dropping the set after the host and its timer handles are released drops the work still
-pending; callers release any strong handle their callbacks capture.
+Dropping the set drops the work still pending. The host's own tasks hold no handle to the
+host; callers release any strong handle their callbacks capture.
 
 ## Starting and stopping
 

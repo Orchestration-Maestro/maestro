@@ -13,8 +13,7 @@ pub const CHILD_MARKER: &str = "MAESTRO_RUNTIME_TEST_CHILD";
 
 /// Drives `body` on a fresh local set inside a current-thread runtime with the time driver.
 ///
-/// A paused clock moves only while no task can run, so every task due before the time
-/// reached has run by then.
+/// A paused clock moves only while no task can run.
 pub fn run_set<Fut: Future<Output = ()>>(paused: bool, body: impl FnOnce(Rc<LocalSet>) -> Fut) {
     let runtime = Builder::new_current_thread()
         .enable_time()
@@ -28,7 +27,8 @@ pub fn run_set<Fut: Future<Output = ()>>(paused: bool, body: impl FnOnce(Rc<Loca
 /// Runs the named test again in a child process and returns what it wrote.
 ///
 /// The child must exit successfully after running exactly that test, so a name that
-/// matches nothing fails here instead of passing silently.
+/// matches nothing fails here instead of passing silently, and its standard output may
+/// hold only the test harness's own lines.
 pub fn rerun(test: &str, setup: impl FnOnce(&mut Command)) -> Output {
     let mut command = Command::new(std::env::current_exe().expect("test executable path"));
     command
@@ -46,6 +46,17 @@ pub fn rerun(test: &str, setup: impl FnOnce(&mut Command)) -> Output {
         String::from_utf8_lossy(&output.stdout).contains("1 passed"),
         "child ran no test named {test}"
     );
+    for line in String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter(|line| !line.is_empty())
+    {
+        assert!(
+            line == "running 1 test"
+                || line == format!("test {test} ... ok")
+                || line.starts_with("test result: ok. 1 passed;"),
+            "unexpected standard output from child {test}: {line:?}"
+        );
+    }
     output
 }
 

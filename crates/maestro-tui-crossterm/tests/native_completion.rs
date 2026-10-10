@@ -1,10 +1,13 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! A retained editor completing asynchronously on the native host.
 #[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
 mod runtime_support;
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
+use std::error::Error;
+use std::fmt;
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
@@ -24,7 +27,7 @@ use maestro_tui::{
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use runtime_support::{is_child, rerun, run_set};
 use tokio::sync::{mpsc, oneshot};
-use tokio::time::{advance, sleep, timeout};
+use tokio::time::{Instant, advance};
 
 /// What a provider future yields.
 type Reply = Result<Option<AutocompleteSuggestions>, CompletionError>;
@@ -32,30 +35,17 @@ type Reply = Result<Option<AutocompleteSuggestions>, CompletionError>;
 /// The cancellation signal the toolkit's own provider operations use.
 type Signal = <NativeAutocompleteOperations as AutocompleteOperations>::Signal;
 
-/// Waits for `future`; a paused clock that has nothing left to run elapses the limit at once,
-/// so a request the host never ran fails the test instead of hanging it.
-async fn within<T>(future: impl Future<Output = T>) -> T {
-    timeout(Duration::from_secs(30), future)
-        .await
-        .expect("the awaited effect happened")
-}
-
-/// Lets every task that can run do so.
-async fn settle() {
-    sleep(Duration::from_millis(1)).await;
-}
-
 /// A provider that holds each reply until the test sends it.
 struct Gate {
     /// Senders of the requests awaiting a reply, oldest first.
     held: RefCell<VecDeque<oneshot::Sender<Reply>>>,
-    /// Announces the lines of each request when its future first runs.
-    started: mpsc::UnboundedSender<Vec<String>>,
+    /// Announces the lines of each request when `get_suggestions` is called.
+    started: mpsc::UnboundedSender<(Instant, Vec<String>)>,
 }
 
 impl Gate {
     /// A provider and the stream of request announcements.
-    fn new() -> (Rc<Self>, mpsc::UnboundedReceiver<Vec<String>>) {
+    fn new() -> (Rc<Self>, mpsc::UnboundedReceiver<(Instant, Vec<String>)>) {
         let (started, requests) = mpsc::unbounded_channel();
         let gate = Rc::new(Self {
             held: RefCell::new(VecDeque::new()),
@@ -82,7 +72,9 @@ impl AutocompleteProvider for Gate {
     ) -> Pin<Box<dyn Future<Output = Reply> + 'a>> {
         let (sender, receiver) = oneshot::channel();
         self.held.borrow_mut().push_back(sender);
-        self.started.send(lines.to_vec()).expect("test listens");
+        self.started
+            .send((Instant::now(), lines.to_vec()))
+            .expect("test listens");
         Box::pin(async move {
             receiver
                 .await
@@ -111,6 +103,20 @@ impl AutocompleteProvider for Gate {
         None
     }
 }
+
+/// A provider failure that signals when it is dropped, after the host reported it.
+#[derive(Debug)]
+struct Offline {
+    _reported: mpsc::UnboundedSender<()>,
+}
+
+impl fmt::Display for Offline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("provider offline")
+    }
+}
+
+impl Error for Offline {}
 
 /// A terminal that sends every write to the test.
 struct Sink {
@@ -204,7 +210,7 @@ struct Scene {
     /// The provider holding replies.
     gate: Rc<Gate>,
     /// Announcements of provider requests.
-    requests: mpsc::UnboundedReceiver<Vec<String>>,
+    requests: mpsc::UnboundedReceiver<(Instant, Vec<String>)>,
     /// Terminal writes in order.
     writes: mpsc::UnboundedReceiver<String>,
 }
@@ -256,12 +262,17 @@ impl Scene {
 
     /// Waits for the provider to receive a request and returns its lines.
     async fn request(&mut self) -> Vec<String> {
-        within(self.requests.recv()).await.expect("a request")
+        self.request_at().await.1
+    }
+
+    /// Waits for the provider to receive a request and returns when it arrived and its lines.
+    async fn request_at(&mut self) -> (Instant, Vec<String>) {
+        self.requests.recv().await.expect("a request")
     }
 
     /// Waits until the terminal receives a write that contains `text`.
     async fn drawn(&mut self, text: &str) {
-        within(read_until(&mut self.writes, text)).await;
+        read_until(&mut self.writes, text).await;
     }
 
     /// Whether the terminal has a write waiting that contains `text`.
@@ -326,19 +337,15 @@ fn symbol_completion_debounces_on_native_host() {
         run_set(true, |local| async move {
             let mut scene = Scene::start(local);
             scene.typed(typed);
+            let origin = Instant::now();
             advance(Duration::from_millis(19)).await;
-            settle().await;
             assert!(
                 scene.requests.try_recv().is_err(),
                 "{typed}: still debouncing"
             );
-            advance(Duration::from_millis(1)).await;
-            assert_eq!(scene.request().await, [typed]);
-            settle().await;
-            assert!(
-                scene.requests.try_recv().is_err(),
-                "{typed}: one request only"
-            );
+            let (asked, lines) = scene.request_at().await;
+            assert_eq!(lines, [typed], "one request for the text");
+            assert_eq!(asked - origin, Duration::from_millis(20), "{typed}");
             scene.gate.reply(Ok(Some(offer(prefix, &[value]))));
             scene.drawn(value).await;
             assert!(
@@ -357,8 +364,11 @@ fn editor_error_is_reported_before_later_completion() {
             scene.typed("src");
             scene.editor.handle_input(TAB);
             scene.request().await;
-            scene.gate.reply(Err("provider offline".into()));
-            settle().await;
+            let (sender, mut reported) = mpsc::unbounded_channel();
+            scene
+                .gate
+                .reply(Err(Box::new(Offline { _reported: sender })));
+            assert_eq!(reported.recv().await, None, "the failure was reported");
             assert!(!scene.editor.is_showing_autocomplete());
 
             scene.editor.handle_input(TAB);

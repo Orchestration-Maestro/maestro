@@ -1,29 +1,40 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! The native host's clock, timers, local futures, environment and log files.
 #[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
 mod runtime_support;
 
-use std::cell::{Cell, RefCell};
 use std::error::Error;
 use std::fmt;
-use std::fs;
+use std::fs::{self, OpenOptions};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use maestro_tui::tui::{RenderCallback, TuiRuntime};
+use maestro_tui::tui::{LogContext, RenderCallback, TuiRuntime};
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use runtime_support::{is_child, rerun, run_set};
-use tokio::task::LocalSet;
+use tokio::sync::mpsc::error::TryRecvError;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
+use tokio::task::{LocalSet, yield_now};
 use tokio::time::{Instant, advance, sleep};
 
-/// Lets every task that can run do so: the paused clock moves only when none can.
-async fn settle() {
-    sleep(Duration::from_millis(1)).await;
+/// Collects what the producers send until every sender is dropped, which closes the set.
+async fn drained<T>(channel: &mut UnboundedReceiver<T>) -> Vec<T> {
+    let mut values = Vec::new();
+    while let Some(value) = channel.recv().await {
+        values.push(value);
+    }
+    values
 }
 
-/// A directory removed with everything below it when dropped.
+/// Whether nothing has been sent yet although a sender is still alive.
+fn is_waiting<T>(receiver: &mut UnboundedReceiver<T>) -> bool {
+    matches!(receiver.try_recv(), Err(TryRecvError::Empty))
+}
+
+/// A directory that is removed, ignoring failure, with everything below it when dropped.
 struct Scratch(PathBuf);
 
 impl Scratch {
@@ -48,19 +59,38 @@ impl Drop for Scratch {
     }
 }
 
-/// An error with an optional cause, for source-chain output.
+/// An error with an optional cause that signals when it is dropped, after its report.
 #[derive(Debug)]
-struct Chain(&'static str, Option<Box<Chain>>);
+struct Chain {
+    message: &'static str,
+    cause: Option<Box<Chain>>,
+    reported: Option<UnboundedSender<()>>,
+}
+
+impl Chain {
+    fn new(message: &'static str, cause: Option<Chain>) -> Self {
+        Self {
+            message,
+            cause: cause.map(Box::new),
+            reported: None,
+        }
+    }
+
+    fn reported_to(mut self, sender: UnboundedSender<()>) -> Self {
+        self.reported = Some(sender);
+        self
+    }
+}
 
 impl fmt::Display for Chain {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)
+        f.write_str(self.message)
     }
 }
 
 impl Error for Chain {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.1
+        self.cause
             .as_deref()
             .map(|cause| cause as &(dyn Error + 'static))
     }
@@ -87,115 +117,100 @@ fn timers_defer_from_scheduling_and_detach_on_handle_drop() {
     run_set(true, |local| async move {
         let host = ProcessTuiRuntime::new(local);
         let origin = Instant::now();
-        let fired = Rc::new(RefCell::new(Vec::new()));
 
-        let log = Rc::clone(&fired);
+        let (sender, mut fired) = unbounded_channel();
         let immediate = host.schedule(
             Duration::ZERO,
             Box::new(move || {
-                log.borrow_mut().push(Instant::now() - origin);
+                sender.send(Instant::now() - origin).unwrap();
                 Ok(())
             }),
         );
-        assert!(fired.borrow().is_empty(), "zero delay never runs inline");
-        settle().await;
-        assert_eq!(*fired.borrow(), [Duration::ZERO]);
+        assert!(is_waiting(&mut fired), "zero delay never runs inline");
+        assert_eq!(drained(&mut fired).await, [Duration::ZERO]);
         drop(immediate);
 
-        fired.borrow_mut().clear();
-        let log = Rc::clone(&fired);
+        let (sender, mut fired) = unbounded_channel();
         let started = Instant::now();
         let detached = host.schedule(
             Duration::from_millis(100),
             Box::new(move || {
-                log.borrow_mut().push(Instant::now() - started);
+                sender.send(Instant::now() - started).unwrap();
                 Ok(())
             }),
         );
         drop(detached);
         advance(Duration::from_millis(60)).await;
-        sleep(Duration::from_secs(1)).await;
+        assert!(is_waiting(&mut fired), "not before the deadline");
         assert_eq!(
-            *fired.borrow(),
+            drained(&mut fired).await,
             [Duration::from_millis(100)],
             "the deadline counts from scheduling, and the callback ran once"
         );
     });
 }
 
-/// Records when the value it holds is dropped.
-fn witness() -> (Rc<()>, Weak<()>) {
-    let held = Rc::new(());
-    let weak = Rc::downgrade(&held);
-    (held, weak)
-}
-
 #[test]
 fn cancelled_timers_drop_captures_without_firing() {
     run_set(true, |local| async move {
         let host = ProcessTuiRuntime::new(local);
-        let fired = Rc::new(Cell::new(0));
         for (label, delay, polled_first) in [
             ("before polling", Duration::from_millis(50), false),
             ("while waiting", Duration::from_millis(50), true),
             ("zero delay before polling", Duration::ZERO, false),
         ] {
-            let (held, released) = witness();
-            let count = Rc::clone(&fired);
+            let (sender, mut fired) = unbounded_channel();
             let mut timer = host.schedule(
                 delay,
                 Box::new(move || {
-                    drop(held);
-                    count.set(count.get() + 1);
+                    sender.send(()).unwrap();
                     Ok(())
                 }),
             );
             if polled_first {
-                tokio::task::yield_now().await;
-                assert!(released.upgrade().is_some(), "{label}: still captured");
+                yield_now().await;
+                assert!(is_waiting(&mut fired), "{label}: still captured");
             }
             timer.cancel();
             timer.cancel();
-            settle().await;
-            sleep(Duration::from_secs(1)).await;
-            assert_eq!(fired.get(), 0, "{label}: never fires");
-            assert!(released.upgrade().is_none(), "{label}: captures released");
+            assert!(
+                drained(&mut fired).await.is_empty(),
+                "{label}: captures released without firing"
+            );
         }
 
-        let count = Rc::clone(&fired);
+        let (sender, mut fired) = unbounded_channel();
         let mut done = host.schedule(
             Duration::ZERO,
             Box::new(move || {
-                count.set(count.get() + 1);
+                sender.send(()).unwrap();
                 Ok(())
             }),
         );
-        settle().await;
+        assert_eq!(drained(&mut fired).await, [()]);
         done.cancel();
-        settle().await;
-        assert_eq!(
-            fired.get(),
-            1,
+        yield_now().await;
+        assert!(
+            drained(&mut fired).await.is_empty(),
             "cancelling after completion changes nothing"
         );
     });
 }
 
-/// Entries a callback and its descendants append in the order they run.
-type Log = Rc<RefCell<Vec<&'static str>>>;
+/// Sends the entries a callback and its descendants record, in the order they run.
+type Log = UnboundedSender<&'static str>;
 
 /// A callback that spawns a future, which in turn schedules another callback.
 fn reentrant_callback(host: Rc<ProcessTuiRuntime>, log: Log) -> RenderCallback {
     Box::new(move || {
-        log.borrow_mut().push("timer");
+        log.send("timer").unwrap();
         let nested = Rc::clone(&host);
         host.spawn_local(Box::pin(async move {
-            log.borrow_mut().push("future");
-            let last = Rc::clone(&log);
+            log.send("future").unwrap();
             drop(nested.schedule(
                 Duration::from_millis(5),
                 Box::new(move || {
-                    last.borrow_mut().push("nested timer");
+                    log.send("nested timer").unwrap();
                     Ok(())
                 }),
             ));
@@ -209,32 +224,25 @@ fn reentrant_callback(host: Rc<ProcessTuiRuntime>, log: Log) -> RenderCallback {
 fn local_futures_defer_and_allow_callback_reentry() {
     run_set(true, |local| async move {
         let host = Rc::new(ProcessTuiRuntime::new(local));
-        let log = Rc::new(RefCell::new(Vec::new()));
 
+        let (sender, mut log) = unbounded_channel();
         let non_send = Rc::new(());
-        let entry = Rc::clone(&log);
         host.spawn_local(Box::pin(async move {
             drop(non_send);
-            entry.borrow_mut().push("future");
+            sender.send("future").unwrap();
             Ok(())
         }));
-        assert!(log.borrow().is_empty(), "a future is never polled inline");
-        settle().await;
-        assert_eq!(*log.borrow(), ["future"]);
+        assert!(is_waiting(&mut log), "a future is never polled inline");
+        assert_eq!(drained(&mut log).await, ["future"]);
 
-        log.borrow_mut().clear();
-        let _timer = host.schedule(
-            Duration::ZERO,
-            reentrant_callback(Rc::clone(&host), Rc::clone(&log)),
-        );
-        settle().await;
-        sleep(Duration::from_millis(10)).await;
-        assert_eq!(*log.borrow(), ["timer", "future", "nested timer"]);
+        let (sender, mut log) = unbounded_channel();
+        let _timer = host.schedule(Duration::ZERO, reentrant_callback(Rc::clone(&host), sender));
+        assert_eq!(drained(&mut log).await, ["timer", "future", "nested timer"]);
     });
 }
 
 const EXPECTED_STDERR: &str =
-    "timer failure\ntimer cause\nfuture outer\nfuture middle\nfuture root\n";
+    "timer failure\nretry later\ntimer cause\nfuture outer\nfuture middle\nfuture root\n";
 
 /// Runs failing and successful work and checks that later work still completes.
 fn report_scenario() {
@@ -245,39 +253,44 @@ fn report_scenario() {
     }));
     run_set(true, |local| async move {
         let host = ProcessTuiRuntime::new(local);
-        let later = Rc::new(Cell::new(0));
-        let cause = Chain("timer cause", None);
+        let (sender, mut reported) = unbounded_channel();
         drop(host.schedule(
             Duration::ZERO,
             Box::new(move || {
-                Err(io::Error::other(Chain(
-                    "timer failure",
-                    Some(Box::new(cause)),
-                )))
+                let cause = Chain::new("timer cause", None);
+                let error = Chain::new("timer failure\nretry later", Some(cause));
+                Err(io::Error::other(error.reported_to(sender)))
             }),
         ));
-        settle().await;
-        let root = Chain("future root", None);
-        let middle = Chain("future middle", Some(Box::new(root)));
+        drained(&mut reported).await;
+
+        let (sender, mut reported) = unbounded_channel();
         host.spawn_local(Box::pin(async move {
-            Err(Box::new(Chain("future outer", Some(Box::new(middle)))) as Box<dyn Error>)
+            let root = Chain::new("future root", None);
+            let middle = Chain::new("future middle", Some(root));
+            let outer = Chain::new("future outer", Some(middle)).reported_to(sender);
+            Err(Box::new(outer) as Box<dyn Error>)
         }));
-        settle().await;
-        let count = Rc::clone(&later);
+        drained(&mut reported).await;
+
+        let (sender, mut later) = unbounded_channel();
+        let from_timer = sender.clone();
         drop(host.schedule(
             Duration::ZERO,
             Box::new(move || {
-                count.set(count.get() + 1);
+                from_timer.send(()).unwrap();
                 Ok(())
             }),
         ));
-        let count = Rc::clone(&later);
         host.spawn_local(Box::pin(async move {
-            count.set(count.get() + 1);
+            sender.send(()).unwrap();
             Ok(())
         }));
-        settle().await;
-        assert_eq!(later.get(), 2, "work after a failure still completes");
+        assert_eq!(
+            drained(&mut later).await.len(),
+            2,
+            "work after a failure still completes"
+        );
     });
     assert!(
         !panicked.load(std::sync::atomic::Ordering::SeqCst),
@@ -293,11 +306,6 @@ fn failed_work_prints_each_source_and_keeps_running() {
     }
     let output = rerun("failed_work_prints_each_source_and_keeps_running", |_| {});
     assert_eq!(String::from_utf8_lossy(&output.stderr), EXPECTED_STDERR);
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        EXPECTED_STDERR.lines().all(|line| !stdout.contains(line)),
-        "the host writes nothing to standard output"
-    );
     #[cfg(unix)]
     {
         let (reader, writer) = rustix::pipe::pipe().expect("pipe created");
@@ -310,6 +318,13 @@ fn failed_work_prints_each_source_and_keeps_running() {
         );
         assert!(output.stderr.is_empty());
     }
+}
+
+/// Records when the value it holds is dropped.
+fn witness() -> (Rc<()>, Weak<()>) {
+    let held = Rc::new(());
+    let weak = Rc::downgrade(&held);
+    (held, weak)
 }
 
 #[test]
@@ -368,6 +383,16 @@ fn environment_returns_values_without_normalization() {
         ("MAESTRO_RUNTIME_MARKS", "\u{feff}\u{85}"),
         ("MAESTRO_RUNTIME_UNICODE", "é日本🦀"),
     ];
+    #[cfg(unix)]
+    const BYTES: [(&str, &[u8], &str); 3] = [
+        ("MAESTRO_RUNTIME_INVALID", b"A\xffB", "A\u{fffd}B"),
+        ("MAESTRO_RUNTIME_TRUNCATED", b"\xe2\x82", "\u{fffd}"),
+        (
+            "MAESTRO_RUNTIME_SURROGATE",
+            b"\xed\xa0\x80",
+            "\u{fffd}\u{fffd}\u{fffd}",
+        ),
+    ];
     if is_child() {
         run_set(true, |local| async move {
             let host = ProcessTuiRuntime::new(local);
@@ -376,10 +401,9 @@ fn environment_returns_values_without_normalization() {
             }
             assert_eq!(host.environment("MAESTRO_RUNTIME_MISSING"), None);
             #[cfg(unix)]
-            assert_eq!(
-                host.environment("MAESTRO_RUNTIME_BYTES").as_deref(),
-                Some("a\u{fffd}b")
-            );
+            for (key, _, lossy) in BYTES {
+                assert_eq!(host.environment(key).as_deref(), Some(lossy), "{key}");
+            }
         });
         return;
     }
@@ -391,64 +415,83 @@ fn environment_returns_values_without_normalization() {
                 command.env(key, value);
             }
             #[cfg(unix)]
-            {
+            for (key, bytes, _) in BYTES {
                 use std::os::unix::ffi::OsStrExt;
-                command.env(
-                    "MAESTRO_RUNTIME_BYTES",
-                    std::ffi::OsStr::from_bytes(b"a\xffb"),
-                );
+                command.env(key, std::ffi::OsStr::from_bytes(bytes));
             }
         },
     );
+}
+
+/// Checks the clock, text and nonce of a fresh context against actual wall time.
+fn checked_context(host: &ProcessTuiRuntime) -> LogContext {
+    let now_ms = || {
+        u64::try_from(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
+        )
+        .unwrap()
+    };
+    let before = now_ms();
+    let context = host.log_context();
+    let after = now_ms();
+    assert!((before..=after).contains(&context.unix_ms));
+    let instant =
+        chrono::DateTime::from_timestamp_millis(i64::try_from(context.unix_ms).unwrap()).unwrap();
+    assert_eq!(
+        context.iso_time,
+        instant.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+    );
+    assert!((1..=16).contains(&context.nonce.len()));
+    assert!(
+        context
+            .nonce
+            .chars()
+            .all(|c| matches!(c, '0'..='9' | 'a'..='f'))
+    );
+    context
 }
 
 #[test]
 fn log_context_uses_native_home_and_current_wall_time() {
     if is_child() {
         run_set(true, |local| async move {
-            let context = ProcessTuiRuntime::new(local).log_context();
-            assert_eq!(context.home, Path::new("/maestro-home-fixture"));
+            let context = checked_context(&ProcessTuiRuntime::new(local));
+            match std::env::var_os("MAESTRO_EXPECT_HOME") {
+                Some(home) => assert_eq!(context.home, Path::new(&home)),
+                None => assert_eq!(context.home, std::env::home_dir().unwrap_or_default()),
+            }
         });
         return;
     }
     run_set(true, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
-        let now_ms = || {
-            u64::try_from(
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis(),
-            )
-            .unwrap()
-        };
-        let before = now_ms();
-        let context = host.log_context();
-        let after = now_ms();
-        assert!((before..=after).contains(&context.unix_ms));
-        let instant =
-            chrono::DateTime::from_timestamp_millis(i64::try_from(context.unix_ms).unwrap())
-                .unwrap();
-        assert_eq!(
-            context.iso_time,
-            instant.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
-        );
+        let context = checked_context(&ProcessTuiRuntime::new(local));
         assert_eq!(context.home, std::env::home_dir().unwrap_or_default());
-        assert!((1..=16).contains(&context.nonce.len()));
-        assert!(
-            context
-                .nonce
-                .chars()
-                .all(|c| matches!(c, '0'..='9' | 'a'..='f'))
-        );
     });
     #[cfg(unix)]
-    rerun(
-        "log_context_uses_native_home_and_current_wall_time",
-        |command| {
-            command.env("HOME", "/maestro-home-fixture");
-        },
-    );
+    for home in [
+        Some("/maestro-home-fixture"),
+        Some("rel/home"),
+        Some("/with space/home"),
+        Some(""),
+        None,
+    ] {
+        rerun(
+            "log_context_uses_native_home_and_current_wall_time",
+            |command| {
+                command.env("TZ", "Pacific/Auckland");
+                match home {
+                    Some(home) => command.env("HOME", home),
+                    None => command.env_remove("HOME"),
+                };
+                if let Some(exact) = home.filter(|home| !home.is_empty()) {
+                    command.env("MAESTRO_EXPECT_HOME", exact);
+                }
+            },
+        );
+    }
 }
 
 /// A host for the file operations, which never use the set.
@@ -473,6 +516,13 @@ fn append_log_preserves_bytes_without_creating_parents() {
         host.append_log(&file, "first\r\n").unwrap();
         host.append_log(&file, "é\n").unwrap();
         assert_eq!(fs::read(&file).unwrap(), "first\r\né\n".as_bytes());
+
+        host.append_log(&file, "").unwrap();
+        assert_eq!(
+            fs::read(&file).unwrap(),
+            "first\r\né\n".as_bytes(),
+            "an empty append keeps the seeded contents"
+        );
 
         let empty = scratch.path("empty.log");
         host.append_log(&empty, "").unwrap();
@@ -500,6 +550,22 @@ fn write_log_creates_parents_and_replaces_bytes() {
     });
 }
 
+/// Asserts that `error` is the operating system's `native` error for the same failure.
+fn assert_native(error: &io::Error, native: &io::Error) {
+    assert!(error.raw_os_error().is_some(), "{error:?} is the system's");
+    assert_eq!(error.raw_os_error(), native.raw_os_error());
+    assert_eq!(error.kind(), native.kind());
+}
+
+/// The error the operating system gives for appending to `path`.
+fn native_append_error(path: &Path) -> io::Error {
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .unwrap_err()
+}
+
 #[test]
 fn log_failures_keep_native_errors_and_failure_order() {
     run_set(true, |_| async {
@@ -507,29 +573,32 @@ fn log_failures_keep_native_errors_and_failure_order() {
         let host = file_host();
         let directory = scratch.path("dir");
         fs::create_dir(&directory).unwrap();
-        for error in [
-            host.append_log(&directory, "x").unwrap_err(),
-            host.write_log(&directory, "x").unwrap_err(),
-        ] {
-            assert!(
-                error.raw_os_error().is_some(),
-                "{error:?} is the operating system's"
-            );
-        }
+        assert_native(
+            &host.append_log(&directory, "x").unwrap_err(),
+            &native_append_error(&directory),
+        );
+        assert_native(
+            &host.write_log(&directory, "x").unwrap_err(),
+            &fs::write(&directory, "x").unwrap_err(),
+        );
 
         let blocker = scratch.path("blocker");
         fs::write(&blocker, "decoy").unwrap();
         let below = blocker.join("sub/out.log");
-        let native = fs::create_dir_all(blocker.join("sub")).unwrap_err();
-        let error = host.write_log(&below, "x").unwrap_err();
-        assert_eq!(error.raw_os_error(), native.raw_os_error());
+        assert_native(
+            &host.write_log(&below, "x").unwrap_err(),
+            &fs::create_dir_all(blocker.join("sub")).unwrap_err(),
+        );
         assert_eq!(
             fs::read(&blocker).unwrap(),
             b"decoy",
             "the decoy is untouched"
         );
-        let error = host.append_log(&blocker.join("out.log"), "x").unwrap_err();
-        assert!(error.raw_os_error().is_some());
+        let beneath = blocker.join("out.log");
+        assert_native(
+            &host.append_log(&beneath, "x").unwrap_err(),
+            &native_append_error(&beneath),
+        );
         assert_eq!(fs::read(&blocker).unwrap(), b"decoy");
     });
 }
