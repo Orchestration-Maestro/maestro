@@ -123,10 +123,10 @@ mod tests {
             ("!k2-marks", "marked"),
             ("!k2-next-line", "\u{85}next\u{85}"),
         ];
-        for (configured, expected) in cases {
+        for (index, (configured, expected)) in cases.into_iter().enumerate() {
             let storage = storing(configured);
             let key = key_of(&storage, &operations).await;
-            assert_eq!(key.as_deref(), Some(expected), "{configured:?}");
+            assert_eq!(key.as_deref(), Some(expected), "case {index}");
         }
         let duplicate = storage_with(r#"{"p":{"type":"api_key","key":"first","key":"last"}}"#);
         let key = key_of(&duplicate, &operations).await;
@@ -232,10 +232,10 @@ mod tests {
             oauth_record(r#","refresh":"r","access":"a","expires":"wrong""#),
         ];
         for (provider, records) in [("k4-key", &keyed[..]), ("k4-oauth", &oauth[..])] {
-            for record in records {
+            for (index, record) in records.iter().enumerate() {
                 let storage = fallback_storage(provider, record);
                 let key = storage.get_api_key(provider, true, &operations).await;
-                assert_eq!(key.unwrap(), None, "{record}");
+                assert_eq!(key.unwrap(), None, "case {index}");
             }
         }
     }
@@ -253,10 +253,10 @@ mod tests {
             "[1]",
             "null",
         ];
-        for record in unrecognized {
+        for (index, record) in unrecognized.into_iter().enumerate() {
             let storage = fallback_storage("k4-other", record);
             let key = storage.get_api_key("k4-other", true, &operations).await;
-            assert_eq!(key.unwrap().as_deref(), Some("fallback"), "{record}");
+            assert_eq!(key.unwrap().as_deref(), Some("fallback"), "case {index}");
         }
         let fields = r#","refresh":"r","access":"extension-key","expires":4102444800000,"enterpriseUrl":"u""#;
         let valid = fallback_storage("k4-oauth", &oauth_record(fields));
@@ -376,11 +376,11 @@ mod tests {
             "!printf ''",
             "!printf '  \\n'",
         ];
-        for command in commands {
+        for (index, command) in commands.into_iter().enumerate() {
             let record = serde_json::json!({"openai": {"type": "api_key", "key": command}});
             let storage = with_fallback(storage_with(&record.to_string()), "fallback");
             let key = storage.get_api_key("openai", true, &native).await;
-            assert_eq!(key.unwrap(), None, "{command}");
+            assert_eq!(key.unwrap(), None, "case {index}");
         }
     }
 
