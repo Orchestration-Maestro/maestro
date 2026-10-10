@@ -71,6 +71,48 @@ failure.
 
 ## Replaceable operations
 
-`ThemeOperations` supplies the file read and environment lookup. `NativeThemeOperations`
-(not built for browsers) reads bytes, decodes them as UTF-8 with replacement
-characters, and reads process variables. Tests and browser callers supply their own.
+`ThemeOperations` supplies the file read, environment lookup, existence check,
+directory listing and name sorting. `NativeThemeOperations` (not built for browsers)
+reads bytes, decodes them as UTF-8 with replacement characters, reads process
+variables and lists directory entries by name, in byte order of the names, without
+filtering by entry kind.
+It sorts with a stable locale collator built once per call from the first present of
+`LC_ALL`, `LC_MESSAGES` and `LANG` (default `en_US`); encoding and modifier suffixes are
+dropped, `C` and `POSIX` mean `en-US`, and an unusable locale selects the library default.
+Tests and browser callers supply their own.
+
+## Registration and discovery
+
+`ThemeState` holds the application-supplied `ThemeDirectories` (the shipped themes
+directory and the custom themes directory), the operations and the registrations.
+Constructing it reads nothing.
+
+- **Shipped data.** The first query that needs it reads and parses `dark.json`,
+  then `light.json`, from the themes directory without the custom-file admission.
+  A parse failure keeps the decoder's own message, without the custom-file label.
+  The documents are cached only when both succeed, so a failure is retried by the
+  next query. The cache holds documents, not instances: every unregistered successful
+  lookup constructs a new `Theme` and samples the color mode anew.
+- **Registration.** `set_registered_themes` replaces all registrations. Themes
+  without a name, or with an empty name, are ignored; a repeated name keeps its
+  first position and takes the last instance. Clearing registrations does not
+  affect `Rc<Theme>` handles that callers still hold.
+- **Lookup.** `get_theme_by_name` returns the registered instance itself, without
+  any effect. Otherwise `dark` and `light` are built from the shipped data, and any
+  other name is read from `<custom dir>/<name>.json` (joined with
+  `maestro_path::join`; names are not trimmed or restricted). A new instance carries the document's name and no source
+  path. Every loading failure is `None`, never a fallback theme; shipped data without
+  a `colors` object fails construction the same way.
+- **Inventories.** `get_available_themes` lists each shipped, custom and registered
+  name once, ordered by UTF-16 code units. `get_available_themes_with_paths` lists
+  each name once with the path of its first owner (shipped, then custom entry, then
+  registration), ordered by the operations' locale sort. Custom names are the entries
+  ending in a case-sensitive `.json`, directories included; contents are not read. A missing custom
+  directory adds nothing; shipped-data and directory-listing failures are errors.
+
+## Source metadata
+
+`Theme::source_info` and `Theme::set_source_info` expose a replaceable slot holding a
+shared `Rc<RefCell<SourceInfo>>` from `maestro-request`. Edits through any holder of the
+record are visible through the theme; replacing or clearing the slot leaves the earlier
+record unchanged for its other holders.

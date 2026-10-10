@@ -1709,8 +1709,12 @@ dependencies = [
 name = "maestro-theme"
 version = "0.1.0"
 dependencies = [
+ "icu_collator",
+ "icu_locale_core",
  "indexmap",
  "jsonschema",
+ "maestro-path",
+ "maestro-request",
  "num-traits",
  "serde_json",
 ]

@@ -1,11 +1,18 @@
 //! Immutable foreground/background theme prefixes and authored metadata.
 use indexmap::IndexMap;
+use maestro_request::source_info::SourceInfo;
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
+#[cfg(not(target_arch = "wasm32"))]
+mod collation;
 mod colors;
 mod loading;
+mod registry;
 #[cfg(not(target_arch = "wasm32"))]
 pub use loading::NativeThemeOperations;
 pub use loading::{ThemeOperations, load_theme_from_path};
+pub use registry::{ThemeDirectories, ThemeInfo, ThemeState};
 
 /// Terminal color conversion mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,6 +234,8 @@ pub struct ThemeOptions {
     pub name: Option<String>,
     /// Authored source path.
     pub source_path: Option<String>,
+    /// Shared resource provenance, replaceable later through [`Theme::set_source_info`].
+    pub source_info: Option<Rc<RefCell<SourceInfo>>>,
 }
 /// Theme construction or lookup failure.
 #[derive(Debug)]
@@ -243,6 +252,17 @@ impl ThemeError {
             message,
             cause: None,
         }
+    }
+    /// Keep a native failure as the cause, displayed as `message`.
+    fn caused_by(message: String, cause: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self {
+            message,
+            cause: Some(Box::new(cause)),
+        }
+    }
+    /// Keep an I/O failure, displayed as itself.
+    fn io(cause: std::io::Error) -> Self {
+        Self::caused_by(cause.to_string(), cause)
     }
 }
 impl fmt::Display for ThemeError {
@@ -266,8 +286,10 @@ pub struct Theme {
     bg_colors: IndexMap<String, String>,
     /// Retained conversion mode.
     mode: ColorMode,
-    /// Authored instance metadata.
+    /// Authored instance metadata; its shared provenance moved to `source_info`.
     options: ThemeOptions,
+    /// Replaceable slot holding the shared provenance record.
+    source_info: RefCell<Option<Rc<RefCell<SourceInfo>>>>,
 }
 impl Theme {
     /// Prepare the supplied foreground and background records.
@@ -278,7 +300,7 @@ impl Theme {
         fg_colors: impl IntoIterator<Item = (ThemeColor, ColorValue)>,
         bg_colors: impl IntoIterator<Item = (ThemeBg, ColorValue)>,
         mode: ColorMode,
-        options: ThemeOptions,
+        mut options: ThemeOptions,
     ) -> Result<Self, ThemeError> {
         let fg: IndexMap<_, _> = fg_colors
             .into_iter()
@@ -290,11 +312,13 @@ impl Theme {
             .collect();
         let fg_colors = prepare(fg, mode, 38)?;
         let bg_colors = prepare(bg, mode, 48)?;
+        let source_info = RefCell::new(options.source_info.take());
         Ok(Self {
             fg_colors,
             bg_colors,
             mode,
             options,
+            source_info,
         })
     }
     /// Borrow the authored theme name.
@@ -306,6 +330,15 @@ impl Theme {
     #[must_use]
     pub fn source_path(&self) -> Option<&str> {
         self.options.source_path.as_deref()
+    }
+    /// Return the shared provenance record, if the slot holds one.
+    #[must_use]
+    pub fn source_info(&self) -> Option<Rc<RefCell<SourceInfo>>> {
+        self.source_info.borrow().clone()
+    }
+    /// Replace the slot; the previous record is left unchanged for its other holders.
+    pub fn set_source_info(&self, source_info: Option<Rc<RefCell<SourceInfo>>>) {
+        *self.source_info.borrow_mut() = source_info;
     }
     /// Return the conversion mode stored at construction.
     #[must_use]
