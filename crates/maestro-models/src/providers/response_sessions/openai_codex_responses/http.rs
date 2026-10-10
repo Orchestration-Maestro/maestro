@@ -212,10 +212,7 @@ pub(crate) async fn invoke_sse(
 use crate::Cancellation;
 use crate::providers::http::decode_utf8;
 use futures_util::StreamExt;
-use std::{
-    future::pending,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::{future::pending, time::Duration};
 
 /// Read a failed setup response before applying friendly parsing or retry policy.
 async fn error_body(
@@ -306,13 +303,12 @@ async fn send_response(
             index += 1;
             continue;
         }
-        let error = parse_error_response(response.status, &text, &response.status_text, || {
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs_f64()
-                * 1000.0
-        });
+        let error = parse_error_response(
+            response.status,
+            &text,
+            &response.status_text,
+            crate::records::diagnostics::timestamp_now,
+        );
         return Err(CodexError::Transport(diagnostic(
             error.friendly_message.unwrap_or(error.message),
         )));
