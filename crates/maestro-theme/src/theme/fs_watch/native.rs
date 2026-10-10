@@ -124,12 +124,25 @@ pub(super) struct NativeWatcher {
     closed: Rc<Cell<bool>>,
 }
 
-impl ThemeWatcher for NativeWatcher {
-    fn close(&mut self) -> io::Result<()> {
+impl NativeWatcher {
+    /// The one teardown shared by closing and dropping.
+    fn stop(&mut self) {
         self.closed.set(true);
         self.notifier = None;
         self.task.cancel();
+    }
+}
+
+impl ThemeWatcher for NativeWatcher {
+    fn close(&mut self) -> io::Result<()> {
+        self.stop();
         Ok(())
+    }
+}
+
+impl Drop for NativeWatcher {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 

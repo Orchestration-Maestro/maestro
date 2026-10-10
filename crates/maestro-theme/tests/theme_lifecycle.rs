@@ -237,6 +237,23 @@ fn theme_named_switch_reports_failure_after_fallback() {
 }
 
 #[test]
+fn theme_construction_reports_integer_keys_before_authored_order() {
+    let scratch = Scratch::new("key-order");
+    let ops = Ops::new(&[]);
+    let state = state(&scratch, &ops);
+    let mut json = custom_json("ordered", "missingAccent");
+    json["colors"]["0"] = "missingIndex".into();
+    scratch.write("custom/ordered.json", &json.to_string());
+
+    assert_eq!(
+        state.set_theme("ordered", None).unwrap(),
+        ThemeChangeResult::Failure {
+            error: "Variable reference not found: missingIndex".into()
+        }
+    );
+}
+
+#[test]
 fn theme_direct_instance_publishes_before_callback() {
     let scratch = Scratch::new("direct");
     let ops = Ops::new(&[]);

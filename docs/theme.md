@@ -148,13 +148,14 @@ nothing rewatches. `stop_theme_watcher` cancels both and keeps the published the
 `NativeThemeWatchOperations` (not built for browsers) uses operating-system
 notifications and Tokio timers on a `LocalSet` that the caller creates and drives.
 Dropping the state or closing or dropping a native watch or timer handle cancels
-its pending work; a closed watch dispatches no queued notification. The native
+its pending work; a closed or dropped watch dispatches no queued notification. The native
 watch resolves the directory against the working directory once, as the notifier
 does.
 
 ## Resolved colors for export
 
-`get_resolved_theme_colors` returns every color of a theme in
+Loading a custom theme resolves its colors in the same order, so the first
+failing alias is the same. `get_resolved_theme_colors` returns every color of a theme in
 canonical key order: array-index keys ascending, then the rest in authored order. The
 document is the shipped one, else the file of a registration (a registration
 without a source path is an error), else the custom file. Authored color text is returned unchanged; palette indices expand to `#rrggbb` from

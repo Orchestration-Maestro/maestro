@@ -155,6 +155,40 @@ fn theme_native_close_inside_a_callback_stops_queued_notifications() {
 }
 
 #[test]
+fn theme_native_drop_inside_a_callback_stops_queued_notifications() {
+    let dir = std::env::temp_dir().join(format!("maestro-watch-drop-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let harness = Harness::new();
+    let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
+    let delivered = Rc::new(Cell::new(0));
+    let (held, count) = (Rc::clone(&slot), Rc::clone(&delivered));
+    let (watcher, results) = harness
+        .operations
+        .open(
+            dir.to_str().unwrap(),
+            Rc::new(move |_| {
+                count.set(count.get() + 1);
+                drop(held.borrow_mut().take());
+            }),
+            Rc::new(|| {}),
+        )
+        .unwrap();
+    *slot.borrow_mut() = Some(watcher);
+    for file in ["first.json", "second.json"] {
+        let path = dir.join(file);
+        results
+            .send(Ok(event(
+                EventKind::Create(CreateKind::File),
+                &[path.to_str().unwrap()],
+            )))
+            .unwrap();
+    }
+    harness.local.block_on(&harness.runtime, results.closed());
+    assert_eq!(delivered.get(), 1);
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
 fn theme_native_error_closes_through_the_handler_and_releases_the_listener() {
     let dir = std::env::temp_dir().join(format!("maestro-watch-error-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();

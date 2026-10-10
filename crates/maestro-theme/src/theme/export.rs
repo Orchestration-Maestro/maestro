@@ -44,9 +44,7 @@ impl ThemeState {
         let colors = document["colors"]
             .as_object()
             .ok_or_else(|| ThemeError::message("Theme colors must be an object".to_owned()))?;
-        let mut entries: Vec<_> = colors.iter().collect();
-        entries.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
-        entries
+        canonical_entries(colors)
             .into_iter()
             .map(|(key, value)| {
                 let color = hex(resolve(value, &document["vars"])?);
@@ -94,6 +92,13 @@ fn export_color(value: Option<&Value>, vars: &Value) -> Result<Option<String>, T
         return Ok(None);
     };
     Ok(Some(hex(resolve(value, vars)?)).filter(|color| !color.is_empty()))
+}
+
+/// Entries in enumeration order: integer-like keys ascending, then authored order.
+pub(super) fn canonical_entries(colors: &serde_json::Map<String, Value>) -> Vec<(&String, &Value)> {
+    let mut entries: Vec<_> = colors.iter().collect();
+    entries.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
+    entries
 }
 
 /// Parse a canonical array index: no sign, no leading zero, below 2^32 - 1.
