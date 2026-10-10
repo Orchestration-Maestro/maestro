@@ -1,9 +1,9 @@
 # Agent state and queued input
 
 `maestro-agent` owns live conversation state, shared message and executable-tool
-entries, and independent steering and follow-up input queues. Execution is
-tracked in [the awaited loop](https://github.com/Orchestration-Maestro/maestro/issues/476)
-and [the Agent lifecycle](https://github.com/Orchestration-Maestro/maestro/issues/477).
+entries, and independent steering and follow-up input queues. The [awaited conversation operations](loop.md) execute plain sequential turns.
+Agent-owned execution remains tracked in
+[the Agent lifecycle](https://github.com/Orchestration-Maestro/maestro/issues/477).
 
 `SharedAgentTool` entries expose declarations, labels, callbacks and scheduling
 preferences directly, including mutable access through the shared handle.

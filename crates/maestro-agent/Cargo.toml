@@ -6,10 +6,14 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+futures-util.workspace = true
 maestro-models = { path = "../maestro-models" }
 serde_json.workspace = true
 
 serde.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "macros"] }
 
 [lints]
 workspace = true
