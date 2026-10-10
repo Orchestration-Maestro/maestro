@@ -454,6 +454,16 @@ fn checked_context(host: &ProcessTuiRuntime) -> LogContext {
     context
 }
 
+/// The home a context should report: a present `HOME` verbatim (empty included) on Unix,
+/// the account directory otherwise.
+fn expected_home() -> PathBuf {
+    #[cfg(unix)]
+    if let Some(home) = std::env::var_os("HOME") {
+        return PathBuf::from(home);
+    }
+    std::env::home_dir().unwrap_or_default()
+}
+
 #[test]
 fn log_context_uses_native_home_and_current_wall_time() {
     if is_child() {
@@ -465,14 +475,14 @@ fn log_context_uses_native_home_and_current_wall_time() {
                     let destination = context.home.join(".maestro").join("agent");
                     assert_eq!(destination.is_relative(), !Path::new(&home).is_absolute());
                 }
-                None => assert_eq!(context.home, std::env::home_dir().unwrap_or_default()),
+                None => assert_eq!(context.home, expected_home()),
             }
         });
         return;
     }
     run_set(true, |local| async move {
         let context = checked_context(&ProcessTuiRuntime::new(local));
-        assert_eq!(context.home, std::env::home_dir().unwrap_or_default());
+        assert_eq!(context.home, expected_home());
     });
     #[cfg(unix)]
     for home in [

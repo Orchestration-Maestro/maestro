@@ -10,6 +10,7 @@ use std::error::Error;
 use std::fmt;
 use std::future::Future;
 use std::io;
+use std::path::Path;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
@@ -18,7 +19,9 @@ use maestro_tui::autocomplete::{
     AutocompleteOperations, CompletionError, CompletionOptions, CompletionResult, CursorPosition,
     NativeAutocompleteOperations,
 };
-use maestro_tui::tui::TerminalHandle;
+use maestro_tui::tui::{
+    LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
+};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Component, Editor,
     EditorOptions, EditorTheme, KeybindingsManager, SelectListTheme, TUI, TUI_KEYBINDINGS,
@@ -27,7 +30,7 @@ use maestro_tui::{
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use runtime_support::{is_child, rerun, run_set};
 use tokio::sync::{mpsc, oneshot};
-use tokio::time::{Instant, advance};
+use tokio::time::{Instant, advance, timeout};
 
 /// What a provider future yields.
 type Reply = Result<Option<AutocompleteSuggestions>, CompletionError>;
@@ -191,14 +194,67 @@ impl Terminal for Sink {
     }
 }
 
-/// Consumes terminal writes up to and including the first that contains `text`.
-async fn read_until(writes: &mut mpsc::UnboundedReceiver<String>, text: &str) {
-    while !writes
-        .recv()
-        .await
-        .expect("the terminal stays open")
-        .contains(text)
-    {}
+/// Reports submitted work that the host dropped before it finished.
+struct Abandoned {
+    /// Receives one signal per abandoned work item.
+    report: mpsc::UnboundedSender<()>,
+    /// Whether the work ran to completion.
+    finished: bool,
+}
+
+impl Drop for Abandoned {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.report.send(()).ok();
+        }
+    }
+}
+
+/// The native host, reporting every submitted future it drops before completion.
+struct Watched {
+    /// The host under test.
+    host: ProcessTuiRuntime,
+    /// Receives the drop signals.
+    report: mpsc::UnboundedSender<()>,
+}
+
+impl TuiRuntime for Watched {
+    fn now(&self) -> Duration {
+        self.host.now()
+    }
+
+    fn schedule(&self, delay: Duration, callback: RenderCallback) -> Box<dyn RenderTimer> {
+        self.host.schedule(delay, callback)
+    }
+
+    fn spawn_local(&self, future: LocalFuture) {
+        let watch = Abandoned {
+            report: self.report.clone(),
+            finished: false,
+        };
+        self.host.spawn_local(Box::pin(async move {
+            let mut watch = watch;
+            let result = future.await;
+            watch.finished = true;
+            result
+        }));
+    }
+
+    fn environment(&self, key: &str) -> Option<String> {
+        self.host.environment(key)
+    }
+
+    fn log_context(&self) -> LogContext {
+        self.host.log_context()
+    }
+
+    fn append_log(&self, path: &Path, contents: &str) -> io::Result<()> {
+        self.host.append_log(path, contents)
+    }
+
+    fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
+        self.host.write_log(path, contents)
+    }
 }
 
 /// A started retained editor on the native host, with its provider and observations.
@@ -213,6 +269,8 @@ struct Scene {
     requests: mpsc::UnboundedReceiver<(Instant, Vec<String>)>,
     /// Terminal writes in order.
     writes: mpsc::UnboundedReceiver<String>,
+    /// Signals for submitted work the host dropped before it finished.
+    abandoned: mpsc::UnboundedReceiver<()>,
 }
 
 impl Scene {
@@ -220,10 +278,15 @@ impl Scene {
     fn start(local: Rc<tokio::task::LocalSet>) -> Self {
         set_keybindings(KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new()));
         let (writes_in, writes) = mpsc::unbounded_channel();
+        let (report, abandoned) = mpsc::unbounded_channel();
         let terminal: TerminalHandle = Rc::new(RefCell::new(Sink { writes: writes_in }));
+        let host = Watched {
+            host: ProcessTuiRuntime::new(local),
+            report,
+        };
         let tui = TUI::new(
             terminal,
-            Rc::new(ProcessTuiRuntime::new(local)),
+            Rc::new(host),
             TerminalImage::new(|_| None, || 1),
             None,
         );
@@ -250,6 +313,7 @@ impl Scene {
             gate,
             requests,
             writes,
+            abandoned,
         }
     }
 
@@ -267,12 +331,29 @@ impl Scene {
 
     /// Waits for the provider to receive a request and returns when it arrived and its lines.
     async fn request_at(&mut self) -> (Instant, Vec<String>) {
-        self.requests.recv().await.expect("a request")
+        tokio::select! {
+            request = self.requests.recv() => request.expect("a request"),
+            _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+        }
     }
 
     /// Waits until the terminal receives a write that contains `text`.
     async fn drawn(&mut self, text: &str) {
-        read_until(&mut self.writes, text).await;
+        let read = async {
+            while !self
+                .writes
+                .recv()
+                .await
+                .expect("the terminal stays open")
+                .contains(text)
+            {}
+        };
+        // A paused clock reaches the limit only once every task is idle.
+        let drawn = timeout(Duration::from_secs(60), read);
+        tokio::select! {
+            result = drawn => assert!(result.is_ok(), "nothing drew {text:?}"),
+            _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+        }
     }
 
     /// Whether the terminal has a write waiting that contains `text`.
@@ -322,12 +403,21 @@ fn retained_editor_displays_async_native_suggestions() {
             .reply(Ok(Some(offer("src", &["src/", "src.txt"]))));
         scene.drawn("src.txt").await;
         assert!(scene.editor.is_showing_autocomplete());
+        assert_eq!(
+            scene.editor.get_text(),
+            "src",
+            "several choices change nothing"
+        );
         let rows = scene.menu();
         assert!(rows.iter().any(|row| row.ends_with("src/")), "{rows:?}");
         assert!(rows.iter().any(|row| row.ends_with("src.txt")), "{rows:?}");
 
         scene.editor.handle_input(TAB);
         assert_eq!(scene.editor.get_text(), "src/");
+        assert!(
+            !scene.editor.is_showing_autocomplete(),
+            "accepting closes the menu"
+        );
     });
 }
 
@@ -351,6 +441,10 @@ fn symbol_completion_debounces_on_native_host() {
             assert!(
                 scene.menu().iter().any(|row| row.ends_with(value)),
                 "{typed}"
+            );
+            assert!(
+                scene.requests.try_recv().is_err(),
+                "{typed}: one request only"
             );
         });
     }
