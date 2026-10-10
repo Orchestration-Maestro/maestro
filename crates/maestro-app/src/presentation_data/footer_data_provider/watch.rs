@@ -165,14 +165,8 @@ impl Watching {
     fn add(self: &Rc<Self>, path: &str, head: bool) -> bool {
         let weak = Rc::downgrade(self);
         let listener = Rc::new(move |name: Option<String>| {
-            if head
-                && name
-                    .as_deref()
-                    .is_some_and(|n| !n.is_empty() && n != "HEAD")
-            {
-                return;
-            }
-            if let Some(owner) = weak.upgrade() {
+            let relevant = !head || name.as_deref().is_none_or(|n| n.is_empty() || n == "HEAD");
+            if let Some(owner) = weak.upgrade().filter(|_| relevant) {
                 owner.schedule();
             }
         });
@@ -182,13 +176,9 @@ impl Watching {
                 owner.error();
             }
         });
-        let Some(watcher) =
-            watch_with_error_handler(path, listener, error, self.operations.as_ref())
-        else {
-            return false;
-        };
-        self.sources.borrow_mut().push(watcher);
-        true
+        watch_with_error_handler(path, listener, error, self.operations.as_ref())
+            .map(|watcher| self.sources.borrow_mut().push(watcher))
+            .is_some()
     }
     /// Install available repository watches in dependency order.
     pub fn setup(self: &Rc<Self>) {

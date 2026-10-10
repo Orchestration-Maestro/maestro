@@ -1,4 +1,4 @@
-//! Native effects bind relative paths before the caller drives their task set.
+//! Successful path resolution binds polling and Git query paths before the caller drives their task set.
 #![cfg(unix)]
 #![cfg(test)]
 use maestro_app::presentation_data::footer_data_provider::{
