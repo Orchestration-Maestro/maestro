@@ -168,6 +168,9 @@ assets. Consumers read brand values from the pack, never hard-code them.
 
 ## Agent skills
 
+[Development prompts](docs/development_prompts.md) cover release audits, issue
+analysis, PR review and task completion through the existing repository process.
+
 ### Issue tracker
 
 Issues are GitHub Issues in `Orchestration-Maestro/maestro`; specs land on
