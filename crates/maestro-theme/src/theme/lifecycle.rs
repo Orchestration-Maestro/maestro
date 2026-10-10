@@ -2,6 +2,7 @@
 use super::fs_watch::ThemeWatchOperations;
 use super::watching::Watch;
 use super::{Theme, ThemeError, ThemeState};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
@@ -9,7 +10,7 @@ use std::rc::Rc;
 /// Name selected while a directly supplied instance is published.
 pub(super) const IN_MEMORY: &str = "<in-memory>";
 
-/// A change callback; its failure is reported to the operation that published.
+/// A change callback; a switch reports its failure and a file reload suppresses it.
 type Callback = Rc<dyn Fn() -> Result<(), Box<dyn Error + Send + Sync>>>;
 
 /// Mutable lifecycle slots of one [`ThemeState`].
@@ -74,13 +75,11 @@ impl ThemeState {
         name: Option<&str>,
         watcher: Option<Rc<dyn ThemeWatchOperations>>,
     ) -> Result<(), ThemeError> {
-        let name = name.map_or_else(|| self.default_theme(), str::to_owned);
+        let name = name.map_or_else(|| Cow::Owned(self.default_theme()), Cow::Borrowed);
         self.select(&name);
         let loaded = self.load_named(&name).map(|theme| {
             self.publish(theme);
-            if let Some(operations) = watcher {
-                self.start_theme_watcher(&operations);
-            }
+            self.start_theme_watcher(watcher);
         });
         loaded.or_else(|_| self.fall_back())
     }
@@ -100,9 +99,7 @@ impl ThemeState {
         self.select(name);
         let switched = self.load_named(name).and_then(|theme| {
             self.publish(theme);
-            if let Some(operations) = watcher {
-                self.start_theme_watcher(&operations);
-            }
+            self.start_theme_watcher(watcher);
             self.notify()
         });
         match switched {
@@ -119,7 +116,7 @@ impl ThemeState {
     /// Publish a directly supplied instance, stop watching and invoke the callback.
     ///
     /// # Errors
-    /// Returns the callback's failure; the instance stays published.
+    /// Returns the callback's failure; the operation rolls back none of the callback's changes.
     pub fn set_theme_instance(&self, theme: Rc<Theme>) -> Result<(), ThemeError> {
         self.publish(theme);
         self.select(IN_MEMORY);
@@ -128,10 +125,7 @@ impl ThemeState {
     }
 
     /// Replace the single change callback.
-    pub fn on_theme_change(
-        &self,
-        callback: Rc<dyn Fn() -> Result<(), Box<dyn Error + Send + Sync>>>,
-    ) {
+    pub fn on_theme_change(&self, callback: Callback) {
         let previous = self.lifecycle.callback.borrow_mut().replace(callback);
         drop(previous);
     }
@@ -154,7 +148,7 @@ impl ThemeState {
         })
     }
 
-    /// Publish the `dark` theme without a watch.
+    /// Publish the `dark` theme; no watcher is started or replaced.
     fn fall_back(&self) -> Result<(), ThemeError> {
         self.select("dark");
         self.load_named("dark").map(|theme| self.publish(theme))

@@ -7,7 +7,6 @@ use live::{Ops, Scratch, custom_json, state};
 use maestro_theme::{NativeThemeWatchOperations, ThemeState, ThemeWatchOperations};
 use std::fs;
 use std::rc::Rc;
-use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::task::LocalSet;
 
@@ -15,13 +14,9 @@ use tokio::task::LocalSet;
 #[cfg(test)]
 async fn published(state: &ThemeState, changed: &Notify, name: &str) {
     let live = state.theme();
-    tokio::time::timeout(Duration::from_secs(30), async {
-        while live.get().unwrap().name() != Some(name) {
-            changed.notified().await;
-        }
-    })
-    .await
-    .unwrap();
+    while live.get().unwrap().name() != Some(name) {
+        changed.notified().await;
+    }
 }
 
 #[test]

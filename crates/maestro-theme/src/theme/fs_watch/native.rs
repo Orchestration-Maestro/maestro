@@ -2,8 +2,9 @@
 use super::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher};
 use notify::event::EventKind;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use std::cell::Cell;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::Rc;
 use std::time::Duration;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
@@ -12,8 +13,8 @@ use tokio::task::{JoinHandle, LocalSet};
 /// Notifications and timers delivered on a caller-driven [`LocalSet`].
 ///
 /// The caller owns the local set and must drive it, for example with
-/// [`LocalSet::run_until`], inside a runtime whose timer is enabled. Dropping a
-/// handle or the last operations value cancels its pending work.
+/// [`LocalSet::run_until`], inside a runtime whose timer is enabled. Closing or
+/// dropping a native watch or timer handle cancels its pending work.
 pub struct NativeThemeWatchOperations {
     /// Set that runs every dispatched callback.
     local: Rc<LocalSet>,
@@ -26,39 +27,39 @@ impl NativeThemeWatchOperations {
         Self { local }
     }
 
-    /// Register a watch and return it with the sink its notifications enter.
+    /// Register a watch and return it with the channel its results enter.
+    ///
+    /// The directory is anchored to the working directory once, as the notifier
+    /// anchors it, so event paths project to entry names.
     pub(super) fn open(
         &self,
         path: &str,
         listener: Rc<dyn Fn(Option<String>)>,
         on_error: Rc<dyn Fn()>,
-    ) -> io::Result<(NativeWatcher, Sink)> {
+    ) -> io::Result<(NativeWatcher, UnboundedSender<notify::Result<Event>>)> {
+        let root = std::path::absolute(path)?;
         let (tx, mut rx) = unbounded_channel();
-        let sink = Sink {
-            tx,
-            dir: PathBuf::from(path),
-        };
-        let handler = sink.clone();
-        let mut watcher = notify::recommended_watcher(move |result| handler.deliver(result))
-            .map_err(io::Error::other)?;
+        let sender = tx.clone();
+        let mut watcher = notify::recommended_watcher(move |result| {
+            let _ = sender.send(result);
+        })
+        .map_err(io::Error::other)?;
         watcher
-            .watch(Path::new(path), RecursiveMode::NonRecursive)
+            .watch(&root, RecursiveMode::NonRecursive)
             .map_err(io::Error::other)?;
+        let closed = Rc::new(Cell::new(false));
+        let stopped = Rc::clone(&closed);
         let task = self.local.spawn_local(async move {
-            while let Some(message) = rx.recv().await {
-                match message {
-                    Message::Changed(name) => listener(name),
-                    Message::Failed => on_error(),
-                }
+            while let Some(result) = rx.recv().await {
+                dispatch(result, &root, &stopped, &*listener, &*on_error);
             }
         });
-        Ok((
-            NativeWatcher {
-                watcher: Some(watcher),
-                task,
-            },
-            sink,
-        ))
+        let watcher = NativeWatcher {
+            watcher: Some(watcher),
+            task: Aborting(task),
+            closed,
+        };
+        Ok((watcher, tx))
     }
 }
 
@@ -78,42 +79,29 @@ impl ThemeWatchOperations for NativeThemeWatchOperations {
             tokio::time::sleep(delay).await;
             callback();
         });
-        Box::new(NativeTimer(task))
+        Box::new(Aborting(task))
     }
 }
 
-/// One notification crossing from the notifier's thread.
-enum Message {
-    /// An entry changed; `None` when its name is unknown.
-    Changed(Option<String>),
-    /// The watch failed.
-    Failed,
-}
-
-/// Channel end that carries projected notifications off the notifier's thread.
-#[derive(Clone)]
-pub(super) struct Sink {
-    /// Notifications in arrival order.
-    tx: UnboundedSender<Message>,
-    /// Watched directory.
-    dir: PathBuf,
-}
-
-impl Sink {
-    /// Project one library result and send each entry name or the failure.
-    ///
-    /// A path outside the directory, or the directory itself, has no entry name.
-    pub(super) fn deliver(&self, result: notify::Result<Event>) {
-        match result {
-            Ok(event) => {
-                for name in entry_names(&event, &self.dir) {
-                    let _ = self.tx.send(Message::Changed(name));
+/// Deliver one notifier result unless the watch was closed, even by an earlier name.
+fn dispatch(
+    result: notify::Result<Event>,
+    root: &Path,
+    stopped: &Cell<bool>,
+    listener: &dyn Fn(Option<String>),
+    on_error: &dyn Fn(),
+) {
+    match result {
+        Ok(event) => {
+            for name in entry_names(&event, root) {
+                if stopped.get() {
+                    return;
                 }
-            }
-            Err(_) => {
-                let _ = self.tx.send(Message::Failed);
+                listener(name);
             }
         }
+        Err(_) if !stopped.get() => on_error(),
+        Err(_) => {}
     }
 }
 
@@ -137,39 +125,36 @@ pub(super) fn entry_names(event: &Event, dir: &Path) -> Vec<Option<String>> {
         .collect()
 }
 
-/// A native watch whose receiver task is aborted when it closes or drops.
-pub(super) struct NativeWatcher {
-    /// Library watch; dropping it stops the notifier.
-    watcher: Option<RecommendedWatcher>,
-    /// Task that dispatches notifications.
-    task: JoinHandle<()>,
-}
+/// A native timer or receiver task that is aborted when dropped.
+struct Aborting(JoinHandle<()>);
 
-impl ThemeWatcher for NativeWatcher {
-    fn close(&mut self) -> io::Result<()> {
-        self.watcher = None;
-        self.task.abort();
-        Ok(())
-    }
-}
-
-impl Drop for NativeWatcher {
+impl Drop for Aborting {
     fn drop(&mut self) {
-        self.task.abort();
-    }
-}
-
-/// A native timer task that is aborted when cancelled or dropped.
-struct NativeTimer(JoinHandle<()>);
-
-impl ThemeReloadTimer for NativeTimer {
-    fn cancel(&mut self) {
         self.0.abort();
     }
 }
 
-impl Drop for NativeTimer {
-    fn drop(&mut self) {
+/// A native watch; once closed, no further notification is dispatched.
+pub(super) struct NativeWatcher {
+    /// Library watch; dropping it stops the notifier.
+    watcher: Option<RecommendedWatcher>,
+    /// Task that dispatches notifications.
+    task: Aborting,
+    /// Checked before every dispatch, because aborting cannot interrupt a running callback.
+    closed: Rc<Cell<bool>>,
+}
+
+impl ThemeWatcher for NativeWatcher {
+    fn close(&mut self) -> io::Result<()> {
+        self.closed.set(true);
+        self.watcher = None;
+        self.task.0.abort();
+        Ok(())
+    }
+}
+
+impl ThemeReloadTimer for Aborting {
+    fn cancel(&mut self) {
         self.0.abort();
     }
 }

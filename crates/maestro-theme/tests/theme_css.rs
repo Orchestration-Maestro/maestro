@@ -32,6 +32,14 @@ fn with_export(export: &Value) -> Value {
     json
 }
 
+/// A custom document whose accent and export page background are both `color`.
+#[cfg(test)]
+fn with_page_bg(name: &str, color: &str) -> Value {
+    let mut json = custom_json(name, color);
+    json["export"] = json!({ "pageBg": color });
+    json
+}
+
 /// Resolved value of one key.
 #[cfg(test)]
 fn color(colors: &[(String, String)], key: &str) -> String {
@@ -50,10 +58,16 @@ fn exported(json: &Value) -> ThemeExportColors {
     state.get_theme_export_colors(Some("e"))
 }
 
+/// Export colors with the given field and nothing else.
+#[cfg(test)]
+fn export_field(field: &str, value: &Value) -> ThemeExportColors {
+    exported(&with_export(&json!({ field: value })))
+}
+
 /// Export colors with the given page background and nothing else.
 #[cfg(test)]
 fn page_bg(value: &Value) -> Option<String> {
-    exported(&with_export(&json!({ "pageBg": value }))).page_bg
+    export_field("pageBg", value).page_bg
 }
 
 #[test]
@@ -199,20 +213,24 @@ fn theme_export_selection_uses_explicit_current_then_default() {
     let (_scratch, ops, state) = custom(
         "selection",
         &[
-            ("one", custom_json("one", "#010101")),
-            ("two", custom_json("two", "#020202")),
+            ("one", with_page_bg("one", "#010101")),
+            ("two", with_page_bg("two", "#020202")),
         ],
     );
     ops.set("COLORFGBG", "0;8");
     let page = |name: Option<&str>| state.get_theme_export_colors(name).page_bg;
+    assert_eq!(page(None), Some("#f8f8f8".to_owned()));
     assert_eq!(
         color(&state.get_resolved_theme_colors(None).unwrap(), "accent"),
         "#5a8080"
     );
     assert!(ops.read("COLORFGBG"));
 
+    assert_eq!(page(Some("one")), Some("#010101".to_owned()));
     ops.env_reads.borrow_mut().clear();
     state.init_theme(Some("one"), None).unwrap();
+    assert_eq!(page(None), Some("#010101".to_owned()));
+    assert_eq!(page(Some("two")), Some("#020202".to_owned()));
     assert_eq!(
         color(&state.get_resolved_theme_colors(None).unwrap(), "accent"),
         "#010101"
@@ -279,6 +297,24 @@ fn theme_export_optional_fields_omit_empty_and_missing_values() {
     assert_eq!(page_bg(&json!(24)), Some("#005f87".to_owned()));
     assert_eq!(page_bg(&json!(255)), Some("#eeeeee".to_owned()));
     assert_eq!(page_bg(&json!("accent")), Some("#8abeb7".to_owned()));
+    for (field, select) in [
+        ("cardBg", (|c: ThemeExportColors| c.card_bg) as fn(_) -> _),
+        ("infoBg", |c| c.info_bg),
+    ] {
+        for (value, expected) in [
+            (json!("#AbCdEf"), Some("#AbCdEf")),
+            (json!(""), None),
+            (json!(24), Some("#005f87")),
+            (json!("accent"), Some("#8abeb7")),
+        ] {
+            let colors = export_field(field, &value);
+            assert_eq!(
+                select(colors),
+                expected.map(str::to_owned),
+                "{field} {value}"
+            );
+        }
+    }
     let json = with_export(&json!({}));
     assert_eq!(exported(&json), ThemeExportColors::default());
     let mut absent = custom_json("e", "#010203");
@@ -401,4 +437,18 @@ fn theme_export_keeps_last_duplicate_and_ignores_unknown_fields() {
     assert_eq!(colors.card_bg, Some("#800000".to_owned()));
     assert_eq!(colors.info_bg, Some("#000000".to_owned()));
     assert!(state.get_resolved_theme_colors(Some("dup")).is_ok());
+}
+
+#[test]
+fn theme_scratch_directories_are_exclusively_owned() {
+    let (_first, _, first) = custom("export", &[("e", with_page_bg("e", "#111111"))]);
+    let (_second, _, second) = custom("export", &[("e", with_page_bg("e", "#222222"))]);
+    assert_eq!(
+        first.get_theme_export_colors(Some("e")).page_bg,
+        Some("#111111".to_owned())
+    );
+    assert_eq!(
+        second.get_theme_export_colors(Some("e")).page_bg,
+        Some("#222222".to_owned())
+    );
 }

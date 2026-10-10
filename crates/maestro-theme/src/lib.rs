@@ -3,12 +3,10 @@
 //! See `docs/theme.md` for the file format, color modes and errors.
 
 pub mod theme;
-#[cfg(not(target_arch = "wasm32"))]
-pub use theme::NativeThemeOperations;
-#[cfg(not(target_arch = "wasm32"))]
-pub use theme::NativeThemeWatchOperations;
 pub use theme::watch_with_error_handler;
 pub use theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
 pub use theme::{LiveTheme, ThemeChangeResult, ThemeExportColors, is_light_theme};
+#[cfg(not(target_arch = "wasm32"))]
+pub use theme::{NativeThemeOperations, NativeThemeWatchOperations};
 pub use theme::{ThemeDirectories, ThemeInfo, ThemeOperations, ThemeState, load_theme_from_path};
 pub use theme::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher};

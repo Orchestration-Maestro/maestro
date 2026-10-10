@@ -2,6 +2,7 @@
 use super::loading::resolve;
 use super::{ColorValue, ThemeError, ThemeState};
 use serde_json::Value;
+use std::borrow::Cow;
 
 /// Explicit export colors of a theme; an unset or empty field is absent.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -21,8 +22,9 @@ pub fn is_light_theme(name: Option<&str>) -> bool {
 }
 
 impl ThemeState {
-    /// Resolve every color of a theme to a CSS hex string, in canonical key order.
+    /// Resolve every color of a theme in canonical key order.
     ///
+    /// Palette indices expand to `#rrggbb`; authored literals are returned unchanged.
     /// The name is the argument, else the selected theme, else the terminal
     /// background's theme. Empty colors become black for `light`, otherwise `#e5e5e7`.
     ///
@@ -64,10 +66,10 @@ impl ThemeState {
     }
 
     /// Select the argument, else the selected name, else the default theme.
-    fn export_name(&self, name: Option<&str>) -> String {
-        name.map(str::to_owned)
-            .or_else(|| self.lifecycle.name.borrow().clone())
-            .unwrap_or_else(|| self.default_theme())
+    fn export_name<'a>(&self, name: Option<&'a str>) -> Cow<'a, str> {
+        name.map(Cow::Borrowed)
+            .or_else(|| self.lifecycle.name.borrow().clone().map(Cow::Owned))
+            .unwrap_or_else(|| Cow::Owned(self.default_theme()))
     }
 
     /// Resolve each export field after the one before it.

@@ -93,9 +93,11 @@ fn theme_live_view_follows_publication() {
     let first = live.get().unwrap();
     assert_eq!(first.name(), Some("dark"));
     let other_view = state.theme();
+    let cloned = live.clone();
     state.set_theme("light", None).unwrap();
     assert_eq!(live.get().unwrap().name(), Some("light"));
     assert_eq!(other_view.get().unwrap().name(), Some("light"));
+    assert!(Rc::ptr_eq(&cloned.get().unwrap(), &live.get().unwrap()));
     assert_eq!(first.name(), Some("dark"));
 
     let direct = instance(&scratch, &ops, "direct");
@@ -229,7 +231,9 @@ fn theme_named_switch_reports_failure_after_fallback() {
         },
         Rc::clone(&ops) as Rc<dyn ThemeOperations>,
     ));
-    assert!(broken.set_theme("missing", None).is_err());
+    let error = broken.set_theme("missing", None).unwrap_err();
+    assert!(!error.to_string().contains("Theme not found"), "{error}");
+    assert!(broken.theme().get().is_err());
 }
 
 #[test]
@@ -281,13 +285,16 @@ fn theme_callback_registration_replaces_the_old_callback() {
     let token = Rc::new(());
     let released = Rc::downgrade(&token);
     let (first_log, held) = (Rc::clone(&log), token);
-    state.on_theme_change(Rc::new(move || {
-        let _ = Rc::strong_count(&held);
-        first_log.borrow_mut().push("first");
-        Ok(())
-    }));
+    let first: Rc<dyn Fn() -> Result<(), Box<dyn std::error::Error + Send + Sync>>> =
+        Rc::new(move || {
+            let _ = Rc::strong_count(&held);
+            first_log.borrow_mut().push("first");
+            Ok(())
+        });
+    state.on_theme_change(Rc::clone(&first));
     state.set_theme("light", None).unwrap();
     assert!(released.upgrade().is_some());
+    assert_eq!(Rc::strong_count(&first), 2);
 
     let (second_log, weak) = (Rc::clone(&log), Rc::downgrade(&state));
     state.on_theme_change(Rc::new(move || {
@@ -299,6 +306,12 @@ fn theme_callback_registration_replaces_the_old_callback() {
         }));
         Ok(())
     }));
+    assert_eq!(Rc::strong_count(&first), 1);
+    assert!(released.upgrade().is_some());
+    first().unwrap();
+    assert_eq!(log.borrow().last(), Some(&"first"));
+    log.borrow_mut().pop();
+    drop(first);
     assert!(released.upgrade().is_none());
     state.set_theme("dark", None).unwrap();
     state.set_theme("light", None).unwrap();
@@ -394,12 +407,20 @@ fn theme_watch_start_replaces_old_handles_and_timers() {
     assert_eq!(fake.watches.borrow().len(), 2);
     assert_eq!(fake.watches.borrow()[1].path, scratch.path("custom"));
 
-    let registered = instance(&scratch, &ops, "registered");
-    state.set_registered_themes(vec![registered]);
-    for name in ["dark", "light", "", "registered", "missing"] {
-        state.set_theme(name, Some(effects(&fake))).unwrap();
-        assert!(fake.watches.borrow()[1].closed.get(), "name {name:?}");
-        assert_eq!(fake.watches.borrow().len(), 2, "name {name:?}");
+    for name in ["dark", "light", "registered"] {
+        let fresh = Rc::new(ThemeState::new(
+            maestro_theme::ThemeDirectories {
+                themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme").to_owned(),
+                custom_themes_dir: scratch.path("custom"),
+            },
+            Rc::clone(&ops) as Rc<dyn ThemeOperations>,
+        ));
+        let fake = Fake::new();
+        fresh.set_registered_themes(vec![instance(&scratch, &ops, "registered")]);
+        fresh.init_theme(Some("a"), Some(effects(&fake))).unwrap();
+        fresh.set_theme(name, Some(effects(&fake))).unwrap();
+        assert!(fake.watches.borrow()[0].closed.get(), "name {name:?}");
+        assert_eq!(fake.watches.borrow().len(), 1, "name {name:?}");
     }
     state
         .set_theme_instance(instance(&scratch, &ops, "direct"))

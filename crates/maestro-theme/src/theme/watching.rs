@@ -38,7 +38,13 @@ impl ThemeState {
     }
 
     /// Replace the watch with one on the selected custom theme's file, when it exists.
-    pub(super) fn start_theme_watcher(self: &Rc<Self>, operations: &Rc<dyn ThemeWatchOperations>) {
+    pub(super) fn start_theme_watcher(
+        self: &Rc<Self>,
+        operations: Option<Rc<dyn ThemeWatchOperations>>,
+    ) {
+        let Some(operations) = operations else {
+            return;
+        };
         self.stop_theme_watcher();
         let Some(name) = self.lifecycle.name.borrow().clone() else {
             return;
@@ -51,17 +57,15 @@ impl ThemeState {
         if !self.operations.exists(&join(&[dir, &file])) {
             return;
         }
-        self.lifecycle.watch.borrow_mut().operations = Some(Rc::clone(operations));
-        let target = Target {
-            state: Rc::downgrade(self),
-            operations: Rc::downgrade(operations),
-            name,
-            file,
-        };
-        let on_error = Weak::clone(&target.state);
+        let (state, effects) = (Rc::downgrade(self), Rc::downgrade(&operations));
+        let on_error = Weak::clone(&state);
         let watcher = watch_with_error_handler(
             dir,
-            Rc::new(move |changed| target.notified(changed.as_deref())),
+            Rc::new(move |changed| {
+                if let (Some(state), Some(effects)) = (state.upgrade(), effects.upgrade()) {
+                    state.notified(&effects, &name, &file, changed.as_deref());
+                }
+            }),
             Rc::new(move || {
                 if let Some(state) = on_error.upgrade() {
                     let watcher = state.lifecycle.watch.borrow_mut().watcher.take();
@@ -70,42 +74,33 @@ impl ThemeState {
             }),
             operations.as_ref(),
         );
-        self.lifecycle.watch.borrow_mut().watcher = watcher;
+        let mut slot = self.lifecycle.watch.borrow_mut();
+        slot.watcher = watcher;
+        slot.operations = Some(operations);
     }
-}
 
-/// The selected custom theme file and the weak handles a watch callback captures.
-struct Target {
-    /// Owner of the watch.
-    state: Weak<ThemeState>,
-    /// Effects that schedule the debounced reload.
-    operations: Weak<dyn ThemeWatchOperations>,
-    /// Selected theme name when the watch started.
-    name: String,
-    /// File name inside the custom directory.
-    file: String,
-}
-
-impl Target {
-    /// Schedule a reload for a notification about this file or an unknown entry.
-    fn notified(&self, changed: Option<&str>) {
-        let (Some(state), Some(operations)) = (self.state.upgrade(), self.operations.upgrade())
-        else {
-            return;
-        };
-        if state.lifecycle.name.borrow().as_deref() != Some(self.name.as_str()) {
+    /// Schedule a reload of `file` for a notification about it or an unknown entry,
+    /// while `name` is still the selected theme.
+    fn notified(
+        self: &Rc<Self>,
+        operations: &Rc<dyn ThemeWatchOperations>,
+        name: &str,
+        file: &str,
+        changed: Option<&str>,
+    ) {
+        if self.lifecycle.name.borrow().as_deref() != Some(name) {
             return;
         }
-        if changed.is_some_and(|changed| !changed.is_empty() && changed != self.file) {
+        if changed.is_some_and(|changed| !changed.is_empty() && changed != file) {
             return;
         }
-        let previous = state.lifecycle.watch.borrow_mut().timer.take();
+        let previous = self.lifecycle.watch.borrow_mut().timer.take();
         if let Some(mut previous) = previous {
             previous.cancel();
         }
-        let weak = Weak::clone(&self.state);
-        let name = self.name.clone();
-        let path = join(&[&state.directories.custom_themes_dir, &self.file]);
+        let weak = Rc::downgrade(self);
+        let name = name.to_owned();
+        let path = join(&[&self.directories.custom_themes_dir, file]);
         let timer = operations.schedule(
             RELOAD_DEBOUNCE,
             Box::new(move || {
@@ -114,7 +109,7 @@ impl Target {
                 }
             }),
         );
-        state.lifecycle.watch.borrow_mut().timer = Some(timer);
+        self.lifecycle.watch.borrow_mut().timer = Some(timer);
     }
 }
 

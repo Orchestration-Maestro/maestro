@@ -125,8 +125,8 @@ returned stays what it was. Before the first publication `get` fails with
   callback failure publishes `dark` and is reported as `ThemeChangeResult::Failure`
   carrying the original message; only a failure to load `dark` is an error.
 - `set_theme_instance` publishes the supplied instance, selects `<in-memory>`,
-  stops watching and invokes the callback; a callback failure is returned and the
-  instance stays published.
+  stops watching and invokes the callback; a callback failure is returned and none
+  of the callback's changes are rolled back.
 - `on_theme_change` replaces the one callback. It runs outside every state borrow,
   so it may read the state, replace itself or publish again.
 
@@ -147,14 +147,17 @@ nothing rewatches. `stop_theme_watcher` cancels both and keeps the published the
 `ThemeWatchOperations` supplies the directory watch and the timer;
 `NativeThemeWatchOperations` (not built for browsers) uses operating-system
 notifications and Tokio timers on a `LocalSet` that the caller creates and drives.
-Dropping the state, a watch or a timer cancels its pending work.
+Dropping the state or closing or dropping a native watch or timer handle cancels
+its pending work; a closed watch dispatches no queued notification. The native
+watch resolves the directory against the working directory once, as the notifier
+does.
 
 ## Resolved colors for export
 
-`get_resolved_theme_colors` returns every color of a theme as `#rrggbb` text in
+`get_resolved_theme_colors` returns every color of a theme in
 canonical key order: array-index keys ascending, then the rest in authored order. The
 document is the shipped one, else the file of a registration (a registration
-without a source path is an error), else the custom file. Palette indices expand to
+without a source path is an error), else the custom file. Authored color text is returned unchanged; palette indices expand to `#rrggbb` from
 the 16 basic colors, the 6x6x6 cube and the 24-step gray ramp; an empty color becomes
 `#000000` when the name is exactly `light` and `#e5e5e7` otherwise. The name is the
 argument, else the selected theme, else the terminal background's theme.

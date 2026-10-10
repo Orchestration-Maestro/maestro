@@ -10,20 +10,25 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Directory of the shipped theme documents.
 const SHIPPED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme");
 /// The shipped dark theme document.
 const DARK: &str = include_str!("../../assets/theme/dark.json");
 
-/// A scratch directory whose removal is attempted on drop.
+/// A uniquely named scratch directory whose removal is attempted on drop.
 pub struct Scratch(PathBuf);
 
 impl Scratch {
     /// Create an empty directory with a custom-themes subdirectory.
     pub fn new(tag: &str) -> Self {
-        let path = std::env::temp_dir().join(format!("maestro-live-{}-{tag}", std::process::id()));
-        let _ = fs::remove_dir_all(&path);
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "maestro-live-{}-{}-{tag}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
         fs::create_dir_all(path.join("custom")).unwrap();
         Self(path)
     }

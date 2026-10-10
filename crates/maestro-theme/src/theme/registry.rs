@@ -178,26 +178,30 @@ impl ThemeState {
         if let Some(index) = BUILTIN_NAMES.iter().position(|builtin| *builtin == name) {
             return Ok(Cow::Borrowed(&builtins[index]));
         }
-        let registered = self.registered.borrow().get(name).cloned();
-        let (path, label) = if let Some(theme) = registered {
-            let path = theme.source_path().filter(|path| !path.is_empty());
+        let registered = self.registered.borrow().get(name).map(|theme| {
+            theme
+                .source_path()
+                .filter(|path| !path.is_empty())
+                .map(str::to_owned)
+        });
+        let (path, label): (String, Option<&str>) = if let Some(path) = registered {
             let path = path.ok_or_else(|| {
                 ThemeError::message(format!(
                     "Theme \"{name}\" does not have a source path for export"
                 ))
             })?;
-            (path.to_owned(), path.to_owned())
+            (path, None)
         } else {
             let path = join(&[&self.directories.custom_themes_dir, &format!("{name}.json")]);
             if !self.operations.exists(&path) {
                 return Err(ThemeError::message(format!("Theme not found: {name}")));
             }
-            (path, name.to_owned())
+            (path, Some(name))
         };
         let content = self
             .operations
             .read_to_string(&path)
             .map_err(ThemeError::io)?;
-        parse_custom(&label, &content).map(Cow::Owned)
+        parse_custom(label.unwrap_or(&path), &content).map(Cow::Owned)
     }
 }
