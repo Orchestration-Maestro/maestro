@@ -242,6 +242,7 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
 }
 
 #[test]
+#[ignore = "hangs when the shell is terminated before it opens the permit FIFO; rewritten with a frozen deadline"]
 fn capture_timeout_covers_streams_and_sends_termination() {
     let scratch = native_support::Scratch::new().unwrap();
     let marker = scratch.0.join("terminated");
