@@ -334,3 +334,27 @@ fn markdown_table_autolinks_and_html_unescape_pipes() {
     );
     assert_eq!(shown(&rows[3]), "│ <span title=\"a|b\"> │");
 }
+
+#[test]
+fn markdown_table_link_destination_unescapes_pipe_once() {
+    for hyperlinks in [false, true] {
+        let rows = render(
+            "| A |\n| --- |\n| [x](https://a.b/a\\\\\\|b) |",
+            markdown::plain(),
+            hyperlinks,
+            60,
+        );
+        let body = rows[3].clone();
+        let printed = if hyperlinks {
+            "│ x │"
+        } else {
+            "│ x (https://a.b/a\\|b) │"
+        };
+        assert_eq!(shown(&body), printed);
+        assert_eq!(
+            body.contains("https://a.b/a\\|b\x1b\\"),
+            hyperlinks,
+            "{body:?}"
+        );
+    }
+}

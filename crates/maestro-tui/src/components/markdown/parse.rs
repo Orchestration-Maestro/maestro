@@ -320,17 +320,18 @@ fn container<'a>(
             ..
         } => {
             let mut children = children(events, source, true);
-            if link_type == LinkType::Autolink {
-                for node in &mut children {
-                    spell_text(node, source);
-                }
-            }
-            let href = if link_type == LinkType::Email {
+            let mut href = if link_type == LinkType::Email {
                 format!("mailto:{dest_url}")
             } else {
                 dest_url.into_string()
             };
-            let href = source.spelling(href);
+            if link_type == LinkType::Autolink {
+                // The native parser leaves an autolink's `\|` raw, unlike every other decoded value.
+                for node in &mut children {
+                    spell_text(node, source);
+                }
+                href = source.spelling(href);
+            }
             let authored = label(&children, source, range, 1);
             Kind::Link(children, authored, href)
         }
