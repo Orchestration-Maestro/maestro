@@ -14,8 +14,9 @@ mise exec -- just build
 ```
 
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
-compiles the delivered workspace through Cargo's dependency graph. `check`
-formats, runs Clippy, builds strict public documentation and verifies workspace
+generates the native catalog once, then compiles the delivered workspace through
+Cargo's dependency graph. See [catalog generation](models/generation.md). `check`
+formats hand-written Rust, runs Clippy, builds strict public documentation and verifies workspace
 conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`, `build`
 and `check`; it never publishes. `clean` removes Cargo outputs, not source files.
 
@@ -87,9 +88,8 @@ stop its descendants.
 
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
-The catalog owner's package build will invoke its generator when
-[#135](https://github.com/Orchestration-Maestro/maestro/issues/135) supplies it;
-ordinary Cargo compilation, tests and watches remain generation-free.
+`models-build` invokes catalog generation once before its explicit Cargo build; ordinary
+Cargo compilation, tests and watches remain generation-free.
 
 ## Identity and execution modes
 

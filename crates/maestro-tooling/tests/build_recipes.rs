@@ -82,7 +82,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked\n"
     );
     fs::remove_file(workspace.0.join("log")).unwrap();
     let result = workspace
@@ -93,7 +93,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     assert!(!result.status.success());
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo build|--workspace|--locked\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\n"
     );
     for phase in ["fmt", "clippy", "doc", "test"] {
         fs::remove_file(workspace.0.join("log")).unwrap();
@@ -153,7 +153,12 @@ fn assert_package_build(workspace: &Workspace, prefix: &str, owner: &str) {
         );
         let log = workspace.log();
         assert!(!log.contains("clippy"));
-        if recipe == "build" {
+        if recipe == "build" && prefix == "models" {
+            assert!(log.starts_with(
+                "cargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\n"
+            ));
+            assert!(log.ends_with("cargo build|-p|maestro-models|--locked\n"));
+        } else if recipe == "build" {
             assert!(log.starts_with(&format!("cargo build|-p|{owner}|--locked\n")));
         } else {
             assert!(log.starts_with(&format!("cargo clean|-p|{owner}\n")));
@@ -207,6 +212,14 @@ fn native_workspace(workspace: &Workspace) {
         .unwrap();
         fs::write(root.join("src/lib.rs"), "/// Adds one.\n/// ```\n/// assert_eq!(maestro_models::increment(1), 2);\n/// ```\npub fn increment(n: i32) -> i32 { n + 1 }\n#[test] fn selected_behavior() {}\n#[test] #[ignore] fn ignored_behavior() {}\n#[test] fn failing_behavior() { if std::env::var_os(\"MAESTRO_TEST_FAIL\").is_some() { panic!(\"controlled failure\"); } }\n".replace("maestro_models", &owner.replace('-', "_"))).unwrap();
     }
+    fs::create_dir_all(workspace.0.join("crates/maestro-models/examples")).unwrap();
+    fs::write(
+        workspace
+            .0
+            .join("crates/maestro-models/examples/generate_catalog_data.rs"),
+        "fn main() {}\n",
+    )
+    .unwrap();
     fs::rename(
         workspace.0.join("bin/cargo"),
         workspace.0.join("bin/cargo-proxy"),
@@ -1335,4 +1348,73 @@ fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
         "--manifest-path|{}",
         workspace.0.join("Cargo.toml").display()
     )));
+}
+
+#[test]
+fn catalog_build_recipes_generate_once_before_compilation() {
+    for recipe in [
+        "models-generate",
+        "models-build",
+        "models-prepublish",
+        "build",
+        "prepublish",
+        "build-binary",
+    ] {
+        let workspace = Workspace::new();
+        assert!(workspace.run(recipe).status.success(), "{recipe}");
+        let log = workspace.log();
+        assert_eq!(
+            log.matches("--example|generate_catalog_data").count(),
+            1,
+            "{recipe}: {log}"
+        );
+        if recipe != "models-generate" {
+            let generation = log.find("--example|generate_catalog_data").unwrap();
+            let compilation = log
+                .find(if matches!(recipe, "build" | "prepublish") {
+                    "cargo build|--workspace"
+                } else {
+                    "cargo build|-p|maestro-models"
+                })
+                .unwrap();
+            assert!(generation < compilation, "{recipe}: {log}");
+        }
+        fs::remove_file(workspace.0.join("log")).unwrap();
+        let result = workspace
+            .command(recipe)
+            .env("MAESTRO_FAIL", "run")
+            .output()
+            .unwrap();
+        assert!(!result.status.success(), "{recipe}");
+        let log = workspace.log();
+        assert!(!log.contains("cargo build|--workspace"));
+        assert!(!log.contains("cargo build|-p|maestro-models"));
+    }
+}
+
+#[test]
+fn catalog_cargo_tests_and_watch_routes_stay_offline() {
+    let workspace = Workspace::new();
+    for recipe in [
+        "check",
+        "test",
+        "models-test",
+        "models-dev",
+        "models-dev-compile",
+        "dev-compile",
+        "dev",
+        "agent-dev",
+        "tui-dev",
+        "app-dev",
+    ] {
+        let result = workspace.run(recipe);
+        assert!(
+            result.status.success(),
+            "{recipe}: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
+    let log = workspace.log();
+    assert!(!log.contains("generate_catalog_data"));
+    assert!(!log.contains("models-generate"));
 }

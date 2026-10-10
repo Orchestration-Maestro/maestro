@@ -26,6 +26,7 @@ clean:
 
 # Compile all delivered workspace members.
 build:
+    just models-generate
     cargo build --workspace --locked
 
 # Verify a distributable build without publishing it.
@@ -39,8 +40,13 @@ pre-commit:
 models-clean:
     cargo clean -p maestro-models
 
-# Compile the models package.
+# Generate the native offline model catalog.
+models-generate:
+    cargo run --quiet --locked -p maestro-models --example generate_catalog_data
+
+# Generate the catalog once before the explicit models build.
 models-build:
+    just models-generate
     cargo build -p maestro-models --locked
 
 # Watch models compiler inputs without generating or copying assets.

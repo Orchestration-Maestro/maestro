@@ -5,6 +5,7 @@ use std::{env, fs, io::Write, path::Path, process::Command};
 fn main() {
     let args: Vec<_> = env::args().skip(1).collect();
     if args.first().map(String::as_str) == Some("run")
+        && args.iter().any(|arg| arg == "--")
         && env::var_os("MAESTRO_REAL_CARGO").is_some()
     {
         if let Some(binary) = env::var_os("MAESTRO_DEVELOPMENT") {
@@ -25,7 +26,7 @@ fn main() {
         run_cargo(Path::new(&cargo), &args);
     }
     log_command(&args);
-    if args.first().map(String::as_str) == Some("run") {
+    if args.first().map(String::as_str) == Some("run") && args.iter().any(|arg| arg == "--") {
         if let Some(binary) = env::var_os("MAESTRO_DEVELOPMENT") {
             let start = args.iter().position(|arg| arg == "--").unwrap() + 1;
             exit_command(Command::new(binary).args(&args[start..]));

@@ -1,4 +1,41 @@
-# Catalog feed acquisition
+# Catalog generation
+
+```sh
+mise exec -- just models-generate
+```
+
+The native `generate_catalog_data` example supplies the default developer
+transport to `maestro_models::catalog_generation::generate_models::generate_models`.
+The operation acquires models.dev, `OpenRouter` and Vercel AI Gateway sequentially;
+see [feed acquisition](#feed-acquisition) for normalization and source failures.
+
+Assembly combines those feeds in that priority order, then applies authored
+corrections, missing and fixed descriptors, cloud response derivation and thinking
+metadata. Literal provider/model pairs use the first candidate. Report counts
+include only unique winners; provider reports put canonical integer keys first,
+then other providers in encounter order. Emitted provider and model keys use
+UTF-16 code-unit order.
+
+Output lives in `crates/maestro-models/src/catalog/models_generated/`: one native
+Rust file per provider plus its registry. The owning module declaration skips
+rustfmt; committed generated files retain the emitter's exact bytes. Text is
+escaped as Rust literals;
+finite numbers retain their values, with either zero sign emitted as positive
+zero. Optional empty maps, null thinking entries and ordered headers are retained.
+The operation creates the generated leaf directory, whose parent must exist.
+It replaces its generated modules and removes obsolete provider files bearing its
+generation instructions; unrelated files are retained. Writes are not atomic:
+a filesystem or writer failure returns an error and can leave partial output.
+Generation success and unique-model statistics follow completed file writes.
+
+`models-build` and workspace `build` run `models-generate` once before their
+explicit Cargo build. Cargo compiles the generator example before running it;
+`models-prepublish`, `prepublish` and `build-binary` use those existing build routes.
+Ordinary Cargo builds, checks, tests, watches and runtime lookup do not generate
+or fetch. Explicit developer generation fetches live feeds; controlled tests do
+not need live services.
+
+## Feed acquisition
 
 The native-only `maestro_models::catalog_generation::generate_models` module
 provides `fetch_open_router_models`, `fetch_ai_gateway_models` and
@@ -11,8 +48,8 @@ These operations return typed model descriptors; they do not register models,
 refresh the embedded catalog or write catalog files. Returned descriptors retain
 feed encounter order and may contain duplicate identities. models.dev traverses
 providers in authored order, with canonical integer entry keys before other
-keys; Xiaomi variants expand in variant-major order. Final catalog-wide
-overrides and deduplication are not applied here.
+keys; Xiaomi variants expand in variant-major order. Catalog-wide
+assembly is a separate operation described above.
 
 ## Normalization and failures
 
