@@ -1,7 +1,33 @@
 # Response-session requests
 
-The internal response-session adapter prepares the account claim, request body
-and effective SSE headers. It has no public invocation entry point yet.
+The dedicated provider lives in
+`maestro_models::providers::response_sessions::openai_codex_responses`.
+`stream_openai_codex_responses` returns a stream whose setup failures become error
+updates. `stream_simple_openai_codex_responses` can return a missing-key error
+before creating a stream. The two option/debug records are also exported at the
+crate root; this provider is not yet part of generic protocol registration.
+
+Missing transport selects `auto` for both dispatch and cached-context selection.
+Explicit `sse` bypasses sockets. Otherwise, a session's sticky fallback selects
+SSE; a socket transport failure falls back only before the first selected event.
+After start, that failure ends the stream without replaying the response.
+API/protocol failures and cancellation do not trigger fallback.
+
+The invocation uses independently running request work and shared partial-message
+handles. Native callers supply a running Tokio runtime. Payload hooks run during
+preparation before headers or transport are processed.
+
+`get_openai_codex_web_socket_debug_stats` returns an independent snapshot.
+`reset_openai_codex_web_socket_debug_stats` clears counters and fallback state,
+not connections. `close_openai_codex_web_socket_sessions` closes connections,
+not counters or fallback state. An absent or empty control identity selects all
+sessions. Public invocation registers socket cleanup with
+[`cleanup_session_resources`](https://docs.rs/maestro-models/latest/maestro_models/fn.cleanup_session_resources.html).
+
+Native User-Agent identity uses the operating system's release and the compile
+target's platform/architecture. Request IDs are random v4 UUIDs unless a nonempty
+session supplies the identity. Browser imports exclude native socket libraries;
+browser socket unavailability follows the pre-start fallback path.
 
 Preparation resolves a nonempty explicit key before the provider environment
 key, extracts the account claim, converts the conversation, awaits the payload
@@ -35,8 +61,8 @@ this provider's setup policy.
 Usable success bodies publish `start`. Provider event selection trims each data
 field, skips empty data and exact `[DONE]`, and normalizes terminal event names
 before delegating content reduction to the [shared response reducer](responses.md).
-This internal operation leaves final done/error publication and stream ending
-to its caller; no public dispatch caller is delivered yet.
+The transport operation delegates final done/error publication to the dedicated
+invocation caller.
 
 ## Native socket request
 
@@ -98,3 +124,58 @@ request in flight sends that close, keeps reading, reduces the messages the
 peer still delivers, and ends with its own result or the peer's close, so a
 queued terminal response still completes it. A connection released without a
 close request reports reason `done`.
+
+
+## Controlled invocation
+
+This example uses a synthetic account claim and an in-memory HTTP response;
+it contacts no service.
+
+```rust
+# #[cfg(not(target_arch = "wasm32"))]
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+use base64::Engine as _;
+use maestro_models::{Context, HttpResponse, Model, StreamOptions, StopReason, Transport};
+use maestro_models::providers::response_sessions::openai_codex_responses::{
+    OpenAICodexResponsesOptions, stream_openai_codex_responses,
+};
+use std::sync::Arc;
+
+let model: Model = serde_json::from_value(serde_json::json!({
+    "id": "controlled", "name": "Controlled", "api": "openai-codex-responses",
+    "provider": "fixture-no-key", "baseUrl": "https://example.test",
+    "reasoning": false, "input": ["text"],
+    "cost": {"input": 1, "output": 2, "cacheRead": 0, "cacheWrite": 0},
+    "contextWindow": 1000, "maxTokens": 100
+}))?;
+let claims = serde_json::to_vec(&serde_json::json!({
+    "https://api.openai.com/auth": {"chatgpt_account_id": "controlled"}
+}))?;
+let key = ["header", &base64::engine::general_purpose::STANDARD.encode(claims),
+    "signature"].join(".");
+let options = OpenAICodexResponsesOptions {
+    common: StreamOptions {
+        api_key: Some(key), transport: Some(Transport::Sse),
+        fetch: Some(Arc::new(|_| Box::pin(async {
+            Ok(HttpResponse {
+                status: 200, status_text: "OK".into(), headers: Default::default(),
+                body: Box::pin(futures_util::stream::iter([Ok(
+                    b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec()
+                )])),
+            })
+        }))),
+        ..Default::default()
+    },
+    ..Default::default()
+};
+let context = Context { system_prompt: None, messages: vec![], tools: None };
+let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+runtime.block_on(async {
+    let events = stream_openai_codex_responses(model, context, Some(options));
+    assert_eq!(events.result().await.read().unwrap().stop_reason, StopReason::Stop);
+});
+# Ok(())
+# }
+# #[cfg(target_arch = "wasm32")]
+# fn main() {}
+```
