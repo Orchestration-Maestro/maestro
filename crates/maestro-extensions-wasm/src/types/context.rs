@@ -5,6 +5,7 @@
     clippy::excessive_nesting
 )]
 
+use crate::ReadonlySessionManager;
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -51,6 +52,8 @@ port! {
     ContextPort for ExtensionContext via 0 {
         /// The working directory of the current session.
         fn cwd() -> String;
+        /// Acquires the reader currently bound to this context.
+        fn session_manager() -> ReadonlySessionManager;
     }
 }
 

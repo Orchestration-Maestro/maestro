@@ -14,6 +14,7 @@ mod exports;
 mod generated;
 mod host_api;
 mod imports;
+mod session;
 mod tools;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;

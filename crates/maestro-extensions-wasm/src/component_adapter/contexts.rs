@@ -4,6 +4,8 @@ use std::rc::Rc;
 
 use super::callbacks::Scoped;
 use super::imports::Imports;
+use super::session::reader;
+use crate::ReadonlySessionManager;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
@@ -42,6 +44,13 @@ struct Ordinary<I: Imports> {
 }
 
 impl<I: Imports> ContextPort for Ordinary<I> {
+    fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
+        Ok(reader(
+            self.imports.clone(),
+            self.imports.session_manager(&self.context)?,
+        ))
+    }
+
     fn cwd(&self) -> ExtensionResult<String> {
         self.imports.cwd(&self.context)
     }
@@ -64,6 +73,13 @@ struct Command<I: Imports> {
 }
 
 impl<I: Imports> ContextPort for Command<I> {
+    fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
+        Ok(reader(
+            self.imports.clone(),
+            self.imports.command_session_manager(&self.context)?,
+        ))
+    }
+
     fn cwd(&self) -> ExtensionResult<String> {
         self.imports.command_cwd(&self.context)
     }

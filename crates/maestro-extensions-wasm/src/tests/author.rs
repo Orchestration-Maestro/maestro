@@ -16,6 +16,8 @@ use maestro_extensions_wasm::{
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
 
+#[path = "reader_author.rs"]
+mod reader_author;
 #[path = "tool_author.rs"]
 mod tool_author;
 
@@ -368,6 +370,9 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                 let api = tool_api.clone();
                 let captured = Rc::clone(&captured);
                 Box::pin(async move {
+                    if args == "reader" {
+                        return reader_author::register(&api);
+                    }
                     if let Some(config) = args.strip_prefix("tools ") {
                         return tool_author::register(&api, config, Rc::clone(&captured));
                     }

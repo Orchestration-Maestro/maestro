@@ -1,0 +1,4248 @@
+{
+  "corpus": [
+    {
+      "name": "populated",
+      "queries": [
+        {
+          "method": "getCwd",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "/work/雪"
+          }
+        },
+        {
+          "method": "getSessionDir",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "/sessions/β"
+          }
+        },
+        {
+          "method": "getSessionId",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "session-α"
+          }
+        },
+        {
+          "method": "getSessionFile",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "/sessions/β/one.jsonl"
+          }
+        },
+        {
+          "method": "getLeafId",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "name"
+          }
+        },
+        {
+          "method": "getLeafEntry",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "type": "session_info",
+              "id": "name",
+              "parentId": "late",
+              "timestamp": "2026-01-06T00:00:00.000Z",
+              "name": "﻿  name 雪 ﻿"
+            }
+          }
+        },
+        {
+          "method": "getHeader",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "type": "session",
+              "version": 3,
+              "id": "session-α",
+              "timestamp": "2026-01-01T00:00:00.000Z",
+              "cwd": "/work/雪",
+              "parentSession": "/parent/α.jsonl"
+            }
+          }
+        },
+        {
+          "method": "getEntries",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": [
+              {
+                "type": "custom",
+                "id": "root",
+                "parentId": null,
+                "timestamp": "2026-01-01T00:00:00.000Z",
+                "customType": "state",
+                "data": "{\"z\":0,\"a\":false}"
+              },
+              {
+                "type": "custom",
+                "id": "late",
+                "parentId": "root",
+                "timestamp": "2026-01-03T00:00:00.000Z",
+                "customType": "state",
+                "data": null
+              },
+              {
+                "type": "custom",
+                "id": "early",
+                "parentId": "root",
+                "timestamp": "2026-01-02T00:00:00.000Z",
+                "customType": "state",
+                "data": "{}"
+              },
+              {
+                "type": "custom",
+                "id": "tie",
+                "parentId": "root",
+                "timestamp": "2026-01-02T00:00:00.000Z",
+                "customType": "state",
+                "data": "[]"
+              },
+              {
+                "type": "custom",
+                "id": "orphan",
+                "parentId": "missing",
+                "timestamp": "2026-01-04T00:00:00.000Z",
+                "customType": "state",
+                "data": "\"雪\""
+              },
+              {
+                "type": "custom",
+                "id": "self",
+                "parentId": "self",
+                "timestamp": "2026-01-05T00:00:00.000Z",
+                "customType": "state",
+                "data": "false"
+              },
+              {
+                "type": "session_info",
+                "id": "name",
+                "parentId": "late",
+                "timestamp": "2026-01-06T00:00:00.000Z",
+                "name": "﻿  name 雪 ﻿"
+              }
+            ]
+          }
+        },
+        {
+          "method": "getTree",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "roots": [
+                0,
+                5,
+                6
+              ],
+              "nodes": [
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "root",
+                    "parentId": null,
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "{\"z\":0,\"a\":false}"
+                  },
+                  "children": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "early",
+                    "parentId": "root",
+                    "timestamp": "2026-01-02T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "{}"
+                  },
+                  "children": [],
+                  "label": ""
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "tie",
+                    "parentId": "root",
+                    "timestamp": "2026-01-02T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "[]"
+                  },
+                  "children": []
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "late",
+                    "parentId": "root",
+                    "timestamp": "2026-01-03T00:00:00.000Z",
+                    "customType": "state",
+                    "data": null
+                  },
+                  "children": [
+                    4
+                  ],
+                  "label": "Label 雪",
+                  "labelTimestamp": "2026-01-07T00:00:00.000Z"
+                },
+                {
+                  "entry": {
+                    "type": "session_info",
+                    "id": "name",
+                    "parentId": "late",
+                    "timestamp": "2026-01-06T00:00:00.000Z",
+                    "name": "﻿  name 雪 ﻿"
+                  },
+                  "children": []
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "orphan",
+                    "parentId": "missing",
+                    "timestamp": "2026-01-04T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "\"雪\""
+                  },
+                  "children": []
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "self",
+                    "parentId": "self",
+                    "timestamp": "2026-01-05T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "false"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "method": "getSessionName",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "name 雪"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": "root"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "type": "custom",
+              "id": "root",
+              "parentId": null,
+              "timestamp": "2026-01-01T00:00:00.000Z",
+              "customType": "state",
+              "data": "{\"z\":0,\"a\":false}"
+            }
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": "root"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": "late"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "type": "custom",
+              "id": "late",
+              "parentId": "root",
+              "timestamp": "2026-01-03T00:00:00.000Z",
+              "customType": "state",
+              "data": null
+            }
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": "late"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": "Label 雪"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": "missing"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": "missing"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": ""
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": ""
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "undefined"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": [
+              {
+                "type": "custom",
+                "id": "root",
+                "parentId": null,
+                "timestamp": "2026-01-01T00:00:00.000Z",
+                "customType": "state",
+                "data": "{\"z\":0,\"a\":false}"
+              },
+              {
+                "type": "custom",
+                "id": "late",
+                "parentId": "root",
+                "timestamp": "2026-01-03T00:00:00.000Z",
+                "customType": "state",
+                "data": null
+              },
+              {
+                "type": "session_info",
+                "id": "name",
+                "parentId": "late",
+                "timestamp": "2026-01-06T00:00:00.000Z",
+                "name": "﻿  name 雪 ﻿"
+              }
+            ]
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": "late"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": [
+              {
+                "type": "custom",
+                "id": "root",
+                "parentId": null,
+                "timestamp": "2026-01-01T00:00:00.000Z",
+                "customType": "state",
+                "data": "{\"z\":0,\"a\":false}"
+              },
+              {
+                "type": "custom",
+                "id": "late",
+                "parentId": "root",
+                "timestamp": "2026-01-03T00:00:00.000Z",
+                "customType": "state",
+                "data": null
+              }
+            ]
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": "orphan"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": [
+              {
+                "type": "custom",
+                "id": "orphan",
+                "parentId": "missing",
+                "timestamp": "2026-01-04T00:00:00.000Z",
+                "customType": "state",
+                "data": "\"雪\""
+              }
+            ]
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": "missing"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": ""
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "queries": [
+        {
+          "method": "getCwd",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": ""
+          }
+        },
+        {
+          "method": "getSessionDir",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": ""
+          }
+        },
+        {
+          "method": "getSessionId",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": ""
+          }
+        },
+        {
+          "method": "getSessionFile",
+          "args": [],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLeafId",
+          "args": [],
+          "expected": {
+            "kind": "null"
+          }
+        },
+        {
+          "method": "getLeafEntry",
+          "args": [],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getHeader",
+          "args": [],
+          "expected": {
+            "kind": "null"
+          }
+        },
+        {
+          "method": "getEntries",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        },
+        {
+          "method": "getTree",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "roots": [],
+              "nodes": []
+            }
+          }
+        },
+        {
+          "method": "getSessionName",
+          "args": [],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": "root"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": "root"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": "late"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": "late"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": "missing"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": "missing"
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getEntry",
+          "args": [
+            {
+              "kind": "value",
+              "value": ""
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getLabel",
+          "args": [
+            {
+              "kind": "value",
+              "value": ""
+            }
+          ],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "undefined"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": "late"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": "orphan"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": "missing"
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [
+            {
+              "kind": "value",
+              "value": ""
+            }
+          ],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "header-optional",
+      "queries": [
+        {
+          "method": "getHeader",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "type": "session",
+              "id": "old",
+              "timestamp": "literal timestamp",
+              "cwd": "",
+              "parentSession": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty-path-name",
+      "queries": [
+        {
+          "method": "getSessionFile",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": ""
+          }
+        },
+        {
+          "method": "getSessionName",
+          "args": [],
+          "expected": {
+            "kind": "undefined"
+          }
+        }
+      ]
+    },
+    {
+      "name": "next-name-nel",
+      "queries": [
+        {
+          "method": "getSessionName",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": "last"
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong-leaf",
+      "queries": [
+        {
+          "method": "getLeafEntry",
+          "args": [],
+          "expected": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "method": "getBranch",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate-entries",
+      "queries": [
+        {
+          "method": "getEntries",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": [
+              {
+                "type": "custom",
+                "id": "early",
+                "parentId": "root",
+                "timestamp": "2026-01-02T00:00:00.000Z",
+                "customType": "state",
+                "data": "{}"
+              },
+              {
+                "type": "custom",
+                "id": "root",
+                "parentId": null,
+                "timestamp": "2026-01-01T00:00:00.000Z",
+                "customType": "state",
+                "data": "{\"z\":0,\"a\":false}"
+              },
+              {
+                "type": "custom",
+                "id": "early",
+                "parentId": "root",
+                "timestamp": "2026-01-02T00:00:00.000Z",
+                "customType": "state",
+                "data": "{}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "header-nulls",
+      "queries": [
+        {
+          "method": "getHeader",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "type": "session",
+              "version": null,
+              "id": "session-α",
+              "timestamp": "2026-01-01T00:00:00.000Z",
+              "cwd": "/work/雪",
+              "parentSession": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "deep-tree",
+      "queries": [
+        {
+          "method": "getTree",
+          "args": [],
+          "expected": {
+            "kind": "value",
+            "value": {
+              "roots": [
+                0
+              ],
+              "nodes": [
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n0",
+                    "parentId": null,
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "0"
+                  },
+                  "children": [
+                    1
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n1",
+                    "parentId": "n0",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "1"
+                  },
+                  "children": [
+                    2
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n2",
+                    "parentId": "n1",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "2"
+                  },
+                  "children": [
+                    3
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n3",
+                    "parentId": "n2",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "3"
+                  },
+                  "children": [
+                    4
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n4",
+                    "parentId": "n3",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "4"
+                  },
+                  "children": [
+                    5
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n5",
+                    "parentId": "n4",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "5"
+                  },
+                  "children": [
+                    6
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n6",
+                    "parentId": "n5",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "6"
+                  },
+                  "children": [
+                    7
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n7",
+                    "parentId": "n6",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "7"
+                  },
+                  "children": [
+                    8
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n8",
+                    "parentId": "n7",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "8"
+                  },
+                  "children": [
+                    9
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n9",
+                    "parentId": "n8",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "9"
+                  },
+                  "children": [
+                    10
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n10",
+                    "parentId": "n9",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "10"
+                  },
+                  "children": [
+                    11
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n11",
+                    "parentId": "n10",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "11"
+                  },
+                  "children": [
+                    12
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n12",
+                    "parentId": "n11",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "12"
+                  },
+                  "children": [
+                    13
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n13",
+                    "parentId": "n12",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "13"
+                  },
+                  "children": [
+                    14
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n14",
+                    "parentId": "n13",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "14"
+                  },
+                  "children": [
+                    15
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n15",
+                    "parentId": "n14",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "15"
+                  },
+                  "children": [
+                    16
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n16",
+                    "parentId": "n15",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "16"
+                  },
+                  "children": [
+                    17
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n17",
+                    "parentId": "n16",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "17"
+                  },
+                  "children": [
+                    18
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n18",
+                    "parentId": "n17",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "18"
+                  },
+                  "children": [
+                    19
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n19",
+                    "parentId": "n18",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "19"
+                  },
+                  "children": [
+                    20
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n20",
+                    "parentId": "n19",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "20"
+                  },
+                  "children": [
+                    21
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n21",
+                    "parentId": "n20",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "21"
+                  },
+                  "children": [
+                    22
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n22",
+                    "parentId": "n21",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "22"
+                  },
+                  "children": [
+                    23
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n23",
+                    "parentId": "n22",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "23"
+                  },
+                  "children": [
+                    24
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n24",
+                    "parentId": "n23",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "24"
+                  },
+                  "children": [
+                    25
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n25",
+                    "parentId": "n24",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "25"
+                  },
+                  "children": [
+                    26
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n26",
+                    "parentId": "n25",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "26"
+                  },
+                  "children": [
+                    27
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n27",
+                    "parentId": "n26",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "27"
+                  },
+                  "children": [
+                    28
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n28",
+                    "parentId": "n27",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "28"
+                  },
+                  "children": [
+                    29
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n29",
+                    "parentId": "n28",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "29"
+                  },
+                  "children": [
+                    30
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n30",
+                    "parentId": "n29",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "30"
+                  },
+                  "children": [
+                    31
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n31",
+                    "parentId": "n30",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "31"
+                  },
+                  "children": [
+                    32
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n32",
+                    "parentId": "n31",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "32"
+                  },
+                  "children": [
+                    33
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n33",
+                    "parentId": "n32",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "33"
+                  },
+                  "children": [
+                    34
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n34",
+                    "parentId": "n33",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "34"
+                  },
+                  "children": [
+                    35
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n35",
+                    "parentId": "n34",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "35"
+                  },
+                  "children": [
+                    36
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n36",
+                    "parentId": "n35",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "36"
+                  },
+                  "children": [
+                    37
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n37",
+                    "parentId": "n36",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "37"
+                  },
+                  "children": [
+                    38
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n38",
+                    "parentId": "n37",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "38"
+                  },
+                  "children": [
+                    39
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n39",
+                    "parentId": "n38",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "39"
+                  },
+                  "children": [
+                    40
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n40",
+                    "parentId": "n39",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "40"
+                  },
+                  "children": [
+                    41
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n41",
+                    "parentId": "n40",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "41"
+                  },
+                  "children": [
+                    42
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n42",
+                    "parentId": "n41",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "42"
+                  },
+                  "children": [
+                    43
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n43",
+                    "parentId": "n42",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "43"
+                  },
+                  "children": [
+                    44
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n44",
+                    "parentId": "n43",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "44"
+                  },
+                  "children": [
+                    45
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n45",
+                    "parentId": "n44",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "45"
+                  },
+                  "children": [
+                    46
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n46",
+                    "parentId": "n45",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "46"
+                  },
+                  "children": [
+                    47
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n47",
+                    "parentId": "n46",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "47"
+                  },
+                  "children": [
+                    48
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n48",
+                    "parentId": "n47",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "48"
+                  },
+                  "children": [
+                    49
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n49",
+                    "parentId": "n48",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "49"
+                  },
+                  "children": [
+                    50
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n50",
+                    "parentId": "n49",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "50"
+                  },
+                  "children": [
+                    51
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n51",
+                    "parentId": "n50",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "51"
+                  },
+                  "children": [
+                    52
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n52",
+                    "parentId": "n51",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "52"
+                  },
+                  "children": [
+                    53
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n53",
+                    "parentId": "n52",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "53"
+                  },
+                  "children": [
+                    54
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n54",
+                    "parentId": "n53",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "54"
+                  },
+                  "children": [
+                    55
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n55",
+                    "parentId": "n54",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "55"
+                  },
+                  "children": [
+                    56
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n56",
+                    "parentId": "n55",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "56"
+                  },
+                  "children": [
+                    57
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n57",
+                    "parentId": "n56",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "57"
+                  },
+                  "children": [
+                    58
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n58",
+                    "parentId": "n57",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "58"
+                  },
+                  "children": [
+                    59
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n59",
+                    "parentId": "n58",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "59"
+                  },
+                  "children": [
+                    60
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n60",
+                    "parentId": "n59",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "60"
+                  },
+                  "children": [
+                    61
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n61",
+                    "parentId": "n60",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "61"
+                  },
+                  "children": [
+                    62
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n62",
+                    "parentId": "n61",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "62"
+                  },
+                  "children": [
+                    63
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n63",
+                    "parentId": "n62",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "63"
+                  },
+                  "children": [
+                    64
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n64",
+                    "parentId": "n63",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "64"
+                  },
+                  "children": [
+                    65
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n65",
+                    "parentId": "n64",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "65"
+                  },
+                  "children": [
+                    66
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n66",
+                    "parentId": "n65",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "66"
+                  },
+                  "children": [
+                    67
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n67",
+                    "parentId": "n66",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "67"
+                  },
+                  "children": [
+                    68
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n68",
+                    "parentId": "n67",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "68"
+                  },
+                  "children": [
+                    69
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n69",
+                    "parentId": "n68",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "69"
+                  },
+                  "children": [
+                    70
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n70",
+                    "parentId": "n69",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "70"
+                  },
+                  "children": [
+                    71
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n71",
+                    "parentId": "n70",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "71"
+                  },
+                  "children": [
+                    72
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n72",
+                    "parentId": "n71",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "72"
+                  },
+                  "children": [
+                    73
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n73",
+                    "parentId": "n72",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "73"
+                  },
+                  "children": [
+                    74
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n74",
+                    "parentId": "n73",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "74"
+                  },
+                  "children": [
+                    75
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n75",
+                    "parentId": "n74",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "75"
+                  },
+                  "children": [
+                    76
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n76",
+                    "parentId": "n75",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "76"
+                  },
+                  "children": [
+                    77
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n77",
+                    "parentId": "n76",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "77"
+                  },
+                  "children": [
+                    78
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n78",
+                    "parentId": "n77",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "78"
+                  },
+                  "children": [
+                    79
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n79",
+                    "parentId": "n78",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "79"
+                  },
+                  "children": [
+                    80
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n80",
+                    "parentId": "n79",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "80"
+                  },
+                  "children": [
+                    81
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n81",
+                    "parentId": "n80",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "81"
+                  },
+                  "children": [
+                    82
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n82",
+                    "parentId": "n81",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "82"
+                  },
+                  "children": [
+                    83
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n83",
+                    "parentId": "n82",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "83"
+                  },
+                  "children": [
+                    84
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n84",
+                    "parentId": "n83",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "84"
+                  },
+                  "children": [
+                    85
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n85",
+                    "parentId": "n84",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "85"
+                  },
+                  "children": [
+                    86
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n86",
+                    "parentId": "n85",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "86"
+                  },
+                  "children": [
+                    87
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n87",
+                    "parentId": "n86",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "87"
+                  },
+                  "children": [
+                    88
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n88",
+                    "parentId": "n87",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "88"
+                  },
+                  "children": [
+                    89
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n89",
+                    "parentId": "n88",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "89"
+                  },
+                  "children": [
+                    90
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n90",
+                    "parentId": "n89",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "90"
+                  },
+                  "children": [
+                    91
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n91",
+                    "parentId": "n90",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "91"
+                  },
+                  "children": [
+                    92
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n92",
+                    "parentId": "n91",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "92"
+                  },
+                  "children": [
+                    93
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n93",
+                    "parentId": "n92",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "93"
+                  },
+                  "children": [
+                    94
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n94",
+                    "parentId": "n93",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "94"
+                  },
+                  "children": [
+                    95
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n95",
+                    "parentId": "n94",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "95"
+                  },
+                  "children": [
+                    96
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n96",
+                    "parentId": "n95",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "96"
+                  },
+                  "children": [
+                    97
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n97",
+                    "parentId": "n96",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "97"
+                  },
+                  "children": [
+                    98
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n98",
+                    "parentId": "n97",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "98"
+                  },
+                  "children": [
+                    99
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n99",
+                    "parentId": "n98",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "99"
+                  },
+                  "children": [
+                    100
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n100",
+                    "parentId": "n99",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "100"
+                  },
+                  "children": [
+                    101
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n101",
+                    "parentId": "n100",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "101"
+                  },
+                  "children": [
+                    102
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n102",
+                    "parentId": "n101",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "102"
+                  },
+                  "children": [
+                    103
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n103",
+                    "parentId": "n102",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "103"
+                  },
+                  "children": [
+                    104
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n104",
+                    "parentId": "n103",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "104"
+                  },
+                  "children": [
+                    105
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n105",
+                    "parentId": "n104",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "105"
+                  },
+                  "children": [
+                    106
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n106",
+                    "parentId": "n105",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "106"
+                  },
+                  "children": [
+                    107
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n107",
+                    "parentId": "n106",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "107"
+                  },
+                  "children": [
+                    108
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n108",
+                    "parentId": "n107",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "108"
+                  },
+                  "children": [
+                    109
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n109",
+                    "parentId": "n108",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "109"
+                  },
+                  "children": [
+                    110
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n110",
+                    "parentId": "n109",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "110"
+                  },
+                  "children": [
+                    111
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n111",
+                    "parentId": "n110",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "111"
+                  },
+                  "children": [
+                    112
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n112",
+                    "parentId": "n111",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "112"
+                  },
+                  "children": [
+                    113
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n113",
+                    "parentId": "n112",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "113"
+                  },
+                  "children": [
+                    114
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n114",
+                    "parentId": "n113",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "114"
+                  },
+                  "children": [
+                    115
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n115",
+                    "parentId": "n114",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "115"
+                  },
+                  "children": [
+                    116
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n116",
+                    "parentId": "n115",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "116"
+                  },
+                  "children": [
+                    117
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n117",
+                    "parentId": "n116",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "117"
+                  },
+                  "children": [
+                    118
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n118",
+                    "parentId": "n117",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "118"
+                  },
+                  "children": [
+                    119
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n119",
+                    "parentId": "n118",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "119"
+                  },
+                  "children": [
+                    120
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n120",
+                    "parentId": "n119",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "120"
+                  },
+                  "children": [
+                    121
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n121",
+                    "parentId": "n120",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "121"
+                  },
+                  "children": [
+                    122
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n122",
+                    "parentId": "n121",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "122"
+                  },
+                  "children": [
+                    123
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n123",
+                    "parentId": "n122",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "123"
+                  },
+                  "children": [
+                    124
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n124",
+                    "parentId": "n123",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "124"
+                  },
+                  "children": [
+                    125
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n125",
+                    "parentId": "n124",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "125"
+                  },
+                  "children": [
+                    126
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n126",
+                    "parentId": "n125",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "126"
+                  },
+                  "children": [
+                    127
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n127",
+                    "parentId": "n126",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "127"
+                  },
+                  "children": [
+                    128
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n128",
+                    "parentId": "n127",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "128"
+                  },
+                  "children": [
+                    129
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n129",
+                    "parentId": "n128",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "129"
+                  },
+                  "children": [
+                    130
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n130",
+                    "parentId": "n129",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "130"
+                  },
+                  "children": [
+                    131
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n131",
+                    "parentId": "n130",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "131"
+                  },
+                  "children": [
+                    132
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n132",
+                    "parentId": "n131",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "132"
+                  },
+                  "children": [
+                    133
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n133",
+                    "parentId": "n132",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "133"
+                  },
+                  "children": [
+                    134
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n134",
+                    "parentId": "n133",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "134"
+                  },
+                  "children": [
+                    135
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n135",
+                    "parentId": "n134",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "135"
+                  },
+                  "children": [
+                    136
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n136",
+                    "parentId": "n135",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "136"
+                  },
+                  "children": [
+                    137
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n137",
+                    "parentId": "n136",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "137"
+                  },
+                  "children": [
+                    138
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n138",
+                    "parentId": "n137",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "138"
+                  },
+                  "children": [
+                    139
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n139",
+                    "parentId": "n138",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "139"
+                  },
+                  "children": [
+                    140
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n140",
+                    "parentId": "n139",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "140"
+                  },
+                  "children": [
+                    141
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n141",
+                    "parentId": "n140",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "141"
+                  },
+                  "children": [
+                    142
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n142",
+                    "parentId": "n141",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "142"
+                  },
+                  "children": [
+                    143
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n143",
+                    "parentId": "n142",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "143"
+                  },
+                  "children": [
+                    144
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n144",
+                    "parentId": "n143",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "144"
+                  },
+                  "children": [
+                    145
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n145",
+                    "parentId": "n144",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "145"
+                  },
+                  "children": [
+                    146
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n146",
+                    "parentId": "n145",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "146"
+                  },
+                  "children": [
+                    147
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n147",
+                    "parentId": "n146",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "147"
+                  },
+                  "children": [
+                    148
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n148",
+                    "parentId": "n147",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "148"
+                  },
+                  "children": [
+                    149
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n149",
+                    "parentId": "n148",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "149"
+                  },
+                  "children": [
+                    150
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n150",
+                    "parentId": "n149",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "150"
+                  },
+                  "children": [
+                    151
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n151",
+                    "parentId": "n150",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "151"
+                  },
+                  "children": [
+                    152
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n152",
+                    "parentId": "n151",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "152"
+                  },
+                  "children": [
+                    153
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n153",
+                    "parentId": "n152",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "153"
+                  },
+                  "children": [
+                    154
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n154",
+                    "parentId": "n153",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "154"
+                  },
+                  "children": [
+                    155
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n155",
+                    "parentId": "n154",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "155"
+                  },
+                  "children": [
+                    156
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n156",
+                    "parentId": "n155",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "156"
+                  },
+                  "children": [
+                    157
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n157",
+                    "parentId": "n156",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "157"
+                  },
+                  "children": [
+                    158
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n158",
+                    "parentId": "n157",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "158"
+                  },
+                  "children": [
+                    159
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n159",
+                    "parentId": "n158",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "159"
+                  },
+                  "children": [
+                    160
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n160",
+                    "parentId": "n159",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "160"
+                  },
+                  "children": [
+                    161
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n161",
+                    "parentId": "n160",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "161"
+                  },
+                  "children": [
+                    162
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n162",
+                    "parentId": "n161",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "162"
+                  },
+                  "children": [
+                    163
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n163",
+                    "parentId": "n162",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "163"
+                  },
+                  "children": [
+                    164
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n164",
+                    "parentId": "n163",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "164"
+                  },
+                  "children": [
+                    165
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n165",
+                    "parentId": "n164",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "165"
+                  },
+                  "children": [
+                    166
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n166",
+                    "parentId": "n165",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "166"
+                  },
+                  "children": [
+                    167
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n167",
+                    "parentId": "n166",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "167"
+                  },
+                  "children": [
+                    168
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n168",
+                    "parentId": "n167",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "168"
+                  },
+                  "children": [
+                    169
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n169",
+                    "parentId": "n168",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "169"
+                  },
+                  "children": [
+                    170
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n170",
+                    "parentId": "n169",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "170"
+                  },
+                  "children": [
+                    171
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n171",
+                    "parentId": "n170",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "171"
+                  },
+                  "children": [
+                    172
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n172",
+                    "parentId": "n171",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "172"
+                  },
+                  "children": [
+                    173
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n173",
+                    "parentId": "n172",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "173"
+                  },
+                  "children": [
+                    174
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n174",
+                    "parentId": "n173",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "174"
+                  },
+                  "children": [
+                    175
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n175",
+                    "parentId": "n174",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "175"
+                  },
+                  "children": [
+                    176
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n176",
+                    "parentId": "n175",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "176"
+                  },
+                  "children": [
+                    177
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n177",
+                    "parentId": "n176",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "177"
+                  },
+                  "children": [
+                    178
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n178",
+                    "parentId": "n177",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "178"
+                  },
+                  "children": [
+                    179
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n179",
+                    "parentId": "n178",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "179"
+                  },
+                  "children": [
+                    180
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n180",
+                    "parentId": "n179",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "180"
+                  },
+                  "children": [
+                    181
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n181",
+                    "parentId": "n180",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "181"
+                  },
+                  "children": [
+                    182
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n182",
+                    "parentId": "n181",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "182"
+                  },
+                  "children": [
+                    183
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n183",
+                    "parentId": "n182",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "183"
+                  },
+                  "children": [
+                    184
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n184",
+                    "parentId": "n183",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "184"
+                  },
+                  "children": [
+                    185
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n185",
+                    "parentId": "n184",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "185"
+                  },
+                  "children": [
+                    186
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n186",
+                    "parentId": "n185",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "186"
+                  },
+                  "children": [
+                    187
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n187",
+                    "parentId": "n186",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "187"
+                  },
+                  "children": [
+                    188
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n188",
+                    "parentId": "n187",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "188"
+                  },
+                  "children": [
+                    189
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n189",
+                    "parentId": "n188",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "189"
+                  },
+                  "children": [
+                    190
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n190",
+                    "parentId": "n189",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "190"
+                  },
+                  "children": [
+                    191
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n191",
+                    "parentId": "n190",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "191"
+                  },
+                  "children": [
+                    192
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n192",
+                    "parentId": "n191",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "192"
+                  },
+                  "children": [
+                    193
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n193",
+                    "parentId": "n192",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "193"
+                  },
+                  "children": [
+                    194
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n194",
+                    "parentId": "n193",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "194"
+                  },
+                  "children": [
+                    195
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n195",
+                    "parentId": "n194",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "195"
+                  },
+                  "children": [
+                    196
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n196",
+                    "parentId": "n195",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "196"
+                  },
+                  "children": [
+                    197
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n197",
+                    "parentId": "n196",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "197"
+                  },
+                  "children": [
+                    198
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n198",
+                    "parentId": "n197",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "198"
+                  },
+                  "children": [
+                    199
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n199",
+                    "parentId": "n198",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "199"
+                  },
+                  "children": [
+                    200
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n200",
+                    "parentId": "n199",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "200"
+                  },
+                  "children": [
+                    201
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n201",
+                    "parentId": "n200",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "201"
+                  },
+                  "children": [
+                    202
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n202",
+                    "parentId": "n201",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "202"
+                  },
+                  "children": [
+                    203
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n203",
+                    "parentId": "n202",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "203"
+                  },
+                  "children": [
+                    204
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n204",
+                    "parentId": "n203",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "204"
+                  },
+                  "children": [
+                    205
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n205",
+                    "parentId": "n204",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "205"
+                  },
+                  "children": [
+                    206
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n206",
+                    "parentId": "n205",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "206"
+                  },
+                  "children": [
+                    207
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n207",
+                    "parentId": "n206",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "207"
+                  },
+                  "children": [
+                    208
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n208",
+                    "parentId": "n207",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "208"
+                  },
+                  "children": [
+                    209
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n209",
+                    "parentId": "n208",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "209"
+                  },
+                  "children": [
+                    210
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n210",
+                    "parentId": "n209",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "210"
+                  },
+                  "children": [
+                    211
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n211",
+                    "parentId": "n210",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "211"
+                  },
+                  "children": [
+                    212
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n212",
+                    "parentId": "n211",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "212"
+                  },
+                  "children": [
+                    213
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n213",
+                    "parentId": "n212",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "213"
+                  },
+                  "children": [
+                    214
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n214",
+                    "parentId": "n213",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "214"
+                  },
+                  "children": [
+                    215
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n215",
+                    "parentId": "n214",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "215"
+                  },
+                  "children": [
+                    216
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n216",
+                    "parentId": "n215",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "216"
+                  },
+                  "children": [
+                    217
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n217",
+                    "parentId": "n216",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "217"
+                  },
+                  "children": [
+                    218
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n218",
+                    "parentId": "n217",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "218"
+                  },
+                  "children": [
+                    219
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n219",
+                    "parentId": "n218",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "219"
+                  },
+                  "children": [
+                    220
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n220",
+                    "parentId": "n219",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "220"
+                  },
+                  "children": [
+                    221
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n221",
+                    "parentId": "n220",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "221"
+                  },
+                  "children": [
+                    222
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n222",
+                    "parentId": "n221",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "222"
+                  },
+                  "children": [
+                    223
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n223",
+                    "parentId": "n222",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "223"
+                  },
+                  "children": [
+                    224
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n224",
+                    "parentId": "n223",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "224"
+                  },
+                  "children": [
+                    225
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n225",
+                    "parentId": "n224",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "225"
+                  },
+                  "children": [
+                    226
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n226",
+                    "parentId": "n225",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "226"
+                  },
+                  "children": [
+                    227
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n227",
+                    "parentId": "n226",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "227"
+                  },
+                  "children": [
+                    228
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n228",
+                    "parentId": "n227",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "228"
+                  },
+                  "children": [
+                    229
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n229",
+                    "parentId": "n228",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "229"
+                  },
+                  "children": [
+                    230
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n230",
+                    "parentId": "n229",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "230"
+                  },
+                  "children": [
+                    231
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n231",
+                    "parentId": "n230",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "231"
+                  },
+                  "children": [
+                    232
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n232",
+                    "parentId": "n231",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "232"
+                  },
+                  "children": [
+                    233
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n233",
+                    "parentId": "n232",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "233"
+                  },
+                  "children": [
+                    234
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n234",
+                    "parentId": "n233",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "234"
+                  },
+                  "children": [
+                    235
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n235",
+                    "parentId": "n234",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "235"
+                  },
+                  "children": [
+                    236
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n236",
+                    "parentId": "n235",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "236"
+                  },
+                  "children": [
+                    237
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n237",
+                    "parentId": "n236",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "237"
+                  },
+                  "children": [
+                    238
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n238",
+                    "parentId": "n237",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "238"
+                  },
+                  "children": [
+                    239
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n239",
+                    "parentId": "n238",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "239"
+                  },
+                  "children": [
+                    240
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n240",
+                    "parentId": "n239",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "240"
+                  },
+                  "children": [
+                    241
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n241",
+                    "parentId": "n240",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "241"
+                  },
+                  "children": [
+                    242
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n242",
+                    "parentId": "n241",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "242"
+                  },
+                  "children": [
+                    243
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n243",
+                    "parentId": "n242",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "243"
+                  },
+                  "children": [
+                    244
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n244",
+                    "parentId": "n243",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "244"
+                  },
+                  "children": [
+                    245
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n245",
+                    "parentId": "n244",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "245"
+                  },
+                  "children": [
+                    246
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n246",
+                    "parentId": "n245",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "246"
+                  },
+                  "children": [
+                    247
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n247",
+                    "parentId": "n246",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "247"
+                  },
+                  "children": [
+                    248
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n248",
+                    "parentId": "n247",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "248"
+                  },
+                  "children": [
+                    249
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n249",
+                    "parentId": "n248",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "249"
+                  },
+                  "children": [
+                    250
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n250",
+                    "parentId": "n249",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "250"
+                  },
+                  "children": [
+                    251
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n251",
+                    "parentId": "n250",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "251"
+                  },
+                  "children": [
+                    252
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n252",
+                    "parentId": "n251",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "252"
+                  },
+                  "children": [
+                    253
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n253",
+                    "parentId": "n252",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "253"
+                  },
+                  "children": [
+                    254
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n254",
+                    "parentId": "n253",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "254"
+                  },
+                  "children": [
+                    255
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n255",
+                    "parentId": "n254",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "255"
+                  },
+                  "children": [
+                    256
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n256",
+                    "parentId": "n255",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "256"
+                  },
+                  "children": [
+                    257
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n257",
+                    "parentId": "n256",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "257"
+                  },
+                  "children": [
+                    258
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n258",
+                    "parentId": "n257",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "258"
+                  },
+                  "children": [
+                    259
+                  ]
+                },
+                {
+                  "entry": {
+                    "type": "custom",
+                    "id": "n259",
+                    "parentId": "n258",
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "customType": "state",
+                    "data": "259"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

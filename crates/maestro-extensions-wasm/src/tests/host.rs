@@ -69,13 +69,13 @@ impl State {
     }
 
     /// Adds a resource to the table and counts it as lent to the extension.
-    fn push<T: Send + 'static>(&mut self, value: T) -> wasmtime::Result<Resource<T>> {
+    pub(super) fn push<T: Send + 'static>(&mut self, value: T) -> wasmtime::Result<Resource<T>> {
         self.observed.lend();
         Ok(self.table.push(value)?)
     }
 
     /// Removes a resource the component dropped.
-    fn release<T: 'static>(&mut self, this: Resource<T>) -> wasmtime::Result<()> {
+    pub(super) fn release<T: 'static>(&mut self, this: Resource<T>) -> wasmtime::Result<()> {
         self.table.delete(this)?;
         self.observed.reclaim();
         Ok(())
@@ -135,6 +135,16 @@ macro_rules! context_methods {
     ($kind:ident) => {
         fn cwd(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<String, String>> {
             Ok(self.table.get(&this)?.0.cwd())
+        }
+
+        fn session_manager(
+            &mut self,
+            _this: Resource<$kind>,
+        ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+            match self.observed.readers.acquire() {
+                Ok(reader) => Ok(Ok(self.push(reader)?)),
+                Err(error) => Ok(Err(error)),
+            }
         }
 
         fn drop(&mut self, this: Resource<$kind>) -> wasmtime::Result<()> {

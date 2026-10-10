@@ -5,7 +5,7 @@ canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
-families, tool callbacks, command contexts and session continuations.
+families, tool callbacks, command contexts, session continuations and session readers.
 
 ## Build a component
 
@@ -64,6 +64,23 @@ finite-checked authored replacements. Named aliases expose the built-in typed vi
 name predicates compare the name alone. Result input remains an opaque string.
 `UserBashEventResult` carries an already-produced `BashResult`; this crate does not
 execute shell commands.
+
+## Session readers
+
+Ordinary and command contexts expose `session_manager()`, which acquires the currently
+bound `ReadonlySessionManager` on each call. Its thirteen queries forward the host's
+strings, optional records and ordered lists without guest-side trimming, sorting or
+path resolution. Entry records use [the existing data boundary](#events-and-results).
+
+`get_tree()` returns independently owned `SessionTreeNode` handles. Read a node's
+`entry()`, `children()`, `label()` or `label_timestamp()` to traverse the captured tree;
+the guest does not decode a complete recursive tree document. Extracted readers and
+nodes survive dropping or invalidating the context that supplied them. Reader clones
+share one owner, released when its last alias is dropped; descendants can outlive parents.
+
+Queries return `ExtensionResult`: host failures retain their messages, while selected
+record decoding failures return native JSON diagnostics. Catching a failure does not
+revoke the reader. The read-only facade exposes no session-writing operations.
 
 ## Events and results
 

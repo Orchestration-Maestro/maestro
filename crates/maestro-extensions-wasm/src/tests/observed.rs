@@ -83,6 +83,8 @@ pub struct Observed {
     pub tools: Vec<String>,
     /// Delivered partial results in observation order.
     pub updates: Vec<String>,
+    /// Session query control state.
+    pub readers: super::reader_host::Bank,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -169,6 +171,9 @@ impl Observed {
 
     /// Records a custom session entry.
     pub fn entry(&mut self, custom_type: &str, data: Option<&str>) {
+        if custom_type == "reader-control" {
+            self.readers.control(data.expect("control document"));
+        }
         self.log(format!("entry {custom_type} {}", data.unwrap_or("none")));
     }
 
