@@ -1,0 +1,16 @@
+[package]
+name = "maestro-credentials"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-path = { path = "../maestro-path" }
+indexmap = "=2.14.2"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "process", "io-util", "macros"] }
+
+[lints]
+workspace = true

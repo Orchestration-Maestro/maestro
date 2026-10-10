@@ -1366,6 +1366,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-credentials"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
+ "maestro-path",
+ "tokio",
+]
+
+[[package]]
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
