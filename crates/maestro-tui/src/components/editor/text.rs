@@ -1,6 +1,6 @@
 //! Buffer normalization and cursor-local edits.
-use super::{Buffer, Editing, Editor, LastAction};
-use crate::{autocomplete::CursorPosition, get_segmenter, is_whitespace_char};
+use super::{Buffer, Editing, Editor, LastAction, markers};
+use crate::{autocomplete::CursorPosition, is_whitespace_char};
 impl Editor {
     /// Replaces normalized text, captures changed content and always notifies.
     pub fn set_text(&self, text: &str) {
@@ -83,12 +83,12 @@ impl Editing {
         self.reset_action();
         let cursor = self.current.cursor;
         if cursor.col > 0 {
-            self.snapshot();
-            let line = &mut self.current.lines[cursor.line];
-            let start = get_segmenter(&line[..cursor.col])
+            let line = &self.current.lines[cursor.line];
+            let start = markers::segments(&line[..cursor.col], self.pastes.len())
                 .last()
-                .map_or(0, |(at, _)| at);
-            line.replace_range(start..cursor.col, "");
+                .map_or(0, |&(at, _)| at);
+            self.snapshot();
+            self.current.lines[cursor.line].replace_range(start..cursor.col, "");
             self.set_col(start);
         } else if cursor.line > 0 {
             self.snapshot();
@@ -107,8 +107,8 @@ impl Editing {
         let cursor = self.current.cursor;
         let line = &self.current.lines[cursor.line];
         if cursor.col < line.len() {
-            let length = get_segmenter(&line[cursor.col..])
-                .next()
+            let length = markers::segments(&line[cursor.col..], self.pastes.len())
+                .first()
                 .map_or(0, |(_, text)| text.len());
             self.snapshot();
             self.current.lines[cursor.line].replace_range(cursor.col..cursor.col + length, "");
@@ -122,11 +122,12 @@ impl Editing {
     pub(super) fn right(&mut self, width: usize) {
         self.reset_action();
         let previous = self.current.cursor;
+        let owned = self.pastes.len();
         let cursor = &mut self.current.cursor;
         let line = &self.current.lines[cursor.line];
         if cursor.col < line.len() {
-            cursor.col += get_segmenter(&line[cursor.col..])
-                .next()
+            cursor.col += markers::segments(&line[cursor.col..], owned)
+                .first()
                 .map_or(0, |(_, text)| text.len());
         } else if cursor.line + 1 < self.current.lines.len() {
             cursor.line += 1;
@@ -142,11 +143,12 @@ impl Editing {
     pub(super) fn left(&mut self) {
         self.reset_action();
         let previous = self.current.cursor;
+        let owned = self.pastes.len();
         let cursor = &mut self.current.cursor;
         if cursor.col > 0 {
-            cursor.col = get_segmenter(&self.current.lines[cursor.line][..cursor.col])
+            cursor.col = markers::segments(&self.current.lines[cursor.line][..cursor.col], owned)
                 .last()
-                .map_or(0, |(at, _)| at);
+                .map_or(0, |&(at, _)| at);
         } else if cursor.line > 0 {
             cursor.line -= 1;
             cursor.col = self.current.lines[cursor.line].len();
@@ -157,7 +159,7 @@ impl Editing {
     }
 }
 /// Normalizes programmatic storage, not ordinary input.
-fn normalize(text: &str) -> String {
+pub(super) fn normalize(text: &str) -> String {
     text.replace("\r\n", "\n")
         .replace('\r', "\n")
         .replace('\t', "    ")

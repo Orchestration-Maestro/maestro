@@ -52,7 +52,7 @@ enum Action {
 impl InputHandler for Editor {
     fn handle_input(&self, data: &str) {
         let bindings = get_keybindings();
-        if self.pending_jump(data, &bindings) {
+        if self.pending_jump(data, &bindings) || self.frame_paste(data) {
             return;
         }
         if let Some(action) = action(data, &bindings) {
@@ -183,7 +183,7 @@ impl Editor {
     /// Clears state before change notification and selects the live submission callable afterward.
     fn submit_value(&self) {
         let value = self
-            .get_text()
+            .get_expanded_text()
             .trim_matches(crate::text::utils::is_whitespace_scalar)
             .to_owned();
         {
@@ -191,6 +191,7 @@ impl Editor {
             state.current = Buffer::default();
             state.history_index = None;
             state.undo.clear();
+            state.pastes.clear();
             state.reset_action();
         }
         self.scroll.set(0);

@@ -120,7 +120,7 @@ fn groups<'a>(atoms: &'a [Atom], supplied: Option<&[(usize, &str)]>) -> Vec<&'a 
 }
 /// Supplied marker spans suppress internal word opportunities.
 fn whitespace(line: &str, group: &[Atom]) -> bool {
-    !marker(&line[group[0].start..group[group.len() - 1].end])
+    !super::markers::is_marker(&line[group[0].start..group[group.len() - 1].end])
         && group.iter().any(|atom| atom.whitespace)
 }
 /// Current chunk and latest viable word boundary.
@@ -174,27 +174,6 @@ impl Wrap {
         }
         self.opportunity = None;
     }
-}
-/// Recognizes the atomic marker spelling without interpreting its numeric identity.
-fn marker(text: &str) -> bool {
-    let Some(body) = text
-        .strip_prefix("[paste #")
-        .and_then(|text| text.strip_suffix(']'))
-    else {
-        return false;
-    };
-    let (id, suffix) = body
-        .split_once(' ')
-        .map_or((body, None), |(id, suffix)| (id, Some(suffix)));
-    let digits = |text: &str| !text.is_empty() && text.bytes().all(|byte| byte.is_ascii_digit());
-    digits(id)
-        && suffix.is_none_or(|suffix| {
-            suffix
-                .strip_prefix('+')
-                .and_then(|text| text.strip_suffix(" lines"))
-                .or_else(|| suffix.strip_suffix(" chars"))
-                .is_some_and(digits)
-        })
 }
 /// Copies one selected range.
 fn chunk(line: &str, start: usize, end: usize) -> TextChunk {
