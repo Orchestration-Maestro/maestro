@@ -1,5 +1,7 @@
 //! Custom-file theme admission and alias resolution.
-use super::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
+use super::{
+    ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeInfo, ThemeOptions,
+};
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::collections::HashSet;
@@ -13,6 +15,18 @@ pub trait ThemeOperations {
     fn read_to_string(&self, path: &str) -> std::io::Result<String>;
     /// Read one optional environment variable.
     fn environment(&self, name: &str) -> Option<String>;
+    /// Report whether the supplied authored path exists.
+    fn exists(&self, path: &str) -> bool;
+    /// List the entry names of a directory, in the adapter's order and without file-kind filtering.
+    ///
+    /// # Errors
+    /// Returns the adapter's I/O failure, such as a path that is not a directory.
+    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>>;
+    /// Sort inventory entries by name with a stable locale comparison.
+    ///
+    /// # Errors
+    /// Returns the adapter's failure to prepare its comparison.
+    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()>;
 }
 /// Native file bytes decoded lossily as UTF-8, with native environment access.
 #[cfg(not(target_arch = "wasm32"))]
@@ -24,6 +38,19 @@ impl ThemeOperations for NativeThemeOperations {
     }
     fn environment(&self, name: &str) -> Option<String> {
         std::env::var(name).ok()
+    }
+    fn exists(&self, path: &str) -> bool {
+        std::path::Path::new(path).exists()
+    }
+    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
+        std::fs::read_dir(path)?
+            .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().into_owned()))
+            .collect()
+    }
+    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()> {
+        let collator = super::collation::collator(&|name| self.environment(name))?;
+        themes.sort_by(|a, b| collator.compare(&a.name, &b.name));
+        Ok(())
     }
 }
 /// Read, validate, resolve and construct an independent terminal theme.
@@ -46,39 +73,54 @@ pub fn load_theme_from_path(
     mode: Option<ColorMode>,
     operations: &dyn ThemeOperations,
 ) -> Result<Theme, ThemeError> {
-    let content = operations
-        .read_to_string(path)
-        .map_err(|cause| ThemeError {
-            message: cause.to_string(),
-            cause: Some(Box::new(cause)),
-        })?;
-    let mut json: Value = serde_json::from_str(&content).map_err(|cause| ThemeError {
-        message: format!("Failed to parse theme {path}: {cause}"),
-        cause: Some(Box::new(cause)),
-    })?;
-    validate(path, &json)?;
+    let content = operations.read_to_string(path).map_err(ThemeError::io)?;
+    let json = parse_custom(path, &content)?;
+    build_theme(
+        &json,
+        mode,
+        operations,
+        ThemeOptions {
+            source_path: Some(path.to_owned()),
+            ..ThemeOptions::default()
+        },
+    )
+}
+/// Parse theme text and admit it against the runtime schema.
+pub(super) fn parse_custom(label: &str, content: &str) -> Result<Value, ThemeError> {
+    let json = parse_json(label, content)?;
+    validate(label, &json)?;
+    Ok(json)
+}
+/// Parse theme text without admission, as for the trusted shipped themes.
+pub(super) fn parse_json(label: &str, content: &str) -> Result<Value, ThemeError> {
+    serde_json::from_str(content).map_err(|cause| {
+        ThemeError::caused_by(format!("Failed to parse theme {label}: {cause}"), cause)
+    })
+}
+/// Resolve and construct a theme from an admitted document, borrowing its colors.
+///
+/// The document's name is authored; `options` supplies the rest of the metadata.
+pub(super) fn build_theme(
+    json: &Value,
+    mode: Option<ColorMode>,
+    operations: &dyn ThemeOperations,
+    mut options: ThemeOptions,
+) -> Result<Theme, ThemeError> {
     let mode = mode.unwrap_or_else(|| detect_mode(operations));
     let mut fg = Vec::new();
     let mut bg = Vec::new();
-    if let Value::Object(colors) = json["colors"].take() {
+    if let Some(colors) = json["colors"].as_object() {
         for (key, value) in colors {
-            let color = resolve(&value, &json["vars"])?;
-            if is_background(&key) {
-                bg.push((ThemeBg::Named(key), color));
+            let color = resolve(value, &json["vars"])?;
+            if is_background(key) {
+                bg.push((ThemeBg::Named(key.clone()), color));
             } else {
-                fg.push((ThemeColor::Named(key), color));
+                fg.push((ThemeColor::Named(key.clone()), color));
             }
         }
     }
-    Theme::new(
-        fg,
-        bg,
-        mode,
-        ThemeOptions {
-            name: json["name"].as_str().map(str::to_owned),
-            source_path: Some(path.to_owned()),
-        },
-    )
+    options.name = json["name"].as_str().map(str::to_owned);
+    Theme::new(fg, bg, mode, options)
 }
 /// The six authored background keys.
 fn is_background(key: &str) -> bool {
@@ -121,13 +163,9 @@ fn detect_mode(operations: &dyn ThemeOperations) -> ColorMode {
 }
 /// Admit selected runtime fields with the native schema validator.
 fn validate(path: &str, json: &Value) -> Result<(), ThemeError> {
-    let schema: Value = serde_json::from_str(include_str!(
-        "../../assets/theme/runtime-schema.json"
-    ))
-    .map_err(|cause| ThemeError {
-        message: cause.to_string(),
-        cause: Some(Box::new(cause)),
-    })?;
+    let schema: Value =
+        serde_json::from_str(include_str!("../../assets/theme/runtime-schema.json"))
+            .map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))?;
     let validator = jsonschema::validator_for(&schema)
         .map_err(|cause| ThemeError::message(cause.to_string()))?;
     let mut missing = std::collections::BTreeSet::new();

@@ -1,6 +1,6 @@
 //! Controlled theme operations and documents shared by the theme tests.
 use maestro_theme::{
-    ColorMode, Theme, ThemeColor, ThemeError, ThemeOperations, load_theme_from_path,
+    ColorMode, Theme, ThemeColor, ThemeError, ThemeInfo, ThemeOperations, load_theme_from_path,
 };
 use serde_json::Value;
 use std::cell::RefCell;
@@ -47,6 +47,18 @@ impl ThemeOperations for Controlled {
     fn environment(&self, name: &str) -> Option<String> {
         self.log.borrow_mut().push(format!("env:{name}"));
         self.env.get(name).cloned()
+    }
+
+    fn exists(&self, _path: &str) -> bool {
+        self.content.is_some()
+    }
+
+    fn read_dir(&self, _path: &str) -> io::Result<Vec<String>> {
+        Err(io::ErrorKind::Unsupported.into())
+    }
+
+    fn sort_by_name(&self, _themes: &mut [ThemeInfo]) -> io::Result<()> {
+        Ok(())
     }
 }
 
