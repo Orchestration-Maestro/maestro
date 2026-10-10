@@ -49,9 +49,10 @@ impl Producer {
         let scratch = scratch::Scratch::new().unwrap();
         let ready = scratch.0.join("ready");
         let permit = scratch.0.join("permit");
+        let written = scratch.0.join("written");
         assert!(
             std::process::Command::new("mkfifo")
-                .args([&ready, &permit])
+                .args([&ready, &permit, &written])
                 .status()
                 .unwrap()
                 .success()
@@ -74,6 +75,12 @@ impl Producer {
                 .open(permit)
                 .unwrap();
             permit.write_all(b"go\n").unwrap();
+            let mut written = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(written)
+                .unwrap();
+            written.write_all(b"x\n").unwrap();
             // Closing the last descriptor discards unread FIFO bytes, so hold it until the capture ends.
             wait.recv().unwrap();
         });
@@ -83,6 +90,13 @@ impl Producer {
             thread,
             ready: receive,
         }
+    }
+    /// The pause that returns only once the permit has been written.
+    fn after_permit_written(&self) -> String {
+        format!(
+            "read written < '{}'",
+            self.scratch.0.join("written").display()
+        )
     }
     /// The shell's acknowledgement followed by its blocking read.
     fn gate(&self) -> String {
@@ -266,17 +280,10 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
             .await
     });
     let (early, captured) = runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
-            .await
-            .unwrap()
-            .unwrap();
+        producer.ready.await.unwrap();
         let early = result.is_finished();
         producer.release.send(()).unwrap();
-        let captured = tokio::time::timeout(Duration::from_secs(5), result)
-            .await
-            .unwrap()
-            .unwrap()
-            .unwrap();
+        let captured = result.await.unwrap().unwrap();
         (early, captured)
     }));
     producer.release.send(()).unwrap();
@@ -290,7 +297,7 @@ fn capture_completes_when_the_shell_opens_the_permit_late() {
     let producer = Producer::new();
     let script = format!(
         "parent=$$; (while kill -0 \"$parent\" 2>/dev/null; do :; done; {}; printf tail) & printf early; exit 0",
-        producer.gate_after("sleep 1")
+        producer.gate_after(&producer.after_permit_written())
     );
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
@@ -309,16 +316,9 @@ fn capture_completes_when_the_shell_opens_the_permit_late() {
             .await
     });
     let captured = runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
-            .await
-            .unwrap()
-            .unwrap();
+        producer.ready.await.unwrap();
         producer.release.send(()).unwrap();
-        tokio::time::timeout(Duration::from_secs(10), result)
-            .await
-            .unwrap()
-            .unwrap()
-            .unwrap()
+        result.await.unwrap().unwrap()
     }));
     producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
@@ -405,10 +405,7 @@ fn capture_timeout_covers_descendant_streams() {
             .await
     });
     runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
-            .await
-            .unwrap()
-            .unwrap();
+        producer.ready.await.unwrap();
         tokio::time::pause();
         tokio::time::advance(Duration::from_millis(10001)).await;
         tokio::time::resume();
