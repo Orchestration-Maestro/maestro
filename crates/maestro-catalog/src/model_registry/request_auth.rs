@@ -9,7 +9,6 @@ use maestro_models::{Model, OAuthError};
 use std::sync::{Arc, PoisonError, RwLock};
 
 /// Checked provider request sources, separate from descriptor metadata.
-#[derive(Clone, Default)]
 pub(super) struct ProviderRequestConfig {
     /// Optional configured key expression.
     pub api_key: Option<String>,
@@ -75,20 +74,21 @@ impl ModelRegistry {
         operations: &dyn ConfigValueOperations,
     ) -> Result<RequestValues, String> {
         let provider = read_provider(model);
-        let config = self
-            .provider_configs
-            .get(&provider)
-            .cloned()
-            .unwrap_or_default();
+        let config = self.provider_configs.get(&provider);
         let stored = self
             .auth_storage
             .get_api_key(&provider, false, operations)
             .await
             .map_err(|error| error.to_string())?;
-        let api_key = resolve_key(stored, config.api_key.as_deref(), model, operations)?;
+        let api_key = resolve_key(
+            stored,
+            config.and_then(|c| c.api_key.as_deref()),
+            model,
+            operations,
+        )?;
         let provider = read_provider(model);
         let provider_headers = resolve_headers_or_throw(
-            config.headers.as_ref(),
+            config.and_then(|c| c.headers.as_ref()),
             &format!("provider \"{provider}\""),
             operations,
         )
@@ -113,7 +113,7 @@ impl ModelRegistry {
             .collect();
         headers.extend(provider_headers.into_iter().flatten());
         headers.extend(model_headers.into_iter().flatten());
-        if config.auth_header {
+        if config.is_some_and(|c| c.auth_header) {
             let Some(key) = api_key.as_ref().filter(|key| !key.is_empty()) else {
                 let provider = read_provider(model);
                 return Err(format!("No API key found for \"{provider}\""));

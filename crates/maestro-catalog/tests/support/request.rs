@@ -37,7 +37,8 @@ impl Operations {
 }
 /// Drive a future to completion without external services.
 /// # Panics
-/// Panics when runtime construction or the supplied future fails.
+/// Panics when runtime construction fails or the supplied future panics; a future's
+/// returned `Err` is passed through unchanged.
 pub fn run<F: std::future::Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .build()
@@ -72,7 +73,11 @@ pub fn success(result: ResolvedRequestAuth, key: Option<&str>, headers: &[(&str,
         panic!("expected request success")
     };
     assert!(api_key.as_deref().eq(&key), "selected key");
-    let actual = actual.unwrap_or_default();
+    if headers.is_empty() {
+        assert!(actual.is_none(), "headers absent");
+        return;
+    }
+    let actual = actual.expect("headers present");
     assert_eq!(
         actual.keys().map(String::as_str).collect::<Vec<_>>(),
         headers.iter().map(|h| h.0).collect::<Vec<_>>()
@@ -104,8 +109,6 @@ pub struct OAuth {
 }
 impl OAuth {
     #[must_use]
-    /// # Panics
-    /// Panics when a controlled test operation or assertion fails.
     pub fn new(id: &'static str, name: &'static str) -> Self {
         Self {
             id,
