@@ -4,8 +4,8 @@
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
-This page describes what is delivered so far: registration, 26 events and ten result
-families, command contexts and session continuations.
+This page describes what is delivered so far: registration, 29 events and thirteen result
+families, tool callbacks, command contexts and session continuations.
 
 ## Build a component
 
@@ -37,12 +37,33 @@ so the host has seen it before the
 factory's next statement runs. Whether and when the host treats the extension as active is
 the host's decision; the `start` export resolves when the factory's future completes. `on`
 forwards each handler under its event name, including names the host does not define, and
-`register_command` forwards a command. A rejected registration returns the host's message and
+`register_command` forwards a command and `register_tool` forwards one tool definition. A rejected registration returns the host's message and
 retains nothing.
 
 Each closure you register stays alive in the guest until the host releases it, exactly once,
 and never while the guest's closure table is borrowed. A destructor may register again while
 its own closure is released.
+
+## Tools
+
+`ToolDefinition` combines `ToolMetadata`, optional synchronous `prepare_arguments` and
+asynchronous `execute`. Preparation receives one JSON value; its returned value can be
+passed to execution. The adapter does not perform argument validation or schedule tools.
+Execution receives the invocation ID, arguments, ordinary context and optional signal
+and progress callback. A progress callback sends one `AgentToolResult` synchronously;
+execution returns its final `AgentToolResult`. Callback failures retain their supplied messages.
+
+Cloned signal and progress handles share the resource lent for that invocation. Returning
+from execution does not revoke retained handles; their last owner releases them.
+For shared content and JSON conventions, see [the data boundary](#events-and-results).
+
+`ToolCallEvent` input and `ToolResultEvent` details retain their JSON independently of
+`toolName`, including overrides of built-in names. Their `ToolInput` / `ToolDetails`
+carrier offers `decode::<T>()` for an on-demand typed view and `from_value()` for
+finite-checked authored replacements. Named aliases expose the built-in typed views;
+name predicates compare the name alone. Result input remains an opaque string.
+`UserBashEventResult` carries an already-produced `BashResult`; this crate does not
+execute shell commands.
 
 ## Events and results
 
@@ -62,6 +83,9 @@ differs from a result whose properties are all omitted.
 | `message_start` | `MessageStartEvent` | `message` |
 | `message_end` | `MessageEndEvent` | `message` |
 | `message_update` | `MessageUpdateEvent` | `message`, `assistantMessageEvent` |
+| `tool_call` | `ToolCallEvent` | `toolCallId`, `toolName`, retained JSON `input` |
+| `tool_result` | `ToolResultEvent` | `toolCallId`, `toolName`, opaque `input`, shared `content`, `isError`, retained JSON `details?` |
+| `user_bash` | `UserBashEvent` | `command`, `cwd`, `excludeFromContext` |
 | `tool_execution_start` | `ToolExecutionStartEvent` | `toolCallId`, `toolName`, `args` |
 | `tool_execution_update` | `ToolExecutionUpdateEvent` | `toolCallId`, `toolName`, `args`, `partialResult` |
 | `tool_execution_end` | `ToolExecutionEndEvent` | `toolCallId`, `toolName`, `result`, `isError` |
@@ -116,6 +140,9 @@ the guest does not discover resources or build the prompt.
 
 | Event | Result | Properties of the result |
 | --- | --- | --- |
+| `tool_call` | `ToolCallEventResult` | `block?`, `reason?` |
+| `tool_result` | `ToolResultEventResult` | `content?`, opaque `details?`, `isError?` |
+| `user_bash` | `UserBashEventResult` | supplied `result?` |
 | `context` | `ContextEventResult` | `messages?` |
 | `message_end` | `MessageEndEventResult` | `message?` |
 | `before_agent_start` | `BeforeAgentStartEventResult` | `message?`, `systemPrompt?` |
@@ -162,12 +189,13 @@ have no added `Presence` wrapper.
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder
-may reject. An extension-assigned Infinity or NaN fails encoding with
+may reject. `ToolInput::from_value` rejects Infinity or NaN before returning a carrier.
+Other extension-assigned Infinity or NaN fails encoding with
 `extension wrote a non-finite number (Infinity or NaN)`; the independent callback
 failure or other encoded part is retained. Numeric-looking text remains text.
 
-The request body of `before_provider_request`, its replacement, tool arguments and
-partial/final results, and application-message or compaction `details` are opaque text
+The request body of `before_provider_request`, its replacement, tool-execution notification arguments and
+partial/final notification results, and application-message or compaction `details` are opaque text
 carried as a string. The adapter never parses or reformats it, so
 duplicate keys, spacing, exponents and any nesting depth reach the handler as authored. A
 replacement `null` is text and differs from returning no result; `details` text `null` differs

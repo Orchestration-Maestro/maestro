@@ -913,3 +913,82 @@ fn guest_host_probe_keeps_engine_dependencies_test_only() {
         }
     }
 }
+
+#[test]
+fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-tools", "maestro-tui"]);
+    source(
+        &workspace,
+        "maestro-tools",
+        "src/lib.rs",
+        "pub struct ToolDefinition;",
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/tools.rs",
+        "pub struct ToolDefinition;",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    guest_tool_declaration_decoys(&workspace);
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/tools.rs",
+        "pub struct ToolDefinition; pub type ToolDefinition = ();",
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("duplicate declaration ToolDefinition")
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/tools.rs",
+        "pub struct ToolDefinition;",
+    );
+    source(
+        &workspace,
+        "maestro-tools",
+        "other.rs",
+        "pub type ToolDefinition = ();",
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("duplicate declaration ToolDefinition")
+    );
+}
+
+fn guest_tool_declaration_decoys(workspace: &Workspace) {
+    for (owner, path, name) in [
+        ("maestro-extensions-wasm", "src/lib.rs", "ToolDefinition"),
+        ("maestro-tui", "src/types/tools.rs", "ToolDefinition"),
+        (
+            "maestro-extensions-wasm",
+            "src/types/tools.rs",
+            "ToolRenderContext",
+        ),
+        (
+            "maestro-extensions-wasm",
+            "src/types/tools.rs",
+            "ToolRenderResultOptions",
+        ),
+    ] {
+        source(workspace, owner, path, &format!("pub struct {name};"));
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("belongs to maestro-tools")
+        );
+        source(workspace, owner, path, "");
+        source(
+            workspace,
+            "maestro-extensions-wasm",
+            "src/types/tools.rs",
+            "pub struct ToolDefinition;",
+        );
+    }
+}

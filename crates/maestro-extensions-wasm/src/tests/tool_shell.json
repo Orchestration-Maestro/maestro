@@ -1,0 +1,386 @@
+[
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": false
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": null
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "Ω😀﻿\\literal",
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": ""
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "Ω😀﻿\\literal",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": "Ω😀﻿\\literal"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": true
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": null
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "Ω😀﻿\\literal",
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": ""
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "Ω😀﻿\\literal",
+      "cwd": "../literal/Ω",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "Ω😀﻿\\literal",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": "Ω😀﻿\\literal"
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": true,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": true,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": true,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": true
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": true,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "exitCode": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "exitCode": 0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "exitCode": -0.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "exitCode": 1.5
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "exitCode": -2.0
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": ""
+      }
+    }
+  },
+  {
+    "event": {
+      "type": "user_bash",
+      "command": "x",
+      "cwd": "..",
+      "excludeFromContext": false
+    },
+    "result": {
+      "result": {
+        "output": "out",
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": "Ω😀﻿\\literal"
+      }
+    }
+  }
+]

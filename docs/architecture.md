@@ -91,9 +91,11 @@ lexing, production line counts and WIT literals share that canonical text.
 Declarations are recognised from native tokens, so macro templates and every item
 shape are covered without expansion; attribute payloads are excluded.
 Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/render-context/result-option types
-belong to tools; application selector types and selector modules belong to chat.
+belong to tools, except the guest author definition in
+`maestro-extensions-wasm/src/types/tools.rs`; application selector types and selector
+modules belong to chat.
 Qualified uses and re-exports are not declarations. Duplicate tool declarations
-are rejected. Planning references in comments retain their separate policy and
+within either owner are rejected. Planning references in comments retain their separate policy and
 line-accurate diagnostics from native compiler-lexer comment spans.
 Legal included fragments need not parse as full modules; the compiler owns
 Rust validity, while the quality checker still counts their production lines.

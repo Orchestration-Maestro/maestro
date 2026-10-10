@@ -25,6 +25,7 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.tool-update": crate::tests::host::Update,
             "maestro:extension/host.callback": crate::tests::host::Identity,
             "maestro:extension/host.abort-signal": crate::tests::host::Flag,
             "maestro:extension/host.context": crate::tests::host::Ordinary,

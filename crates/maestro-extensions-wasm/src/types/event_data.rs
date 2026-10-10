@@ -22,11 +22,18 @@ use super::session_events::{
 use super::tool_events::{
     ToolExecutionEndEvent, ToolExecutionStartEvent, ToolExecutionUpdateEvent,
 };
+use super::{ToolCallEvent, ToolResultEvent, UserBashEvent};
 
 /// The `type` tag of an event document.
 #[derive(Deserialize)]
 #[serde(variant_identifier, rename_all = "snake_case")]
 enum Kind {
+    /// Invocation before execution.
+    ToolCall,
+    /// Completed result.
+    ToolResult,
+    /// User shell command.
+    UserBash,
     /// Selection notification.
     ModelSelect,
     /// Selection notification.
@@ -96,6 +103,12 @@ struct Tag {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(crate) enum EventData {
+    /// Invocation before execution.
+    ToolCall(ToolCallEvent),
+    /// Completed result.
+    ToolResult(ToolResultEvent),
+    /// User shell command.
+    UserBash(UserBashEvent),
     /// Selection notification.
     ModelSelect(Box<ModelSelectEvent>),
     /// Selection notification.
@@ -165,6 +178,9 @@ impl EventData {
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
         let Tag { kind } = object::from_str(text)?;
         Ok(match kind {
+            Kind::ToolCall => Self::ToolCall(ToolCallEvent::decode(text)?),
+            Kind::ToolResult => Self::ToolResult(ToolResultEvent::decode(text)?),
+            Kind::UserBash => Self::UserBash(object::from_str(text)?),
             Kind::ModelSelect => Self::ModelSelect(object::from_str(text)?),
             Kind::ThinkingLevelSelect => Self::ThinkingLevelSelect(object::from_str(text)?),
 
@@ -204,6 +220,9 @@ impl EventData {
     /// Returns an error when a before-compaction or before-tree event has no signal.
     pub(crate) fn attach(self, signal: Option<AbortSignal>) -> Result<ExtensionEvent, String> {
         Ok(match self {
+            Self::ToolCall(event) => ExtensionEvent::ToolCall(event),
+            Self::ToolResult(event) => ExtensionEvent::ToolResult(event),
+            Self::UserBash(event) => ExtensionEvent::UserBash(event),
             Self::ModelSelect(event) => ExtensionEvent::ModelSelect(event),
             Self::ThinkingLevelSelect(event) => ExtensionEvent::ThinkingLevelSelect(event),
 
@@ -259,6 +278,9 @@ impl From<ExtensionEvent> for EventData {
     /// The data of an event; an owned cancellation signal is dropped.
     fn from(event: ExtensionEvent) -> Self {
         match event {
+            ExtensionEvent::ToolCall(event) => Self::ToolCall(event),
+            ExtensionEvent::ToolResult(event) => Self::ToolResult(event),
+            ExtensionEvent::UserBash(event) => Self::UserBash(event),
             ExtensionEvent::ModelSelect(event) => Self::ModelSelect(event),
             ExtensionEvent::ThinkingLevelSelect(event) => Self::ThinkingLevelSelect(event),
 

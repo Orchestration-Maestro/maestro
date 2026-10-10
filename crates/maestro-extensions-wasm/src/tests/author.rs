@@ -16,6 +16,9 @@ use maestro_extensions_wasm::{
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
 
+#[path = "tool_author.rs"]
+mod tool_author;
+
 /// Reports its label to the host when this guard is dropped.
 struct Released {
     /// Extension handle used to report the release.
@@ -349,6 +352,7 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
         kept: Rc::default(),
     };
     let captured = Rc::clone(&probe.captured);
+    let tool_api = api.clone();
     api.on(
         "probe",
         Rc::new(move |event, ctx| {
@@ -360,9 +364,13 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
         "capture",
         CommandOptions {
             description: None,
-            handler: Rc::new(move |_args, ctx| {
+            handler: Rc::new(move |args, ctx| {
+                let api = tool_api.clone();
                 let captured = Rc::clone(&captured);
                 Box::pin(async move {
+                    if let Some(config) = args.strip_prefix("tools ") {
+                        return tool_author::register(&api, config, Rc::clone(&captured));
+                    }
                     captured.replace(Some(ctx));
                     Ok(())
                 })
@@ -395,15 +403,7 @@ impl Probe {
                 .wait_for_idle()
                 .await?;
         }
-        if let Some(edit) = &directive.session_edit {
-            edit_session(event, edit);
-        }
-        if matches!(directive.session_action, Some(SessionAction::FileEdit))
-            && let ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) = event
-            && compact.preparation.file_ops.read.shift_remove("z")
-        {
-            compact.preparation.file_ops.read.insert("z".to_owned());
-        }
+        apply_event_edits(event, &directive)?;
         if directive.mark {
             mark(event);
         }
@@ -475,6 +475,12 @@ impl Probe {
 
 /// Assigns a numeric field in the new result families.
 fn assign_result_number(result: &mut ExtensionEventResult, number: f64) {
+    if let ExtensionEventResult::UserBash(event) = result
+        && let Presence::Present(result) = &mut event.result
+    {
+        result.exit_code = Presence::Present(number);
+        return;
+    }
     let message = match result {
         ExtensionEventResult::Context(context) => match &mut context.messages {
             Presence::Present(messages) => messages.first_mut(),
@@ -536,6 +542,9 @@ fn mark(event: &mut ExtensionEvent) {
         }
         ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
         ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
+        ExtensionEvent::ToolCall(event) => tool_author::mark(&mut event.input, &event.tool_name),
+        ExtensionEvent::ToolResult(event) => event.is_error = !event.is_error,
+        ExtensionEvent::UserBash(event) => event.command = changed(),
         ExtensionEvent::Input(input) => input.text = changed(),
     }
 }
@@ -609,6 +618,9 @@ fn event_from(document: Value) -> ExtensionResult<ExtensionEvent> {
 fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
     let unreadable = |error: serde_json::Error| format!("unreadable result: {error}");
     Ok(match family {
+        "tool_call" => ExtensionEventResult::ToolCall(from_value(value).map_err(unreadable)?),
+        "tool_result" => ExtensionEventResult::ToolResult(from_value(value).map_err(unreadable)?),
+        "user_bash" => ExtensionEventResult::UserBash(from_value(value).map_err(unreadable)?),
         "context" => ExtensionEventResult::Context(from_value(value).map_err(unreadable)?),
         "message_end" => ExtensionEventResult::MessageEnd(from_value(value).map_err(unreadable)?),
         "before_agent_start" => {
@@ -641,6 +653,12 @@ fn reply(family: &str, value: Value) -> ExtensionResult<ExtensionEventResult> {
 fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> Result<(), String> {
     let bits = u64::from_str_radix(bits, 16).map_err(|e| e.to_string())?;
     let value = f64::from_bits(bits);
+    if matches!(
+        event,
+        ExtensionEvent::ToolCall(_) | ExtensionEvent::ToolResult(_)
+    ) {
+        return tool_author::write_number(event, field.unwrap_or("limit"), value);
+    }
     match event {
         ExtensionEvent::Context(context) => {
             let Some(maestro_extensions_wasm::AgentMessage::Message(message)) =
@@ -759,4 +777,28 @@ fn summarize(event: &ExtensionEvent) -> ExtensionResult<ExtensionEventResult> {
             }),
         },
     ))
+}
+
+/// Applies the selected callback edits through the typed event payloads.
+fn apply_event_edits(event: &mut ExtensionEvent, directive: &Directive) -> ExtensionResult<()> {
+    if directive.session_edit.as_deref() == Some("tool custom")
+        && let ExtensionEvent::ToolCall(event) = event
+    {
+        tool_author::mark_custom(&mut event.input)?;
+    }
+    if directive.session_edit.as_deref() == Some("tool extra")
+        && let ExtensionEvent::ToolCall(event) = event
+    {
+        tool_author::mark_extra(&mut event.input);
+    }
+    if let Some(edit) = &directive.session_edit {
+        edit_session(event, edit);
+    }
+    if matches!(directive.session_action, Some(SessionAction::FileEdit))
+        && let ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) = event
+        && compact.preparation.file_ops.read.shift_remove("z")
+    {
+        compact.preparation.file_ops.read.insert("z".to_owned());
+    }
+    Ok(())
 }

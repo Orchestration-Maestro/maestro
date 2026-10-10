@@ -16,6 +16,9 @@ interface host {
         aborted: func() -> bool;
     }
 
+    /// Partial output delivered by an executing tool.
+    resource tool-update { update: func(partial: string) -> result<_, string>; }
+
     /// Live capabilities available to every callback.
     resource context {
         cwd: func() -> result<string, string>;
@@ -41,6 +44,8 @@ interface host {
     register-command: func(
         name: string, description: option<string>, handler: borrow<callback>,
     ) -> result<_, string>;
+    /// Registers authored tool data and callbacks.
+    register-tool: func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>) -> result<_, string>;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> result<_, string>;
 }

@@ -1,0 +1,1890 @@
+[
+  {
+    "name": "bash",
+    "query": "bash",
+    "expected": true
+  },
+  {
+    "name": "bash",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isBashToolResult",
+    "expected": true
+  },
+  {
+    "name": "bash",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "read",
+    "expected": true
+  },
+  {
+    "name": "read",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "helper": "isReadToolResult",
+    "expected": true
+  },
+  {
+    "name": "read",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "read",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "edit",
+    "expected": true
+  },
+  {
+    "name": "edit",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "helper": "isEditToolResult",
+    "expected": true
+  },
+  {
+    "name": "edit",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "edit",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "write",
+    "expected": true
+  },
+  {
+    "name": "write",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "helper": "isWriteToolResult",
+    "expected": true
+  },
+  {
+    "name": "write",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "write",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "grep",
+    "expected": true
+  },
+  {
+    "name": "grep",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "helper": "isGrepToolResult",
+    "expected": true
+  },
+  {
+    "name": "grep",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "grep",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "find",
+    "expected": true
+  },
+  {
+    "name": "find",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "find",
+    "helper": "isFindToolResult",
+    "expected": true
+  },
+  {
+    "name": "find",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "ls",
+    "expected": true
+  },
+  {
+    "name": "ls",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "ls",
+    "helper": "isLsToolResult",
+    "expected": true
+  },
+  {
+    "name": "custom",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "custom",
+    "expected": true
+  },
+  {
+    "name": "custom",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "custom",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "",
+    "expected": true
+  },
+  {
+    "name": "",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "Bash",
+    "expected": true
+  },
+  {
+    "name": "Bash",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "Bash",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "bash ",
+    "expected": true
+  },
+  {
+    "name": "bash ",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash ",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "﻿bash",
+    "expected": true
+  },
+  {
+    "name": "﻿bash",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "﻿bash",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "bash",
+    "expected": true
+  },
+  {
+    "name": "bash",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "工具",
+    "expected": true
+  },
+  {
+    "name": "工具",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "工具",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "query": "__proto__",
+    "expected": true
+  },
+  {
+    "name": "__proto__",
+    "query": "básh",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "__proto__",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "read",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "edit",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "write",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "grep",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "find",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "ls",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "custom",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "Bash",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "bash ",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "﻿bash",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "bash",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "工具",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "__proto__",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "query": "básh",
+    "expected": true
+  },
+  {
+    "name": "básh",
+    "helper": "isBashToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "helper": "isReadToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "helper": "isEditToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "helper": "isWriteToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "helper": "isGrepToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "helper": "isFindToolResult",
+    "expected": false
+  },
+  {
+    "name": "básh",
+    "helper": "isLsToolResult",
+    "expected": false
+  },
+  {
+    "name": "bash",
+    "helper": "isBashToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "read",
+    "helper": "isReadToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "edit",
+    "helper": "isEditToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "write",
+    "helper": "isWriteToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "grep",
+    "helper": "isGrepToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "find",
+    "helper": "isFindToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "ls",
+    "helper": "isLsToolResult",
+    "expected": true,
+    "decoy": true
+  },
+  {
+    "name": "bash",
+    "query": "bash",
+    "expected": true,
+    "decoy": true
+  }
+]

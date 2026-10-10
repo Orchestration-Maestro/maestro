@@ -128,3 +128,9 @@ members!(SerializeTupleVariant; serialize_field(););
 members!(SerializeMap; serialize_key(); serialize_value(););
 members!(SerializeStruct; serialize_field(_key: &'static str,););
 members!(SerializeStructVariant; serialize_field(_key: &'static str,););
+
+/// Encodes authored data after rejecting nonfinite typed numbers.
+pub(crate) fn encode_value<T: Serialize>(value: &T) -> Result<String, String> {
+    value.serialize(Finite).map_err(|error| error.to_string())?;
+    serde_json::to_string(value).map_err(|error| error.to_string())
+}

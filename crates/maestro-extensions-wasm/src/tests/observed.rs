@@ -79,6 +79,10 @@ pub struct Observed {
     pub dropped: Vec<u32>,
     /// Resources handed to the extension that it has not dropped.
     pub live: usize,
+    /// Authored tool metadata in registration order.
+    pub tools: Vec<String>,
+    /// Delivered partial results in observation order.
+    pub updates: Vec<String>,
     /// Last identity handed out.
     next: u32,
     /// Registered callback keys by name, such as `event input`.
@@ -135,6 +139,26 @@ impl Observed {
     pub fn register_command(&mut self, name: &str, key: u32) {
         self.log(format!("register command {name}"));
         self.register(format!("command {name}"), key);
+    }
+
+    /// Records one tool registration, rejecting the named rejection fixture.
+    pub fn register_tool(
+        &mut self,
+        metadata: &str,
+        prepare: Option<u32>,
+        execute: u32,
+    ) -> Result<(), String> {
+        let value: serde_json::Value = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
+        let name = value["name"].as_str().ok_or("missing tool name")?;
+        if name == "rejected" {
+            return Err("tool rejected: Ω".into());
+        }
+        self.tools.push(metadata.into());
+        if let Some(prepare) = prepare {
+            self.register(format!("prepare {name}"), prepare);
+        }
+        self.register(format!("tool {name}"), execute);
+        Ok(())
     }
 
     /// Records what the host last observed when the driver saw a held wait pending.

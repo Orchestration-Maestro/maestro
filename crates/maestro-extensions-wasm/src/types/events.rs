@@ -338,9 +338,20 @@ pub enum SessionEvent {
     Shutdown(SessionShutdownEvent),
 }
 
+use super::{
+    ToolCallEvent, ToolCallEventResult, ToolResultEvent, ToolResultEventResult, UserBashEvent,
+    UserBashEventResult,
+};
+
 /// An event delivered to handlers, in the shape authors write against.
 #[derive(Debug)]
 pub enum ExtensionEvent {
+    /// Invocation before execution.
+    ToolCall(ToolCallEvent),
+    /// Completed tool result.
+    ToolResult(ToolResultEvent),
+    /// User shell command.
+    UserBash(UserBashEvent),
     /// Selection notification.
     ModelSelect(Box<ModelSelectEvent>),
     /// Selection notification.
@@ -389,6 +400,12 @@ pub enum ExtensionEvent {
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
 pub enum ExtensionEventResult {
+    /// Invocation decision.
+    ToolCall(ToolCallEventResult),
+    /// Result replacement.
+    ToolResult(ToolResultEventResult),
+    /// Supplied shell result.
+    UserBash(UserBashEventResult),
     /// Replacement context messages.
     Context(ContextEventResult),
     /// Replacement finalized message.

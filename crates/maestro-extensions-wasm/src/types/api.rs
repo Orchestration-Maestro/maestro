@@ -12,6 +12,7 @@ use serde_json::Value;
 use super::context::ExtensionCommandContext;
 use super::events::ExtensionHandler;
 use super::extension_result::{ExtensionFuture, ExtensionResult};
+use super::tools::ToolDefinition;
 
 /// Handler of a registered command: receives the argument text and a command context.
 pub type CommandHandler =
@@ -33,6 +34,8 @@ port! {
         fn on(event: &str, handler: ExtensionHandler) -> ();
         /// Registers a command; nothing is retained when the host rejects it.
         fn register_command(name: &str, options: CommandOptions) -> ();
+        /// Registers one tool; rejected registration retains no callbacks.
+        fn register_tool(tool: ToolDefinition) -> ();
         /// Forwards a custom entry to the host's session.
         fn append_entry(custom_type: &str, data: Option<Value>) -> ();
     }

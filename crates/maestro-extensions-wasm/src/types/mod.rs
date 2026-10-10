@@ -13,13 +13,16 @@ mod context;
 mod event_data;
 mod events;
 mod extension_result;
-#[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) mod finite;
 pub(crate) mod object;
 mod presence;
 mod selection_events;
 mod session_events;
 mod tool_events;
+mod tool_results;
+pub use tool_results::*;
+mod tools;
+pub use tools::*;
 
 pub use agent_events::*;
 pub use agent_results::*;

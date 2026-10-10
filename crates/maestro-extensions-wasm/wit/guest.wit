@@ -2,10 +2,19 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{callback, abort-signal, context, command-context, replaced-session-context};
+    use host.{tool-update, callback, abort-signal, context, command-context, replaced-session-context};
 
     /// Host resources lent to one event callback; the signal accompanies a compaction.
     record capabilities { ctx: context, signal: option<abort-signal> }
+
+    /// Invocation identifier and opaque parameter document.
+    record tool-invocation { tool-call-id: string, params: string }
+    /// Owned resources received by tool execution.
+    record tool-capabilities { ctx: context, signal: option<abort-signal>, update: option<tool-update> }
+    /// Synchronously prepares arguments.
+    invoke-prepare: func(handler: borrow<callback>, args: string) -> result<string, string>;
+    /// Awaits execution of a tool.
+    invoke-tool: async func(handler: borrow<callback>, invocation: tool-invocation, resources: tool-capabilities) -> result<string, string>;
 
     /// A JSON document, no document, or the message that explains why encoding failed.
     type encoded = result<option<string>, string>;

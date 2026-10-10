@@ -14,6 +14,9 @@ mod exports;
 mod generated;
 mod host_api;
 mod imports;
+mod tools;
+#[cfg(test)]
+pub(crate) use tools::ToolCapabilities;
 
 pub(crate) use callbacks::release;
 #[cfg(test)]

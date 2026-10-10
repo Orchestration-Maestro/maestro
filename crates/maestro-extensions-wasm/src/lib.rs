@@ -9,6 +9,10 @@
 #[macro_use]
 mod port;
 mod agent;
+mod bash_executor;
+mod tools;
+pub use bash_executor::*;
+pub use tools::*;
 #[doc(hidden)]
 pub mod bindings;
 mod compaction;

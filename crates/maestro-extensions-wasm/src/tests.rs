@@ -51,6 +51,8 @@ mod session_records;
 mod session_summary;
 mod shared_records;
 mod stream_events;
+mod tool_callbacks;
+mod tool_events;
 
 use std::future::Future;
 
@@ -350,6 +352,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         [
             "invoke-command",
             "invoke-event",
+            "invoke-tool",
             "invoke-with-session",
             "start"
         ],
@@ -357,8 +360,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     );
     assert_eq!(
         names(&contract.exports, false),
-        ["release"],
-        "release stays synchronous"
+        ["invoke-prepare", "release"],
+        "preparation and release stay synchronous"
     );
     assert_typed_event_export(&contract);
     assert_eq!(
