@@ -26,14 +26,13 @@ pub(super) enum Context {
 impl Owner {
     /// Handles a key while a menu is open; false lets ordinary input dispatch continue.
     pub(super) fn menu_input(&self, data: &str, bindings: &KeybindingsManager) -> bool {
-        let menu = {
-            let completion = self.completion.borrow();
-            completion
-                .menu
-                .as_ref()
-                .map(|menu| (menu.list.clone(), menu.prefix.clone()))
-        };
-        let Some((list, prefix)) = menu else {
+        let list = self
+            .completion
+            .borrow()
+            .menu
+            .as_ref()
+            .map(|menu| menu.list.clone());
+        let Some(list) = list else {
             return false;
         };
         if bindings.matches(data, "tui.select.cancel") {
@@ -51,14 +50,29 @@ impl Owner {
         let (Some(selected), Some(provider)) = (list.get_selected_item(), self.provider()) else {
             return tab;
         };
+        let Some(prefix) = self
+            .completion
+            .borrow()
+            .menu
+            .as_ref()
+            .map(|menu| menu.prefix.clone())
+        else {
+            return tab;
+        };
         let item = AutocompleteItem {
             value: selected.value.clone(),
             label: selected.label.clone(),
             description: selected.description.clone(),
         };
         self.apply_item(&provider, &item, &prefix);
+        let live_slash = self
+            .completion
+            .borrow()
+            .menu
+            .as_ref()
+            .is_some_and(|menu| menu.prefix.starts_with('/'));
         self.cancel_autocomplete();
-        if !tab && prefix.starts_with('/') {
+        if !tab && live_slash {
             return false;
         }
         self.notify();
@@ -70,11 +84,12 @@ impl Owner {
         if self.provider().is_none() {
             return;
         }
-        let before = self.before_cursor();
-        let command = self.in_slash_context(&before)
-            && !before
-                .trim_start_matches(is_whitespace_scalar)
-                .contains(' ');
+        let command = self.with_before(|before| {
+            self.in_slash_context(before)
+                && !before
+                    .trim_start_matches(is_whitespace_scalar)
+                    .contains(' ')
+        });
         let mode = if command { Mode::Regular } else { Mode::Force };
         self.request_completion(Intent { mode, tab: true });
     }
@@ -85,16 +100,18 @@ impl Owner {
             self.update_autocomplete();
             return;
         }
-        let before = self.before_cursor();
-        let triggers = match text {
-            "/" => self.at_start_of_message(&before),
-            "@" | "#" => before.len() == 1 || before[..before.len() - 1].ends_with([' ', '\t']),
+        let triggers = self.with_before(|before| match text {
+            "/" => self.at_start_of_message(before),
+            "@" | "#" => {
+                let mut rev = before.chars().rev();
+                rev.next().is_some() && matches!(rev.next(), None | Some(' ' | '\t'))
+            }
             _ => {
                 text.chars()
                     .any(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
-                    && (self.in_slash_context(&before) || matches(Context::Symbol, &before))
+                    && (self.in_slash_context(before) || matches(Context::Symbol, before))
             }
-        };
+        });
         if triggers {
             self.request_completion(Intent {
                 mode: Mode::Regular,
@@ -109,8 +126,9 @@ impl Owner {
             self.update_autocomplete();
             return;
         }
-        let before = self.before_cursor();
-        if self.in_slash_context(&before) || matches(Context::Symbol, &before) {
+        if self
+            .with_before(|before| self.in_slash_context(before) || matches(Context::Symbol, before))
+        {
             self.request_completion(Intent {
                 mode: Mode::Regular,
                 tab: false,
@@ -120,14 +138,14 @@ impl Owner {
 
     /// Whether the text before the cursor matches a pattern.
     pub(super) fn before_cursor_matches(&self, context: Context) -> bool {
-        matches(context, &self.before_cursor())
+        self.with_before(|before| matches(context, before))
     }
 
-    /// The current line up to the cursor.
-    fn before_cursor(&self) -> String {
+    /// Runs a predicate on the current line up to the cursor; the state stays borrowed meanwhile.
+    fn with_before<R>(&self, read: impl FnOnce(&str) -> R) -> R {
         let state = self.state.borrow();
         let cursor = state.current.cursor;
-        state.current.lines[cursor.line][..cursor.col].to_owned()
+        read(&state.current.lines[cursor.line][..cursor.col])
     }
 
     /// Whether a slash menu is allowed and the text starts a command.

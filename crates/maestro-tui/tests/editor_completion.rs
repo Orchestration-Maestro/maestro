@@ -346,6 +346,8 @@ struct Matching {
     prefix: &'static str,
     /// Value Enter applies.
     applied: &'static str,
+    /// Label of the row highlighted before Enter.
+    highlighted: &'static str,
 }
 
 /// Value-matching cases in decreasing order of precedence.
@@ -355,42 +357,49 @@ const MATCHING: [Matching; 7] = [
         pairs: &[("x", "x"), ("y", "y")],
         prefix: "",
         applied: "x",
+        highlighted: "x",
     },
     Matching {
         name: "exact beats an earlier prefix",
         pairs: &[("bz", "bz"), ("b", "b")],
         prefix: "b",
         applied: "b",
+        highlighted: "b",
     },
     Matching {
         name: "first prefix wins",
         pairs: &[("xb", "xb"), ("bz", "bz"), ("ba", "ba")],
         prefix: "b",
         applied: "bz",
+        highlighted: "bz",
     },
     Matching {
         name: "case matters",
         pairs: &[("b", "b"), ("Ba", "Ba")],
         prefix: "B",
         applied: "Ba",
+        highlighted: "Ba",
     },
     Matching {
         name: "labels never match",
         pairs: &[("q", "b"), ("r", "r")],
         prefix: "b",
         applied: "q",
+        highlighted: "b",
     },
     Matching {
         name: "duplicates keep their order",
         pairs: &[("d", "first"), ("d", "second")],
         prefix: "d",
         applied: "d",
+        highlighted: "first",
     },
     Matching {
         name: "no match keeps the default",
         pairs: &[("m", "m"), ("n", "n")],
         prefix: "z",
         applied: "m",
+        highlighted: "m",
     },
 ];
 
@@ -408,7 +417,12 @@ fn completion_value_matching_retains_order() {
     for case in MATCHING {
         let rig = Rig::new();
         forced_menu(&rig, items(case.pairs, case.prefix));
-        assert!(selected(&rig).is_some(), "{}", case.name);
+        assert_eq!(
+            selected(&rig).as_deref(),
+            Some(case.highlighted),
+            "{}",
+            case.name
+        );
         rig.input(ENTER);
         assert_eq!(
             rig.provider.applied.borrow().as_slice(),
@@ -547,6 +561,84 @@ fn completion_deadline_restarts_at_twenty_milliseconds() {
     assert_eq!(rig.provider.count(), 1, "explicit Tab starts at once");
     drop(rig);
     assert_quoted_and_plain_tokens();
+}
+
+#[test]
+fn completion_symbol_tokens_wait_for_typing_to_stop() {
+    for (typed, reply) in [("@mai", "@main.ts"), ("#298", "#2983")] {
+        let rig = Rig::new();
+        rig.provider.answer(move |_| offer(typed, &[reply]));
+        rig.typed(typed);
+        rig.wait(19);
+        assert_eq!(rig.provider.count(), 0, "{typed}: nothing before 20 ms");
+        assert!(!rig.editor.is_showing_autocomplete());
+        rig.wait(1);
+        assert_eq!(rig.provider.count(), 1, "{typed}: one request after typing");
+        assert_eq!(selected(&rig).as_deref(), Some(reply), "{typed}");
+    }
+}
+
+#[test]
+fn completion_active_symbol_request_aborts_when_typing_continues() {
+    let rig = Rig::new();
+    rig.typed("@mai");
+    rig.wait(20);
+    assert_eq!(rig.provider.count(), 1);
+    assert!(!rig.provider.aborted(0));
+    rig.typed("n");
+    assert!(rig.provider.aborted(0), "the running request is aborted");
+    rig.provider.resolve(0, None);
+    rig.run();
+    rig.wait(20);
+    assert_eq!(rig.provider.count(), 2, "typing restarts one request");
+    assert!(!rig.provider.aborted(1), "only the first request aborted");
+}
+
+/// Replaces the editor text once from inside its change notification.
+fn replace_text_on_first_change(rig: &Rig, replacement: &'static str) {
+    let editor = Rc::downgrade(&rig.editor);
+    let fired = std::cell::Cell::new(false);
+    rig.editor.set_on_change(Some(Rc::new(move |_| {
+        if let (Some(editor), false) = (editor.upgrade(), fired.replace(true)) {
+            editor.set_text(replacement);
+        }
+    })));
+}
+
+#[test]
+fn completion_symbol_typing_survives_change_callback_replacing_text() {
+    for replacement in ["", "éé"] {
+        for symbol in ["@", "#"] {
+            let rig = Rig::new();
+            replace_text_on_first_change(&rig, replacement);
+            rig.typed(symbol);
+            rig.wait(20);
+            assert_eq!(rig.provider.count(), 0, "{symbol} over {replacement:?}");
+            assert_eq!(rig.editor.get_text(), replacement);
+        }
+    }
+}
+
+#[test]
+fn completion_slash_confirm_reads_live_prefix_after_application() {
+    let rig = Rig::new();
+    let submitted = submissions(&rig);
+    slash_menu(&rig, &["/alpha"]);
+    let editor = Rc::downgrade(&rig.editor);
+    rig.provider.on_apply.replace(Some(Box::new(move || {
+        if let Some(editor) = editor.upgrade() {
+            editor.set_text("/");
+        }
+    })));
+    rig.changes.borrow_mut().clear();
+    rig.input(ENTER);
+    assert_eq!(rig.editor.get_text(), "/alpha", "the applied text stays");
+    assert!(submitted.borrow().is_empty(), "no submission");
+    assert_eq!(
+        rig.changes.borrow().last().map(String::as_str),
+        Some("/alpha"),
+        "the application is notified"
+    );
 }
 
 /// Starts a held request for `/` and returns the rig.
@@ -860,15 +952,15 @@ fn completion_rejection_settles_before_next_request() {
     rig.typed("a");
     rig.run();
     rig.typed("b");
-    rig.provider.resolve(1, rig::failure());
+    let token = Rc::new(());
+    rig.provider.resolve(1, rig::failure(&token));
     let errors = rig.run();
     assert_eq!(errors.len(), 1, "the provider error reaches the host");
-    assert_eq!(errors[0].to_string(), "controlled failure");
     assert!(
         errors[0]
-            .downcast_ref::<std::io::Error>()
-            .is_some_and(|error| error.kind() == std::io::ErrorKind::Other),
-        "the error is returned unchanged"
+            .downcast_ref::<rig::Marked>()
+            .is_some_and(|error| Rc::ptr_eq(&error.0, &token)),
+        "the very error the provider returned reaches the host"
     );
     assert!(rig.editor.is_showing_autocomplete(), "the old menu stays");
     assert_eq!(
@@ -893,8 +985,16 @@ fn completion_rejection_settles_before_next_request() {
     rig.typed("/");
     rig.run();
     assert_eq!(replacement.count(), 0, "waits for the failing predecessor");
-    rig.provider.resolve(0, rig::failure());
-    assert_eq!(rig.run().len(), 1);
+    let token = Rc::new(());
+    rig.provider.resolve(0, rig::failure(&token));
+    let errors = rig.run();
+    assert!(
+        errors.len() == 1
+            && errors[0]
+                .downcast_ref::<rig::Marked>()
+                .is_some_and(|error| Rc::ptr_eq(&error.0, &token)),
+        "the failing predecessor's error reaches the host"
+    );
     assert_eq!(
         replacement.count(),
         1,
@@ -1001,6 +1101,60 @@ fn completion_render_uses_list_layout_and_suppresses_cursor() {
         rig.menu(30),
         [padded("  → @one", 30), padded("    @two", 30)],
         "default non-slash layout"
+    );
+}
+
+/// A theme whose selection callbacks each wrap their text in a distinct marker.
+fn marked_theme() -> maestro_tui::EditorTheme {
+    let mark = |name: &'static str| -> Rc<dyn Fn(&str) -> String> {
+        Rc::new(move |text| format!("{name}<{text}>"))
+    };
+    let mut theme = support::theme();
+    theme.select_list = maestro_tui::SelectListTheme {
+        selected_prefix: mark("P"),
+        selected_text: mark("S"),
+        description: mark("D"),
+        scroll_info: mark("I"),
+        no_match: mark("N"),
+    };
+    theme
+}
+
+#[test]
+fn completion_menu_routes_each_selection_style() {
+    let rig = Rig::with_theme(marked_theme());
+    rig.editor.set_autocomplete_max_visible(3.0);
+    rig.provider.answer(|_| Some(described()));
+    rig.input("/");
+    rig.run();
+    assert_eq!(
+        rows(&rig),
+        [
+            "S<→ /aa         about /aa>",
+            "  /bbD<         about /bb>",
+            "  /ccD<         about /cc>",
+            "I<  (1/5)>",
+        ],
+        "selected, description and scroll styles reach their rows; the prefix style stays unused"
+    );
+}
+
+#[test]
+fn completion_menu_keeps_captured_maximum_until_refreshed() {
+    let rig = Rig::new();
+    rig.editor.set_autocomplete_max_visible(3.0);
+    rig.provider.answer(|_| Some(described()));
+    rig.input("/");
+    rig.run();
+    assert_eq!(rows(&rig).len(), 4, "three rows and a position row");
+    rig.editor.set_autocomplete_max_visible(5.0);
+    assert_eq!(rows(&rig).len(), 4, "the visible menu keeps its maximum");
+    rig.input("a");
+    rig.run();
+    assert_eq!(
+        rows(&rig).len(),
+        5,
+        "the refreshed menu uses the new maximum"
     );
 }
 
@@ -1255,6 +1409,35 @@ fn rebind_completion_keys() {
     ));
 }
 
+/// The former arrows and wrong-modifier chords leave the selection and menu alone.
+fn assert_former_menu_keys_are_inert(rig: &Rig) {
+    rig.input(DOWN);
+    assert_eq!(
+        selected(rig).as_deref(),
+        Some("xa"),
+        "the former down key no longer moves"
+    );
+    rig.input(UP);
+    assert_eq!(
+        selected(rig).as_deref(),
+        Some("xa"),
+        "the former up key no longer moves"
+    );
+    for wrong in ["\x1bp", "\x1b[112;6u", "\x1bn", "\x1b[110;6u"] {
+        rig.input(wrong);
+        assert_eq!(
+            selected(rig).as_deref(),
+            Some("xa"),
+            "{wrong:?} is not the registered key"
+        );
+    }
+    rig.input("\x1b[120;6u");
+    assert!(
+        rig.editor.is_showing_autocomplete(),
+        "a wrong-modifier cancel key does nothing"
+    );
+}
+
 /// The new keys drive the menu and the former defaults no longer do.
 fn assert_new_keys_drive_menu() {
     let rig = Rig::new();
@@ -1281,18 +1464,7 @@ fn assert_new_keys_drive_menu() {
         Some("xa"),
         "the new up key moves"
     );
-    rig.input(DOWN);
-    rig.input(UP);
-    assert_eq!(
-        selected(&rig).as_deref(),
-        Some("xa"),
-        "former arrows no longer drive the menu"
-    );
-    rig.input(COPY);
-    assert!(
-        rig.editor.is_showing_autocomplete(),
-        "copy keeps priority over an overlapping cancel"
-    );
+    assert_former_menu_keys_are_inert(&rig);
     rig.input(ESC);
     assert!(
         rig.editor.is_showing_autocomplete(),
@@ -1308,6 +1480,12 @@ fn assert_new_keys_drive_menu() {
     rig.run();
     rig.provider.resolve_last(offer("x", &["xa", "xb"]));
     rig.run();
+    rig.input("\x1b[103;6u");
+    assert_eq!(
+        rig.editor.get_text(),
+        "x",
+        "a wrong-modifier confirm key does nothing"
+    );
     rig.input("\x07");
     assert_eq!(rig.editor.get_text(), "xa", "the new confirm key applies");
 }
@@ -1325,6 +1503,13 @@ fn assert_former_keys_are_ordinary() {
         0,
         "the former Tab key requests nothing"
     );
+    rig.input("\x1b[116;6u");
+    rig.run();
+    assert_eq!(
+        rig.provider.count(),
+        0,
+        "a wrong-modifier Tab key requests nothing"
+    );
     rig.input("\x14");
     rig.run();
     rig.provider.resolve_last(offer("x", &["xa", "xb"]));
@@ -1339,6 +1524,38 @@ fn assert_former_keys_are_ordinary() {
         *submitted.borrow(),
         ["x"],
         "the former confirm key now only submits"
+    );
+}
+
+/// Copy and undo keep priority when menu actions are bound to the same chords.
+#[test]
+fn completion_copy_and_undo_precede_rebound_menu_keys() {
+    let rig = Rig::new();
+    set_keybindings(KeybindingsManager::new(
+        TUI_KEYBINDINGS.clone(),
+        vec![
+            (
+                "tui.select.cancel".to_owned(),
+                Some(KeybindingKeys::Single("ctrl+c".to_owned())),
+            ),
+            (
+                "tui.select.down".to_owned(),
+                Some(KeybindingKeys::Single("ctrl+-".to_owned())),
+            ),
+        ],
+    ));
+    slash_menu(&rig, &["/a", "/b", "/c"]);
+    rig.input(COPY);
+    assert!(
+        rig.editor.is_showing_autocomplete(),
+        "copy outranks a cancel bound to the same chord"
+    );
+    rig.input(UNDO);
+    assert_eq!(rig.editor.get_text(), "", "undo ran");
+    assert_eq!(
+        selected(&rig).as_deref(),
+        Some("/a"),
+        "undo outranks a down bound to the same chord"
     );
 }
 

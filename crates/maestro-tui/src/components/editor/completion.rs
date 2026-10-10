@@ -73,8 +73,6 @@ struct Request {
     id: u64,
     /// Lines at start.
     lines: Vec<String>,
-    /// Joined text at start.
-    text: String,
     /// Byte cursor at start.
     cursor: CursorPosition,
 }
@@ -237,7 +235,6 @@ impl Owner {
             provider,
             signal,
             id,
-            text: lines.join("\n"),
             lines,
             cursor,
         })
@@ -262,11 +259,11 @@ impl Owner {
 
     /// Whether live editor state and cancellation still admit the request's result.
     fn current(&self, request: &Request) -> bool {
-        let (lines, cursor) = self.input();
-        !request.signal.is_aborted()
-            && request.id == self.completion.borrow().request
-            && request.cursor == cursor
-            && request.text == lines.join("\n")
+        if request.signal.is_aborted() || request.id != self.completion.borrow().request {
+            return false;
+        }
+        let state = self.state.borrow();
+        request.cursor == state.current.cursor && request.lines == state.current.lines
     }
 
     /// Applies a current result: nothing, an immediate edit or a menu.

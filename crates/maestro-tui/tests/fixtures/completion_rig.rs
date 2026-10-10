@@ -8,7 +8,7 @@ use maestro_tui::autocomplete::{
 use maestro_tui::tui::TuiRuntime;
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Component, Editor,
-    EditorOptions, Focusable, TUI, tui::InputHandler,
+    EditorOptions, EditorTheme, Focusable, TUI, tui::InputHandler,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -112,9 +112,21 @@ pub fn offer(prefix: &str, values: &[&str]) -> AutocompleteSuggestions {
     }
 }
 
-/// A provider failure.
-pub fn failure() -> Reply {
-    Err(Box::new(std::io::Error::other("controlled failure")))
+/// A provider failure carrying a token whose shared allocation identifies the instance.
+#[derive(Debug)]
+pub struct Marked(pub Rc<()>);
+
+impl std::fmt::Display for Marked {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("marked failure")
+    }
+}
+
+impl std::error::Error for Marked {}
+
+/// A provider failure that carries `token`.
+pub fn failure(token: &Rc<()>) -> Reply {
+    Err(Box::new(Marked(Rc::clone(token))))
 }
 
 impl Scripted {
@@ -239,13 +251,14 @@ pub struct Rig {
 impl Rig {
     /// A focused editor with a scripted provider and a change log.
     pub fn new() -> Self {
+        Self::with_theme(support::theme())
+    }
+
+    /// Like [`Rig::new`], with the given theme.
+    pub fn with_theme(theme: EditorTheme) -> Self {
         let globals = support::globals();
         let (tui, _, runtime) = support::host(24);
-        let editor = Rc::new(Editor::new(
-            &tui,
-            support::theme(),
-            EditorOptions::default(),
-        ));
+        let editor = Rc::new(Editor::new(&tui, theme, EditorOptions::default()));
         editor.focus_flag().set(true);
         let provider = Scripted::new();
         editor.set_autocomplete_provider(provider.clone());

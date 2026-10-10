@@ -99,14 +99,21 @@ fn paste(editor: &Editor) -> String {
 
 `set_autocomplete_provider` installs an `AutocompleteProvider` whose cancellation
 signal is `maestro_cancellation::Cancellation`; replacing it cancels admitted
-completion and clears the menu. Typing a `/` that starts the first line, an `@` or
-`#` that starts a token, or a letter, digit, `.`, `-` or `_` inside a slash command or
-`@`/`#` token requests suggestions; Backspace and forward delete retrigger from their
-own context, or refresh an open menu in the mode it was requested in. Tab requests
+completion and clears the menu. Typing `/` when the first line before the cursor is
+empty or only `/` (ignoring surrounding Unicode whitespace) requests suggestions. So
+does typing `@` or `#` when it is the first character before the cursor or follows an
+ASCII space or tab. Any other typed chunk requests them when it contains an ASCII letter,
+digit, `.`, `-` or `_` and either, on the first line, the text before the cursor starts
+with `/` after leading Unicode whitespace, or, on any line, it ends in an `@`/`#` token
+that starts the text or follows Unicode whitespace. Backspace and forward delete retrigger from the same two contexts, or refresh
+an open menu in the mode it was requested in. Tab requests
 regular completion for a first-line slash command without a literal space and forced
 completion otherwise. A forced request first asks the provider whether file completion
-applies and returns without cancelling anything when it says no. An `@` or `#` token
-waits 20 ms for further typing; Tab and forced requests do not wait.
+applies and returns without cancelling anything when it says no. An automatic request
+waits 20 ms for further typing while the text before the cursor ends in an `@` token
+(a quoted `@"` token keeps waiting through whitespace) or an unquoted `#` token, either
+one starting the text or following an ASCII space or tab; every other request, including
+Tab and forced requests, starts at once.
 
 Requests run on the host's `spawn_local`, one at a time: a newer request waits for the
 running one to settle, superseded waiting requests are skipped, and the newest starts
@@ -116,20 +123,24 @@ when its signal is live, it belongs to the newest started request, and the text,
 line and byte column still equal those at its start; undo and cursor movement do not
 cancel a request, so returning to the same text and cursor keeps its result eligible.
 A provider failure leaves the menu as it was, lets the next waiting request start and
-is returned unchanged to the host. `None` and an empty list clear the menu and
-request a frame.
+is returned unchanged to the host. A current `None` or empty result clears the menu
+and requests a frame; a stale one returns without clearing.
 
 Only an explicit forced request with exactly one item applies at once; otherwise
-the items fill a menu below the editor, rendered by `SelectList` in the editor's side
-padding with a 12 to 32 cell primary column for a slash prefix, and at most the
-configured item count visible. The selection starts at the item whose value equals the prefix,
-else the first whose value starts with it (case-sensitive, values only, provider
-order kept). While the menu is open, copy and undo keep their usual meaning, then
+the items fill a menu below the editor, rendered by [`SelectList`](widgets.md#selectlist)
+in the editor's side padding; the menu takes the configured item count current when it
+is built and keeps it until the next result replaces the menu. With a non-empty prefix
+the selection starts at the item whose value equals it, else the first whose value starts
+with it (case-sensitive, values only, provider order kept); otherwise it starts on the
+first item. While the menu is open, copy and undo keep their usual meaning, then
 cancel closes it, up and down move through it, Tab applies the selection, and confirm
-applies it: for a non-slash prefix the edit ends there, and for a slash prefix input
-continues as ordinary input, so submission still follows the disabled-submit rule. An
-application is one undo snapshot and one change notification, and the hardware cursor
-marker is withheld while the menu is open.
+applies it. Afterwards a non-slash prefix ends the edit with one change notification,
+and so does a menu that an application callback closed. When the menu still
+carries a slash prefix, input continues as ordinary input: submission follows the
+disabled-submit rule (with submission disabled no notification follows the application),
+and a rebound confirm key takes its ordinary action with its own undo snapshot. Every
+application takes one undo snapshot, and the hardware cursor marker is withheld while
+the menu is open.
 
 Selection styling comes from the theme. See
 [text helpers](text.md), [keybindings](keybindings.md) and

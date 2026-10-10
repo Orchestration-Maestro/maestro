@@ -13,7 +13,6 @@ use rig::{Rig, offer};
 use std::{
     cell::{Cell, RefCell},
     future::Future,
-    io,
     pin::Pin,
     rc::Rc,
     task::{Context, Poll},
@@ -153,7 +152,7 @@ fn completion_pending_request_releases_editor() {
     );
 }
 
-/// Exercises every operation of the shared interface through its trait.
+/// Exercises the change and submit callback accessors, `set_text` and Enter through the trait.
 /// Callbacks are shared slots: an earlier alias stays callable after replacement.
 fn exercise_callbacks<E: EditorComponent<Signal = Cancellation>>(editor: &E) {
     let log = Rc::new(RefCell::new(Vec::new()));
@@ -244,7 +243,7 @@ fn editor_component_facade_shares_retained_operations() {
 }
 
 /// Becomes ready once its flag is set.
-struct Gate(Rc<Cell<bool>>, Rc<Cell<u32>>);
+struct Gate(Rc<Cell<bool>>, Rc<Cell<u32>>, Rc<()>);
 
 impl Future for Gate {
     type Output = Result<(), Box<dyn std::error::Error>>;
@@ -252,7 +251,7 @@ impl Future for Gate {
     fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Self::Output> {
         self.1.set(self.1.get() + 1);
         if self.0.get() {
-            Poll::Ready(Err(Box::new(io::Error::other("gate failed"))))
+            Poll::Ready(Err(Box::new(rig::Marked(Rc::clone(&self.2)))))
         } else {
             Poll::Pending
         }
@@ -266,9 +265,11 @@ fn completion_host_defers_and_drives_local_futures() {
     let polls = Rc::new(Cell::new(0));
     let witness = Rc::new(());
     let owned = Rc::clone(&witness);
-    let (gate_open, gate_polls) = (Rc::clone(&open), Rc::clone(&polls));
+    let token = Rc::new(());
+    let (gate_open, gate_polls, gate_token) =
+        (Rc::clone(&open), Rc::clone(&polls), Rc::clone(&token));
     runtime.spawn_local(Box::pin(async move {
-        let result = Gate(gate_open, gate_polls).await;
+        let result = Gate(gate_open, gate_polls, gate_token).await;
         drop(owned);
         result
     }));
@@ -282,10 +283,11 @@ fn completion_host_defers_and_drives_local_futures() {
     open.set(true);
     let errors = runtime.drain_futures();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].to_string(),
-        "gate failed",
-        "errors return unchanged"
+    assert!(
+        errors[0]
+            .downcast_ref::<rig::Marked>()
+            .is_some_and(|error| Rc::ptr_eq(&error.0, &token)),
+        "the very error the future returned reaches the host"
     );
     assert_eq!(runtime.futures(), 0);
     assert_eq!(
