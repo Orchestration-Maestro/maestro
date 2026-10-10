@@ -45,11 +45,11 @@
       "temperature": 1e-07,
       "input": [],
       "unknown": {
-        "negative": 0,
+        "zero": 0,
         "large": 1e+21
       }
     },
-    "expected": "{\"type\":\"response.create\",\"model\":\"m\",\"temperature\":1e-7,\"input\":[],\"unknown\":{\"negative\":0,\"large\":1e+21}}"
+    "expected": "{\"type\":\"response.create\",\"model\":\"m\",\"temperature\":1e-7,\"input\":[],\"unknown\":{\"zero\":0,\"large\":1e+21}}"
   },
   {
     "body": {

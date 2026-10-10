@@ -11,7 +11,6 @@ use serde_json::{Value, json};
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, mpsc};
-use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 use tokio_tungstenite::tungstenite::protocol::frame::Frame;
@@ -19,20 +18,13 @@ use tokio_tungstenite::tungstenite::protocol::frame::coding::{Data, OpCode};
 use tokio_tungstenite::tungstenite::{Message, handshake::derive_accept_key};
 use tokio_tungstenite::{WebSocketStream, accept_async};
 
-/// A deadlock guard, never an ordering mechanism: every ordering below is a named acknowledgement.
-const GUARD: Duration = Duration::from_secs(60);
-
 /// Run on a real-time runtime so loopback readiness is never mistaken for idleness.
 fn run_native<F: std::future::Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap()
-        .block_on(async {
-            tokio::time::timeout(GUARD, future)
-                .await
-                .expect("test deadlocked")
-        })
+        .block_on(future)
 }
 
 /// Everything one operation needs.
@@ -200,7 +192,7 @@ fn maestro_response_sessions_send_authenticated_native_handshake() {
         let token = ready.options.common.api_key.clone().unwrap();
         let outcome = operate(&ready, "req-native", &AtomicUsize::new(0)).await;
         outcome.result.unwrap();
-        let head = peer.head.recv_timeout(GUARD).unwrap();
+        let head = peer.head.recv().unwrap();
         let first_line = head.split(|byte| *byte == b'\r').next().unwrap();
         assert_eq!(first_line, b"GET /codex/responses HTTP/1.1");
         let bearer = format!("Bearer {token}");
@@ -277,6 +269,7 @@ fn maestro_response_sessions_finish_socket_before_peer_close() {
         let ready = setup(&url, |_| {}).await;
         for (terminal, status, reason) in [
             ("response.completed", "completed", "stop"),
+            ("response.done", "completed", "stop"),
             ("response.incomplete", "incomplete", "length"),
         ] {
             let (done_tx, done_rx) = oneshot::channel::<()>();
@@ -301,10 +294,10 @@ fn maestro_response_sessions_finish_socket_before_peer_close() {
     });
 }
 
-/// Send one text payload as two fragments.
-async fn send_fragmented(socket: &mut WebSocketStream<TcpStream>, text: &str) {
+/// Send one payload as two fragments of the given data kind.
+async fn send_fragmented(socket: &mut WebSocketStream<TcpStream>, text: &str, kind: Data) {
     let (head, tail) = text.as_bytes().split_at(text.len() / 2);
-    let first = Frame::message(head.to_vec(), OpCode::Data(Data::Text), false);
+    let first = Frame::message(head.to_vec(), OpCode::Data(kind), false);
     let last = Frame::message(tail.to_vec(), OpCode::Data(Data::Continue), true);
     socket.send(Message::Frame(first)).await.unwrap();
     socket.send(Message::Frame(last)).await.unwrap();
@@ -322,7 +315,7 @@ fn maestro_response_sessions_retain_socket_receive_order() {
             for event in &head[..3] {
                 socket.send(Message::text(event.clone())).await.unwrap();
             }
-            send_fragmented(&mut socket, &head[3]).await;
+            send_fragmented(&mut socket, &head[3], Data::Text).await;
             acknowledged(&mut socket).await;
             let second = json!({"type":"response.output_text.delta","delta":"B"}).to_string();
             socket
@@ -330,13 +323,16 @@ fn maestro_response_sessions_retain_socket_receive_order() {
                 .await
                 .unwrap();
             acknowledged(&mut socket).await;
-            for event in closing("AB") {
+            let third = json!({"type":"response.output_text.delta","delta":"C"}).to_string();
+            send_fragmented(&mut socket, &third, Data::Binary).await;
+            acknowledged(&mut socket).await;
+            for event in closing("ABC") {
                 socket.send(Message::text(event)).await.unwrap();
             }
         };
         let ((), outcome) = join(server, operate(&ready, "req", &AtomicUsize::new(0))).await;
         outcome.result.unwrap();
-        assert_eq!(text_of(&outcome.output), "AB");
+        assert_eq!(text_of(&outcome.output), "ABC");
         let mut deltas = Vec::new();
         while let Some(Some(event)) = outcome.events.next().now_or_never() {
             let event = serde_json::to_value(&event).unwrap();
@@ -344,7 +340,7 @@ fn maestro_response_sessions_retain_socket_receive_order() {
                 deltas.push(event["delta"].as_str().unwrap().to_owned());
             }
         }
-        assert_eq!(deltas, ["A", "B"]);
+        assert_eq!(deltas, ["A", "B", "C"]);
     });
 }
 
@@ -430,7 +426,7 @@ fn maestro_response_sessions_receive_immediate_socket_response() {
         let outcome = operate(&ready, "req", &AtomicUsize::new(0)).await;
         outcome.result.unwrap();
         assert_eq!(text_of(&outcome.output), "now");
-        peer.released.recv_timeout(GUARD).unwrap();
+        peer.released.recv().unwrap();
     });
 }
 
@@ -623,7 +619,7 @@ fn maestro_response_sessions_use_secure_socket_transport() {
         let ready = setup(&format!("https://{addr}"), |_| {}).await;
         let outcome = operate(&ready, "req", &AtomicUsize::new(0)).await;
         assert!(matches!(outcome.result, Err(CodexError::Transport(_))));
-        let head = first.recv_timeout(GUARD).unwrap();
+        let head = first.recv().unwrap();
         assert_eq!(
             head[0], 0x16,
             "a TLS handshake record, not plaintext: {head:?}"
@@ -721,55 +717,200 @@ fn maestro_response_sessions_keep_socket_hooks_single_use() {
     });
 }
 
-/// Reject every upgrade with a plain response; report each connection and its release.
-fn rejecting_peer() -> (String, mpsc::Receiver<usize>) {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-    let addr = listener.local_addr().unwrap();
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        read_head(&mut stream);
-        stream
-            .write_all(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n")
-            .unwrap();
-        let mut rest = Vec::new();
-        stream.read_to_end(&mut rest).ok();
-        listener.set_nonblocking(true).unwrap();
-        let more = usize::from(listener.accept().is_ok());
-        tx.send(1 + more).unwrap();
-    });
-    (addr.to_string(), rx)
+/// Answer the next upgrade request with a plain 403 response.
+async fn refuse(listener: &TcpListener) {
+    const REFUSAL: &[u8] = b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
+    let (stream, _) = listener.accept().await.unwrap();
+    let (mut head, mut buffer) = (Vec::new(), [0_u8; 1]);
+    while !head.ends_with(b"\r\n\r\n") {
+        stream.readable().await.unwrap();
+        match stream.try_read(&mut buffer) {
+            Ok(read) => head.extend(&buffer[..read]),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error) => panic!("{error}"),
+        }
+    }
+    let mut written = 0;
+    while written < REFUSAL.len() {
+        stream.writable().await.unwrap();
+        match stream.try_write(&REFUSAL[written..]) {
+            Ok(count) => written += count,
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error) => panic!("{error}"),
+        }
+    }
+}
+
+/// Refuse every upgrade until the operation is done, then report how many were attempted.
+async fn refused_attempts(listener: &TcpListener, done: oneshot::Receiver<()>) -> usize {
+    let (mut attempts, mut done) = (0, done);
+    loop {
+        match select(Box::pin(refuse(listener)), done).await {
+            Either::Left(((), pending)) => {
+                attempts += 1;
+                done = pending;
+            }
+            Either::Right(_) => return attempts,
+        }
+    }
 }
 
 #[test]
 fn maestro_response_sessions_reject_failed_socket_handshake() {
     run_native(async {
-        let (addr, connections) = rejecting_peer();
-        let ready = setup(&format!("http://{addr}"), |_| {}).await;
+        let (listener, url) = listen().await;
+        let ready = setup(&url, |_| {}).await;
         let starts = AtomicUsize::new(0);
-        let outcome = operate(&ready, "req", &starts).await;
+        let (done_tx, done_rx) = oneshot::channel::<()>();
+        let server = async { refused_attempts(&listener, done_rx).await };
+        let client = async {
+            let outcome = operate(&ready, "req", &starts).await;
+            done_tx.send(()).unwrap();
+            outcome
+        };
+        let (attempts, outcome) = join(server, client).await;
         assert!(matches!(outcome.result, Err(CodexError::Transport(_))));
         assert_eq!(starts.load(Ordering::SeqCst), 0);
         assert!(
             outcome.events.next().now_or_never().is_none(),
             "model event after a refused upgrade"
         );
-        assert_eq!(connections.recv_timeout(GUARD).unwrap(), 1);
+        assert_eq!(attempts, 1);
     });
 }
 
 #[test]
-fn maestro_response_sessions_bypass_common_socket_retry_settings() {
+fn maestro_response_sessions_attempt_socket_upgrade_once() {
     run_native(async {
-        let (addr, connections) = rejecting_peer();
-        let ready = setup(&format!("http://{addr}"), |options| {
+        let (listener, url) = listen().await;
+        let ready = setup(&url, |options| {
             options.common.max_retries = Some(5.0);
-            options.common.timeout_ms = Some(1.0);
             options.common.max_retry_delay_ms = Some(1.0);
         })
         .await;
-        let outcome = operate(&ready, "req", &AtomicUsize::new(0)).await;
+        let (done_tx, done_rx) = oneshot::channel::<()>();
+        let server = async { refused_attempts(&listener, done_rx).await };
+        let client = async {
+            let outcome = operate(&ready, "req", &AtomicUsize::new(0)).await;
+            done_tx.send(()).unwrap();
+            outcome
+        };
+        let (attempts, outcome) = join(server, client).await;
         assert!(matches!(outcome.result, Err(CodexError::Transport(_))));
-        assert_eq!(connections.recv_timeout(GUARD).unwrap(), 1);
+        assert_eq!(attempts, 1);
+    });
+}
+
+#[test]
+fn maestro_response_sessions_ignore_common_socket_timeout() {
+    super::sockets::block_on(async {
+        let (listener, url) = listen().await;
+        let ready = setup(&url, |options| options.common.timeout_ms = Some(1.0)).await;
+        let (gate_tx, gate_rx) = oneshot::channel::<()>();
+        let server = async {
+            let (stream, _) = listener.accept().await.unwrap();
+            gate_rx.await.unwrap();
+            let mut socket = accept_async(stream).await.unwrap();
+            socket.next().await.unwrap().unwrap();
+            socket
+                .send(Message::text(closing("")[1].clone()))
+                .await
+                .unwrap();
+        };
+        let gate = async {
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+            gate_tx.send(()).unwrap();
+        };
+        let starts = AtomicUsize::new(0);
+        let client = operate(&ready, "req", &starts);
+        let ((), (), outcome) = futures_util::future::join3(server, gate, client).await;
+        outcome.result.unwrap();
+    });
+}
+
+/// Run one operation against `base_url` and return its transport failure.
+async fn admission_failure(base_url: &str) -> crate::DiagnosticErrorInfo {
+    let ready = setup(base_url, |_| {}).await;
+    let CodexError::Transport(info) = operate(&ready, "req", &AtomicUsize::new(0))
+        .await
+        .result
+        .unwrap_err()
+    else {
+        panic!("transport failure expected");
+    };
+    info
+}
+
+#[test]
+fn maestro_response_sessions_reject_unconnectable_socket_urls() {
+    run_native(async {
+        let (listener, url) = listen().await;
+        let port = url.rsplit(':').next().unwrap();
+        for (base, message) in [
+            (
+                format!("ftp://127.0.0.1:{port}"),
+                "expected a ws: or wss: url",
+            ),
+            (format!("{url}#fragment"), "hash"),
+        ] {
+            let info = admission_failure(&base).await;
+            assert_eq!(info.name.as_deref(), Some("SyntaxError"), "{base}");
+            assert_eq!(info.message, message, "{base}");
+            assert!(
+                listener.accept().now_or_never().is_none(),
+                "connected for {base}"
+            );
+        }
+    });
+}
+
+#[test]
+fn maestro_response_sessions_keep_encoded_hash_in_socket_path() {
+    run_native(async {
+        let (url, peer) = raw_peer(closing("")[1..].to_vec());
+        let ready = setup(&format!("{url}/a%23b"), |_| {}).await;
+        operate(&ready, "req", &AtomicUsize::new(0))
+            .await
+            .result
+            .unwrap();
+        let head = peer.head.recv().unwrap();
+        let first_line = head.split(|byte| *byte == b'\r').next().unwrap();
+        assert_eq!(first_line, b"GET /a%23b/codex/responses HTTP/1.1");
+    });
+}
+
+/// Which native ending a peer produces after reading the request.
+#[derive(Clone, Copy)]
+enum Ending {
+    /// A close frame without a status.
+    NoStatus,
+    /// The connection drops without a closing handshake.
+    Vanish,
+}
+
+#[test]
+fn maestro_response_sessions_report_native_close_endings() {
+    run_native(async {
+        for (ending, code) in [(Ending::NoStatus, 1005), (Ending::Vanish, 1006)] {
+            let (listener, url) = listen().await;
+            let ready = setup(&url, |_| {}).await;
+            let server = async {
+                let mut socket = accept(&listener).await;
+                socket.next().await.unwrap().unwrap();
+                match ending {
+                    Ending::NoStatus => socket.send(Message::Close(None)).await.unwrap(),
+                    Ending::Vanish => drop(socket.into_inner()),
+                }
+            };
+            let ((), outcome) = join(server, operate(&ready, "req", &AtomicUsize::new(0))).await;
+            let CodexError::Transport(info) = outcome.result.unwrap_err() else {
+                panic!("transport failure expected");
+            };
+            assert_eq!(info.message, format!("WebSocket closed {code}"));
+            assert_eq!(
+                info.code,
+                Some(crate::DiagnosticCode::Number(f64::from(code)))
+            );
+        }
     });
 }

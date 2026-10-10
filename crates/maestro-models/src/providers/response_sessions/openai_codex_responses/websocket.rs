@@ -6,14 +6,14 @@ use super::request::{PreparedRequest, diagnostic, resolve_codex_url};
 use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{Raced, client_pairs, decode_utf8, race};
-use crate::providers::json_text::{compact_object, raw_json};
+use crate::providers::json_text::{compact_members, raw_json};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     DiagnosticErrorInfo, Model, SharedAssistantMessage,
 };
 use futures_util::{FutureExt, Sink, SinkExt, Stream, StreamExt};
 use indexmap::IndexMap;
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::Arc;
 use tokio_tungstenite::tungstenite::{
@@ -82,7 +82,8 @@ pub(super) fn close_error(code: u16, reason: &str) -> CodexError {
     })
 }
 
-/// A library failure of a live socket; a peer that vanished is an abnormal close.
+/// A library failure of a live socket; a closed socket or a reset without a closing handshake
+/// is an abnormal close, and any other failure keeps the library's wording.
 fn transport_error(error: &Error) -> CodexError {
     match error {
         Error::ConnectionClosed
@@ -222,17 +223,20 @@ pub(super) fn message_text(message: &Message) -> Option<Cow<'_, str>> {
     }
 }
 
-/// The request object: the default type first, then the prepared body, whose own members win.
+/// The request object: `type` holds the first non-index position with the body's own value
+/// when it has one; the body's other members follow. Member order and number spelling are
+/// those of [`compact_members`].
 pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
-    let mut members = Map::new();
-    members.insert("type".to_owned(), Value::from("response.create"));
-    if let Value::Object(own) = body {
-        members.extend(
-            own.iter()
-                .map(|(name, value)| (name.clone(), value.clone())),
-        );
-    }
-    compact_object(&members).map_err(|error| CodexError::Transport(diagnostic(error.to_string())))
+    let own = body.as_object();
+    let default = Value::from("response.create");
+    let kind = own.and_then(|own| own.get("type")).unwrap_or(&default);
+    let rest = own
+        .into_iter()
+        .flatten()
+        .filter(|(name, _)| *name != "type")
+        .map(|(name, value)| (name.as_str(), value));
+    compact_members(std::iter::once(("type", kind)).chain(rest))
+        .map_err(|error| CodexError::Transport(diagnostic(error.to_string())))
 }
 
 /// Send the request and reduce the response, owning every receive from the first message.
@@ -287,6 +291,22 @@ where
     result
 }
 
+/// Reject, before any connection, an endpoint with a fragment or a scheme other than `ws`/`wss`.
+fn admit(url: &str) -> Result<(), CodexError> {
+    let url =
+        Url::parse(url).map_err(|error| CodexError::Transport(diagnostic(error.to_string())))?;
+    let reason = if !matches!(url.scheme(), "ws" | "wss") {
+        "expected a ws: or wss: url"
+    } else if url.fragment().is_some() {
+        "hash"
+    } else {
+        return Ok(());
+    };
+    let mut error = diagnostic(reason);
+    error.name = Some("SyntaxError".to_owned());
+    Err(CodexError::Transport(error))
+}
+
 /// Open the authenticated upgrade, unbounded in message size, unless cancelled first.
 async fn connect(
     url: &str,
@@ -294,6 +314,7 @@ async fn connect(
     signal: Option<&Cancellation>,
 ) -> Result<WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>, CodexError> {
     let pairs = client_pairs(headers).map_err(|error| CodexError::Transport(diagnostic(error)))?;
+    admit(url)?;
     let mut request = url.into_client_request().map_err(|error| native(&error))?;
     request.headers_mut().extend(pairs);
     if signal.is_some_and(Cancellation::is_aborted) {

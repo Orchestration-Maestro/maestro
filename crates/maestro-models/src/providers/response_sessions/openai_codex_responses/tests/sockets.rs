@@ -46,7 +46,7 @@ pub(super) enum Incoming {
 pub(super) struct Scripted {
     /// Receives not yet delivered; an exhausted script ends the stream.
     incoming: VecDeque<Incoming>,
-    /// Messages written to the socket.
+    /// Messages written to the socket, including a refused request write.
     pub(super) sent: Arc<Mutex<Vec<Message>>>,
     /// The write that fails.
     fault: Fault,
@@ -97,6 +97,9 @@ impl futures_util::Sink<Message> for Scripted {
                 Fault::Request
             }
         {
+            if !closing {
+                self.sent.lock().unwrap().push(item);
+            }
             return Err(Error::Io(std::io::Error::other("send failed")));
         }
         self.sent.lock().unwrap().push(item);
@@ -204,7 +207,7 @@ pub(super) struct Run {
     pub(super) output: SharedAssistantMessage,
     /// Producer events in order, by type name.
     pub(super) events: Vec<String>,
-    /// Messages written to the socket.
+    /// Messages written to the socket, including a refused request write.
     pub(super) sent: Vec<Message>,
 }
 
@@ -349,6 +352,16 @@ struct BodyCase {
 }
 
 #[test]
+fn maestro_response_sessions_write_negative_zero_as_zero() {
+    let body = json!({"model":"m","temperature":-0.0,"input":[]});
+    assert!(body["temperature"].as_f64().unwrap().is_sign_negative());
+    assert_eq!(
+        wire_body(&body).unwrap(),
+        r#"{"type":"response.create","model":"m","temperature":0,"input":[]}"#
+    );
+}
+
+#[test]
 fn maestro_response_sessions_send_full_socket_body() {
     let text = include_str!("fixtures/socket_bodies.json");
     let rows: Vec<BodyCase> = super::fixture_rows(text, &["body"]).unwrap();
@@ -476,7 +489,7 @@ struct LifecycleCase {
     packets: Vec<Packet>,
     /// The request write fails.
     send_fails: bool,
-    /// Text of each request written.
+    /// Text of each request write attempted.
     sent: Vec<String>,
     /// Closes written, in order.
     closes: Vec<CloseCase>,
@@ -539,9 +552,7 @@ fn maestro_response_sessions_run_uncached_socket_lifecycle() {
             assert_eq!(closes, expected, "{label}");
             assert_eq!(run.starts, row.starts, "{label}");
             assert_eq!(run.events, row.events, "{label}");
-            if !row.send_fails {
-                assert_eq!(texts, row.sent, "{label}");
-            }
+            assert_eq!(texts, row.sent, "{label}");
             let snapshot = run.output.read().unwrap().clone();
             let actual = serde_json::to_value(snapshot).unwrap();
             assert_eq!(

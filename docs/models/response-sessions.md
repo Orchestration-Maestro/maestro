@@ -51,12 +51,12 @@ become `ws` and `wss`; any restriction of the native connector applies when it
 connects. The socket makes one attempt and uses none of the SSE setup retry
 settings. Browser targets exclude this operation.
 
-The request text is `type: "response.create"` followed by the retained payload;
-an edited `type` or `store` from the payload hook wins, and the hook runs once
-during preparation. Text messages are read as sent, binary messages as lenient
-UTF-8 with one leading byte-order mark removed, and empty text is ignored.
-Event selection is shared with the SSE path, but socket text is neither trimmed
-nor filtered for `[DONE]`.
+The request text is the retained payload with `type: "response.create"` as the
+default `type`; an edited `type` or `store` from the payload hook wins, and the
+hook runs once during preparation. Member order and number spelling follow the
+shared compact JSON writer. Empty text messages are ignored, and event selection
+is shared with the SSE path, but socket text is neither trimmed nor filtered for
+`[DONE]`. Binary messages are decoded by the shared HTTP text decoder.
 
 `start` is published immediately before the first selected event. A terminal
 event completes the operation without waiting for the peer to close, and later
@@ -64,5 +64,8 @@ messages are not read. Failures keep their category: server errors are API
 failures, unreadable messages are protocol failures, and a close or transport
 problem is a transport failure. A close reports `WebSocket closed` with its
 numeric code and reason, and an empty reason for code 1009 reads
-`message too big`. Cancellation reports `Request was aborted`; dropping the
-operation releases the connection.
+`message too big`. Once the endpoint resolves and the upgrade starts,
+cancellation reports `Request was aborted`; an earlier preparation or endpoint
+failure is reported instead. The connector rejects an endpoint with a fragment
+or a scheme other than `ws` and `wss` before connecting. Dropping the operation
+releases the connection.

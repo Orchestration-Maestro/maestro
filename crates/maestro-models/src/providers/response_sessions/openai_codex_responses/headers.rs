@@ -68,10 +68,11 @@ pub(super) fn build_web_socket_headers(
     prepared: &IndexMap<String, String>,
     request_id: &str,
 ) -> Result<IndexMap<String, String>, DiagnosticErrorInfo> {
-    let mut headers = prepared.clone();
-    for name in ["accept", "content-type", "openai-beta"] {
-        headers.shift_remove(name);
-    }
+    let mut headers: IndexMap<String, String> = prepared
+        .iter()
+        .filter(|(name, _)| !matches!(name.as_str(), "accept" | "content-type" | "openai-beta"))
+        .map(|(name, value)| (name.clone(), value.clone()))
+        .collect();
     headers.extend([
         (
             "openai-beta".to_owned(),
