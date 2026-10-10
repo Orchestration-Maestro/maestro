@@ -71,6 +71,17 @@ fn match_pattern(tokens: &[Token], text: &str) -> bool {
     {
         return false;
     }
+    if tokens.first() == Some(&Token::Star)
+        && let Some(suffix) = tokens[1..]
+            .iter()
+            .map(|token| match token {
+                Token::Literal(c) => Some(*c),
+                Token::Star | Token::Question => None,
+            })
+            .collect::<Option<String>>()
+    {
+        return text.ends_with(&suffix);
+    }
     let mut reachable = BTreeSet::from([0]);
     close_stars(tokens, &mut reachable);
     for c in text.chars() {

@@ -199,6 +199,15 @@ fn close_globstars(parts: &[Part], states: &mut BTreeSet<usize>) {
 
 /// Walks finite component-position states without a recursion cutoff.
 fn match_one(file: &[&str], parts: &[Part]) -> bool {
+    let mut globstars = parts
+        .iter()
+        .enumerate()
+        .filter_map(|(i, part)| matches!(part, Part::Globstar).then_some(i));
+    if let Some(index) = globstars.next()
+        && globstars.next().is_none()
+    {
+        return match_single_globstar(file, parts, index);
+    }
     let mut states = BTreeSet::from([0]);
     close_globstars(parts, &mut states);
     for (position, text) in file.iter().enumerate() {
@@ -213,6 +222,28 @@ fn match_one(file: &[&str], parts: &[Part]) -> bool {
         states = next;
     }
     states.contains(&parts.len())
+}
+
+/// Anchors the head and tail before checking the globstar's middle once.
+fn match_single_globstar(file: &[&str], parts: &[Part], index: usize) -> bool {
+    let tail = &parts[index + 1..];
+    if index + tail.len() > file.len() || !match_one(&file[..index], &parts[..index]) {
+        return false;
+    }
+    let mut tail_start = file.len() - tail.len();
+    if !tail.is_empty() && !match_one(&file[tail_start..], tail) {
+        if file.last() != Some(&"") || tail_start == index {
+            return false;
+        }
+        tail_start -= 1;
+        if !match_one(&file[tail_start..], tail) {
+            return false;
+        }
+    }
+    (tail_start > index || !tail.is_empty())
+        && file[index..tail_start]
+            .iter()
+            .all(|text| !text.starts_with('.'))
 }
 
 /// Consumes a component at an active pattern position.
