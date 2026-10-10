@@ -1,4 +1,5 @@
 //! Typed model selection and ordered descriptor composition.
+use indexmap::IndexMap;
 use maestro_models::{
     Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel, ThinkingLevelMap,
 };
@@ -17,11 +18,13 @@ pub(super) struct ProviderConfig {
     pub base_url: Option<String>,
     /// Protocol default.
     pub api: Option<String>,
-    /// Presence of a configured key, used only by additional validation.
-    #[serde(skip)]
-    pub api_key: bool,
-    /// Header presence, without retaining unconsumed values.
-    pub headers: Option<serde::de::IgnoredAny>,
+    /// Authored request key source.
+    pub api_key: Option<String>,
+    /// Authored request header sources.
+    pub headers: Option<IndexMap<String, String>>,
+    /// Whether requests synthesize an Authorization header.
+    #[serde(default)]
+    pub auth_header: bool,
     /// Open compatibility defaults.
     pub compat: Option<ModelCompat>,
     /// Authored custom definitions.
@@ -35,6 +38,8 @@ pub(super) struct ProviderConfig {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct ModelDefinition {
+    /// Authored request header sources.
+    headers: Option<IndexMap<String, String>>,
     /// Exact model identifier.
     pub id: String,
     /// Model-specific protocol.
@@ -63,6 +68,8 @@ pub(super) struct ModelDefinition {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct ModelOverride {
+    /// Authored request header sources.
+    pub headers: Option<IndexMap<String, String>>,
     /// Display name.
     name: Option<String>,
     /// Reasoning capability.
@@ -138,28 +145,33 @@ pub(super) fn providers(value: Value) -> Result<Vec<(String, ProviderConfig)>, s
         Some(Value::Object(providers)) => providers.into_iter().collect(),
         _ => Vec::new(),
     };
-    entries.sort_by_key(|(key, _)| {
-        key.parse::<u32>()
-            .ok()
-            .filter(|n| *n < u32::MAX && n.to_string() == *key)
-            .map_or((1, 0), |n| (0, n))
-    });
+    entries.sort_by_key(|(key, _)| enumeration_key(key));
     entries
         .into_iter()
-        .map(|(key, value)| {
-            let api_key = value
-                .as_object()
-                .is_some_and(|map| map.contains_key("apiKey"));
-            let mut config: ProviderConfig = serde_json::from_value(value)?;
-            config.api_key = api_key;
-            Ok((key, config))
-        })
+        .map(|(key, value)| serde_json::from_value(value).map(|config| (key, config)))
         .collect()
+}
+/// Canonical numeric member ordering followed by stable authored order.
+pub(super) fn enumeration_key(key: &str) -> (u8, u32) {
+    key.parse::<u32>()
+        .ok()
+        .filter(|n| *n < u32::MAX && n.to_string() == key)
+        .map_or((1, 0), |n| (0, n))
+}
+/// Order a checked header record at its retained boundary.
+pub(super) fn ordered(
+    headers: Option<IndexMap<String, String>>,
+) -> Option<IndexMap<String, String>> {
+    headers.map(|mut headers| {
+        headers.sort_by_cached_key(|key, _| enumeration_key(key));
+        headers
+    })
 }
 /// Apply custom defaults and replace exact identities without moving their first slot.
 pub(super) fn compose(
     mut models: Vec<Model>,
     mut providers: Vec<(String, ProviderConfig)>,
+    headers: &mut HashMap<(String, String), IndexMap<String, String>>,
 ) -> Vec<Model> {
     let mut defaults = HashMap::new();
     for model in &models {
@@ -190,12 +202,18 @@ pub(super) fn compose(
         .map(|(i, m)| ((m.provider.clone(), m.id.clone()), i))
         .collect();
     for (provider, mut config) in providers {
-        for definition in std::mem::take(&mut config.models) {
+        for mut definition in std::mem::take(&mut config.models) {
+            let request_headers = ordered(definition.headers.take());
             let Some(model) = custom(&provider, &config, definition, defaults.get(&provider))
             else {
                 continue;
             };
             let key = (model.provider.clone(), model.id.clone());
+            if let Some(values) = request_headers.filter(|h| !h.is_empty()) {
+                headers.insert(key.clone(), values);
+            } else {
+                headers.remove(&key);
+            }
             if let Some(&position) = positions.get(&key) {
                 models[position] = model;
             } else {
@@ -239,6 +257,7 @@ fn custom(
     apply(
         &mut model,
         ModelOverride {
+            headers: None,
             name: definition.name,
             reasoning: definition.reasoning,
             thinking_level_map: definition.thinking_level_map,

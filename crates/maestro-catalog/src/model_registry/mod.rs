@@ -1,8 +1,14 @@
 //! Published local model descriptors and file operations.
+mod auth_metadata;
 mod composition;
 mod loading;
+mod request_auth;
+use indexmap::IndexMap;
 use maestro_credentials::{AuthCredential, AuthStorage};
 use maestro_models::{Model, OAuthError, get_models, get_oauth_providers, get_providers};
+use request_auth::ProviderRequestConfig;
+pub use request_auth::ResolvedRequestAuth;
+use std::collections::HashMap;
 use std::sync::{Arc, PoisonError, RwLock};
 
 /// Two synchronous effects used to load a model file.
@@ -41,6 +47,10 @@ pub struct ModelRegistry {
     models: ModelList,
     /// Current file failure, separate from OAuth failures.
     load_error: Option<String>,
+    /// Request sources keyed by exact provider identity.
+    provider_configs: HashMap<String, ProviderRequestConfig>,
+    /// Model header sources keyed by both identity components.
+    model_headers: HashMap<(String, String), IndexMap<String, String>>,
 }
 impl ModelRegistry {
     /// Load immediately from the explicit native file path.
@@ -76,6 +86,8 @@ impl ModelRegistry {
             operations: Box::new(operations),
             models: Arc::default(),
             load_error: None,
+            provider_configs: HashMap::new(),
+            model_headers: HashMap::new(),
         };
         registry.refresh()?;
         Ok(registry)
@@ -91,10 +103,15 @@ impl ModelRegistry {
     /// Returns a transformation failure without replacing the published list.
     pub fn refresh(&mut self) -> Result<(), OAuthError> {
         self.load_error = None;
+        self.provider_configs.clear();
+        self.model_headers.clear();
         let config = loading::load(&self.path, self.operations.as_ref());
         let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
         match config {
-            Ok(Some(providers)) => models = composition::compose(models, providers),
+            Ok(Some(mut providers)) => {
+                self.retain_request_sources(&mut providers);
+                models = composition::compose(models, providers, &mut self.model_headers);
+            }
             Ok(None) => {}
             Err(error) => self.load_error = Some(error),
         }
@@ -110,6 +127,33 @@ impl ModelRegistry {
                 .collect(),
         ));
         Ok(())
+    }
+    /// Move checked request sources before descriptor composition.
+    fn retain_request_sources(&mut self, providers: &mut [(String, composition::ProviderConfig)]) {
+        for (provider, config) in providers {
+            self.provider_configs.insert(
+                provider.clone(),
+                ProviderRequestConfig {
+                    api_key: config.api_key.take(),
+                    headers: composition::ordered(config.headers.take()),
+                    auth_header: config.auth_header,
+                },
+            );
+            self.retain_model_headers(provider, &mut config.model_overrides);
+        }
+    }
+    /// Move overrides before custom definitions replace or remove their sources.
+    fn retain_model_headers(
+        &mut self,
+        provider: &str,
+        overrides: &mut HashMap<String, composition::ModelOverride>,
+    ) {
+        for (id, fields) in overrides {
+            if let Some(headers) = composition::ordered(fields.headers.take()) {
+                self.model_headers
+                    .insert((provider.to_owned(), id.clone()), headers);
+            }
+        }
     }
     /// Borrow the current file-load diagnostic.
     #[must_use]
@@ -144,4 +188,13 @@ impl ModelFileOperations for MemoryOperations {
     fn read_to_string(&self, _: &str) -> std::io::Result<String> {
         Ok(String::new())
     }
+}
+
+/// Copy only the provider operand before calling authentication effects.
+fn read_provider(model: &Arc<RwLock<Model>>) -> String {
+    model
+        .read()
+        .unwrap_or_else(PoisonError::into_inner)
+        .provider
+        .clone()
 }

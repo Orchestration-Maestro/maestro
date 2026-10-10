@@ -570,3 +570,10 @@ and `sync`. Tokio is MIT and num-traits is MIT OR Apache-2.0. Notifications and
 one-shot timers reuse `maestro-watch`; no notification library is duplicated in
 the application. Other targets supply `FooterOperations` without these native
 process/stat edges.
+
+## Approved catalog request libraries
+
+`maestro-catalog` uses `indexmap =2.14.2` with defaults and `serde` for ordered
+request header sources. Native tests use Tokio `=1.53.2`, defaults off, `rt` and
+`sync`. These reuse the resolved workspace packages; internal dependencies remain
+models and credentials.

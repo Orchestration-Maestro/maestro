@@ -11,5 +11,10 @@ maestro-credentials = { path = "../maestro-credentials" }
 serde.workspace = true
 serde_json.workspace = true
 
+indexmap = { version = "=2.14.2", features = ["serde"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync"] }
+
 [lints]
 workspace = true
