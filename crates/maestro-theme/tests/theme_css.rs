@@ -227,7 +227,6 @@ fn theme_export_selection_uses_explicit_current_then_default() {
     assert!(ops.read("COLORFGBG"));
 
     assert_eq!(page(Some("one")), Some("#010101".to_owned()));
-    ops.env_reads.borrow_mut().clear();
     state.init_theme(Some("one"), None).unwrap();
     assert_eq!(page(None), Some("#010101".to_owned()));
     assert_eq!(page(Some("two")), Some("#020202".to_owned()));
@@ -240,7 +239,6 @@ fn theme_export_selection_uses_explicit_current_then_default() {
     let empty = state.get_resolved_theme_colors(Some("")).unwrap_err();
     assert_eq!(empty.to_string(), "Theme not found: ");
     assert_eq!(page(Some("")), None);
-    assert!(!ops.read("COLORFGBG"));
 
     state
         .set_theme_instance(state.get_theme_by_name("one").unwrap())
@@ -248,6 +246,30 @@ fn theme_export_selection_uses_explicit_current_then_default() {
     let memory = state.get_resolved_theme_colors(None).unwrap_err();
     assert_eq!(memory.to_string(), "Theme not found: <in-memory>");
     assert_eq!(page(None), None);
+}
+
+#[test]
+fn theme_export_with_a_name_never_reads_the_terminal_background() {
+    let (_scratch, ops, state) = custom(
+        "explicit-only",
+        &[
+            ("one", with_page_bg("one", "#010101")),
+            ("two", with_page_bg("two", "#020202")),
+        ],
+    );
+    ops.set("COLORFGBG", "0;8");
+    assert_eq!(
+        state.get_theme_export_colors(Some("one")).page_bg,
+        Some("#010101".to_owned())
+    );
+    state.get_resolved_theme_colors(Some("two")).unwrap();
+    state.get_resolved_theme_colors(Some("")).unwrap_err();
+    state.init_theme(Some("one"), None).unwrap();
+    assert_eq!(
+        state.get_theme_export_colors(None).page_bg,
+        Some("#010101".to_owned())
+    );
+    assert!(!ops.read("COLORFGBG"));
 }
 
 #[test]
@@ -287,6 +309,30 @@ fn maestro_theme_exports_resolved_alias_colors() {
     assert_eq!(colors.page_bg, Some("#abcdef".to_owned()));
     assert_eq!(colors.card_bg, Some("#005f87".to_owned()));
     assert_eq!(colors.info_bg, None);
+
+    json["vars"]["slot"] = 24.into();
+    json["vars"]["slotAlias"] = "slot".into();
+    json["vars"]["zero"] = 0.into();
+    json["vars"]["last"] = 255.into();
+    json["export"] = json!({ "pageBg": "slotAlias", "cardBg": "zero", "infoBg": "last" });
+    let colors = exported(&json);
+    assert_eq!(colors.page_bg, Some("#005f87".to_owned()));
+    assert_eq!(colors.card_bg, Some("#000000".to_owned()));
+    assert_eq!(colors.info_bg, Some("#eeeeee".to_owned()));
+}
+
+#[test]
+fn theme_export_recursive_alias_yields_no_colors_while_resolution_reports_it() {
+    let mut json = custom_json("loop", "#010203");
+    json["vars"]["a"] = "b".into();
+    json["vars"]["b"] = "a".into();
+    json["export"] = json!({ "pageBg": "#112233", "cardBg": "a" });
+    assert_eq!(exported(&json), ThemeExportColors::default());
+
+    json["colors"]["accent"] = "a".into();
+    let (_scratch, _ops, state) = custom("loop-colors", &[("loop", json)]);
+    let error = state.get_resolved_theme_colors(Some("loop")).unwrap_err();
+    assert_eq!(error.to_string(), "Circular variable reference detected: a");
 }
 
 #[test]
@@ -304,7 +350,9 @@ fn theme_export_optional_fields_omit_empty_and_missing_values() {
         for (value, expected) in [
             (json!("#AbCdEf"), Some("#AbCdEf")),
             (json!(""), None),
+            (json!(0), Some("#000000")),
             (json!(24), Some("#005f87")),
+            (json!(255), Some("#eeeeee")),
             (json!("accent"), Some("#D9A066")),
         ] {
             let colors = export_field(field, &value);
