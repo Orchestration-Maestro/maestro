@@ -897,10 +897,7 @@ fn maestro_response_sessions_use_native_http() {
                 .into_bytes()
         );
         for (name, value) in &prepared.headers {
-            assert!(
-                headers.contains(&format!("\r\n{name}: {value}\r\n")),
-                "missing {name}"
-            );
+            assert!(headers.contains(&format!("\r\n{name}: {value}\r\n")));
         }
         assert_eq!(output_value(&output)["content"][0]["text"], "native Ω🧭");
         assert_eq!(output.read().unwrap().stop_reason, crate::StopReason::Stop);
