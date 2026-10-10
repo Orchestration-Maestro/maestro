@@ -205,6 +205,30 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn dangling_link_chain_creates_final_target_and_existing_file_is_kept() {
+        let dir = TempDir::new("chain");
+        let target = dir.path("final.json");
+        let middle = dir.path("middle.json");
+        let link = dir.path("auth.json");
+        std::os::unix::fs::symlink("final.json", &middle).unwrap();
+        std::os::unix::fs::symlink("middle.json", &link).unwrap();
+        let storage = AuthStorage::create(&link);
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "{}");
+        assert_eq!(mode(&target), 0o600);
+        assert!(storage.drain_errors().is_empty());
+
+        let winner = dir.path("winner.json");
+        std::fs::write(&winner, pretty(&[("a", "1")])).unwrap();
+        let storage = AuthStorage::create(&winner);
+        assert_eq!(storage.list(), ["a"]);
+        assert_eq!(
+            std::fs::read_to_string(&winner).unwrap(),
+            pretty(&[("a", "1")])
+        );
+    }
+
     #[test]
     fn callback_read_and_write_failures_release_the_lock() {
         let dir = TempDir::new("release");

@@ -53,9 +53,7 @@ impl FileAuthStorageBackend {
     /// Initialize a missing file (following a symlink), then read it, under the held lock.
     fn read(&self) -> io::Result<Option<String>> {
         let path = Path::new(&self.auth_path);
-        if !path.exists() {
-            write(path, "{}")?;
-        }
+        initialize(path)?;
         match fs::read(path) {
             Ok(bytes) => Ok(Some(String::from_utf8_lossy(&bytes).into_owned())),
             Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
@@ -78,6 +76,36 @@ fn retry_contended(
         }
     }
     Err(Box::new(TryLockError::WouldBlock))
+}
+
+/// Create the file with `{}` only if absent, following dangling links; an existing file is never opened for writing.
+fn initialize(path: &Path) -> io::Result<()> {
+    let mut candidate = path.to_path_buf();
+    loop {
+        match OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&candidate)
+        {
+            Ok(mut file) => {
+                io::Write::write_all(&mut file, b"{}")?;
+                #[cfg(unix)]
+                file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?;
+                return Ok(());
+            }
+            Err(error) if error.kind() == ErrorKind::AlreadyExists => {
+                match fs::metadata(&candidate) {
+                    Err(missing) if missing.kind() == ErrorKind::NotFound => {
+                        let link = fs::read_link(&candidate)?;
+                        candidate = candidate.parent().unwrap_or(Path::new("")).join(link);
+                    }
+                    Err(other) => return Err(other),
+                    Ok(_) => return Ok(()),
+                }
+            }
+            Err(error) => return Err(error),
+        }
+    }
 }
 
 /// Replace the text, restricting it to its owner on Unix.

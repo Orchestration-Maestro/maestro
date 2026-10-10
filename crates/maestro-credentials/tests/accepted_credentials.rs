@@ -216,10 +216,25 @@ mod tests {
         std::fs::create_dir(&path).unwrap();
         storage.reload();
         assert_eq!(storage.list(), ["anthropic"]);
+        assert_eq!(storage.get("anthropic"), Some(api_key("a")));
         let errors = storage.drain_errors();
         assert_eq!(errors.len(), 2);
         assert!(errors[0].downcast_ref::<serde_json::Error>().is_some());
         assert!(errors[1].downcast_ref::<std::io::Error>().is_some());
+        assert!(storage.drain_errors().is_empty());
+    }
+
+    #[test]
+    fn newline_terminated_text_loads_untouched_and_rewrites_without_newline() {
+        let dir = TempDir::new("newline");
+        let path = dir.path("auth.json");
+        let text = format!("{}\n", pretty_keys(&[("a", "1")]));
+        write_file(&path, &text);
+        let storage = AuthStorage::create(&path);
+        assert_eq!(storage.list(), ["a"]);
+        assert_eq!(read_file(&path), text);
+        storage.set("b", api_key("2"));
+        assert_eq!(read_file(&path), pretty_keys(&[("a", "1"), ("b", "2")]));
         assert!(storage.drain_errors().is_empty());
     }
 
@@ -253,6 +268,7 @@ mod tests {
         let dir = TempDir::new("decode");
         let path = dir.path("auth.json");
         let source = r#"{
+  "dup": {"type": "api_key", "key": "first"},
   "other": {"type": "future", "value": 1},
   "apiNoKey": {"type": "api_key"},
   "apiNumberKey": {"type": "api_key", "key": 5},
@@ -264,7 +280,6 @@ mod tests {
   "zero": 0,
   "apiExtra": {"type": "api_key", "key": "k", "note": "kept"},
   "o": {"type": "oauth", "refresh": "r", "access": "a", "expires": 1730000000000, "enterpriseUrl": "u", "nested": {"b": 1, "a": [2]}},
-  "dup": {"type": "api_key", "key": "first"},
   "dup": {"type": "api_key", "key": "last"}
 }"#;
         write_file(&path, source);
@@ -292,7 +307,7 @@ mod tests {
         );
         assert_eq!(
             storage.get_all().keys().collect::<Vec<_>>(),
-            ["apiExtra", "o", "dup"]
+            ["dup", "apiExtra", "o"]
         );
         storage.set("new", api_key("n"));
         let rewritten: Value = serde_json::from_str(&read_file(&path)).unwrap();
@@ -307,7 +322,7 @@ mod tests {
                 "\"nested\": {\n      \"b\": 1,\n      \"a\": [\n        2\n      ]\n    }"
             )
         );
-        assert!(text.find("\"dup\"").unwrap() > text.find("\"o\"").unwrap());
+        assert!(text.find("\"dup\"").unwrap() < text.find("\"other\"").unwrap());
     }
 
     /// Fallback resolver that counts calls and answers `key`.

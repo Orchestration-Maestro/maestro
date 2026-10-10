@@ -26,7 +26,7 @@ may have changed. `get` and `get_all` return
 typed copies of complete `api_key` and `oauth` objects only; `list` and `has` cover
 every stored record, whatever its shape, and rewrites keep records that do not
 decode. Expiry times of typed credentials you supply are written without a fraction when
-whole; preserved stored records keep their original number spelling.
+whole; preserved stored records keep their numeric values, written in the JSON serializer's spelling (for example `1e3` becomes `1000.0`), not their original spelling.
 
 `has_auth` is true for a runtime override (even empty), a stored record, a usable
 provider environment value or a nonempty fallback key. `get_auth_status` reports
