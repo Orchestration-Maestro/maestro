@@ -36,7 +36,8 @@ pub use providers::messages::anthropic::{
     AnthropicThinkingDisplay, stream_anthropic, stream_simple_anthropic,
 };
 pub use providers::reasoning::mistral::{
-    MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice,
+    MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
+    stream_simple_mistral,
 };
 pub use providers::responses::azure_openai_responses::AzureOpenAIResponsesOptions;
 pub use providers::responses::openai_responses::OpenAIResponsesOptions;

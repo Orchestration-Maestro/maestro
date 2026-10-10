@@ -257,21 +257,21 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Object<T> {
 }
 
 /// Preserve absence separately from admitted null.
-fn nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+pub(super) fn nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<Nullable<T>>, D::Error> {
     Nullable::<T>::deserialize(deserializer).map(Some)
 }
 
 /// Decode an optional field that does not admit null.
-fn optional<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+pub(super) fn optional<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error> {
     T::deserialize(deserializer).map(Some)
 }
 
 /// Require a nullable field to be present.
-fn required_nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+pub(super) fn required_nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error> {
     Option::<T>::deserialize(deserializer)
@@ -280,7 +280,13 @@ fn required_nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
 /// An integral number in the safe integer interval.
 #[derive(Serialize)]
 #[serde(transparent)]
-struct SafeInteger(Number);
+pub(super) struct SafeInteger(pub(super) Number);
+
+impl Default for SafeInteger {
+    fn default() -> Self {
+        Self(Number::from(0))
+    }
+}
 
 impl<'de> Deserialize<'de> for SafeInteger {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -324,7 +330,7 @@ fn optional_literal<'de, D: Deserializer<'de>, T: serde::de::DeserializeOwned>(
 /// The value domain of a nullable field, separate from its presence.
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
-enum Nullable<T> {
+pub(super) enum Nullable<T> {
     /// Explicit JSON null.
     Null,
     /// Typed field value.
