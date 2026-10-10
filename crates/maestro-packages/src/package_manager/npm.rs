@@ -59,23 +59,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if self.offline() {
             return false;
         }
-        let manifest = join(&[path, "package.json"]);
-        if !self.operations.exists(&manifest) {
-            return false;
-        }
-        let installed = self
-            .operations
-            .read_file(&manifest)
-            .ok()
-            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
-            .and_then(|value| {
-                value
-                    .as_object()?
-                    .get("version")?
-                    .as_str()
-                    .map(str::to_owned)
-            })
-            .filter(|version| !version.is_empty());
+        let installed = self.installed_npm_version(path);
         let Some(installed) = installed else {
             return false;
         };
@@ -104,5 +88,98 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             return Err(io::Error::other("Empty response from npm view"));
         }
         serde_json::from_str(raw).map_err(io::Error::other)
+    }
+}
+
+impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Reads a nonempty string version, suppressing file and manifest failures.
+    fn installed_npm_version(&self, path: &str) -> Option<String> {
+        let manifest = join(&[path, "package.json"]);
+        if !self.operations.exists(&manifest) {
+            return None;
+        }
+        self.operations
+            .read_file(&manifest)
+            .ok()
+            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+            .and_then(|value| {
+                value
+                    .as_object()?
+                    .get("version")?
+                    .as_str()
+                    .map(str::to_owned)
+            })
+            .filter(|version| !version.is_empty())
+    }
+    /// Unknown versions and failed latest probes require an update.
+    pub(super) async fn should_update_npm(
+        &self,
+        row: &super::update::ConfiguredUpdateSource,
+    ) -> io::Result<bool> {
+        let installed = self
+            .installed_path(&row.source, row.scope)?
+            .and_then(|path| self.installed_npm_version(&path));
+        let Some(installed) = installed else {
+            return Ok(true);
+        };
+        let super::sources::Source::Npm { name, .. } = super::sources::parse(&row.source) else {
+            return Ok(false);
+        };
+        Ok(self
+            .latest_npm_version(name)
+            .await
+            .map_or(true, |latest| latest != installed))
+    }
+    /// Reports one grouped update and installs ordered latest specs in its scope.
+    pub(super) async fn update_npm_batch(
+        &self,
+        rows: &[super::update::ConfiguredUpdateSource],
+        scope: InstalledSourceScope,
+    ) -> io::Result<()> {
+        let label = if rows.len() == 1 {
+            rows[0].source.clone()
+        } else {
+            format!(
+                "{} npm packages",
+                if scope == InstalledSourceScope::User {
+                    "user"
+                } else {
+                    "project"
+                }
+            )
+        };
+        let specs: Vec<_> = rows
+            .iter()
+            .filter_map(|row| match super::sources::parse(&row.source) {
+                super::sources::Source::Npm { name, .. } => Some(format!("{name}@latest")),
+                _ => None,
+            })
+            .collect();
+        self.with_progress(
+            super::ProgressAction::Update,
+            &label,
+            format!("Updating {label}..."),
+            self.install_npm_batch(&specs, scope),
+        )
+        .await
+    }
+    /// Shares project preparation and live command selection with acquisition.
+    async fn install_npm_batch(
+        &self,
+        specs: &[String],
+        scope: InstalledSourceScope,
+    ) -> io::Result<()> {
+        let mut args = vec!["install"];
+        let root = join(&[&self.base(scope), "npm"]);
+        if scope == InstalledSourceScope::User {
+            args.push("-g");
+        }
+        args.extend(specs.iter().map(String::as_str));
+        if scope == InstalledSourceScope::Project {
+            self.ensure_file(&root, ".gitignore", GITIGNORE)?;
+            self.ensure_file(&root, "package.json", PACKAGE_JSON)?;
+            args.extend(["--prefix", &root]);
+        }
+        self.run_npm(&args, None).await
     }
 }

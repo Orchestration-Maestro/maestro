@@ -52,7 +52,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             .ok_or_else(|| io::Error::other("Failed to determine remote HEAD"))
     }
     /// Supplies the common Git network capture operands at the consuming call.
-    async fn git_capture(
+    pub(super) async fn git_capture(
         &self,
         path: &str,
         args: &[&str],

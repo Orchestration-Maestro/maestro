@@ -410,3 +410,11 @@ fn stopped_native_runtime_rejects_spawn_without_a_cycle() {
         "package runtime is no longer available"
     );
 }
+
+#[test]
+fn captured_command_reassembles_fragmented_utf8() {
+    assert_eq!(
+        shell(r"printf '\342'; printf '\202'; printf '\254'", None).unwrap(),
+        "€"
+    );
+}

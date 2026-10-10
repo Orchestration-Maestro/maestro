@@ -29,15 +29,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             let checkout = ["checkout".to_owned(), reference.clone()];
             self.run_command("git", &checkout, Some(&target)).await?;
         }
-        if self.operations.exists(&join(&[&target, "package.json"])) {
-            let args: &[&str] = if self.npm_command_configured()? {
-                &["install"]
-            } else {
-                &["install", "--omit=dev"]
-            };
-            self.run_npm(args, Some(&target)).await?;
-        }
-        Ok(())
+        self.install_git_dependencies(&target).await
     }
     /// Removes the repository directory, then the empty parents below the Git root.
     pub(super) fn remove_git(
@@ -90,4 +82,98 @@ fn is_inside(root: &str, path: &str) -> bool {
         },
     );
     !path.is_empty() && !is_absolute(&path) && path.split(SEP).next() != Some("..")
+}
+
+/// The local ref and targeted fetch operands selected before refreshing.
+struct GitUpdateTarget {
+    /// The ref used for post-fetch comparison and reset.
+    reference: &'static str,
+    /// The refspec updated by the fetch.
+    refspec: String,
+}
+impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Installs dependencies only when the checkout has a manifest.
+    async fn install_git_dependencies(&self, target: &str) -> io::Result<()> {
+        if self.operations.exists(&join(&[target, "package.json"])) {
+            let args: &[&str] = if self.npm_command_configured()? {
+                &["install"]
+            } else {
+                &["install", "--omit=dev"]
+            };
+            self.run_npm(args, Some(target)).await?;
+        }
+        Ok(())
+    }
+    /// Retains the fallible pre-fetch probe because its failure selects fallback.
+    async fn get_local_git_update_target(&self, path: &str) -> io::Result<GitUpdateTarget> {
+        let upstream = async {
+            let text = self
+                .git_capture(path, &["rev-parse", "--abbrev-ref", "@{upstream}"], &[])
+                .await?;
+            let branch = crate::trim(&text)
+                .strip_prefix("origin/")
+                .filter(|branch| !branch.is_empty())
+                .ok_or_else(|| io::Error::other("Unsupported upstream remote"))?;
+            self.git_capture(path, &["rev-parse", "@{upstream}"], &[])
+                .await?;
+            Ok::<_, io::Error>(GitUpdateTarget {
+                reference: "@{upstream}",
+                refspec: format!("+refs/heads/{branch}:refs/remotes/origin/{branch}"),
+            })
+        }
+        .await;
+        if let Ok(target) = upstream {
+            return Ok(target);
+        }
+        let args = ["remote", "set-head", "origin", "-a"].map(str::to_owned);
+        let _ = self.run_command("git", &args, Some(path)).await;
+        self.git_capture(path, &["rev-parse", "origin/HEAD"], &[])
+            .await?;
+        let text = self
+            .git_capture(path, &["symbolic-ref", "refs/remotes/origin/HEAD"], &[])
+            .await
+            .unwrap_or_default();
+        let trimmed = crate::trim(&text);
+        let branch = trimmed
+            .strip_prefix("refs/remotes/origin/")
+            .unwrap_or(trimmed);
+        Ok(GitUpdateTarget {
+            reference: "origin/HEAD",
+            refspec: if branch.is_empty() {
+                "+HEAD:refs/remotes/origin/HEAD".into()
+            } else {
+                format!("+refs/heads/{branch}:refs/remotes/origin/{branch}")
+            },
+        })
+    }
+    /// Fetches the selected ref and replaces changed contents without merging.
+    pub(super) async fn update_git(
+        &self,
+        git: &GitSource,
+        scope: InstalledSourceScope,
+    ) -> io::Result<()> {
+        let (_, path) = self.git_locations(git, scope);
+        if !self.operations.exists(&path) {
+            return self.install_git(git, scope).await;
+        }
+        let target = self.get_local_git_update_target(&path).await?;
+        let args = ["fetch", "--prune", "--no-tags", "origin", &target.refspec].map(str::to_owned);
+        self.run_command("git", &args, Some(&path)).await?;
+        let local = self.git_capture(&path, &["rev-parse", "HEAD"], &[]).await?;
+        let refreshed = self
+            .git_capture(&path, &["rev-parse", target.reference], &[])
+            .await?;
+        if crate::trim(&local) == crate::trim(&refreshed) {
+            return Ok(());
+        }
+        self.run_command(
+            "git",
+            &["reset", "--hard", target.reference].map(str::to_owned),
+            Some(&path),
+        )
+        .await?;
+        self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(&path))
+            .await?;
+        self.install_git_dependencies(&path).await
+    }
 }
