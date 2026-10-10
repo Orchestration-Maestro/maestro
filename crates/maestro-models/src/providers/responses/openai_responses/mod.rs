@@ -23,9 +23,9 @@ use crate::providers::http::{
 use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Cancellation, Context,
-    DiagnosticErrorInfo, DoneReason, Model, ModelCompat, ModelThinkingLevel,
-    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel,
-    build_base_options, clamp_thinking_level, get_env_api_key,
+    DiagnosticErrorInfo, DoneReason, Model, ModelThinkingLevel, SharedAssistantMessage,
+    SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, build_base_options,
+    clamp_thinking_level, get_env_api_key,
 };
 use futures_util::stream;
 use indexmap::IndexMap;
@@ -235,12 +235,14 @@ impl Request<'_> {
             .filter(|_| self.retention != CacheRetention::None)
     }
 
-    /// Compatibility fields supplied by this model.
-    fn compat(&self) -> Option<&crate::OpenAIResponsesCompat> {
-        match &self.model.compat {
-            Some(ModelCompat::OpenAIResponses(compat)) => Some(compat),
-            _ => None,
-        }
+    /// Resolve a nullish-enabled response option at its consuming branch.
+    fn compat(&self, name: &str) -> bool {
+        self.model
+            .compat
+            .as_ref()
+            .and_then(|compat| compat.0.get(name))
+            .filter(|value| !value.is_null())
+            .is_none_or(enabled)
     }
 
     /// Ordered case-insensitive header layers with gateway authorization applied last.
@@ -263,11 +265,7 @@ impl Request<'_> {
             );
         }
         if let Some(session) = self.session().filter(|id| !id.is_empty()) {
-            if self
-                .compat()
-                .and_then(|c| c.send_session_id_header)
-                .unwrap_or(true)
-            {
+            if self.compat("sendSessionIdHeader") {
                 headers.insert("session_id".to_owned(), session.to_owned());
             }
             headers.insert("x-client-request-id".to_owned(), session.to_owned());
@@ -308,11 +306,8 @@ impl Request<'_> {
             .as_ref()
             .is_some_and(|r| r.summary.is_some())
             .then_some(["reasoning.encrypted_content"]);
-        let long = self.retention == CacheRetention::Long
-            && self
-                .compat()
-                .and_then(|c| c.supports_long_cache_retention)
-                .unwrap_or(true);
+        let long =
+            self.retention == CacheRetention::Long && self.compat("supportsLongCacheRetention");
         serde_json::to_value(Payload {
             model: &self.model.id,
             input,
@@ -519,4 +514,15 @@ pub(super) fn reasoning(
         effort,
         summary: None,
     })
+}
+
+/// Interpret a supplied option at this provider's conditional branch.
+fn enabled(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Null => false,
+        serde_json::Value::Bool(value) => *value,
+        serde_json::Value::Number(value) => value.as_f64().is_some_and(|number| number != 0.0),
+        serde_json::Value::String(value) => !value.is_empty(),
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
+    }
 }

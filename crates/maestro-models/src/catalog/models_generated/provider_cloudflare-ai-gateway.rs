@@ -573,10 +573,7 @@ cost: crate::ModelCost { input: 0.6, output: 3.0, cache_read: 0.1, cache_write: 
 context_window: 256_000.0,
 max_tokens: 256_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-send_session_affinity_headers: Some(true),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -594,10 +591,7 @@ cost: crate::ModelCost { input: 0.95, output: 4.0, cache_read: 0.16, cache_write
 context_window: 256_000.0,
 max_tokens: 256_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-send_session_affinity_headers: Some(true),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -615,10 +609,7 @@ cost: crate::ModelCost { input: 0.5, output: 1.5, cache_read: 0.0, cache_write: 
 context_window: 256_000.0,
 max_tokens: 256_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-send_session_affinity_headers: Some(true),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -636,10 +627,7 @@ cost: crate::ModelCost { input: 0.06, output: 0.4, cache_read: 0.0, cache_write:
 context_window: 131_072.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-send_session_affinity_headers: Some(true),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("sendSessionAffinityHeaders".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

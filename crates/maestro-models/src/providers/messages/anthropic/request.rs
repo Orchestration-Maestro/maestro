@@ -15,7 +15,7 @@ use crate::providers::chat::github_copilot_headers::{
 };
 use crate::providers::http::{HttpRequest, RequestFailure, edge_whitespace, endpoint_url};
 use crate::providers::json_text::compact_json;
-use crate::{CacheRetention, Context, Model, ModelCompat, ToolChoice, get_env_api_key};
+use crate::{CacheRetention, Context, Model, ToolChoice, get_env_api_key};
 
 /// Environment variable that selects long cache retention when set to `long`.
 const CACHE_RETENTION_VARIABLE: &str = "MAESTRO_CACHE_RETENTION";
@@ -210,15 +210,17 @@ impl<'a> Invocation<'a> {
 
     /// The compatibility flags of the model, each on unless the model turns it off.
     fn compat(&self) -> Compat {
-        match &self.model.compat {
-            Some(ModelCompat::AnthropicMessages(compat)) => Compat {
-                eager_input_streaming: compat.supports_eager_tool_input_streaming.unwrap_or(true),
-                long_cache_retention: compat.supports_long_cache_retention.unwrap_or(true),
-            },
-            _ => Compat {
-                eager_input_streaming: true,
-                long_cache_retention: true,
-            },
+        let flag = |name| {
+            self.model
+                .compat
+                .as_ref()
+                .and_then(|compat| compat.0.get(name))
+                .filter(|value| !value.is_null())
+                .is_none_or(enabled)
+        };
+        Compat {
+            eager_input_streaming: flag("supportsEagerToolInputStreaming"),
+            long_cache_retention: flag("supportsLongCacheRetention"),
         }
     }
 
@@ -521,4 +523,15 @@ pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
     ]
     .iter()
     .any(|marker| model_id.contains(marker))
+}
+
+/// Interpret a supplied option at this provider's conditional branch.
+fn enabled(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Null => false,
+        serde_json::Value::Bool(value) => *value,
+        serde_json::Value::Number(value) => value.as_f64().is_some_and(|number| number != 0.0),
+        serde_json::Value::String(value) => !value.is_empty(),
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
+    }
 }

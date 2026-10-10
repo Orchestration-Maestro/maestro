@@ -128,9 +128,10 @@ known role does not fall back to custom data.
 is independent of the stream message. The stream handle is detached after the callback,
 before output validation and encoding; retained handles cannot change that output snapshot.
 Guest snapshots do not provide live identity propagation between component values.
-Model selection uses shared descriptors and their host decoding; see
-[`ModelCompat`](https://docs.rs/maestro-request/latest/maestro_request/types/enum.ModelCompat.html)
-for compatibility decoding.
+Model selection carries the selected and previous descriptors with their open
+compatibility objects, including mixed-family and custom members. Handler edits to
+the selected object return independently of the previous descriptor. See
+[shared records](../records.md#wire-records-and-helpers) for construction and ownership.
 Reasoning selection carries the current and previous levels without checking model support.
 
 `BuildSystemPromptOptions` carries `cwd` and optional `customPrompt`, `selectedTools`,

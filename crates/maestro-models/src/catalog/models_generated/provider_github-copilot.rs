@@ -15,7 +15,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 144_000.0,
 max_tokens: 32_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::AnthropicMessages(crate::AnthropicMessagesCompat { supports_eager_tool_input_streaming: Some(false), supports_long_cache_retention: None })),
+compat: Some(crate::ModelCompat([("supportsEagerToolInputStreaming".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -87,7 +87,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 216_000.0,
 max_tokens: 16_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::AnthropicMessages(crate::AnthropicMessagesCompat { supports_eager_tool_input_streaming: Some(false), supports_long_cache_retention: None })),
+compat: Some(crate::ModelCompat([("supportsEagerToolInputStreaming".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -105,7 +105,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 144_000.0,
 max_tokens: 32_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::AnthropicMessages(crate::AnthropicMessagesCompat { supports_eager_tool_input_streaming: Some(false), supports_long_cache_retention: None })),
+compat: Some(crate::ModelCompat([("supportsEagerToolInputStreaming".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -141,12 +141,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -164,12 +159,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -187,12 +177,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -210,12 +195,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -233,12 +213,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 16_384.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -256,12 +231,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 4096.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -495,12 +465,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 128_000.0,
 max_tokens: 64_000.0,
 headers: Some(indexmap::IndexMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),("Editor-Version".into(), "vscode/1.107.0".into()),("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),("Copilot-Integration-Id".into(), "vscode-chat".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

@@ -288,6 +288,8 @@ struct Directive {
     wait: bool,
     /// Edit the event in place.
     mark: bool,
+    /// Compatibility member to edit on the selected descriptor.
+    compatibility_edit: Option<Value>,
     /// A session example operation to execute.
     session_action: Option<SessionAction>,
     /// Apply the recorded session edit before ending the handler.
@@ -781,6 +783,17 @@ fn summarize(event: &ExtensionEvent) -> ExtensionResult<ExtensionEventResult> {
 
 /// Applies the selected callback edits through the typed event payloads.
 fn apply_event_edits(event: &mut ExtensionEvent, directive: &Directive) -> ExtensionResult<()> {
+    if let Some(value) = &directive.compatibility_edit
+        && let ExtensionEvent::ModelSelect(event) = event
+    {
+        event
+            .model
+            .compat
+            .get_or_insert_with(Default::default)
+            .0
+            .insert("open".into(), value.clone());
+    }
+
     if directive.session_edit.as_deref() == Some("tool custom")
         && let ExtensionEvent::ToolCall(event) = event
     {

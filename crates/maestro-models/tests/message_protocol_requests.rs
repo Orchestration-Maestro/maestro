@@ -764,3 +764,52 @@ fn messages_reuse_setup_retry_policy() -> TestResult {
         Ok(())
     })
 }
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompatibilityQuery {
+    test: String,
+    input: Value,
+    expected: Value,
+}
+#[test]
+fn messages_open_options_keep_eager_streaming_and_retention() -> TestResult {
+    block_on(false, async {
+        let rows: Vec<CompatibilityQuery> =
+            serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
+        for (index, row) in rows
+            .into_iter()
+            .enumerate()
+            .filter(|(_, row)| row.test == "messages")
+        {
+            let case = messages::Case {
+                model: json!({"compat":row.input["compat"]}),
+                context: json!({"messages":[],"tools":row.input["tools"]}),
+                options: json!({"apiKey":"fixture-key","cacheRetention":row.input["retention"]}),
+                ..Default::default()
+            };
+            let result = messages::run_case(&case).await?;
+            let request = &result.requests[0];
+            if row.input["tools"].as_array().unwrap().is_empty() {
+                assert!(
+                    request["body"].get("tools").is_none(),
+                    "row {index} empty tools"
+                );
+                assert_eq!(row.expected["tools"], json!([]));
+            } else {
+                assert_eq!(
+                    request["body"]["tools"], row.expected["tools"],
+                    "row {index} tools"
+                );
+            }
+            let beta = request["headers"]["anthropic-beta"].as_str().unwrap_or("");
+            assert_eq!(
+                beta.split(',')
+                    .any(|beta| beta == "fine-grained-tool-streaming-2025-05-14"),
+                row.expected["legacyBeta"].as_bool().unwrap(),
+                "row {index} beta"
+            );
+        }
+        Ok(())
+    })
+}

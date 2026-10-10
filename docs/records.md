@@ -137,8 +137,14 @@ current epoch milliseconds and append without removing prior entries.
 Messages and content serialize with their fixed role/type tags, even when used
 alone. Tagged unions decode by their role/type. Optional absent fields are omitted;
 explicit null is retained for supported thinking/routing fields and open tool
-details. Model compatibility decoding uses the protocol identifier. Signature
+details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.
+
+Model compatibility is one ordered open object, independent of the protocol identifier.
+`ModelCompat` retains mixed-family and custom members and allows ordinary map edits.
+The typed completion, response and message compatibility records convert into it with
+`From`, omitting absent optional fields. Request decisions belong to the
+[provider adapters](models/chat-completions.md), not shared-record decoding.
 
 `short_hash` mixes supplied UTF-16 units with wrapping unsigned arithmetic and
 emits two concatenated lower-case base-36 words. It is not a cryptographic hash.

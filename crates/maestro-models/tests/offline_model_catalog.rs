@@ -93,7 +93,7 @@ fn maestro_catalog_retains_every_descriptor() {
 
 #[test]
 fn maestro_catalog_returns_independent_descriptors() {
-    use maestro_models::{ModelCompat, ModelThinkingLevel};
+    use maestro_models::ModelThinkingLevel;
     let original = get_model("github-copilot", "gpt-4.1").unwrap();
     let mut edited = get_model("github-copilot", "gpt-4.1").unwrap();
     edited.id = "edited-id".into();
@@ -102,10 +102,12 @@ fn maestro_catalog_returns_independent_descriptors() {
     edited.cost.input = -10.0;
     edited.headers.as_mut().unwrap().clear();
     edited.thinking_level_map = Some([(ModelThinkingLevel::Xhigh, None)].into());
-    let Some(ModelCompat::OpenAICompletions(compat)) = &mut edited.compat else {
+    let Some(compat) = &mut edited.compat else {
         panic!("expected completion compatibility");
     };
-    compat.send_session_affinity_headers = Some(false);
+    compat
+        .0
+        .insert("sendSessionAffinityHeaders".into(), false.into());
     assert_ne!(edited, original);
     assert_eq!(get_model("github-copilot", "gpt-4.1").unwrap(), original);
     assert!(get_model("edited-provider", "edited-id").is_none());

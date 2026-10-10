@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::messages::{ChatCompletionMessageParam, OpenAICompatCacheControl};
-use crate::{OpenRouterRouting, Tool, ToolChoice, VercelGatewayRouting};
+use crate::{Tool, ToolChoice};
 
 /// The request body; the model, tools, tool choice, routing and effort names are borrowed from
 /// the caller's inputs.
@@ -63,7 +63,7 @@ pub(super) struct Payload<'a> {
     pub(super) reasoning: Option<Reasoning<'a>>,
     /// `OpenRouter` routing preferences.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) provider: Option<&'a OpenRouterRouting>,
+    pub(super) provider: Option<&'a Value>,
     /// Gateway routing preferences.
     #[serde(rename = "providerOptions", skip_serializing_if = "Option::is_none")]
     pub(super) provider_options: Option<GatewayOptions<'a>>,
@@ -103,7 +103,7 @@ pub(super) struct Reasoning<'a> {
 #[derive(Serialize)]
 pub(super) struct GatewayOptions<'a> {
     /// Gateway routing.
-    pub(super) gateway: &'a VercelGatewayRouting,
+    pub(super) gateway: GatewayRouting<'a>,
 }
 
 /// A function tool declaration.
@@ -146,4 +146,15 @@ impl<'a> ToolParam<'a> {
             cache_control: None,
         }
     }
+}
+
+/// The gateway's selected routing fields, in request order.
+#[derive(Serialize)]
+pub(super) struct GatewayRouting<'a> {
+    /// Supplied provider allowlist.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) only: Option<&'a Value>,
+    /// Supplied provider preference order.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) order: Option<&'a Value>,
 }

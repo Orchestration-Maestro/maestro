@@ -15,11 +15,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 131_072.0,
 max_tokens: 98_304.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_developer_role: Some(false),
-thinking_format: Some(crate::ThinkingFormat::Zai),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("thinkingFormat".into(), serde_json::Value::String("zai".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -37,12 +33,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 204_800.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_developer_role: Some(false),
-zai_tool_stream: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Zai),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("thinkingFormat".into(), serde_json::Value::String("zai".into())),("zaiToolStream".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -60,12 +51,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 200_000.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_developer_role: Some(false),
-zai_tool_stream: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Zai),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("thinkingFormat".into(), serde_json::Value::String("zai".into())),("zaiToolStream".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -83,12 +69,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 200_000.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_developer_role: Some(false),
-zai_tool_stream: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Zai),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("thinkingFormat".into(), serde_json::Value::String("zai".into())),("zaiToolStream".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -106,12 +87,7 @@ cost: crate::ModelCost { input: 0.0, output: 0.0, cache_read: 0.0, cache_write: 
 context_window: 200_000.0,
 max_tokens: 131_072.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_developer_role: Some(false),
-zai_tool_stream: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Zai),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("thinkingFormat".into(), serde_json::Value::String("zai".into())),("zaiToolStream".into(), serde_json::Value::Bool(true))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

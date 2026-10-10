@@ -29,9 +29,12 @@ fn boundary_inputs() -> Vec<(String, Model)> {
     }
     let command: Model = serde_json::from_str(r#"{"id":"boundary/\"\\\n\u0000😀","name":"Name \"\\\n\u0000😀","api":"openai-completions","provider":"openrouter","baseUrl":"https://openrouter.ai/api/v1","reasoning":false,"input":["text","image"],"cost":{"input":1,"output":2,"cacheRead":0,"cacheWrite":0},"contextWindow":4096,"maxTokens":4096}"#).unwrap();
     records.push(("command-boundary".into(), command));
+    let mut open = records.last().unwrap().1.clone();
+    open.compat = Some(crate::ModelCompat(serde_json::from_str(r#"{"supportsStore":false,"sendSessionIdHeader":true,"openRouterRouting":{"unknown":{"values":["b","a","b"]}},"open":null,"precise":0.8455124082255701,"zero":-0.0}"#).unwrap()));
+    records.push(("open-compatibility".into(), open));
     records
 }
-/// Emit a small constructor capsule, reusing identical zero-normalized expressions.
+/// Emit a small constructor capsule, reusing identical emitted expressions.
 fn boundary_source(records: &[(String, Model)]) -> String {
     let mut source = String::from("// Generated typed boundary constructors.\n");
     let mut expressions = Vec::new();
@@ -192,4 +195,38 @@ fn assert_directory_local_filenames() {
         catalog.len() + 1
     );
     assert_eq!(std::fs::read_dir(&scratch.0).unwrap().count(), 1);
+}
+
+#[test]
+fn generated_open_compatibility_reconstructs_supplied_fields() {
+    let inputs = boundary_inputs();
+    let expected = &inputs
+        .iter()
+        .find(|(key, _)| key == "open-compatibility")
+        .unwrap()
+        .1;
+    assert_eq!(
+        boundary_source(&inputs),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/catalog_boundary.rs"
+        ))
+    );
+    let compiled = boundary::cases();
+    let actual = &compiled
+        .iter()
+        .find(|(key, _)| *key == "open-compatibility")
+        .unwrap()
+        .1;
+    assert_eq!(actual, expected);
+    let actual = &actual.compat.as_ref().unwrap().0;
+    let expected = &expected.compat.as_ref().unwrap().0;
+    assert_eq!(
+        actual.keys().collect::<Vec<_>>(),
+        expected.keys().collect::<Vec<_>>()
+    );
+    assert_eq!(
+        actual["zero"].as_f64().unwrap().to_bits(),
+        (-0.0_f64).to_bits()
+    );
 }

@@ -211,3 +211,46 @@ fn responses_preserve_payload_insertion_order_at_hook_and_wire() -> chat::TestRe
 
 #[path = "support/response_output.rs"]
 mod response_output;
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompatibilityQuery {
+    test: String,
+    input: serde_json::Value,
+    expected: serde_json::Value,
+}
+#[test]
+fn responses_open_options_keep_affinity_and_retention() -> chat::TestResult {
+    chat::block_on(false, async {
+        let rows: Vec<CompatibilityQuery> =
+            serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
+        for (index, row) in rows
+            .into_iter()
+            .enumerate()
+            .filter(|(_, row)| row.test == "responses")
+        {
+            let result = endpoint::run_case(&serde_json::json!({"model":{"compat":row.input["compat"]},"context":{"messages":[]},"options":{"apiKey":"fixture-key","sessionId":"session","cacheRetention":row.input["retention"]}})).await?;
+            let request = &result["requests"][0];
+            for key in ["session_id", "x-client-request-id"] {
+                assert_eq!(
+                    request["headers"][key], row.expected["headers"][key],
+                    "row {index} {key}"
+                );
+            }
+            assert_eq!(
+                request["body"]["prompt_cache_retention"], row.expected["promptCacheRetention"],
+                "row {index} retention"
+            );
+            let key_expected = if row.input["retention"] == "none" {
+                serde_json::Value::Null
+            } else {
+                serde_json::json!("session")
+            };
+            assert_eq!(
+                request["body"]["prompt_cache_key"], key_expected,
+                "row {index} cache key"
+            );
+        }
+        Ok(())
+    })
+}
