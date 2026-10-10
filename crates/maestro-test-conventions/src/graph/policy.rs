@@ -28,7 +28,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         &["maestro-settings", "maestro-resources"],
     ),
     ("maestro-test-terminal", &["maestro-tui"]),
-    ("maestro-theme", &["maestro-tui"]),
+    ("maestro-theme", &["maestro-tui", "maestro-request"]),
     ("maestro-tui-crossterm", &["maestro-tui"]),
     (
         "maestro-catalog",

@@ -6,8 +6,8 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
-The extension domain may depend directly on resources. Models, resources and guest
-authoring may depend on the shared request-record owner, `maestro-request`, which
+The extension domain may depend directly on resources. Models, resources, themes and
+guest authoring may depend on the shared request-record owner, `maestro-request`, which
 has no workspace dependencies. No reverse dependency or internal dev edge is permitted.
 
 `workspace-crates.json` lists actual workspace members with string-valued classes.
@@ -68,7 +68,7 @@ a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
 adapter, shared request owner, cancellation leaf and the terminal scenario
 harness. The edge is ignored when checking a crate's complete direct set or leaf
-status, so the graph holds 29 crates and 90 permitted edges: 67 table edges plus
+status, so the graph holds 29 crates and 91 permitted edges: 68 table edges plus
 23 utility edges. Dev-dependencies on the
 utility, dependencies from the utility, and cycles are rejected like any other
 internal edge.

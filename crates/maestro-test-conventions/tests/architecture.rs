@@ -459,6 +459,44 @@ fn forbidden_direct_edges_are_rejected() {
 }
 
 #[test]
+fn theme_shared_records_edge_is_scoped() {
+    let allowed = Workspace::new();
+    allowed.foundation(&["maestro-theme", "maestro-request"]);
+    check_permitted_declarations(
+        &allowed,
+        "maestro-theme",
+        "maestro-request",
+        &["maestro-request"],
+    );
+    for (from, to) in [
+        ("maestro-tui", "maestro-request"),
+        ("maestro-request", "maestro-theme"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, to]);
+        for (kind, extra) in DECLARATIONS {
+            workspace.member(
+                from,
+                from,
+                &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../{to}\"{extra} }}"),
+            );
+            let error = check_workspace(&workspace.root).unwrap_err();
+            assert!(
+                error.contains(from) && error.contains(to),
+                "{from} -> {to} ({kind}{extra}): {error}"
+            );
+        }
+        workspace.member(
+            from,
+            from,
+            &format!("[dev-dependencies]\nalias = {{ package = {to:?}, path = \"../{to}\" }}"),
+        );
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(error.contains(from) && error.contains(to), "{error}");
+    }
+}
+
+#[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
     assert_eq!(support::policy::POLICY.len(), 29);
@@ -467,7 +505,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        67
+        68
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();

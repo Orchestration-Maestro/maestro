@@ -102,7 +102,7 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.
 - `maestro-request` owns model-request records below layer 0: model, message,
   content, usage, stream and diagnostic data, plus `SourceInfo` and `Skill`.
-  Only models, resources and guest authoring may depend on it; it has no internal
+  Only models, resources, theme and guest authoring may depend on it; it has no internal
   dependencies. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
