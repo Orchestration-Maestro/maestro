@@ -4,12 +4,13 @@
 #[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
 mod runtime_support;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt;
 use std::future::Future;
 use std::io;
+use std::path::Path;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
@@ -18,7 +19,9 @@ use maestro_tui::autocomplete::{
     AutocompleteOperations, CompletionError, CompletionOptions, CompletionResult, CursorPosition,
     NativeAutocompleteOperations,
 };
-use maestro_tui::tui::TerminalHandle;
+use maestro_tui::tui::{
+    LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
+};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Component, Editor,
     EditorOptions, EditorTheme, KeybindingsManager, SelectListTheme, TUI, TUI_KEYBINDINGS,
@@ -191,14 +194,128 @@ impl Terminal for Sink {
     }
 }
 
-/// Consumes terminal writes up to and including the first that contains `text`.
-async fn read_until(writes: &mut mpsc::UnboundedReceiver<String>, text: &str) {
-    while !writes
-        .recv()
-        .await
-        .expect("the terminal stays open")
-        .contains(text)
-    {}
+/// Counts the host work that has not finished or been dropped.
+#[derive(Default)]
+struct Activity {
+    /// Scheduled render callbacks, the producers of debounced requests.
+    callbacks: Cell<usize>,
+    /// Submitted futures.
+    work: Cell<usize>,
+    /// Whether scheduled callbacks are cancelled as soon as they are scheduled.
+    discard: Cell<bool>,
+    /// A signal the next submitted future waits for before it is polled.
+    hold: RefCell<Option<oneshot::Receiver<()>>>,
+}
+
+/// Counts one item of host work until it finishes or is dropped, then signals the test.
+struct Tracked {
+    /// The count this item belongs to.
+    count: Rc<Activity>,
+    /// Whether this item is a scheduled callback rather than a submitted future.
+    callback: bool,
+    /// Receives one signal per item that ends.
+    ended: mpsc::UnboundedSender<()>,
+    /// Receives one signal per submitted future dropped before it finished.
+    abandoned: Option<mpsc::UnboundedSender<()>>,
+    /// Whether a submitted future ran to completion; callback guards never set it.
+    finished: bool,
+}
+
+impl Tracked {
+    /// Starts counting one item.
+    fn new(watch: &Watched, callback: bool) -> Self {
+        let counter = if callback {
+            &watch.activity.callbacks
+        } else {
+            &watch.activity.work
+        };
+        counter.set(counter.get() + 1);
+        Self {
+            count: Rc::clone(&watch.activity),
+            callback,
+            ended: watch.ended.clone(),
+            abandoned: (!callback).then(|| watch.report.clone()),
+            finished: false,
+        }
+    }
+}
+
+impl Drop for Tracked {
+    fn drop(&mut self) {
+        let counter = if self.callback {
+            &self.count.callbacks
+        } else {
+            &self.count.work
+        };
+        counter.set(counter.get() - 1);
+        if let (false, Some(report)) = (self.finished, &self.abandoned) {
+            report.send(()).ok();
+        }
+        self.ended.send(()).ok();
+    }
+}
+
+/// The native host, counting its scheduled callbacks and submitted futures.
+struct Watched {
+    /// The host under test.
+    host: ProcessTuiRuntime,
+    /// Receives the drop signals of submitted futures.
+    report: mpsc::UnboundedSender<()>,
+    /// Receives a signal each time scheduled or submitted work ends.
+    ended: mpsc::UnboundedSender<()>,
+    /// The work still outstanding.
+    activity: Rc<Activity>,
+}
+
+impl TuiRuntime for Watched {
+    fn now(&self) -> Duration {
+        self.host.now()
+    }
+
+    fn schedule(&self, delay: Duration, callback: RenderCallback) -> Box<dyn RenderTimer> {
+        let watch = Tracked::new(self, true);
+        let mut timer = self.host.schedule(
+            delay,
+            Box::new(move || {
+                let _watch = watch;
+                callback()
+            }),
+        );
+        if self.activity.discard.get() {
+            timer.cancel();
+        }
+        timer
+    }
+
+    fn spawn_local(&self, future: LocalFuture) {
+        let watch = Tracked::new(self, false);
+        let hold = self.activity.hold.borrow_mut().take();
+        self.host.spawn_local(Box::pin(async move {
+            let mut watch = watch;
+            if let Some(hold) = hold {
+                hold.await.ok();
+            }
+            let result = future.await;
+            watch.finished = true;
+            result
+        }));
+    }
+
+    fn environment(&self, key: &str) -> Option<String> {
+        self.host.environment(key)
+    }
+
+    fn log_context(&self) -> LogContext {
+        self.host.log_context()
+    }
+
+    fn append_log(&self, path: &Path, contents: &str) -> io::Result<()> {
+        self.host.append_log(path, contents)
+    }
+
+    fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
+        self.host.write_log(path, contents)
+    }
 }
 
 /// A started retained editor on the native host, with its provider and observations.
@@ -213,6 +330,12 @@ struct Scene {
     requests: mpsc::UnboundedReceiver<(Instant, Vec<String>)>,
     /// Terminal writes in order.
     writes: mpsc::UnboundedReceiver<String>,
+    /// Signals for submitted work the host dropped before it finished.
+    abandoned: mpsc::UnboundedReceiver<()>,
+    /// Signals each time scheduled or submitted work ends.
+    ended: mpsc::UnboundedReceiver<()>,
+    /// The work still outstanding.
+    activity: Rc<Activity>,
 }
 
 impl Scene {
@@ -220,10 +343,19 @@ impl Scene {
     fn start(local: Rc<tokio::task::LocalSet>) -> Self {
         set_keybindings(KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new()));
         let (writes_in, writes) = mpsc::unbounded_channel();
+        let (report, abandoned) = mpsc::unbounded_channel();
+        let (ended_in, ended) = mpsc::unbounded_channel();
+        let activity = Rc::new(Activity::default());
         let terminal: TerminalHandle = Rc::new(RefCell::new(Sink { writes: writes_in }));
+        let host = Watched {
+            host: ProcessTuiRuntime::new(local),
+            report,
+            ended: ended_in,
+            activity: Rc::clone(&activity),
+        };
         let tui = TUI::new(
             terminal,
-            Rc::new(ProcessTuiRuntime::new(local)),
+            Rc::new(host),
             TerminalImage::new(|_| None, || 1),
             None,
         );
@@ -250,6 +382,9 @@ impl Scene {
             gate,
             requests,
             writes,
+            abandoned,
+            ended,
+            activity,
         }
     }
 
@@ -267,12 +402,49 @@ impl Scene {
 
     /// Waits for the provider to receive a request and returns when it arrived and its lines.
     async fn request_at(&mut self) -> (Instant, Vec<String>) {
-        self.requests.recv().await.expect("a request")
+        loop {
+            if let Ok(request) = self.requests.try_recv() {
+                return request;
+            }
+            assert!(self.outstanding() > 0, "no request is left to start");
+            tokio::select! {
+                request = self.requests.recv() => return request.expect("a request"),
+                _ = self.ended.recv() => {}
+                _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+            }
+        }
     }
 
-    /// Waits until the terminal receives a write that contains `text`.
+    /// The scheduled callbacks and submitted futures that have not ended.
+    fn outstanding(&self) -> usize {
+        self.activity.callbacks.get() + self.activity.work.get()
+    }
+
+    /// Waits until the terminal receives a write that contains `text`, failing once no
+    /// host work remains that could still draw it.
     async fn drawn(&mut self, text: &str) {
-        read_until(&mut self.writes, text).await;
+        while !self.has_drawn(text) {
+            assert!(self.outstanding() > 0, "nothing drew {text:?}");
+            tokio::select! {
+                _ = self.ended.recv() => {}
+                _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+            }
+        }
+    }
+
+    /// Waits until every scheduled callback and submitted future has ended, so no request is
+    /// left to start, and fails on any request that arrives meanwhile.
+    async fn settled(&mut self) {
+        while self.outstanding() > 0 {
+            tokio::select! {
+                request = self.requests.recv() => panic!("unexpected request {request:?}"),
+                _ = self.ended.recv() => {}
+                _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+            }
+        }
+        if let Ok(request) = self.requests.try_recv() {
+            panic!("unexpected request {request:?}");
+        }
     }
 
     /// Whether the terminal has a write waiting that contains `text`.
@@ -322,12 +494,21 @@ fn retained_editor_displays_async_native_suggestions() {
             .reply(Ok(Some(offer("src", &["src/", "src.txt"]))));
         scene.drawn("src.txt").await;
         assert!(scene.editor.is_showing_autocomplete());
+        assert_eq!(
+            scene.editor.get_text(),
+            "src",
+            "several choices change nothing"
+        );
         let rows = scene.menu();
         assert!(rows.iter().any(|row| row.ends_with("src/")), "{rows:?}");
         assert!(rows.iter().any(|row| row.ends_with("src.txt")), "{rows:?}");
 
         scene.editor.handle_input(TAB);
         assert_eq!(scene.editor.get_text(), "src/");
+        assert!(
+            !scene.editor.is_showing_autocomplete(),
+            "accepting closes the menu"
+        );
     });
 }
 
@@ -352,8 +533,44 @@ fn symbol_completion_debounces_on_native_host() {
                 scene.menu().iter().any(|row| row.ends_with(value)),
                 "{typed}"
             );
+            scene.settled().await;
         });
     }
+}
+
+#[test]
+#[should_panic(expected = "no request is left to start")]
+fn discarded_debounce_callback_fails_the_request_wait() {
+    run_set(true, |local| async move {
+        let mut scene = Scene::start(local);
+        scene.activity.discard.set(true);
+        scene.typed("@mai");
+        scene.request().await;
+    });
+}
+
+#[test]
+fn settling_waits_for_submitted_futures_not_yet_polled() {
+    run_set(true, |local| async move {
+        let mut scene = Scene::start(local);
+        let (release, hold) = oneshot::channel();
+        *scene.activity.hold.borrow_mut() = Some(hold);
+        scene.typed("@mai");
+        advance(Duration::from_millis(20)).await;
+        while scene.activity.callbacks.get() > 0 {
+            scene.ended.recv().await;
+        }
+        assert_eq!(scene.activity.work.get(), 1, "the request future is held");
+        tokio::select! {
+            biased;
+            () = scene.settled() => panic!("settled with a submitted future outstanding"),
+            () = tokio::task::yield_now() => {}
+        }
+        assert!(release.send(()).is_ok());
+        assert_eq!(scene.request().await, ["@mai"]);
+        scene.gate.reply(Ok(Some(offer("@mai", &["@main.ts"]))));
+        scene.settled().await;
+    });
 }
 
 #[test]

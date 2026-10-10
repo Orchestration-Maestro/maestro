@@ -13,7 +13,7 @@ pub const CHILD_MARKER: &str = "MAESTRO_RUNTIME_TEST_CHILD";
 
 /// Drives `body` on a fresh local set inside a current-thread runtime with the time driver.
 ///
-/// A paused clock moves only while no task can run.
+/// A paused clock advances by itself only while no task can run.
 pub fn run_set<Fut: Future<Output = ()>>(paused: bool, body: impl FnOnce(Rc<LocalSet>) -> Fut) {
     let runtime = Builder::new_current_thread()
         .enable_time()
