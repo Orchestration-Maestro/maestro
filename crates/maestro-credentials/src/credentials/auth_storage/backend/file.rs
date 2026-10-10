@@ -1,5 +1,5 @@
 //! Native credential file guarded by a sidecar lock file.
-use super::{AuthStorageBackend, AuthStorageError, LockUpdate};
+use super::{AsyncLockUpdate, AuthStorageBackend, AuthStorageError, AuthStorageFuture, LockUpdate};
 use std::fs::{self, File, OpenOptions, TryLockError};
 use std::io::{self, ErrorKind};
 use std::path::Path;
@@ -9,6 +9,9 @@ use std::time::Duration;
 const LOCK_ATTEMPTS: u32 = 10;
 /// Wait between two contended attempts.
 const LOCK_RETRY_DELAY: Duration = Duration::from_millis(20);
+
+/// Waits between contended attempts of the asynchronous acquisition, in milliseconds.
+const ASYNC_LOCK_DELAYS_MS: [u64; 10] = [100, 200, 400, 800, 1600, 3200, 6400, 10000, 10000, 10000];
 
 /// Credential file at a caller-resolved path; relative paths use the working directory.
 #[derive(Debug)]
@@ -48,6 +51,22 @@ impl FileAuthStorageBackend {
         let file = self.lock_file()?;
         retry_contended(|| file.try_lock())?;
         Ok(file)
+    }
+
+    /// Lock the sidecar, waiting the scheduled delays while another holder has it.
+    async fn acquire_async(&self) -> Result<File, AuthStorageError> {
+        let file = self.lock_file()?;
+        let mut delays = ASYNC_LOCK_DELAYS_MS.into_iter();
+        loop {
+            match file.try_lock() {
+                Ok(()) => return Ok(file),
+                Err(TryLockError::WouldBlock) => match delays.next() {
+                    Some(delay) => tokio::time::sleep(Duration::from_millis(delay)).await,
+                    None => return Err(Box::new(TryLockError::WouldBlock)),
+                },
+                Err(error) => return Err(Box::new(error)),
+            }
+        }
     }
 
     /// Initialize a missing file (following a symlink), then read it, under the held lock.
@@ -132,6 +151,20 @@ impl AuthStorageBackend for FileAuthStorageBackend {
             });
         lock.unlock()?;
         outcome
+    }
+
+    fn with_lock_async<'a>(
+        &'a self,
+        update: AsyncLockUpdate<'a>,
+    ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
+        Box::pin(async move {
+            let _lock = self.acquire_async().await?;
+            let current = self.read()?;
+            if let Some(next) = update(current).await? {
+                write(Path::new(&self.auth_path), &next)?;
+            }
+            Ok(())
+        })
     }
 }
 

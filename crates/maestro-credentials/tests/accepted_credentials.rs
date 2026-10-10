@@ -7,8 +7,9 @@ mod tests {
     use super::support::{TempDir, is_child, run_child};
     use indexmap::IndexMap;
     use maestro_credentials::{
-        ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
-        AuthStorageData, InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
+        ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage,
+        AuthStorageBackend, AuthStorageData, AuthStorageError, AuthStorageFuture,
+        InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
     };
     use serde_json::{Value, json};
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -63,6 +64,22 @@ mod tests {
                 Some(_) => Err("write refused".into()),
                 None => Ok(None),
             })
+        }
+
+        fn with_lock_async<'a>(
+            &'a self,
+            update: AsyncLockUpdate<'a>,
+        ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
+            self.0
+                .with_lock_async(Box::new(|current| Box::pin(refuse_writes(update, current))))
+        }
+    }
+
+    /// Run `update` and refuse any replacement text.
+    async fn refuse_writes(update: AsyncLockUpdate<'_>, current: Option<String>) -> LockUpdate {
+        match update(current).await? {
+            Some(_) => Err("write refused".into()),
+            None => Ok(None),
         }
     }
 
@@ -251,15 +268,15 @@ mod tests {
             "{\"a\":1e400}",
             "{\"a\":\"\\ud800\"}",
         ];
-        for document in documents {
+        for (index, document) in documents.into_iter().enumerate() {
             let dir = TempDir::new("non-object");
             let path = dir.path("auth.json");
             write_file(&path, document);
             let storage = AuthStorage::create(&path);
-            assert_eq!(storage.drain_errors().len(), 1, "{document:?}");
-            assert!(storage.list().is_empty(), "{document:?}");
+            assert_eq!(storage.drain_errors().len(), 1, "case {index}");
+            assert!(storage.list().is_empty(), "case {index}");
             storage.set("openai", api_key("o"));
-            assert_eq!(read_file(&path), document, "{document:?}");
+            assert_eq!(read_file(&path), document, "case {index}");
         }
     }
 
