@@ -1,5 +1,5 @@
 //! Caller initialization and live conversation state.
-use crate::types::{AgentMessage, AgentTool, CustomAgentMessages, ThinkingLevel};
+use crate::types::{AgentMessage, CustomAgentMessages, SharedAgentTool, ThinkingLevel};
 use maestro_models::{Model, ModelCost};
 use std::{
     convert::Infallible,
@@ -19,7 +19,7 @@ pub struct AgentInitialState<C: CustomAgentMessages = Infallible> {
     /// Optional requested thinking level.
     pub thinking_level: Option<ThinkingLevel>,
     /// Initial executable tools.
-    pub tools: Vec<Arc<RwLock<AgentTool>>>,
+    pub tools: Vec<SharedAgentTool>,
     /// Initial conversation entries.
     pub messages: Vec<AgentMessage<C>>,
 }
@@ -43,7 +43,7 @@ pub struct AgentState<C: CustomAgentMessages = Infallible> {
     /// Requested thinking level.
     pub thinking_level: ThinkingLevel,
     /// Current executable-tool collection.
-    tools: Arc<RwLock<Vec<Arc<RwLock<AgentTool>>>>>,
+    tools: Arc<RwLock<Vec<SharedAgentTool>>>,
     /// Current conversation collection.
     pub(super) messages: Arc<RwLock<Vec<AgentMessage<C>>>>,
     /// Runtime streaming flag.
@@ -72,11 +72,11 @@ impl<C: CustomAgentMessages> AgentState<C> {
     }
     /// The current tool collection handle.
     #[must_use]
-    pub fn tools(&self) -> &Arc<RwLock<Vec<Arc<RwLock<AgentTool>>>>> {
+    pub fn tools(&self) -> &Arc<RwLock<Vec<SharedAgentTool>>> {
         &self.tools
     }
     /// Retain supplied tool entries in new outer storage.
-    pub fn set_tools(&mut self, tools: Vec<Arc<RwLock<AgentTool>>>) {
+    pub fn set_tools(&mut self, tools: Vec<SharedAgentTool>) {
         self.tools = Arc::new(RwLock::new(tools));
     }
     /// The current history collection handle.

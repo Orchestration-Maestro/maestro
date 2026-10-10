@@ -1,6 +1,9 @@
 //! Stored executable tool declarations.
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Tool, UserBlock};
-use std::sync::Arc;
+use std::{
+    any::Any,
+    sync::{Arc, RwLock},
+};
 /// Tool scheduling preference.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ToolExecutionMode {
@@ -69,3 +72,41 @@ pub struct AgentTool<TParameters = serde_json::Value, TDetails = serde_json::Val
     /// Optional scheduling preference.
     pub execution_mode: Option<ToolExecutionMode>,
 }
+/// Type-erased view that lets one collection retain tools of different parameter and detail types.
+#[cfg(not(target_arch = "wasm32"))]
+pub trait AnyAgentTool: Any + Send + Sync {
+    /// The tool as `Any`.
+    fn as_any(&self) -> &dyn Any;
+    /// The tool as mutable `Any`.
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+/// Type-erased view that lets one collection retain browser tools of different types.
+#[cfg(target_arch = "wasm32")]
+pub trait AnyAgentTool: Any {
+    /// The tool as `Any`.
+    fn as_any(&self) -> &dyn Any;
+    /// The tool as mutable `Any`.
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+impl<P: 'static, D: 'static> AnyAgentTool for AgentTool<P, D> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+impl dyn AnyAgentTool {
+    /// The retained tool when its parameter and detail types are `P` and `D`.
+    #[must_use]
+    pub fn downcast_ref<P: 'static, D: 'static>(&self) -> Option<&AgentTool<P, D>> {
+        self.as_any().downcast_ref()
+    }
+    /// The retained tool, mutably, when its parameter and detail types are `P` and `D`.
+    #[must_use]
+    pub fn downcast_mut<P: 'static, D: 'static>(&mut self) -> Option<&mut AgentTool<P, D>> {
+        self.as_any_mut().downcast_mut()
+    }
+}
+/// A shared, mutable tool entry of any parameter and detail types.
+pub type SharedAgentTool = Arc<RwLock<dyn AnyAgentTool>>;

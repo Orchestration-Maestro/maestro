@@ -2,7 +2,7 @@
 #![cfg(test)]
 use maestro_agent::{
     Agent, AgentInitialState, AgentMessage, AgentOptions, AgentState, AgentTool,
-    CustomAgentMessages, QueueMode, ThinkingLevel, ToolExecutionMode,
+    CustomAgentMessages, QueueMode, SharedAgentTool, ThinkingLevel, ToolExecutionMode,
 };
 use maestro_models::{Model, UserContent, UserMessage};
 use serde::Deserialize;
@@ -94,7 +94,8 @@ fn state<C: CustomAgentMessages>(state: &AgentState<C>) -> Value {
         .unwrap()
         .iter()
         .map(|entry| {
-            let tool = entry.read().unwrap();
+            let guard = entry.read().unwrap();
+            let tool = guard.downcast_ref::<Value, Value>().unwrap();
             let mut value = json!({"name": tool.definition.name, "label": tool.label,
             "description": tool.definition.description, "parameters": tool.definition.parameters});
             if let Some(mode) = tool.execution_mode {
@@ -353,11 +354,11 @@ fn tool(
     name: &str,
     label: &str,
     execution_mode: Option<ToolExecutionMode>,
-) -> (Arc<RwLock<AgentTool>>, Arc<AtomicUsize>) {
+) -> (SharedAgentTool, Arc<AtomicUsize>) {
     let calls = Arc::new(AtomicUsize::new(0));
     let preparation = Arc::clone(&calls);
     let execution = Arc::clone(&calls);
-    let entry = Arc::new(RwLock::new(AgentTool {
+    let entry: SharedAgentTool = Arc::new(RwLock::new(AgentTool::<Value, Value> {
         definition: maestro_models::Tool {
             name: name.into(),
             description: format!("{name} tool"),
@@ -430,13 +431,16 @@ fn maestro_tool_collections_retain_executable_entries() {
         });
         original.clear();
         let captured = Arc::clone(agent.state().read().unwrap().tools());
-        entry.write().unwrap().label = take(&mut case.input, "label");
+        with_tool(&entry, |tool| tool.label = take(&mut case.input, "label"));
         captured.write().unwrap().push(Arc::clone(&entry));
         let before: Vec<_> = captured
             .read()
             .unwrap()
             .iter()
-            .map(|entry| entry.read().unwrap().label.clone())
+            .map(|entry| {
+                let guard = entry.read().unwrap();
+                guard.downcast_ref::<Value, Value>().unwrap().label.clone()
+            })
             .collect();
         let mut replacement = vec![Arc::clone(&entry)];
         agent
@@ -446,14 +450,14 @@ fn maestro_tool_collections_retain_executable_entries() {
             .set_tools(replacement.clone());
         replacement.clear();
         captured.write().unwrap().push(Arc::clone(&entry));
-        entry.write().unwrap().execution_mode = Some(tool_mode(&take::<String>(
-            &mut case.input,
-            "replacementMode",
-        )));
+        let replacement_mode = tool_mode(&take::<String>(&mut case.input, "replacementMode"));
+        with_tool(&entry, |tool| tool.execution_mode = Some(replacement_mode));
         let current = Arc::clone(agent.state().read().unwrap().tools());
         let current_guard = current.read().unwrap();
-        let stored = current_guard[0].read().unwrap();
-        let supplied = entry.read().unwrap();
+        let stored_guard = current_guard[0].read().unwrap();
+        let stored = stored_guard.downcast_ref::<Value, Value>().unwrap();
+        let supplied_guard = entry.read().unwrap();
+        let supplied = supplied_guard.downcast_ref::<Value, Value>().unwrap();
         check(
             case,
             json!({"called":calls.load(Ordering::SeqCst),"copiedOuter":captured.read().unwrap().len()!=original.len(),
@@ -465,6 +469,65 @@ fn maestro_tool_collections_retain_executable_entries() {
             "currentMode":match stored.execution_mode.unwrap() {ToolExecutionMode::Sequential=>"sequential",ToolExecutionMode::Parallel=>"parallel"}}),
         );
     }
+}
+/// Mutate a retained default-typed tool through its shared handle.
+fn with_tool(entry: &SharedAgentTool, change: impl FnOnce(&mut AgentTool)) {
+    change(
+        entry
+            .write()
+            .unwrap()
+            .downcast_mut::<Value, Value>()
+            .unwrap(),
+    );
+}
+/// Tools with different parameter and detail types share one collection and keep their identity.
+#[test]
+fn maestro_heterogeneous_typed_tools_are_retained_by_identity() {
+    let typed = |name: &str| maestro_models::Tool {
+        name: name.into(),
+        description: String::new(),
+        parameters: json!({}),
+    };
+    let numeric: SharedAgentTool = Arc::new(RwLock::new(AgentTool::<u32, String> {
+        definition: typed("numeric"),
+        label: "Numeric".into(),
+        prepare_arguments: None,
+        execute: Arc::new(|_, _, _, _| panic!("unexpected execution")),
+        execution_mode: None,
+    }));
+    let textual: SharedAgentTool = Arc::new(RwLock::new(AgentTool::<String, Vec<u8>> {
+        definition: typed("textual"),
+        label: "Textual".into(),
+        prepare_arguments: None,
+        execute: Arc::new(|_, _, _, _| panic!("unexpected execution")),
+        execution_mode: None,
+    }));
+    let agent: Agent = Agent::new(AgentOptions {
+        initial_state: AgentInitialState {
+            tools: vec![Arc::clone(&numeric), Arc::clone(&textual)],
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+    agent
+        .state()
+        .write()
+        .unwrap()
+        .set_tools(vec![Arc::clone(&textual), Arc::clone(&numeric)]);
+    let live = agent.state().read().unwrap();
+    let tools = live.tools().read().unwrap();
+    assert!(Arc::ptr_eq(&tools[0], &textual) && Arc::ptr_eq(&tools[1], &numeric));
+    let first = tools[0].read().unwrap();
+    assert!(first.downcast_ref::<u32, String>().is_none());
+    assert_eq!(
+        first.downcast_ref::<String, Vec<u8>>().unwrap().label,
+        "Textual"
+    );
+    let second = tools[1].read().unwrap();
+    assert_eq!(
+        second.downcast_ref::<u32, String>().unwrap().label,
+        "Numeric"
+    );
 }
 /// Parse the admitted tool scheduling preferences.
 fn tool_mode(text: &str) -> ToolExecutionMode {
@@ -726,7 +789,15 @@ fn assert_tool_order_and_duplicates() {
         let collection = live.tools().read().unwrap();
         let names: Vec<_> = collection
             .iter()
-            .map(|entry| entry.read().unwrap().definition.name.clone())
+            .map(|entry| {
+                let guard = entry.read().unwrap();
+                guard
+                    .downcast_ref::<Value, Value>()
+                    .unwrap()
+                    .definition
+                    .name
+                    .clone()
+            })
             .collect();
         assert_eq!(names, ["zulu", "alpha", "zulu"]);
         assert!(Arc::ptr_eq(&collection[0], &collection[2]));
