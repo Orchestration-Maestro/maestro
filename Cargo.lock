@@ -1774,6 +1774,7 @@ dependencies = [
  "maestro-request",
  "notify",
  "num-traits",
+ "serde",
  "serde_json",
  "tokio",
 ]

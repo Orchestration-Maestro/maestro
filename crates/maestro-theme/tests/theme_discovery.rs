@@ -15,7 +15,7 @@ use std::rc::Rc;
 #[cfg(test)]
 const SHIPPED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme");
 #[cfg(test)]
-const TRUECOLOR_ACCENT: &str = "\x1b[38;2;138;190;183m";
+const TRUECOLOR_ACCENT: &str = "\x1b[38;2;217;160;102m";
 
 /// A scratch directory whose removal is attempted on drop.
 #[cfg(test)]

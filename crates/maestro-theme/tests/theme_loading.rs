@@ -389,7 +389,7 @@ fn theme_accepts_runtime_extensions_without_published_schema_restrictions() {
     root["extra"] = json!({ "nested": ["retained", true] });
     assert_eq!(
         fg(&load_doc(&root).unwrap(), "accent"),
-        "\x1b[38;2;138;190;183m"
+        "\x1b[38;2;217;160;102m"
     );
     let mut colors = dark();
     colors["colors"]["extraColor"] = json!("#010203");
@@ -401,7 +401,7 @@ fn theme_accepts_runtime_extensions_without_published_schema_restrictions() {
     export["export"] = json!({ "any": true });
     assert_eq!(
         fg(&load_doc(&export).unwrap(), "accent"),
-        "\x1b[38;2;138;190;183m"
+        "\x1b[38;2;217;160;102m"
     );
 }
 
@@ -570,7 +570,7 @@ fn theme_retains_mode_and_authored_metadata() {
     let limited =
         load_theme_from_path("p", None, &Controlled::new(&text, &[("TERM", "linux")])).unwrap();
     assert_eq!(limited.get_color_mode(), ColorMode::Color256);
-    assert_eq!(fg(&limited, "accent"), "\x1b[38;5;109m");
+    assert_eq!(fg(&limited, "accent"), "\x1b[38;5;179m");
     let bare = maestro_theme::Theme::new(
         [],
         [],
@@ -629,7 +629,7 @@ fn theme_native_and_controlled_loading_share_the_public_operation() {
     );
     assert_eq!(
         native.fg(&ThemeColor::Accent, "x").unwrap(),
-        "\x1b[38;5;109mx\x1b[39m"
+        "\x1b[38;5;179mx\x1b[39m"
     );
 
     let mut bytes = dark()

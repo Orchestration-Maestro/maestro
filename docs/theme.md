@@ -9,13 +9,14 @@ use maestro_theme::{ColorMode, NativeThemeOperations, ThemeColor, load_theme_fro
 
 let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme/dark.json");
 let theme = load_theme_from_path(path, Some(ColorMode::Truecolor), &NativeThemeOperations)?;
-assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;138;190;183mhi\x1b[39m");
+assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;217;160;102mhi\x1b[39m");
 # Ok::<(), maestro_theme::ThemeError>(())
 ```
 
 ## Theme files
 
-`assets/theme/dark.json` and `light.json` are the shipped themes; `theme-schema.json`
+`assets/theme/dark.json` and `light.json` are the shipped themes, derived from the
+[brand pack](#brand-pack); `theme-schema.json`
 is the published editor schema and rejects unknown fields. Loading admits a looser
 runtime schema (`runtime-schema.json`) that ignores unknown root and `export` fields
 and resolves extra entries under `colors`.
@@ -165,6 +166,60 @@ argument, else the selected theme, else the terminal background's theme.
 `get_theme_export_colors` resolves the optional `export` fields of the same document
 and returns none of them when anything fails; an empty field is absent.
 `is_light_theme` tests only the supplied name.
+
+## Brand pack
+
+The shipped `dark.json` and `light.json` are generated from the shared brand pack
+(`assets/brand/brand.json`, shape in the [identity guide](identity.md#pack-shape-and-swapping)),
+never edited by hand. A same-format pack supplies the outputs below without a code change.
+
+```sh
+cargo run -p maestro-theme --example brand_themes -- assets/brand/brand.json crates/maestro-theme/assets/theme
+```
+
+The example writes `dark.json` and `light.json` into the given directory. Fewer or more
+arguments fail with `usage: brand_themes <pack.json> <output-directory>`.
+
+`load_brand_pack(path, operations)` reads exactly `path` through `ThemeOperations` and
+decodes it. It searches for no default pack and reads no template or font. A read
+failure keeps its I/O error; text or fields the decoder rejects give
+`Invalid brand pack <path>: <cause>`. Every listed field is required and not null;
+records are objects, never positional arrays; unknown members are ignored and a repeated
+member keeps its last value. A type size of zero or less, or a negative spacing or
+radius, gives `Invalid brand measurement: <JSON Pointer>`. Mark paths become the pack's
+directory joined with the authored relative path (`maestro_path::join`, lexical).
+
+A `BrandMode` (`Dark` or `Light`, independent of `ColorMode`) selects the mode of every
+projection. A projection resolves a role through the mode's alias, then the palette.
+
+- `BrandPack::theme_json` returns the standard theme document: `$schema`, `name` (the
+  mode), `vars` (the mode's resolved colors in key order), `colors` (the 51 established
+  keys mapped through `brand-roles.json`) and `export`. The four terminal-default keys
+  stay empty. Custom themes and the generic export fallback are untouched.
+- `BrandPack::presentation` returns the resolved colors, fonts, type, spacing, radii,
+  glyphs and ANSI and truecolor aliases, borrowed from the pack.
+- `BrandPresentation::css_properties` returns custom properties only:
+  `--maestro-color-<role>`, `--maestro-font-<role>`, `--maestro-type-<role>-font`, `-size`,
+  `-line-height` and `-weight`, `--maestro-spacing-<role>` and `--maestro-radii-<role>`.
+  Size, spacing and radii carry `px`. Named families are quoted, generic family keywords
+  stay bare, and fallback order and repeats are kept. Names and strings use CSS escapes,
+  with `<` as a hexadecimal escape.
+- `BrandPack::mark_svg` reads the default template or the named variant and substitutes
+  `{{wordmark}}` (XML-escaped), `var(--role)` and `currentColor` (the `text` color) in one
+  pass; inserted text is never scanned again.
+
+Empty colors in exported themes follow [Resolved colors for export](#resolved-colors-for-export);
+callers that want the pack's text color read `BrandPresentation::colors["text"]`.
+
+Projection failures are `Missing brand mode: <mode>`, `Missing brand palette color: <key>`,
+`Invalid brand color: <value>` (not `#` and six hexadecimal digits), `Missing brand font: <key>`,
+`Missing brand color role: <role>`, `Unknown brand mark variant: <name>` (before any read) and
+`Unterminated brand template color`. A projection checks the selected mode's colors and the
+pack's font, glyph and terminal references, and `mark_svg` reads only the requested
+template; nothing falls back to a default.
+
+Font files, pack selection, frontend rendering and the exported-page integration are
+separate deliveries.
 
 ## Source metadata
 

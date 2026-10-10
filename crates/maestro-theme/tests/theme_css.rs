@@ -99,7 +99,7 @@ fn theme_export_source_precedence_differs_from_instance_lookup() {
     ]);
 
     let shipped = state.get_resolved_theme_colors(Some("dark")).unwrap();
-    assert_eq!(color(&shipped, "accent"), "#8abeb7");
+    assert_eq!(color(&shipped, "accent"), "#D9A066");
     assert_eq!(
         color(
             &state.get_resolved_theme_colors(Some("reg")).unwrap(),
@@ -189,7 +189,7 @@ fn theme_resolved_css_preserves_key_order_and_empty_fallback() {
     assert_eq!(keys[keys.len() - tail.len()..], tail);
     assert_eq!(color(&colors, "__proto__"), "#112233");
     assert_eq!(color(&colors, "4294967294"), "#000002");
-    assert_eq!(color(&colors, "border"), "#8abeb7");
+    assert_eq!(color(&colors, "border"), "#D9A066");
     assert_eq!(color(&colors, "text"), "#e5e5e7");
 
     let light = state_for_shipped();
@@ -219,10 +219,10 @@ fn theme_export_selection_uses_explicit_current_then_default() {
     );
     ops.set("COLORFGBG", "0;8");
     let page = |name: Option<&str>| state.get_theme_export_colors(name).page_bg;
-    assert_eq!(page(None), Some("#f8f8f8".to_owned()));
+    assert_eq!(page(None), Some("#F2E8DC".to_owned()));
     assert_eq!(
         color(&state.get_resolved_theme_colors(None).unwrap(), "accent"),
-        "#5a8080"
+        "#B7410E"
     );
     assert!(ops.read("COLORFGBG"));
 
@@ -296,7 +296,7 @@ fn theme_export_optional_fields_omit_empty_and_missing_values() {
     assert_eq!(page_bg(&json!(0)), Some("#000000".to_owned()));
     assert_eq!(page_bg(&json!(24)), Some("#005f87".to_owned()));
     assert_eq!(page_bg(&json!(255)), Some("#eeeeee".to_owned()));
-    assert_eq!(page_bg(&json!("accent")), Some("#8abeb7".to_owned()));
+    assert_eq!(page_bg(&json!("accent")), Some("#D9A066".to_owned()));
     for (field, select) in [
         ("cardBg", (|c: ThemeExportColors| c.card_bg) as fn(_) -> _),
         ("infoBg", |c| c.info_bg),
@@ -305,7 +305,7 @@ fn theme_export_optional_fields_omit_empty_and_missing_values() {
             (json!("#AbCdEf"), Some("#AbCdEf")),
             (json!(""), None),
             (json!(24), Some("#005f87")),
-            (json!("accent"), Some("#8abeb7")),
+            (json!("accent"), Some("#D9A066")),
         ] {
             let colors = export_field(field, &value);
             assert_eq!(

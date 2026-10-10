@@ -68,7 +68,7 @@ impl ThemeOperations for NativeThemeOperations {
 ///
 /// let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme/dark.json");
 /// let theme = load_theme_from_path(path, Some(ColorMode::Truecolor), &NativeThemeOperations)?;
-/// assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;138;190;183mhi\x1b[39m");
+/// assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;217;160;102mhi\x1b[39m");
 /// # Ok::<(), maestro_theme::ThemeError>(())
 /// ```
 ///

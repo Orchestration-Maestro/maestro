@@ -4,6 +4,7 @@ use maestro_request::source_info::SourceInfo;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+mod brand;
 #[cfg(not(target_arch = "wasm32"))]
 mod collation;
 mod colors;
@@ -13,6 +14,10 @@ mod lifecycle;
 mod loading;
 mod registry;
 mod watching;
+pub use brand::{
+    BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPack, BrandPresentation, BrandType,
+    load_brand_pack,
+};
 pub use export::{ThemeExportColors, is_light_theme};
 #[cfg(not(target_arch = "wasm32"))]
 pub use fs_watch::NativeThemeWatchOperations;

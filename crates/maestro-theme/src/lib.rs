@@ -4,6 +4,8 @@
 
 pub mod theme;
 pub use theme::watch_with_error_handler;
+pub use theme::{BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPack, BrandPresentation};
+pub use theme::{BrandType, load_brand_pack};
 pub use theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
 pub use theme::{LiveTheme, ThemeChangeResult, ThemeExportColors, is_light_theme};
 #[cfg(not(target_arch = "wasm32"))]

@@ -307,6 +307,25 @@ actual rendered combinations in the terminal implementation. Keep existing
 terminal theme names, color keys, format and custom-theme loading unchanged;
 this pack supplies defaults, not a replacement terminal theme format.
 
+The shipped terminal themes derive each of their 51 color keys from one
+semantic role, as data in the theme library's `brand-roles.json`:
+
+| Semantic role | Terminal keys |
+| --- | --- |
+| `accent` | `accent`, `borderAccent`, `customMessageLabel`, `mdHeading`, `mdLink`, `mdCode`, `mdListBullet`, `syntaxKeyword`, `syntaxFunction`, `thinkingLow`, `thinkingMedium` |
+| `border` | `border`, `borderMuted`, `mdCodeBlockBorder`, `mdQuoteBorder`, `mdHr`, `thinkingOff` |
+| `success` | `success`, `toolDiffAdded`, `syntaxString`, `bashMode` |
+| `error` | `error`, `toolDiffRemoved` |
+| `warning` | `warning`, `syntaxNumber` |
+| `muted` | `muted`, `dim`, `thinkingText`, `toolOutput`, `mdLinkUrl`, `mdQuote`, `toolDiffContext`, `syntaxComment`, `thinkingMinimal` |
+| `text` | `mdCodeBlock`, `syntaxVariable`, `syntaxOperator`, `syntaxPunctuation` |
+| `live` | `syntaxType`, `thinkingHigh`, `thinkingXhigh` |
+| `panel` | `selectedBg`, `userMessageBg`, `customMessageBg`, `toolPendingBg`, `toolSuccessBg`, `toolErrorBg` |
+| terminal default (empty) | `text`, `userMessageText`, `customMessageText`, `toolTitle` |
+
+Backgrounds use `panel`, so existing text is not paired with a newly inverted
+foreground. Several thinking levels share a color in a small palette.
+
 ## Typography and spacing
 
 Forge uses Barlow Condensed for display, Barlow for body text and JetBrains Mono
@@ -399,10 +418,13 @@ independent color settings. The template contains no hex colors.
    aliases, accent-filled controls and the mark canvas. Inspect both modes at
    the intended size before publishing.
 
-The repository currently ships these data files and static renders, not a
-pack-selection command or renderer. Runtime integration belongs to the theme,
-web and export implementations. Every runtime consumer must read the selected
+The repository ships these data files and static renders, and the theme
+library reads a selected pack: it derives the shipped dark and light terminal
+themes, resolved presentation values, CSS custom properties and filled mark
+templates ([theme library](theme.md#brand-pack)). It has no pack-selection
+command, renderer or bundled font files. Web and export implementations must read
+the same selected pack. Every runtime consumer must read the selected
 pack and never hard-code brand colors, fonts, sizes, wordmark, tagline, glyphs or
-mark paths. The theme loader must prove a same-format pack swap reaches its
-consumers without a code change. A brand swap must not change behavior, message
+mark paths. The theme library's tests prove a same-format pack swap reaches its
+outputs without a code change. A brand swap must not change behavior, message
 wording, custom themes or the user's terminal font.
