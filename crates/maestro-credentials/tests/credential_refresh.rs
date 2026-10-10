@@ -14,7 +14,8 @@ mod tests {
     use super::support::{TempDir, block_on, is_child, run_child};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
-        AuthStorageFuture, ConfigValueOperations, InMemoryAuthStorageBackend, LockUpdate,
+        AuthStorageFuture, ConfigValueOperations, FileAuthStorageBackend,
+        InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{
         BoxFuture, OAuthAuthInfo, OAuthCredentials, OAuthError, OAuthLoginCallbacks, OAuthPrompt,
@@ -44,8 +45,6 @@ mod tests {
     struct Probe {
         /// The text store.
         inner: InMemoryAuthStorageBackend,
-        /// Asynchronous operations fail before reading.
-        lock_fails: AtomicBool,
         /// Replacement text is refused.
         write_fails: AtomicBool,
         /// Asynchronous operations fail after acquiring, instead of reading.
@@ -124,9 +123,6 @@ mod tests {
         ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
             let probe = &*self.0;
             probe.async_calls.fetch_add(1, Ordering::SeqCst);
-            if probe.lock_fails.load(Ordering::SeqCst) {
-                return Box::pin(std::future::ready(Err("lock failed".into())));
-            }
             probe.inner.with_lock_async(probe.hooked(update))
         }
     }
@@ -268,6 +264,30 @@ mod tests {
     }
 
     #[test]
+    fn locked_reread_with_unextractable_valid_token_fails_without_refresh_or_write() {
+        block_on(async {
+            let provider = ControlledProvider::new("r2-extract").register();
+            let _cleanup = Unregister("r2-extract".into());
+            let (probe, storage) = setup(&json!({"r2-extract": record("old", 1000.0)}));
+            replace_text(
+                &probe,
+                &json!({"r2-extract": record("extract-fails", FUTURE)}),
+            );
+            let outcome = request(&storage, "r2-extract").await;
+            assert_eq!(outcome.unwrap_err().to_string(), "extract failed");
+            let errors = storage.drain_errors();
+            assert_eq!(errors.len(), 1);
+            assert_eq!(errors[0].to_string(), "extract failed");
+            assert_eq!(provider.refreshes.load(Ordering::SeqCst), 0);
+            assert!(probe.writes.lock().unwrap().is_empty());
+            assert!(matches!(
+                storage.get("r2-extract"),
+                Some(AuthCredential::OAuth(adopted)) if adopted.access == "extract-fails"
+            ));
+        });
+    }
+
+    #[test]
     fn expired_tokens_refresh_once_and_preserve_other_records() {
         block_on(async {
             let provider = ControlledProvider::new("r3").register();
@@ -319,10 +339,9 @@ mod tests {
         ControlledProvider::refreshing("openai", refresh)
     }
 
-    /// Make the lock, read, parse or write phase named `kind` fail.
+    /// Make the read, parse or write phase named `kind` fail.
     fn break_refresh(kind: &str, probe: &Probe) {
         match kind {
-            "lock" => probe.lock_fails.store(true, Ordering::SeqCst),
             "read" => probe.read_fails.store(true, Ordering::SeqCst),
             "parse" => probe
                 .inner
@@ -337,7 +356,6 @@ mod tests {
     /// lookup with its own recorded error, and the stored login recovers once the phase works.
     async fn refresh_failures_block_ambient_sources() {
         let expected = [
-            ("lock", "lock failed"),
             ("read", "read failed"),
             ("parse", ""),
             ("write", "write failed"),
@@ -366,7 +384,6 @@ mod tests {
             if matches!(kind, "provider" | "extract") {
                 continue;
             }
-            probe.lock_fails.store(false, Ordering::SeqCst);
             probe.read_fails.store(false, Ordering::SeqCst);
             probe.write_fails.store(false, Ordering::SeqCst);
             replace_text(&probe, &json!({"openai": record("old", 1000.0)}));
@@ -446,20 +463,7 @@ mod tests {
             let _cleanup = Unregister("r6".into());
             let document = json!({"r6": record("old", 1000.0)});
             let (probe, storage) = setup(&document);
-            probe.lock_fails.store(true, Ordering::SeqCst);
             probe.sync_fails.store(true, Ordering::SeqCst);
-            assert_eq!(request(&storage, "r6").await.unwrap(), None);
-            let messages: Vec<String> = storage
-                .drain_errors()
-                .iter()
-                .map(ToString::to_string)
-                .collect();
-            assert_eq!(messages, ["lock failed", "sync failed"]);
-            assert!(
-                matches!(storage.get("r6"), Some(AuthCredential::OAuth(old)) if old.access == "old")
-            );
-
-            probe.lock_fails.store(false, Ordering::SeqCst);
             probe.write_fails.store(true, Ordering::SeqCst);
             assert_eq!(
                 request(&storage, "r6").await.unwrap().as_deref(),
@@ -477,19 +481,39 @@ mod tests {
         });
     }
 
+    /// Storage over a credentials file in `dir` whose lock sidecar becomes a directory, so
+    /// the operating system refuses to open it.
+    fn storage_with_unopenable_lock(dir: &TempDir, document: &Value) -> (String, AuthStorage) {
+        let path = dir.path("auth.json");
+        std::fs::write(&path, serde_json::to_string_pretty(document).unwrap()).unwrap();
+        let storage = AuthStorage::from_storage(FileAuthStorageBackend::new(&path));
+        let sidecar = format!("{path}.lock");
+        std::fs::remove_file(&sidecar).unwrap();
+        std::fs::create_dir(&sidecar).unwrap();
+        (sidecar, storage)
+    }
+
     #[test]
-    fn refresh_can_retry_after_failure() {
+    fn file_lock_failure_blocks_fallback_and_refresh_retries_after_it_clears() {
         block_on(async {
             let provider = ControlledProvider::new("r7").register();
             let _cleanup = Unregister("r7".into());
-            let (probe, storage) = setup(&json!({"r7": record("old", 1000.0)}));
-            probe.lock_fails.store(true, Ordering::SeqCst);
+            let dir = TempDir::new("refresh-lock-failure");
+            let (sidecar, storage) =
+                storage_with_unopenable_lock(&dir, &json!({"r7": record("old", 1000.0)}));
+            storage.set_fallback_resolver(|_| Some("fallback".into()));
             assert_eq!(request(&storage, "r7").await.unwrap(), None);
-            assert_eq!(storage.drain_errors().len(), 1);
+            let errors = storage.drain_errors();
+            assert!(!errors.is_empty());
+            for error in &errors {
+                let io = error.downcast_ref::<std::io::Error>().unwrap();
+                assert_eq!(io.kind(), std::io::ErrorKind::IsADirectory);
+            }
+            assert_eq!(provider.refreshes.load(Ordering::SeqCst), 0);
             assert!(
                 matches!(storage.get("r7"), Some(AuthCredential::OAuth(old)) if old.refresh == "refresh-old")
             );
-            probe.lock_fails.store(false, Ordering::SeqCst);
+            std::fs::remove_dir(&sidecar).unwrap();
             assert_eq!(
                 request(&storage, "r7").await.unwrap().as_deref(),
                 Some("new")

@@ -38,7 +38,7 @@ impl AuthStorage {
 
     /// The registered OAuth providers in registration order, sharing their implementations.
     ///
-    /// The registry itself is documented by `maestro_models::get_oauth_providers`.
+    /// The registry itself is documented by [`maestro_models::get_oauth_providers`].
     #[must_use]
     pub fn get_oauth_providers(&self) -> Vec<OAuthProviderHandle> {
         maestro_models::get_oauth_providers()

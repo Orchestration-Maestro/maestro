@@ -409,36 +409,57 @@ mod tests {
         "text".into()
     }
 
+    /// Run one memory callback over `initial` text and check the seen text, stored text and error.
+    async fn memory_input_and_outcome(
+        initial: Option<&str>,
+        outcome: Result<Option<&str>, &'static str>,
+    ) {
+        let backend = InMemoryAuthStorageBackend::default();
+        if let Some(text) = initial {
+            let discarded = std::sync::Mutex::new(Vec::new());
+            let seed = Ok(Some(text.into()));
+            backend
+                .with_lock_async(replacing(&discarded, seed))
+                .await
+                .unwrap();
+        }
+        let seen = std::sync::Mutex::new(Vec::new());
+        let update = outcome.map(|text| text.map(Into::into)).map_err(Into::into);
+        let result = backend.with_lock_async(replacing(&seen, update)).await;
+        let expected_text = match outcome {
+            Ok(Some(text)) => Some(text.to_owned()),
+            _ => initial.map(str::to_owned),
+        };
+        let label = format!("{initial:?} {outcome:?}");
+        assert_eq!(memory_text(&backend), expected_text, "{label}");
+        assert_eq!(
+            *seen.lock().unwrap(),
+            [initial.map(str::to_owned)],
+            "{label}"
+        );
+        let message = result.err().map(|error| error.to_string());
+        assert_eq!(message, outcome.err().map(str::to_owned), "{label}");
+    }
+
     #[test]
     fn async_memory_callbacks_are_unlocked_and_last_write_wins() {
         block_on(async {
-            let backend = InMemoryAuthStorageBackend::default();
-            let seen = std::sync::Mutex::new(Vec::new());
-            backend
-                .with_lock_async(replacing(&seen, Ok(None)))
-                .await
-                .unwrap();
-            assert_eq!(memory_text(&backend), None);
-            backend
-                .with_lock_async(replacing(&seen, Ok(Some(String::new()))))
-                .await
-                .unwrap();
-            assert_eq!(memory_text(&backend), Some(String::new()));
-            backend
-                .with_lock_async(replacing(&seen, Ok(Some("a".into()))))
-                .await
-                .unwrap();
-            let error = backend
-                .with_lock_async(replacing(&seen, Err("refused".into())))
-                .await
-                .unwrap_err();
-            assert_eq!(error.to_string(), "refused");
-            assert_eq!(memory_text(&backend), Some("a".into()));
-            assert_eq!(
-                *seen.lock().unwrap(),
-                [None, None, Some(String::new()), Some("a".into())]
-            );
+            let outcomes = [Ok(None), Ok(Some("b")), Ok(Some("")), Err("refused")];
+            for (initial, outcome) in [None, Some(""), Some("a")]
+                .into_iter()
+                .flat_map(|initial| outcomes.map(|outcome| (initial, outcome)))
+            {
+                memory_input_and_outcome(initial, outcome).await;
+            }
 
+            let backend = InMemoryAuthStorageBackend::default();
+            backend
+                .with_lock_async(replacing(
+                    &std::sync::Mutex::new(Vec::new()),
+                    Ok(Some("a".into())),
+                ))
+                .await
+                .unwrap();
             let (first_waits, second_done) = (AtomicBool::new(false), AtomicBool::new(false));
             let first = backend.with_lock_async(handshake(&second_done, &first_waits, "first"));
             let second = backend.with_lock_async(handshake(&first_waits, &second_done, "second"));

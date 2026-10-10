@@ -6,8 +6,9 @@ expired OAuth tokens and formats login guidance.
 
 ## Stored credentials
 
-`AuthStorage` accepts the stored records once, when it is created, and again on
-`reload`; later reads and changes use that accepted snapshot. Missing or empty
+`AuthStorage` accepts the stored records when it is created, on `reload` and when a
+locked refresh rereads the document, adopting a newer one; other reads and changes use
+that accepted snapshot. Missing or empty
 stored text is an empty store. Text that is not a JSON object, or cannot be read,
 locked or parsed, is a load failure: the accepted records are kept, the failure
 is recorded for `drain_errors` (oldest first), and `set`/`remove` change only

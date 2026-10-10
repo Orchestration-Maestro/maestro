@@ -104,6 +104,7 @@ mod tests {
             ("k2-lines", "line1\nline2\n"),
             ("k2-marks", "\u{feff}marked\u{feff}"),
             ("k2-next-line", "\u{85}next\u{85}"),
+            ("k2-mixed", "\u{feff}\u{85}mixed\u{85}\u{feff}"),
         ]);
         operations.env.replace(HashMap::from([
             ("K2_SET".to_owned(), " padded \n".to_owned()),
@@ -122,6 +123,7 @@ mod tests {
             ("!k2-lines", "line1\nline2"),
             ("!k2-marks", "marked"),
             ("!k2-next-line", "\u{85}next\u{85}"),
+            ("!k2-mixed", "\u{85}mixed\u{85}"),
         ];
         for (index, (configured, expected)) in cases.into_iter().enumerate() {
             let storage = storing(configured);
@@ -230,6 +232,7 @@ mod tests {
             oauth_record(r#","refresh":"r","access":"a""#),
             oauth_record(r#","refresh":"r","access":"a","expires":null"#),
             oauth_record(r#","refresh":"r","access":"a","expires":"wrong""#),
+            oauth_record(r#","refresh":"r","access":"a","expires":true"#),
         ];
         for (provider, records) in [("k4-key", &keyed[..]), ("k4-oauth", &oauth[..])] {
             for (index, record) in records.iter().enumerate() {

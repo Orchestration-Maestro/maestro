@@ -11,7 +11,7 @@ milliseconds and flattened provider extension fields. It does not validate
 credentials or persist them. Prompt and authorization records omit absent
 optional fields during serialization but retain explicit empty text and false.
 Selection prompts keep the supplied option order and repeated identifiers.
-`timestamp_now` returns the current time in the same epoch milliseconds on every
+[`timestamp_now`](../../crates/maestro-models/src/records/diagnostics.rs) returns the current time in the same epoch milliseconds on every
 target, for expiry decisions.
 
 PKCE requests 32 secure random bytes, encodes an unpadded URL-safe Base64
