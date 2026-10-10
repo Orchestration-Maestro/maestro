@@ -71,79 +71,75 @@ fn theme_published_schema_keeps_all_required_tokens() {
             "toolErrorBg"
         ]
     );
-    let color = &schema["$defs"]["colorValue"]["oneOf"];
-    assert_eq!(color[1]["minimum"], 0);
-    assert_eq!(color[1]["maximum"], 255);
-    for node in [
-        &schema,
-        &schema["properties"]["colors"],
-        &schema["properties"]["export"],
-    ] {
-        assert_eq!(node["additionalProperties"], false);
+    let validator = jsonschema::validator_for(&schema).unwrap();
+    let valid = |doc: &Value| validator.is_valid(doc);
+    assert!(valid(&dark()));
+    let mutated = |path: &[&str], value: Option<Value>| {
+        let mut doc = dark();
+        set(&mut doc, path, value);
+        doc
+    };
+    let accepted = [
+        mutated(&["colors", "accent"], Some(json!(0))),
+        mutated(&["colors", "accent"], Some(json!(255))),
+        mutated(&["colors", "accent"], Some(json!(""))),
+        mutated(&["export", "pageBg"], Some(json!("#101010"))),
+    ];
+    for doc in &accepted {
+        assert!(valid(doc), "{doc}");
     }
-    assert!(runtime["additionalProperties"].is_null());
-    assert!(runtime["properties"]["colors"]["additionalProperties"].is_null());
-    assert!(runtime["properties"]["export"]["additionalProperties"].is_null());
+    let rejected = [
+        mutated(&["colors", "accent"], None),
+        mutated(&["colors", "accent"], Some(json!(true))),
+        mutated(&["colors", "accent"], Some(json!(1.5))),
+        mutated(&["colors", "accent"], Some(json!(256))),
+        mutated(&["colors", "accent"], Some(json!(-1))),
+        mutated(&["name"], None),
+        mutated(&["extra"], Some(json!(1))),
+        mutated(&["colors", "extra"], Some(json!("#000000"))),
+        mutated(&["export", "extra"], Some(json!("#000000"))),
+        mutated(&["export", "pageBg"], Some(json!(1.5))),
+        mutated(&["vars", "extra"], Some(json!(1.5))),
+    ];
+    for doc in &rejected {
+        assert!(!valid(doc), "{doc}");
+    }
+    assert!(jsonschema::is_valid(
+        &runtime,
+        &mutated(&["colors", "extra"], Some(json!("#000000")))
+    ));
 }
 
-/// The truecolor prefix the file data demands for `name`, resolving one variable hop.
-#[cfg(test)]
-fn expected_truecolor(doc: &Value, name: &str) -> String {
-    let plane = if name.ends_with("Bg") { 48 } else { 38 };
-    let mut value = &doc["colors"][name];
-    if let Some(target) = value.as_str().and_then(|text| doc["vars"].get(text)) {
-        value = target;
-    }
-    match value {
-        Value::Number(index) => format!("\x1b[{plane};5;{index}m"),
-        Value::String(text) if text.is_empty() => format!("\x1b[{}m", plane + 1),
-        Value::String(text) => {
-            let channel = |at: usize| u8::from_str_radix(&text[at..at + 2], 16).unwrap();
-            format!(
-                "\x1b[{plane};2;{};{};{}m",
-                channel(1),
-                channel(3),
-                channel(5)
-            )
-        }
-        other => panic!("unexpected shipped color {other}"),
+/// The stored prefix of `name` on its own plane.
+fn prefix_of(theme: &maestro_theme::Theme, name: &str) -> String {
+    if name.ends_with("Bg") {
+        bg(theme, name)
+    } else {
+        fg(theme, name)
     }
 }
+
+/// Independently computed prefixes for every shipped token, per asset and mode.
+const SHIPPED_PREFIXES: &str = include_str!("support/shipped_prefixes.json");
 
 #[test]
 fn theme_loads_shipped_theme_data() {
-    for (file, text, indexed_accent) in [
-        (
-            "dark",
-            include_str!("../assets/theme/dark.json"),
-            "\x1b[38;5;109m",
-        ),
-        (
-            "light",
-            include_str!("../assets/theme/light.json"),
-            "\x1b[38;5;66m",
-        ),
-    ] {
-        let doc: Value = serde_json::from_str(text).unwrap();
+    let expected: Value = serde_json::from_str(SHIPPED_PREFIXES).unwrap();
+    for file in ["dark", "light"] {
         let path = format!("{}/assets/theme/{file}.json", env!("CARGO_MANIFEST_DIR"));
-        let load_with =
-            |mode| load_theme_from_path(&path, Some(mode), &NativeThemeOperations).unwrap();
-        let truecolor = load_with(ColorMode::Truecolor);
-        let indexed = load_with(ColorMode::Color256);
-        assert_eq!(truecolor.name(), Some(file));
-        for name in required_colors() {
-            let (full, short) = if name.ends_with("Bg") {
-                (bg(&truecolor, &name), bg(&indexed, &name))
-            } else {
-                (fg(&truecolor, &name), fg(&indexed, &name))
-            };
-            assert_eq!(full, expected_truecolor(&doc, &name), "{file} {name}");
-            assert!(
-                short.contains(";5;") || short.ends_with("39m") || short.ends_with("49m"),
-                "{file} {name}"
-            );
+        for (mode, key) in [
+            (ColorMode::Truecolor, "truecolor"),
+            (ColorMode::Color256, "color256"),
+        ] {
+            let theme = load_theme_from_path(&path, Some(mode), &NativeThemeOperations).unwrap();
+            assert_eq!(theme.name(), Some(file));
+            let table = expected[file][key].as_object().unwrap();
+            assert_eq!(table.len(), 51);
+            for (name, prefix) in table {
+                let actual = prefix_of(&theme, name);
+                assert_eq!(actual, prefix.as_str().unwrap(), "{file} {key} {name}");
+            }
         }
-        assert_eq!(fg(&indexed, "accent"), indexed_accent);
     }
 }
 

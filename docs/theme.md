@@ -1,7 +1,7 @@
 # Theme
 
 `maestro-theme` builds typed terminal themes. A `Theme` holds one prepared ANSI
-prefix per color name, a stored `ColorMode`, and optional name and source path.
+prefix per plane and color name, a stored `ColorMode`, and optional name and source path.
 Every public item lives in the `theme` module and is re-exported at the crate root.
 
 ```rust
@@ -20,7 +20,7 @@ is the published editor schema and rejects unknown fields. Loading admits a loos
 runtime schema (`runtime-schema.json`) that ignores unknown root and `export` fields
 and resolves extra entries under `colors`.
 
-A file has a required `name`, optional `$schema`, `vars`, `colors` and `export`.
+A file requires `name` and `colors`; `$schema`, `vars` and `export` are optional.
 `colors` holds all 51 required tokens (45 foreground, 6 background: `selectedBg`,
 `userMessageBg`, `customMessageBg`, `toolPendingBg`, `toolSuccessBg`,
 `toolErrorBg`). A color, and every variable, is one of:
@@ -60,9 +60,11 @@ indices are never requantized.
 - `Variable reference not found: <name>` and `Circular variable reference detected: <name>`.
 - `Unknown theme color: <name>` / `Unknown theme background color: <name>`: lookup of
   a key the theme was not built with.
-- `Failed to parse theme <path>: <cause>`: the file is not JSON.
-- `Invalid theme "<path>":` followed by `Missing required color tokens:` (sorted)
-  and `Other errors:` (`  - <json path>: <detail>`).
+- `Failed to parse theme <path>: <cause>`: the native JSON decoder rejected the text;
+  what it accepts is that decoder's, see `serde_json`.
+- `Invalid theme "<path>":` followed by either or both of
+  `Missing required color tokens:` (sorted) and `Other errors:`
+  (`  - <json path>: <detail>`), according to the errors present.
 
 A file that cannot be read keeps its I/O error and is never relabelled as a parse
 failure.

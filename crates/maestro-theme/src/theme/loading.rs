@@ -52,7 +52,7 @@ pub fn load_theme_from_path(
             message: cause.to_string(),
             cause: Some(Box::new(cause)),
         })?;
-    let json: Value = serde_json::from_str(&content).map_err(|cause| ThemeError {
+    let mut json: Value = serde_json::from_str(&content).map_err(|cause| ThemeError {
         message: format!("Failed to parse theme {path}: {cause}"),
         cause: Some(Box::new(cause)),
     })?;
@@ -60,13 +60,13 @@ pub fn load_theme_from_path(
     let mode = mode.unwrap_or_else(|| detect_mode(operations));
     let mut fg = Vec::new();
     let mut bg = Vec::new();
-    if let Some(colors) = json["colors"].as_object() {
+    if let Value::Object(colors) = json["colors"].take() {
         for (key, value) in colors {
-            let color = resolve(value, &json["vars"])?;
-            if is_background(key) {
-                bg.push((ThemeBg::Named(key.clone()), color));
+            let color = resolve(&value, &json["vars"])?;
+            if is_background(&key) {
+                bg.push((ThemeBg::Named(key), color));
             } else {
-                fg.push((ThemeColor::Named(key.clone()), color));
+                fg.push((ThemeColor::Named(key), color));
             }
         }
     }
@@ -182,22 +182,20 @@ fn authored(value: &Value) -> Result<ColorValue, ThemeError> {
 }
 /// Follow an immutable alias chain, rejecting revisits within this color only.
 fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeError> {
-    let mut value = authored(value)?;
+    let mut current = value;
     let mut visited = HashSet::new();
-    loop {
-        match value {
-            ColorValue::String(ref name) if !name.is_empty() && !name.starts_with('#') => {
-                if !visited.insert(name.clone()) {
-                    return Err(ThemeError::message(format!(
-                        "Circular variable reference detected: {name}"
-                    )));
-                }
-                let target = vars.get(name).ok_or_else(|| {
-                    ThemeError::message(format!("Variable reference not found: {name}"))
-                })?;
-                value = authored(target)?;
-            }
-            value => return Ok(value),
+    while let Some(name) = current
+        .as_str()
+        .filter(|name| !name.is_empty() && !name.starts_with('#'))
+    {
+        if !visited.insert(name) {
+            return Err(ThemeError::message(format!(
+                "Circular variable reference detected: {name}"
+            )));
         }
+        current = vars
+            .get(name)
+            .ok_or_else(|| ThemeError::message(format!("Variable reference not found: {name}")))?;
     }
+    authored(current)
 }

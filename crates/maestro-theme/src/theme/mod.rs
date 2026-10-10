@@ -120,6 +120,13 @@ pub enum ThemeColor {
     Named(String),
 }
 impl ThemeColor {
+    /// Consume the token into its literal map key.
+    fn into_key(self) -> String {
+        match self {
+            Self::Named(name) => name,
+            other => other.as_str().to_owned(),
+        }
+    }
     /// Return the literal map key.
     #[must_use]
     pub fn as_str(&self) -> &str {
@@ -192,6 +199,13 @@ pub enum ThemeBg {
     Named(String),
 }
 impl ThemeBg {
+    /// Consume the token into its literal map key.
+    fn into_key(self) -> String {
+        match self {
+            Self::Named(name) => name,
+            other => other.as_str().to_owned(),
+        }
+    }
     /// Return the literal map key.
     #[must_use]
     pub fn as_str(&self) -> &str {
@@ -268,11 +282,11 @@ impl Theme {
     ) -> Result<Self, ThemeError> {
         let fg: IndexMap<_, _> = fg_colors
             .into_iter()
-            .map(|(key, value)| (key.as_str().to_owned(), value))
+            .map(|(key, value)| (key.into_key(), value))
             .collect();
         let bg: IndexMap<_, _> = bg_colors
             .into_iter()
-            .map(|(key, value)| (key.as_str().to_owned(), value))
+            .map(|(key, value)| (key.into_key(), value))
             .collect();
         let fg_colors = prepare(fg, mode, 38)?;
         let bg_colors = prepare(bg, mode, 48)?;
