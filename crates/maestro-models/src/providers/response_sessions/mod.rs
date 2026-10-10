@@ -1,3 +1,3 @@
-//! Internal response-session protocol preparation.
+//! Dedicated response-session protocol.
 
-mod openai_codex_responses;
+pub mod openai_codex_responses;

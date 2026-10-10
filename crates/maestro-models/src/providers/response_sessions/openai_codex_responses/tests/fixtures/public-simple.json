@@ -1,0 +1,3954 @@
+[
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "minimal",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "small",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "small",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": false,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "minimal"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "low"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "medium"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "high"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        },
+        "reasoning": "xhigh"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "base": {
+        "temperature": 0,
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>",
+        "transport": "websocket-cached",
+        "cacheRetention": "long",
+        "sessionId": "s",
+        "headers": {
+          "X-Meta": " fixture "
+        },
+        "timeoutMs": 7,
+        "maxRetries": 0,
+        "maxRetryDelayMs": 9,
+        "metadata": {
+          "z": [
+            2,
+            1,
+            2
+          ]
+        }
+      },
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "s",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "temperature": 0,
+        "reasoning": {
+          "effort": "",
+          "summary": "auto"
+        }
+      }
+    }
+  }
+]

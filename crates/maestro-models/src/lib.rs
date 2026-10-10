@@ -92,3 +92,7 @@ pub use oauth::{
     OAuthApiKey, OAuthProviderHandle, get_oauth_api_key, get_oauth_provider, get_oauth_providers,
     refresh_oauth_token, register_oauth_provider, reset_oauth_providers, unregister_oauth_provider,
 };
+
+pub use providers::response_sessions::openai_codex_responses::{
+    OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats,
+};

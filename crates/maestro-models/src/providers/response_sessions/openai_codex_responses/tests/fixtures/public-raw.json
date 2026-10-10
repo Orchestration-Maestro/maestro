@@ -1,0 +1,1217 @@
+[
+  {
+    "input": {
+      "options": {},
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "none"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "none",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "minimal"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "minimal",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "low"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "medium"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "high"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "xhigh"
+      },
+      "model_reasoning": true
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {},
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "none"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "disabled",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "minimal"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "minimal",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "low"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "small",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "medium"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "high"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "xhigh"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "disabled",
+        "minimal": null,
+        "low": "small",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh"
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {},
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "none"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "none",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "minimal"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "minimal",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "low"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "medium"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "high"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "xhigh"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": null,
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": null,
+        "xhigh": null
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {},
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "none"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "minimal"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "low"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "medium"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "high"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "xhigh"
+      },
+      "model_reasoning": true,
+      "thinking_level_map": {
+        "off": "",
+        "minimal": "",
+        "xhigh": ""
+      }
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "",
+          "summary": "auto"
+        }
+      }
+    }
+  }
+]

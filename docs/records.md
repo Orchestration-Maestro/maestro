@@ -36,6 +36,9 @@ Cloudflare and Copilot helpers.
 The [response-event guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/responses.md)
 describes the internal history/tool converter and response-event reducer.
 
+The [response-session guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/response-sessions.md)
+covers dedicated raw/simple invocation, automatic transport dispatch and session controls.
+
 The [OAuth authorization guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
 covers data records, secure proof keys, escaped callback pages, device, subscription
 and response-account login and refresh.

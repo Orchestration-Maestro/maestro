@@ -456,7 +456,7 @@ pub(crate) fn price(usage: &mut crate::Usage, tier: Option<&str>, model: &str) {
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.
-pub(super) fn conclude(
+pub(crate) fn conclude(
     events: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,

@@ -43,6 +43,12 @@ registered custom callback keeps returning its own setup error immediately (insi
 the future for `complete`). A bundled callback never does: its setup failures are
 settled error streams.
 
+## Dedicated response sessions
+
+The [response-session provider](response-sessions.md) exposes raw/simple streams
+through its provider module, separate from generic registration and root stream
+forwarding. Its named option/debug records are available at the crate root.
+
 ## Raw extras
 
 `ProviderStreamOptions.common` reaches the adapter unchanged. A bundled raw
