@@ -455,7 +455,7 @@ fn checked_context(host: &ProcessTuiRuntime) -> LogContext {
 }
 
 /// The home a context should report: a present `HOME` verbatim (empty included) on Unix,
-/// the account directory otherwise.
+/// otherwise the native home fallback, or an empty path if unavailable.
 fn expected_home() -> PathBuf {
     #[cfg(unix)]
     if let Some(home) = std::env::var_os("HOME") {

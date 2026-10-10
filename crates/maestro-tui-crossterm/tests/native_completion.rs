@@ -4,7 +4,7 @@
 #[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
 mod runtime_support;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt;
@@ -30,7 +30,7 @@ use maestro_tui::{
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use runtime_support::{is_child, rerun, run_set};
 use tokio::sync::{mpsc, oneshot};
-use tokio::time::{Instant, advance, timeout};
+use tokio::time::{Instant, advance};
 
 /// What a provider future yields.
 type Reply = Result<Option<AutocompleteSuggestions>, CompletionError>;
@@ -194,28 +194,73 @@ impl Terminal for Sink {
     }
 }
 
-/// Reports submitted work that the host dropped before it finished.
-struct Abandoned {
-    /// Receives one signal per abandoned work item.
-    report: mpsc::UnboundedSender<()>,
-    /// Whether the work ran to completion.
+/// Counts the host work that has not finished or been dropped.
+#[derive(Default)]
+struct Activity {
+    /// Scheduled render callbacks, the producers of debounced requests.
+    callbacks: Cell<usize>,
+    /// Submitted futures.
+    work: Cell<usize>,
+}
+
+/// Counts one item of host work until it finishes or is dropped, then signals the test.
+struct Tracked {
+    /// The count this item belongs to.
+    count: Rc<Activity>,
+    /// Whether this item is a scheduled callback rather than a submitted future.
+    callback: bool,
+    /// Receives one signal per item that ends.
+    ended: mpsc::UnboundedSender<()>,
+    /// Receives one signal per submitted future dropped before it finished.
+    abandoned: Option<mpsc::UnboundedSender<()>>,
+    /// Whether the item ran to completion.
     finished: bool,
 }
 
-impl Drop for Abandoned {
-    fn drop(&mut self) {
-        if !self.finished {
-            self.report.send(()).ok();
+impl Tracked {
+    /// Starts counting one item.
+    fn new(watch: &Watched, callback: bool) -> Self {
+        let counter = if callback {
+            &watch.activity.callbacks
+        } else {
+            &watch.activity.work
+        };
+        counter.set(counter.get() + 1);
+        Self {
+            count: Rc::clone(&watch.activity),
+            callback,
+            ended: watch.ended.clone(),
+            abandoned: (!callback).then(|| watch.report.clone()),
+            finished: false,
         }
     }
 }
 
-/// The native host, reporting every submitted future it drops before completion.
+impl Drop for Tracked {
+    fn drop(&mut self) {
+        let counter = if self.callback {
+            &self.count.callbacks
+        } else {
+            &self.count.work
+        };
+        counter.set(counter.get() - 1);
+        if let (false, Some(report)) = (self.finished, &self.abandoned) {
+            report.send(()).ok();
+        }
+        self.ended.send(()).ok();
+    }
+}
+
+/// The native host, counting its scheduled callbacks and submitted futures.
 struct Watched {
     /// The host under test.
     host: ProcessTuiRuntime,
-    /// Receives the drop signals.
+    /// Receives the drop signals of submitted futures.
     report: mpsc::UnboundedSender<()>,
+    /// Receives a signal each time scheduled or submitted work ends.
+    ended: mpsc::UnboundedSender<()>,
+    /// The work still outstanding.
+    activity: Rc<Activity>,
 }
 
 impl TuiRuntime for Watched {
@@ -224,14 +269,18 @@ impl TuiRuntime for Watched {
     }
 
     fn schedule(&self, delay: Duration, callback: RenderCallback) -> Box<dyn RenderTimer> {
-        self.host.schedule(delay, callback)
+        let watch = Tracked::new(self, true);
+        self.host.schedule(
+            delay,
+            Box::new(move || {
+                let _watch = watch;
+                callback()
+            }),
+        )
     }
 
     fn spawn_local(&self, future: LocalFuture) {
-        let watch = Abandoned {
-            report: self.report.clone(),
-            finished: false,
-        };
+        let watch = Tracked::new(self, false);
         self.host.spawn_local(Box::pin(async move {
             let mut watch = watch;
             let result = future.await;
@@ -271,6 +320,10 @@ struct Scene {
     writes: mpsc::UnboundedReceiver<String>,
     /// Signals for submitted work the host dropped before it finished.
     abandoned: mpsc::UnboundedReceiver<()>,
+    /// Signals each time scheduled or submitted work ends.
+    ended: mpsc::UnboundedReceiver<()>,
+    /// The work still outstanding.
+    activity: Rc<Activity>,
 }
 
 impl Scene {
@@ -279,10 +332,14 @@ impl Scene {
         set_keybindings(KeybindingsManager::new(TUI_KEYBINDINGS.clone(), Vec::new()));
         let (writes_in, writes) = mpsc::unbounded_channel();
         let (report, abandoned) = mpsc::unbounded_channel();
+        let (ended_in, ended) = mpsc::unbounded_channel();
+        let activity = Rc::new(Activity::default());
         let terminal: TerminalHandle = Rc::new(RefCell::new(Sink { writes: writes_in }));
         let host = Watched {
             host: ProcessTuiRuntime::new(local),
             report,
+            ended: ended_in,
+            activity: Rc::clone(&activity),
         };
         let tui = TUI::new(
             terminal,
@@ -314,6 +371,8 @@ impl Scene {
             requests,
             writes,
             abandoned,
+            ended,
+            activity,
         }
     }
 
@@ -337,22 +396,26 @@ impl Scene {
         }
     }
 
-    /// Waits until the terminal receives a write that contains `text`.
+    /// Waits until the terminal receives a write that contains `text`, failing once no
+    /// host work remains that could still draw it.
     async fn drawn(&mut self, text: &str) {
-        let read = async {
-            while !self
-                .writes
-                .recv()
-                .await
-                .expect("the terminal stays open")
-                .contains(text)
-            {}
-        };
-        // A paused clock reaches the limit only once every task is idle.
-        let drawn = timeout(Duration::from_secs(60), read);
-        tokio::select! {
-            result = drawn => assert!(result.is_ok(), "nothing drew {text:?}"),
-            _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+        while !self.has_drawn(text) {
+            assert!(
+                self.activity.callbacks.get() + self.activity.work.get() > 0,
+                "nothing drew {text:?}"
+            );
+            tokio::select! {
+                _ = self.ended.recv() => {}
+                _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+            }
+        }
+    }
+
+    /// Waits until every scheduled callback has run or been dropped, so no request is left
+    /// to start.
+    async fn settled(&mut self) {
+        while self.activity.callbacks.get() > 0 {
+            self.ended.recv().await;
         }
     }
 
@@ -442,6 +505,7 @@ fn symbol_completion_debounces_on_native_host() {
                 scene.menu().iter().any(|row| row.ends_with(value)),
                 "{typed}"
             );
+            scene.settled().await;
             assert!(
                 scene.requests.try_recv().is_err(),
                 "{typed}: one request only"
