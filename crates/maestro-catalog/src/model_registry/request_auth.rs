@@ -108,9 +108,7 @@ impl ModelRegistry {
             .unwrap_or_else(PoisonError::into_inner)
             .headers
             .clone()
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
+            .unwrap_or_default();
         headers.extend(provider_headers.into_iter().flatten());
         headers.extend(model_headers.into_iter().flatten());
         if config.is_some_and(|c| c.auth_header) {
