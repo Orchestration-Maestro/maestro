@@ -5,18 +5,27 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 mod brand;
+mod code;
 #[cfg(not(target_arch = "wasm32"))]
 mod collation;
 mod colors;
+mod components;
 mod export;
 pub mod fs_watch;
+mod highlighting;
+mod languages;
 mod lifecycle;
 mod loading;
 mod registry;
+mod styles;
 mod watching;
 pub use brand::{
     BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPack, BrandPresentation, BrandType,
     load_brand_pack,
+};
+pub use code::{highlight_code, highlight_html};
+pub use components::{
+    get_editor_theme, get_markdown_theme, get_select_list_theme, get_settings_list_theme,
 };
 pub use export::{ThemeExportColors, is_light_theme};
 #[cfg(not(target_arch = "wasm32"))]
@@ -24,6 +33,8 @@ pub use fs_watch::NativeThemeWatchOperations;
 pub use fs_watch::{
     ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher, watch_with_error_handler,
 };
+pub use highlighting::{SyntaxHighlighter, SyntaxSpan, SyntectHighlighter};
+pub use languages::get_language_from_path;
 pub use lifecycle::{LiveTheme, ThemeChangeResult};
 #[cfg(not(target_arch = "wasm32"))]
 pub use loading::NativeThemeOperations;
@@ -47,7 +58,7 @@ pub enum ColorValue {
     Index(u8),
 }
 /// Typed foreground key, with literal names for runtime extensions.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ThemeColor {
     /// The `accent` token.
     Accent,

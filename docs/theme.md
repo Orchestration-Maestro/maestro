@@ -131,6 +131,75 @@ returned stays what it was. Before the first publication `get` fails with
 - `on_theme_change` replaces the one callback. It runs outside every state borrow,
   so it may read the state, replace itself or publish again.
 
+## Decorations and border callbacks
+
+`Theme::bold`, `italic`, `underline`, `inverse` and `strikethrough` take the text and an
+explicit `enabled` flag that stands for the caller's terminal style capability; the library
+detects nothing. Empty text and disabled calls return the text unchanged. Otherwise the text is
+wrapped in the style's opening escape and its own closing escape (`22`, `23`, `24`, `27`, `29`).
+Each matching closing escape inside the text is followed by the opening escape again, and each
+LF or CRLF is preceded by the closing and followed by the opening escape. Other escapes,
+including reset `0`, and a lone CR stay literal. `fg` and `bg` keep their literal
+prefix, unchanged text and plane reset.
+
+`get_thinking_border_color` maps `off`, `minimal`, `low`, `medium`, `high` and `xhigh` to
+their `thinking*` keys and any other level to `thinkingOff`; `get_bash_mode_border_color`
+uses `bashMode`. The returned callbacks keep the instance they were created from, whatever
+is published later, and return their text unstyled when that instance lacks the key.
+
+## Code highlighting
+
+`SyntaxHighlighter` classifies code in a named language into `SyntaxSpan` runs: byte ranges
+of the original text, in order, each with one of the nine syntax colors or none. Spans carry
+no styling, so one interface serves the terminal and HTML callers, and a controlled
+implementation can replace the native one. `SyntectHighlighter` is the native adapter. It
+parses the whole snippet with one state, so a block comment or string spans its lines, and
+joins adjacent runs of one color.
+
+Labels are matched without case against the bundled syntax names and file extensions, then
+`assets/syntax-aliases.json` names the exceptions: labels whose extension would select another
+grammar (`fs` is F#, `h` is C) and labels with no grammar in the set, which stay unsupported
+instead of borrowing a similar one. A scope maps to a color by its longest matching rule
+prefix, and the innermost scope with a color wins:
+
+| Color | Scope prefixes |
+| --- | --- |
+| `syntaxComment` | `comment` |
+| `syntaxKeyword` | `keyword` |
+| `syntaxOperator` | `keyword.operator` |
+| `syntaxFunction` | `entity.name.function`, `support.function` |
+| `syntaxVariable` | `variable`, `entity.other.attribute-name` |
+| `syntaxString` | `string` |
+| `syntaxNumber` | `constant.numeric`, `constant.language` |
+| `syntaxType` | `storage.type`, `entity.name.type`, `entity.name.class`, `support.class` |
+| `syntaxPunctuation` | `punctuation` |
+
+`highlight_code` splits the code at every LF, keeping CR. A missing, empty or unsupported
+label never reaches the engine and colors every row with `mdCodeBlock`; so does text no rule
+classifies. An engine failure returns the rows unstyled. Each row is styled from the theme
+published when the call runs, and a run that spans rows is styled once per row.
+`get_markdown_theme`'s code callback colors the rows with `mdCodeBlock` after a failure
+instead.
+
+`highlight_html` returns an escaped fragment of `<span class="hljs-*">` runs (`comment`,
+`keyword`, `function`, `variable`, `string`, `number`, `type`, `operator`, `punctuation`)
+and plain escaped text for unclassified runs; `&`, `<`, `>`, `"` and `'` (`&#x27;`) are
+escaped. A missing, empty or unsupported label returns `None` and an engine failure is
+returned as the error; recognizing unlabeled code and the plain fallback belong to the
+consuming frontend.
+
+`get_language_from_path` compares the lowercase text after the last `.` of the whole string
+with the file-extension table, so `Dockerfile` and `Makefile` match only without a directory.
+
+## Component styles
+
+`get_markdown_theme`, `get_select_list_theme`, `get_editor_theme` and
+`get_settings_list_theme` return the terminal toolkit's style records. Their callbacks read
+the published theme on every call and return their text unstyled when no theme is published
+or the key is missing. The Markdown decorations apply when `styles_enabled` is set and first
+check that a theme is published; strikethrough does not. The settings cursor is the only value
+fixed at creation: the accent-colored arrow and space of the theme published then.
+
 ## Watching and reload
 
 The watcher operand of `init_theme` and `set_theme` is `Some(operations)` to start
