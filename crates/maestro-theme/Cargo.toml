@@ -1,0 +1,15 @@
+[package]
+name = "maestro-theme"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+indexmap = "=2.14.2"
+serde_json.workspace = true
+num-traits.workspace = true
+jsonschema = { version = "=0.58.5", default-features = false }
+
+[lints]
+workspace = true

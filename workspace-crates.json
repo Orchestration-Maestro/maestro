@@ -9,6 +9,7 @@
   "maestro-request": "core",
   "maestro-resources": "core",
   "maestro-settings": "core",
+  "maestro-theme": "core",
   "maestro-test-conventions": "dedicated",
   "maestro-test-terminal": "dedicated",
   "maestro-tooling": "dedicated",
