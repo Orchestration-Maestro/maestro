@@ -405,6 +405,7 @@ struct ErrorTexts {
 
 #[test]
 fn maestro_response_sessions_render_friendly_http_errors() {
+    assert_conditional_clock();
     let rows: Vec<ErrorCase> = super::fixture_rows(
         include_str!("fixtures/errors.json"),
         &["status", "raw", "statusText", "now"],
@@ -662,4 +663,31 @@ fn unique_body_queries(text: &str, rows: &[BodyCase]) -> Result<(), serde_json::
         }
     }
     Ok(())
+}
+
+/// Friendly rendering reads its clock only after a usage code with a nonzero reset.
+fn assert_conditional_clock() {
+    for raw in [
+        r#"{"error":{"code":"other","resets_at":1}}"#,
+        r#"{"error":{"code":"usage_limit_reached","resets_at":0}}"#,
+    ] {
+        super::super::http::parse_error_response(400, raw, "", || {
+            panic!("unselected clock must not be read")
+        });
+    }
+    let reads = std::cell::Cell::new(0);
+    let result = super::super::http::parse_error_response(
+        400,
+        r#"{"error":{"code":"usage_limit_reached","resets_at":60}}"#,
+        "",
+        || {
+            reads.set(reads.get() + 1);
+            0.0
+        },
+    );
+    assert_eq!(reads.get(), 1);
+    assert_eq!(
+        result.friendly_message.as_deref(),
+        Some("You have hit your ChatGPT usage limit. Try again in ~1 min.")
+    );
 }

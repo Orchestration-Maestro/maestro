@@ -274,6 +274,7 @@ fn maestro_response_sessions_require_terminal_events() {
                 assert_eq!(serde_json::to_value(&output.read().unwrap().content).unwrap()[0]["text"], retained);
             }
         }
+        assert_tool_eof().await;
         for (kind, status, reason) in [("response.completed", "completed", crate::StopReason::Stop),
             ("response.incomplete", "incomplete", crate::StopReason::Length)] {
             let (result, output) = finite_body(event_bytes(&[serde_json::json!({"type":kind,"response":{"status":status}})])).await;
@@ -346,28 +347,19 @@ fn maestro_response_sessions_keep_hook_and_abort_order() {
         .build()
         .unwrap();
     runtime.block_on(async {
-        for stage in ["preaborted", "payload-fails", "payload-fails-invalid-header", "missing-key", "invalid-token"] {
+        for stage in [
+            "preaborted",
+            "payload-fails",
+            "payload-fails-invalid-header",
+            "missing-key",
+            "invalid-token",
+        ] {
             assert_preparation_stage(stage).await;
         }
         assert_first_wait_abort().await;
 
-        let (model, context, mut options) = super::invocation();
-        let signal = crate::Cancellation::new();
-        let abort = signal.clone();
-        options.common.signal = Some(signal);
-        options.common.on_response = Some(std::sync::Arc::new(move |_, _| {
-            abort.abort(); Box::pin(async { Ok(()) })
-        }));
-        options.common.fetch = Some(std::sync::Arc::new(|_| Box::pin(async {
-            Ok(crate::HttpResponse { status: 200, status_text: String::new(), headers: std::collections::BTreeMap::new(),
-                body: Box::pin(stream::iter([Ok(b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec())])) })
-        })));
-        let prepared = super::super::request::prepare_request(&model, &context, &options, "maestro (browser)").await.unwrap();
-        let output = std::sync::Arc::new(std::sync::RwLock::new(crate::providers::assistant_output::initial_message(&model)));
-        let events = crate::AssistantMessageEventStream::new();
-        let error = super::super::http::invoke_sse(&prepared, &model, &options, &output, &events).await.unwrap_err();
-        assert_eq!(error.diagnostic().message, "Request was aborted");
-        assert!(matches!(events.next().await, Some(crate::AssistantMessageEvent::Start { .. })));
+        assert_preaborted_payload_await().await;
+        assert_response_hook_await().await;
     });
 }
 
@@ -1126,13 +1118,14 @@ fn configure_lifecycle(
     let hooks = Arc::clone(observed);
     let hook_scenario = scenario.to_owned();
     options.common.on_response = Some(Arc::new(move |_, _| {
-        hooks.hooks.fetch_add(1, Ordering::SeqCst);
+        let hooks = Arc::clone(&hooks);
         let error = match hook_scenario.as_str() {
             "hook" => Some("hook failed"),
             "hook-usage" => Some("usage limit from hook"),
             _ => None,
         };
         Box::pin(async move {
+            hooks.hooks.fetch_add(1, Ordering::SeqCst);
             error.map_or(Ok(()), |message| {
                 Err(super::super::request::diagnostic(message))
             })
@@ -1306,4 +1299,108 @@ fn maestro_response_sessions_fixtures_read_every_field() {
     ] {
         super::fixture_rows::<FrameCase>(text, &["chunks"]).unwrap();
     }
+}
+
+/// Incomplete EOF keeps the same operation's already reduced tool arguments.
+async fn assert_tool_eof() {
+    let bytes = event_bytes(&[
+        serde_json::json!({"type":"response.output_item.added","item":{"type":"function_call","call_id":"pending","id":"fc_pending","name":"lookup","arguments":""}}),
+        serde_json::json!({"type":"response.function_call_arguments.delta","delta":"{\"value\":23}"}),
+    ]);
+    let (result, output) = finite_body(bytes).await;
+    assert_eq!(
+        result.unwrap_err().diagnostic().message,
+        "Response stream ended before a terminal event"
+    );
+    assert_eq!(
+        serde_json::to_value(&output.read().unwrap().content).unwrap()[0],
+        serde_json::json!({"type":"toolCall","id":"pending|fc_pending","name":"lookup","arguments":{"value":23}})
+    );
+}
+
+/// Even a pre-aborted call awaits payload completion before the transport checks cancellation.
+async fn assert_preaborted_payload_await() {
+    use std::sync::{Arc, Mutex};
+    let (model, context, mut options) = super::invocation();
+    let signal = crate::Cancellation::new();
+    signal.abort();
+    options.common.signal = Some(signal);
+    let (release, receiver) = tokio::sync::oneshot::channel();
+    let slot = Arc::new(Mutex::new(Some(receiver)));
+    options.common.on_payload = Some(Arc::new(move |mut body, _| {
+        let receiver = slot.lock().unwrap().take().unwrap();
+        Box::pin(async move {
+            receiver.await.unwrap();
+            body["awaited"] = Value::from("payload finished");
+            Ok(body)
+        })
+    }));
+    let future =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)");
+    futures_util::pin_mut!(future);
+    assert!(
+        future.as_mut().now_or_never().is_none(),
+        "pre-aborted signal raced the payload hook"
+    );
+    release.send(()).unwrap();
+    let prepared = future.await.unwrap();
+    assert_eq!(prepared.body["awaited"], "payload finished");
+}
+
+/// Aborting during an awaited response hook does not bypass its completion or publish start early.
+async fn assert_response_hook_await() {
+    use std::sync::{Arc, Mutex};
+    let (model, context, mut options) = super::invocation();
+    let signal = crate::Cancellation::new();
+    options.common.signal = Some(signal.clone());
+    let (release, receiver) = tokio::sync::oneshot::channel();
+    let slot = Arc::new(Mutex::new(Some(receiver)));
+    options.common.on_response = Some(Arc::new(move |_, _| {
+        let receiver = slot.lock().unwrap().take().unwrap();
+        Box::pin(async move {
+            receiver.await.unwrap();
+            Ok(())
+        })
+    }));
+    options.common.fetch = Some(Arc::new(|_| {
+        Box::pin(async {
+            Ok(crate::HttpResponse {
+                status: 200,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::new(),
+                body: Box::pin(stream::poll_fn(|_| {
+                    panic!("aborted body must not be polled")
+                })),
+            })
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(&model, &context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(&model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    let future = super::super::http::invoke_sse(&prepared, &model, &options, &output, &events);
+    futures_util::pin_mut!(future);
+    assert!(future.as_mut().now_or_never().is_none());
+    signal.abort();
+    assert!(
+        future.as_mut().now_or_never().is_none(),
+        "abort raced the response hook"
+    );
+    assert!(
+        events.next().now_or_never().is_none(),
+        "start preceded response-hook completion"
+    );
+    release.send(()).unwrap();
+    assert_eq!(
+        future.await.unwrap_err().diagnostic().message,
+        "Request was aborted"
+    );
+    assert!(matches!(
+        events.next().await,
+        Some(crate::AssistantMessageEvent::Start { .. })
+    ));
 }
