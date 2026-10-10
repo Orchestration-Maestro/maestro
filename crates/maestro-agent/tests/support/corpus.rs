@@ -9,6 +9,15 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
+/// Source-recorded turn and hook operands.
+pub mod controls;
+/// Replay source-recorded hook and queue cases.
+///
+/// # Panics
+/// Panics for unread operands or mismatched observations.
+pub async fn replay_controls(ids: &[&str]) {
+    controls::replay(ids).await;
+}
 /// One complete source observation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -37,9 +46,13 @@ struct Observations {
     trace: Vec<String>,
     /// Model requests.
     requests: Vec<Value>,
+    /// Hook record snapshots.
+    hooks: Vec<Value>,
 }
 /// Immutable scenario choices consumed by callbacks.
 struct Input {
+    /// Extended hook and queue choices.
+    control: Option<controls::Control>,
     /// Consumed boolean source operands.
     flags: BTreeMap<&'static str, bool>,
     /// Trace label.
@@ -104,6 +117,7 @@ impl Input {
         .map(|name| (name, take(&mut input, name).unwrap_or_default()))
         .collect();
         let value = Self {
+            control: None,
             flags,
             id: take(&mut input, "id").unwrap(),
             prompts: take(&mut input, "prompts").unwrap_or_default(),
@@ -267,6 +281,7 @@ fn context(input: &Input) -> (AgentContext<Notice>, Vec<AgentMessage<Notice>>) {
         _ => vec![entry("earlier")],
     };
     let prompts = match input.prompts.as_str() {
+        "control" => vec![entry("prompt")],
         "empty" => vec![],
         "batch" => ["zulu", "alpha", "zulu"].into_iter().map(entry).collect(),
         "custom" => vec![notice("custom prompt")],
@@ -282,6 +297,9 @@ fn context(input: &Input) -> (AgentContext<Notice>, Vec<AgentMessage<Notice>>) {
     )
 }
 /// Replay selected disjoint fixture rows through the public operations.
+///
+/// # Panics
+/// Panics for invalid fixtures, unknown case identifiers or mismatched observations.
 pub async fn replay(ids: &[&str]) {
     let cases: Vec<Case> =
         serde_json::from_str(include_str!("../fixtures/loop_cases.json")).unwrap();
@@ -307,7 +325,8 @@ async fn execute(input: Arc<Input>) -> Value {
         Arc::clone(&context.messages)
     };
     install_tools(&mut context, &input, Arc::clone(&observations));
-    let config = config(&input, Arc::clone(&observations));
+    let mut config = config(&input, Arc::clone(&observations));
+    controls::install(&mut config, &input, Arc::clone(&observations));
     let signal = Cancellation::new();
     if input.flag("abort") {
         signal.abort();
@@ -330,6 +349,24 @@ async fn execute(input: Arc<Input>) -> Value {
         Ok(returned) => value["returned"] = json!(returned.iter().map(message).collect::<Vec<_>>()),
         Err(error) => value["error"] = json!(error.message),
     }
+    if input.control.is_some() {
+        value["hooks"] = json!(observed.hooks);
+        let object = value.as_object_mut().unwrap();
+        let hooks = object.shift_remove("hooks").unwrap();
+        let requests = object.shift_remove("requests").unwrap();
+        let history = object.shift_remove("history").unwrap();
+        let returned = object.shift_remove("returned");
+        let error = object.shift_remove("error");
+        object.insert("hooks".into(), hooks);
+        object.insert("requests".into(), requests);
+        object.insert("history".into(), history);
+        if let Some(returned) = returned {
+            object.insert("returned".into(), returned);
+        }
+        if let Some(error) = error {
+            object.insert("error".into(), error);
+        }
+    }
     value
 }
 /// Record a snapshot before any controlled listener failure.
@@ -342,7 +379,11 @@ fn sink(input: Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentEvent
             None => kind.into(),
         };
         let result = if kind == input.emit_error {
-            Err(error(&format!("sink failed: {kind}")))
+            Err(error(&if input.control.is_some() {
+                "turn end failed".into()
+            } else {
+                format!("sink failed: {kind}")
+            }))
         } else {
             Ok(())
         };
@@ -383,6 +424,12 @@ fn config(input: &Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentLo
         }),
         transform_context: None,
         get_api_key: None,
+        before_tool_call: None,
+        after_tool_call: None,
+        should_stop_after_turn: None,
+        get_steering_messages: None,
+        get_follow_up_messages: None,
+        tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
     };
     config.model.input = vec![ModelInput::Text];
     config.model.context_window = 8192.0;
@@ -459,6 +506,10 @@ fn install_tools(
     input: &Arc<Input>,
     observed: Arc<Mutex<Observations>>,
 ) {
+    if input.control.is_some() {
+        controls::tools(context, input, observed);
+        return;
+    }
     if input.tools == "absent" {
         return;
     }
@@ -557,6 +608,16 @@ fn options(
     AgentLoopOptions {
         signal: invocation,
         stream_fn: Some(Arc::new(move |_, context, options, open| {
+            if input.control.is_some() {
+                let index = {
+                    let mut observed = observed.lock().unwrap();
+                    let index = observed.requests.len();
+                    observed.trace.push("request".into());
+                    observed.requests.push(json!(context.messages));
+                    index
+                };
+                return ready(Ok(stream(&input, index)));
+            }
             let mut request = json!({"context":context,"options":{}});
             request["options"] = request_options(&input, &options, &open, &signal, &expected);
             if input.flag("richOptions") {
@@ -581,7 +642,11 @@ fn options(
 }
 /// Build declared model event variants, without undeclared source-oracle fields.
 fn stream(input: &Input, index: usize) -> AssistantMessageEventStream {
-    let response = assistant("finished");
+    let response = assistant(if input.control.is_some() {
+        "done"
+    } else {
+        "finished"
+    });
     let stop = if index == 0 {
         input.stop.clone()
     } else {
@@ -594,7 +659,9 @@ fn stream(input: &Input, index: usize) -> AssistantMessageEventStream {
             && let Some(calls) = &input.tool_calls
         {
             value.content.clone_from(calls);
-            value.stop_reason = if input.stop == StopReason::Stop {
+            value.stop_reason = if input.stop == StopReason::Stop
+                && (input.control.is_none() || !calls.is_empty())
+            {
                 StopReason::ToolUse
             } else {
                 stop

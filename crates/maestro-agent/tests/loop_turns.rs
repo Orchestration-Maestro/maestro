@@ -1,7 +1,8 @@
 //! Awaited conversation operations through the public loop.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support;
+/// Shared controlled conversation fixtures.
+pub mod support;
 use maestro_agent::{AgentEvent, AgentMessage, run_agent_loop};
 use std::sync::{Arc, Mutex, RwLock};
 use support::*;
@@ -805,6 +806,12 @@ async fn retired_entry_drops_after_guard_case() {
         convert_to_llm: Arc::new(|_| ready(Ok(Vec::new()))),
         transform_context: None,
         get_api_key: None,
+        before_tool_call: None,
+        after_tool_call: None,
+        should_stop_after_turn: None,
+        get_steering_messages: None,
+        get_follow_up_messages: None,
+        tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
     };
     let options = maestro_agent::AgentLoopOptions {
         signal: None,

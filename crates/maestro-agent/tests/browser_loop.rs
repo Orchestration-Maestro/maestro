@@ -22,35 +22,7 @@ impl CustomAgentMessages for Notice {
 fn browser_callbacks_admit_local_payloads() {
     let local = Rc::new(());
     let observed = Rc::clone(&local);
-    let config = AgentLoopConfig {
-        model: Model {
-            id: "local".into(),
-            name: "Local".into(),
-            api: "local".into(),
-            provider: "local".into(),
-            base_url: String::new(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec![],
-            cost: ModelCost::default(),
-            context_window: 1.0,
-            max_tokens: 1.0,
-            headers: None,
-            compat: None,
-        },
-        options: SimpleStreamOptions::default(),
-        extra: JsonObject::new(),
-        objects: ProviderObjects::default(),
-        transform_context: None,
-        get_api_key: None,
-        convert_to_llm: Arc::new(move |_| {
-            let local = Rc::clone(&observed);
-            Box::pin(async move {
-                drop(local);
-                Ok(vec![])
-            })
-        }),
-    };
+    let config = local_config(observed, &local);
     let emit: AgentEventSink<Notice> = Arc::new(move |event| {
         if let maestro_agent::AgentEvent::MessageStart {
             message: AgentMessage::Custom(value),
@@ -73,4 +45,98 @@ fn browser_callbacks_admit_local_payloads() {
         AgentLoopOptions::default(),
     );
     drop(operation);
+}
+
+/// Construct a local queue carrying the same non-Send custom payload type.
+fn local_queue(local: Rc<()>) -> maestro_agent::GetSteeringMessages<Notice> {
+    Arc::new(move || {
+        let local = Rc::clone(&local);
+        Box::pin(async move {
+            Ok(vec![AgentMessage::Custom(Arc::new(RwLock::new(Notice(
+                local,
+            ))))])
+        })
+    })
+}
+
+/// Build a local before tool call callback.
+fn local_before_tool_call(local: Rc<()>) -> maestro_agent::BeforeToolCall<Notice> {
+    Arc::new(move |c, _| {
+        let captured = Rc::clone(&local);
+        Box::pin(async move {
+            c.args["edited"] = serde_json::json!(Rc::strong_count(&captured));
+            Ok(None)
+        })
+    })
+}
+
+/// Build a local after tool call callback.
+fn local_after_tool_call(local: Rc<()>) -> maestro_agent::AfterToolCall<Notice> {
+    Arc::new(move |c, _| {
+        let captured = Rc::clone(&local);
+        Box::pin(async move {
+            assert!(Rc::strong_count(&captured) >= 1);
+            assert!(c.context.messages.try_write().is_ok());
+            Ok(None)
+        })
+    })
+}
+
+/// Build a local should stop after turn callback.
+fn local_should_stop_after_turn(local: Rc<()>) -> maestro_agent::ShouldStopAfterTurn<Notice> {
+    Arc::new(move |c| {
+        let captured = Rc::clone(&local);
+        Box::pin(async move {
+            assert!(Rc::strong_count(&captured) >= 1);
+            assert!(c.context.messages.try_write().is_ok());
+            Ok(false)
+        })
+    })
+}
+
+/// Construct a complete configuration with local callback captures.
+fn local_config(observed: Rc<()>, local: &Rc<()>) -> AgentLoopConfig<Notice> {
+    AgentLoopConfig {
+        model: local_model(),
+        options: SimpleStreamOptions::default(),
+        extra: JsonObject::new(),
+        objects: ProviderObjects::default(),
+        transform_context: None,
+        get_api_key: None,
+        before_tool_call: Some(local_before_tool_call(Rc::clone(local))),
+
+        after_tool_call: Some(local_after_tool_call(Rc::clone(local))),
+
+        should_stop_after_turn: Some(local_should_stop_after_turn(Rc::clone(local))),
+
+        get_steering_messages: Some(local_queue(Rc::clone(local))),
+        get_follow_up_messages: Some(local_queue(Rc::clone(local))),
+        tool_execution: None,
+        convert_to_llm: Arc::new(move |_| {
+            let local = Rc::clone(&observed);
+            Box::pin(async move {
+                drop(local);
+                Ok(vec![])
+            })
+        }),
+    }
+}
+
+/// Supply the browser fixture model descriptor.
+fn local_model() -> Model {
+    Model {
+        id: "local".into(),
+        name: "Local".into(),
+        api: "local".into(),
+        provider: "local".into(),
+        base_url: String::new(),
+        reasoning: false,
+        thinking_level_map: None,
+        input: vec![],
+        cost: ModelCost::default(),
+        context_window: 1.0,
+        max_tokens: 1.0,
+        headers: None,
+        compat: None,
+    }
 }

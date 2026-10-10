@@ -1,7 +1,8 @@
 //! Sequential tool turns through the awaited conversation operation.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support;
+/// Shared controlled conversation fixtures.
+pub mod support;
 use maestro_agent::{AgentTool, AgentToolResult, run_agent_loop_continue};
 use maestro_models::{AssistantContent, Tool, ToolCall};
 use std::sync::{Arc, Mutex, RwLock};

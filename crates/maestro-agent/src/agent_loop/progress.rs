@@ -17,13 +17,15 @@ struct Admission {
 }
 
 impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
-    /// Close progress admission at execution completion and settle admitted effects.
-    pub(super) async fn execute(
+    /// Admit execution immediately; close and settle progress when its future completes.
+    pub(super) fn execute(
         &self,
         call: &ToolCall,
-        execute: ExecuteTool,
+        execute: &ExecuteTool,
         arguments: serde_json::Value,
-    ) -> Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<
+        Output = Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo>,
+    > + use<C> {
         let updates = EventStream::new(
             |_: &BoxFuture<Result<(), DiagnosticErrorInfo>>| false,
             |_| (),
@@ -43,27 +45,21 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         .map(futures_util::stream::once)
         .flatten_unordered(None)
         .collect::<Vec<_>>();
-        let (result, progress) = join(
-            async {
-                let result = execution.await;
-                let mut state = admission
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                state.closed = true;
-                let settled = state.pending == 0;
-                drop(state);
-                if settled {
-                    updates.end(Some(()));
-                }
-                result
-            },
-            progress,
-        )
-        .await;
-        for settled in progress {
-            settled?;
+        async move {
+            let (result, progress) = join(
+                async {
+                    let result = execution.await;
+                    close_progress(&admission, &updates);
+                    result
+                },
+                progress,
+            )
+            .await;
+            for settled in progress {
+                settled?;
+            }
+            Ok(result)
         }
-        Ok(result)
     }
     /// Reserve observation entry before invoking foreign code without a lock.
     fn progress_callback(
@@ -96,5 +92,21 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                 admitted.end(Some(()));
             }
         })
+    }
+}
+
+/// Revoke new delivery while allowing admitted observers to finish enqueueing.
+fn close_progress(
+    admission: &Mutex<Admission>,
+    updates: &EventStream<BoxFuture<Result<(), DiagnosticErrorInfo>>, ()>,
+) {
+    let mut state = admission
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    state.closed = true;
+    let settled = state.pending == 0;
+    drop(state);
+    if settled {
+        updates.end(Some(()));
     }
 }

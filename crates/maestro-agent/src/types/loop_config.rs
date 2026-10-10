@@ -31,6 +31,18 @@ impl<C: CustomAgentMessages> Clone for AgentContext<C> {
 }
 /// Model selection and callbacks for each request.
 pub struct AgentLoopConfig<C: CustomAgentMessages = Infallible> {
+    /// Optional validated-argument hook.
+    pub before_tool_call: Option<super::BeforeToolCall<C>>,
+    /// Optional execution-outcome hook.
+    pub after_tool_call: Option<super::AfterToolCall<C>>,
+    /// Optional completed-turn stop decision.
+    pub should_stop_after_turn: Option<super::ShouldStopAfterTurn<C>>,
+    /// Optional steering poll at entry and after a completed turn.
+    pub get_steering_messages: Option<super::GetSteeringMessages<C>>,
+    /// Optional follow-up poll when ordinary continuation is exhausted.
+    pub get_follow_up_messages: Option<super::GetFollowUpMessages<C>>,
+    /// Batch preference; absence selects parallel unless a tool requires sequential.
+    pub tool_execution: Option<super::ToolExecutionMode>,
     /// Supplied model descriptor.
     pub model: Model,
     /// Simple invocation settings.
