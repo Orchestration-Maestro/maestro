@@ -95,6 +95,7 @@ are later scope, not active foundation concepts.
 
 ### Interfaces
 
+- **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends.
 - **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
