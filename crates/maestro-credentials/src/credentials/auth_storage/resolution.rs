@@ -1,4 +1,4 @@
-//! Configured-authentication availability and status without key values.
+//! Configured-authentication availability and status, plus request-key selection.
 use super::backend::AuthStorageFuture;
 use super::state::AuthStorage;
 use super::types::{AuthCredential, AuthSource, AuthStatus, decode};

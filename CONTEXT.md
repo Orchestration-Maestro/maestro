@@ -79,11 +79,11 @@ are later scope, not active foundation concepts.
 - **Pending edit:** An unsaved preference edit captured with a revision; a successful save acknowledges only the revisions it wrote, so later or failed edits stay pending.
 - **Configuration root:** The explicitly selected user configuration directory.
 - **Session directory:** The resolved location supplied to the session owner.
-- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion, preserving application-owned ordering and a bounded retry on contention without leases, heartbeats or compromise handling; the owning credentials documentation gives each schedule.
+- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion, preserving application-owned ordering and a bounded retry on contention without leases, heartbeats or compromise handling; the owning [credentials documentation](docs/credentials.md) gives each schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
-- **AuthStorage:** The owner of accepted stored credentials, their ordered listing, drainable errors and per-provider persistence through a replaceable raw-text backend, plus request key selection, OAuth login and locked token refresh; the provider registry and refresh operation belong to the OAuth documentation.
+- **AuthStorage:** The owner of accepted stored credentials, their ordered listing, drainable errors and per-provider persistence through a replaceable raw-text backend, plus request key selection, OAuth login and locked token refresh; the [credentials documentation](docs/credentials.md) describes them, and the provider registry and refresh operation belong to the [OAuth documentation](docs/models/oauth.md).
 
 ### Extensibility
 
