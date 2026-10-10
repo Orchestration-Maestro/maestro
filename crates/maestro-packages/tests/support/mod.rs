@@ -9,7 +9,7 @@ use std::{cell::RefCell, collections::VecDeque, io, rc::Rc};
 /// Controlled effects observed by the public caller.
 #[derive(Default)]
 pub struct Effects {
-    /// Commands after child completion.
+    /// Command invocations.
     pub calls: RefCell<Vec<(String, Vec<String>)>>,
     /// A one-shot settings edit during completed root lookup.
     pub on_command: RefCell<Option<Box<dyn FnOnce()>>>,

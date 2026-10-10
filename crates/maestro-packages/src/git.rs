@@ -10,7 +10,7 @@ pub struct GitSource {
     pub repo: String,
     /// The repository host.
     pub host: String,
-    /// The repository path without a terminal `.git`.
+    /// The selected repository path identity.
     pub path: String,
     /// The selected branch, tag or commit.
     pub r#ref: Option<String>,
@@ -79,7 +79,6 @@ fn split_ref(source: &str) -> (String, Option<String>) {
         if let Ok(mut url) = Url::parse(source)
             && let Some((path, reference)) = ref_parts(url.path().trim_start_matches('/'))
         {
-            let path = path.to_owned();
             let reference = reference.to_owned();
             url.set_path(&format!("/{path}"));
             return (
@@ -113,31 +112,34 @@ fn ref_parts(path: &str) -> Option<(&str, &str)> {
 
 /// Extracts generic components without widening shorthand admission.
 fn generic(repo: &str, reference: Option<String>) -> Option<GitSource> {
+    let url = explicit_protocol(repo)
+        .then(|| Url::parse(repo))
+        .transpose()
+        .ok()?;
     let (clone, host, path) = if repo.starts_with("git@") {
         let (host, path) = repo.strip_prefix("git@")?.split_once(':')?;
-        let parsed = git_url_parse::GitUrl::parse(repo).ok()?;
+        let parsed = git_url_parse::GitUrl::parse(&format!("ssh://git@{host}/{path}")).ok()?;
         (
             repo.to_owned(),
             parsed.host().unwrap_or(host).to_owned(),
-            path.to_owned(),
+            path,
         )
-    } else if explicit_protocol(repo) {
-        let url = Url::parse(repo).ok()?;
+    } else if let Some(url) = &url {
         (
             repo.to_owned(),
             url.host_str()?.to_owned(),
-            url.path().trim_start_matches('/').to_owned(),
+            url.path().trim_start_matches('/'),
         )
     } else {
         let (host, path) = repo.split_once('/')?;
         if !host.contains('.') && host != "localhost" {
             return None;
         }
-        (format!("https://{repo}"), host.to_owned(), path.to_owned())
+        (format!("https://{repo}"), host.to_owned(), path)
     };
     let path = path
         .strip_suffix(".git")
-        .unwrap_or(&path)
+        .unwrap_or(path)
         .trim_start_matches('/');
     if host.is_empty() || path.is_empty() || path.split('/').count() < 2 {
         return None;
@@ -167,14 +169,25 @@ enum Provider {
 }
 
 impl Provider {
-    /// Finds a provider by its canonical host or shortcut.
-    fn find(name: &str) -> Option<Self> {
+    /// Finds a provider by its shortcut name.
+    fn by_shortcut(name: &str) -> Option<Self> {
         match name {
-            "github" | "github.com" => Some(Self::Github),
-            "gitlab" | "gitlab.com" => Some(Self::Gitlab),
-            "bitbucket" | "bitbucket.org" => Some(Self::Bitbucket),
-            "gist" | "gist.github.com" => Some(Self::Gist),
-            "sourcehut" | "git.sr.ht" => Some(Self::Sourcehut),
+            "github" => Some(Self::Github),
+            "gitlab" => Some(Self::Gitlab),
+            "bitbucket" => Some(Self::Bitbucket),
+            "gist" => Some(Self::Gist),
+            "sourcehut" => Some(Self::Sourcehut),
+            _ => None,
+        }
+    }
+    /// Finds a provider by its canonical domain.
+    fn by_domain(name: &str) -> Option<Self> {
+        match name {
+            "github.com" => Some(Self::Github),
+            "gitlab.com" => Some(Self::Gitlab),
+            "bitbucket.org" => Some(Self::Bitbucket),
+            "gist.github.com" => Some(Self::Gist),
+            "git.sr.ht" => Some(Self::Sourcehut),
             _ => None,
         }
     }
@@ -273,7 +286,7 @@ fn hosted(source: &str) -> Option<GitSource> {
     let (scheme, tail) = source.split_once(':')?;
     let shortcut = (!tail.starts_with("//")).then_some(());
     let (provider, user, project, reference) = if shortcut.is_some() {
-        let provider = Provider::find(scheme)?;
+        let provider = Provider::by_shortcut(scheme)?;
         let (path, hash) = tail.split_once('#').unwrap_or((tail, ""));
         let path = path.strip_prefix('/').unwrap_or(path);
         let path = path.split_once('@').map_or(path, |(_, after)| after);
@@ -286,7 +299,7 @@ fn hosted(source: &str) -> Option<GitSource> {
         )
     } else {
         let url = Url::parse(source).ok()?;
-        let provider = Provider::find(
+        let provider = Provider::by_domain(
             url.host_str()?
                 .strip_prefix("www.")
                 .unwrap_or(url.host_str()?),
@@ -304,8 +317,10 @@ fn hosted(source: &str) -> Option<GitSource> {
     if user.is_empty() || project.is_empty() {
         return None;
     }
-    let path = format!("{user}/{project}");
-    let path = path.strip_suffix(".git").unwrap_or(&path).to_owned();
+    let mut path = format!("{user}/{project}");
+    if let Some(identity) = path.strip_suffix(".git") {
+        path.truncate(identity.len());
+    }
     Some(GitSource {
         repo: String::new(),
         host: provider.domain().to_owned(),
@@ -336,12 +351,7 @@ fn clone_address(repo: &str, selected: &GitSource) -> Option<String> {
     let explicit = repo.contains("://");
     if explicit {
         let mut url = Url::parse(repo).ok()?;
-        let scheme = url
-            .scheme()
-            .strip_prefix("git+")
-            .unwrap_or(url.scheme())
-            .to_owned();
-        if scheme != url.scheme() {
+        if url.scheme().starts_with("git+") {
             url = Url::parse(&repo.replacen("git+", "", 1)).ok()?;
         }
         let old_identity = url

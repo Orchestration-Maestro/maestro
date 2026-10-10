@@ -11,8 +11,9 @@ first, then the resource owner's local-path classification, then Git parsing.
 Git identity ignores transport and ref; npm identity uses the package name.
 
 Ordinary local paths use the supplied working directory as their input base;
-stored locals use their scope's base. Local storage writes paths relative to the
-user agent directory or project `.maestro` directory. The manager trims local
+stored locals use their scope's base. Local storage uses `maestro-path` relative-path calculation from the
+user agent directory or project `.maestro` directory; see the
+[shared path module](../crates/maestro-path/src/lib.rs) documentation for root handling. The manager trims local
 inputs and expands `~`, `~/name` and `~name` using the supplied home operation.
 Storage resolves incomplete bases and home-derived paths through the supplied
 ambient-context operations. Lexical path operations belong to `maestro-path`;

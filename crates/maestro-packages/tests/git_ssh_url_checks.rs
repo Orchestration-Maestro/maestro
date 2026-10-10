@@ -139,3 +139,49 @@ fn git_url_escaping_uses_hosted_or_generic_identity() {
 fn git_hosted_protocols_choose_provider_or_generic_rules() {
     vectors("git_hosted_protocols_choose_provider_or_generic_rules").unwrap();
 }
+
+#[test]
+fn short_hostnames_keep_generic_identity() {
+    for (shortcut, domain) in [
+        ("github", "github.com"),
+        ("gitlab", "gitlab.com"),
+        ("bitbucket", "bitbucket.org"),
+        ("gist", "gist.github.com"),
+        ("sourcehut", "git.sr.ht"),
+    ] {
+        for host in [shortcut.to_owned(), format!("www.{shortcut}")] {
+            let repo = format!("https://{host}/group/repo.git");
+            assert_eq!(
+                parse_git_url(&repo),
+                Some(GitSource {
+                    repo: repo.clone(),
+                    host,
+                    path: "group/repo".into(),
+                    r#ref: None,
+                    pinned: false,
+                })
+            );
+        }
+        assert_eq!(
+            parse_git_url(&format!("git:{shortcut}:group/repo"))
+                .unwrap()
+                .host,
+            domain
+        );
+        assert!(parse_git_url(&format!("git:{domain}:group/repo")).is_none());
+    }
+}
+
+#[test]
+fn numeric_scp_namespace_is_not_a_port() {
+    assert_eq!(
+        parse_git_url("git:git@git.example:123/repo.git"),
+        Some(GitSource {
+            repo: "git@git.example:123/repo.git".into(),
+            host: "git.example".into(),
+            path: "123/repo".into(),
+            r#ref: None,
+            pinned: false,
+        })
+    );
+}

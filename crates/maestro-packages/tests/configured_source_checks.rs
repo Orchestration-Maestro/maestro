@@ -799,3 +799,45 @@ fn relative_home_storage_needs_cwd() -> std::io::Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn short_hosts_and_public_domains_remain_separate_settings_entries() {
+    let (mut manager, settings, _) = support::manager(&json!({}));
+    let local = "https://gitlab/group/repo";
+    let public = "https://gitlab.com/group/repo";
+    assert!(manager.add_source_to_settings(local, None).unwrap());
+    assert!(manager.add_source_to_settings(public, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([local, public])
+    );
+    assert!(manager.remove_source_from_settings(public, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([local])
+    );
+    assert!(!manager.remove_source_from_settings(public, None).unwrap());
+    assert!(manager.remove_source_from_settings(local, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([])
+    );
+}
+
+#[test]
+fn numeric_scp_namespace_matches_git_transport_in_settings() {
+    let scp = "git:git@git.example:123/repo.git";
+    let https = "https://git.example/123/repo";
+    let (mut manager, settings, _) = support::manager(&json!({}));
+    assert!(manager.add_source_to_settings(scp, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([scp])
+    );
+    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert!(manager.remove_source_from_settings(https, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([])
+    );
+}

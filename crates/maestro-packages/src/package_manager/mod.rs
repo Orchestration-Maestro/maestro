@@ -10,12 +10,12 @@ pub use operations::NativePackageOperations;
 pub use operations::{CommandOutput, PackageOperations};
 use std::{cell::RefCell, rc::Rc};
 
-/// The configuration scope containing installed contents.
+/// The configuration scope selected for source lookup.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum InstalledSourceScope {
-    /// Contents under the supplied agent directory.
+    /// Sources configured in user settings.
     User,
-    /// Contents under the project configuration directory.
+    /// Sources configured in project settings.
     Project,
 }
 /// One configured source in its original list position.
