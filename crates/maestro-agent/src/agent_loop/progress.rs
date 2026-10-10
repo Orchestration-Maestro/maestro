@@ -5,7 +5,10 @@ use crate::{
 };
 use futures_util::{StreamExt, future::join};
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, EventStream, ToolCall};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
     /// Close progress admission at execution completion and settle admitted effects.
@@ -22,7 +25,12 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         let admitted = updates.clone();
         let emit = Arc::clone(&self.emit);
         let update_call = call.clone();
+        let closed = Arc::new(AtomicBool::new(false));
+        let admission = Arc::clone(&closed);
         let callback: AgentToolUpdateCallback = Arc::new(move |partial_result| {
+            if admission.load(Ordering::Acquire) {
+                return;
+            }
             admitted.push(emit(AgentEvent::ToolExecutionUpdate {
                 tool_call: update_call.clone(),
                 partial_result,
@@ -43,6 +51,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         let (result, progress) = join(
             async {
                 let result = execution.await;
+                closed.store(true, Ordering::Release);
                 updates.end(Some(()));
                 result
             },

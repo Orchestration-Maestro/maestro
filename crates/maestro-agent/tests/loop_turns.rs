@@ -507,6 +507,36 @@ fn retained_callbacks_release_after_explicit_teardown() {
     assert!(weak.upgrade().is_none());
 }
 
+/// A progress callback invoked after execution completed never runs the observer.
+#[test]
+fn late_progress_callback_does_not_run_sink_slot() {
+    let saved = Arc::new(Mutex::new(None));
+    let sink_slot = Arc::clone(&saved);
+    let context = with_execute(Arc::new(move |_, _, _, update| {
+        *sink_slot.lock().unwrap() = update;
+        ready(Ok(result()))
+    }));
+    let emitted = Arc::new(Mutex::new(0usize));
+    let tally = Arc::clone(&emitted);
+    let emit = Arc::new(move |_| {
+        *tally.lock().unwrap() += 1;
+        ready(Ok(()))
+    });
+    assert!(
+        run(maestro_agent::run_agent_loop_continue(
+            context,
+            &config(),
+            emit,
+            responses(vec![tool_call()])
+        ))
+        .is_ok()
+    );
+    let before = *emitted.lock().unwrap();
+    let late = saved.lock().unwrap().clone().unwrap();
+    late(result());
+    assert_eq!(*emitted.lock().unwrap(), before);
+}
+
 /// EOF remains pending until the same stream publishes its result.
 async fn pending_result_case(started: bool) {
     use futures_util::FutureExt;

@@ -76,14 +76,17 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             .lookup(&call.name)
             .ok_or_else(|| failure(format!("Tool {} not found", call.name)))?;
         let prepare = read(&tool).prepare_arguments.clone();
-        let mut candidate = call.clone();
-        if let Some(prepare) = prepare {
-            candidate.arguments =
-                serde_json::from_value(prepare(serde_json::Value::Object(candidate.arguments))?)
-                    .map_err(|error| failure(error.to_string()))?;
-        }
-        let arguments =
-            maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?;
+        let arguments = match prepare {
+            Some(prepare) => {
+                let mut candidate = call.clone();
+                candidate.arguments = serde_json::from_value(prepare(serde_json::Value::Object(
+                    candidate.arguments,
+                ))?)
+                .map_err(|error| failure(error.to_string()))?;
+                maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?
+            }
+            None => maestro_models::validate_tool_arguments(&read(&tool).definition, call)?,
+        };
         Ok(Prepared {
             tool,
             arguments: serde_json::Value::Object(arguments),
