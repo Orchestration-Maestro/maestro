@@ -3,7 +3,8 @@
 `ProcessTerminal` connects a Unix process to the toolkit. It implements the toolkit's
 `Terminal` port over the process's own standard input and standard output, so it needs no
 terminal framework and sends the toolkit raw protocol text rather than decoded key events.
-The type exists on Unix only; on other targets the crate builds empty. It drives the
+The type exists on Unix only; the native runtime host described [below](#the-runtime-host) exists
+on every native target, and only browser targets build the crate empty. It drives the
 descriptors directly and never opens the controlling terminal, so redirecting one of the two
 changes what it controls: raw mode and input come from standard input, window size and
 output from standard output.
@@ -39,6 +40,32 @@ reports itself. `start` called outside a running runtime returns an `ErrorKind::
 and changes nothing, even on a terminal that is already started. Because callbacks never
 leave the thread that drives the set, they need not be `Send`, and a callback may call back
 into the terminal to write or to stop it.
+
+## The runtime host
+
+`ProcessTuiRuntime` is the toolkit's `TuiRuntime` for native targets. It is built on the
+same caller-driven `LocalSet` as the terminal, so one set can serve both, and it starts no
+runtime, thread or task of its own. Work runs only while the caller drives the set inside a
+Tokio runtime with the time driver enabled.
+
+- `now` is the monotonic time since the host was created, on Tokio's clock.
+- `schedule` measures its delay from the call and runs the callback once, never before the
+  call returns, even for a zero delay. Dropping the returned handle leaves the callback
+  scheduled; only `cancel` prevents it and releases what it captured.
+- `spawn_local` queues a future on the set; it is not polled before the call returns.
+- A callback or future that returns an error has its message and then each source error
+  printed to standard error, one per line; the host then keeps running. A failure to write
+  to standard error is ignored.
+- `environment` returns the value as the platform holds it, with invalid text converted
+  lossily; it does not trim or interpret the value.
+- `log_context` reports the home directory (empty when the platform has none), the current
+  UTC time in milliseconds and a random lowercase hexadecimal nonce.
+- `append_log` and `write_log` act on the given path as the operating system resolves it.
+  Append creates the file but not its directory; write creates the directory and replaces the
+  file. Both return the operating system's errors.
+
+Dropping the set after the host and its timer handles are released drops the work still
+pending; callers release any strong handle their callbacks capture.
 
 ## Starting and stopping
 
@@ -166,6 +193,7 @@ failure to append is ignored. Cursor, title, protocol and progress output is not
 
 Operating-system errors are returned as `std::io::Error` from the call that met them, and
 `start` outside a runtime returns an `ErrorKind::Other` error; the terminal prints no
-diagnostics of its own, and a failure to append to the write log is ignored. Failures in
+diagnostics of its own (the runtime host prints the errors its work returns, as described
+above), and a failure to append to the write log is ignored. Failures in
 background tasks cannot be returned where they happen, so the first is kept and the next
 `stop` reports it; dropping the terminal discards it.
