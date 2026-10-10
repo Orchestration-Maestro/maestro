@@ -114,6 +114,22 @@ fn maestro_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
 }
 
 #[test]
+fn maestro_bus_teardown_releases_announced_tails_once() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    let bus = events(host.clone());
+    bus.on("tail", Rc::new(|_, _| Ok(Some(Box::pin(async { Ok(()) })))))?;
+    super::block_on(bus.emit("tail", Value::Null))?;
+    let tail = host.observed().bus.tails[0];
+    loop {
+        let next = host.observe().next_to_release();
+        let Some((_, key)) = next else { break };
+        release(key);
+    }
+    assert_dropped_once(&host, tail);
+    Ok(())
+}
+
+#[test]
 fn maestro_bus_keeps_prefix_tail_and_unsubscribe_ownership() -> ExtensionResult<()> {
     let host = Controlled::default();
     let bus = events(host.clone());
@@ -521,7 +537,6 @@ fn maestro_component_bus_uses_borrowed_emitters_and_native_async_tails() -> Exte
                 .iter()
                 .any(|s| s == "entry bus-tail \"done\"")
         );
-        harness.release(tails[0]).await.map_err(|e| e.to_string())?;
         while let Some((_, key)) = harness.observed().next_to_release() {
             harness.release(key).await.map_err(|e| e.to_string())?;
         }

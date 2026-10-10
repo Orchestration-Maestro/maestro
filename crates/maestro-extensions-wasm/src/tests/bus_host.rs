@@ -30,6 +30,8 @@ pub struct Bank {
     pub listeners: Vec<(String, u32)>,
     /// Announced independent tails.
     pub tails: Vec<u32>,
+    /// Announced tails not yet handed to teardown.
+    pub unreleased: Vec<u32>,
     /// Registration rejection.
     pub registration_error: Option<String>,
     /// Emission rejection.
@@ -84,6 +86,7 @@ impl Bank {
             return Err(error.clone());
         }
         self.tails.push(id);
+        self.unreleased.push(id);
         Ok(())
     }
 }

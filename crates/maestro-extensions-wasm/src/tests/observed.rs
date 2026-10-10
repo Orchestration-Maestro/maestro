@@ -201,10 +201,14 @@ impl Observed {
         self.order.remove(position).map(|(_, key)| key)
     }
 
-    /// Takes the registration next in line for release, in registration order; registrations
-    /// made while earlier ones are released queue up behind them.
+    /// Takes the registration next in line for release, in registration order, then the
+    /// announced event-bus tails; registrations made while earlier ones are released queue up
+    /// behind them.
     pub fn next_to_release(&mut self) -> Option<(String, u32)> {
-        self.order.pop_front()
+        self.order.pop_front().or_else(|| {
+            let key = self.bus.unreleased.pop()?;
+            Some(("bus tail".into(), key))
+        })
     }
 
     /// Keeps the next wait for idle pending.
