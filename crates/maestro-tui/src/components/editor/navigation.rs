@@ -1,6 +1,6 @@
 //! Original-byte visual positions with retained cell-column intent.
 use super::{
-    Editing, Editor, LastAction,
+    Editing, Editor, LastAction, markers,
     wrapping::{atoms, word_wrap_line},
 };
 use crate::autocomplete::CursorPosition;
@@ -71,7 +71,8 @@ impl Editing {
         for (line, text) in self.current.lines.iter().enumerate() {
             let atoms = atoms(text);
             let mut remaining = atoms.as_slice();
-            let chunks = word_wrap_line(text, width, None);
+            let segments = markers::segments(text, self.pastes.len());
+            let chunks = word_wrap_line(text, width, Some(&segments));
             let last = chunks.len() - 1;
             let mut cell = 0;
             for (index, chunk) in chunks.into_iter().enumerate() {
@@ -161,30 +162,61 @@ impl Editing {
         let current = absolute.saturating_sub(resolved.cells.start);
         let destination = &rows[target];
         let column = self.vertical_column(current, row.maximum(), destination);
-        let text = &self.current.lines[destination.line];
-        let mut cells = destination.cells.start;
-        let mut col = destination.bytes.end;
-        self.snapped = None;
-        let Column::Cell(column) = column else {
-            self.current.cursor = CursorPosition {
-                line: destination.line,
-                col,
-            };
-            return;
-        };
-        let absolute = destination.cells.start + column;
-        for atom in atoms(&text[destination.bytes.clone()]) {
-            if absolute == cells || absolute < cells + atom.cells {
-                col = destination.bytes.start + atom.start;
-                self.snapped = (absolute > cells).then_some(absolute);
-                break;
+        let (col, snapped) = match column {
+            Column::Cell(column) => {
+                match self.land(rows, (source, target), destination.cells.start + column) {
+                    Ok(landed) => landed,
+                    Err(next) => return self.move_to_row(rows, source, next),
+                }
             }
-            cells += atom.cells;
-        }
+            Column::End => (destination.bytes.end, None),
+        };
+        self.snapped = snapped;
         self.current.cursor = CursorPosition {
             line: destination.line,
             col,
         };
+    }
+    /// Chooses the byte column and remembered cell for an absolute cell of the target row.
+    ///
+    /// Moving down onto a row that continues a marker, the first row past that marker is returned
+    /// as the error when one exists; otherwise, and in every other case, the cursor lands on the
+    /// start of the unit under the target cell.
+    fn land(
+        &self,
+        rows: &[VisualRow],
+        (source, target): (usize, usize),
+        absolute: usize,
+    ) -> Result<(usize, Option<usize>), usize> {
+        let destination = &rows[target];
+        let Some((start, end, cells)) = self.unit_at(destination, absolute) else {
+            return Ok((destination.bytes.end, None));
+        };
+        if start < destination.bytes.start
+            && target > source
+            && let Some(next) = past_continuation(rows, target, end)
+        {
+            return Err(next);
+        }
+        Ok((start, (absolute > cells).then_some(absolute)))
+    }
+    /// Finds the edit unit of the destination row that holds an absolute cell.
+    ///
+    /// Returns its byte range start, byte range end and first absolute cell. An owned marker
+    /// is one unit even where wrapping split it across rows.
+    fn unit_at(&self, row: &VisualRow, absolute: usize) -> Option<(usize, usize, usize)> {
+        let mut cells = 0;
+        for unit in markers::units(&self.current.lines[row.line], self.pastes.len()) {
+            let start = cells;
+            cells += unit.cells;
+            if unit.end > row.bytes.start
+                && unit.start < row.bytes.end
+                && (absolute == start || absolute < cells)
+            {
+                return Some((unit.start, unit.end, start));
+            }
+        }
+        None
     }
     /// Restores preferred columns only from a clamped source row.
     ///
@@ -225,6 +257,17 @@ impl Editing {
         self.snapped = None;
     }
 }
+/// First row after `target` that starts at or beyond `end` or on another line.
+fn past_continuation(rows: &[VisualRow], target: usize, end: usize) -> Option<usize> {
+    let line = rows[target].line;
+    let next = target
+        + 1
+        + rows[target + 1..]
+            .iter()
+            .take_while(|row| row.line == line && row.bytes.start < end)
+            .count();
+    (next < rows.len()).then_some(next)
+}
 impl Editing {
     /// Moves across one whitespace prefix and one punctuation or word run.
     pub(super) fn word(&mut self, forward: bool) {
@@ -243,13 +286,14 @@ impl Editing {
             }
         } else {
             let length = if forward {
-                word_length(crate::get_segmenter(&text[cursor.col..]).map(|(_, text)| text))
+                word_length(
+                    markers::segments(&text[cursor.col..], self.pastes.len())
+                        .into_iter()
+                        .map(|(_, text)| text),
+                )
             } else {
-                let mut parts = crate::get_segmenter(&text[..cursor.col])
-                    .map(|(_, text)| text)
-                    .collect::<Vec<_>>();
-                parts.reverse();
-                word_length(parts.into_iter())
+                let parts = markers::segments(&text[..cursor.col], self.pastes.len());
+                word_length(parts.into_iter().rev().map(|(_, text)| text))
             };
             self.set_col(if forward {
                 cursor.col + length
@@ -259,23 +303,28 @@ impl Editing {
         }
     }
 }
-/// Consumes leading whitespace then one homogeneous punctuation or word run.
+/// Consumes leading whitespace, then one owned marker or one homogeneous punctuation or word run.
 fn word_length<'a>(parts: impl Iterator<Item = &'a str>) -> usize {
     let mut parts = parts.peekable();
     let mut length = 0;
-    while parts
-        .peek()
-        .is_some_and(|text| crate::is_whitespace_char(text))
+    while let Some(text) =
+        parts.next_if(|text| !markers::is_marker(text) && crate::is_whitespace_char(text))
     {
-        length += parts.next().map_or(0, str::len);
+        length += text.len();
     }
-    let punctuation = parts
-        .peek()
-        .is_some_and(|text| crate::is_punctuation_char(text));
+    let Some(first) = parts.peek() else {
+        return length;
+    };
+    if markers::is_marker(first) {
+        return length + first.len();
+    }
+    let punctuation = crate::is_punctuation_char(first);
     length
         + parts
             .take_while(|text| {
-                !crate::is_whitespace_char(text) && crate::is_punctuation_char(text) == punctuation
+                !markers::is_marker(text)
+                    && !crate::is_whitespace_char(text)
+                    && crate::is_punctuation_char(text) == punctuation
             })
             .map(str::len)
             .sum::<usize>()

@@ -31,10 +31,11 @@ struct Options {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Observation {
-    text: Option<String>,
+    text: Option<serde_json::Value>,
+    expanded: Option<serde_json::Value>,
     lines: Option<Vec<String>>,
     cursor: Option<Cursor>,
-    events: Option<Vec<(String, String)>>,
+    events: Option<Vec<(String, serde_json::Value)>>,
     requests: Option<usize>,
     padding: Option<f64>,
     maximum: Option<usize>,
@@ -46,6 +47,23 @@ struct Observation {
 struct Cursor {
     line: usize,
     col: usize,
+}
+/// Reads a literal string or a list of literals and `[unit, count]` repetitions.
+fn text(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::String(text) => text.clone(),
+        serde_json::Value::Array(parts) => parts
+            .iter()
+            .map(|part| match part.as_array().map(Vec::as_slice) {
+                Some([unit, count]) => unit
+                    .as_str()
+                    .unwrap()
+                    .repeat(usize::try_from(count.as_u64().unwrap()).unwrap()),
+                _ => part.as_str().unwrap().to_owned(),
+            })
+            .collect(),
+        other => panic!("{other}"),
+    }
 }
 fn number(value: &serde_json::Value) -> f64 {
     value
@@ -63,6 +81,9 @@ pub fn run(name: &str) {
     let mut cases: Vec<Case> = serde_json::from_str(include_str!("../editor_cases.json")).unwrap();
     cases.extend(
         serde_json::from_str::<Vec<Case>>(include_str!("../editor_navigation_cases.json")).unwrap(),
+    );
+    cases.extend(
+        serde_json::from_str::<Vec<Case>>(include_str!("../editor_paste_cases.json")).unwrap(),
     );
     let mut queries = std::collections::HashSet::new();
     let mut count = 0;
@@ -164,10 +185,10 @@ impl Replay {
     /// Invokes one public operation, returning only observable rows or copied lines.
     fn action(&self, action: &str, value: &serde_json::Value) -> Option<Vec<String>> {
         match action {
-            "history" => self.editor.add_to_history(value.as_str().unwrap()),
-            "set" => self.editor.set_text(value.as_str().unwrap()),
-            "insert" => self.editor.insert_text_at_cursor(value.as_str().unwrap()),
-            "key" => self.editor.handle_input(value.as_str().unwrap()),
+            "history" => self.editor.add_to_history(&text(value)),
+            "set" => self.editor.set_text(&text(value)),
+            "insert" => self.editor.insert_text_at_cursor(&text(value)),
+            "key" => self.editor.handle_input(&text(value)),
             "render" => {
                 return Some(
                     self.editor
@@ -196,8 +217,15 @@ impl Replay {
     }
     /// Compares every retained expected field with its public witness.
     fn observe(&self, expected: &Observation, result: Option<&Vec<String>>, id: &str) {
-        if let Some(text) = &expected.text {
-            assert_eq!(self.editor.get_text(), *text, "{id} text");
+        if let Some(expected) = &expected.text {
+            assert_eq!(self.editor.get_text(), text(expected), "{id} text");
+        }
+        if let Some(expected) = &expected.expanded {
+            assert_eq!(
+                self.editor.get_expanded_text(),
+                text(expected),
+                "{id} expanded"
+            );
         }
         if let Some(lines) = &expected.lines {
             assert_eq!(self.editor.get_lines(), *lines, "{id} lines");
@@ -214,7 +242,11 @@ impl Replay {
         }
         let events = self.events.take();
         if let Some(expected) = &expected.events {
-            assert_eq!(events, *expected, "{id} events");
+            let expected: Vec<_> = expected
+                .iter()
+                .map(|(kind, value)| (kind.clone(), text(value)))
+                .collect();
+            assert_eq!(events, expected, "{id} events");
         }
         self.observe_layout(expected, result, id);
     }

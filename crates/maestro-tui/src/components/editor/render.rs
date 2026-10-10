@@ -1,7 +1,7 @@
 //! Logical-line layout, vertical viewport and display-only cursor decoration.
-use super::{Editor, word_wrap_line};
+use super::{Editor, markers, word_wrap_line};
 use crate::components::cursor::display_cursor;
-use crate::{CURSOR_MARKER, get_segmenter, truncate_to_width, visible_width};
+use crate::{CURSOR_MARKER, truncate_to_width, visible_width};
 use std::borrow::Cow;
 /// A rendered logical chunk with an optional local byte cursor.
 struct LayoutLine {
@@ -47,7 +47,8 @@ impl Editor {
         let state = self.state.borrow();
         let mut lines = Vec::new();
         for (index, text) in state.current.lines.iter().enumerate() {
-            let chunks = word_wrap_line(text, width, None);
+            let segments = markers::segments(text, state.pastes.len());
+            let chunks = word_wrap_line(text, width, Some(&segments));
             let last = chunks.len() - 1;
             for (part, chunk) in chunks.into_iter().enumerate() {
                 let cursor = state.current.cursor;
@@ -81,12 +82,13 @@ impl Editor {
         if width == 0 {
             return String::new();
         }
+        let owned = self.state.borrow().pastes.len();
         let mut text = crate::text::expand_tabs(&line.text);
         let budget = width - padding;
         if let Some(cursor) = line.cursor {
             let cursor = display_cursor(&line.text, cursor);
             let mapped = crate::text::expand_tabs(&line.text[..cursor]).len();
-            text = Cow::Owned(decorate(&text, mapped, budget, self.focus.get()));
+            text = Cow::Owned(decorate(&text, mapped, budget, self.focus.get(), owned));
         } else if visible_width(&text) > budget {
             text = Cow::Owned(crate::slice_by_column(&text, 0, budget, true));
         }
@@ -107,12 +109,12 @@ pub(super) fn visible_lines(rows: usize) -> usize {
         5,
     )
 }
-/// Decorates a whole grapheme or a blank, clipping only the displayed viewport.
-fn decorate(text: &str, cursor: usize, budget: usize, focused: bool) -> String {
+/// Decorates a whole grapheme, owned marker or blank, clipping only the displayed viewport.
+fn decorate(text: &str, cursor: usize, budget: usize, focused: bool, owned: usize) -> String {
     let cursor = display_cursor(text, cursor);
-    let at = get_segmenter(&text[cursor..])
-        .next()
-        .map_or(" ", |(_, text)| text);
+    let at = markers::segments(&text[cursor..], owned)
+        .first()
+        .map_or(" ", |&(_, text)| text);
     let end = (cursor + at.len()).min(text.len());
     let marker = if focused { CURSOR_MARKER } else { "" };
     let result = format!(

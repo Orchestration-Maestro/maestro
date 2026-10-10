@@ -2,7 +2,9 @@
 mod history;
 mod input;
 mod kill;
+mod markers;
 mod navigation;
+mod paste;
 mod render;
 mod text;
 mod wrapping;
@@ -116,6 +118,10 @@ struct Editing {
     revision: u64,
     /// Pending direction for a literal jump.
     jump: Option<navigation::Direction>,
+    /// Stored large pastes in creation order; paste `n` has marker identifier `n + 1`.
+    pastes: Vec<String>,
+    /// Input buffered since a bracketed paste started.
+    framing: Option<String>,
 }
 impl Editor {
     /// Creates an empty editor retaining live terminal dimensions without retaining its writer.
