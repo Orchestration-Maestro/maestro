@@ -104,9 +104,9 @@ struct Tag {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(crate) enum EventData {
     /// Invocation before execution.
-    ToolCall(Box<ToolCallEvent>),
+    ToolCall(ToolCallEvent),
     /// Completed result.
-    ToolResult(Box<ToolResultEvent>),
+    ToolResult(ToolResultEvent),
     /// User shell command.
     UserBash(UserBashEvent),
     /// Selection notification.
@@ -178,8 +178,8 @@ impl EventData {
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
         let Tag { kind } = object::from_str(text)?;
         Ok(match kind {
-            Kind::ToolCall => Self::ToolCall(Box::new(ToolCallEvent::decode(text)?)),
-            Kind::ToolResult => Self::ToolResult(Box::new(ToolResultEvent::decode(text)?)),
+            Kind::ToolCall => Self::ToolCall(ToolCallEvent::decode(text)?),
+            Kind::ToolResult => Self::ToolResult(ToolResultEvent::decode(text)?),
             Kind::UserBash => Self::UserBash(object::from_str(text)?),
             Kind::ModelSelect => Self::ModelSelect(object::from_str(text)?),
             Kind::ThinkingLevelSelect => Self::ThinkingLevelSelect(object::from_str(text)?),

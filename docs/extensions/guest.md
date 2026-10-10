@@ -57,8 +57,8 @@ Cloned signal and progress handles share the resource lent for that invocation. 
 from execution does not revoke retained handles; their last owner releases them.
 For shared content and JSON conventions, see [the data boundary](#events-and-results).
 
-`ToolCallEvent` selects built-in inputs by exact `tool_name`; input records retain extra
-properties. `ToolResultEvent` selects the corresponding details record. Named aliases expose
+When decoding `ToolCallEvent`, the adapter selects built-in inputs by exact `toolName`;
+input records retain extra properties. It selects `ToolResultEvent` details by the name too. Named aliases expose
 those payloads directly, and name predicates compare the name alone, not the payload kind.
 Custom input/details and result input remain opaque strings. `UserBashEventResult` carries
 an already-produced `BashResult`; this crate does not execute shell commands.

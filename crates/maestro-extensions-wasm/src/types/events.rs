@@ -347,9 +347,9 @@ use super::{
 #[derive(Debug)]
 pub enum ExtensionEvent {
     /// Invocation before execution.
-    ToolCall(Box<ToolCallEvent>),
+    ToolCall(ToolCallEvent),
     /// Completed tool result.
-    ToolResult(Box<ToolResultEvent>),
+    ToolResult(ToolResultEvent),
     /// User shell command.
     UserBash(UserBashEvent),
     /// Selection notification.
