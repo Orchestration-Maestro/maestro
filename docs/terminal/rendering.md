@@ -12,6 +12,12 @@ the same writer runs under a native event loop, a browser or a test with a manua
 clock. `TerminalImage` is the shared image state its components already use; the
 writer queries and updates the cell size through that same instance.
 
+`TuiRuntime::spawn_local` hands the host a fallible future, such as an editor's
+completion request, to run on the current thread. The host never polls it before
+`spawn_local` returns, owns it until it finishes and reports an error it returns; the
+toolkit never prints that error. The native host that does so is delivered separately;
+tests use a controlled host that polls the futures it was given when the test asks.
+
 ```rust
 # use std::cell::RefCell;
 # use std::future::Future;
@@ -21,7 +27,7 @@ writer queries and updates the cell size through that same instance.
 # use std::rc::Rc;
 # use std::time::Duration;
 use maestro_tui::tui::{
-    ComponentHandle, LogContext, RenderCallback, RenderTimer, TuiRuntime,
+    ComponentHandle, LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime,
 };
 use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 
@@ -56,6 +62,7 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 #         self.0.borrow_mut().push(callback);
 #         Box::new(Timer)
 #     }
+#     fn spawn_local(&self, _: LocalFuture) {}
 #     fn environment(&self, _: &str) -> Option<String> { None }
 #     fn log_context(&self) -> LogContext {
 #         LogContext { home: "/home/user".into(), iso_time: String::new(), unix_ms: 0, nonce: String::new() }

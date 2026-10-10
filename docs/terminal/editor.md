@@ -21,7 +21,11 @@ lines and a byte cursor. Left and Right cross logical lines at their endpoints; 
 endpoints of the current logical line. Character deletion removes the cursor-local edit unit: a grapheme of the prefix or suffix, or an owned marker.
 Undo restores text and cursor, coalescing consecutive nonwhitespace typing.
 
-Change callbacks run after edits. Submission clears the buffer and undo stack
+Change callbacks run after edits. The submit and change callbacks are shared
+slots: `on_submit` and `on_change` return the current callable, so an earlier alias
+stays callable after `set_on_submit` or `set_on_change` replaces or removes it.
+The `EditorComponent` implementation of `Editor` reads and writes the same slots,
+border colour, history, padding and item maximum. Submission clears the buffer and undo stack
 before change notification, then reads the current submit callback. Callbacks
 may synchronously edit or replace callbacks; retained callable aliases survive
 replacement. Disabled submission leaves text untouched.
@@ -91,7 +95,53 @@ fn paste(editor: &Editor) -> String {
 }
 ```
 
-Completion is not delivered here. Selection styling is retained, not invoked.
-See
+## Completion
+
+`set_autocomplete_provider` installs an `AutocompleteProvider` whose cancellation
+signal is `maestro_cancellation::Cancellation`; replacing it cancels admitted
+completion and clears the menu. Typing `/` when the first line before the cursor is
+empty or only `/` (ignoring surrounding Unicode whitespace) requests suggestions. So
+does typing `@` or `#` when it is the first character before the cursor or follows an
+ASCII space or tab. Any other typed chunk requests them when it contains an ASCII letter,
+digit, `.`, `-` or `_` and either, on the first line, the text before the cursor starts
+with `/` after leading Unicode whitespace, or, on any line, it ends in an `@`/`#` token
+that starts the text or follows Unicode whitespace. Backspace and forward delete retrigger from the same two contexts, or refresh
+an open menu in the mode it was requested in. Tab requests
+regular completion for a first-line slash command without a literal space and forced
+completion otherwise. A forced request first asks the provider whether file completion
+applies and returns without cancelling anything when it says no. An automatic request
+waits 20 ms for further typing while the text before the cursor ends in an `@` token
+(a quoted `@"` token keeps waiting through whitespace) or an unquoted `#` token, either
+one starting the text or following an ASCII space or tab; every other request, including
+Tab and forced requests, starts at once.
+
+Requests run on the host's `spawn_local`, one at a time: a newer request waits for the
+running one to settle, superseded waiting requests are skipped, and the newest starts
+from the buffer and provider live at that moment. Cancellation is cooperative, so a
+provider that ignores its signal still occupies the slot. A result is applied only
+when its signal is live, it belongs to the newest started request, and the text, logical
+line and byte column still equal those at its start; undo and cursor movement do not
+cancel a request, so returning to the same text and cursor keeps its result eligible.
+A provider failure leaves the menu as it was, lets the next waiting request start and
+is returned unchanged to the host. A current `None` or empty result clears the menu
+and requests a frame; a stale one returns without clearing.
+
+Only an explicit forced request with exactly one item applies at once; otherwise
+the items fill a menu below the editor, rendered by [`SelectList`](widgets.md#selectlist)
+in the editor's side padding; the menu takes the configured item count current when it
+is built and keeps it until the next result replaces the menu. With a non-empty prefix
+the selection starts at the item whose value equals it, else the first whose value starts
+with it (case-sensitive, values only, provider order kept); otherwise it starts on the
+first item. While the menu is open, copy and undo keep their usual meaning, then
+cancel closes it, up and down move through it, Tab applies the selection, and confirm
+applies it. Afterwards a non-slash prefix ends the edit with one change notification,
+and so does a menu that an application callback closed. When the menu still
+carries a slash prefix, input continues as ordinary input: submission follows the
+disabled-submit rule (with submission disabled no notification follows the application),
+and a rebound confirm key takes its ordinary action with its own undo snapshot. Every
+application takes one undo snapshot, and the hardware cursor marker is withheld while
+the menu is open.
+
+Selection styling comes from the theme. See
 [text helpers](text.md), [keybindings](keybindings.md) and
 [rendering](rendering.md) for shared behavior.

@@ -3,7 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use maestro_tui::editor_component::{EditorCallbacks, TextCallback};
+use maestro_tui::editor_component::{BorderColor, TextCallback};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{AutocompleteProvider, Component, EditorComponent};
 
@@ -14,16 +14,20 @@ pub type FlagProvider = dyn AutocompleteProvider<Signal = Cell<bool>>;
 pub struct Rich {
     /// Current text.
     pub text: RefCell<String>,
-    /// Callbacks under test.
-    pub callbacks: RefCell<EditorCallbacks>,
+    /// Submission callback slot.
+    pub submit: RefCell<Option<TextCallback>>,
+    /// Change callback slot.
+    pub change: RefCell<Option<TextCallback>>,
+    /// Border painter slot.
+    pub border: RefCell<Option<BorderColor>>,
     /// Text added to history.
-    pub history: Vec<String>,
+    pub history: RefCell<Vec<String>>,
     /// Horizontal padding.
-    pub padding: usize,
+    pub padding: Cell<f64>,
     /// Visible completion items.
-    pub visible: usize,
+    pub visible: Cell<f64>,
     /// Installed provider.
-    pub provider: Option<Rc<FlagProvider>>,
+    pub provider: RefCell<Option<Rc<FlagProvider>>>,
 }
 
 impl Rich {
@@ -31,29 +35,29 @@ impl Rich {
     pub fn new() -> Self {
         Self {
             text: RefCell::default(),
-            callbacks: RefCell::default(),
-            history: Vec::new(),
-            padding: 0,
-            visible: 0,
-            provider: None,
+            submit: RefCell::default(),
+            change: RefCell::default(),
+            border: RefCell::default(),
+            history: RefCell::default(),
+            padding: Cell::new(0.0),
+            visible: Cell::new(0.0),
+            provider: RefCell::default(),
         }
     }
 
-    /// Runs the callback `slot` picks with the current text, holding no cell guard meanwhile;
-    /// the callback is absent while it runs and returns unless a new one was installed.
-    fn notify(&self, slot: fn(&mut EditorCallbacks) -> &mut Option<TextCallback>) {
-        let callback = slot(&mut self.callbacks.borrow_mut()).take();
-        if let Some(mut callback) = callback {
+    /// Runs the callback in `slot` with the current text, holding no cell guard meanwhile.
+    fn notify(&self, slot: &RefCell<Option<TextCallback>>) {
+        let callback = slot.borrow().clone();
+        if let Some(callback) = callback {
             let text = self.text.borrow().clone();
             callback(&text);
-            slot(&mut self.callbacks.borrow_mut()).get_or_insert(callback);
         }
     }
 }
 
 impl Component for Rich {
     fn render(&self, _width: usize) -> Vec<String> {
-        let paint = self.callbacks.borrow().border_color.clone();
+        let paint = self.border.borrow().clone();
         let border = paint.map_or_else(|| "-".to_owned(), |paint| paint("-"));
         vec![border, self.text.borrow().clone()]
     }
@@ -66,11 +70,11 @@ impl Component for Rich {
 impl InputHandler for Rich {
     fn handle_input(&self, data: &str) {
         if data == "\r" {
-            self.notify(|callbacks| &mut callbacks.on_submit);
+            self.notify(&self.submit);
             return;
         }
         self.text.borrow_mut().push_str(data);
-        self.notify(|callbacks| &mut callbacks.on_change);
+        self.notify(&self.change);
     }
 }
 
@@ -81,21 +85,33 @@ impl EditorComponent for Rich {
         self.text.borrow().clone()
     }
 
-    fn set_text(&mut self, text: &str) {
-        text.clone_into(self.text.get_mut());
+    fn set_text(&self, text: &str) {
+        text.clone_into(&mut self.text.borrow_mut());
     }
 
-    fn callbacks(&mut self) -> &mut EditorCallbacks {
-        self.callbacks.get_mut()
+    fn on_submit(&self) -> Option<TextCallback> {
+        self.submit.borrow().clone()
     }
 
-    fn add_to_history(&mut self, text: &str) -> Option<()> {
-        self.history.push(text.to_owned());
+    fn set_on_submit(&self, callback: Option<TextCallback>) {
+        self.submit.replace(callback);
+    }
+
+    fn on_change(&self) -> Option<TextCallback> {
+        self.change.borrow().clone()
+    }
+
+    fn set_on_change(&self, callback: Option<TextCallback>) {
+        self.change.replace(callback);
+    }
+
+    fn add_to_history(&self, text: &str) -> Option<()> {
+        self.history.borrow_mut().push(text.to_owned());
         Some(())
     }
 
-    fn insert_text_at_cursor(&mut self, text: &str) -> Option<()> {
-        self.text.get_mut().push_str(text);
+    fn insert_text_at_cursor(&self, text: &str) -> Option<()> {
+        self.text.borrow_mut().push_str(text);
         Some(())
     }
 
@@ -103,18 +119,27 @@ impl EditorComponent for Rich {
         Some(self.text.borrow().replace("[paste]", "pasted text"))
     }
 
-    fn set_autocomplete_provider(&mut self, provider: Rc<FlagProvider>) -> Option<()> {
-        self.provider = Some(provider);
+    fn set_autocomplete_provider(&self, provider: Rc<FlagProvider>) -> Option<()> {
+        self.provider.replace(Some(provider));
         Some(())
     }
 
-    fn set_padding_x(&mut self, padding: usize) -> Option<()> {
-        self.padding = padding;
+    fn border_color(&self) -> Option<BorderColor> {
+        self.border.borrow().clone()
+    }
+
+    fn set_border_color(&self, color: BorderColor) -> Option<()> {
+        self.border.replace(Some(color));
         Some(())
     }
 
-    fn set_autocomplete_max_visible(&mut self, max_visible: usize) -> Option<()> {
-        self.visible = max_visible;
+    fn set_padding_x(&self, padding: f64) -> Option<()> {
+        self.padding.set(padding);
+        Some(())
+    }
+
+    fn set_autocomplete_max_visible(&self, max_visible: f64) -> Option<()> {
+        self.visible.set(max_visible);
         Some(())
     }
 }
@@ -123,8 +148,10 @@ impl EditorComponent for Rich {
 pub struct Bare {
     /// Current text.
     pub text: RefCell<String>,
-    /// Callbacks storage.
-    pub callbacks: EditorCallbacks,
+    /// Submission callback slot.
+    pub submit: RefCell<Option<TextCallback>>,
+    /// Change callback slot.
+    pub change: RefCell<Option<TextCallback>>,
 }
 
 impl Component for Bare {
@@ -150,11 +177,23 @@ impl EditorComponent for Bare {
         self.text.borrow().clone()
     }
 
-    fn set_text(&mut self, text: &str) {
-        text.clone_into(self.text.get_mut());
+    fn set_text(&self, text: &str) {
+        text.clone_into(&mut self.text.borrow_mut());
     }
 
-    fn callbacks(&mut self) -> &mut EditorCallbacks {
-        &mut self.callbacks
+    fn on_submit(&self) -> Option<TextCallback> {
+        self.submit.borrow().clone()
+    }
+
+    fn set_on_submit(&self, callback: Option<TextCallback>) {
+        self.submit.replace(callback);
+    }
+
+    fn on_change(&self) -> Option<TextCallback> {
+        self.change.borrow().clone()
+    }
+
+    fn set_on_change(&self, callback: Option<TextCallback>) {
+        self.change.replace(callback);
     }
 }

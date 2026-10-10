@@ -111,7 +111,7 @@ are later scope, not active foundation concepts.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.
 - **Overlay:** A retained component layered over the frame, with live placement/visibility options and a public handle for focus, temporary hiding and removal.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
-- **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, environment queries and log files.
+- **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, local future execution, environment queries and log files.
 - **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit and, optionally, the foundation utility.
 - **Grapheme:** A user-perceived character cluster, indivisible when text is wrapped, truncated or sliced; escapes inside it never split it.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.

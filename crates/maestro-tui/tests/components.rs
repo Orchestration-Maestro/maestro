@@ -6,7 +6,7 @@ use std::rc::{Rc, Weak};
 use std::time::Duration;
 
 use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
-use maestro_tui::editor_component::{BorderColor, EditorCallbacks};
+use maestro_tui::editor_component::BorderColor;
 use maestro_tui::tui::{ChildArray, ComponentHandle, InputHandler};
 use maestro_tui::{
     AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayMargin,
@@ -553,30 +553,26 @@ fn completion_contracts_keep_signals_results_and_byte_cursors()
 type Log = Rc<RefCell<Vec<String>>>;
 
 /// Wires submit, change and border callbacks into shared logs.
-fn wire_callbacks(editor: &mut Rich) -> (Log, Log) {
+fn wire_callbacks(editor: &Rich) -> (Log, Log) {
     let submitted = Rc::new(RefCell::new(Vec::new()));
     let changed = Rc::new(RefCell::new(Vec::new()));
     let (submit_log, change_log) = (Rc::clone(&submitted), Rc::clone(&changed));
-    let callbacks: &mut EditorCallbacks = editor.callbacks();
-    callbacks.on_submit = Some(Box::new(move |text| {
+    editor.set_on_submit(Some(Rc::new(move |text| {
         submit_log.borrow_mut().push(text.to_owned());
-    }));
-    callbacks.on_change = Some(Box::new(move |text| {
+    })));
+    editor.set_on_change(Some(Rc::new(move |text| {
         change_log.borrow_mut().push(text.to_owned());
-    }));
-    callbacks.border_color = Some(Rc::new(|text| format!("\x1b[34m{text}{RESET}")));
+    })));
+    editor.set_border_color(Rc::new(|text| format!("\x1b[34m{text}{RESET}")));
     (submitted, changed)
 }
 
 fn assert_rich_editor() {
-    let mut rich = Rich::new();
-    let callbacks = rich.callbacks();
+    let rich = Rich::new();
     assert!(
-        callbacks.on_submit.is_none()
-            && callbacks.on_change.is_none()
-            && callbacks.border_color.is_none()
+        rich.on_submit().is_none() && rich.on_change().is_none() && rich.border_color().is_none()
     );
-    let (submitted, changed) = wire_callbacks(&mut rich);
+    let (submitted, changed) = wire_callbacks(&rich);
     if let Some(input) = rich.input_handler() {
         input.handle_input("hi");
         input.handle_input("\r");
@@ -585,7 +581,7 @@ fn assert_rich_editor() {
         (submitted.take(), changed.take()),
         (vec!["hi".to_owned()], vec!["hi".to_owned()])
     );
-    rich.callbacks().on_change = None;
+    rich.set_on_change(None);
     rich.handle_input("!");
     assert_eq!(
         changed.take(),
@@ -603,24 +599,32 @@ fn assert_rich_editor() {
     assert_eq!(rich.add_to_history("older"), Some(()));
     assert_eq!(rich.insert_text_at_cursor("!"), Some(()));
     assert_eq!(
-        (rich.set_padding_x(2), rich.set_autocomplete_max_visible(7)),
+        (
+            rich.set_padding_x(2.0),
+            rich.set_autocomplete_max_visible(7.0)
+        ),
         (Some(()), Some(()))
     );
     assert_eq!(
         rich.set_autocomplete_provider(Rc::new(CommandProvider)),
         Some(())
     );
-    assert_eq!(rich.history, ["older"]);
+    assert_eq!(*rich.history.borrow(), ["older"]);
     assert_eq!(
-        (rich.padding, rich.visible, rich.provider.is_some()),
-        (2, 7, true)
+        (
+            rich.padding.get().to_bits(),
+            rich.visible.get().to_bits(),
+            rich.provider.borrow().is_some()
+        ),
+        (2.0_f64.to_bits(), 7.0_f64.to_bits(), true)
     );
 }
 
 fn assert_bare_editor() {
-    let mut bare = Bare {
+    let bare = Bare {
         text: RefCell::default(),
-        callbacks: EditorCallbacks::default(),
+        submit: RefCell::default(),
+        change: RefCell::default(),
     };
     bare.set_text("plain");
     assert_eq!(bare.get_text(), "plain");
@@ -632,13 +636,18 @@ fn assert_bare_editor() {
     assert_eq!(bare.add_to_history("x"), None);
     assert_eq!(bare.insert_text_at_cursor("x"), None);
     assert_eq!(
-        (bare.set_padding_x(1), bare.set_autocomplete_max_visible(3)),
+        (
+            bare.set_padding_x(1.0),
+            bare.set_autocomplete_max_visible(3.0)
+        ),
         (None, None)
     );
     assert_eq!(
         bare.set_autocomplete_provider(Rc::new(CountingProvider)),
         None
     );
+    assert!(bare.border_color().is_none());
+    assert_eq!(bare.set_border_color(Rc::new(str::to_owned)), None);
     bare.handle_input("!");
     assert_eq!(bare.render(5), ["plain!"]);
 }
@@ -673,13 +682,18 @@ fn painter_reentering(weak: Weak<Rich>, seen: Rendered) -> BorderColor {
 /// change callback (`"change"`) re-enters the editor itself.
 fn editor_reentered_by(trigger: &str, seen: &Rendered) -> Rc<Rich> {
     Rc::new_cyclic(|weak: &Weak<Rich>| {
-        let mut rich = Rich::new();
+        let rich = Rich::new();
         let (weak, seen) = (weak.clone(), Rc::clone(seen));
-        let callbacks = rich.callbacks();
         match trigger {
-            "paint" => callbacks.border_color = Some(painter_reentering(weak, seen)),
-            "submit" => callbacks.on_submit = Some(Box::new(move |_| reenter(&weak, "", &seen))),
-            _ => callbacks.on_change = Some(Box::new(move |_| reenter(&weak, "", &seen))),
+            "paint" => drop(rich.border.replace(Some(painter_reentering(weak, seen)))),
+            "submit" => drop(
+                rich.submit
+                    .replace(Some(Rc::new(move |_| reenter(&weak, "", &seen)))),
+            ),
+            _ => drop(
+                rich.change
+                    .replace(Some(Rc::new(move |_| reenter(&weak, "", &seen)))),
+            ),
         }
         rich
     })

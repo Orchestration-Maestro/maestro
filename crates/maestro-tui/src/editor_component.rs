@@ -2,30 +2,24 @@
 
 use std::rc::Rc;
 
+use maestro_cancellation::Cancellation;
+
+use crate::Editor;
 use crate::autocomplete::AutocompleteProvider;
 use crate::tui::{Component, InputHandler};
 
 /// Receives the editor text when the user submits or changes it.
-pub type TextCallback = Box<dyn FnMut(&str)>;
+pub type TextCallback = Rc<dyn Fn(&str)>;
 
 /// Paints text with the border colour.
 pub type BorderColor = Rc<dyn Fn(&str) -> String>;
-
-/// Callbacks an editor invokes; each starts absent and can be replaced at any time.
-#[derive(Default)]
-pub struct EditorCallbacks {
-    /// Called with the text when the user submits.
-    pub on_submit: Option<TextCallback>,
-    /// Called with the text after every change.
-    pub on_change: Option<TextCallback>,
-    /// Paints the editor border.
-    pub border_color: Option<BorderColor>,
-}
 
 /// A text editor that extensions can substitute for the built-in one.
 ///
 /// Optional operations return `None` when the editor does not support them. Those that
 /// act return `Some(())` once carried out; [`get_expanded_text`] returns the expanded text.
+/// Every operation takes `&self`, so a handle shared with its callbacks stays usable;
+/// editors keep their state behind interior mutability.
 ///
 /// [`get_expanded_text`]: EditorComponent::get_expanded_text
 pub trait EditorComponent: Component + InputHandler {
@@ -36,18 +30,27 @@ pub trait EditorComponent: Component + InputHandler {
     fn get_text(&self) -> String;
 
     /// Replaces the text.
-    fn set_text(&mut self, text: &str);
+    fn set_text(&self, text: &str);
 
-    /// The callbacks the editor invokes.
-    fn callbacks(&mut self) -> &mut EditorCallbacks;
+    /// The callback invoked with the text when the user submits, if any.
+    fn on_submit(&self) -> Option<TextCallback>;
+
+    /// Replaces or removes the submission callback.
+    fn set_on_submit(&self, callback: Option<TextCallback>);
+
+    /// The callback invoked with the text after every change, if any.
+    fn on_change(&self) -> Option<TextCallback>;
+
+    /// Replaces or removes the change callback.
+    fn set_on_change(&self, callback: Option<TextCallback>);
 
     /// Adds text to the history used for up and down navigation.
-    fn add_to_history(&mut self, _text: &str) -> Option<()> {
+    fn add_to_history(&self, _text: &str) -> Option<()> {
         None
     }
 
     /// Inserts text at the cursor.
-    fn insert_text_at_cursor(&mut self, _text: &str) -> Option<()> {
+    fn insert_text_at_cursor(&self, _text: &str) -> Option<()> {
         None
     }
 
@@ -61,19 +64,98 @@ pub trait EditorComponent: Component + InputHandler {
 
     /// Sets the completion provider.
     fn set_autocomplete_provider(
-        &mut self,
+        &self,
         _provider: Rc<dyn AutocompleteProvider<Signal = Self::Signal>>,
     ) -> Option<()> {
         None
     }
 
+    /// The border painter, or `None` when the editor has none to share.
+    fn border_color(&self) -> Option<BorderColor> {
+        None
+    }
+
+    /// Sets the border painter.
+    fn set_border_color(&self, _color: BorderColor) -> Option<()> {
+        None
+    }
+
     /// Sets the horizontal padding.
-    fn set_padding_x(&mut self, _padding: usize) -> Option<()> {
+    fn set_padding_x(&self, _padding: f64) -> Option<()> {
         None
     }
 
     /// Sets how many completion items are visible at once.
-    fn set_autocomplete_max_visible(&mut self, _max_visible: usize) -> Option<()> {
+    fn set_autocomplete_max_visible(&self, _max_visible: f64) -> Option<()> {
         None
+    }
+}
+
+impl EditorComponent for Editor {
+    type Signal = Cancellation;
+
+    fn get_text(&self) -> String {
+        Editor::get_text(self)
+    }
+
+    fn set_text(&self, text: &str) {
+        Editor::set_text(self, text);
+    }
+
+    fn on_submit(&self) -> Option<TextCallback> {
+        Editor::on_submit(self)
+    }
+
+    fn set_on_submit(&self, callback: Option<TextCallback>) {
+        Editor::set_on_submit(self, callback);
+    }
+
+    fn on_change(&self) -> Option<TextCallback> {
+        Editor::on_change(self)
+    }
+
+    fn set_on_change(&self, callback: Option<TextCallback>) {
+        Editor::set_on_change(self, callback);
+    }
+
+    fn add_to_history(&self, text: &str) -> Option<()> {
+        Editor::add_to_history(self, text);
+        Some(())
+    }
+
+    fn insert_text_at_cursor(&self, text: &str) -> Option<()> {
+        Editor::insert_text_at_cursor(self, text);
+        Some(())
+    }
+
+    fn get_expanded_text(&self) -> Option<String> {
+        Some(Editor::get_expanded_text(self))
+    }
+
+    fn set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
+    ) -> Option<()> {
+        Editor::set_autocomplete_provider(self, provider);
+        Some(())
+    }
+
+    fn border_color(&self) -> Option<BorderColor> {
+        Some(Editor::border_color(self))
+    }
+
+    fn set_border_color(&self, color: BorderColor) -> Option<()> {
+        Editor::set_border_color(self, color);
+        Some(())
+    }
+
+    fn set_padding_x(&self, padding: f64) -> Option<()> {
+        Editor::set_padding_x(self, padding);
+        Some(())
+    }
+
+    fn set_autocomplete_max_visible(&self, max_visible: f64) -> Option<()> {
+        Editor::set_autocomplete_max_visible(self, max_visible);
+        Some(())
     }
 }

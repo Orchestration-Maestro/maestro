@@ -1,5 +1,5 @@
 //! Logical-line layout, vertical viewport and display-only cursor decoration.
-use super::{Editor, markers, word_wrap_line};
+use super::{Owner, markers, word_wrap_line};
 use crate::components::cursor::display_cursor;
 use crate::{CURSOR_MARKER, truncate_to_width, visible_width};
 use std::borrow::Cow;
@@ -10,7 +10,7 @@ struct LayoutLine {
     /// Byte cursor owned by this chunk.
     cursor: Option<usize>,
 }
-impl Editor {
+impl Owner {
     /// Composes border styling before reading the buffer for layout.
     pub(super) fn draw(&self, width: usize) -> Vec<String> {
         let padding = super::normalize(self.padding.get(), 0, width.saturating_sub(1) / 2, 0);
@@ -40,6 +40,7 @@ impl Editor {
                 .map(|line| self.row(line, width, padding)),
         );
         result.push(self.border(width, lines.len() - end, "↓", &horizontal));
+        result.extend(self.menu_rows(width.saturating_sub(2 * padding), padding));
         result
     }
     /// Wraps each logical line and assigns boundary cursors to the following chunk.
@@ -88,7 +89,8 @@ impl Editor {
         if let Some(cursor) = line.cursor {
             let cursor = display_cursor(&line.text, cursor);
             let mapped = crate::text::expand_tabs(&line.text[..cursor]).len();
-            text = Cow::Owned(decorate(&text, mapped, budget, self.focus.get(), owned));
+            let focused = self.focus.get() && !self.is_showing_autocomplete();
+            text = Cow::Owned(decorate(&text, mapped, budget, focused, owned));
         } else if visible_width(&text) > budget {
             text = Cow::Owned(crate::slice_by_column(&text, 0, budget, true));
         }

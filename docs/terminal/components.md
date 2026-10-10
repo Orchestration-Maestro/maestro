@@ -109,16 +109,17 @@ applies its own defaults, 1000 ms at most and 50 ms idle, when they are omitted.
 ## Editors and completion
 
 The concrete [Editor](editor.md) provides multiline prompt editing and rendering.
-It exposes component, input and focus capabilities; its optional editor facade
-is not yet delivered.
+It exposes component, input and focus capabilities and implements `EditorComponent`.
 
 An `EditorComponent` is a component that must also handle input. Its text accessors
 are required. History, insertion, the completion provider, padding and the visible
 item count are optional: each returns `None` when unsupported and `Some(())` once
 carried out. Expanded text is optional too: `get_expanded_text` returns `None` when
 unsupported and `Some(text)` with the markers expanded otherwise, so `get_text` is
-the fallback. `EditorCallbacks` holds the submit, change and border-colour
-callbacks; all start absent and the editor calls them.
+the fallback. The submit and change callbacks are shared `TextCallback` slots read and
+replaced through `&self`, and a retained earlier callable stays callable after
+replacement; the border colour is an optional getter and setter. Custom editors keep
+their state behind interior mutability.
 
 An `AutocompleteProvider` suggests items for lines and a UTF-8 byte cursor, borrowing
 a caller-supplied signal. Suggestions and optional command argument callbacks return

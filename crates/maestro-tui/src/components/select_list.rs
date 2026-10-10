@@ -21,6 +21,7 @@ pub struct SelectItem {
     pub description: Option<String>,
 }
 /// Styling callbacks for command rows.
+#[derive(Clone)]
 pub struct SelectListTheme {
     /// Declared styling callback that this component does not invoke.
     pub selected_prefix: Rc<dyn Fn(&str) -> String>,
