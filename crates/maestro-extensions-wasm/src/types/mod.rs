@@ -13,7 +13,6 @@ mod context;
 mod event_data;
 mod events;
 mod extension_result;
-#[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) mod finite;
 pub(crate) mod object;
 mod presence;

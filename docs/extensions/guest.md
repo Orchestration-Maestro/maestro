@@ -57,11 +57,13 @@ Cloned signal and progress handles share the resource lent for that invocation. 
 from execution does not revoke retained handles; their last owner releases them.
 For shared content and JSON conventions, see [the data boundary](#events-and-results).
 
-When decoding `ToolCallEvent`, the adapter selects built-in inputs by exact `toolName`;
-input records retain extra properties. It selects `ToolResultEvent` details by the name too. Named aliases expose
-those payloads directly, and name predicates compare the name alone, not the payload kind.
-Custom input/details and result input remain opaque strings. `UserBashEventResult` carries
-an already-produced `BashResult`; this crate does not execute shell commands.
+`ToolCallEvent` input and `ToolResultEvent` details retain their JSON independently of
+`toolName`, including overrides of built-in names. Their `ToolInput` / `ToolDetails`
+carrier offers `decode::<T>()` for an on-demand typed view and `from_value()` for
+finite-checked authored replacements. Named aliases expose the built-in typed views;
+name predicates compare the name alone. Result input remains an opaque string.
+`UserBashEventResult` carries an already-produced `BashResult`; this crate does not
+execute shell commands.
 
 ## Events and results
 
@@ -81,8 +83,8 @@ differs from a result whose properties are all omitted.
 | `message_start` | `MessageStartEvent` | `message` |
 | `message_end` | `MessageEndEvent` | `message` |
 | `message_update` | `MessageUpdateEvent` | `message`, `assistantMessageEvent` |
-| `tool_call` | `ToolCallEvent` | `toolCallId`, `toolName`, typed built-in or opaque custom `input` |
-| `tool_result` | `ToolResultEvent` | `toolCallId`, `toolName`, opaque `input`, shared `content`, `isError`, selected `details?` |
+| `tool_call` | `ToolCallEvent` | `toolCallId`, `toolName`, retained JSON `input` |
+| `tool_result` | `ToolResultEvent` | `toolCallId`, `toolName`, opaque `input`, shared `content`, `isError`, retained JSON `details?` |
 | `user_bash` | `UserBashEvent` | `command`, `cwd`, `excludeFromContext` |
 | `tool_execution_start` | `ToolExecutionStartEvent` | `toolCallId`, `toolName`, `args` |
 | `tool_execution_update` | `ToolExecutionUpdateEvent` | `toolCallId`, `toolName`, `args`, `partialResult` |
@@ -187,7 +189,8 @@ have no added `Presence` wrapper.
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder
-may reject. An extension-assigned Infinity or NaN fails encoding with
+may reject. `ToolInput::from_value` rejects Infinity or NaN before returning a carrier.
+Other extension-assigned Infinity or NaN fails encoding with
 `extension wrote a non-finite number (Infinity or NaN)`; the independent callback
 failure or other encoded part is retained. Numeric-looking text remains text.
 

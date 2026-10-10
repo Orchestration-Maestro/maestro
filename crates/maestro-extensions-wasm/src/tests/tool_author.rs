@@ -111,60 +111,31 @@ fn execution(
     })
 }
 
-/// Changes a typed argument and inserts an ordered extra property.
-pub fn mark(input: &mut maestro_extensions_wasm::ToolInput) {
-    use maestro_extensions_wasm::ToolInput;
-    let extra = match input {
-        ToolInput::Bash(input) => {
-            input.command = "changed".into();
-            &mut input.extra
-        }
-        ToolInput::Read(input) => {
-            input.path = "changed".into();
-            &mut input.extra
-        }
-        ToolInput::Edit(input) => {
-            input.path = "changed".into();
-            &mut input.extra
-        }
-        ToolInput::Write(input) => {
-            input.content = "changed".into();
-            &mut input.extra
-        }
-        ToolInput::Grep(input) => {
-            input.pattern = "changed".into();
-            &mut input.extra
-        }
-        ToolInput::Find(input) => {
-            input.pattern = "changed".into();
-            &mut input.extra
-        }
-        ToolInput::Ls(input) => {
-            input.path = maestro_extensions_wasm::Presence::Present("changed".into());
-            &mut input.extra
-        }
-        ToolInput::Custom(input) => {
-            *input = "changed".into();
-            return;
-        }
-    };
-    extra.insert("mark".into(), json!("changed"));
+/// Changes the selected argument and inserts an ordered extra property.
+pub fn mark(input: &mut maestro_extensions_wasm::ToolInput, name: &str) {
+    let mut value: Value = input.decode().unwrap();
+    if let Some(object) = value.as_object_mut() {
+        let field = match name {
+            "bash" => "command",
+            "write" => "content",
+            "grep" | "find" => "pattern",
+            _ => "path",
+        };
+        object.insert(field.into(), json!("changed"));
+        object.insert("mark".into(), json!("changed"));
+    } else {
+        value = json!("changed");
+    }
+    *input = maestro_extensions_wasm::ToolInput::from_value(&value).unwrap();
 }
 
 /// Inserts only the extra property observed by the source callback corpus.
 pub fn mark_extra(input: &mut maestro_extensions_wasm::ToolInput) {
-    use maestro_extensions_wasm::ToolInput;
-    let extra = match input {
-        ToolInput::Bash(input) => &mut input.extra,
-        ToolInput::Read(input) => &mut input.extra,
-        ToolInput::Edit(input) => &mut input.extra,
-        ToolInput::Write(input) => &mut input.extra,
-        ToolInput::Grep(input) => &mut input.extra,
-        ToolInput::Find(input) => &mut input.extra,
-        ToolInput::Ls(input) => &mut input.extra,
-        ToolInput::Custom(_) => return,
-    };
-    extra.insert("mark".into(), json!("changed"));
+    let mut value: Value = input.decode().unwrap();
+    if let Some(object) = value.as_object_mut() {
+        object.insert("mark".into(), json!("changed"));
+        *input = maestro_extensions_wasm::ToolInput::from_value(&value).unwrap();
+    }
 }
 
 /// Two aliases of each retained resource, owned by the callbacks until explicitly removed.
@@ -201,86 +172,88 @@ fn control_kept(kept: &RefCell<Kept>, control: &str) -> ExtensionResult<Value> {
     Ok(json!(aborted))
 }
 
-/// Writes typed numeric fields without converting the nonfinite values through JSON.
+/// Decodes a typed view, edits a number, and checks finite encoding at construction.
 pub fn write_number(
     event: &mut maestro_extensions_wasm::ExtensionEvent,
     field: &str,
     value: f64,
 ) -> ExtensionResult<()> {
-    use maestro_extensions_wasm::{ExtensionEvent, Presence, ToolDetails, ToolInput};
-    let optional = match event {
-        ExtensionEvent::ToolCall(event) => match &mut event.input {
-            ToolInput::Bash(input) => &mut input.timeout,
-            ToolInput::Read(input) if field == "offset" => &mut input.offset,
-            ToolInput::Read(input) => &mut input.limit,
-            ToolInput::Grep(input) if field == "context" => &mut input.context,
-            ToolInput::Grep(input) => &mut input.limit,
-            ToolInput::Find(input) => &mut input.limit,
-            ToolInput::Ls(input) => &mut input.limit,
+    use maestro_extensions_wasm::*;
+    use maestro_extensions_wasm::{ExtensionEvent, Presence, ToolInput};
+    macro_rules! edit {
+        ($carrier:expr, $ty:ty, $member:ident) => {{
+            let carrier = $carrier;
+            let mut view: $ty = carrier.decode().map_err(|e| e.to_string())?;
+            view.$member = Presence::Present(value);
+            *carrier = ToolInput::from_value(&view)?;
+        }};
+    }
+    match event {
+        ExtensionEvent::ToolCall(event) => match (event.tool_name.as_str(), field) {
+            ("bash", _) => edit!(&mut event.input, BashToolInput, timeout),
+            ("read", "offset") => edit!(&mut event.input, ReadToolInput, offset),
+            ("read", _) => edit!(&mut event.input, ReadToolInput, limit),
+            ("grep", "context") => edit!(&mut event.input, GrepToolInput, context),
+            ("grep", _) => edit!(&mut event.input, GrepToolInput, limit),
+            ("find", _) => edit!(&mut event.input, FindToolInput, limit),
+            ("ls", _) => edit!(&mut event.input, LsToolInput, limit),
             _ => return Err("not numeric input".into()),
         },
         ExtensionEvent::ToolResult(event) => {
             let Presence::Present(details) = &mut event.details else {
                 return Err("missing details".into());
             };
-            match details {
-                ToolDetails::Edit(details) => &mut details.first_changed_line,
-                ToolDetails::Grep(details) if field == "matchLimitReached" => {
-                    &mut details.match_limit_reached
+            match (event.tool_name.as_str(), field) {
+                ("edit", _) => edit!(details, EditToolDetails, first_changed_line),
+                ("grep", "matchLimitReached") => {
+                    edit!(details, GrepToolDetails, match_limit_reached);
                 }
-                ToolDetails::Find(details) if field == "resultLimitReached" => {
-                    &mut details.result_limit_reached
+                ("find", "resultLimitReached") => {
+                    edit!(details, FindToolDetails, result_limit_reached);
                 }
-                ToolDetails::Ls(details) if field == "entryLimitReached" => {
-                    &mut details.entry_limit_reached
-                }
-                _ => return write_truncation(details, field, value),
+                ("ls", "entryLimitReached") => edit!(details, LsToolDetails, entry_limit_reached),
+                _ => write_truncation(details, field, value)?,
             }
         }
         _ => return Err("not a tool event".into()),
-    };
-    *optional = Presence::Present(value);
+    }
     Ok(())
 }
 
-/// Assigns each independent accounting field in the selected details owner.
+/// A view of the accounting shared by tools that supply truncation.
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Accounting {
+    /// Supplied accounting.
+    truncation: maestro_extensions_wasm::TruncationResult,
+}
+
+/// Assigns each independent accounting field through an explicitly requested view.
 fn write_truncation(
     details: &mut maestro_extensions_wasm::ToolDetails,
     field: &str,
     value: f64,
 ) -> ExtensionResult<()> {
-    use maestro_extensions_wasm::{Presence, ToolDetails};
-    let truncation = match details {
-        ToolDetails::Bash(details) => &mut details.truncation,
-        ToolDetails::Read(details) => &mut details.truncation,
-        ToolDetails::Grep(details) => &mut details.truncation,
-        ToolDetails::Find(details) => &mut details.truncation,
-        ToolDetails::Ls(details) => &mut details.truncation,
-        _ => return Err("no truncation owner".into()),
-    };
-    let Presence::Present(truncation) = truncation else {
-        return Err("missing truncation".into());
-    };
+    let mut view: Accounting = details.decode().map_err(|e| e.to_string())?;
     let target = match field {
-        "totalLines" => &mut truncation.total_lines,
-        "totalBytes" => &mut truncation.total_bytes,
-        "outputLines" => &mut truncation.output_lines,
-        "outputBytes" => &mut truncation.output_bytes,
-        "maxLines" => &mut truncation.max_lines,
-        "maxBytes" => &mut truncation.max_bytes,
+        "totalLines" => &mut view.truncation.total_lines,
+        "totalBytes" => &mut view.truncation.total_bytes,
+        "outputLines" => &mut view.truncation.output_lines,
+        "outputBytes" => &mut view.truncation.output_bytes,
+        "maxLines" => &mut view.truncation.max_lines,
+        "maxBytes" => &mut view.truncation.max_bytes,
         _ => return Err("unknown truncation field".into()),
     };
     *target = value;
+    *details = maestro_extensions_wasm::ToolDetails::from_value(&view)?;
     Ok(())
 }
 
-/// The custom author parses and edits its own opaque data; the transport does not.
+/// The custom author parses and edits its own string payload; the transport does not.
 pub fn mark_custom(input: &mut maestro_extensions_wasm::ToolInput) -> ExtensionResult<()> {
-    let maestro_extensions_wasm::ToolInput::Custom(input) = input else {
-        return Err("not custom".into());
-    };
-    let mut value: Value = serde_json::from_str(input).map_err(|e| e.to_string())?;
+    let text: String = input.decode().map_err(|e| e.to_string())?;
+    let mut value: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
     value["a"] = json!("changed");
-    *input = serde_json::to_string(&value).map_err(|e| e.to_string())?;
+    let text = serde_json::to_string(&value).map_err(|e| e.to_string())?;
+    *input = maestro_extensions_wasm::ToolInput::from_value(&text)?;
     Ok(())
 }

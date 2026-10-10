@@ -141,6 +141,53 @@ fn maestro_tool_events_keep_builtin_inputs_and_custom_extras() -> Result<(), Str
     on_both_adapters!(builtin_records)
 }
 
+/// Overrides retain details and parameters independently of the registered name.
+async fn override_payloads(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
+    use super::documents::{Answer, ask};
+    use serde_json::json;
+    for name in ["bash", "read", "edit", "write", "grep", "find", "ls"] {
+        for details in [
+            json!({"blocked":true}),
+            json!({"lines":12,"error":"denied"}),
+            json!(["replacement", false, 3]),
+        ] {
+            let event = json!({"type":"tool_result","toolCallId":"c","toolName":name,"input":"{}","content":[],"isError":false,"details":details});
+            assert_eq!(
+                ask(driver, &event, &json!({})).await?,
+                Answer::returned(&event, None),
+                "{name}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_named_overrides_keep_arbitrary_details() -> Result<(), String> {
+    on_both_adapters!(override_payloads)
+}
+
+/// An override need not use the original tool's parameter schema.
+async fn override_inputs(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
+    use super::documents::{Answer, ask};
+    use serde_json::json;
+    for name in ["bash", "read", "edit", "write", "grep", "find", "ls"] {
+        let event =
+            json!({"type":"tool_call","toolCallId":"c","toolName":name,"input":{"override":true}});
+        assert_eq!(
+            ask(driver, &event, &json!({})).await?,
+            Answer::returned(&event, None),
+            "{name}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_named_overrides_keep_arbitrary_inputs() -> Result<(), String> {
+    on_both_adapters!(override_inputs)
+}
+
 /// Per-handler answers retain absent and falsy fields without applying host reduction.
 async fn event_answers(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
     use super::documents::{Answer, ask, returns};
@@ -335,8 +382,11 @@ async fn numeric_output(driver: &mut impl super::scenario::Driver) -> Result<(),
             let answer = driver
                 .deliver(handler, &event.to_string(), &directive.to_string(), None)
                 .await?;
-            assert_eq!(answer.event, Err(message.into()));
-            assert_eq!(answer.decision, Decision::Returned(Ok(Some("{}".into()))));
+            assert_eq!(
+                serde_json::from_str::<Value>(&answer.event?.unwrap()).unwrap(),
+                event
+            );
+            assert_eq!(answer.decision, Decision::Failed(message.into()));
         }
     }
     numeric_shell_result(driver).await
@@ -390,8 +440,8 @@ fn maestro_tool_numeric_fields_reject_nonfinite_output() -> Result<(), String> {
     on_both_adapters!(numeric_output)
 }
 
-/// Selected-name decoding admits the record decoder's shapes, not a schema validator.
-async fn selected_decoder(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
+/// Transport retains payload shapes without selecting a schema by name.
+async fn retained_payloads(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
     use super::documents::{Answer, ask};
     use serde_json::json;
     let read = json!({"type":"tool_call","toolCallId":"c","toolName":"read","input":{"path":"p","content":"write decoy","offset":-1.25,"new":"kept"}});
@@ -406,35 +456,33 @@ async fn selected_decoder(driver: &mut impl super::scenario::Driver) -> Result<(
         Answer::returned(&custom, None)
     );
     let result = json!({"type":"tool_result","toolCallId":"c","toolName":"edit","input":"{}","content":[],"isError":false,"details":{"diff":"d","truncation":"wrong-owner","unread":{"nested":[1,2,3]}}});
-    let mut expected = result.clone();
-    expected["details"] = json!({"diff":"d"});
     assert_eq!(
         ask(driver, &result, &json!({})).await?,
-        Answer::returned(&expected, None)
+        Answer::returned(&result, None)
     );
     let positional = json!({"type":"tool_result","toolCallId":"c","toolName":"edit","input":"{}","content":[],"isError":false,"details":["d",2.5]});
-    let mut expected = positional.clone();
-    expected["details"] = json!({"diff":"d","firstChangedLine":2.5});
     assert_eq!(
         ask(driver, &positional, &json!({})).await?,
-        Answer::returned(&expected, None)
+        Answer::returned(&positional, None)
     );
-    native_literal_shapes(driver).await?;
+    retained_literal_shapes(driver).await?;
     decoder_refusals(driver).await?;
     let handler = driver.identity("event probe")?;
     let deep = format!("{}0{}", "[".repeat(150), "]".repeat(150));
     let raw = format!(
         r#"{{"type":"tool_result","toolCallId":"c","toolName":"edit","input":"{{}}","content":[],"isError":false,"details":{{"diff":"d","unread":{deep}}},"unread":{deep}}}"#
     );
-    assert!(driver.deliver(handler, &raw, "{}", None).await.is_ok());
+    let answer = driver.deliver(handler, &raw, "{}", None).await?;
+    let edited = answer.event?.unwrap();
+    assert!(edited.contains(&format!(r#""details":{{"diff":"d","unread":{deep}}}"#)));
     arbitrary_preparation(driver).await?;
     driver.release_all().await;
     Ok(())
 }
 
 #[test]
-fn maestro_tool_decoding_selects_names_without_schema_validation() -> Result<(), String> {
-    on_both_adapters!(selected_decoder)
+fn maestro_tool_decoding_keeps_payloads_without_schema_validation() -> Result<(), String> {
+    on_both_adapters!(retained_payloads)
 }
 
 /// Invalid selected records fail before the synchronous producer can enter its handler.
@@ -442,15 +490,7 @@ async fn decoder_refusals(driver: &mut impl super::scenario::Driver) -> Result<(
     let handler = driver.identity("event probe")?;
     for raw in [
         r#"["tool_call","c","read",{"path":"p"}]"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"read","input":{"path":42}}"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"read","input":{"path":null}}"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"read","input":{}}"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"read","input":["p",null,null]}"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"read","input":{"path":"p","offset":false}}"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"read","input":{"path":"p","path":"q"}}"#,
         r#"{"type":"tool_call","toolCallId":"c","toolName":{},"input":"{}"}"#,
-        r#"{"type":"tool_call","toolCallId":"c","toolName":"custom","input":{}}"#,
-        r#"{"type":"tool_result","toolCallId":"c","toolName":"write","input":"{}","content":[],"isError":false,"details":{}}"#,
     ] {
         let entered = driver
             .transcript()
@@ -500,19 +540,17 @@ async fn arbitrary_preparation(driver: &mut impl super::scenario::Driver) -> Res
     Ok(())
 }
 
-/// The selected native enum decoder retains its admitted object-valued literals.
-async fn native_literal_shapes(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
+/// Transport retains object-valued literals without decoding their enum views.
+async fn retained_literal_shapes(driver: &mut impl super::scenario::Driver) -> Result<(), String> {
     use super::documents::{Answer, ask};
     use serde_json::json;
     for mode in ["lines", "bytes"] {
         let mut supplied = truncation();
         supplied["truncatedBy"] = json!({mode:null});
         let event = json!({"type":"tool_result","toolName":"bash","toolCallId":"c","input":"{}","content":[],"isError":false,"details":{"truncation":supplied}});
-        let mut expected = event.clone();
-        expected["details"]["truncation"]["truncatedBy"] = json!(mode);
         assert_eq!(
             ask(driver, &event, &json!({})).await?,
-            Answer::returned(&expected, None)
+            Answer::returned(&event, None)
         );
     }
     Ok(())

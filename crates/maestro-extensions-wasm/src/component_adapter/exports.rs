@@ -113,8 +113,5 @@ impl<I: Imports> Exports<I> {
 
 /// Encodes authored data after rejecting nonfinite typed numbers.
 pub(super) fn encode_value<T: Serialize>(value: &T) -> Result<String, String> {
-    value
-        .serialize(crate::types::finite::Finite)
-        .map_err(|error| error.to_string())?;
-    serde_json::to_string(value).map_err(|error| error.to_string())
+    crate::types::finite::encode_value(value)
 }

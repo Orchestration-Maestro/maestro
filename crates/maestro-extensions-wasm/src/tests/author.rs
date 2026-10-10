@@ -542,7 +542,7 @@ fn mark(event: &mut ExtensionEvent) {
         }
         ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
         ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
-        ExtensionEvent::ToolCall(event) => tool_author::mark(&mut event.input),
+        ExtensionEvent::ToolCall(event) => tool_author::mark(&mut event.input, &event.tool_name),
         ExtensionEvent::ToolResult(event) => event.is_error = !event.is_error,
         ExtensionEvent::UserBash(event) => event.command = changed(),
         ExtensionEvent::Input(input) => input.text = changed(),

@@ -119,48 +119,34 @@ use crate::tools::{
     GrepToolDetails, GrepToolInput, LsToolDetails, LsToolInput, ReadToolDetails, ReadToolInput,
     WriteToolInput,
 };
-#[derive(Debug, Clone, Serialize)]
-#[serde(untagged)]
-/// `ToolInput` data.
-pub enum ToolInput {
-    /// Bash payload.
-    Bash(BashToolInput),
-    /// Read payload.
-    Read(ReadToolInput),
-    /// Edit payload.
-    Edit(EditToolInput),
-    /// Write payload.
-    Write(WriteToolInput),
-    /// Grep payload.
-    Grep(GrepToolInput),
-    /// Find payload.
-    Find(FindToolInput),
-    /// Ls payload.
-    Ls(LsToolInput),
-    /// Custom payload.
-    Custom(String),
+/// JSON retained independently of the tool's registered name.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ToolInput(Box<serde_json::value::RawValue>);
+
+impl ToolInput {
+    /// Decodes an authored view without changing the retained JSON.
+    ///
+    /// # Errors
+    /// Returns the selected type's JSON decoding error.
+    pub fn decode<'de, T: Deserialize<'de>>(&'de self) -> Result<T, serde_json::Error> {
+        serde_json::from_str(self.0.get())
+    }
+
+    /// Encodes an authored value, rejecting nonfinite numbers before encoding.
+    ///
+    /// # Errors
+    /// Returns an error for nonfinite numbers or failed serialization.
+    pub fn from_value<T: Serialize>(value: &T) -> Result<Self, String> {
+        let text = crate::types::finite::encode_value(value)?;
+        serde_json::value::RawValue::from_string(text)
+            .map(Self)
+            .map_err(|error| error.to_string())
+    }
 }
-#[derive(Debug, Clone, Serialize)]
-#[serde(untagged)]
-/// `ToolDetails` data.
-pub enum ToolDetails {
-    /// Bash payload.
-    Bash(BashToolDetails),
-    /// Read payload.
-    Read(ReadToolDetails),
-    /// Edit payload.
-    Edit(EditToolDetails),
-    /// Write payload.
-    Write(()),
-    /// Grep payload.
-    Grep(GrepToolDetails),
-    /// Find payload.
-    Find(FindToolDetails),
-    /// Ls payload.
-    Ls(LsToolDetails),
-    /// Custom payload.
-    Custom(String),
-}
+
+/// Result details use the same JSON carrier as tool input.
+pub type ToolDetails = ToolInput;
 /// `BashToolCallEvent` data.
 pub type BashToolCallEvent = ToolCallEvent<BashToolInput>;
 /// `BashToolResultEvent` data.
@@ -193,56 +179,16 @@ pub type LsToolResultEvent = ToolResultEvent<LsToolDetails>;
 #[cfg(any(test, target_arch = "wasm32"))]
 use crate::types::object;
 #[cfg(any(test, target_arch = "wasm32"))]
-use serde_json::value::RawValue;
-#[cfg(any(test, target_arch = "wasm32"))]
 impl ToolCallEvent {
-    /// Decodes the payload selected by the exact tool name.
+    /// Retains the input JSON without selecting a schema by name.
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
-        let event: ToolCallEvent<Box<RawValue>> = object::from_str(text)?;
-        let raw = event.input.get();
-        let input = match event.tool_name.as_str() {
-            "bash" => ToolInput::Bash(serde_json::from_str(raw)?),
-            "read" => ToolInput::Read(serde_json::from_str(raw)?),
-            "edit" => ToolInput::Edit(serde_json::from_str(raw)?),
-            "write" => ToolInput::Write(serde_json::from_str(raw)?),
-            "grep" => ToolInput::Grep(serde_json::from_str(raw)?),
-            "find" => ToolInput::Find(serde_json::from_str(raw)?),
-            "ls" => ToolInput::Ls(serde_json::from_str(raw)?),
-            _ => ToolInput::Custom(serde_json::from_str(raw)?),
-        };
-        Ok(Self {
-            tool_call_id: event.tool_call_id,
-            tool_name: event.tool_name,
-            input,
-        })
+        object::from_str(text)
     }
 }
 #[cfg(any(test, target_arch = "wasm32"))]
 impl ToolResultEvent {
-    /// Decodes the payload selected by the exact tool name.
+    /// Retains the details JSON without selecting a schema by name.
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
-        let event: ToolResultEvent<Box<RawValue>> = object::from_str(text)?;
-        let details = match event.details {
-            Presence::Missing => Presence::Missing,
-            Presence::Null => Presence::Null,
-            Presence::Present(raw) => Presence::Present(match event.tool_name.as_str() {
-                "bash" => ToolDetails::Bash(serde_json::from_str(raw.get())?),
-                "read" => ToolDetails::Read(serde_json::from_str(raw.get())?),
-                "edit" => ToolDetails::Edit(serde_json::from_str(raw.get())?),
-                "write" => ToolDetails::Write(serde_json::from_str(raw.get())?),
-                "grep" => ToolDetails::Grep(serde_json::from_str(raw.get())?),
-                "find" => ToolDetails::Find(serde_json::from_str(raw.get())?),
-                "ls" => ToolDetails::Ls(serde_json::from_str(raw.get())?),
-                _ => ToolDetails::Custom(serde_json::from_str(raw.get())?),
-            }),
-        };
-        Ok(Self {
-            tool_call_id: event.tool_call_id,
-            tool_name: event.tool_name,
-            input: event.input,
-            content: event.content,
-            is_error: event.is_error,
-            details,
-        })
+        object::from_str(text)
     }
 }
