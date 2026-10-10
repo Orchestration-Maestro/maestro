@@ -356,3 +356,38 @@ fn vertical_selection_reaches_zero_cell_wrapped_row() {
     editor.insert_text_at_cursor("|");
     assert_eq!(editor.get_text(), "|\u{200b}界\nx");
 }
+
+fn up_then_insert(text: &str, keys: &[&str]) -> String {
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(24);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    editor.set_text(text);
+    for key in keys {
+        editor.handle_input(key);
+    }
+    editor.handle_input("\u{1b}[A");
+    editor.insert_text_at_cursor("|");
+    editor.get_text()
+}
+
+#[test]
+fn vertical_clamp_to_line_end_lands_after_trailing_zero_cell_atom() {
+    assert_eq!(
+        up_then_insert("abc\u{200b}\n1234", &[]),
+        "abc\u{200b}|\n1234"
+    );
+}
+
+#[test]
+fn vertical_exact_column_stays_before_trailing_zero_cell_atom() {
+    assert_eq!(up_then_insert("abc\u{200b}\n123", &[]), "abc|\u{200b}\n123");
+}
+
+#[test]
+fn vertical_move_onto_zero_width_only_line_follows_requested_column() {
+    assert_eq!(
+        up_then_insert("\u{200b}\nabcd", &["\u{1b}[H"]),
+        "|\u{200b}\nabcd"
+    );
+    assert_eq!(up_then_insert("\u{200b}\nabcd", &[]), "\u{200b}|\nabcd");
+}

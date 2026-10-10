@@ -45,11 +45,13 @@ browsing, Up and Down select admitted older and newer entries at the first and
 last visual rows. Unavailable selections leave the prompt unchanged. Outside
 these history-selection branches, they move within the current prompt. Callers add history
 explicitly; submission does not add it. Page keys use the live terminal row count;
-visual movement uses terminal-cell columns. Literal character jumps search stored
+visual movement uses terminal-cell columns; a column beyond the width of a final row
+lands at the line end, after any trailing zero-width text. Literal character jumps search stored
 text at scalar boundaries, separately from visual movement.
 
 Directional kills retain deleted text for yank; yank-pop rotates the ring after
-notifying the deletion, then notifies the replacement. Reentrant edits during yank
+notifying the deletion, then notifies the replacement. A yank-pop requested
+from the deletion notification does nothing. Reentrant edits during yank
 notification invalidate that insertion's later replacement eligibility.
 
 Bracketed paste and completion are not delivered here. Selection styling is

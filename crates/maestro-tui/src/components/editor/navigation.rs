@@ -16,6 +16,13 @@ struct VisualRow {
     /// Whether the logical endpoint belongs to this row.
     final_row: bool,
 }
+/// Column chosen for a vertical move: a cell number, or the destination line end.
+enum Column {
+    /// Earliest byte at this cell offset within the row.
+    Cell(usize),
+    /// End of the destination line, after any trailing zero-cell atoms.
+    End,
+}
 impl VisualRow {
     /// Largest admitted local cell position.
     fn maximum(&self) -> usize {
@@ -153,12 +160,19 @@ impl Editing {
             .unwrap_or(row);
         let current = absolute.saturating_sub(resolved.cells.start);
         let destination = &rows[target];
-        let column = self.vertical_column(current, row.maximum(), destination.maximum());
-        let absolute = destination.cells.start + column;
+        let column = self.vertical_column(current, row.maximum(), destination);
         let text = &self.current.lines[destination.line];
         let mut cells = destination.cells.start;
         let mut col = destination.bytes.end;
         self.snapped = None;
+        let Column::Cell(column) = column else {
+            self.current.cursor = CursorPosition {
+                line: destination.line,
+                col,
+            };
+            return;
+        };
+        let absolute = destination.cells.start + column;
         for atom in atoms(&text[destination.bytes.clone()]) {
             if absolute == cells || absolute < cells + atom.cells {
                 col = destination.bytes.start + atom.start;
@@ -173,21 +187,35 @@ impl Editing {
         };
     }
     /// Restores preferred columns only from a clamped source row.
+    ///
+    /// A column clamped on the destination's final row is the line end, which
+    /// keeps trailing zero-cell atoms before it; any other column is a cell
+    /// number, and a clamp on a non-final row stays the row's last cell.
     fn vertical_column(
         &mut self,
         current: usize,
         source_maximum: usize,
-        target_maximum: usize,
-    ) -> usize {
+        destination: &VisualRow,
+    ) -> Column {
+        let target_maximum = destination.maximum();
+        let clamp = if destination.final_row {
+            Column::End
+        } else {
+            Column::Cell(target_maximum)
+        };
         let Some(preferred) = self.preferred.filter(|_| current >= source_maximum) else {
             self.preferred = (target_maximum < current).then_some(current);
-            return current.min(target_maximum);
+            return if target_maximum < current {
+                clamp
+            } else {
+                Column::Cell(current)
+            };
         };
         if target_maximum < current || target_maximum < preferred {
-            return target_maximum;
+            return clamp;
         }
         self.preferred = None;
-        preferred
+        Column::Cell(preferred)
     }
     /// Changes the byte column and invalidates visual-column intent.
     pub(super) fn set_col(&mut self, col: usize) {

@@ -100,6 +100,7 @@ impl Editor {
             state.snapshot();
             if rotate {
                 state.delete_yank();
+                state.action = LastAction::None;
             }
         }
         if rotate {

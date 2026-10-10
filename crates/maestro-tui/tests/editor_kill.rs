@@ -277,3 +277,32 @@ fn yank_reentry_never_erases_replacement_text() {
         editor.set_on_change(None);
     }
 }
+
+#[test]
+fn yank_pop_from_deletion_callback_does_not_rotate_again() {
+    use maestro_tui::tui::InputHandler;
+    use std::{cell::Cell, rc::Rc};
+    let _guard = support::globals();
+    for entries in [["one", "two"], ["a\nb", "c\nd"]] {
+        let (_tui, editor) = ring_editor(&[]);
+        for entry in entries {
+            editor.set_text(entry);
+            for _ in 0..3 {
+                editor.handle_input("\x15");
+            }
+            editor.set_text("");
+        }
+        editor.handle_input("\x19");
+        let once = Cell::new(false);
+        let owner = editor.clone();
+        editor.set_on_change(Some(Rc::new(move |_| {
+            if !once.replace(true) {
+                owner.handle_input("\x1by");
+            }
+        })));
+        editor.handle_input("\x1by");
+        editor.set_on_change(None);
+        assert_eq!(editor.get_text(), entries[0]);
+        assert_eq!(editor.get_cursor().line, entries[0].matches('\n').count());
+    }
+}
