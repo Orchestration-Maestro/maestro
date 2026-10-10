@@ -21,18 +21,20 @@ impl Renderer<'_> {
         else {
             return wrap_text_with_ansi(&table.authored, width);
         };
-        let (measured_header, measured_rows) = self.cells(table, style);
-        let widths = column_widths(&measured_header, &measured_rows, available);
-        let (header, rows) = self.cells(table, style);
+        let widths = self.widths(table, style, available);
         let separator = border(['├', '┼', '┤'], &widths);
         let mut lines = vec![border(['┌', '┬', '┐'], &widths)];
-        lines.extend(cell_lines(&header, &widths, |text| (self.theme.bold)(text)));
+        lines.extend(cell_lines(
+            &self.row(&table.header, style),
+            &widths,
+            |text| (self.theme.bold)(text),
+        ));
         lines.push(separator.clone());
-        for (index, row) in rows.iter().enumerate() {
+        for (index, row) in table.rows.iter().enumerate() {
             if index > 0 {
                 lines.push(separator.clone());
             }
-            lines.extend(cell_lines(row, &widths, str::to_owned));
+            lines.extend(cell_lines(&self.row(row, style), &widths, str::to_owned));
         }
         lines.push(border(['└', '┴', '┘'], &widths));
         lines
@@ -40,15 +42,16 @@ impl Renderer<'_> {
 }
 
 impl Renderer<'_> {
-    /// Renders every header cell, then every body cell; each pass invokes the callbacks again.
-    fn cells(&self, table: &Table, style: Style<'_>) -> (Vec<String>, Vec<Vec<String>>) {
-        let render = |cells: &Cells| -> Vec<String> {
-            cells.iter().map(|cell| self.inline(cell, style)).collect()
-        };
-        (
-            render(&table.header),
-            table.rows.iter().map(render).collect(),
-        )
+    /// Renders each cell of one row in source order.
+    fn row(&self, cells: &Cells, style: Style<'_>) -> Vec<String> {
+        cells.iter().map(|cell| self.inline(cell, style)).collect()
+    }
+
+    /// Measures every cell once, header first, and fits the columns to `available`.
+    fn widths(&self, table: &Table, style: Style<'_>, available: usize) -> Vec<usize> {
+        let header = self.row(&table.header, style);
+        let rows: Vec<Vec<String>> = table.rows.iter().map(|row| self.row(row, style)).collect();
+        column_widths(&header, &rows, available)
     }
 }
 

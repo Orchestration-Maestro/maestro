@@ -108,7 +108,7 @@ impl Frame<'_> {
 impl Source<'_> {
     /// Retains authored bytes while removing enclosing continuation prefixes.
     fn authored(&self, range: Range<usize>) -> String {
-        self.text[range]
+        let authored = self.text[range]
             .split('\n')
             .enumerate()
             .map(|(index, line)| {
@@ -119,7 +119,17 @@ impl Source<'_> {
                 }
             })
             .collect::<Vec<_>>()
-            .join("\n")
+            .join("\n");
+        self.spelling(authored)
+    }
+
+    /// Spells a table cell's `\|` as a literal pipe; other sources pass through unchanged.
+    fn spelling(&self, text: String) -> String {
+        if self.cell {
+            text.replace("\\|", "|")
+        } else {
+            text
+        }
     }
 }
 /// Removes a native quote prefix, leaving lazy continuation text intact.
@@ -169,14 +179,15 @@ fn children<'a>(
     while let Some((event, mut range)) = events.next() {
         let kind = match event {
             Event::Start(tag) => container(tag, events, source, blocked, &range),
-            Event::Html(text) | Event::InlineHtml(text) => Kind::Html(text.into_string()),
+            Event::Html(text) | Event::InlineHtml(text) => {
+                Kind::Html(source.spelling(text.into_string()))
+            }
             Event::Rule => Kind::Rule,
             Event::Text(text) => {
                 if text
                     .as_bytes()
                     .first()
                     .is_some_and(u8::is_ascii_punctuation)
-                    && !(source.cell && text.starts_with('|'))
                     && source.text[..range.start]
                         .bytes()
                         .rev()
@@ -267,12 +278,7 @@ fn label(nodes: &[Node], source: &Source<'_>, range: &Range<usize>, opener: usiz
     if opener == 0 {
         authored
     } else {
-        let authored = authored.replace("\\[", "[").replace("\\]", "]");
-        if source.cell {
-            authored.replace("\\|", "|")
-        } else {
-            authored
-        }
+        authored.replace("\\[", "[").replace("\\]", "]")
     }
 }
 
@@ -292,6 +298,13 @@ fn runs(nodes: Vec<Node>) -> Vec<Node> {
     result
 }
 
+/// Spells a table cell's `\|` inside an autolink's displayed text, which the parser leaves raw.
+fn spell_text(node: &mut Node, source: &Source<'_>) {
+    if let Kind::Text(text) = &mut node.kind {
+        text.decoded = source.spelling(std::mem::take(&mut text.decoded));
+    }
+}
+
 /// Consumes one structured native tag.
 fn container<'a>(
     tag: Tag<'a>,
@@ -306,12 +319,18 @@ fn container<'a>(
             dest_url,
             ..
         } => {
-            let children = children(events, source, true);
+            let mut children = children(events, source, true);
+            if link_type == LinkType::Autolink {
+                for node in &mut children {
+                    spell_text(node, source);
+                }
+            }
             let href = if link_type == LinkType::Email {
                 format!("mailto:{dest_url}")
             } else {
                 dest_url.into_string()
             };
+            let href = source.spelling(href);
             let authored = label(&children, source, range, 1);
             Kind::Link(children, authored, href)
         }

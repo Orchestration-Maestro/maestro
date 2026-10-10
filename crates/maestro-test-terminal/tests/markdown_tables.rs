@@ -282,3 +282,55 @@ fn markdown_table_cells_render_callbacks_again_when_drawing() {
     let rows = render("| H |\n| --- |\n| `x` |", theme, false, 20);
     assert_eq!(rows[3].trim_end(), "│ \x1b[32mx\x1b[39m │");
 }
+
+#[test]
+fn markdown_table_header_bold_runs_before_body_cells_render() {
+    let colour = Rc::new(std::cell::Cell::new(31));
+    let (bold, code) = (Rc::clone(&colour), Rc::clone(&colour));
+    let mut theme = markdown::plain();
+    theme.bold = Box::new(move |text| {
+        bold.set(32);
+        format!("\x1b[1m{text}\x1b[22m")
+    });
+    theme.code = Box::new(move |text| format!("\x1b[{}m{text}\x1b[39m", code.get()));
+    let rows = render("| H |\n| --- |\n| `x` |", theme, false, 20);
+    assert_eq!(rows[3].trim_end(), "│ \x1b[32mx\x1b[39m │");
+}
+
+#[test]
+fn markdown_table_alternating_bold_applies_per_header_line_then_body_cell() {
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let recording = Rc::clone(&calls);
+    let mut theme = markdown::plain();
+    theme.bold = Box::new(move |text| {
+        recording.set(recording.get() + 1);
+        let mark = if recording.get() % 2 == 1 { "[" } else { "(" };
+        format!("{mark}{text}")
+    });
+    let rows = render("| H |\n| --- |\n| **x** |", theme, false, 20);
+    assert_eq!(rows[1].trim_end(), "│ (H  │");
+    assert_eq!(rows[3].trim_end(), "│ [x │");
+}
+
+#[test]
+fn markdown_table_autolinks_and_html_unescape_pipes() {
+    for hyperlinks in [false, true] {
+        let rows = render(
+            "| A |\n| --- |\n| <https://a.b/a\\|b> |",
+            markdown::plain(),
+            hyperlinks,
+            60,
+        );
+        let body = rows[3].clone();
+        assert_eq!(shown(&body), "│ https://a.b/a|b │", "{hyperlinks}");
+        assert_eq!(body.contains("a.b/a|b\x1b\\"), hyperlinks);
+        assert!(!body.contains('\\') || hyperlinks, "{body:?}");
+    }
+    let rows = render(
+        "| A |\n| --- |\n| <span title=\"a\\|b\"> |",
+        markdown::plain(),
+        false,
+        60,
+    );
+    assert_eq!(shown(&rows[3]), "│ <span title=\"a|b\"> │");
+}

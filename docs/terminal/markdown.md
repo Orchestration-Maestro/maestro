@@ -17,9 +17,9 @@ Otherwise each column starts from its longest word, counted up to thirty cells o
 the visible text (terminal escapes such as link destinations are not words), and
 the remaining width is shared by how much more each column needs; if even those
 words do not fit, each column starts from one cell and the width is shared by word
-length. In a cell, `\|` is a literal pipe in text, autolinks and image labels. A drawn
-table runs each cell's callbacks once to measure and again to draw, so stateful
-callbacks see both passes. Cell text wraps at its column width. Alignment markers are
+length. In a cell, `\|` is a literal pipe in text, autolinks, link and image labels, and inline HTML. A drawn
+table runs each cell's callbacks once to measure and again to draw, header first and
+then each body row in turn, so stateful callbacks see both passes in source order. Cell text wraps at its column width. Alignment markers are
 accepted but do not align text. When the width cannot give every column one cell, the
 table's source rows are shown instead; a table inside a list item also shows its source rows.
 
