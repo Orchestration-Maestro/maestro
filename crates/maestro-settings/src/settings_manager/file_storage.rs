@@ -1,17 +1,11 @@
 //! Native file storage with sidecar file locks.
 
-use std::fs::{self, File, OpenOptions, TryLockError};
+use std::fs::{self, File, OpenOptions};
 use std::path::Path;
-use std::time::Duration;
 
 use maestro_path::join;
 
 use super::preferences::{SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate};
-
-/// How often a contended lock is tried before giving up.
-const LOCK_ATTEMPTS: u32 = 10;
-/// How long to wait between two attempts on a contended lock.
-const LOCK_RETRY_DELAY: Duration = Duration::from_millis(20);
 
 /// Storage backed by `settings.json` files at caller-supplied locations.
 #[derive(Debug)]
@@ -48,16 +42,7 @@ impl Lock {
             .write(true)
             .truncate(false)
             .open(sidecar)?;
-        for attempt in 1..=LOCK_ATTEMPTS {
-            match file.try_lock() {
-                Ok(()) => return Ok(Self(file)),
-                Err(TryLockError::WouldBlock) if attempt < LOCK_ATTEMPTS => {
-                    std::thread::sleep(LOCK_RETRY_DELAY);
-                }
-                Err(error) => return Err(Box::new(error)),
-            }
-        }
-        Err(Box::new(TryLockError::WouldBlock))
+        Ok(Self(maestro_lock::acquire(file)?))
     }
 }
 

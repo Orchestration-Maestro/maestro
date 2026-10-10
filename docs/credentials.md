@@ -93,8 +93,8 @@ interface.
 path, relative paths resolving against the working directory. Missing parent
 directories are created with mode 0700 and a missing file is created, only while
 the sidecar `<path>.lock` is held, containing `{}` with mode 0600 on Unix; writes
-set mode 0600. The lock is tried up to ten times, waiting 20 ms only between contended attempts; other lock errors return
-at once, and the lock is released after every outcome. File bytes are read as
+set mode 0600. Synchronous acquisition delegates to [the shared file-lock operation](locking.md),
+and the lock is released after every outcome. File bytes are read as
 lossy UTF-8. The asynchronous operation `with_lock_async` instead tries the lock
 immediately and after waits of 100, 200, 400, 800, 1600, 3200, 6400 and then three of
 10000 ms (11 attempts, 42,700 ms), returning the lock-held error when the last attempt

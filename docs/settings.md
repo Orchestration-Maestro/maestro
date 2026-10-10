@@ -135,8 +135,7 @@ join results, then works in place:
    every outcome. The sidecar is never removed.
 2. For a missing file it runs the callback first without creating anything. Only a
    replacement creates the directory, takes the lock and writes, without reading again.
-3. A contended lock is tried ten times with 20 ms between attempts. Any other
-   failure is returned at once.
+3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md).
 
 Writes are not atomic: there is no rename, rollback or sync step.
 
