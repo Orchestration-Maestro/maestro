@@ -166,3 +166,27 @@ fn editor_wraps_escape_interleaved_clusters_without_splitting_storage() {
         assert_eq!(editor.get_cursor().col, line.len());
     }
 }
+
+#[test]
+fn editor_clipped_scroll_borders_keep_resets() {
+    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(16);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    editor.set_text(&["x"; 7].join("\n"));
+    let reset = "\x1b[0m";
+    let rows = editor.render(10);
+    assert_eq!(rows[0], format!("─── ↑ 2{reset}...{reset}"));
+    for _ in 0..6 {
+        editor.handle_input("\x1b[A");
+    }
+    let rows = editor.render(10);
+    assert_eq!(rows[0], "──────────");
+    assert_eq!(rows[rows.len() - 1], format!("─── ↓ 2{reset}...{reset}"));
+    editor.set_border_color(std::rc::Rc::new(|text| format!("\x1b[31m{text}")));
+    let rows = editor.render(10);
+    assert_eq!(
+        rows[rows.len() - 1],
+        format!("\x1b[31m─── ↓ 2{reset}...{reset}")
+    );
+}

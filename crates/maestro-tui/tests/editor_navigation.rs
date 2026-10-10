@@ -391,3 +391,23 @@ fn vertical_move_onto_zero_width_only_line_follows_requested_column() {
     );
     assert_eq!(up_then_insert("\u{200b}\nabcd", &[]), "\u{200b}|\nabcd");
 }
+
+#[test]
+fn page_navigation_preserves_clipped_border_resets() {
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(16);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    editor.set_text("a\nb\nc\nd\ne\nf\ng");
+    let reset = "\x1b[0m";
+    let rows = editor.render(10);
+    assert_eq!(rows[0], format!("─── ↑ 2{reset}...{reset}"));
+    assert_eq!(rows[rows.len() - 1], "──────────");
+    editor.handle_input("\x1b[5~");
+    let rows = editor.render(10);
+    assert_eq!(rows[0], format!("─── ↑ 1{reset}...{reset}"));
+    assert_eq!(rows[rows.len() - 1], format!("─── ↓ 1{reset}...{reset}"));
+    editor.handle_input("\x1b[6~");
+    let rows = editor.render(10);
+    assert_eq!(rows[0], format!("─── ↑ 2{reset}...{reset}"));
+    assert_eq!(rows[rows.len() - 1], "──────────");
+}
