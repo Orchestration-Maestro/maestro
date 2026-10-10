@@ -288,7 +288,7 @@ fn theme_source_metadata_keeps_alias_and_slot_identity() {
 fn theme_registration_replaces_without_reordering() {
     let scratch = Scratch::new("registration-order");
     let ops = Real::new(&[]);
-    let mut state = make(&ops, &scratch.path("missing"));
+    let state = make(&ops, &scratch.path("missing"));
     let decomposed = registered(Some("e\u{301}"), Some("second"));
     let replacement = registered(Some("é"), Some("replacement"));
     state.set_registered_themes(vec![
@@ -330,7 +330,7 @@ fn theme_registration_replaces_without_reordering() {
 #[test]
 fn theme_registration_clear_preserves_retained_instances() {
     let ops = Real::new(&[]);
-    let mut state = make(&ops, "/nonexistent-custom");
+    let state = make(&ops, "/nonexistent-custom");
     let info = record(SourceScope::User, SourceOrigin::TopLevel, None);
     let options = ThemeOptions {
         name: Some("mine".into()),
@@ -356,7 +356,7 @@ fn theme_registration_clear_preserves_retained_instances() {
 #[test]
 fn theme_registered_lookup_avoids_unneeded_effects() {
     let ops = Rc::new(Virtual::default());
-    let mut state = ThemeState::new(
+    let state = ThemeState::new(
         dirs("/themes", "/custom"),
         Rc::clone(&ops) as Rc<dyn ThemeOperations>,
     );
@@ -374,7 +374,7 @@ fn maestro_theme_resolves_registered_and_file_precedence() {
     let scratch = Scratch::new("precedence");
     scratch.write("custom/dark.json", &theme_text("custom-dark", "#123456"));
     let ops = Real::new(&[("COLORTERM", "truecolor")]);
-    let mut state = make(&ops, &scratch.path("custom"));
+    let state = make(&ops, &scratch.path("custom"));
     let shadow = Rc::new(
         Theme::new(
             [(ThemeColor::Accent, maestro_theme::ColorValue::Index(24))],
@@ -474,7 +474,7 @@ fn theme_lists_json_names_with_ordinal_order() {
     }
     fs::create_dir(scratch.path("custom/directory.json")).unwrap();
     let ops = Real::new(&[]);
-    let mut state = make(&ops, &scratch.path("custom"));
+    let state = make(&ops, &scratch.path("custom"));
     state.set_registered_themes(vec![
         registered(Some("z"), None),
         registered(Some("registered-only"), None),
@@ -507,7 +507,7 @@ fn theme_path_inventory_keeps_first_owner_and_sorted_names() {
     }
     let custom = scratch.path("custom");
     let ops = Real::new(&[]);
-    let mut native = make(&ops, &custom);
+    let native = make(&ops, &custom);
     native.set_registered_themes(vec![
         registered(Some("z"), Some("registered-z")),
         registered(Some("reg-none"), None),
@@ -569,7 +569,7 @@ fn theme_path_inventory_sorts_with_the_supplied_operation() {
     ops.dirs
         .insert("/custom".into(), vec!["dark.json".into(), "x.json".into()]);
     let ops = Rc::new(ops);
-    let mut controlled = ThemeState::new(
+    let controlled = ThemeState::new(
         dirs("/themes", "/custom"),
         Rc::clone(&ops) as Rc<dyn ThemeOperations>,
     );
@@ -592,7 +592,7 @@ fn theme_path_inventory_sorts_with_the_supplied_operation() {
 #[test]
 fn theme_inventory_handles_absent_custom_directory() {
     let ops = Rc::new(Virtual::shipped());
-    let mut state = ThemeState::new(
+    let state = ThemeState::new(
         dirs("/themes", "/custom"),
         Rc::clone(&ops) as Rc<dyn ThemeOperations>,
     );

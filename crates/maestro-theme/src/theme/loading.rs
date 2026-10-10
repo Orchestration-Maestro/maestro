@@ -1,4 +1,5 @@
 //! Custom-file theme admission and alias resolution.
+use super::export::canonical_entries;
 use super::{
     ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeInfo, ThemeOptions,
 };
@@ -113,7 +114,7 @@ pub(super) fn build_theme(
     let colors = json["colors"]
         .as_object()
         .ok_or_else(|| ThemeError::message("Theme colors must be an object".to_owned()))?;
-    for (key, value) in colors {
+    for (key, value) in canonical_entries(colors) {
         let color = resolve(value, &json["vars"])?;
         if is_background(key) {
             bg.push((ThemeBg::Named(key.clone()), color));
@@ -221,7 +222,7 @@ fn authored(value: &Value) -> Result<ColorValue, ThemeError> {
     Err(ThemeError::message(format!("Invalid color value: {value}")))
 }
 /// Follow an immutable alias chain, rejecting revisits within this color only.
-fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeError> {
+pub(super) fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeError> {
     let mut current = value;
     let mut visited = HashSet::new();
     while let Some(name) = current
