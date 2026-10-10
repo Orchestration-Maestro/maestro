@@ -31,10 +31,10 @@ struct Options {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Observation {
-    text: String,
+    text: Option<String>,
     lines: Option<Vec<String>>,
-    cursor: Cursor,
-    events: Vec<(String, String)>,
+    cursor: Option<Cursor>,
+    events: Option<Vec<(String, String)>>,
     requests: Option<usize>,
     padding: Option<f64>,
     maximum: Option<usize>,
@@ -60,7 +60,10 @@ fn number(value: &serde_json::Value) -> f64 {
 /// Runs distinct controlled queries owned by one named behavior.
 pub fn run(name: &str) {
     let _guard = globals();
-    let cases: Vec<Case> = serde_json::from_str(include_str!("../editor_cases.json")).unwrap();
+    let mut cases: Vec<Case> = serde_json::from_str(include_str!("../editor_cases.json")).unwrap();
+    cases.extend(
+        serde_json::from_str::<Vec<Case>>(include_str!("../editor_navigation_cases.json")).unwrap(),
+    );
     let mut queries = std::collections::HashSet::new();
     let mut count = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
@@ -161,6 +164,7 @@ impl Replay {
     /// Invokes one public operation, returning only observable rows or copied lines.
     fn action(&self, action: &str, value: &serde_json::Value) -> Option<Vec<String>> {
         match action {
+            "history" => self.editor.add_to_history(value.as_str().unwrap()),
             "set" => self.editor.set_text(value.as_str().unwrap()),
             "insert" => self.editor.insert_text_at_cursor(value.as_str().unwrap()),
             "key" => self.editor.handle_input(value.as_str().unwrap()),
@@ -192,19 +196,30 @@ impl Replay {
     }
     /// Compares every retained expected field with its public witness.
     fn observe(&self, expected: &Observation, result: Option<&Vec<String>>, id: &str) {
-        assert_eq!(self.editor.get_text(), expected.text, "{id} text");
+        if let Some(text) = &expected.text {
+            assert_eq!(self.editor.get_text(), *text, "{id} text");
+        }
         if let Some(lines) = &expected.lines {
             assert_eq!(self.editor.get_lines(), *lines, "{id} lines");
         }
-        assert_eq!(
-            self.editor.get_cursor(),
-            maestro_tui::autocomplete::CursorPosition {
-                line: expected.cursor.line,
-                col: expected.cursor.col
-            },
-            "{id} cursor"
-        );
-        assert_eq!(self.events.take(), expected.events, "{id} events");
+        if let Some(cursor) = &expected.cursor {
+            assert_eq!(
+                self.editor.get_cursor(),
+                maestro_tui::autocomplete::CursorPosition {
+                    line: cursor.line,
+                    col: cursor.col
+                },
+                "{id} cursor"
+            );
+        }
+        let events = self.events.take();
+        if let Some(expected) = &expected.events {
+            assert_eq!(events, *expected, "{id} events");
+        }
+        self.observe_layout(expected, result, id);
+    }
+    /// Compares layout and property observations independently of edited content.
+    fn observe_layout(&self, expected: &Observation, result: Option<&Vec<String>>, id: &str) {
         if let Some(requests) = expected.requests {
             assert_eq!(self.requests, requests, "{id} requests");
         }
@@ -233,6 +248,8 @@ impl Replay {
                 "{id} widths"
             );
         }
-        assert_eq!(result, expected.result.as_ref(), "{id} rows");
+        if let Some(rows) = &expected.result {
+            assert_eq!(result, Some(rows), "{id} rows");
+        }
     }
 }

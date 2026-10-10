@@ -16,6 +16,7 @@ impl Editor {
         let padding = super::normalize(self.padding.get(), 0, width.saturating_sub(1) / 2, 0);
         let content = width.saturating_sub(2 * padding).max(1);
         let layout_width = content.saturating_sub(usize::from(padding == 0)).max(1);
+        self.width.set(layout_width);
         let horizontal = (self.border_color())("─");
         let lines = self.layout(layout_width);
         let maximum = visible_lines(self.terminal.borrow().rows());
@@ -99,7 +100,7 @@ impl Editor {
     }
 }
 /// Retains the source floating-point order through flooring to a native line count.
-fn visible_lines(rows: usize) -> usize {
+pub(super) fn visible_lines(rows: usize) -> usize {
     super::normalize(
         rows.to_string().parse::<f64>().unwrap_or(0.0) * 0.3,
         5,

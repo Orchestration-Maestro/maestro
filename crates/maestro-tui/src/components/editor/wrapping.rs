@@ -52,18 +52,18 @@ pub fn word_wrap_line(
     scan.chunks
 }
 /// One visible grapheme with any escapes inside or immediately before it.
-struct Atom {
+pub(super) struct Atom {
     /// Original byte range start, including preceding escapes.
-    start: usize,
+    pub(super) start: usize,
     /// Original byte range end, including trailing escapes at line end.
-    end: usize,
+    pub(super) end: usize,
     /// Shared measurement of the visible grapheme.
-    cells: usize,
+    pub(super) cells: usize,
     /// Shared whitespace classification of the visible grapheme.
     whitespace: bool,
 }
 /// Removes recognized escapes for segmentation while retaining original scalar ends.
-fn atoms(line: &str) -> Vec<Atom> {
+pub(super) fn atoms(line: &str) -> Vec<Atom> {
     let endings = crate::text::Endings::of(line);
     let mut visible = String::new();
     let mut positions = Vec::new();
