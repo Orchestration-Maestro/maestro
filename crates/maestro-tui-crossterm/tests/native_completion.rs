@@ -201,6 +201,10 @@ struct Activity {
     callbacks: Cell<usize>,
     /// Submitted futures.
     work: Cell<usize>,
+    /// Whether scheduled callbacks are cancelled as soon as they are scheduled.
+    discard: Cell<bool>,
+    /// A signal the next submitted future waits for before it is polled.
+    hold: RefCell<Option<oneshot::Receiver<()>>>,
 }
 
 /// Counts one item of host work until it finishes or is dropped, then signals the test.
@@ -213,7 +217,7 @@ struct Tracked {
     ended: mpsc::UnboundedSender<()>,
     /// Receives one signal per submitted future dropped before it finished.
     abandoned: Option<mpsc::UnboundedSender<()>>,
-    /// Whether the item ran to completion.
+    /// Whether a submitted future ran to completion; callback guards never set it.
     finished: bool,
 }
 
@@ -270,19 +274,27 @@ impl TuiRuntime for Watched {
 
     fn schedule(&self, delay: Duration, callback: RenderCallback) -> Box<dyn RenderTimer> {
         let watch = Tracked::new(self, true);
-        self.host.schedule(
+        let mut timer = self.host.schedule(
             delay,
             Box::new(move || {
                 let _watch = watch;
                 callback()
             }),
-        )
+        );
+        if self.activity.discard.get() {
+            timer.cancel();
+        }
+        timer
     }
 
     fn spawn_local(&self, future: LocalFuture) {
         let watch = Tracked::new(self, false);
+        let hold = self.activity.hold.borrow_mut().take();
         self.host.spawn_local(Box::pin(async move {
             let mut watch = watch;
+            if let Some(hold) = hold {
+                hold.await.ok();
+            }
             let result = future.await;
             watch.finished = true;
             result
@@ -390,20 +402,29 @@ impl Scene {
 
     /// Waits for the provider to receive a request and returns when it arrived and its lines.
     async fn request_at(&mut self) -> (Instant, Vec<String>) {
-        tokio::select! {
-            request = self.requests.recv() => request.expect("a request"),
-            _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+        loop {
+            if let Ok(request) = self.requests.try_recv() {
+                return request;
+            }
+            assert!(self.outstanding() > 0, "no request is left to start");
+            tokio::select! {
+                request = self.requests.recv() => return request.expect("a request"),
+                _ = self.ended.recv() => {}
+                _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+            }
         }
+    }
+
+    /// The scheduled callbacks and submitted futures that have not ended.
+    fn outstanding(&self) -> usize {
+        self.activity.callbacks.get() + self.activity.work.get()
     }
 
     /// Waits until the terminal receives a write that contains `text`, failing once no
     /// host work remains that could still draw it.
     async fn drawn(&mut self, text: &str) {
         while !self.has_drawn(text) {
-            assert!(
-                self.activity.callbacks.get() + self.activity.work.get() > 0,
-                "nothing drew {text:?}"
-            );
+            assert!(self.outstanding() > 0, "nothing drew {text:?}");
             tokio::select! {
                 _ = self.ended.recv() => {}
                 _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
@@ -411,11 +432,18 @@ impl Scene {
         }
     }
 
-    /// Waits until every scheduled callback has run or been dropped, so no request is left
-    /// to start.
+    /// Waits until every scheduled callback and submitted future has ended, so no request is
+    /// left to start, and fails on any request that arrives meanwhile.
     async fn settled(&mut self) {
-        while self.activity.callbacks.get() > 0 {
-            self.ended.recv().await;
+        while self.outstanding() > 0 {
+            tokio::select! {
+                request = self.requests.recv() => panic!("unexpected request {request:?}"),
+                _ = self.ended.recv() => {}
+                _ = self.abandoned.recv() => panic!("the host dropped the submitted work"),
+            }
+        }
+        if let Ok(request) = self.requests.try_recv() {
+            panic!("unexpected request {request:?}");
         }
     }
 
@@ -512,6 +540,41 @@ fn symbol_completion_debounces_on_native_host() {
             );
         });
     }
+}
+
+#[test]
+#[should_panic(expected = "no request is left to start")]
+fn discarded_debounce_callback_fails_the_request_wait() {
+    run_set(true, |local| async move {
+        let mut scene = Scene::start(local);
+        scene.activity.discard.set(true);
+        scene.typed("@mai");
+        scene.request().await;
+    });
+}
+
+#[test]
+fn settling_waits_for_submitted_futures_not_yet_polled() {
+    run_set(true, |local| async move {
+        let mut scene = Scene::start(local);
+        let (release, hold) = oneshot::channel();
+        *scene.activity.hold.borrow_mut() = Some(hold);
+        scene.typed("@mai");
+        advance(Duration::from_millis(20)).await;
+        while scene.activity.callbacks.get() > 0 {
+            scene.ended.recv().await;
+        }
+        assert_eq!(scene.activity.work.get(), 1, "the request future is held");
+        tokio::select! {
+            biased;
+            () = scene.settled() => panic!("settled with a submitted future outstanding"),
+            () = tokio::task::yield_now() => {}
+        }
+        assert!(release.send(()).is_ok());
+        assert_eq!(scene.request().await, ["@mai"]);
+        scene.gate.reply(Ok(Some(offer("@mai", &["@main.ts"]))));
+        scene.settled().await;
+    });
 }
 
 #[test]
