@@ -1,6 +1,6 @@
 //! Typed mod transport records.
 
-use crate::providers::nullable::Nullable;
+pub(super) use crate::providers::nullable::Nullable;
 use guardrails::GuardrailConfig;
 use messages::Message;
 use serde::{Deserialize, Serialize};
