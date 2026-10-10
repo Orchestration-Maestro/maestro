@@ -518,3 +518,11 @@ commands; no Tokio type appears in a public interface. Serde derive is test-only
 here, as is Tokio's runtime builder. Internal dependencies are settings, resources
 and the shared path utility. Native effects use the standard library and Tokio and
 remain outside the browser target; browser callers supply `PackageOperations`.
+
+## Approved agent-loop libraries
+
+`maestro-agent` inherits `futures-util =0.3.34` (defaults off, `std`, `sink`)
+for driving admitted progress futures without spawning tasks. Native tests use
+Tokio `=1.53.2` (defaults off, `rt`, `sync`, `macros`). The product adds no runtime
+or internal dependency edge. These libraries are MIT OR Apache-2.0 and MIT,
+respectively. Awaited operations are documented in [conversation turns](docs/loop.md).
