@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct SessionCompactEvent {
     /// Stored compaction entry.
     pub compaction_entry: CompactionEntry,
-    /// Whether an extension initiated the operation.
+    /// Whether the compaction content was supplied by an extension hook.
     pub from_extension: bool,
 }
 /// Supplied branch positions and summary inputs for navigation.
@@ -50,7 +50,7 @@ pub struct SessionTreeEvent {
     /// Stored summary entry, null or omitted.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub summary_entry: Presence<BranchSummaryEntry>,
-    /// Whether an extension initiated the operation.
+    /// Whether the tree summary content was supplied by an extension hook.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub from_extension: Presence<bool>,
 }
