@@ -94,7 +94,7 @@ fn export_color(value: Option<&Value>, vars: &Value) -> Result<Option<String>, T
     Ok(Some(hex(resolve(value, vars)?)).filter(|color| !color.is_empty()))
 }
 
-/// Entries in enumeration order: integer-like keys ascending, then authored order.
+/// Entries in enumeration order: canonical array-index keys ascending, then other keys in authored order.
 pub(super) fn canonical_entries(colors: &serde_json::Map<String, Value>) -> Vec<(&String, &Value)> {
     let mut entries: Vec<_> = colors.iter().collect();
     entries.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
