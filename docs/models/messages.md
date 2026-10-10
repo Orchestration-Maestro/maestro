@@ -7,8 +7,9 @@ switch and an optional client. It returns the call's `AssistantMessageEventStrea
 failure the call detects,
 including a missing key, ends that stream with an error update instead of failing the call.
 
-`stream_simple_anthropic(model, context, options)` takes `SimpleStreamOptions`. It returns an
-immediate error, `No API key for provider: {provider}`, when neither a nonempty explicit key
+`stream_simple_anthropic(model, context, options)` takes `SimpleStreamOptions`. The function in
+this module returns an immediate error (the root export of the same name settles it as an error
+stream, see the [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)), `No API key for provider: {provider}`, when neither a nonempty explicit key
 nor the provider's environment key can be selected; an ambient bearer alone is not a simple key.
 Other detected failures end the returned stream as on the raw entry. The simple entry reuses
 [common option and budget helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)

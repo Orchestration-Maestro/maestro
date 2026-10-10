@@ -4,7 +4,11 @@ pub mod arguments;
 pub use arguments::*;
 /// Built-in provider environment utilities.
 mod builtins;
-pub use builtins::{find_env_keys, get_env_api_key};
+pub use builtins::{
+    find_env_keys, get_env_api_key, register_built_in_api_providers, reset_api_providers,
+    stream_simple_anthropic, stream_simple_azure_openai_responses, stream_simple_mistral,
+    stream_simple_openai_completions, stream_simple_openai_responses,
+};
 
 pub mod cancellation;
 /// Model descriptors and catalog lookup helpers.
@@ -28,19 +32,20 @@ pub use catalog::models::{
 };
 
 pub use providers::chat::openai_completions::{
-    OpenAICompletionsOptions, stream_openai_completions, stream_simple_openai_completions,
+    OpenAICompletionsOptions, stream_openai_completions,
 };
 pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
 pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
-    AnthropicThinkingDisplay, stream_anthropic, stream_simple_anthropic,
+    AnthropicThinkingDisplay, stream_anthropic,
 };
 pub use providers::reasoning::mistral::{
     MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
-    stream_simple_mistral,
 };
-pub use providers::responses::azure_openai_responses::AzureOpenAIResponsesOptions;
-pub use providers::responses::openai_responses::OpenAIResponsesOptions;
+pub use providers::responses::azure_openai_responses::{
+    AzureOpenAIResponsesOptions, stream_azure_openai_responses,
+};
+pub use providers::responses::openai_responses::{OpenAIResponsesOptions, stream_openai_responses};
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
     get_api_providers, register_api_provider, unregister_api_providers,

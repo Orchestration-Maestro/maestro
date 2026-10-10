@@ -5,10 +5,11 @@ use crate::{
     corpus,
 };
 use futures_util::StreamExt;
+use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
 use maestro_models::{
     AssistantContent, AssistantMessageEvent as Event, Cancellation, DiagnosticErrorInfo, Fetch,
     FetchError, HttpBody, HttpResponse, MistralOptions, OnPayload, SharedAssistantMessage,
-    SimpleStreamOptions, StopReason, StreamOptions, stream_mistral, stream_simple_mistral,
+    SimpleStreamOptions, StopReason, StreamOptions, stream_mistral,
 };
 use serde_json::{Value, json};
 use std::{

@@ -3,7 +3,8 @@
 mod chat;
 
 use chat::{TestResult, block_on};
-use maestro_models::{stream_mistral, stream_simple_mistral};
+use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
+use maestro_models::stream_mistral;
 use serde_json::json;
 
 #[test]

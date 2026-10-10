@@ -1,7 +1,7 @@
 #![doc = include_str!("../../../../../../docs/models/reasoning-conversations.md")]
 
 use crate::StreamOptions;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Raw settings for reasoning conversation requests.
 #[derive(Clone, Default)]
@@ -55,7 +55,7 @@ fn serialize_function_choice<S: serde::Serializer>(
 }
 
 /// Prompt mode for raw requests.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MistralPromptMode {
     /// Use a reasoning prompt.
@@ -63,7 +63,7 @@ pub enum MistralPromptMode {
 }
 
 /// Reasoning effort for raw requests.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MistralReasoningEffort {
     /// Disable reasoning effort.

@@ -49,7 +49,7 @@ pub struct OpenAIResponsesOptions {
 }
 
 /// Summary styles admitted by the response endpoint.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenAIResponsesReasoningSummary {
     /// Automatically select a summary style.
@@ -61,7 +61,7 @@ pub enum OpenAIResponsesReasoningSummary {
 }
 
 /// Service tiers admitted by the response endpoint.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenAIResponsesServiceTier {
     /// Automatically select a tier.

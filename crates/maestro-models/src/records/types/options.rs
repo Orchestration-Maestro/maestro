@@ -90,6 +90,56 @@ pub struct StreamOptions {
     /// Replacement for the default HTTP transport.
     pub fetch: Option<Fetch>,
 }
+/// Object handle retained by [`ProviderObjects`].
+#[cfg(not(target_arch = "wasm32"))]
+type ObjectHandle = std::sync::Arc<dyn std::any::Any + Send + Sync>;
+/// Browser-local object handle retained by [`ProviderObjects`].
+#[cfg(target_arch = "wasm32")]
+type ObjectHandle = std::sync::Arc<dyn std::any::Any>;
+
+/// Typed, non-serializable objects handed to a provider, at most one per concrete type.
+///
+/// Cloning copies the container and shares the stored objects; replacing an entry in one
+/// container never changes another.
+#[derive(Clone, Default)]
+pub struct ProviderObjects {
+    /// Retained handles keyed by their concrete type.
+    entries: std::collections::HashMap<std::any::TypeId, ObjectHandle>,
+}
+
+impl ProviderObjects {
+    /// Store `value`, replacing any earlier value of the same type.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn insert<T: std::any::Any + Send + Sync>(&mut self, value: T) {
+        self.entries
+            .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
+    }
+
+    /// Store `value`, replacing any earlier value of the same type.
+    #[cfg(target_arch = "wasm32")]
+    pub fn insert<T: std::any::Any>(&mut self, value: T) {
+        self.entries
+            .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
+    }
+
+    /// Borrow the stored value of type `T`, if any.
+    #[must_use]
+    pub fn get<T: std::any::Any>(&self) -> Option<&T> {
+        self.entries
+            .get(&std::any::TypeId::of::<T>())?
+            .downcast_ref()
+    }
+}
+
+impl std::fmt::Debug for ProviderObjects {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ProviderObjects")
+            .field("entries", &self.entries.len())
+            .finish()
+    }
+}
+
 /// Retain typed common options plus provider-specific open fields.
 #[derive(Clone, Default)]
 pub struct ProviderStreamOptions {
@@ -97,6 +147,8 @@ pub struct ProviderStreamOptions {
     pub common: StreamOptions,
     /// Extra.
     pub extra: JsonObject,
+    /// Typed objects that cannot travel as JSON, such as an injected client.
+    pub objects: ProviderObjects,
 }
 /// Carry common options plus requested thinking and optional budgets.
 #[derive(Clone, Default)]
@@ -158,16 +210,16 @@ enum ToolChoiceMode {
 /// Constant `function` discriminator.
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum FunctionTag {
+pub(crate) enum FunctionTag {
     /// The only accepted discriminator.
     Function,
 }
 
 /// Function reference inside a named tool choice.
 #[derive(Deserialize)]
-struct FunctionName {
+pub(crate) struct FunctionName {
     /// Function name.
-    name: String,
+    pub(crate) name: String,
 }
 
 /// Borrowed function reference written inside a named tool choice.

@@ -8,7 +8,8 @@ at the package root. Conversion and event reduction remain crate-internal.
 
 `stream_openai_responses` reports setup failures through its stream.
 `stream_simple_openai_responses` rejects a missing provider key before creating
-a stream, then uses the shared simple budget and reasoning selection. Raw calls
+a stream (the root export of the same name settles it as an error stream; see the
+[linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)), then uses the shared simple budget and reasoning selection. Raw calls
 also fall back to `OPENAI_API_KEY` after explicit and provider keys.
 
 Cache retention selects an explicit option, otherwise the exact `long` value of
@@ -69,8 +70,8 @@ async fn controlled() {
 `providers::responses::azure_openai_responses` provides
 `stream_azure_openai_responses` and `stream_simple_azure_openai_responses`;
 `AzureOpenAIResponsesOptions` is also exported at the package root. Raw setup
-failures are stream errors. Simple invocation rejects a missing provider key
-before creating a stream and uses the shared simple budgets and reasoning support.
+failures are stream errors. Simple invocation in this module rejects a missing provider key
+before creating a stream (the root export settles it as an error stream) and uses the shared simple budgets and reasoning support.
 
 Credentials select a nonempty explicit key, then the provider's environment key.
 Raw invocation alone finally tries `AZURE_OPENAI_API_KEY`. Requests authenticate
