@@ -648,29 +648,14 @@
       "expected": false
     },
     {
-      "pattern": "a\\\\b",
-      "input": "a\\b",
-      "expected": true
-    },
-    {
       "pattern": "a\\/b",
       "input": "a/b",
       "expected": false
     },
     {
       "pattern": "a\\",
-      "input": "a\\",
-      "expected": true
-    },
-    {
-      "pattern": "a\\",
       "input": "a",
       "expected": false
-    },
-    {
-      "pattern": "*\\",
-      "input": "x\\",
-      "expected": true
     },
     {
       "pattern": "a\\ b",
@@ -698,11 +683,6 @@
       "expected": true
     },
     {
-      "pattern": "*\\a",
-      "input": "b\\a",
-      "expected": true
-    },
-    {
       "pattern": "?\\a",
       "input": "ba",
       "expected": true
@@ -715,11 +695,6 @@
     {
       "pattern": "*\\.ts",
       "input": "a.ts",
-      "expected": true
-    },
-    {
-      "pattern": "*\\.ts",
-      "input": "a\\.ts",
       "expected": true
     },
     {
@@ -1162,6 +1137,16 @@
     {
       "pattern": "**/a/**/a/**",
       "input": "a/",
+      "expected": false
+    },
+    {
+      "pattern": "**/a/**/.b",
+      "input": "a/.b",
+      "expected": true
+    },
+    {
+      "pattern": "**/a/**/.b",
+      "input": "a/.h/.b",
       "expected": false
     }
   ],

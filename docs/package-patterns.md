@@ -12,7 +12,8 @@ components. A terminal `/**` requires a remaining component, including an empty
 component supplied by a trailing separator.
 
 Leading `#` makes the original pattern a comment. Each leading `!` toggles
-negation. Backslashes escape the next scalar; a final backslash remains literal.
+negation. `/` always separates components; within a component, a backslash escapes
+the next scalar and a final backslash remains literal.
 Brace alternatives and sequences use the
 [brace-expansion library](https://docs.rs/brace-expansion/0.1.1/brace_expansion/).
 Repeated separators collapse; eligible pattern `component/..` pairs reduce,

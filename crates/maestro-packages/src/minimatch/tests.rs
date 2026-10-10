@@ -19,6 +19,11 @@ fn windows_roots_keep_drive_and_unc_identity() {
         (r"//other/share/a", r"//server/share/a", false),
         (r"a\b", r"a/b", true),
         (r"a/b", r"a\b", false),
+        (r"a\b", r"a\\b", false),
+        (r"a\", r"a\", false),
+        (r"x\", r"*\", false),
+        (r"b\a", r"*\a", false),
+        (r"a\.ts", r"*\.ts", false),
         (r"//server/share/a", r"///server/share/a", false),
     ];
     for (index, (path, pattern, expected)) in cases.into_iter().enumerate() {
@@ -38,6 +43,11 @@ fn posix_roots_do_not_adopt_windows_identity() {
         (r"c:/a", r"//?/C:/a", false),
         (r"/server/share/a", r"//server/share/a", true),
         (r"a\b", r"a/b", false),
+        (r"a\b", r"a\\b", true),
+        (r"a\", r"a\", true),
+        (r"x\", r"*\", true),
+        (r"b\a", r"*\a", true),
+        (r"a\.ts", r"*\.ts", true),
     ];
     for (index, (path, pattern, expected)) in cases.into_iter().enumerate() {
         assert_eq!(
