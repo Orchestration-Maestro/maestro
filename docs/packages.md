@@ -27,8 +27,8 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
 - **Local paths**: installation only checks that the path, resolved against the input
   base, exists (`Path does not exist: <path>` otherwise); removal does nothing.
 
-Installation does not consult the offline setting; that belongs to resource
-resolution.
+Installation does not consult the offline setting. [Available-update
+checks](package-updates.md) consult it without acquiring contents.
 
 ## Progress
 

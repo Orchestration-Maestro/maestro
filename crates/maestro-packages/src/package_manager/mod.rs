@@ -1,8 +1,12 @@
 //! Configured-source policy over supplied effects and a live settings owner.
 mod acquisition;
+#[cfg(not(target_arch = "wasm32"))]
+mod capture;
 mod commands;
+mod concurrency;
 mod configuration;
 mod git;
+mod git_checks;
 mod npm;
 mod operations;
 mod paths;
@@ -10,12 +14,14 @@ mod paths;
 mod process;
 mod progress;
 mod sources;
+mod update;
 use maestro_settings::SettingsManager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use operations::NativePackageOperations;
-pub use operations::{CommandOutput, PackageOperations};
+pub use operations::{CommandCaptureOptions, CommandOutput, PackageOperations};
 pub use progress::{ProgressAction, ProgressCallback, ProgressEvent, ProgressEventType};
 use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
+pub use update::{PackageUpdate, PackageUpdateType};
 
 /// An object-safe fallible asynchronous operation.
 pub type PackageFuture<'a, T> = Pin<Box<dyn Future<Output = io::Result<T>> + 'a>>;

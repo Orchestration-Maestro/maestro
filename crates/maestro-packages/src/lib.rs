@@ -7,14 +7,20 @@ pub use git::{GitSource, parse_git_url};
 
 /// Trims the whitespace accepted in authored source and command text.
 fn trim(text: &str) -> &str {
-    text.trim_matches(|c: char| c == '\u{feff}' || (c.is_whitespace() && c != '\u{85}'))
+    text.trim_matches(whitespace)
+}
+
+/// Recognizes authored whitespace, including BOM but not the next-line control.
+fn whitespace(c: char) -> bool {
+    c == '\u{feff}' || (c.is_whitespace() && c != '\u{85}')
 }
 
 mod package_manager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use package_manager::NativePackageOperations;
 pub use package_manager::{
-    CommandOutput, ConfiguredPackage, DefaultPackageManager, InstalledSourceScope, PackageFuture,
-    PackageManager, PackageManagerOptions, PackageOperations, ProgressAction, ProgressCallback,
-    ProgressEvent, ProgressEventType,
+    CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager,
+    InstalledSourceScope, PackageFuture, PackageManager, PackageManagerOptions, PackageOperations,
+    PackageUpdate, PackageUpdateType, ProgressAction, ProgressCallback, ProgressEvent,
+    ProgressEventType,
 };

@@ -4,7 +4,8 @@
 contents; see [package installation and removal](packages.md). Supply a live
 `SettingsManager` and `PackageOperations`; native callers can use
 `NativePackageOperations` with their own shell-selection function and stdout
-takeover query.
+takeover query and a caller-driven `Rc<tokio::task::LocalSet>`.
+For read-only availability, see [package update checks](package-updates.md).
 
 The direct `parse_git_url` parser accepts explicit HTTP, HTTPS, SSH and Git URLs;
 shorthand requires the `git:` prefix. Its result separates the clone address,
@@ -43,13 +44,14 @@ use maestro_packages::{DefaultPackageManager, NativePackageOperations,
 use maestro_settings::{Settings, SettingsManager};
 
 let settings = Rc::new(RefCell::new(SettingsManager::in_memory(Settings::default())));
+let local = Rc::new(tokio::task::LocalSet::new());
 let packages = DefaultPackageManager::new(
     PackageManagerOptions {
         cwd: "/project".into(),
         agent_dir: "/agent".into(),
         settings_manager: settings,
     },
-    NativePackageOperations::new(|_| false, Rc::new(|| false)),
+    NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
 );
 assert!(packages.add_source_to_settings("https://github.com/user/repository", None)?);
 assert!(!packages.add_source_to_settings("ssh://git@github.com/user/repository", None)?);
