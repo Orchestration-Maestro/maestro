@@ -1,4 +1,4 @@
-//! Component style records whose callbacks read the published theme when invoked.
+//! Component style records whose color callbacks read the published theme when invoked.
 use super::code::{colored_rows, highlight_rows};
 use super::styles::paint;
 use super::{LiveTheme, SyntaxHighlighter, Theme, ThemeColor};
@@ -6,6 +6,8 @@ use maestro_tui::{EditorTheme, MarkdownTheme, SelectListTheme, SettingsListTheme
 use std::rc::Rc;
 
 /// Callback coloring text with `key` of the theme published at call time.
+///
+/// Strikethrough does no lookup and unselected settings labels are never colored.
 fn foreground(live: LiveTheme, key: ThemeColor) -> impl Fn(&str) -> String + Clone {
     move |text| paint(&live, &key, text)
 }

@@ -264,12 +264,14 @@ fn highlighting_reads_the_replaced_live_theme() {
         TYPE,
         OPERATOR,
         PUNCTUATION,
-        CODE,
     ];
     let expect = |shift: u8| -> String {
         "0123456789"
             .char_indices()
-            .map(|(i, c)| color(palette[i] + shift, &c.to_string()))
+            .map(|(i, c)| match palette.get(i) {
+                Some(key) => color(key + shift, &c.to_string()),
+                None => c.to_string(),
+            })
             .collect()
     };
     assert_eq!(render(), [expect(0)]);
@@ -466,11 +468,23 @@ fn production_highlighting_routes_real_tokens_to_theme_keys() {
     );
     assert!(python[0].starts_with(&color(KEYWORD, "def")));
     assert!(python[1].contains(&color(STRING, "Hello, ")));
-    assert!(
-        javascript[1].starts_with(&color(CODE, "console")),
-        "{:?}",
-        javascript[1]
-    );
+    assert!(javascript[1].starts_with("console"), "{:?}", javascript[1]);
+}
+
+const PROSE: &str = "This is an ordinary sentence about a quiet room.";
+
+#[test]
+fn explicit_plaintext_terminal_rows_stay_unstyled() {
+    let (_state, live) = live();
+    assert_eq!(native_rows(&live, PROSE, "plaintext"), [PROSE]);
+}
+
+#[test]
+fn explicit_plaintext_markdown_rows_stay_unstyled() {
+    let (_state, live) = live();
+    let markdown = get_markdown_theme(live, Rc::new(SyntectHighlighter::new().unwrap()), true);
+    let highlight = markdown.highlight_code.as_ref().unwrap();
+    assert_eq!(highlight(PROSE, Some("plaintext")), [PROSE]);
 }
 
 /// Undo [`escape`]d HTML text: remove tags, then decode the five entities once.

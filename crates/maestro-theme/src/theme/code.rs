@@ -25,7 +25,8 @@ fn raw_rows(_theme: &LiveTheme, code: &str) -> Vec<String> {
 
 /// Rows of highlighted code; `recover` supplies the rows when the engine fails.
 ///
-/// A missing, empty or unsupported label skips the engine and colors the rows as code.
+/// A missing, empty or unsupported label skips the engine and colors the rows as code;
+/// text the engine leaves unclassified is returned unchanged.
 pub(super) fn highlight_rows(
     theme: &LiveTheme,
     highlighter: &dyn SyntaxHighlighter,
@@ -41,13 +42,13 @@ pub(super) fn highlight_rows(
     }
 }
 
-/// Rows of `code` split at line feeds, each run colored from the live theme.
+/// Rows of `code` split at line feeds; classified runs are colored from the live theme and
+/// unclassified runs stay unchanged.
 ///
-/// A run that spans line breaks is colored once per row.
+/// A classified run that spans line breaks is colored once per nonempty row piece.
 fn styled_rows(theme: &LiveTheme, code: &str, spans: &[SyntaxSpan]) -> Vec<String> {
     let (mut rows, mut row) = (Vec::new(), String::new());
     for span in spans {
-        let key = span.color.clone().unwrap_or(ThemeColor::MdCodeBlock);
         for (index, piece) in code
             .get(span.range.clone())
             .unwrap_or_default()
@@ -58,7 +59,10 @@ fn styled_rows(theme: &LiveTheme, code: &str, spans: &[SyntaxSpan]) -> Vec<Strin
                 rows.push(std::mem::take(&mut row));
             }
             if !piece.is_empty() {
-                row.push_str(&paint(theme, &key, piece));
+                match span.color.as_ref() {
+                    Some(key) => row.push_str(&paint(theme, key, piece)),
+                    None => row.push_str(piece),
+                }
             }
         }
     }
@@ -69,7 +73,8 @@ fn styled_rows(theme: &LiveTheme, code: &str, spans: &[SyntaxSpan]) -> Vec<Strin
 /// Highlight `code` for a terminal, never guessing a language.
 ///
 /// A missing, empty or unsupported label colors every row as code without calling the
-/// engine, and an engine failure returns the rows unstyled.
+/// engine, text the engine leaves unclassified stays unchanged, and an engine failure
+/// returns the rows unstyled.
 #[must_use]
 pub fn highlight_code(
     theme: &LiveTheme,

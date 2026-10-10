@@ -175,9 +175,10 @@ prefix, and the innermost scope with a color wins:
 | `syntaxPunctuation` | `punctuation` |
 
 `highlight_code` splits the code at every LF, keeping CR. A missing, empty or unsupported
-label never reaches the engine and colors every row with `mdCodeBlock`; so does text no rule
-classifies. An engine failure returns the rows unstyled. Each row is styled from the theme
-published when the call runs, and a run that spans rows is styled once per row.
+label never reaches the engine and colors every row with `mdCodeBlock`. Text the engine
+leaves unclassified, such as explicit `plaintext`, is returned unchanged. An engine failure
+returns the rows unstyled. Classified runs are styled from the theme published when the call
+runs, once per nonempty row piece.
 `get_markdown_theme`'s code callback colors the rows with `mdCodeBlock` after a failure
 instead.
 
@@ -189,13 +190,15 @@ returned as the error; recognizing unlabeled code and the plain fallback belong 
 consuming frontend.
 
 `get_language_from_path` compares the lowercase text after the last `.` of the whole string
-with the file-extension table, so `Dockerfile` and `Makefile` match only without a directory.
+with the file-extension table. A name without a dot is compared whole, so extensionless
+`Dockerfile` and `Makefile` match only without a directory; a suffixed name such as
+`DIR/FILE.DOCKERFILE` matches by its suffix.
 
 ## Component styles
 
 `get_markdown_theme`, `get_select_list_theme`, `get_editor_theme` and
-`get_settings_list_theme` return the terminal toolkit's style records. Their callbacks read
-the published theme on every call and return their text unstyled when no theme is published
+`get_settings_list_theme` return the terminal toolkit's style records. Their color callbacks
+read the published theme on every call and return their text unstyled when no theme is published
 or the key is missing. The Markdown decorations apply when `styles_enabled` is set and first
 check that a theme is published; strikethrough does not. The settings cursor is the only value
 fixed at creation: the accent-colored arrow and space of the theme published then.

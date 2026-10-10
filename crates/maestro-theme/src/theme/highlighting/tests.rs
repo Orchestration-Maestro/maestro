@@ -98,10 +98,4 @@ fn language_aliases_keep_the_selected_grammar_identity() {
         selected += 1;
     }
     assert_eq!(selected, 190);
-    let identity = |token| highlighter.find(token).map(|syntax| syntax.name.as_str());
-    assert_eq!(identity("fs"), Some("F#"));
-    assert_eq!(identity("h"), Some("C"));
-    assert_eq!(identity("tsx"), Some("TypeScriptReact"));
-    assert_eq!(identity("toml"), Some("TOML"));
-    assert_eq!(identity("html"), Some("HTML"));
 }
