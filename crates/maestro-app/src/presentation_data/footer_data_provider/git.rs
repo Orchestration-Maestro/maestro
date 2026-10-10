@@ -113,19 +113,22 @@ pub(super) fn resolve_branch(
     match read_branch(operations, paths) {
         BranchRead::Ready(branch) => branch,
         BranchRead::Query(repo) => Some(git_answer(
-            operations.symbolic_ref_sync(&repo).ok().flatten(),
+            operations.symbolic_ref_sync(repo).ok().flatten(),
         )),
     }
 }
 /// HEAD selection or the directory requiring a symbolic-reference query.
-pub(super) enum BranchRead {
+pub(super) enum BranchRead<'a> {
     /// A completed HEAD read, including unreadable or absent metadata.
     Ready(Option<String>),
     /// A placeholder requiring Git in this repository directory.
-    Query(String),
+    Query(&'a str),
 }
 /// Select a readable HEAD before deciding whether Git is needed.
-pub(super) fn read_branch(operations: &dyn FooterOperations, paths: &GitPaths) -> BranchRead {
+pub(super) fn read_branch<'a>(
+    operations: &dyn FooterOperations,
+    paths: &'a GitPaths,
+) -> BranchRead<'a> {
     let Ok(head) = operations.read_text(&paths.head_path) else {
         return BranchRead::Ready(None);
     };
@@ -133,7 +136,7 @@ pub(super) fn read_branch(operations: &dyn FooterOperations, paths: &GitPaths) -
         return BranchRead::Ready(Some("detached".to_owned()));
     };
     if branch == ".invalid" {
-        BranchRead::Query(paths.repo_dir.clone())
+        BranchRead::Query(&paths.repo_dir)
     } else {
         BranchRead::Ready(Some(branch.to_owned()))
     }

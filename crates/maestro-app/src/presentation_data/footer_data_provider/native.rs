@@ -3,6 +3,7 @@
 use std::fs;
 use std::io;
 use std::os::unix::fs::MetadataExt;
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::{rc::Rc, time::Duration};
 
@@ -42,7 +43,7 @@ impl WatchOperations for NativeFooterOperations {
     }
 }
 /// Read the three metadata dimensions selected by footer polling.
-fn stats(path: &str) -> Option<FooterFileStats> {
+fn stats(path: &Path) -> Option<FooterFileStats> {
     std::fs::metadata(path).ok().map(|m| FooterFileStats {
         mtime_ms: millis(m.mtime(), m.mtime_nsec()),
         ctime_ms: millis(m.ctime(), m.ctime_nsec()),
@@ -140,14 +141,14 @@ impl FooterOperations for NativeFooterOperations {
     }
 }
 
-/// Start one stat poll with registration-time metadata as its previous sample.
+/// Start one stat poll on the registration-time absolute path, with its metadata as the previous sample.
 fn poll(
     local: &LocalSet,
     path: &str,
     interval: Duration,
     listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
 ) -> JoinHandle<()> {
-    let path = path.to_owned();
+    let path = std::path::absolute(path).unwrap_or_else(|_| path.into());
     let mut last = stats(&path);
     let mut previous = last.unwrap_or_default();
     local.spawn_local(async move {

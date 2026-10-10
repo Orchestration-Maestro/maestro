@@ -3,7 +3,6 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterFileKind, FooterFileStats, FooterOperations,
 };
 use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
-use serde::Deserialize;
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
@@ -14,11 +13,9 @@ use std::{
 
 pub type Finish = Box<dyn FnOnce(io::Result<Option<String>>)>;
 pub type PollListener = Rc<dyn Fn(FooterFileStats, FooterFileStats)>;
-#[derive(Clone, Deserialize)]
-#[serde(untagged)]
 pub enum Entry {
     Text(String),
-    Directory(bool),
+    Directory,
 }
 struct Watch {
     closed: Rc<Cell<bool>>,
@@ -89,7 +86,7 @@ impl Effects {
     pub fn directory(&self, path: &str) {
         self.files
             .borrow_mut()
-            .insert(path.into(), Entry::Directory(true));
+            .insert(path.into(), Entry::Directory);
     }
     pub fn text(&self, path: &str, value: &str) {
         self.files
@@ -207,8 +204,7 @@ impl FooterOperations for Effects {
     }
     fn stat_kind(&self, path: &str) -> io::Result<FooterFileKind> {
         match self.files.borrow().get(&portable(path)) {
-            Some(Entry::Directory(true)) => Ok(FooterFileKind::Directory),
-            Some(Entry::Directory(false)) => Ok(FooterFileKind::Other),
+            Some(Entry::Directory) => Ok(FooterFileKind::Directory),
             Some(Entry::Text(_)) => Ok(FooterFileKind::File),
             None => Err(io::Error::other("missing")),
         }

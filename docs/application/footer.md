@@ -55,9 +55,12 @@ U+180E and U+200B.
 
 ## Live refresh
 
-The provider watches the directory containing `HEAD`. When present, it also
-watches the common metadata directory's `reftable` directory and its `tables.list`
-file, polling that file every 250 ms. HEAD-directory events with an unknown,
+Until disposed, the provider watches the directory containing `HEAD`. Registration
+proceeds in order and stops at the first failure or absent path: when the common
+metadata directory's `reftable` directory is present and registered, it is watched
+too, and when its `tables.list` file is then present and registered, that file is
+watched and polled every 250 ms. A relative polling path is anchored to the working
+directory current at registration. HEAD-directory events with an unknown,
 empty or exact `HEAD` filename request refresh; reference-table events need no
 filename filter. Polling requests refresh when modification time, metadata change
 time or size differs. The native poll retains the last successful sample through
@@ -68,7 +71,8 @@ deadline. Events during an unresolved query queue one follow-up, scheduled after
 completion. Refresh publishes before notifying subscribers, and an initial
 refresh that populates an unread cache does not notify. Unchanged results stay
 silent. A completion from an old working directory or a disposed provider cannot
-publish.
+publish, and an event or watch error arriving after disposal neither queues a
+refresh nor schedules a retry.
 
 Watch registration or asynchronous watch failure releases the registered sources
 and schedules another attempt in five seconds. A watch failure leaves an already

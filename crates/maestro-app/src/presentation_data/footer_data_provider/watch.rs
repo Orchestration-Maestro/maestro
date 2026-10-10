@@ -116,17 +116,21 @@ impl Watching {
         }
         self.in_flight.set(true);
         let generation = self.generation.get();
-        let selection = self
-            .state
-            .borrow()
-            .git_paths
-            .as_ref()
-            .map_or(git::BranchRead::Ready(None), |paths| {
-                git::read_branch(self.operations.as_ref(), paths)
-            });
-        let repo = match selection {
-            git::BranchRead::Ready(branch) => return self.finish(generation, branch),
-            git::BranchRead::Query(repo) => repo,
+        let repo = {
+            let state = self.state.borrow();
+            let selection = state
+                .git_paths
+                .as_ref()
+                .map_or(git::BranchRead::Ready(None), |paths| {
+                    git::read_branch(self.operations.as_ref(), paths)
+                });
+            match selection {
+                git::BranchRead::Ready(branch) => {
+                    drop(state);
+                    return self.finish(generation, branch);
+                }
+                git::BranchRead::Query(repo) => repo.to_owned(),
+            }
         };
         let weak = Rc::downgrade(self);
         self.operations.symbolic_ref_async(
