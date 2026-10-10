@@ -11,7 +11,8 @@ shared assistant updates. Two entry points start a call:
 - `stream_simple_openai_completions(model, context, options)` takes
   `SimpleStreamOptions`. It resolves a nonempty explicit key or the provider's
   environment key first and returns `No API key for provider: {provider}` at once,
-  before any stream exists. It then applies `build_base_options`, clamps the
+  before any stream exists (the root export of the same name settles it as an error
+  stream; see the [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)). It then applies `build_base_options`, clamps the
   requested thinking level to what the model supports (absent or `off` requests no
   reasoning) and forwards the typed `tool_choice`.
 

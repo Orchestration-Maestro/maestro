@@ -2,11 +2,11 @@
 
 use std::sync::{Arc, Mutex};
 
+use maestro_models::providers::chat::openai_completions::stream_simple_openai_completions;
 use maestro_models::{
     AssistantMessageEventStream, Cancellation, DiagnosticErrorInfo, DiagnosticInput, Fetch,
     FetchError, HttpResponse, OnPayload, OnResponse, OpenAICompletionsOptions, SimpleStreamOptions,
     StreamOptions, extract_diagnostic_error, stream_openai_completions,
-    stream_simple_openai_completions,
 };
 use serde_json::{Value, json};
 

@@ -7,7 +7,11 @@ check. Replacing a protocol preserves its position but replaces its source owner
 source removal affects only registrations still owned by that source. Retained
 handles remain usable after replacement, removal or clear.
 
-`stream` and `stream_simple` invoke immediately and return setup errors directly.
+The registry already holds the bundled protocols; see [bundled protocol linkage](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)
+for registration, reset, the root entry points and the raw extras they accept.
+
+`stream` and `stream_simple` invoke immediately and return a registered custom
+callback's setup errors directly; a bundled callback settles its own as error streams.
 `complete` and `complete_simple` also invoke immediately, but return setup errors
 inside their futures. Options, hooks and cancellation signals reach the adapter
 unchanged; adapters own payload policy, credentials, I/O and provider defaults.

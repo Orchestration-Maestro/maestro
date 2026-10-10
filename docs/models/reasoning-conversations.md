@@ -7,7 +7,8 @@ and `stream_simple_mistral`. These operations expose cumulative updates from
 independently owned work: dropping the reader does not cancel the producer.
 Native calls need a running Tokio runtime.
 Missing credentials produce a terminal error for raw calls and an immediate
-error for simple calls. Text, thinking and tool updates retain the same message
+error for simple calls made through this module (the root export settles it as an error
+stream; see the [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)). Text, thinking and tool updates retain the same message
 handle through the terminal result.
 
 ```rust

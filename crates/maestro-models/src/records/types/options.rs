@@ -3,8 +3,9 @@ use super::ThinkingLevel;
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
 use crate::providers::http::Fetch;
 use indexmap::IndexMap;
+use serde::de::IntoDeserializer;
 use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// Carry optional per-level token budgets.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -90,6 +91,56 @@ pub struct StreamOptions {
     /// Replacement for the default HTTP transport.
     pub fetch: Option<Fetch>,
 }
+/// Object handle retained by [`ProviderObjects`].
+#[cfg(not(target_arch = "wasm32"))]
+type ObjectHandle = std::sync::Arc<dyn std::any::Any + Send + Sync>;
+/// Browser-local object handle retained by [`ProviderObjects`].
+#[cfg(target_arch = "wasm32")]
+type ObjectHandle = std::sync::Arc<dyn std::any::Any>;
+
+/// Typed, non-serializable objects handed to a provider, at most one per concrete type.
+///
+/// Cloning copies the container and shares the stored objects; replacing an entry in one
+/// container never changes another.
+#[derive(Clone, Default)]
+pub struct ProviderObjects {
+    /// Retained handles keyed by their concrete type.
+    entries: std::collections::HashMap<std::any::TypeId, ObjectHandle>,
+}
+
+impl ProviderObjects {
+    /// Store `value`, replacing any earlier value of the same type.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn insert<T: std::any::Any + Send + Sync>(&mut self, value: T) {
+        self.entries
+            .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
+    }
+
+    /// Store `value`, replacing any earlier value of the same type.
+    #[cfg(target_arch = "wasm32")]
+    pub fn insert<T: std::any::Any>(&mut self, value: T) {
+        self.entries
+            .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
+    }
+
+    /// Borrow the stored value of type `T`, if any.
+    #[must_use]
+    pub fn get<T: std::any::Any>(&self) -> Option<&T> {
+        self.entries
+            .get(&std::any::TypeId::of::<T>())?
+            .downcast_ref()
+    }
+}
+
+impl std::fmt::Debug for ProviderObjects {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ProviderObjects")
+            .field("entries", &self.entries.len())
+            .finish()
+    }
+}
+
 /// Retain typed common options plus provider-specific open fields.
 #[derive(Clone, Default)]
 pub struct ProviderStreamOptions {
@@ -97,6 +148,8 @@ pub struct ProviderStreamOptions {
     pub common: StreamOptions,
     /// Extra.
     pub extra: JsonObject,
+    /// Typed objects that cannot travel as JSON, such as an injected client.
+    pub objects: ProviderObjects,
 }
 /// Carry common options plus requested thinking and optional budgets.
 #[derive(Clone, Default)]
@@ -133,11 +186,11 @@ pub enum ToolChoice {
 #[serde(untagged)]
 enum ToolChoiceWire {
     /// Mode string.
-    Mode(ToolChoiceMode),
+    Mode(Literal<ToolChoiceMode>),
     /// Named function object.
     Function {
         /// Constant discriminator.
-        r#type: FunctionTag,
+        r#type: Literal<FunctionTag>,
         /// Function reference.
         function: FunctionName,
     },
@@ -158,16 +211,38 @@ enum ToolChoiceMode {
 /// Constant `function` discriminator.
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum FunctionTag {
+pub(crate) enum FunctionTag {
     /// The only accepted discriminator.
     Function,
 }
 
-/// Function reference inside a named tool choice.
-#[derive(Deserialize)]
-struct FunctionName {
+/// An enum read only from a JSON string; maps such as `{"high": null}` are rejected.
+pub(crate) struct Literal<T>(pub(crate) T);
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Literal<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        T::deserialize(text.into_deserializer()).map(Self)
+    }
+}
+
+/// Function reference inside a named tool choice, read only from a JSON object.
+pub(crate) struct FunctionName {
     /// Function name.
-    name: String,
+    pub(crate) name: String,
+}
+
+impl<'de> Deserialize<'de> for FunctionName {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct Fields {
+            name: String,
+        }
+        let fields = serde_json::Map::<String, serde_json::Value>::deserialize(deserializer)?;
+        Fields::deserialize(serde_json::Value::Object(fields))
+            .map(|Fields { name }| Self { name })
+            .map_err(serde::de::Error::custom)
+    }
 }
 
 /// Borrowed function reference written inside a named tool choice.
@@ -180,11 +255,11 @@ struct FunctionNameRef<'a> {
 impl From<ToolChoiceWire> for ToolChoice {
     fn from(wire: ToolChoiceWire) -> Self {
         match wire {
-            ToolChoiceWire::Mode(ToolChoiceMode::Auto) => Self::Auto,
-            ToolChoiceWire::Mode(ToolChoiceMode::None) => Self::None,
-            ToolChoiceWire::Mode(ToolChoiceMode::Required) => Self::Required,
+            ToolChoiceWire::Mode(Literal(ToolChoiceMode::Auto)) => Self::Auto,
+            ToolChoiceWire::Mode(Literal(ToolChoiceMode::None)) => Self::None,
+            ToolChoiceWire::Mode(Literal(ToolChoiceMode::Required)) => Self::Required,
             ToolChoiceWire::Function {
-                r#type: FunctionTag::Function,
+                r#type: Literal(FunctionTag::Function),
                 function,
             } => Self::Function {
                 name: function.name,

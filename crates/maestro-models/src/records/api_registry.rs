@@ -1,6 +1,7 @@
 //! Ordered protocol registration retaining checked invocation callbacks.
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{Api, ProviderStreamOptions, SimpleStreamOptions, StreamFunction};
+use crate::builtins::built_in_providers;
 use indexmap::IndexMap;
 use std::sync::Arc;
 
@@ -28,11 +29,11 @@ struct Registration {
 #[cfg(not(target_arch = "wasm32"))]
 /// Process-wide ordered API registrations protected for native callers.
 static REGISTRY: std::sync::LazyLock<std::sync::Mutex<IndexMap<String, Registration>>> =
-    std::sync::LazyLock::new(|| std::sync::Mutex::new(IndexMap::new()));
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(seeded()));
 #[cfg(target_arch = "wasm32")]
 thread_local! {
 /// Browser-thread API registrations in insertion order.
-static REGISTRY: std::cell::RefCell<IndexMap<String, Registration>> = std::cell::RefCell::new(IndexMap::new()); }
+static REGISTRY: std::cell::RefCell<IndexMap<String, Registration>> = std::cell::RefCell::new(seeded()); }
 /// Access the native shared or browser-local registration map.
 fn with_registry<T>(operation: impl FnOnce(&mut IndexMap<String, Registration>) -> T) -> T {
     #[cfg(not(target_arch = "wasm32"))]
@@ -62,27 +63,33 @@ fn checked<O: 'static>(api: String, callback: StreamFunction<O>) -> StreamFuncti
         callback(model, context, options)
     })
 }
-/// Insert checked callbacks, keeping an existing protocol's original position.
-pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
+/// Pair checked callbacks with their owner.
+fn registration(provider: ApiProvider, source_id: Option<String>) -> Registration {
     let ApiProvider {
         api,
         stream,
         stream_simple,
     } = provider;
-    let provider = ApiProvider {
-        stream: checked(api.clone(), stream),
-        stream_simple: checked(api.clone(), stream_simple),
-        api,
-    };
-    let retired = with_registry(|registry| {
-        registry.insert(
-            provider.api.clone(),
-            Registration {
-                provider,
-                source_id,
-            },
-        )
-    });
+    Registration {
+        provider: ApiProvider {
+            stream: checked(api.clone(), stream),
+            stream_simple: checked(api.clone(), stream_simple),
+            api,
+        },
+        source_id,
+    }
+}
+/// The bundled protocols, registered before the first lookup or change.
+fn seeded() -> IndexMap<String, Registration> {
+    built_in_providers()
+        .into_iter()
+        .map(|provider| (provider.api.clone(), registration(provider, None)))
+        .collect()
+}
+/// Insert checked callbacks, keeping an existing protocol's original position.
+pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
+    let entry = registration(provider, source_id);
+    let retired = with_registry(|registry| registry.insert(entry.provider.api.clone(), entry));
     drop(retired);
 }
 /// Retain a checked provider handle independently of future registry changes.

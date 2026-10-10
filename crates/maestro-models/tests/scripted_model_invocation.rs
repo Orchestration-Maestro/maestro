@@ -1420,12 +1420,11 @@ mod tests {
         let factory: FauxResponseFactory = std::sync::Arc::new(|_, options, _, _| {
             Box::pin(std::future::ready(Ok(check_forwarded_options(options))))
         });
-        registration.set_responses(vec![
-            FauxResponseStep::Factory(factory.clone()),
-            FauxResponseStep::Factory(factory.clone()),
-            FauxResponseStep::Factory(factory.clone()),
-            FauxResponseStep::Factory(factory),
-        ]);
+        registration.set_responses(
+            (0..4)
+                .map(|_| FauxResponseStep::Factory(factory.clone()))
+                .collect(),
+        );
         assert_eq!(
             invoke(&registration, context("hi"), None).content,
             vec![AssistantContent::Text(faux_text("absent"))]
@@ -1438,6 +1437,7 @@ mod tests {
                 on_response: Some(std::sync::Arc::new(|_, _| Box::pin(async { Ok(()) }))),
                 ..StreamOptions::default()
             },
+            ..ProviderStreamOptions::default()
         };
         assert_eq!(
             invoke(&registration, context("hi"), Some(raw)).content,

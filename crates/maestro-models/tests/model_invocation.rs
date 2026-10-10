@@ -401,6 +401,7 @@ mod tests {
                     .as_object()
                     .unwrap()
                     .clone(),
+                ..ProviderStreamOptions::default()
             }),
         );
         assert_eq!(raw_count.load(std::sync::atomic::Ordering::SeqCst), 1);
@@ -529,6 +530,7 @@ mod tests {
                     ..StreamOptions::default()
                 },
                 extra: JsonObject::new(),
+                ..ProviderStreamOptions::default()
             };
             let result = stream(
                 model("hooks"),

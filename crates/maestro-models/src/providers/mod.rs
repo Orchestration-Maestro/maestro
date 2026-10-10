@@ -6,7 +6,7 @@ pub mod faux;
 pub mod http;
 pub(crate) mod json_text;
 pub mod messages;
-mod nullable;
+pub(crate) mod nullable;
 pub mod reasoning;
 pub mod responses;
 

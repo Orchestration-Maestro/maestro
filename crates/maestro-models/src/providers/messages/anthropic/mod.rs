@@ -30,7 +30,8 @@ const ABORTED_TEXT: &str = "Request was aborted";
 const UNKNOWN_ERROR_TEXT: &str = "An unknown error occurred";
 
 /// Effort supplied to adaptive thinking on a raw invocation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum AnthropicEffort {
     /// Low effort.
     Low,
@@ -57,7 +58,8 @@ impl AnthropicEffort {
 }
 
 /// Display mode for enabled thinking.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum AnthropicThinkingDisplay {
     /// Request summarized thinking display.
     Summarized,

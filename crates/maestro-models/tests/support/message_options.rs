@@ -7,10 +7,10 @@ use crate::{
     child_process::{child_case, rerun},
     messages,
 };
-use maestro_models::providers::messages::anthropic::AnthropicEffort;
+use maestro_models::providers::messages::anthropic::{AnthropicEffort, stream_simple_anthropic};
 use maestro_models::{
     AnthropicOptions, AnthropicThinkingDisplay, HttpResponse, SimpleStreamOptions, StreamOptions,
-    ThinkingBudgets, stream_anthropic, stream_simple_anthropic,
+    ThinkingBudgets, stream_anthropic,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
