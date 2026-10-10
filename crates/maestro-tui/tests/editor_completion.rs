@@ -382,10 +382,10 @@ const MATCHING: [Matching; 7] = [
     },
     Matching {
         name: "labels never match",
-        pairs: &[("q", "b"), ("r", "r")],
+        pairs: &[("q", "q"), ("r", "b")],
         prefix: "b",
         applied: "q",
-        highlighted: "b",
+        highlighted: "q",
     },
     Matching {
         name: "duplicates keep their order",
@@ -430,6 +430,13 @@ fn completion_value_matching_retains_order() {
             "{}",
             case.name
         );
+        let kept = &"b"[..1 - case.prefix.len().min(1)];
+        assert_eq!(
+            rig.editor.get_text(),
+            format!("{kept}{}", case.applied),
+            "{}",
+            case.name
+        );
     }
     let rig = Rig::new();
     forced_menu(
@@ -459,7 +466,7 @@ fn requests(setup: &str, inputs: &[&str]) -> usize {
 
 #[test]
 fn completion_contexts_have_distinct_boundaries() {
-    let cases: [(&str, &[&str], usize); 21] = [
+    let cases: [(&str, &[&str], usize); 27] = [
         ("", &["/"], 1),
         (" ", &["/"], 1),
         ("a", &["/"], 0),
@@ -476,6 +483,12 @@ fn completion_contexts_have_distinct_boundaries() {
         ("é", &["@"], 0),
         ("\u{feff}", &["@"], 0),
         ("", &["@", "é"], 1),
+        ("", &["@", "a!"], 2),
+        ("", &["@", "!a"], 2),
+        ("", &["@", "."], 2),
+        ("", &["@", "-"], 2),
+        ("", &["@", "_"], 2),
+        ("", &["/", "a!"], 2),
         ("", &["#", "x"], 2),
         ("", &["x@y"], 0),
         ("", &["a @y"], 1),
@@ -897,6 +910,23 @@ fn assert_menu_deletions() {
     rig.run();
     let last = rig.provider.calls.borrow().last().map(|call| call.force);
     assert_eq!(last, Some(Some(true)), "deletion keeps the forced mode");
+    drop(rig);
+
+    let rig = Rig::new();
+    rig.provider.answer(|_| offer("/a", &["/ab", "/ac"]));
+    rig.typed("/ab");
+    rig.run();
+    rig.input("\x1b[D");
+    rig.run();
+    let before = rig.provider.count();
+    rig.input("\x1b[3~");
+    rig.run();
+    assert_eq!(rig.editor.get_text(), "/a");
+    assert_eq!(
+        rig.provider.count(),
+        before + 1,
+        "forward delete refreshes an open menu"
+    );
 }
 
 #[test]
@@ -910,6 +940,11 @@ fn completion_deletions_retrigger_from_their_context() {
         deletion_requests("/ab", &["\x1b[D", "\x1b[3~"]),
         1,
         "forward delete retriggers its own context"
+    );
+    assert_eq!(
+        deletion_requests("/ab", &["\x1b[3~"]),
+        1,
+        "forward delete at the end of the text changes nothing yet retriggers"
     );
     assert_eq!(
         deletion_requests("", &["\x7f", "\x1b[3~"]),
@@ -1104,6 +1139,30 @@ fn completion_render_uses_list_layout_and_suppresses_cursor() {
     );
 }
 
+#[test]
+fn completion_slash_primary_column_is_bounded() {
+    let rig = Rig::new();
+    let long = format!("/{}", "x".repeat(40));
+    rig.provider.answer(move |_| {
+        Some(AutocompleteSuggestions {
+            items: vec![AutocompleteItem {
+                value: long.clone(),
+                label: long.clone(),
+                description: Some("about it".to_owned()),
+            }],
+            prefix: "/".to_owned(),
+        })
+    });
+    rig.input("/");
+    rig.run();
+    let clipped = format!("→ /{}\x1b[0m  about it", "x".repeat(29));
+    assert_eq!(
+        rig.menu(80),
+        [padded(&clipped, 80 + "\x1b[0m".len())],
+        "a long label is cut to the 32-cell column before its description"
+    );
+}
+
 /// A theme whose selection callbacks each wrap their text in a distinct marker.
 fn marked_theme() -> maestro_tui::EditorTheme {
     let mark = |name: &'static str| -> Rc<dyn Fn(&str) -> String> {
@@ -1272,6 +1331,8 @@ fn assert_suspended_argument(rig: &Rig, seen: &Rc<RefCell<Vec<String>>>) {
     rig.run();
     assert_eq!(*seen.borrow(), ["x", "xy"]);
     assert_eq!(rows(rig), ["→ xy1", "  xy2"]);
+    rig.input(ENTER);
+    assert_eq!(rig.editor.get_text(), "/later xy1");
 }
 
 #[test]
@@ -1296,6 +1357,16 @@ fn completion_bundled_provider_argument_paths() {
     assert!(
         !rig.editor.is_showing_autocomplete(),
         "a command without a callback offers nothing"
+    );
+    assert_eq!(rig.editor.get_text(), "/plain x");
+    rig.editor.set_text("");
+    rig.typed("/plain");
+    rig.run();
+    rig.input(TAB);
+    assert_eq!(
+        rig.editor.get_text(),
+        "/plain ",
+        "choosing a command appends a space"
     );
 }
 
