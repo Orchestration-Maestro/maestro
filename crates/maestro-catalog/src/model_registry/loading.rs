@@ -4,6 +4,7 @@ use super::{
     composition::{self, ProviderConfig},
 };
 use maestro_models::arguments::validation::validate_schema;
+use serde::Deserialize;
 use serde_json::Value;
 use std::sync::LazyLock;
 
@@ -21,7 +22,7 @@ pub(super) fn load(
     let text = operations
         .read_to_string(path)
         .map_err(|e| envelope("Failed to load models.json", &e.to_string(), path))?;
-    let value = serde_json::from_str(&strip_comments(&text))
+    let value = parse(&strip_comments(&text))
         .map_err(|e| envelope("Failed to parse models.json", &e.to_string(), path))?;
     let schema = SCHEMA
         .as_ref()
@@ -39,6 +40,14 @@ pub(super) fn load(
         .map_err(|e| envelope("Failed to load models.json", &e.to_string(), path))?;
     validate(&providers).map_err(|e| envelope("Failed to load models.json", &e, path))?;
     Ok(Some(providers))
+}
+/// Parse a complete document; discarded members never hit the decoder's default depth bound.
+fn parse(text: &str) -> Result<Value, serde_json::Error> {
+    let mut decoder = serde_json::Deserializer::from_str(text);
+    decoder.disable_recursion_limit();
+    let value = Value::deserialize(&mut decoder)?;
+    decoder.end()?;
+    Ok(value)
 }
 /// Remove line comments first, then recognize trailing commas on the resulting text.
 fn strip_comments(text: &str) -> String {

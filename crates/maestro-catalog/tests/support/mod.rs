@@ -53,6 +53,8 @@ struct Expected {
     changes: Vec<Model>,
     error: Option<Error>,
     keys: Option<Vec<(String, String)>>,
+    /// Keys following the unchanged offline inventory, in order.
+    appended: Option<Vec<(String, String)>>,
 }
 /// Source diagnostics omit platform-dependent parser details.
 #[derive(Deserialize)]
@@ -112,6 +114,25 @@ pub fn corpus(group: &str) {
         }
     }
 }
+/// Compare the complete key sequence, whole or after the offline inventory.
+fn check_keys(actual: &[Model], expected: &Expected, index: usize) {
+    let actual: Vec<_> = actual
+        .iter()
+        .map(|m| (m.provider.clone(), m.id.clone()))
+        .collect();
+    if let Some(keys) = &expected.keys {
+        assert_eq!(actual, *keys, "key order case {index}");
+    }
+    if let Some(appended) = &expected.appended {
+        let mut keys: Vec<_> = get_providers()
+            .iter()
+            .flat_map(|p| get_models(p))
+            .map(|m| (m.provider, m.id))
+            .collect();
+        keys.extend(appended.iter().cloned());
+        assert_eq!(actual, keys, "inventory order case {index}");
+    }
+}
 /// Compare the complete output's changed descriptors, optional key sequence and error.
 fn check_case(
     registry: &ModelRegistry,
@@ -140,16 +161,7 @@ fn check_case(
             "compat key order case {index}"
         );
     }
-    if let Some(keys) = &expected.keys {
-        assert_eq!(
-            actual
-                .iter()
-                .map(|m| (m.provider.clone(), m.id.clone()))
-                .collect::<Vec<_>>(),
-            *keys,
-            "key order case {index}"
-        );
-    }
+    check_keys(&actual, expected, index);
     match &expected.error {
         None => assert_eq!(registry.get_error(), None, "{group} case {index}"),
         Some(error) => {

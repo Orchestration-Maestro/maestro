@@ -24,9 +24,11 @@ as name, text input, no reasoning, zero prices, a 128000 context window and a
 
 Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
-explicit thinking nulls remain null. Compatibility overlays merge router and
-gateway objects one level; nested prices and lists are replaced, not recursively
-merged. Custom descriptors omit request headers.
+explicit thinking nulls remain null. Compatibility overlays merge a router or
+gateway slot one level only when either side is truthy (a null, false, zero or
+empty-text slot with no truthy partner is kept as written); nested prices and lists are replaced, not recursively
+merged. Custom descriptors omit request headers. Members the descriptors do
+not read are skipped whatever their nesting depth.
 
 ## Observations and reload
 
