@@ -7,6 +7,19 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 struct Workspace(PathBuf);
 
+/// Copies an executable through a child `install`, so this process never holds a
+/// writable descriptor to a file it later runs (a concurrent fork would otherwise
+/// make `exec` fail with "Text file busy").
+fn install_executable(source: &Path, target: &Path) {
+    let status = Command::new("install")
+        .args(["-m", "0700"])
+        .arg(source)
+        .arg(target)
+        .status()
+        .unwrap();
+    assert!(status.success());
+}
+
 impl Workspace {
     fn new() -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -34,7 +47,7 @@ impl Workspace {
                 .success()
         );
         for name in ["mise", "prek", "watchexec"] {
-            fs::copy(&tool, root.join("bin").join(name)).unwrap();
+            install_executable(&tool, &root.join("bin").join(name));
         }
         Self(root)
     }
@@ -225,7 +238,7 @@ fn native_workspace(workspace: &Workspace) {
         workspace.0.join("bin/cargo-proxy"),
     )
     .unwrap();
-    fs::copy(env!("CARGO"), workspace.0.join("bin/cargo")).unwrap();
+    install_executable(Path::new(env!("CARGO")), &workspace.0.join("bin/cargo"));
     assert!(
         Command::new(env!("CARGO"))
             .current_dir(&workspace.0)
