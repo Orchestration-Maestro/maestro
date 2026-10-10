@@ -41,20 +41,23 @@ fn preparation(
         .unwrap_or(true)
         .then(|| {
             let guard = super::Released::new(api, "tool prepare");
-            Rc::new(move |mut args: Value| {
-                let _ = &guard;
-                if let Some(control) = args["control"].as_str() {
-                    return control_kept(&prepare_kept, control);
-                }
-                if let Some(error) = prepare_config["prepareError"].as_str() {
-                    return Err(error.into());
-                }
-                if args.is_object() {
-                    args["mark"] = json!("after");
-                }
-                prepare_api.append_entry("prepared", Some(args.clone()))?;
-                Ok(args)
-            }) as maestro_extensions_wasm::PrepareArguments
+            Rc::new(
+                move |mut args: Value, emitter: maestro_extensions_wasm::CallbackEmitter<'_>| {
+                    let _ = &guard;
+                    if let Some(control) = args["control"].as_str() {
+                        return control_kept(&prepare_kept, control);
+                    }
+                    emit_prepared(&prepare_api, &prepare_config, &emitter)?;
+                    if let Some(error) = prepare_config["prepareError"].as_str() {
+                        return Err(error.into());
+                    }
+                    if args.is_object() {
+                        args["mark"] = json!("after");
+                    }
+                    prepare_api.append_entry("prepared", Some(args.clone()))?;
+                    Ok(args)
+                },
+            ) as maestro_extensions_wasm::PrepareArguments
         })
 }
 
@@ -255,5 +258,25 @@ pub fn mark_custom(input: &mut maestro_extensions_wasm::ToolInput) -> ExtensionR
     value["a"] = json!("changed");
     let text = serde_json::to_string(&value).map_err(|e| e.to_string())?;
     *input = maestro_extensions_wasm::ToolInput::from_value(&text)?;
+    Ok(())
+}
+
+/// Emits configured preparation data, optionally recording a caught failure.
+fn emit_prepared(
+    api: &ExtensionAPI,
+    config: &Value,
+    emitter: &maestro_extensions_wasm::CallbackEmitter<'_>,
+) -> ExtensionResult<()> {
+    let Some(emissions) = config["emissions"].as_array() else {
+        return Ok(());
+    };
+    for data in emissions {
+        if let Err(error) = emitter.emit("prepared-event", data.clone()) {
+            if config["catchEmission"].as_bool() != Some(true) {
+                return Err(error);
+            }
+            api.append_entry("caught-emission", Some(json!(error)))?;
+        }
+    }
     Ok(())
 }

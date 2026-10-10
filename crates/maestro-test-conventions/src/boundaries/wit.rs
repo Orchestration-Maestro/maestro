@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use syn::{
     Token,
+    ext::IdentExt,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
 };
@@ -108,7 +109,7 @@ impl Parse for Inputs {
 fn fields(input: ParseStream<'_>) -> syn::Result<Inputs> {
     let mut result = Inputs::default();
     while !input.is_empty() {
-        let name: syn::Ident = input.parse()?;
+        let name = input.call(syn::Ident::parse_any)?;
         input.parse::<Token![:]>()?;
         if name == "path" {
             result.paths.extend(paths(input)?);

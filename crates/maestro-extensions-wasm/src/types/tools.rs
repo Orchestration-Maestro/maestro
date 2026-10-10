@@ -43,7 +43,8 @@ pub struct ToolMetadata {
     pub execution_mode: Presence<ToolExecutionMode>,
 }
 /// Synchronous transformation of invocation arguments.
-pub type PrepareArguments = Rc<dyn Fn(Value) -> ExtensionResult<Value>>;
+pub type PrepareArguments =
+    Rc<dyn for<'a> Fn(Value, crate::CallbackEmitter<'a>) -> ExtensionResult<Value>>;
 /// Asynchronous execution receiving owned context, signal and update handles.
 pub type ToolExecute = Rc<
     dyn Fn(

@@ -9,6 +9,8 @@
 #[macro_use]
 mod port;
 mod agent;
+mod event_bus;
+pub use event_bus::*;
 mod bash_executor;
 mod tools;
 pub use bash_executor::*;

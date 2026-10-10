@@ -10,6 +10,7 @@
 
 wit_bindgen::generate!({
     path: "wit",
+    async: ["-import:maestro:extension/host@0.1.0#callback-emit"],
     world: "extension",
     pub_export_macro: true,
     default_bindings_module: "maestro_extensions_wasm::bindings",
@@ -27,6 +28,8 @@ pub(crate) mod host_side {
         with: {
             "maestro:extension/host.readonly-session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.session-tree-node": crate::tests::reader_host::Node,
+            "maestro:extension/host.subscription": crate::tests::bus_host::Subscription,
+            "maestro:extension/host.callback-emitter": crate::tests::bus_host::Emitter,
             "maestro:extension/host.tool-update": crate::tests::host::Update,
             "maestro:extension/host.callback": crate::tests::host::Identity,
             "maestro:extension/host.abort-signal": crate::tests::host::Flag,

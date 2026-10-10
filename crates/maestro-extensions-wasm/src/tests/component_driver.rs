@@ -212,13 +212,33 @@ impl Driver for ComponentDriver {
 
     async fn prepare_key(&mut self, handler: u32, args: &str) -> Result<String, String> {
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
-        harness
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter)
+            .map_err(|e| e.to_string())?;
+        let result = harness
             .exports
             .func_invoke_prepare()
-            .call_async(&mut harness.store, (borrow(handler), args))
+            .call_async(
+                &mut harness.store,
+                (
+                    borrow(handler),
+                    args,
+                    wasmtime::component::Resource::new_borrow(emitter.rep()),
+                ),
+            )
             .await
             .map_err(|e| e.to_string())?
-            .0
+            .0;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        result
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         started(&mut self.harness)
@@ -272,6 +292,27 @@ impl Driver for ComponentDriver {
     fn tools(&self) -> Vec<String> {
         self.observed(|o| o.tools.clone())
     }
+    fn reject_bus_emission(&mut self, error: Option<String>) {
+        self.harness
+            .as_mut()
+            .expect("started component")
+            .store
+            .data_mut()
+            .observed
+            .bus
+            .emission_error = error;
+    }
+    fn bus_emissions(&self) -> Vec<(String, serde_json::Value)> {
+        self.harness
+            .as_ref()
+            .expect("started component")
+            .store
+            .data()
+            .observed
+            .bus
+            .emissions
+            .clone()
+    }
     fn updates(&self) -> Vec<String> {
         self.observed(|o| o.updates.clone())
     }
@@ -279,7 +320,7 @@ impl Driver for ComponentDriver {
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
         self.run_command(name, args, false)
             .await
-            .map_err(|error| error.to_string())
+            .map_err(|error| format!("{error:#}"))
     }
 
     async fn command(&mut self, args: &str) -> Result<(), String> {

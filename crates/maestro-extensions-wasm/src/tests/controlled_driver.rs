@@ -157,7 +157,10 @@ impl Driver for ControlledDriver {
         handler: u32,
         args: &str,
     ) -> impl Future<Output = Result<String, String>> {
-        std::future::ready(Exports::<Controlled>::invoke_prepare(handler, args))
+        std::future::ready(
+            self.exports()
+                .invoke_prepare(handler, args, &super::bus_host::Emitter),
+        )
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         Ok(id)
@@ -192,6 +195,12 @@ impl Driver for ControlledDriver {
 
     fn tools(&self) -> Vec<String> {
         self.host.observed().tools.clone()
+    }
+    fn reject_bus_emission(&mut self, error: Option<String>) {
+        self.host.observe().bus.emission_error = error;
+    }
+    fn bus_emissions(&self) -> Vec<(String, serde_json::Value)> {
+        self.host.observed().bus.emissions.clone()
     }
     fn updates(&self) -> Vec<String> {
         self.host.observed().updates.clone()

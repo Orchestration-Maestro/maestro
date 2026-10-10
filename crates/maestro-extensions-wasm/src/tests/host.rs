@@ -172,7 +172,48 @@ impl host::HostReplacedSessionContext for State {
     }
 }
 
+impl host::HostSubscription for State {
+    fn unsubscribe(
+        &mut self,
+        this: Resource<super::bus_host::Subscription>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.observed.bus.unsubscribe(self.table.get(&this)?))
+    }
+    fn drop(&mut self, this: Resource<super::bus_host::Subscription>) -> wasmtime::Result<()> {
+        self.table.delete(this)?;
+        Ok(())
+    }
+}
+impl host::HostCallbackEmitter for State {
+    fn drop(&mut self, this: Resource<super::bus_host::Emitter>) -> wasmtime::Result<()> {
+        self.table.delete(this)?;
+        Ok(())
+    }
+}
 impl host::Host for State {
+    fn event_on(
+        &mut self,
+        channel: String,
+        handler: Resource<Identity>,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Subscription>, String>> {
+        match self.observed.bus.on(&channel, handler.rep()) {
+            Ok(subscription) => {
+                self.observed
+                    .on(&format!("bus {}", handler.rep()), handler.rep())
+                    .map_err(wasmtime::Error::msg)?;
+                Ok(Ok(self.table.push(subscription)?))
+            }
+            Err(error) => Ok(Err(error)),
+        }
+    }
+    fn start_event_tail(
+        &mut self,
+        _emitter: Resource<super::bus_host::Emitter>,
+        tail: Resource<Identity>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(self.observed.bus.tail(tail.rep()))
+    }
+
     fn on(
         &mut self,
         event: String,
@@ -429,4 +470,63 @@ pub async fn cancel_held(
             .expect("retained flag exists");
     }
     open.send(()).expect("execution still pending");
+}
+
+impl host::HostWithStore<State> for Imports {
+    async fn event_emit(
+        accessor: &Accessor<State, Self>,
+        channel: String,
+        data: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let hold = accessor.with(|mut access| access.get().observed.take_hold());
+        pause(hold).await;
+        let emitter =
+            accessor.with(|mut access| access.get().table.push(super::bus_host::Emitter))?;
+        let result =
+            Self::callback_emit(accessor, Resource::new_borrow(emitter.rep()), channel, data).await;
+        accessor.with(|mut access| access.get().table.delete(emitter))?;
+        result
+    }
+    async fn callback_emit(
+        accessor: &Accessor<State, Self>,
+        emitter: Resource<super::bus_host::Emitter>,
+        channel: String,
+        data: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let (guest, handlers) = accessor.with(|mut access| {
+            let state = access.get();
+            (
+                state.guest.clone(),
+                state.observed.bus.emit(&channel, &data),
+            )
+        });
+        let handlers = match handlers {
+            Ok(handlers) => handlers,
+            Err(error) => return Ok(Err(error)),
+        };
+        let guest = guest.ok_or_else(|| wasmtime::format_err!("no guest recorded"))?;
+        for handler in handlers {
+            let function = accessor.with(|access| {
+                guest.func_invoke_listener().func().typed::<(
+                    Resource<Identity>,
+                    String,
+                    Resource<super::bus_host::Emitter>,
+                ), (Result<(), String>,)>(access)
+            })?;
+            let (result,) = function
+                .call_concurrent(
+                    accessor,
+                    (
+                        borrow(handler),
+                        data.clone(),
+                        Resource::new_borrow(emitter.rep()),
+                    ),
+                )
+                .await?;
+            if let Err(error) = result {
+                return Ok(Err(error));
+            }
+        }
+        Ok(Ok(()))
+    }
 }

@@ -992,3 +992,36 @@ fn guest_tool_declaration_decoys(workspace: &Workspace) {
         );
     }
 }
+
+#[test]
+fn wit_async_selector_keeps_static_path_admission() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm"]);
+    let guest = workspace.root.join("crates/maestro-extensions-wasm/wit");
+    std::fs::create_dir(&guest).unwrap();
+    std::fs::write(
+        guest.join("world.wit"),
+        "package maestro:fixture; world fixture {}",
+    )
+    .unwrap();
+    let input = r#"wit_bindgen::generate!({
+        path: "wit",
+        async: ["-import:maestro:extension/host@0.1.0#callback-emit"],
+        world: "extension",
+    });"#;
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/bindings.rs",
+        input,
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/bindings.rs",
+        &input.replace("path: \"wit\"", "path: env!(\"WIT_PATH\")"),
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("expected static path"), "{error}");
+}

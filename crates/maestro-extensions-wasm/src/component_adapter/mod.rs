@@ -8,6 +8,9 @@
 )]
 
 mod callbacks;
+mod event_bus;
+#[cfg(test)]
+pub(crate) use event_bus::events;
 mod contexts;
 mod exports;
 #[cfg(target_arch = "wasm32")]

@@ -5,7 +5,7 @@ canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
-families, tool callbacks, command contexts, session continuations and session readers.
+families, tool callbacks, command contexts, session continuations, session readers and event channels.
 
 ## Build a component
 
@@ -47,8 +47,8 @@ its own closure is released.
 ## Tools
 
 `ToolDefinition` combines `ToolMetadata`, optional synchronous `prepare_arguments` and
-asynchronous `execute`. Preparation receives one JSON value; its returned value can be
-passed to execution. The adapter does not perform argument validation or schedule tools.
+asynchronous `execute`. Preparation receives one JSON value and a callback-scoped `CallbackEmitter`; its returned
+value can be passed to execution. The emitter forwards synchronous emission during preparation. The adapter does not perform argument validation or schedule tools.
 Execution receives the invocation ID, arguments, ordinary context and optional signal
 and progress callback. A progress callback sends one `AgentToolResult` synchronously;
 execution returns its final `AgentToolResult`. Callback failures retain their supplied messages.
@@ -64,6 +64,23 @@ finite-checked authored replacements. Named aliases expose the built-in typed vi
 name predicates compare the name alone. Result input remains an opaque string.
 `UserBashEventResult` carries an already-produced `BashResult`; this crate does not
 execute shell commands.
+
+## Event channels
+
+`api.events()` returns the supplied host's `EventBus`. Ordinary code awaits
+`bus.emit(channel, data)`; a synchronous listener uses its borrowed `CallbackEmitter`.
+Both forward literal channels and JSON payloads without trimming or sorting.
+See [shared event-bus scheduling](event_bus.md) for the host's delivery rules.
+
+`bus.on(channel, listener)` returns an explicitly invoked `Subscription`.
+Dropping its facade does not unsubscribe; call `unsubscribe()` to forward removal.
+Clones of bus and subscription facades share their supplied ports.
+
+A listener's synchronous prefix returns `Ok(None)` or an independently owned
+`ExtensionFuture<'static, ()>`. The adapter announces that future without polling it;
+the host invokes the tail separately. Releasing the listener does not release a tail
+already announced. The callback emitter cannot be retained by that tail: capture an
+owned `EventBus` for later asynchronous emissions instead.
 
 ## Session readers
 

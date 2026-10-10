@@ -10,6 +10,9 @@ use crate::types::{CommandOptions, ExtensionHandler, ExtensionHost, ExtensionRes
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn events(&self) -> crate::EventBus {
+        super::event_bus::events(self.0.clone())
+    }
     fn on(&self, event: &str, handler: ExtensionHandler) -> ExtensionResult<()> {
         let identity = Identity::new(&self.0);
         self.0.on(event, &identity.handle)?;

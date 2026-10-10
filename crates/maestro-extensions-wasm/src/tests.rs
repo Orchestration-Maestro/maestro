@@ -29,6 +29,8 @@ mod agent_events;
 mod application_messages;
 mod author;
 mod build;
+mod bus_callbacks;
+pub(crate) mod bus_host;
 mod component_driver;
 mod controlled;
 mod controlled_driver;
@@ -397,6 +399,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         [
             "invoke-command",
             "invoke-event",
+            "invoke-tail",
             "invoke-tool",
             "invoke-with-session",
             "start"
@@ -405,7 +408,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     );
     assert_eq!(
         names(&contract.exports, false),
-        ["invoke-prepare", "release"],
+        ["invoke-listener", "invoke-prepare", "release"],
         "preparation and release stay synchronous"
     );
     assert_typed_event_export(&contract);
@@ -415,6 +418,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         [
             "[method]command-context.new-session",
             "[method]command-context.wait-for-idle",
+            "callback-emit",
+            "event-emit",
         ]
     );
     let polling = contract

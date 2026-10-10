@@ -73,6 +73,8 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Event-channel observations.
+    pub bus: super::bus_host::Bank,
     /// Lines in time order.
     pub transcript: Vec<String>,
     /// Identities the extension dropped, in drop order.

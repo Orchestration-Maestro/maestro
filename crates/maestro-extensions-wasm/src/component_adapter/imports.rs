@@ -8,6 +8,34 @@ use crate::types::{ExtensionFuture, ExtensionResult};
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Explicit remover resource.
+    type Subscription: 'static;
+    /// Callback-scoped emission resource.
+    type Emitter: 'static;
+    /// Registers a bus listener or returns the host rejection.
+    fn event_on(
+        &self,
+        channel: &str,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription>;
+    /// Explicitly removes a host subscription.
+    fn unsubscribe(&self, subscription: &Self::Subscription) -> ExtensionResult<()>;
+    /// Emits ordinary data asynchronously.
+    fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()>;
+    /// Emits from a borrowed callback capability.
+    fn callback_emit(
+        &self,
+        emitter: &Self::Emitter,
+        channel: &str,
+        data: &str,
+    ) -> ExtensionResult<()>;
+    /// Announces a tail without invoking it.
+    fn start_event_tail(
+        &self,
+        emitter: &Self::Emitter,
+        tail: &Self::Callback,
+    ) -> ExtensionResult<()>;
+
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
     /// Host-owned progress resource.

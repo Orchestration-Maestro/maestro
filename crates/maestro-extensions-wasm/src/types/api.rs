@@ -39,6 +39,10 @@ port! {
         /// Forwards a custom entry to the host's session.
         fn append_entry(custom_type: &str, data: Option<Value>) -> ();
     }
+    infallible {
+        /// Returns the supplied host bus.
+        fn events() -> crate::EventBus;
+    }
 }
 
 /// The handle an extension factory registers through.
