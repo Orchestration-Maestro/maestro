@@ -1,0 +1,424 @@
+[
+  {
+    "status": 400,
+    "raw": "plain failure",
+    "statusText": "Bad Request",
+    "now": 1700000000000,
+    "expected": {
+      "message": "plain failure"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "",
+    "statusText": "Bad Request",
+    "now": 1700000000000,
+    "expected": {
+      "message": "Bad Request"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "Request failed"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{bad",
+    "statusText": "Bad Request",
+    "now": 1700000000000,
+    "expected": {
+      "message": "{bad"
+    }
+  },
+  {
+    "status": 429,
+    "raw": "{}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "{}"
+    }
+  },
+  {
+    "status": 429,
+    "raw": "{\"error\":{}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "You have hit your ChatGPT usage limit.",
+      "friendlyMessage": "You have hit your ChatGPT usage limit."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"message\":\"specific\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "specific"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan)."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1699999970,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1700000000,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1700000029.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1700000030,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1700000089.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1700000090,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~2 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan)."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"resets_at\":1699999970,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"resets_at\":1700000000,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"resets_at\":1700000029.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"resets_at\":1700000030,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"resets_at\":1700000089.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"USAGE_NOT_INCLUDED\",\"plan_type\":\"PLUS\",\"resets_at\":1700000090,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~2 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan)."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"resets_at\":1699999970,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"resets_at\":1700000000,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"resets_at\":1700000029.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"resets_at\":1700000030,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"resets_at\":1700000089.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"rate_limit_exceeded\",\"plan_type\":\"PLUS\",\"resets_at\":1700000090,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~2 min."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"resets_at\":1699999970,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"resets_at\":1700000000,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"resets_at\":1700000029.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"resets_at\":1700000030,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"resets_at\":1700000089.999,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"plan_type\":\"PLUS\",\"resets_at\":1700000090,\"message\":\"server detail\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "server detail"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"type\":\"usage_limit_reached\",\"resets_at\":0}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "You have hit your ChatGPT usage limit.",
+      "friendlyMessage": "You have hit your ChatGPT usage limit."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "null",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "null"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "[]",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "[]"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":null}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "{\"error\":null}"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"message\":\"\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "{\"error\":{\"message\":\"\"}}"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"other\",\"type\":\"usage_limit_reached\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "{\"error\":{\"code\":\"other\",\"type\":\"usage_limit_reached\"}}"
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"\",\"type\":\"usage_limit_reached\",\"plan_type\":\"\",\"resets_at\":0}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "You have hit your ChatGPT usage limit.",
+      "friendlyMessage": "You have hit your ChatGPT usage limit."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "You have hit your ChatGPT usage limit.",
+      "friendlyMessage": "You have hit your ChatGPT usage limit."
+    }
+  },
+  {
+    "status": 400,
+    "raw": "{\"error\":{\"code\":\"usage_limit_reached\",\"message\":\"\",\"plan_type\":\"TEAM\"}}",
+    "statusText": "",
+    "now": 1700000000000,
+    "expected": {
+      "message": "You have hit your ChatGPT usage limit (team plan).",
+      "friendlyMessage": "You have hit your ChatGPT usage limit (team plan)."
+    }
+  }
+]

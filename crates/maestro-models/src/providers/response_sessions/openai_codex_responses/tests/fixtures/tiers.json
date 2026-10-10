@@ -1,0 +1,233 @@
+[
+  {
+    "expected": null
+  },
+  {
+    "response": null,
+    "expected": null
+  },
+  {
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "response": "default",
+    "expected": "default"
+  },
+  {
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "response": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": null,
+    "expected": null
+  },
+  {
+    "request": null,
+    "response": null,
+    "expected": null
+  },
+  {
+    "request": null,
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": null,
+    "response": "default",
+    "expected": "default"
+  },
+  {
+    "request": null,
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": null,
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": null,
+    "response": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": "auto",
+    "response": null,
+    "expected": "auto"
+  },
+  {
+    "request": "auto",
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": "auto",
+    "response": "default",
+    "expected": "default"
+  },
+  {
+    "request": "auto",
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": "auto",
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": "auto",
+    "response": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": "default",
+    "expected": "default"
+  },
+  {
+    "request": "default",
+    "response": null,
+    "expected": "default"
+  },
+  {
+    "request": "default",
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": "default",
+    "response": "default",
+    "expected": "default"
+  },
+  {
+    "request": "default",
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": "default",
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": "default",
+    "response": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": "flex",
+    "response": null,
+    "expected": "flex"
+  },
+  {
+    "request": "flex",
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": "flex",
+    "response": "default",
+    "expected": "flex"
+  },
+  {
+    "request": "flex",
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": "flex",
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": "flex",
+    "response": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": "scale",
+    "response": null,
+    "expected": "scale"
+  },
+  {
+    "request": "scale",
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": "scale",
+    "response": "default",
+    "expected": "default"
+  },
+  {
+    "request": "scale",
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": "scale",
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": "scale",
+    "response": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": "priority",
+    "expected": "priority"
+  },
+  {
+    "request": "priority",
+    "response": null,
+    "expected": "priority"
+  },
+  {
+    "request": "priority",
+    "response": "auto",
+    "expected": "auto"
+  },
+  {
+    "request": "priority",
+    "response": "default",
+    "expected": "priority"
+  },
+  {
+    "request": "priority",
+    "response": "flex",
+    "expected": "flex"
+  },
+  {
+    "request": "priority",
+    "response": "scale",
+    "expected": "scale"
+  },
+  {
+    "request": "priority",
+    "response": "priority",
+    "expected": "priority"
+  }
+]

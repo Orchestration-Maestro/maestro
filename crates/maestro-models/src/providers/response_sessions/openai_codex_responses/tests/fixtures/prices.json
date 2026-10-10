@@ -1,0 +1,326 @@
+[
+  {
+    "id": "gpt-5.1-codex",
+    "tier": null,
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.1-codex",
+    "tier": "auto",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.1-codex",
+    "tier": "default",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.1-codex",
+    "tier": "flex",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 0.5,
+      "output": 1,
+      "cacheRead": 1.5,
+      "cacheWrite": 2,
+      "total": 5
+    }
+  },
+  {
+    "id": "gpt-5.1-codex",
+    "tier": "scale",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.1-codex",
+    "tier": "priority",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 2,
+      "output": 4,
+      "cacheRead": 6,
+      "cacheWrite": 8,
+      "total": 20
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "tier": null,
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "tier": "auto",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "tier": "default",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "tier": "flex",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 0.5,
+      "output": 1,
+      "cacheRead": 1.5,
+      "cacheWrite": 2,
+      "total": 5
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "tier": "scale",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "tier": "priority",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 2.5,
+      "output": 5,
+      "cacheRead": 7.5,
+      "cacheWrite": 10,
+      "total": 25
+    }
+  },
+  {
+    "id": "gpt-5.5-other",
+    "tier": null,
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5-other",
+    "tier": "auto",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5-other",
+    "tier": "default",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5-other",
+    "tier": "flex",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 0.5,
+      "output": 1,
+      "cacheRead": 1.5,
+      "cacheWrite": 2,
+      "total": 5
+    }
+  },
+  {
+    "id": "gpt-5.5-other",
+    "tier": "scale",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    }
+  },
+  {
+    "id": "gpt-5.5-other",
+    "tier": "priority",
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 3,
+      "cacheWrite": 4,
+      "total": 99
+    },
+    "expected": {
+      "input": 2,
+      "output": 4,
+      "cacheRead": 6,
+      "cacheWrite": 8,
+      "total": 20
+    }
+  }
+]

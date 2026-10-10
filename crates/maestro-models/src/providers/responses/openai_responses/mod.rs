@@ -77,7 +77,7 @@ pub enum OpenAIResponsesServiceTier {
 }
 impl OpenAIResponsesServiceTier {
     /// Wire spelling of a named tier.
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Auto => "auto",
             Self::Default => "default",
@@ -445,7 +445,7 @@ async fn run(
 }
 
 /// Scale every cost category using the selected tier, retaining source expression order.
-fn price(usage: &mut crate::Usage, tier: Option<&str>, model: &str) {
+pub(crate) fn price(usage: &mut crate::Usage, tier: Option<&str>, model: &str) {
     let multiplier = match tier {
         Some("flex") => 0.5,
         Some("priority") if model == "gpt-5.5" => 2.5,

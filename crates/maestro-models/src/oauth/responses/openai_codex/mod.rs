@@ -199,7 +199,7 @@ pub fn refresh_openai_codex_token(
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 /// Response-account provider with the default unchanged model projection.
 pub(crate) struct OpenAICodexOAuthProvider;

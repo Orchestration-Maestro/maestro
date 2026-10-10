@@ -355,3 +355,94 @@ fn responses_send_false_payload_as_json() -> chat::TestResult {
 
 #[path = "support/response_output.rs"]
 mod response_output;
+
+#[test]
+fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
+    use futures_util::FutureExt as _;
+    use maestro_models::{AssistantMessageEvent, OpenAIResponsesOptions, StreamOptions};
+    use std::sync::Arc;
+
+    chat::block_on(false, async {
+        let (fetch, reached, release) = carriage_transport();
+        let model =
+            chat::model(&serde_json::json!({"api":"openai-responses","provider":"openai"}))?;
+        let context = chat::context(&serde_json::json!({"messages":[]}))?;
+        let stream =
+            maestro_models::providers::responses::openai_responses::stream_openai_responses(
+                model,
+                context,
+                Some(OpenAIResponsesOptions {
+                    common: StreamOptions {
+                        api_key: Some("fixture-key".into()),
+                        fetch: Some(fetch),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }),
+            );
+        reached.await?;
+        let mut partial = None;
+        while let Some(Some(event)) = stream.next().now_or_never() {
+            if let AssistantMessageEvent::TextDelta {
+                partial: message,
+                delta,
+                ..
+            } = event
+            {
+                assert_eq!(delta, "carriage");
+                partial = Some(message);
+            }
+        }
+        let partial = partial.ok_or("CRCR must emit text before the second body poll")?;
+        let snapshot = partial.read().map_err(|e| e.to_string())?.clone();
+        assert_eq!(
+            serde_json::to_value(snapshot)?["content"][0]["text"],
+            "carriage"
+        );
+        release.send(()).map_err(|()| "body stopped waiting")?;
+        let (events, result) = endpoint::collect(&stream).await?;
+        assert_eq!(
+            events.last(),
+            Some(&serde_json::json!({"type":"done","reason":"stop"}))
+        );
+        assert_eq!(result["content"][0]["text"], "carriage");
+        assert!(Arc::ptr_eq(&partial, &stream.result().await));
+        Ok(())
+    })
+}
+
+/// A finite body whose second poll is acknowledged before terminal bytes are released.
+fn carriage_transport() -> (
+    maestro_models::Fetch,
+    tokio::sync::oneshot::Receiver<()>,
+    tokio::sync::oneshot::Sender<()>,
+) {
+    use futures_util::StreamExt as _;
+    use maestro_models::HttpBody;
+    use std::sync::{Arc, Mutex, PoisonError};
+
+    let (reached_tx, reached) = tokio::sync::oneshot::channel();
+    let (release, release_rx) = tokio::sync::oneshot::channel::<()>();
+    let head = b"data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"message\",\"id\":\"m\",\"content\":[]}}\r\rdata: {\"type\":\"response.content_part.added\",\"part\":{\"type\":\"output_text\",\"text\":\"\"}}\r\rdata: {\"type\":\"response.output_text.delta\",\"delta\":\"carriage\"}\r\r".to_vec();
+    let body: HttpBody = Box::pin(futures_util::stream::once(async { Ok(head) }).chain(
+        futures_util::stream::once(async move {
+            reached_tx.send(()).ok();
+            release_rx.await.ok();
+            Ok(endpoint::COMPLETE.as_bytes().to_vec())
+        }),
+    ));
+    let body = Arc::new(Mutex::new(Some(body)));
+    let fetch: maestro_models::Fetch = Arc::new(move |_| {
+        let body = body.lock().unwrap_or_else(PoisonError::into_inner).take();
+        Box::pin(async move {
+            let body = body.ok_or(maestro_models::FetchError::Aborted)?;
+            Ok(maestro_models::HttpResponse {
+                status: 200,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::default(),
+                body,
+            })
+        })
+    });
+    (fetch, reached, release)
+}

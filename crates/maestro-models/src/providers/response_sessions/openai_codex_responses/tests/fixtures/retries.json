@@ -1,0 +1,242 @@
+[
+  {
+    "status": 200,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 200,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 401,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 401,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 403,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 403,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 408,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 408,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 409,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 409,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 422,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 422,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 429,
+    "text": "",
+    "expected": true
+  },
+  {
+    "status": 429,
+    "text": "plain failure",
+    "expected": true
+  },
+  {
+    "status": 499,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 499,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 500,
+    "text": "",
+    "expected": true
+  },
+  {
+    "status": 500,
+    "text": "plain failure",
+    "expected": true
+  },
+  {
+    "status": 501,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 501,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 502,
+    "text": "",
+    "expected": true
+  },
+  {
+    "status": 502,
+    "text": "plain failure",
+    "expected": true
+  },
+  {
+    "status": 503,
+    "text": "",
+    "expected": true
+  },
+  {
+    "status": 503,
+    "text": "plain failure",
+    "expected": true
+  },
+  {
+    "status": 504,
+    "text": "",
+    "expected": true
+  },
+  {
+    "status": 504,
+    "text": "plain failure",
+    "expected": true
+  },
+  {
+    "status": 505,
+    "text": "",
+    "expected": false
+  },
+  {
+    "status": 505,
+    "text": "plain failure",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "RateLimit",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "rate limit",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "rate-limit",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "rate_limit",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "rate..limit",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "rate\nlimit",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "OVERLOADED",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "service unavailable",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "service_unavailable",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "service\tunavailable",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "service..unavailable",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "upstream connect",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "upstream-connect",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "connection refused",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "connection_refused",
+    "expected": true
+  },
+  {
+    "status": 400,
+    "text": "connection..refused",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "rate\ud83c\udf1flimit",
+    "expected": false
+  },
+  {
+    "status": 400,
+    "text": "Usage limit reached",
+    "expected": false
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "base": null,
+    "expected": "https://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": "",
+    "expected": "https://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": " ",
+    "expected": "https://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": "\ufeff",
+    "expected": "https://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": "\u0085",
+    "expected": "\u0085/codex/responses"
+  },
+  {
+    "base": "\u200b",
+    "expected": "\u200b/codex/responses"
+  },
+  {
+    "base": "https://example.test",
+    "expected": "https://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test///",
+    "expected": "https://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/codex",
+    "expected": "https://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/codex/",
+    "expected": "https://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/codex/responses",
+    "expected": "https://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/codex/responses/",
+    "expected": "https://example.test/codex/responses"
+  },
+  {
+    "base": " https://example.test/ ",
+    "expected": " https://example.test/ /codex/responses"
+  },
+  {
+    "base": "https://example.test/x?q=1#tail",
+    "expected": "https://example.test/x?q=1#tail/codex/responses"
+  }
+]

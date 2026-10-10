@@ -1,0 +1,190 @@
+[
+  {
+    "events": [
+      {}
+    ],
+    "expected": [],
+    "error": null
+  },
+  {
+    "events": [
+      {
+        "type": 42
+      }
+    ],
+    "expected": [],
+    "error": null
+  },
+  {
+    "events": [
+      {
+        "type": ""
+      }
+    ],
+    "expected": [],
+    "error": null
+  },
+  {
+    "events": [
+      {
+        "type": "response.created",
+        "response": {
+          "id": "r"
+        }
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.created",
+        "response": {
+          "id": "r"
+        }
+      }
+    ],
+    "error": null
+  },
+  {
+    "events": [
+      {
+        "type": "unknown",
+        "untouched": [
+          2,
+          1,
+          2
+        ]
+      }
+    ],
+    "expected": [
+      {
+        "type": "unknown",
+        "untouched": [
+          2,
+          1,
+          2
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "events": [
+      {
+        "type": "error",
+        "message": "bad",
+        "code": "bad_code"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex error: bad",
+      "code": "bad_code"
+    }
+  },
+  {
+    "events": [
+      {
+        "type": "error",
+        "message": "",
+        "code": "bad_code"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex error: bad_code",
+      "code": "bad_code"
+    }
+  },
+  {
+    "events": [
+      {
+        "type": "error",
+        "code": "",
+        "message": ""
+      }
+    ],
+    "expected": null,
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex error: {\"type\":\"error\",\"code\":\"\",\"message\":\"\"}"
+    }
+  },
+  {
+    "events": [
+      {
+        "type": "response.failed",
+        "response": {
+          "error": {
+            "code": "oops",
+            "message": "bad failure"
+          }
+        }
+      }
+    ],
+    "expected": null,
+    "error": {
+      "name": "CodexApiError",
+      "message": "bad failure",
+      "code": "oops"
+    }
+  },
+  {
+    "events": [
+      {
+        "type": "response.failed",
+        "response": {
+          "error": {
+            "code": "oops"
+          }
+        }
+      }
+    ],
+    "expected": null,
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex response failed",
+      "code": "oops"
+    }
+  },
+  {
+    "events": [
+      {
+        "type": "response.failed"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex response failed"
+    }
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed"
+      }
+    ],
+    "error": null
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": null
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": null
+      }
+    ],
+    "error": null
+  }
+]

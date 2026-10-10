@@ -1,4 +1,4 @@
-//! The reader agrees with events recorded from the `OpenAI` client library's own reader.
+//! Recorded event results with immediate carriage-return dispatch.
 
 use serde::Deserialize;
 
@@ -75,4 +75,60 @@ fn every_recorded_body_gives_the_events_the_client_library_gave() {
             .collect();
         assert_eq!(events, recorded, "{}", case.name);
     }
+}
+
+#[test]
+fn maestro_http_dispatches_carriage_terminated_events() {
+    let endings = ["\n", "\r\n", "\r"];
+    for line in endings {
+        for blank in endings {
+            let mut reader = SseMessages::default();
+            let frame = format!("data: first{line}{blank}");
+            if line == "\r" && blank == "\n" {
+                assert!(reader.push(frame.as_bytes()).is_empty());
+                assert_eq!(
+                    reader.push(b"\n"),
+                    vec![ServerSentEvent {
+                        event: None,
+                        data: "first".to_owned(),
+                    }]
+                );
+                continue;
+            }
+            assert_eq!(
+                reader.push(frame.as_bytes()),
+                vec![ServerSentEvent {
+                    event: None,
+                    data: "first".to_owned(),
+                }],
+                "{frame:?}"
+            );
+            assert!(reader.push(b"").is_empty());
+        }
+    }
+    let mut reader = SseMessages::default();
+    assert_eq!(
+        reader.push(b"data: first\r\r"),
+        vec![ServerSentEvent {
+            event: None,
+            data: "first".to_owned(),
+        }]
+    );
+    assert!(reader.push(b"\n").is_empty());
+    assert_eq!(
+        reader.push(b"data: second\r\n\r"),
+        vec![ServerSentEvent {
+            event: None,
+            data: "second".to_owned(),
+        }]
+    );
+    assert!(reader.push(b"\n").is_empty());
+    assert_eq!(
+        reader.push(b"data: second\n\n"),
+        vec![ServerSentEvent {
+            event: None,
+            data: "second".to_owned(),
+        }]
+    );
+    assert!(reader.finish().is_empty());
 }

@@ -1,0 +1,237 @@
+[
+  {
+    "input": {
+      "init": {},
+      "additional": {
+        "X-Test": " new ",
+        "Authorization": "wrong2",
+        "chatgpt-account-id": "bad",
+        "OpenAI-Beta": "bad",
+        "ACCEPT": "other",
+        "CONTENT-TYPE": "other"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-test": "new"
+    }
+  },
+  {
+    "input": {
+      "init": {
+        "X-Test": "a",
+        "x-test": "b",
+        "session_id": "old",
+        "x-client-request-id": "old",
+        "Authorization": "wrong",
+        "User-Agent": "old",
+        "originator": "old"
+      },
+      "additional": {
+        "X-Test": " new ",
+        "Authorization": "wrong2",
+        "chatgpt-account-id": "bad",
+        "OpenAI-Beta": "bad",
+        "ACCEPT": "other",
+        "CONTENT-TYPE": "other"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "session_id": "old",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-client-request-id": "old",
+      "x-test": "new"
+    }
+  },
+  {
+    "input": {
+      "init": {},
+      "additional": {
+        "X-Test": " new ",
+        "Authorization": "wrong2",
+        "chatgpt-account-id": "bad",
+        "OpenAI-Beta": "bad",
+        "ACCEPT": "other",
+        "CONTENT-TYPE": "other"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "session": "",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-test": "new"
+    }
+  },
+  {
+    "input": {
+      "init": {
+        "X-Test": "a",
+        "x-test": "b",
+        "session_id": "old",
+        "x-client-request-id": "old",
+        "Authorization": "wrong",
+        "User-Agent": "old",
+        "originator": "old"
+      },
+      "additional": {
+        "X-Test": " new ",
+        "Authorization": "wrong2",
+        "chatgpt-account-id": "bad",
+        "OpenAI-Beta": "bad",
+        "ACCEPT": "other",
+        "CONTENT-TYPE": "other"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "session": "",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "session_id": "old",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-client-request-id": "old",
+      "x-test": "new"
+    }
+  },
+  {
+    "input": {
+      "init": {},
+      "additional": {
+        "X-Test": " new ",
+        "Authorization": "wrong2",
+        "chatgpt-account-id": "bad",
+        "OpenAI-Beta": "bad",
+        "ACCEPT": "other",
+        "CONTENT-TYPE": "other"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "session": "sess",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "session_id": "sess",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-client-request-id": "sess",
+      "x-test": "new"
+    }
+  },
+  {
+    "input": {
+      "init": {
+        "X-Test": "a",
+        "x-test": "b",
+        "session_id": "old",
+        "x-client-request-id": "old",
+        "Authorization": "wrong",
+        "User-Agent": "old",
+        "originator": "old"
+      },
+      "additional": {
+        "X-Test": " new ",
+        "Authorization": "wrong2",
+        "chatgpt-account-id": "bad",
+        "OpenAI-Beta": "bad",
+        "ACCEPT": "other",
+        "CONTENT-TYPE": "other"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "session": "sess",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "session_id": "sess",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-client-request-id": "sess",
+      "x-test": "new"
+    }
+  },
+  {
+    "input": {
+      "init": {
+        "X-Duplicate": "one",
+        "x-duplicate": "two"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-duplicate": "one, two"
+    }
+  },
+  {
+    "input": {
+      "init": {
+        "session_id": "preexisting",
+        "x-client-request-id": "preexisting"
+      },
+      "account": "acc_test",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
+    },
+    "expected": {
+      "accept": "text/event-stream",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "chatgpt-account-id": "acc_test",
+      "content-type": "application/json",
+      "openai-beta": "responses=experimental",
+      "originator": "maestro",
+      "session_id": "preexisting",
+      "user-agent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)",
+      "x-client-request-id": "preexisting"
+    }
+  }
+]

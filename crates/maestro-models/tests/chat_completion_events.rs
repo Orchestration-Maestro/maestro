@@ -1513,3 +1513,39 @@ fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn maestro_chat_emits_carriage_delimited_events() -> TestResult {
+    use futures_util::FutureExt as _;
+
+    block_on(false, async {
+        let first = format!("data: {}\r\r", chunk_json("carriage"));
+        let (attempt, Gate { reached, release }) =
+            gated(vec![first.into_bytes()], b"data: [DONE]\n\n".to_vec());
+        let (stream, _) = start(attempt, &Cancellation::new())?;
+        reached.await?;
+        let mut partial = None;
+        while let Some(Some(event)) = stream.next().now_or_never() {
+            if let AssistantMessageEvent::TextDelta {
+                partial: message,
+                delta,
+                ..
+            } = event
+            {
+                assert_eq!(delta, "carriage");
+                assert_only_text(
+                    &*message.read().map_err(|error| error.to_string())?,
+                    "carriage",
+                );
+                partial = Some(message);
+            }
+        }
+        let partial = partial.ok_or("CRCR must emit text before the second body poll")?;
+        release.send(()).map_err(|()| "body stopped waiting")?;
+        let (labels, message) = drain(&stream).await?;
+        assert_eq!(labels, ["text_end", "done"]);
+        assert_only_text(&message, "carriage");
+        assert!(Arc::ptr_eq(&partial, &stream.result().await));
+        Ok(())
+    })
+}

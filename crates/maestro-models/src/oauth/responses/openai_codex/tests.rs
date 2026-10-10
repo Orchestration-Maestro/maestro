@@ -145,11 +145,15 @@ struct AccountCase {
     /// Extracted account, if any.
     expected: Option<String>,
 }
+/// Encode the shared synthetic account namespace at run time.
+pub(crate) fn account_fixture_prefix() -> String {
+    use base64::Engine as _;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"https://api.openai.com/au"#)
+}
+
 /// Read only the committed, consumed fixture schema.
 fn corpus() -> Corpus {
-    use base64::Engine as _;
-    let prefix =
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"https://api.openai.com/au"#);
+    let prefix = account_fixture_prefix();
     let fixture = include_str!("../../../../tests/fixtures/response_accounts.json")
         .replace("<fake-account-prefix>", &prefix);
     let corpus: Corpus = serde_json::from_str(&fixture).unwrap();

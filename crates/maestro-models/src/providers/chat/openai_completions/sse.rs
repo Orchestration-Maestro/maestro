@@ -45,9 +45,7 @@ fn reduce(
 
 /// Read the response body as server-sent events, reducing each event until the body ends.
 ///
-/// The body is read as the `OpenAI` client library reads it (see [`SseMessages`]): lines end at
-/// `\r\n`, `\r` or `\n`, each line is decoded as text on its own, and an event is delivered
-/// when its blank line arrives.
+/// Body framing is provided by [`SseMessages`].
 ///
 /// A cancelled signal ends reading quietly; the caller reports the cancellation. A body that
 /// reports an abort while the signal is unset is a failure.

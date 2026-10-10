@@ -1,5 +1,6 @@
 //! Typed mod transport records.
 
+pub(super) use crate::providers::nullable::Nullable;
 use guardrails::GuardrailConfig;
 use messages::Message;
 use serde::{Deserialize, Serialize};
@@ -325,14 +326,4 @@ fn optional_literal<'de, D: Deserializer<'de>, T: serde::de::DeserializeOwned>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error> {
     literal(deserializer).map(Some)
-}
-
-/// The value domain of a nullable field, separate from its presence.
-#[derive(Deserialize, Serialize)]
-#[serde(untagged)]
-pub(super) enum Nullable<T> {
-    /// Explicit JSON null.
-    Null,
-    /// Typed field value.
-    Value(T),
 }

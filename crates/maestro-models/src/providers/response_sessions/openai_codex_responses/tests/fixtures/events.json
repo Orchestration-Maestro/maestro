@@ -1,0 +1,692 @@
+[
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": null,
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "completed",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "completed",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "incomplete",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "incomplete",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "failed",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "failed",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "cancelled",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "cancelled",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "queued",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "queued",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "in_progress",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "in_progress",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.done",
+        "response": {
+          "id": "r",
+          "status": "unknown",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": null,
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "completed",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "completed",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "incomplete",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "incomplete",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "failed",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "failed",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "cancelled",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "cancelled",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "queued",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "queued",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "in_progress",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "in_progress",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "unknown",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": null,
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "completed",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "completed",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "incomplete",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "incomplete",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "failed",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "failed",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "cancelled",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "cancelled",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "queued",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "queued",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "in_progress",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "status": "in_progress",
+          "extra": "retained"
+        }
+      }
+    ]
+  },
+  {
+    "events": [
+      {
+        "type": "response.incomplete",
+        "response": {
+          "id": "r",
+          "status": "unknown",
+          "extra": "retained"
+        }
+      },
+      {
+        "type": "error",
+        "message": "must not consume"
+      }
+    ],
+    "expected": [
+      {
+        "type": "response.completed",
+        "response": {
+          "id": "r",
+          "extra": "retained"
+        }
+      }
+    ]
+  }
+]

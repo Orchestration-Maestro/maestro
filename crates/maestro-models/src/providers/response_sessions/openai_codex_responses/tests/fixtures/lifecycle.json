@@ -1,0 +1,107 @@
+[
+  {
+    "scenario": "400",
+    "attempts": 1,
+    "hooks": 1,
+    "error": "bad input",
+    "reason": "stop"
+  },
+  {
+    "scenario": "429",
+    "attempts": 4,
+    "hooks": 4,
+    "error": "overloaded",
+    "reason": "stop"
+  },
+  {
+    "scenario": "network",
+    "attempts": 4,
+    "hooks": 0,
+    "error": "connection lost",
+    "reason": "stop"
+  },
+  {
+    "scenario": "hook",
+    "attempts": 4,
+    "hooks": 4,
+    "error": "hook failed",
+    "reason": "stop"
+  },
+  {
+    "scenario": "usage-network",
+    "attempts": 1,
+    "hooks": 0,
+    "error": "usage limit exceeded",
+    "reason": "stop"
+  },
+  {
+    "scenario": "abort-network",
+    "attempts": 1,
+    "hooks": 0,
+    "error": "Request was aborted",
+    "reason": "stop"
+  },
+  {
+    "scenario": "terminal",
+    "attempts": 1,
+    "hooks": 1,
+    "error": null,
+    "reason": "stop"
+  },
+  {
+    "scenario": "incomplete",
+    "attempts": 1,
+    "hooks": 1,
+    "error": null,
+    "reason": "length"
+  },
+  {
+    "scenario": "no-terminal",
+    "attempts": 1,
+    "hooks": 1,
+    "error": "Response stream ended before a terminal event",
+    "reason": "stop"
+  },
+  {
+    "scenario": "malformed",
+    "attempts": 1,
+    "hooks": 1,
+    "error": "Invalid Codex SSE JSON: key must be a string at line 1 column 2",
+    "reason": "stop"
+  },
+  {
+    "scenario": "upper-usage-network",
+    "attempts": 4,
+    "hooks": 0,
+    "error": "Usage limit exceeded",
+    "reason": "stop"
+  },
+  {
+    "scenario": "usage429",
+    "attempts": 4,
+    "hooks": 4,
+    "error": "You have hit your ChatGPT usage limit.",
+    "reason": "stop"
+  },
+  {
+    "scenario": "usage400",
+    "attempts": 1,
+    "hooks": 1,
+    "error": "You have hit your ChatGPT usage limit.",
+    "reason": "stop"
+  },
+  {
+    "scenario": "hook-usage",
+    "attempts": 1,
+    "hooks": 1,
+    "error": "usage limit from hook",
+    "reason": "stop"
+  },
+  {
+    "scenario": "body-read-fails",
+    "attempts": 4,
+    "hooks": 4,
+    "error": "body read failed",
+    "reason": "stop"
+  }
+]
