@@ -7,7 +7,10 @@ use super::super::websocket::{
 use super::super::{CodexError, headers::build_web_socket_headers};
 use crate::providers::nullable::Nullable;
 use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier;
-use crate::{AssistantMessageEventStream, Cancellation, DiagnosticCode, SharedAssistantMessage};
+use crate::{
+    AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
+    SharedAssistantMessage,
+};
 use futures_core::Stream;
 use futures_util::FutureExt;
 use indexmap::IndexMap;
@@ -205,6 +208,8 @@ pub(super) struct Run {
     pub(super) starts: usize,
     /// The filled message.
     pub(super) output: SharedAssistantMessage,
+    /// Partial output carried by the start event, when one was produced.
+    pub(super) start: Option<SharedAssistantMessage>,
     /// Producer events in order, by type name.
     pub(super) events: Vec<String>,
     /// Messages written to the socket, including a refused request write.
@@ -256,6 +261,7 @@ pub(super) async fn run_script(incoming: Vec<Incoming>, fault: Fault) -> Run {
     )
     .await;
     let mut names = Vec::new();
+    let mut start = None;
     while let Some(Some(event)) = events.next().now_or_never() {
         names.push(
             serde_json::to_value(&event).unwrap()["type"]
@@ -263,12 +269,16 @@ pub(super) async fn run_script(incoming: Vec<Incoming>, fault: Fault) -> Run {
                 .unwrap()
                 .to_owned(),
         );
+        if let AssistantMessageEvent::Start { partial } = event {
+            start = Some(partial);
+        }
     }
     let sent = sent.lock().unwrap().clone();
     Run {
         result,
         starts: starts.load(Ordering::SeqCst),
         output,
+        start,
         events: names,
         sent,
     }
@@ -509,6 +519,21 @@ fn numbers_as_written(value: &Value) -> Value {
     serde_json::from_str(&text).unwrap()
 }
 
+/// The start event shares the operation's output, so it shows the finished message.
+fn assert_start_handle(run: &Run, finished: &Value, label: &str) {
+    match &run.start {
+        Some(start) => {
+            assert!(
+                Arc::ptr_eq(start, &run.output),
+                "{label}: start handle is a copy"
+            );
+            let retained = serde_json::to_value(start.read().unwrap().clone()).unwrap();
+            assert_eq!(&retained, finished, "{label}");
+        }
+        None => assert!(!run.events.contains(&"start".to_owned()), "{label}"),
+    }
+}
+
 #[test]
 fn maestro_response_sessions_run_uncached_socket_lifecycle() {
     let rows: Vec<LifecycleCase> = super::fixture_rows(
@@ -555,6 +580,7 @@ fn maestro_response_sessions_run_uncached_socket_lifecycle() {
             assert_eq!(texts, row.sent, "{label}");
             let snapshot = run.output.read().unwrap().clone();
             let actual = serde_json::to_value(snapshot).unwrap();
+            assert_start_handle(&run, &actual, label);
             assert_eq!(
                 numbers_as_written(&actual),
                 numbers_as_written(&row.message),

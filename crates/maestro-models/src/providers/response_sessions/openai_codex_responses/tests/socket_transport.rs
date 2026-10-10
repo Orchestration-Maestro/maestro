@@ -4,7 +4,9 @@ use super::super::request::{PreparedRequest, prepare_request};
 use super::super::websocket::{WebSocketOutput, process_web_socket_stream, wire_body};
 use super::super::{CodexError, OpenAICodexResponsesOptions};
 use super::sockets::{Fault, Incoming, run_script};
-use crate::{AssistantMessageEventStream, Cancellation, Model, SharedAssistantMessage};
+use crate::{
+    AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Model, SharedAssistantMessage,
+};
 use futures_util::future::{Either, join, select};
 use futures_util::{FutureExt, SinkExt, StreamExt};
 use serde_json::{Value, json};
@@ -212,6 +214,7 @@ fn maestro_response_sessions_send_authenticated_native_handshake() {
         for absent in ["accept", "content-type"] {
             assert!(header_values(&head, absent).is_empty(), "{absent}");
         }
+        peer.finish();
     });
 }
 
@@ -334,13 +337,21 @@ fn maestro_response_sessions_retain_socket_receive_order() {
         outcome.result.unwrap();
         assert_eq!(text_of(&outcome.output), "ABC");
         let mut deltas = Vec::new();
+        let mut start = None;
         while let Some(Some(event)) = outcome.events.next().now_or_never() {
-            let event = serde_json::to_value(&event).unwrap();
-            if event["type"] == "text_delta" {
-                deltas.push(event["delta"].as_str().unwrap().to_owned());
+            match event {
+                AssistantMessageEvent::Start { partial } => start = Some(partial),
+                AssistantMessageEvent::TextDelta { delta, .. } => deltas.push(delta),
+                _ => {}
             }
         }
         assert_eq!(deltas, ["A", "B", "C"]);
+        let start = start.expect("start event");
+        assert!(
+            Arc::ptr_eq(&start, &outcome.output),
+            "start handle is a copy"
+        );
+        assert_eq!(text_of(&start), "ABC");
     });
 }
 
@@ -388,6 +399,16 @@ struct RawPeer {
     head: mpsc::Receiver<Vec<u8>>,
     /// Sent once the client closed the connection.
     released: mpsc::Receiver<()>,
+    /// The thread serving the connection.
+    worker: std::thread::JoinHandle<()>,
+}
+
+impl RawPeer {
+    /// Wait for the client's release acknowledgement, then join the serving thread.
+    fn finish(self) {
+        self.released.recv().unwrap();
+        self.worker.join().unwrap();
+    }
 }
 
 /// Accept the upgrade and write the response with every event in one write.
@@ -396,7 +417,7 @@ fn raw_peer(events: Vec<String>) -> (String, RawPeer) {
     let url = format!("http://{}", listener.local_addr().unwrap());
     let (head_tx, head) = mpsc::channel();
     let (released_tx, released) = mpsc::channel();
-    std::thread::spawn(move || {
+    let worker = std::thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
         let head = read_head(&mut stream);
         let key = header_values(&head, "sec-websocket-key")[0].to_vec();
@@ -414,7 +435,14 @@ fn raw_peer(events: Vec<String>) -> (String, RawPeer) {
         stream.read_to_end(&mut rest).ok();
         released_tx.send(()).unwrap();
     });
-    (url, RawPeer { head, released })
+    (
+        url,
+        RawPeer {
+            head,
+            released,
+            worker,
+        },
+    )
 }
 
 #[test]
@@ -426,7 +454,7 @@ fn maestro_response_sessions_receive_immediate_socket_response() {
         let outcome = operate(&ready, "req", &AtomicUsize::new(0)).await;
         outcome.result.unwrap();
         assert_eq!(text_of(&outcome.output), "now");
-        peer.released.recv().unwrap();
+        peer.finish();
     });
 }
 
@@ -599,27 +627,28 @@ fn maestro_response_sessions_release_socket_on_future_drop() {
 }
 
 /// Serve a TLS-less peer: report the first bytes the client sends, then hang up.
-fn first_bytes_peer() -> (String, mpsc::Receiver<Vec<u8>>) {
+fn first_bytes_peer() -> (String, mpsc::Receiver<Vec<u8>>, std::thread::JoinHandle<()>) {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = listener.local_addr().unwrap();
     let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
+    let worker = std::thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
         let mut head = [0_u8; 4];
         let read = stream.read(&mut head).unwrap();
         tx.send(head[..read].to_vec()).unwrap();
     });
-    (addr.to_string(), rx)
+    (addr.to_string(), rx, worker)
 }
 
 #[test]
 fn maestro_response_sessions_use_secure_socket_transport() {
     run_native(async {
-        let (addr, first) = first_bytes_peer();
+        let (addr, first, worker) = first_bytes_peer();
         let ready = setup(&format!("https://{addr}"), |_| {}).await;
         let outcome = operate(&ready, "req", &AtomicUsize::new(0)).await;
         assert!(matches!(outcome.result, Err(CodexError::Transport(_))));
         let head = first.recv().unwrap();
+        worker.join().unwrap();
         assert_eq!(
             head[0], 0x16,
             "a TLS handshake record, not plaintext: {head:?}"
@@ -807,8 +836,10 @@ fn maestro_response_sessions_ignore_common_socket_timeout() {
         let (listener, url) = listen().await;
         let ready = setup(&url, |options| options.common.timeout_ms = Some(1.0)).await;
         let (gate_tx, gate_rx) = oneshot::channel::<()>();
+        let (pending_tx, pending_rx) = oneshot::channel::<()>();
         let server = async {
             let (stream, _) = listener.accept().await.unwrap();
+            pending_tx.send(()).unwrap();
             gate_rx.await.unwrap();
             let mut socket = accept_async(stream).await.unwrap();
             socket.next().await.unwrap().unwrap();
@@ -817,13 +848,24 @@ fn maestro_response_sessions_ignore_common_socket_timeout() {
                 .await
                 .unwrap();
         };
-        let gate = async {
-            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-            gate_tx.send(()).unwrap();
-        };
         let starts = AtomicUsize::new(0);
-        let client = operate(&ready, "req", &starts);
-        let ((), (), outcome) = futures_util::future::join3(server, gate, client).await;
+        let mut client = Box::pin(operate(&ready, "req", &starts));
+        let driver = async {
+            match select(client.as_mut(), pending_rx).await {
+                Either::Right((pending, _)) => pending.unwrap(),
+                Either::Left(_) => panic!("operation finished before the upgrade was pending"),
+            }
+            let timeout = std::time::Duration::from_secs(60);
+            tokio::time::advance(timeout).await;
+            assert!(
+                client.as_mut().now_or_never().is_none(),
+                "common timeout ended the pending upgrade"
+            );
+            gate_tx.send(()).unwrap();
+            tokio::time::advance(timeout).await;
+            client.await
+        };
+        let ((), outcome) = join(server, driver).await;
         outcome.result.unwrap();
     });
 }
@@ -876,6 +918,7 @@ fn maestro_response_sessions_keep_encoded_hash_in_socket_path() {
         let head = peer.head.recv().unwrap();
         let first_line = head.split(|byte| *byte == b'\r').next().unwrap();
         assert_eq!(first_line, b"GET /a%23b/codex/responses HTTP/1.1");
+        peer.finish();
     });
 }
 
