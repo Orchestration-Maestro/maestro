@@ -87,12 +87,14 @@ macro_rules! kinds {
 kinds! {
     shared {
         Event(ExtensionHandler),
+        Listener(crate::EventListener),
         Command(CommandHandler),
         Prepare(crate::PrepareArguments),
         Tool(crate::ToolExecute),
     }
     once {
         WithSession(WithSession),
+        Tail(crate::ExtensionFuture<'static, ()>),
     }
 }
 

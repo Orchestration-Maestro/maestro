@@ -11,6 +11,19 @@ interface host {
         id: func() -> u32;
     }
 
+    /// Explicit subscription remover.
+    resource subscription { unsubscribe: func() -> result<_, string>; }
+    /// Emission capability lent to a synchronous invocation.
+    resource callback-emitter;
+    /// Registers a bus listener.
+    event-on: func(channel: string, handler: borrow<callback>) -> result<subscription, string>;
+    /// Emits ordinary data.
+    event-emit: async func(channel: string, data: string) -> result<_, string>;
+    /// Emits during a synchronous callback.
+    callback-emit: async func(emitter: borrow<callback-emitter>, channel: string, data: string) -> result<_, string>;
+    /// Announces an independently owned tail.
+    start-event-tail: func(emitter: borrow<callback-emitter>, tail: borrow<callback>) -> result<_, string>;
+
     /// Host-owned cancellation flag.
     resource abort-signal {
         aborted: func() -> bool;

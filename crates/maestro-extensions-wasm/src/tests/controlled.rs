@@ -179,6 +179,45 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type Subscription = super::bus_host::Subscription;
+    type Emitter = super::bus_host::Emitter;
+    fn event_on(
+        &self,
+        channel: &str,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        let subscription = self.observed.borrow_mut().bus.on(channel, handler.id)?;
+        self.observed
+            .borrow_mut()
+            .on(&format!("bus {}", handler.id), handler.id)?;
+        Ok(subscription)
+    }
+    fn unsubscribe(&self, subscription: &Self::Subscription) -> ExtensionResult<()> {
+        self.observed.borrow_mut().bus.unsubscribe(subscription)
+    }
+    fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
+        Box::pin(async move { self.callback_emit(&super::bus_host::Emitter, &channel, &data) })
+    }
+    fn callback_emit(
+        &self,
+        emitter: &Self::Emitter,
+        channel: &str,
+        data: &str,
+    ) -> ExtensionResult<()> {
+        let handlers = self.observed.borrow_mut().bus.emit(channel, data)?;
+        for handler in handlers {
+            Exports::new(self.clone()).invoke_listener(handler, data, emitter)?;
+        }
+        Ok(())
+    }
+    fn start_event_tail(
+        &self,
+        _emitter: &Self::Emitter,
+        tail: &Self::Callback,
+    ) -> ExtensionResult<()> {
+        self.observed.borrow_mut().bus.tail(tail.id)
+    }
+
     type Reader = Reader;
     type Node = Node;
     type Update = Update;

@@ -17,6 +17,36 @@ use crate::types::{ExtensionFuture, ExtensionResult};
 struct Generated;
 
 impl Imports for Generated {
+    type Subscription = host::Subscription;
+    type Emitter = host::CallbackEmitter;
+    fn event_on(
+        &self,
+        channel: &str,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<Self::Subscription> {
+        host::event_on(channel, handler)
+    }
+    fn unsubscribe(&self, subscription: &Self::Subscription) -> ExtensionResult<()> {
+        subscription.unsubscribe()
+    }
+    fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
+        Box::pin(host::event_emit(channel, data))
+    }
+    fn callback_emit(
+        &self,
+        emitter: &Self::Emitter,
+        channel: &str,
+        data: &str,
+    ) -> ExtensionResult<()> {
+        host::callback_emit(emitter, channel, data)
+    }
+    fn start_event_tail(
+        &self,
+        emitter: &Self::Emitter,
+        tail: &Self::Callback,
+    ) -> ExtensionResult<()> {
+        host::start_event_tail(emitter, tail)
+    }
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Signal = host::AbortSignal;
@@ -174,8 +204,22 @@ impl<E: Extension> Guest for Glue<E> {
         release(handler.id());
     }
 
-    fn invoke_prepare(handler: &host::Callback, args: String) -> ExtensionResult<String> {
-        Exports::<Generated>::invoke_prepare(handler.id(), &args)
+    fn invoke_prepare(
+        handler: &host::Callback,
+        args: String,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<String> {
+        Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter)
+    }
+    fn invoke_listener(
+        handler: &host::Callback,
+        data: String,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<()> {
+        Exports::new(Generated).invoke_listener(handler.id(), &data, emitter)
+    }
+    async fn invoke_tail(handler: &host::Callback) -> ExtensionResult<()> {
+        Exports::<Generated>::invoke_tail(handler.id()).await
     }
     async fn invoke_tool(
         handler: &host::Callback,

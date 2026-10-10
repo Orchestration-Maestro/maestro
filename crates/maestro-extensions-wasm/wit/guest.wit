@@ -2,7 +2,7 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{tool-update, callback, abort-signal, context, command-context, replaced-session-context};
+    use host.{callback-emitter, tool-update, callback, abort-signal, context, command-context, replaced-session-context};
 
     /// Host resources lent to one event callback; the signal accompanies a compaction.
     record capabilities { ctx: context, signal: option<abort-signal> }
@@ -12,7 +12,11 @@ interface guest {
     /// Owned resources received by tool execution.
     record tool-capabilities { ctx: context, signal: option<abort-signal>, update: option<tool-update> }
     /// Synchronously prepares arguments.
-    invoke-prepare: func(handler: borrow<callback>, args: string) -> result<string, string>;
+    invoke-prepare: func(handler: borrow<callback>, args: string, emitter: borrow<callback-emitter>) -> result<string, string>;
+    /// Runs a synchronous listener prefix.
+    invoke-listener: func(handler: borrow<callback>, data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    /// Awaits an independently retained listener tail.
+    invoke-tail: async func(handler: borrow<callback>) -> result<_, string>;
     /// Awaits execution of a tool.
     invoke-tool: async func(handler: borrow<callback>, invocation: tool-invocation, resources: tool-capabilities) -> result<string, string>;
 

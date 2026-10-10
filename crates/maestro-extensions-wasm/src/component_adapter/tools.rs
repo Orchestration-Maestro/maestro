@@ -15,10 +15,19 @@ pub(crate) struct ToolCapabilities<I: Imports> {
 }
 impl<I: Imports> Exports<I> {
     /// Transforms arguments synchronously using the registered preparation.
-    pub(crate) fn invoke_prepare(handler: u32, args: &str) -> ExtensionResult<String> {
+    pub(crate) fn invoke_prepare(
+        &self,
+        handler: u32,
+        args: &str,
+        emitter: &I::Emitter,
+    ) -> ExtensionResult<String> {
         let prepare = callbacks::find::<PrepareArguments>(handler)?;
         let args = serde_json::from_str(args).map_err(|error| error.to_string())?;
-        encode_value(&prepare(args)?)
+        let port = super::event_bus::Emitter {
+            imports: &self.imports,
+            handle: emitter,
+        };
+        encode_value(&prepare(args, crate::CallbackEmitter::new(&port))?)
     }
     /// Awaits the registered execution with owned resource facades.
     pub(crate) async fn invoke_tool(

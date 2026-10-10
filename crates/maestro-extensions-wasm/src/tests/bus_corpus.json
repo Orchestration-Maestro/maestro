@@ -1,0 +1,328 @@
+{
+  "inputs": [
+    {
+      "name": "channel \"\"",
+      "channel": "",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"change\"",
+      "channel": "change",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"Change\"",
+      "channel": "Change",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \" change \"",
+      "channel": " change ",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"﻿change\"",
+      "channel": "﻿change",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"change\"",
+      "channel": "change",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"changes:雪\"",
+      "channel": "changes:雪",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"__proto__\"",
+      "channel": "__proto__",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "channel \"error\"",
+      "channel": "error",
+      "input": {
+        "z": [
+          2,
+          1,
+          2
+        ],
+        "a": "雪"
+      },
+      "expected": [
+        {
+          "z": [
+            2,
+            1,
+            2
+          ],
+          "a": "雪"
+        }
+      ]
+    },
+    {
+      "name": "null",
+      "channel": "value",
+      "input": null,
+      "expected": [
+        null
+      ]
+    },
+    {
+      "name": "false",
+      "channel": "value",
+      "input": false,
+      "expected": [
+        false
+      ]
+    },
+    {
+      "name": "true",
+      "channel": "value",
+      "input": true,
+      "expected": [
+        true
+      ]
+    },
+    {
+      "name": "zero",
+      "channel": "value",
+      "input": 0,
+      "expected": [
+        0
+      ]
+    },
+    {
+      "name": "empty text",
+      "channel": "value",
+      "input": "",
+      "expected": [
+        ""
+      ]
+    },
+    {
+      "name": "empty list",
+      "channel": "value",
+      "input": [],
+      "expected": [
+        []
+      ]
+    },
+    {
+      "name": "empty object",
+      "channel": "value",
+      "input": {},
+      "expected": [
+        {}
+      ]
+    },
+    {
+      "name": "array repeats",
+      "channel": "value",
+      "input": [
+        3,
+        1,
+        3
+      ],
+      "expected": [
+        [
+          3,
+          1,
+          3
+        ]
+      ]
+    },
+    {
+      "name": "nested",
+      "channel": "value",
+      "input": {
+        "z": {
+          "a": [
+            null,
+            false,
+            "雪"
+          ]
+        },
+        "a": 1
+      },
+      "expected": [
+        {
+          "z": {
+            "a": [
+              null,
+              false,
+              "雪"
+            ]
+          },
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "decimal",
+      "channel": "value",
+      "input": 0.10000000000000002,
+      "expected": [
+        0.10000000000000002
+      ]
+    },
+    {
+      "name": "maximum",
+      "channel": "value",
+      "input": 1.7976931348623157e+308,
+      "expected": [
+        1.7976931348623157e+308
+      ]
+    },
+    {
+      "name": "subnormal",
+      "channel": "value",
+      "input": 5e-324,
+      "expected": [
+        5e-324
+      ]
+    }
+  ],
+  "negativeZero": {
+    "input": "-0",
+    "expected": true
+  }
+}

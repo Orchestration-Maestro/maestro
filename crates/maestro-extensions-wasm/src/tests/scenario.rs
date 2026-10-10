@@ -108,6 +108,10 @@ pub trait Driver {
     async fn tool(&mut self, run: ToolRun<'_>) -> Result<String, String>;
     /// Registered tool metadata.
     fn tools(&self) -> Vec<String>;
+    /// Sets a controlled host emission rejection.
+    fn reject_bus_emission(&mut self, error: Option<String>);
+    /// Event-channel payloads observed at the host boundary.
+    fn bus_emissions(&self) -> Vec<(String, serde_json::Value)>;
     /// Partial outputs received by this host.
     fn updates(&self) -> Vec<String>;
     /// Runs the command registered as `name` against a command context in `/work`.

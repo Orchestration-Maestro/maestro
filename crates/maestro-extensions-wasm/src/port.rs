@@ -7,7 +7,8 @@
 
 /// Declares a port trait and the facade methods that forward to it from one list.
 ///
-/// Each listed method returns `ExtensionResult<T>`; the facade reaches its port through the
+/// Ordinary methods return `ExtensionResult<T>`; the optional infallible block returns directly.
+/// The facade reaches its port through the
 /// field `$access`.
 macro_rules! port {
     (
@@ -18,9 +19,13 @@ macro_rules! port {
                 fn $method:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;
             )*
         }
+        $(infallible {
+            $( $(#[$infallible_meta:meta])* fn $infallible:ident() -> $value:ty; )*
+        })?
     ) => {
         $(#[$port_meta])*
         pub trait $port {
+            $($( $(#[$infallible_meta])* fn $infallible(&self) -> $value; )*)?
             $(
                 $(#[$meta])*
                 ///
@@ -31,6 +36,10 @@ macro_rules! port {
         }
 
         impl $facade {
+            $($( $(#[$infallible_meta])*
+                #[must_use]
+                pub fn $infallible(&self) -> $value { self.$access.$infallible() }
+            )*)?
             $(
                 $(#[$meta])*
                 ///
