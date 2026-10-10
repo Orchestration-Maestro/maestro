@@ -1,0 +1,934 @@
+[
+  {
+    "name": "object",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "id-missing",
+    "raw": "{\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `id` at line 1 column 258"
+    }
+  },
+  {
+    "name": "id-null",
+    "raw": "{\"id\":null,\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a string at line 1 column 10"
+    }
+  },
+  {
+    "name": "id-wrong",
+    "raw": "{\"id\":{\"wrong\":true},\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a string at line 1 column 6"
+    }
+  },
+  {
+    "name": "provider-missing",
+    "raw": "{\"id\":\"descriptor\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `provider` at line 1 column 250"
+    }
+  },
+  {
+    "name": "provider-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":null,\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a string at line 1 column 34"
+    }
+  },
+  {
+    "name": "provider-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":{\"wrong\":true},\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a string at line 1 column 30"
+    }
+  },
+  {
+    "name": "name-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `name` at line 1 column 256"
+    }
+  },
+  {
+    "name": "name-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":null,\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a string at line 1 column 56"
+    }
+  },
+  {
+    "name": "name-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":{\"wrong\":true},\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a string at line 1 column 52"
+    }
+  },
+  {
+    "name": "api-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `api` at line 1 column 249"
+    }
+  },
+  {
+    "name": "api-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":null,\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a string at line 1 column 75"
+    }
+  },
+  {
+    "name": "api-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":{\"wrong\":true},\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a string at line 1 column 71"
+    }
+  },
+  {
+    "name": "baseUrl-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `baseUrl` at line 1 column 240"
+    }
+  },
+  {
+    "name": "baseUrl-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":null,\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a string at line 1 column 106"
+    }
+  },
+  {
+    "name": "baseUrl-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":{\"wrong\":true},\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a string at line 1 column 102"
+    }
+  },
+  {
+    "name": "reasoning-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `reasoning` at line 1 column 258"
+    }
+  },
+  {
+    "name": "reasoning-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":null,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a boolean at line 1 column 144"
+    }
+  },
+  {
+    "name": "reasoning-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":{\"wrong\":true},\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a boolean at line 1 column 140"
+    }
+  },
+  {
+    "name": "input-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `input` at line 1 column 243"
+    }
+  },
+  {
+    "name": "input-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":null,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected a sequence at line 1 column 158"
+    }
+  },
+  {
+    "name": "input-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":{\"wrong\":true},\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected a sequence at line 1 column 154"
+    }
+  },
+  {
+    "name": "cost-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `cost` at line 1 column 217"
+    }
+  },
+  {
+    "name": "cost-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":null,\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected struct ModelCost at line 1 column 190"
+    }
+  },
+  {
+    "name": "cost-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"wrong\":true},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `input` at line 1 column 200"
+    }
+  },
+  {
+    "name": "contextWindow-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `contextWindow` at line 1 column 255"
+    }
+  },
+  {
+    "name": "contextWindow-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":null,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected f64 at line 1 column 258"
+    }
+  },
+  {
+    "name": "contextWindow-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":{\"wrong\":true},\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected f64 at line 1 column 254"
+    }
+  },
+  {
+    "name": "maxTokens-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `maxTokens` at line 1 column 259"
+    }
+  },
+  {
+    "name": "maxTokens-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":null}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected f64 at line 1 column 275"
+    }
+  },
+  {
+    "name": "maxTokens-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":{\"wrong\":true}}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: map, expected f64 at line 1 column 271"
+    }
+  },
+  {
+    "name": "thinkingLevelMap-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":null}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "thinkingLevelMap-{}",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":{}}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "thinkingLevelMap": {},
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "thinkingLevelMap-[]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":[]}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: sequence, expected a map at line 1 column 295"
+    }
+  },
+  {
+    "name": "thinkingLevelMap-false",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":false}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: boolean `false`, expected a map at line 1 column 300"
+    }
+  },
+  {
+    "name": "headers-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"headers\":null}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "headers-{}",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"headers\":{}}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0,
+        "headers": {}
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "headers-[]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"headers\":[]}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: sequence, expected a map at line 1 column 286"
+    }
+  },
+  {
+    "name": "headers-false",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"headers\":false}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: boolean `false`, expected a map at line 1 column 291"
+    }
+  },
+  {
+    "name": "compat-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"compat\":null}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "compat-{}",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"compat\":{}}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0,
+        "compat": {}
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "compat-[]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"compat\":[]}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: sequence, expected a map at line 1 column 285"
+    }
+  },
+  {
+    "name": "compat-false",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"compat\":false}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: boolean `false`, expected a map at line 1 column 290"
+    }
+  },
+  {
+    "name": "cost-input-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `input` at line 1 column 227"
+    }
+  },
+  {
+    "name": "cost-input-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":null,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected f64 at line 1 column 199"
+    }
+  },
+  {
+    "name": "cost-input-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":\"1.5\",\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: string \"1.5\", expected f64 at line 1 column 200"
+    }
+  },
+  {
+    "name": "cost-output-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `output` at line 1 column 226"
+    }
+  },
+  {
+    "name": "cost-output-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":null,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected f64 at line 1 column 210"
+    }
+  },
+  {
+    "name": "cost-output-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":\"1.5\",\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: string \"1.5\", expected f64 at line 1 column 211"
+    }
+  },
+  {
+    "name": "cost-cacheRead-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `cacheRead` at line 1 column 223"
+    }
+  },
+  {
+    "name": "cost-cacheRead-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":null,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected f64 at line 1 column 224"
+    }
+  },
+  {
+    "name": "cost-cacheRead-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":\"1.5\",\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: string \"1.5\", expected f64 at line 1 column 225"
+    }
+  },
+  {
+    "name": "cost-cacheWrite-missing",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "missing field `cacheWrite` at line 1 column 222"
+    }
+  },
+  {
+    "name": "cost-cacheWrite-null",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":null},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: null, expected f64 at line 1 column 239"
+    }
+  },
+  {
+    "name": "cost-cacheWrite-wrong",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":\"1.5\"},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: string \"1.5\", expected f64 at line 1 column 240"
+    }
+  },
+  {
+    "name": "input-[\"text\",\"image\",\"text\"]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"text\",\"image\",\"text\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "text",
+          "image",
+          "text"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "input-[{\"text\":null}]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[{\"text\":null}],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "input-[\"audio\"]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"audio\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "unknown variant `audio`, expected `text` or `image` at line 1 column 162"
+    }
+  },
+  {
+    "name": "input-[]",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "thinking-{\"off\":null,\"xhigh\":\"max\"}",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":{\"off\":null,\"xhigh\":\"max\"}}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "thinkingLevelMap": {
+          "off": null,
+          "xhigh": "max"
+        },
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "thinking-{\"off\":4}",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":{\"off\":4}}",
+    "native": {
+      "kind": "error",
+      "error": "invalid type: integer `4`, expected a string at line 1 column 303"
+    }
+  },
+  {
+    "name": "thinking-{\"future\":\"low\"}",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"thinkingLevelMap\":{\"future\":\"low\"}}",
+    "native": {
+      "kind": "error",
+      "error": "unknown variant `future`, expected one of `off`, `minimal`, `low`, `medium`, `high`, `xhigh` at line 1 column 304"
+    }
+  },
+  {
+    "name": "cost-sequence",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":[1,2,3,4],\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1.0,
+          "output": 2.0,
+          "cacheRead": 3.0,
+          "cacheWrite": 4.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "model-sequence",
+    "raw": "[\"descriptor\",\"descriptor\",\"openai-completions\",\"provider 雪\",\"https://example.invalid\",false,null,[\"image\",\"text\",\"image\"],{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},8192,1024,null,null]",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "unknown-deep",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"unread\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "duplicate-id",
+    "raw": "{\"id\":\"earlier\",\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "error",
+      "error": "duplicate field `id` at line 1 column 20"
+    }
+  },
+  {
+    "name": "escaped-id",
+    "raw": "{\"id\":\"descr\\u0069ptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "signed-zero",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":-0.0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": -0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0
+      },
+      "input_cost_negative_zero": true
+    }
+  },
+  {
+    "name": "compat-open",
+    "raw": "{\"id\":\"descriptor\",\"provider\":\"provider 雪\",\"name\":\"descriptor\",\"api\":\"openai-completions\",\"baseUrl\":\"https://example.invalid\",\"reasoning\":false,\"input\":[\"image\",\"text\",\"image\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024,\"compat\":{\"sendSessionIdHeader\":false,\"unknown\":{\"z\":1,\"a\":[3,2,3]},\"thinkingFormat\":{\"open\":true}}}",
+    "native": {
+      "kind": "value",
+      "value": {
+        "id": "descriptor",
+        "name": "descriptor",
+        "api": "openai-completions",
+        "provider": "provider 雪",
+        "baseUrl": "https://example.invalid",
+        "reasoning": false,
+        "input": [
+          "image",
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.0,
+          "output": 0.0,
+          "cacheRead": 0.0,
+          "cacheWrite": 0.0
+        },
+        "contextWindow": 8192.0,
+        "maxTokens": 1024.0,
+        "compat": {
+          "sendSessionIdHeader": false,
+          "unknown": {
+            "z": 1,
+            "a": [
+              3,
+              2,
+              3
+            ]
+          },
+          "thinkingFormat": {
+            "open": true
+          }
+        }
+      },
+      "input_cost_negative_zero": false
+    }
+  },
+  {
+    "name": "syntax",
+    "raw": "{",
+    "native": {
+      "kind": "error",
+      "error": "EOF while parsing an object at line 1 column 1"
+    }
+  }
+]

@@ -179,4 +179,83 @@ pub trait Imports: Clone + 'static {
     fn node_label(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
     /// The label timestamp retained by this node.
     fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
+
+    /// Independently owned host capability.
+    type Ui: 'static;
+    /// Independently owned host capability.
+    type Registry: 'static;
+    /// Forwards the corresponding host capability call.
+    fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String>;
+    /// Forwards the corresponding host capability call.
+    fn registry_get_available(&self, resource: &Self::Registry) -> ExtensionResult<String>;
+    /// Forwards the corresponding host capability call.
+    fn registry_find(
+        &self,
+        resource: &Self::Registry,
+        provider: &str,
+        model_id: &str,
+    ) -> ExtensionResult<Option<String>>;
+    /// Forwards the corresponding host capability call.
+    fn registry_get_api_key_and_headers<'a>(
+        &'a self,
+        resource: &'a Self::Registry,
+        model: String,
+    ) -> ExtensionFuture<'a, crate::ResolvedRequestAuth>;
+    /// Forwards the corresponding host capability call.
+    fn ui(&self, context: &Self::Context) -> ExtensionResult<Self::Ui>;
+    /// Forwards the corresponding host capability call.
+    fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool>;
+    /// Forwards the corresponding host capability call.
+    fn model_registry(&self, context: &Self::Context) -> ExtensionResult<Self::Registry>;
+    /// Forwards the corresponding host capability call.
+    fn model(&self, context: &Self::Context) -> ExtensionResult<Option<String>>;
+    /// Forwards the corresponding host capability call.
+    fn is_idle(&self, context: &Self::Context) -> ExtensionResult<bool>;
+    /// Forwards the corresponding host capability call.
+    fn signal(&self, context: &Self::Context) -> ExtensionResult<Option<Self::Signal>>;
+    /// Forwards the corresponding host capability call.
+    fn abort(&self, context: &Self::Context) -> ExtensionResult<()>;
+    /// Forwards the corresponding host capability call.
+    fn has_pending_messages(&self, context: &Self::Context) -> ExtensionResult<bool>;
+    /// Forwards the corresponding host capability call.
+    fn shutdown(&self, context: &Self::Context) -> ExtensionResult<()>;
+    /// Forwards the corresponding host capability call.
+    fn get_context_usage(
+        &self,
+        context: &Self::Context,
+    ) -> ExtensionResult<Option<crate::ContextUsage>>;
+    /// Forwards the corresponding host capability call.
+    fn get_system_prompt(&self, context: &Self::Context) -> ExtensionResult<String>;
+    /// Forwards the corresponding host capability call.
+    fn command_ui(&self, context: &Self::CommandContext) -> ExtensionResult<Self::Ui>;
+    /// Forwards the corresponding host capability call.
+    fn command_has_ui(&self, context: &Self::CommandContext) -> ExtensionResult<bool>;
+    /// Forwards the corresponding host capability call.
+    fn command_model_registry(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Self::Registry>;
+    /// Forwards the corresponding host capability call.
+    fn command_model(&self, context: &Self::CommandContext) -> ExtensionResult<Option<String>>;
+    /// Forwards the corresponding host capability call.
+    fn command_is_idle(&self, context: &Self::CommandContext) -> ExtensionResult<bool>;
+    /// Forwards the corresponding host capability call.
+    fn command_signal(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Option<Self::Signal>>;
+    /// Forwards the corresponding host capability call.
+    fn command_abort(&self, context: &Self::CommandContext) -> ExtensionResult<()>;
+    /// Forwards the corresponding host capability call.
+    fn command_has_pending_messages(&self, context: &Self::CommandContext)
+    -> ExtensionResult<bool>;
+    /// Forwards the corresponding host capability call.
+    fn command_shutdown(&self, context: &Self::CommandContext) -> ExtensionResult<()>;
+    /// Forwards the corresponding host capability call.
+    fn command_get_context_usage(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Option<crate::ContextUsage>>;
+    /// Forwards the corresponding host capability call.
+    fn command_get_system_prompt(&self, context: &Self::CommandContext) -> ExtensionResult<String>;
 }

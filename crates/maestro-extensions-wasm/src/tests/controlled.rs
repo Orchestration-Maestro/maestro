@@ -7,7 +7,7 @@
     clippy::excessive_nesting
 )]
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::observed::{Observed, Session, pause};
@@ -17,12 +17,12 @@ use crate::types::{ExtensionFuture, ExtensionResult};
 
 /// A cancellation flag the test controls.
 #[derive(Clone, Default)]
-pub struct Flag(Rc<Cell<bool>>);
+pub struct Flag(std::sync::Arc<std::sync::atomic::AtomicBool>);
 
 impl Flag {
     /// Cancels the flag.
     pub fn abort(&self) {
-        self.0.set(true);
+        self.0.store(true, std::sync::atomic::Ordering::SeqCst);
     }
 }
 
@@ -75,6 +75,8 @@ pub struct Update {
 
 /// Ordinary context lent to the extension.
 pub struct Context {
+    /// Captured model supplier.
+    model: super::reader_host::Reader,
     /// The session the context is bound to.
     session: Session,
     /// Marks the resource as lent.
@@ -83,6 +85,8 @@ pub struct Context {
 
 /// Command context lent to the extension.
 pub struct CommandContext {
+    /// Captured model supplier.
+    model: super::reader_host::Reader,
     /// The session the context is bound to.
     session: Session,
     /// Marks the resource as lent.
@@ -140,7 +144,9 @@ impl Controlled {
 
     /// An ordinary context in `cwd`.
     pub fn context(&self, cwd: &str) -> Context {
+        let model = self.observed.borrow().catalog.model.clone();
         Context {
+            model,
             session: Session::new(cwd),
             _lease: Lease::new(&self.observed),
         }
@@ -156,7 +162,9 @@ impl Controlled {
 
     /// A command context in `cwd`.
     pub fn command_context(&self, cwd: &str) -> CommandContext {
+        let model = self.observed.borrow().catalog.model.clone();
         CommandContext {
+            model,
             session: Session::new(cwd),
             _lease: Lease::new(&self.observed),
         }
@@ -178,6 +186,11 @@ impl Controlled {
     }
 }
 
+/// Retained opaque UI owner with a counted lifetime.
+pub struct Ui {
+    /// Counted owner.
+    _lease: Lease,
+}
 impl Imports for Controlled {
     type Subscription = super::bus_host::Subscription;
     type Emitter = super::bus_host::Emitter;
@@ -218,6 +231,8 @@ impl Imports for Controlled {
         self.observed.borrow_mut().bus.tail(tail.id)
     }
 
+    type Ui = Ui;
+    type Registry = Reader;
     type Reader = Reader;
     type Node = Node;
     type Update = Update;
@@ -328,6 +343,213 @@ impl Imports for Controlled {
         resource.data.label_timestamp()
     }
 
+    fn ui(&self, context: &Context) -> ExtensionResult<Ui> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(Ui {
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn has_ui(&self, context: &Context) -> ExtensionResult<bool> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.has_ui)
+    }
+    fn model_registry(&self, context: &Context) -> ExtensionResult<Reader> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        let data = self.observed.borrow().catalog.registry.clone();
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn model(&self, context: &Context) -> ExtensionResult<Option<String>> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        self.observed
+            .borrow()
+            .catalog
+            .selected_model(&context.model)
+    }
+    fn is_idle(&self, context: &Context) -> ExtensionResult<bool> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.idle)
+    }
+    fn signal(&self, context: &Context) -> ExtensionResult<Option<Signal>> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        let flag = self.observed.borrow().catalog.flag.clone();
+        Ok(flag.map(|flag| Signal {
+            flag: Flag(flag),
+            _lease: Lease::new(&self.observed),
+        }))
+    }
+    fn abort(&self, context: &Context) -> ExtensionResult<()> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context abort");
+        Ok(())
+    }
+    fn has_pending_messages(&self, context: &Context) -> ExtensionResult<bool> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.queued)
+    }
+    fn shutdown(&self, context: &Context) -> ExtensionResult<()> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context shutdown");
+        Ok(())
+    }
+    fn get_context_usage(&self, context: &Context) -> ExtensionResult<Option<crate::ContextUsage>> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self
+            .observed
+            .borrow()
+            .catalog
+            .data
+            .usage
+            .as_ref()
+            .map(|u| crate::ContextUsage {
+                tokens: u.tokens,
+                context_window: u.context_window,
+                percent: u.percent,
+            }))
+    }
+    fn get_system_prompt(&self, context: &Context) -> ExtensionResult<String> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    }
+    fn command_ui(&self, context: &CommandContext) -> ExtensionResult<Ui> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(Ui {
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn command_has_ui(&self, context: &CommandContext) -> ExtensionResult<bool> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.has_ui)
+    }
+    fn command_model_registry(&self, context: &CommandContext) -> ExtensionResult<Reader> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        let data = self.observed.borrow().catalog.registry.clone();
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn command_model(&self, context: &CommandContext) -> ExtensionResult<Option<String>> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        self.observed
+            .borrow()
+            .catalog
+            .selected_model(&context.model)
+    }
+    fn command_is_idle(&self, context: &CommandContext) -> ExtensionResult<bool> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.idle)
+    }
+    fn command_signal(&self, context: &CommandContext) -> ExtensionResult<Option<Signal>> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        let flag = self.observed.borrow().catalog.flag.clone();
+        Ok(flag.map(|flag| Signal {
+            flag: Flag(flag),
+            _lease: Lease::new(&self.observed),
+        }))
+    }
+    fn command_abort(&self, context: &CommandContext) -> ExtensionResult<()> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context abort");
+        Ok(())
+    }
+    fn command_has_pending_messages(&self, context: &CommandContext) -> ExtensionResult<bool> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.queued)
+    }
+    fn command_shutdown(&self, context: &CommandContext) -> ExtensionResult<()> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        self.observed.borrow_mut().log("context shutdown");
+        Ok(())
+    }
+    fn command_get_context_usage(
+        &self,
+        context: &CommandContext,
+    ) -> ExtensionResult<Option<crate::ContextUsage>> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self
+            .observed
+            .borrow()
+            .catalog
+            .data
+            .usage
+            .as_ref()
+            .map(|u| crate::ContextUsage {
+                tokens: u.tokens,
+                context_window: u.context_window,
+                percent: u.percent,
+            }))
+    }
+    fn command_get_system_prompt(&self, context: &CommandContext) -> ExtensionResult<String> {
+        let _ = context;
+        self.observed.borrow().catalog.check()?;
+        Ok(self.observed.borrow().catalog.data.prompt.clone())
+    }
+    fn registry_get_all(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("getAll", &[])?
+            .ok_or("missing list".into())
+    }
+    fn registry_get_available(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("getAvailable", &[])?
+            .ok_or("missing list".into())
+    }
+    fn registry_find(
+        &self,
+        resource: &Reader,
+        provider: &str,
+        model_id: &str,
+    ) -> ExtensionResult<Option<String>> {
+        resource.data.record(
+            "find",
+            &[serde_json::json!(provider), serde_json::json!(model_id)],
+        )
+    }
+    fn registry_get_api_key_and_headers<'a>(
+        &'a self,
+        resource: &'a Reader,
+        model: String,
+    ) -> ExtensionFuture<'a, crate::ResolvedRequestAuth> {
+        Box::pin(async move {
+            let hold = {
+                let mut o = self.observed.borrow_mut();
+                o.log("auth started");
+                o.take_hold()
+            };
+            pause(hold).await;
+            let answer = super::catalog_host::auth(&resource.data, &model)
+                .map(|value| super::catalog_host::resolved(&value));
+            self.observed.borrow_mut().log("auth completed");
+            answer
+        })
+    }
+
     fn new_callback(&self) -> (u32, Callback) {
         let id = self.observed.borrow_mut().next_identity();
         (
@@ -381,7 +603,7 @@ impl Imports for Controlled {
     }
 
     fn aborted(&self, signal: &Signal) -> bool {
-        signal.flag.0.get()
+        signal.flag.0.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     fn cwd(&self, context: &Context) -> ExtensionResult<String> {

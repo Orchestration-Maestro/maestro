@@ -22,10 +22,13 @@ mod compaction;
 mod component_adapter;
 mod loader;
 mod messages;
+mod model_registry;
 mod session_manager;
+pub use model_registry::*;
 mod system_prompt;
 #[cfg(test)]
 mod tests;
+
 mod types;
 
 pub use agent::*;

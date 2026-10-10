@@ -28,9 +28,9 @@ pub use agent_events::*;
 pub use agent_results::*;
 pub use api::{CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost};
 pub use context::{
-    AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
-    NewSessionCommandOptions, ReplacedSessionContext, ReplacedSessionContextPort, SignalPort,
-    WithSession,
+    AbortSignal, CommandContextPort, ContextPort, ContextUsage, ExtensionCommandContext,
+    ExtensionContext, ExtensionUIContext, ExtensionUIContextPort, NewSessionCommandOptions,
+    ReplacedSessionContext, ReplacedSessionContextPort, SignalPort, WithSession,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use event_data::EventData;

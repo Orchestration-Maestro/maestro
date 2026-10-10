@@ -17,6 +17,7 @@ mod exports;
 mod generated;
 mod host_api;
 mod imports;
+mod model_registry;
 mod session;
 mod tools;
 #[cfg(test)]

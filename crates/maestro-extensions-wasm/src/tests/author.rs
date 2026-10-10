@@ -18,6 +18,8 @@ use serde_json::{Value, from_value, json};
 
 #[path = "bus_author.rs"]
 mod bus_author;
+#[path = "catalog_author.rs"]
+mod catalog_author;
 #[path = "reader_author.rs"]
 mod reader_author;
 #[path = "tool_author.rs"]
@@ -379,6 +381,9 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     }
                     if let Some(request) = args.strip_prefix("bus ") {
                         return bus_author::run(&api, request).await;
+                    }
+                    if args == "catalog" {
+                        return catalog_author::register(&api);
                     }
                     if args == "reader" {
                         return reader_author::register(&api);
