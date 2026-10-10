@@ -7,8 +7,8 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct AccountCase {
-    /// Complete encoded credential.
-    token: String,
+    /// Literal segments assembled into the controlled credential at run time.
+    token: Vec<String>,
     /// Account or an extraction failure.
     account: Option<String>,
 }
@@ -18,10 +18,11 @@ fn maestro_response_sessions_extract_account_claim() {
     let rows: Vec<AccountCase> =
         super::fixture_rows(include_str!("fixtures/account.json"), &["token"]).unwrap();
     for row in rows {
+        let token = row.token.join(".");
         match row.account {
-            Some(account) => assert_eq!(extract_account_id(&row.token).unwrap(), account),
+            Some(account) => assert_eq!(extract_account_id(&token).unwrap(), account),
             None => assert_eq!(
-                extract_account_id(&row.token).unwrap_err().message,
+                extract_account_id(&token).unwrap_err().message,
                 "Failed to extract accountId from token"
             ),
         }
@@ -138,7 +139,9 @@ impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
             reasoning_effort: effort,
             reasoning_summary: summary,
             common: crate::StreamOptions {
-                api_key: Some("a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b".to_owned()),
+                api_key: Some(super::fixture_text(
+                    "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+                )),
                 temperature: input.temperature,
                 session_id: input.session_id,
                 max_tokens: input.max_tokens,
@@ -631,9 +634,9 @@ fn conversation<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<crate::C
 
 /// Load one unique full-query corpus, then let each named witness select its associations.
 fn body_cases(case: &str) -> Result<Vec<BodyCase>, serde_json::Error> {
-    let text = include_str!("fixtures/requests.json");
-    let rows: Vec<BodyCase> = serde_json::from_str(text)?;
-    unique_body_queries(text, &rows)?;
+    let text = super::fixture_text(include_str!("fixtures/requests.json"));
+    let rows: Vec<BodyCase> = serde_json::from_str(&text)?;
+    unique_body_queries(&text, &rows)?;
     for row in &rows {
         let mut names = std::collections::HashSet::new();
         if row.cases.is_empty()

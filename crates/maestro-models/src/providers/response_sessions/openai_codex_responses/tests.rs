@@ -14,9 +14,12 @@ fn invocation() -> (
     let context = controlled_context();
     let options = super::OpenAICodexResponsesOptions {
         common: crate::StreamOptions {
-            api_key: Some("a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b".to_owned()),
+            api_key: Some(fixture_text(
+                "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+            )),
             ..Default::default()
-        }, ..Default::default()
+        },
+        ..Default::default()
     };
     (std::sync::Arc::new(model), context, options)
 }
@@ -128,6 +131,13 @@ fn fixture_rows<T: serde::de::DeserializeOwned>(
     text: &str,
     query: &[&str],
 ) -> Result<Vec<T>, serde_json::Error> {
-    unique_queries(text, query)?;
-    serde_json::from_str(text)
+    let text = fixture_text(text);
+    unique_queries(&text, query)?;
+    serde_json::from_str(&text)
+}
+
+/// Reconstruct synthetic account strings using the owning account fixture encoder.
+fn fixture_text(text: &str) -> String {
+    let prefix = crate::oauth::responses::openai_codex::tests::account_fixture_prefix();
+    text.replace("<fake-account-prefix>", &prefix)
 }

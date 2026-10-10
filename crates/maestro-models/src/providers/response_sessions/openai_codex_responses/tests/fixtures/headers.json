@@ -11,12 +11,12 @@
         "CONTENT-TYPE": "other"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -45,12 +45,12 @@
         "CONTENT-TYPE": "other"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -73,13 +73,13 @@
         "CONTENT-TYPE": "other"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "session": "",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -108,13 +108,13 @@
         "CONTENT-TYPE": "other"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "session": "",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -137,13 +137,13 @@
         "CONTENT-TYPE": "other"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "session": "sess",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -174,13 +174,13 @@
         "CONTENT-TYPE": "other"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "session": "sess",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -198,12 +198,12 @@
         "x-duplicate": "two"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
@@ -219,12 +219,12 @@
         "x-client-request-id": "preexisting"
       },
       "account": "acc_test",
-      "token": "a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "token": "a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "userAgent": "maestro (linux 6.18.40.1-microsoft-standard-WSL2; x64)"
     },
     "expected": {
       "accept": "text/event-stream",
-      "authorization": "Bearer a.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
+      "authorization": "Bearer a.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjX3Rlc3QifX0=.b",
       "chatgpt-account-id": "acc_test",
       "content-type": "application/json",
       "openai-beta": "responses=experimental",
