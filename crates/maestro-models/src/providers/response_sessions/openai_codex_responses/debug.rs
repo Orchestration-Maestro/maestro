@@ -6,10 +6,11 @@ use crate::{DiagnosticInput, format_thrown_value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-/// What one session's requests did; optional fields stay absent until a request sets them.
+/// What one session's requests did; optional fields stay absent until a request or a recorded
+/// outcome sets them.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct OpenAICodexWebSocketDebugStats {
-    /// Requests that reached the send step.
+    /// Selected request attempts, counted before the send.
     pub(crate) requests: u64,
     /// Requests that opened a connection.
     pub(crate) connections_created: u64,
@@ -51,7 +52,7 @@ pub(super) struct Mode {
 
 /// Statistics and fallback flags, keyed by session.
 struct DebugState {
-    /// Counters of sessions that sent a request or recorded an outcome.
+    /// Counters of sessions that selected a request or recorded an outcome.
     stats: BTreeMap<String, OpenAICodexWebSocketDebugStats>,
     /// Sessions whose socket failed.
     fallback: BTreeSet<String>,
@@ -63,12 +64,12 @@ static DEBUG: Mutex<DebugState> = Mutex::new(DebugState {
     fallback: BTreeSet::new(),
 });
 
-/// Lock the debug state, ignoring a poisoned lock because every update is a single step.
+/// Lock the debug state; a poisoned lock is used as it is.
 fn lock() -> MutexGuard<'static, DebugState> {
     DEBUG.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// Count one request that is about to be sent.
+/// Count one selected request attempt before it is sent.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn count_request(session_id: &str, request: &Request, mode: Mode) {
     let mut guard = lock();

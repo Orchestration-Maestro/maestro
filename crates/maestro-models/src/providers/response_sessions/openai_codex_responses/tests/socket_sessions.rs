@@ -12,7 +12,7 @@ use super::super::sessions::{
     close_openai_codex_web_socket_sessions as close, lock, publish,
 };
 use super::super::websocket::{
-    Retention, WebSocketOutput, conclude, process_web_socket_stream, resolve_codex_web_socket_url,
+    WebSocketOutput, process_web_socket_stream, resolve_codex_web_socket_url,
 };
 use super::super::{CodexError, OpenAICodexResponsesOptions};
 use super::loopback::{Conversation, answer, read_request, respond};
@@ -114,8 +114,8 @@ const fn secs(seconds: u64) -> Duration {
     Duration::from_secs(seconds)
 }
 
-/// A session whose socket is released one millisecond before its deadline is still cached; one
-/// millisecond later its owner closes it with the expiry reason.
+/// A session whose socket was released 299999 milliseconds ago is still cached; one millisecond
+/// later its owner closes it with the expiry reason.
 async fn expires_at_the_deadline(listener: &TcpListener, url: &str) {
     let chat = Conversation::new(url, Some("expire-edge"), CACHED).await;
     let (mut peer, _) = completed(&chat, listener).await;
@@ -236,7 +236,7 @@ async fn with_options(
     chat
 }
 
-/// Names, case and spacing of headers do not make a connection unequal.
+/// Header sets that are equal after name lower-casing and value trimming reuse the connection.
 async fn equivalent_headers_reuse(listener: &TcpListener, url: &str) {
     let session = "identity-reuse";
     let first = with_options(url, session, |o| {
@@ -266,27 +266,27 @@ type Change = fn(&mut OpenAICodexResponsesOptions);
 /// Changing the credential, the account or a custom field replaces the idle socket, and the
 /// new request reaches the endpoint with the new value.
 async fn changed_headers_replace_the_socket(listener: &TcpListener, url: &str) {
-    let changes: [(&str, Change, &str, &str); 3] = [
+    let changes: [(&str, Change, &str, String); 3] = [
         (
             "token",
             |o| o.common.api_key = Some(token("acc_test", "c")),
             "authorization",
-            "Bearer",
+            format!("Bearer {}", token("acc_test", "c")),
         ),
         (
             "account",
             |o| o.common.api_key = Some(token("acc_other", "b")),
             "chatgpt-account-id",
-            "acc_other",
+            "acc_other".to_owned(),
         ),
         (
             "custom",
             |o| o.common.headers = Some(headers(&[("X-Custom", "b")])),
             "x-custom",
-            "b",
+            "b".to_owned(),
         ),
     ];
-    for (name, change, field, needle) in changes {
+    for (name, change, field, expected) in changes {
         let session = format!("identity-{name}");
         let old = with_options(url, &session, |_| {}).await;
         let new = with_options(url, &session, change).await;
@@ -303,7 +303,7 @@ async fn changed_headers_replace_the_socket(listener: &TcpListener, url: &str) {
         };
         let ((released, seen), ()) = join(server, client).await;
         assert_eq!(released, closed("done"), "{name}");
-        assert!(seen[field].to_str().unwrap().contains(needle), "{name}");
+        assert_eq!(seen[field].to_str().unwrap(), expected, "{name}");
         close(Some(&session));
     }
 }
@@ -435,7 +435,7 @@ async fn replaced_lease_leaves_the_replacement(mut new_peer: Peer, lease: Lease)
     let latest = publish(session, endpoint("c"), third_socket);
     let current = cached_entry(session).unwrap();
     drop(lease);
-    assert_eq!(close_seen(&mut new_peer).await, closed("done"));
+    assert_eq!(close_seen(&mut new_peer).await, closed("debug_close"));
     assert!(
         Arc::ptr_eq(&cached_entry(session).unwrap(), &current),
         "stale lease drop"
@@ -459,22 +459,34 @@ async fn publish_race(first_gate: usize) {
     let ((socket_a, mut peer_a), (socket_b, mut peer_b)) = pairs().await;
     let (open_a, gate_a) = oneshot::channel::<()>();
     let (open_b, gate_b) = oneshot::channel::<()>();
-    let acquire_a = acquire(Some(&session), endpoint("race"), async move {
-        gate_a.await.unwrap();
-        Ok(socket_a)
-    });
-    let acquire_b = acquire(Some(&session), endpoint("race"), async move {
-        gate_b.await.unwrap();
-        Ok(socket_b)
-    });
-    let (first, second) = if first_gate == 0 {
-        (open_a, open_b)
+    let (done_a, published_a) = oneshot::channel::<()>();
+    let (done_b, published_b) = oneshot::channel::<()>();
+    let acquire_a = async {
+        let lease = acquire(Some(&session), endpoint("race"), async move {
+            gate_a.await.unwrap();
+            Ok(socket_a)
+        })
+        .await;
+        done_a.send(()).unwrap();
+        lease
+    };
+    let acquire_b = async {
+        let lease = acquire(Some(&session), endpoint("race"), async move {
+            gate_b.await.unwrap();
+            Ok(socket_b)
+        })
+        .await;
+        done_b.send(()).unwrap();
+        lease
+    };
+    let (first, published, second) = if first_gate == 0 {
+        (open_a, published_a, open_b)
     } else {
-        (open_b, open_a)
+        (open_b, published_b, open_a)
     };
     let driver = async {
         first.send(()).unwrap();
-        tokio::task::yield_now().await;
+        published.await.unwrap();
         second.send(()).unwrap();
     };
     let (lease_a, lease_b, ()) = join3(acquire_a, acquire_b, driver).await;
@@ -862,42 +874,6 @@ async fn failed_request(index: usize, fault: Fault, category: &str, message: &st
     reset(Some(&session));
 }
 
-/// A projection failure after reduction clears the context, closes the socket and reports the
-/// converter's own failure.
-async fn projection_failure_clears_the_context() {
-    let (socket, mut peer) = pair().await;
-    let lease = publish("projection-failure", endpoint("p"), socket);
-    let entry = cached_entry("projection-failure").unwrap();
-    *lock(&entry.continuation) = Continuation::new(&serde_json::json!({}), "old", Vec::new());
-    let model = Arc::new(super::controlled_model());
-    let mut message = crate::providers::assistant_output::initial_message(&model);
-    message.response_id = Some("r".to_owned());
-    message
-        .content
-        .push(crate::AssistantContent::Thinking(crate::ThinkingContent {
-            thinking: String::new(),
-            thinking_signature: Some("{".to_owned()),
-            redacted: None,
-        }));
-    let output = Arc::new(std::sync::RwLock::new(message));
-    let body = serde_json::json!({});
-    let retention = Retention {
-        body: &body,
-        output: &output,
-        model: &model,
-        cached: true,
-        signal: None,
-    };
-    let result = conclude(lease, Ok(()), &retention);
-    assert!(
-        matches!(result, Err(CodexError::Transport(_))),
-        "{result:?}"
-    );
-    assert!(lock(&entry.continuation).is_none());
-    assert!(cached_entry("projection-failure").is_none());
-    assert_eq!(close_seen(&mut peer).await, closed("done"));
-}
-
 #[test]
 fn maestro_response_sessions_clear_failed_socket_continuation() {
     let _isolated = super::exclusive();
@@ -905,7 +881,6 @@ fn maestro_response_sessions_clear_failed_socket_continuation() {
         for (index, (fault, category, message)) in FAULTS.into_iter().enumerate() {
             Box::pin(failed_request(index, fault, category, message)).await;
         }
-        projection_failure_clears_the_context().await;
     });
 }
 
@@ -1110,7 +1085,7 @@ async fn close_while_connecting() {
     close(Some("close-connecting"));
     assert_eq!(lease.closed().now_or_never(), Some(CloseReason::DebugClose));
     drop(lease);
-    assert_eq!(close_seen(&mut peer).await, closed("done"));
+    assert_eq!(close_seen(&mut peer).await, closed("debug_close"));
 }
 
 #[test]
@@ -1122,6 +1097,99 @@ fn maestro_response_sessions_close_active_socket_session() {
             Box::pin(close_during_use(control, &listener, &url)).await;
         }
         close_while_connecting().await;
+    });
+}
+
+/// The server for a request that an explicit close interrupts: once the close frame has reached
+/// its socket, and before it acknowledges the frame, it sends `late`.
+async fn late_frames_server(
+    listener: &TcpListener,
+    held: oneshot::Sender<()>,
+    late: Vec<String>,
+) -> (u16, String) {
+    let mut socket = accept(listener).await;
+    read_request(&mut socket).await;
+    send_events(&mut socket, opening("partial")).await;
+    acknowledged(&mut socket).await;
+    held.send(()).unwrap();
+    socket.get_ref().peek(&mut [0_u8; 1]).await.unwrap();
+    send_events(&mut socket, late).await;
+    let released = close_seen(&mut socket).await;
+    socket.flush().await.unwrap();
+    released
+}
+
+/// Request an explicit close of the session while a request is in flight and the peer still
+/// delivers `late` messages.
+async fn close_with_late_frames(
+    session: &str,
+    late: Vec<String>,
+    listener: &TcpListener,
+    url: &str,
+) -> (Outcome, (u16, String)) {
+    let chat = Conversation::new(url, Some(session), CACHED).await;
+    let (held_tx, held_rx) = oneshot::channel::<()>();
+    let closer = async {
+        held_rx.await.unwrap();
+        close(Some(session));
+    };
+    let server = late_frames_server(listener, held_tx, late);
+    let (released, (outcome, ())) = join(server, join(chat.send(), closer)).await;
+    (outcome, released)
+}
+
+#[test]
+fn maestro_response_sessions_keep_frames_in_flight_at_explicit_close() {
+    let _isolated = super::exclusive();
+    run_native(async {
+        let (listener, url) = listen().await;
+        let delta = serde_json::json!({"type":"response.output_text.delta","delta":"more"});
+        let error = serde_json::json!({"type":"error","message":"no"});
+        let late = vec![delta.to_string(), error.to_string()];
+        let (failed, released) = close_with_late_frames("late-error", late, &listener, &url).await;
+        assert_eq!(
+            described(&failed.result),
+            ("api", "Codex error: no".to_owned())
+        );
+        assert_eq!(text_of(&failed.output), "partialmore");
+        assert_eq!(released, closed("debug_close"));
+
+        let late = vec![delta.to_string(), closing("partialmore")[0].clone()];
+        let late = [late, closing("")[1..].to_vec()].concat();
+        let (finished, released) = close_with_late_frames("late-done", late, &listener, &url).await;
+        finished.result.unwrap();
+        assert_eq!(text_of(&finished.output), "partialmore");
+        assert_eq!(released, closed("debug_close"));
+    });
+}
+
+#[test]
+fn maestro_response_sessions_send_requested_close_reason_when_dropped() {
+    let _isolated = super::exclusive();
+    run_native(async {
+        let (listener, url) = listen().await;
+        let chat = Conversation::new(&url, Some("close-drop"), CACHED).await;
+        let (ready_tx, ready_rx) = oneshot::channel::<()>();
+        let server = async {
+            let mut socket = accept(&listener).await;
+            read_request(&mut socket).await;
+            send_events(&mut socket, opening("partial")).await;
+            acknowledged(&mut socket).await;
+            ready_tx.send(()).unwrap();
+            close_seen(&mut socket).await
+        };
+        let client = async {
+            match select_first(Box::pin(chat.send()), ready_rx).await {
+                Either::Right((signalled, request)) => {
+                    signalled.unwrap();
+                    close(Some("close-drop"));
+                    drop(request);
+                }
+                Either::Left(_) => panic!("finished before the drop"),
+            }
+        };
+        let (released, ()) = join(server, client).await;
+        assert_eq!(released, closed("debug_close"));
     });
 }
 

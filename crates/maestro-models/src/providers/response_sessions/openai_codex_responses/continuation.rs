@@ -3,22 +3,22 @@
 use super::CodexError;
 use super::sessions::lock;
 use super::websocket::{wire_body, wire_members};
-use crate::providers::json_text::{compact_json, compact_members};
+use crate::providers::json_text::{CompactJson, compact_json, compact_members};
 use crate::providers::responses::openai_responses_shared::messages::convert_assistant;
 use crate::{DiagnosticErrorInfo, Model, SharedAssistantMessage, StopReason};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::{Mutex, PoisonError};
 
-/// The request text and the facts the counters read from the request as sent.
+/// The request text and the facts the counters read from the selected request.
 pub(super) struct Request {
     /// Socket message text.
     pub(super) wire: String,
-    /// Array items of the sent input, or UTF-16 units of a text input.
+    /// Array items of the selected input, or UTF-16 units of a text input.
     pub(super) input_items: usize,
-    /// Nonempty previous response identifier of the sent body.
+    /// Nonempty previous response identifier of the selected request.
     pub(super) previous_response_id: Option<String>,
-    /// The sent body stores its response.
+    /// The prepared body requests storage of its response.
     pub(super) store_true: bool,
 }
 
@@ -44,7 +44,7 @@ impl Request {
 
 /// What a cached connection remembers of its last completed request.
 pub(super) struct Continuation {
-    /// Complete request body that was sent.
+    /// Complete prepared body of the completed request.
     body: Value,
     /// Compact text of that body without `input` and `previous_response_id`.
     rest: String,
@@ -82,19 +82,22 @@ fn spread(input: Option<&Value>) -> Option<Vec<Cow<'_, Value>>> {
 
 /// The body with the identifier and the input suffix in place of its own members; absent members
 /// follow the existing ones, identifier first.
-fn delta_wire(body: &Value, id: &Value, input: &Value) -> Result<String, CodexError> {
+fn delta_wire(body: &Value, id: &Value, input: &[Value]) -> Result<String, CodexError> {
     let own = body.as_object();
     let replaced = own.into_iter().flatten().map(|(name, value)| {
-        let value = match name.as_str() {
+        let value: &dyn CompactJson = match name.as_str() {
             "previous_response_id" => id,
-            "input" => input,
+            "input" => &input,
             _ => value,
         };
         (name.as_str(), value)
     });
-    let appended = [("previous_response_id", id), ("input", input)]
-        .into_iter()
-        .filter(|(name, _)| own.is_none_or(|own| !own.contains_key(*name)));
+    let appended = [
+        ("previous_response_id", id as &dyn CompactJson),
+        ("input", &input),
+    ]
+    .into_iter()
+    .filter(|(name, _)| own.is_none_or(|own| !own.contains_key(*name)));
     wire_members(replaced.chain(appended))
 }
 
@@ -130,9 +133,8 @@ impl Continuation {
             }
         }
         let id = Value::from(self.response_id.as_str());
-        let input = Value::Array(suffix.to_vec());
         Some(Request {
-            wire: delta_wire(body, &id, &input).ok()?,
+            wire: delta_wire(body, &id, suffix).ok()?,
             input_items: suffix.len(),
             previous_response_id: Some(self.response_id.clone()),
             store_true: body.get("store") == Some(&Value::Bool(true)),
@@ -166,7 +168,7 @@ pub(super) fn project(
     Ok(items)
 }
 
-/// Retain the sent `body` and the finished response unless the response has no identifier.
+/// Retain the prepared `body` and the finished response unless the response has no identifier.
 pub(super) fn retain(
     slot: &Mutex<Option<Continuation>>,
     body: &Value,

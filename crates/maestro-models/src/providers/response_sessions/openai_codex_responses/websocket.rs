@@ -1,15 +1,16 @@
-//! Native response-session socket: authenticated upgrade, full request and ordered reduction.
+//! Native response-session socket: authenticated upgrade, the selected request and ordered
+//! reduction.
 
 use super::continuation::{Request, retain, select};
 use super::debug::{Mode, count_request};
 use super::events::{map_codex_event, reduce};
 use super::headers::build_web_socket_headers;
 use super::request::{PreparedRequest, diagnostic, resolve_codex_url};
-use super::sessions::{CloseReason, Identity, Lease, Socket, acquire, lock};
+use super::sessions::{CloseReason, Identity, Socket, acquire, lock};
 use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{Raced, client_pairs, decode_utf8, race};
-use crate::providers::json_text::{compact_members, raw_json};
+use crate::providers::json_text::{CompactJson, compact_members, raw_json};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     DiagnosticErrorInfo, Model, SharedAssistantMessage, Transport,
@@ -19,6 +20,8 @@ use futures_util::{FutureExt, Sink, SinkExt, Stream, StreamExt};
 use indexmap::IndexMap;
 use serde_json::Value;
 use std::borrow::Cow;
+use std::future::Future;
+use std::pin::{Pin, pin};
 use std::sync::{Arc, LazyLock};
 use tokio_tungstenite::connect_async_with_config;
 use tokio_tungstenite::tungstenite::{
@@ -131,11 +134,16 @@ pub(super) struct Receiver<'s, 'o, S> {
     ended: bool,
     /// Failure category recovered after the reducer sees its diagnostic view.
     pub(super) failure: Option<CodexError>,
+    /// An explicit close of the session, sent once while reading goes on.
+    closed: Option<Closed>,
 }
+
+/// Resolves when the session is explicitly closed.
+pub(super) type Closed = Pin<Box<dyn Future<Output = CloseReason> + Send>>;
 
 impl<'s, 'o, S> Receiver<'s, 'o, S>
 where
-    S: Stream<Item = Result<Message, Error>> + Unpin,
+    S: Stream<Item = Result<Message, Error>> + Sink<Message, Error = Error> + Unpin,
 {
     /// Begin selecting events from an open socket.
     pub(super) fn new(
@@ -150,7 +158,28 @@ where
             started: false,
             ended: false,
             failure: None,
+            closed: None,
         }
+    }
+
+    /// Read the next message. An explicit session close is sent as a close frame, after which
+    /// reading continues: the peer may still deliver response messages before it answers.
+    async fn read(&mut self) -> Raced<Option<Result<Message, Error>>> {
+        while let Some(closed) = self.closed.as_mut() {
+            let read = race(self.socket.next(), None, self.signal);
+            let reason = match select_first(pin!(read), closed.as_mut()).await {
+                Either::Left((raced, _)) => return raced,
+                Either::Right((reason, _)) => reason,
+            };
+            self.closed = None;
+            let frame = close_message(reason);
+            if let Raced::Cancelled | Raced::TimedOut =
+                race(self.socket.send(frame), None, self.signal).await
+            {
+                return Raced::Cancelled;
+            }
+        }
+        race(self.socket.next(), None, self.signal).await
     }
 
     /// Keep the category while exposing the reducer's diagnostic item.
@@ -210,7 +239,7 @@ where
             let received = if self.signal.is_some_and(Cancellation::is_aborted) {
                 Err(aborted())
             } else {
-                match race(self.socket.next(), None, self.signal).await {
+                match self.read().await {
                     Raced::Done(Some(Ok(message))) => self.select(message),
                     Raced::Done(Some(Err(error))) => Err(transport_error(&error)),
                     Raced::Done(None) => Err(close_error(ABNORMAL_CLOSE, "")),
@@ -241,7 +270,7 @@ pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
         body.as_object()
             .into_iter()
             .flatten()
-            .map(|(name, value)| (name.as_str(), value)),
+            .map(|(name, value)| (name.as_str(), value as &dyn CompactJson)),
     )
 }
 
@@ -249,21 +278,29 @@ pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
 /// when they have one; the other members follow. Member order and number spelling are
 /// those of [`compact_members`].
 pub(super) fn wire_members<'a>(
-    members: impl Iterator<Item = (&'a str, &'a Value)> + Clone,
+    members: impl Iterator<Item = (&'a str, &'a dyn CompactJson)> + Clone,
 ) -> Result<String, CodexError> {
     let kind = members
         .clone()
         .find_map(|(name, value)| (name == "type").then_some(value))
-        .unwrap_or(&REQUEST_TYPE);
+        .unwrap_or(&*REQUEST_TYPE);
     let rest = members.filter(|(name, _)| *name != "type");
     compact_members(std::iter::once(("type", kind)).chain(rest))
         .map_err(|error| CodexError::Transport(diagnostic(error.to_string())))
 }
 
+/// A request's socket message text, and the explicit close that may interrupt its response.
+pub(super) struct Outgoing {
+    /// Socket message text.
+    pub(super) wire: String,
+    /// Resolves when the session is explicitly closed.
+    pub(super) closed: Option<Closed>,
+}
+
 /// Send the request and reduce the response, owning every receive from the first message.
 async fn exchange<S>(
     socket: &mut S,
-    body: String,
+    outgoing: Outgoing,
     model: &Model,
     options: &OpenAICodexResponsesOptions,
     output: WebSocketOutput<'_>,
@@ -272,13 +309,14 @@ where
     S: Stream<Item = Result<Message, Error>> + Sink<Message, Error = Error> + Unpin,
 {
     let signal = options.common.signal.as_ref();
-    match race(socket.send(Message::text(body)), None, signal).await {
+    match race(socket.send(Message::text(outgoing.wire)), None, signal).await {
         Raced::Done(Ok(())) => {}
         Raced::Done(Err(error)) => return Err(transport_error(&error)),
         Raced::Cancelled | Raced::TimedOut => return Err(aborted()),
     }
     let (message, stream) = (output.output, output.stream);
     let mut receiver = Receiver::new(socket, signal, output);
+    receiver.closed = outgoing.closed;
     let view = futures_util::stream::unfold(&mut receiver, |receiver| async move {
         receiver.next().await.map(|event| (event, receiver))
     });
@@ -292,6 +330,7 @@ where
 }
 
 /// Run one request on an open socket, then send a best-effort close and release it.
+#[cfg(test)]
 pub(super) async fn run_released<S>(
     mut socket: S,
     body: String,
@@ -302,9 +341,21 @@ pub(super) async fn run_released<S>(
 where
     S: Stream<Item = Result<Message, Error>> + Sink<Message, Error = Error> + Unpin,
 {
-    let result = exchange(&mut socket, body, model, options, output).await;
+    let outgoing = Outgoing {
+        wire: body,
+        closed: None,
+    };
+    let result = exchange(&mut socket, outgoing, model, options, output).await;
     close_now(&mut socket, CloseReason::Done);
     result
+}
+
+/// The normal close frame carrying the reason text.
+fn close_message(reason: CloseReason) -> Message {
+    Message::Close(Some(CloseFrame {
+        code: CloseCode::Normal,
+        reason: reason.as_str().into(),
+    }))
 }
 
 /// Send a normal close with the reason; a close that cannot be written at once is dropped
@@ -313,11 +364,7 @@ pub(super) fn close_now<S>(socket: &mut S, reason: CloseReason)
 where
     S: Sink<Message, Error = Error> + Unpin,
 {
-    let close = Message::Close(Some(CloseFrame {
-        code: CloseCode::Normal,
-        reason: reason.as_str().into(),
-    }));
-    let _ = socket.send(close).now_or_never();
+    let _ = socket.send(close_message(reason)).now_or_never();
 }
 
 /// Reject, before any connection, an endpoint with a fragment or a scheme other than `ws`/`wss`.
@@ -365,101 +412,10 @@ async fn connect(
     }
 }
 
-/// What a finished request needs to retain its context.
-pub(super) struct Retention<'a> {
-    /// The full body that was prepared.
-    pub(super) body: &'a Value,
-    /// The reduced response.
-    pub(super) output: &'a SharedAssistantMessage,
-    /// The model that produced it.
-    pub(super) model: &'a Model,
-    /// The cached-context transport was selected.
-    pub(super) cached: bool,
-    /// Caller cancellation.
-    pub(super) signal: Option<&'a Cancellation>,
-}
-
-/// Send the close an explicit session close asked for, then report how the peer ended the socket.
-async fn close_socket(
-    socket: &mut Socket,
-    reason: CloseReason,
-    signal: Option<&Cancellation>,
-) -> CodexError {
-    let frame = Message::Close(Some(CloseFrame {
-        code: CloseCode::Normal,
-        reason: reason.as_str().into(),
-    }));
-    if let Raced::Cancelled | Raced::TimedOut = race(socket.send(frame), None, signal).await {
-        return aborted();
-    }
-    loop {
-        match race(socket.next(), None, signal).await {
-            Raced::Done(Some(Ok(Message::Close(frame)))) => return close_frame_error(frame),
-            Raced::Done(Some(Ok(_))) => {}
-            Raced::Done(Some(Err(error))) => return transport_error(&error),
-            Raced::Done(None) => return close_error(ABNORMAL_CLOSE, ""),
-            Raced::Cancelled | Raced::TimedOut => return aborted(),
-        }
-    }
-}
-
-/// Run one request on the leased socket; an explicit close of the session ends it with the
-/// close the peer answers with, keeping the output reduced so far.
-async fn run_leased(
-    lease: &mut Lease,
-    wire: String,
-    model: &Model,
-    options: &OpenAICodexResponsesOptions,
-    output: WebSocketOutput<'_>,
-) -> Result<(), CodexError> {
-    let closed = lease.closed();
-    let finished = {
-        let operation = exchange(&mut lease.held.socket, wire, model, options, output);
-        match select_first(Box::pin(operation), Box::pin(closed)).await {
-            Either::Left((result, _)) => Ok(result),
-            Either::Right((reason, _)) => Err(reason),
-        }
-    };
-    match finished {
-        Ok(result) => result,
-        Err(reason) => {
-            let signal = options.common.signal.as_ref();
-            Err(close_socket(&mut lease.held.socket, reason, signal).await)
-        }
-    }
-}
-
-/// Settle the lease after a request: a healthy socket returns to the cache, a completed cached
-/// request retains its context, and a failure clears the context and closes the socket.
-pub(super) fn conclude(
-    lease: Lease,
-    result: Result<(), CodexError>,
-    retention: &Retention<'_>,
-) -> Result<(), CodexError> {
-    let outcome = result.and_then(|()| {
-        if retention.signal.is_some_and(Cancellation::is_aborted) {
-            return Ok(false);
-        }
-        if let Some(slot) = lease.continuation().filter(|_| retention.cached) {
-            retain(slot, retention.body, retention.output, retention.model)?;
-        }
-        Ok(true)
-    });
-    match outcome {
-        Ok(true) => lease.keep(),
-        Ok(false) => {}
-        Err(_) => {
-            if let Some(slot) = lease.continuation() {
-                *lock(slot) = None;
-            }
-        }
-    }
-    outcome.map(drop)
-}
-
 /// Send one request over the session's cached socket or a new one: the input suffix with the
-/// previous response identifier when the cached-context transport is selected and the retained
-/// context matches, otherwise the full request.
+/// previous response identifier when the cached-context transport is selected and [`select`]
+/// accepts the retained context, otherwise the full request. The result decides what the lease
+/// keeps: see [`retain`] and `Lease::keep`; a failure clears the context.
 pub(crate) async fn process_web_socket_stream(
     prepared: &PreparedRequest,
     model: &Arc<Model>,
@@ -470,7 +426,6 @@ pub(crate) async fn process_web_socket_stream(
     let mut headers =
         build_web_socket_headers(&prepared.headers, request_id).map_err(CodexError::Transport)?;
     let url = resolve_codex_web_socket_url(&model.base_url)?;
-    let full = Request::full(&prepared.body)?;
     let signal = options.common.signal.as_ref();
     let session = options
         .common
@@ -483,11 +438,11 @@ pub(crate) async fn process_web_socket_stream(
         options.common.transport,
         Some(Transport::WebsocketCached | Transport::Auto)
     );
-    let request = lease
+    let delta = lease
         .continuation()
         .filter(|_| cached)
-        .and_then(|slot| select(slot, &prepared.body))
-        .unwrap_or(full);
+        .and_then(|slot| select(slot, &prepared.body));
+    let request = delta.map_or_else(|| Request::full(&prepared.body), Ok)?;
     if let Some(session) = session {
         let mode = Mode {
             reused: lease.reused,
@@ -495,13 +450,29 @@ pub(crate) async fn process_web_socket_stream(
         };
         count_request(session, &request, mode);
     }
-    let retention = Retention {
-        body: &prepared.body,
-        output: output.output,
-        model,
-        cached,
-        signal,
+    let message = output.output;
+    let outgoing = Outgoing {
+        wire: request.wire,
+        closed: Some(Box::pin(lease.closed())),
     };
-    let result = run_leased(&mut lease, request.wire, model, options, output).await;
-    conclude(lease, result, &retention)
+    let result = exchange(&mut lease.socket, outgoing, model, options, output).await;
+    let settled = result.and_then(|()| {
+        if signal.is_some_and(Cancellation::is_aborted) {
+            return Ok(false);
+        }
+        if let Some(slot) = lease.continuation().filter(|_| cached) {
+            retain(slot, &prepared.body, message, model)?;
+        }
+        Ok(true)
+    });
+    match &settled {
+        Ok(true) => lease.keep(),
+        Ok(false) => {}
+        Err(_) => {
+            if let Some(slot) = lease.continuation() {
+                *lock(slot) = None;
+            }
+        }
+    }
+    settled.map(drop)
 }

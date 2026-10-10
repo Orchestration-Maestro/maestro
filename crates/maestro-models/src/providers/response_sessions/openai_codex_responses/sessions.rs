@@ -79,42 +79,20 @@ impl Identity {
 pub(super) struct Entry {
     /// Endpoint and headers the connection was opened with.
     identity: Identity,
-    /// Whether an operation owns the socket.
-    state: Mutex<State>,
+    /// The idle task while the socket is idle; none while an operation owns it.
+    idle: Mutex<Option<Idle>>,
     /// The close request, kept even while nothing listens.
     close: watch::Sender<Option<CloseReason>>,
     /// Context of the last completed request.
     pub(super) continuation: Mutex<Option<Continuation>>,
 }
 
-/// Who owns the cached socket.
-enum State {
-    /// An operation owns it.
-    Busy,
-    /// The idle task owns it.
-    Idle(Idle),
-}
-
 /// The idle task of a released socket.
 pub(super) struct Idle {
     /// Hands the socket to the next operation.
     pub(super) wake: oneshot::Sender<()>,
-    /// Returns the socket when handed off, or nothing once the task closed it.
-    pub(super) task: JoinHandle<Option<Held>>,
-}
-
-/// A socket that sends its close frame when it is dropped.
-pub(super) struct Held {
-    /// The open socket.
-    pub(super) socket: Socket,
-    /// Reason sent with the close frame.
-    reason: CloseReason,
-}
-
-impl Drop for Held {
-    fn drop(&mut self) {
-        close_now(&mut self.socket, self.reason);
-    }
+    /// Returns the lease when handed off, or nothing once the task closed the socket.
+    pub(super) task: JoinHandle<Option<Lease>>,
 }
 
 /// A session's slot in the cache, held by whoever owns the entry's socket.
@@ -128,13 +106,6 @@ struct Slot {
 /// Removes the slot when dropped, unless it already holds a replacement.
 struct SlotGuard(Option<Slot>);
 
-impl SlotGuard {
-    /// Take the slot so dropping the guard leaves the cache alone.
-    fn disarm(mut self) -> Option<Slot> {
-        self.0.take()
-    }
-}
-
 impl Drop for SlotGuard {
     fn drop(&mut self) {
         if let Some(Slot { session, entry }) = &self.0 {
@@ -143,40 +114,44 @@ impl Drop for SlotGuard {
     }
 }
 
-/// Remove the session's slot only while it still holds `entry`.
+/// Remove the session's slot only while it still holds `entry`, which the caller keeps alive.
 fn remove_current(session: &str, entry: &Arc<Entry>) {
-    let removed = {
-        let mut entries = lock(&ENTRIES);
-        if entries
-            .get(session)
-            .is_some_and(|current| Arc::ptr_eq(current, entry))
-        {
-            entries.remove(session)
-        } else {
-            None
-        }
-    };
-    drop(removed);
+    let mut entries = lock(&ENTRIES);
+    if entries
+        .get(session)
+        .is_some_and(|current| Arc::ptr_eq(current, entry))
+    {
+        entries.remove(session);
+    }
 }
 
-/// An operation's ownership of one socket and, when cached, of its entry.
+/// An operation's ownership of one socket and, when cached, of its entry. Dropping it attempts
+/// to send the close frame, with the session's requested reason if it has one (see
+/// [`close_now`]), and removes the cache slot.
 pub(super) struct Lease {
-    /// The socket, closed when the lease is dropped.
-    pub(super) held: Held,
+    /// The open socket.
+    pub(super) socket: Socket,
+    /// Reason sent when the session has no close request.
+    reason: CloseReason,
     /// The cache slot, removed when the lease is dropped.
     slot: SlotGuard,
     /// The socket came from the idle cache.
     pub(super) reused: bool,
 }
 
+impl Drop for Lease {
+    fn drop(&mut self) {
+        let requested = self.entry().and_then(|entry| *entry.close.borrow());
+        close_now(&mut self.socket, requested.unwrap_or(self.reason));
+    }
+}
+
 impl Lease {
     /// A socket the cache does not own.
     fn uncached(socket: Socket) -> Self {
         Self {
-            held: Held {
-                socket,
-                reason: CloseReason::Done,
-            },
+            socket,
+            reason: CloseReason::Done,
             slot: SlotGuard(None),
             reused: false,
         }
@@ -194,18 +169,28 @@ impl Lease {
 
     /// Resolves when the session is explicitly closed; never for an uncached lease.
     pub(super) fn closed(&self) -> impl Future<Output = CloseReason> + use<> {
-        wait_closed(self.entry().map(|entry| entry.close.subscribe()))
+        let close = self.entry().map(|entry| entry.close.subscribe());
+        async move {
+            let Some(mut close) = close else {
+                return std::future::pending().await;
+            };
+            let requested = close.wait_for(Option::is_some).await;
+            requested
+                .ok()
+                .and_then(|reason| *reason)
+                .unwrap_or(CloseReason::Done)
+        }
     }
 
-    /// Return a healthy socket to the cache, where it stays idle for five minutes.
-    pub(super) fn keep(self) {
-        let Self { mut held, slot, .. } = self;
-        let Some(Slot { session, entry }) = slot.disarm() else {
+    /// Park a healthy cached socket for 300,000 milliseconds. An uncached lease, or one whose
+    /// session was closed meanwhile, is closed instead.
+    pub(super) fn keep(mut self) {
+        let Some(Slot { session, entry }) = self.slot.0.take() else {
             return;
         };
         let close = entry.close.subscribe();
         if let Some(reason) = *close.borrow() {
-            held.reason = reason;
+            self.reason = reason;
             return;
         }
         let (wake, ready) = oneshot::channel();
@@ -216,23 +201,8 @@ impl Lease {
             session,
             owner: Arc::downgrade(&entry),
         };
-        let task = tokio::spawn(park.run(held));
-        *lock(&entry.state) = State::Idle(Idle { wake, task });
-    }
-}
-
-/// Wait for a close request, which a subscription sees even if it was made before subscribing.
-async fn wait_closed(close: Option<watch::Receiver<Option<CloseReason>>>) -> CloseReason {
-    let Some(mut close) = close else {
-        return std::future::pending().await;
-    };
-    loop {
-        if let Some(reason) = *close.borrow_and_update() {
-            return reason;
-        }
-        if close.changed().await.is_err() {
-            return CloseReason::Done;
-        }
+        let task = tokio::spawn(park.run(self));
+        *lock(&entry.idle) = Some(Idle { wake, task });
     }
 }
 
@@ -262,15 +232,6 @@ enum Parked {
     Frame(Option<Result<Message, Error>>),
 }
 
-/// A claim hands the socket over; a dropped claim sender closes it.
-fn handoff(claimed: bool) -> Parked {
-    if claimed {
-        Parked::Handoff
-    } else {
-        Parked::Close
-    }
-}
-
 /// Discard what the socket already holds and report whether the peer ended it.
 fn ended(socket: &mut Socket) -> bool {
     loop {
@@ -290,7 +251,8 @@ impl Park {
         let ready = &mut self.ready;
         poll_fn(|context| {
             if let Poll::Ready(claimed) = Pin::new(&mut *ready).poll(context) {
-                return Poll::Ready(handoff(claimed.is_ok()));
+                // A dropped claim sender closes the socket.
+                return Poll::Ready(claimed.map_or(Parked::Close, |()| Parked::Handoff));
             }
             if closing.as_mut().poll(context).is_ready() {
                 return Poll::Ready(Parked::Close);
@@ -307,20 +269,20 @@ impl Park {
     fn claimed(&self) -> bool {
         self.owner
             .upgrade()
-            .is_some_and(|entry| matches!(*lock(&entry.state), State::Busy))
+            .is_some_and(|entry| lock(&entry.idle).is_none())
     }
 
     /// Own the idle socket: answer pings, discard messages, and end on handoff, close,
     /// expiry or the peer going away. A handoff returns the socket.
-    async fn run(mut self, mut held: Held) -> Option<Held> {
+    async fn run(mut self, mut lease: Lease) -> Option<Lease> {
         let outcome = loop {
-            match self.next(&mut held.socket).await {
-                Parked::Handoff if !ended(&mut held.socket) => return Some(held),
+            match self.next(&mut lease.socket).await {
+                Parked::Handoff if !ended(&mut lease.socket) => return Some(lease),
                 Parked::Handoff => break CloseReason::Done,
                 Parked::Close => {
                     break self.close.borrow().unwrap_or(CloseReason::Done);
                 }
-                Parked::Expire if self.claimed() => return Some(held),
+                Parked::Expire if self.claimed() => return Some(lease),
                 Parked::Expire => break CloseReason::IdleTimeout,
                 Parked::Frame(Some(Ok(Message::Close(_)) | Err(_)) | None) => {
                     break CloseReason::Done;
@@ -328,7 +290,7 @@ impl Park {
                 Parked::Frame(Some(Ok(_))) => {}
             }
         };
-        held.reason = outcome;
+        lease.reason = outcome;
         if let Some(entry) = self.owner.upgrade() {
             remove_current(&self.session, &entry);
         }
@@ -352,22 +314,17 @@ pub(super) fn claim(session: &str, identity: &Identity) -> Claim {
     let Some(entry) = entries.get(session).cloned() else {
         return Claim::Absent;
     };
-    let mut state = lock(&entry.state);
-    if matches!(*state, State::Busy) {
+    let mut idle = lock(&entry.idle);
+    if idle.is_none() {
         return Claim::Busy;
     }
     if entry.identity != *identity {
-        drop(state);
-        let removed = entries.remove(session);
-        drop(entries);
+        entries.remove(session);
         entry.close.send_replace(Some(CloseReason::Done));
-        drop(removed);
         return Claim::Absent;
     }
-    match std::mem::replace(&mut *state, State::Busy) {
-        State::Idle(idle) => Claim::Idle(Arc::clone(&entry), idle),
-        State::Busy => Claim::Busy,
-    }
+    idle.take()
+        .map_or(Claim::Busy, |idle| Claim::Idle(Arc::clone(&entry), idle))
 }
 
 /// Publish a freshly connected socket unless another operation published first.
@@ -379,18 +336,17 @@ pub(super) fn publish(session: &str, identity: Identity, socket: Socket) -> Leas
     }
     let entry = Arc::new(Entry {
         identity,
-        state: Mutex::new(State::Busy),
+        idle: Mutex::new(None),
         close: watch::channel(None).0,
         continuation: Mutex::new(None),
     });
     entries.insert(session.to_owned(), Arc::clone(&entry));
-    Lease {
-        slot: SlotGuard(Some(Slot {
-            session: session.to_owned(),
-            entry,
-        })),
-        ..Lease::uncached(socket)
-    }
+    let mut lease = Lease::uncached(socket);
+    lease.slot = SlotGuard(Some(Slot {
+        session: session.to_owned(),
+        entry,
+    }));
+    lease
 }
 
 /// Own a socket for one request: the session's idle socket when its identity matches, otherwise
@@ -412,12 +368,10 @@ pub(super) async fn acquire(
             }));
             // A closed receiver means the idle task already ended.
             let _ = idle.wake.send(());
-            if let Ok(Some(held)) = idle.task.await {
-                return Ok(Lease {
-                    held,
-                    slot,
-                    reused: true,
-                });
+            if let Ok(Some(mut lease)) = idle.task.await {
+                lease.slot = slot;
+                lease.reused = true;
+                return Ok(lease);
             }
         }
         Claim::Absent => {}
@@ -426,6 +380,7 @@ pub(super) async fn acquire(
 }
 
 /// The session's cached entry, if any.
+#[cfg(test)]
 pub(super) fn cached_entry(session: &str) -> Option<Arc<Entry>> {
     lock(&ENTRIES).get(session).cloned()
 }

@@ -1,6 +1,6 @@
 //! Continuation selection, projection and payload witnesses for the cached-context transport.
 
-use super::super::continuation::{Continuation, Request, project, select};
+use super::super::continuation::{Continuation, Request, project, retain, select};
 use super::super::debug::{
     get_openai_codex_web_socket_debug_stats, reset_openai_codex_web_socket_debug_stats,
 };
@@ -13,6 +13,7 @@ use crate::providers::responses::openai_responses_shared::{
     ConvertResponsesMessagesOptions, messages::convert_responses_messages,
 };
 use crate::{AssistantMessage, Model, Transport};
+use futures_util::StreamExt;
 use futures_util::future::join;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -64,54 +65,6 @@ struct Retained {
     response_items: Vec<Value>,
 }
 
-/// Arrays wrapped around a number.
-fn nested(depth: usize) -> Value {
-    (0..depth).fold(json!(0), |inner, _| Value::Array(vec![inner]))
-}
-
-/// Replace the `extra` member wherever it occurs.
-fn restore(value: &mut Value, depth: usize) {
-    match value {
-        Value::Object(members) => {
-            for (name, member) in members {
-                if name == "extra" {
-                    *member = nested(depth);
-                } else {
-                    restore(member, depth);
-                }
-            }
-        }
-        Value::Array(items) => items.iter_mut().for_each(|item| restore(item, depth)),
-        _ => {}
-    }
-}
-
-/// Decode recorded JSON. A text nested beyond the decoder's depth limit is decoded with a shallow
-/// stand-in for its one deep member, which is then rebuilt by wrapping and must compact to the
-/// recorded text.
-fn recorded(text: &str) -> Value {
-    if let Ok(value) = serde_json::from_str(text) {
-        return value;
-    }
-    let start = text.find("[[[[").unwrap();
-    let depth = text[start..]
-        .bytes()
-        .take_while(|byte| *byte == b'[')
-        .count();
-    let end = start + 2 * depth + 1;
-    assert_eq!(&text[start + depth..=start + depth], "0");
-    assert!(
-        text[start + depth + 1..end]
-            .bytes()
-            .all(|byte| byte == b']')
-    );
-    let shallow = format!("{}[0]{}", &text[..start], &text[end..]);
-    let mut value: Value = serde_json::from_str(&shallow).unwrap();
-    restore(&mut value, depth);
-    assert_eq!(compact_json(&value).unwrap(), text);
-    value
-}
-
 #[test]
 fn maestro_response_sessions_send_cached_input_delta() {
     let rows: Vec<ContinuationCase> = super::fixture_rows(
@@ -119,11 +72,11 @@ fn maestro_response_sessions_send_cached_input_delta() {
         &["input"],
     )
     .unwrap();
-    assert_eq!(rows.len(), 30);
+    assert_eq!(rows.len(), 29);
     for (index, row) in rows.iter().enumerate() {
-        let body = recorded(&row.input.body);
+        let body: Value = serde_json::from_str(&row.input.body).unwrap();
         let slot = Mutex::new(row.input.continuation.as_deref().map(|text| {
-            let retained: Retained = serde_json::from_value(recorded(text)).unwrap();
+            let retained: Retained = serde_json::from_str(text).unwrap();
             Continuation::new(
                 &retained.request_body,
                 &retained.response_id,
@@ -134,7 +87,7 @@ fn maestro_response_sessions_send_cached_input_delta() {
         let sent = select(&slot, &body)
             .unwrap_or_else(|| Request::full(&body).unwrap())
             .wire;
-        let expected = wire_body(&recorded(&row.expected.body)).unwrap();
+        let expected = wire_body(&serde_json::from_str(&row.expected.body).unwrap()).unwrap();
         assert_eq!(sent, expected, "case {index}");
         assert_eq!(
             slot.lock().unwrap().is_some(),
@@ -396,6 +349,85 @@ async fn two_requests(session: &str, edit: fn(&mut Value)) -> (Value, Value) {
     );
     close_openai_codex_web_socket_sessions(Some(session));
     sent
+}
+
+/// Arrays wrapped around a number.
+fn nested(depth: usize) -> Value {
+    (0..depth).fold(json!(0), |inner, _| Value::Array(vec![inner]))
+}
+
+/// The next message of the peer's socket, as text.
+async fn raw_request(
+    socket: &mut tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>,
+) -> String {
+    socket
+        .next()
+        .await
+        .unwrap()
+        .unwrap()
+        .into_text()
+        .unwrap()
+        .to_string()
+}
+
+/// A payload hook adds a member nested beyond the depth `serde_json` parses; the second request
+/// still carries the member intact, with only the input suffix and the previous identifier.
+#[test]
+fn maestro_response_sessions_send_delta_with_deeply_nested_open_member() {
+    let _isolated = super::exclusive();
+    run_native(async {
+        let (listener, url) = listen().await;
+        let mut chat =
+            Conversation::new(&url, Some("deep-open"), Some(Transport::WebsocketCached)).await;
+        chat.setup.options.common.on_payload = Some(Arc::new(|mut payload, _| {
+            payload["extra"] = nested(131);
+            Box::pin(async move { Ok(payload) })
+        }));
+        let server = async {
+            let mut socket = accept(&listener).await;
+            let first = raw_request(&mut socket).await;
+            respond(&mut socket, Some("r1"), "answer").await;
+            let second = raw_request(&mut socket).await;
+            respond(&mut socket, Some("r2"), "again").await;
+            (first, second)
+        };
+        let client = async {
+            let first = chat.send().await;
+            first.result.unwrap();
+            chat.follow(&first.output, "next");
+            chat.send().await.result.unwrap();
+        };
+        let ((first, second), ()) = join(server, client).await;
+        let deep = format!("\"extra\":{}", compact_json(&nested(131)).unwrap());
+        assert!(first.contains(&deep) && !first.contains("previous_response_id"));
+        assert!(second.contains(&format!("{deep},\"previous_response_id\":\"r1\"}}")));
+        assert!(second.contains(
+            r#""input":[{"role":"user","content":[{"type":"input_text","text":"next"}]}]"#
+        ));
+        close_openai_codex_web_socket_sessions(Some("deep-open"));
+    });
+}
+
+/// A response whose item cannot be converted fails retention with the converter's own failure
+/// and leaves the earlier context in place.
+#[test]
+fn maestro_response_sessions_report_projection_failure_on_retention() {
+    let model = Arc::new(super::controlled_model());
+    let mut message = crate::providers::assistant_output::initial_message(&model);
+    message.response_id = Some("r".to_owned());
+    message
+        .content
+        .push(crate::AssistantContent::Thinking(crate::ThinkingContent {
+            thinking: String::new(),
+            thinking_signature: Some("{".to_owned()),
+            redacted: None,
+        }));
+    let output = Arc::new(std::sync::RwLock::new(message));
+    let body = json!({});
+    let slot = Mutex::new(Continuation::new(&body, "old", Vec::new()));
+    assert!(retain(&slot, &body, &output, &model).is_err());
+    let kept = select(&slot, &body).expect("the earlier context is still eligible");
+    assert_eq!(kept.previous_response_id.as_deref(), Some("old"));
 }
 
 #[test]
