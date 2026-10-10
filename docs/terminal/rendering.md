@@ -15,8 +15,8 @@ writer queries and updates the cell size through that same instance.
 `TuiRuntime::spawn_local` hands the host a fallible future, such as an editor's
 completion request, to run on the current thread. The host never polls it before
 `spawn_local` returns, owns it until it finishes and reports an error it returns; the
-toolkit never prints that error. The native host that does so is delivered separately;
-tests use a controlled host that polls the futures it was given when the test asks.
+toolkit never prints that error. The native host that does so is
+[`ProcessTuiRuntime`](native-terminal.md#the-runtime-host); tests use a controlled host that polls the futures it was given when the test asks.
 
 ```rust
 # use std::cell::RefCell;

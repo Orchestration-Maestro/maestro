@@ -31,13 +31,13 @@ pub trait RenderTimer {
 /// Wall-clock and file-system facts the diagnostic logs are written with.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LogContext {
-    /// Absolute home directory that holds the application's log directory.
+    /// Home directory the application's log paths are built from; the host chooses its form.
     pub home: PathBuf,
     /// UTC time with millisecond precision, such as `2026-01-02T03:04:05.006Z`.
     pub iso_time: String,
     /// Milliseconds since the Unix epoch.
     pub unix_ms: u64,
-    /// Lowercase alphanumeric text that keeps file names apart within one millisecond.
+    /// Lowercase alphanumeric text that distinguishes log file names created in one millisecond.
     pub nonce: String,
 }
 

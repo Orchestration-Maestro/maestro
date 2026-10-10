@@ -11,11 +11,17 @@ maestro-tui = { path = "../maestro-tui" }
 [lints]
 workspace = true
 
-[target.'cfg(unix)'.dependencies]
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
+rand = "=0.10.3"
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["test-util", "sync"] }
+
+[target.'cfg(unix)'.dependencies]
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "event", "fs", "stdio", "termios"] }
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "net", "time", "signal", "macros"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["net", "signal", "macros"] }
 
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { version = "=1.1.5", default-features = false, features = ["pipe", "pty", "process"] }
-tokio = { version = "=1.53.2", default-features = false, features = ["test-util"] }
