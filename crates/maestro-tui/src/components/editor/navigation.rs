@@ -18,7 +18,7 @@ struct VisualRow {
 }
 /// Column chosen for a vertical move: a cell number, or the destination line end.
 enum Column {
-    /// Earliest byte at this cell offset within the row.
+    /// Exact atom boundary at this cell offset, or the start of the wide atom containing it.
     Cell(usize),
     /// End of the destination line, after any trailing zero-cell atoms.
     End,

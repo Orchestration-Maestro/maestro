@@ -280,10 +280,13 @@ fn yank_reentry_never_erases_replacement_text() {
 
 #[test]
 fn yank_pop_from_deletion_callback_does_not_rotate_again() {
-    use maestro_tui::tui::InputHandler;
+    use maestro_tui::{autocomplete::CursorPosition, tui::InputHandler};
     use std::{cell::Cell, rc::Rc};
     let _guard = support::globals();
-    for entries in [["one", "two"], ["a\nb", "c\nd"]] {
+    for (entries, cursor) in [
+        (["one", "two"], CursorPosition { line: 0, col: 3 }),
+        (["a\nb", "c\nd"], CursorPosition { line: 1, col: 1 }),
+    ] {
         let (_tui, editor) = ring_editor(&[]);
         for entry in entries {
             editor.set_text(entry);
@@ -303,6 +306,6 @@ fn yank_pop_from_deletion_callback_does_not_rotate_again() {
         editor.handle_input("\x1by");
         editor.set_on_change(None);
         assert_eq!(editor.get_text(), entries[0]);
-        assert_eq!(editor.get_cursor().line, entries[0].matches('\n').count());
+        assert_eq!(editor.get_cursor(), cursor);
     }
 }
