@@ -75,8 +75,9 @@ pub type SharedAgentTool = Arc<RwLock<AgentTool>>;
 impl AgentTool {
     /// Wrap a typed callback in the common JSON tool interface.
     ///
-    /// Argument decoding errors do not invoke the callback. Details and progress
-    /// details use ordinary JSON serialization; nonfinite numbers become null.
+    /// Arguments are decoded with [`serde_json::from_value`] and a decoding
+    /// error does not invoke the callback. Details and progress details are
+    /// encoded with [`serde_json::to_value`].
     #[must_use]
     pub fn typed<P: serde::de::DeserializeOwned + 'static, D: serde::Serialize + 'static>(
         definition: Tool,

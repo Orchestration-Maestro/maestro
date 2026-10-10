@@ -123,7 +123,7 @@ fn maestro_typed_tool_round_trips_arguments_results_and_progress() {
         "decode failure must not call body"
     );
 }
-/// Host details follow ordinary JSON serialization, including null for nonfinite numbers.
+/// Infinite final details encode as null.
 #[test]
 fn maestro_typed_tool_uses_host_json_number_semantics() {
     let tool = AgentTool::typed::<u32, f64>(
