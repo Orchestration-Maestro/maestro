@@ -15,7 +15,7 @@ fn construction_stores_dependencies_without_observing_them() {
     let held = settings.borrow_mut();
     let effects = Rc::new(Effects::default());
     effects.fail_ambient.set(true);
-    let mut manager = DefaultPackageManager::new(
+    let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: "relative".into(),
             agent_dir: "relative-agent".into(),
@@ -40,7 +40,7 @@ fn construction_stores_dependencies_without_observing_them() {
 fn source_classification_preserves_npm_and_local_precedence() {
     let rows: Vec<SourceVector> =
         serde_json::from_str(include_str!("source_vectors.json")).unwrap();
-    let (mut manager, _, effects) = support::manager(&json!({}));
+    let (manager, _, effects) = support::manager(&json!({}));
     effects.exists.set(true);
     let mut visited = std::collections::HashSet::new();
     for row in rows {
@@ -70,7 +70,7 @@ fn scoped_local_storage_and_matching_use_different_bases() {
             "project" => Project,
             _ => panic!("unknown scope"),
         };
-        let (mut manager, settings, _) = support::manager(&json!({}));
+        let (manager, settings, _) = support::manager(&json!({}));
         assert!(
             manager
                 .add_source_to_settings(&row.input, Some(scope))
@@ -88,7 +88,7 @@ fn scoped_local_storage_and_matching_use_different_bases() {
         );
     }
     assert_eq!(visited.len(), 26);
-    let (mut manager, settings, _) = support::manager(&json!({}));
+    let (manager, settings, _) = support::manager(&json!({}));
     assert!(
         manager
             .add_source_to_settings("/work/project/.maestro", Some(Project))
@@ -102,7 +102,7 @@ fn scoped_local_storage_and_matching_use_different_bases() {
 #[test]
 fn scoped_changes_preserve_filtered_objects_and_raw_spelling() {
     let original = json!({"source":"npm:keep", "skills":7, "unknown":{"x":1}});
-    let (mut manager, settings, _) = support::manager(&json!({"packages":[original]}));
+    let (manager, settings, _) = support::manager(&json!({"packages":[original]}));
     assert!(
         manager
             .add_source_to_settings("npm: pkg@latest ", None)
@@ -133,7 +133,7 @@ fn scoped_changes_preserve_filtered_objects_and_raw_spelling() {
 }
 #[test]
 fn git_transports_match_one_identity_without_rewriting() {
-    let (mut manager, settings, _) = support::manager(
+    let (manager, settings, _) = support::manager(
         &json!({"packages":["git:git@github.com:u/r@old", {"source":"https://github.com/u/r.git","skills":[]}, "https://github.com/v/r"]}),
     );
     assert!(
@@ -164,7 +164,7 @@ fn git_transports_match_one_identity_without_rewriting() {
 #[test]
 #[cfg(unix)]
 fn local_input_and_stored_paths_match_in_their_own_scopes() {
-    let (mut manager, settings, _) = support::manager(
+    let (manager, settings, _) = support::manager(
         &json!({"packages":["../../../work/project/pkg", {"source":"../../../work/project/pkg","skills":null},"./local"]}),
     );
     assert!(!manager.add_source_to_settings("./pkg", None).unwrap());
@@ -183,7 +183,7 @@ fn local_input_and_stored_paths_match_in_their_own_scopes() {
         json!(["./local", "."])
     );
     let retained = json!(["../../work/project/pkg","./local",{"source":"../../work/project/pkg","skills":null}]);
-    let (mut manager, settings, _) = support::manager(&json!({"packages":retained}));
+    let (manager, settings, _) = support::manager(&json!({"packages":retained}));
     assert!(manager.add_source_to_settings("./pkg", None).unwrap());
     assert!(manager.remove_source_from_settings("./pkg/", None).unwrap());
     assert!(
@@ -212,7 +212,7 @@ fn local_input_and_stored_paths_match_in_their_own_scopes() {
 #[cfg(unix)]
 fn configured_listing_retains_order_duplicates_and_object_flags() {
     use maestro_packages::InstalledSourceScope::{Project, User};
-    let (mut manager, settings, effects) = support::manager(
+    let (manager, settings, effects) = support::manager(
         &json!({"packages":["./local", {"source":"https://github.com/u/r","skills":null}, "./local"]}),
     );
     settings.borrow_mut().set_project_packages(vec![
@@ -251,7 +251,7 @@ fn configured_listing_retains_order_duplicates_and_object_flags() {
 #[test]
 fn raw_package_errors_follow_the_consumed_entry() {
     for root in [json!(null), json!([])] {
-        let (mut manager, _, _) = support::manager(&json!({"packages":root}));
+        let (manager, _, _) = support::manager(&json!({"packages":root}));
         assert!(manager.list_configured_packages().unwrap().is_empty());
         assert!(
             !manager
@@ -273,7 +273,7 @@ fn raw_package_errors_follow_the_consumed_entry() {
     }
     rejects_packages(&json!([{}, "npm:pkg"]));
     let retained = json!({"source":"npm:pkg","skills":4,"unknown":[1]});
-    let (mut manager, settings, _) = support::manager(&json!({"packages":[retained]}));
+    let (manager, settings, _) = support::manager(&json!({"packages":[retained]}));
     assert!(!manager.add_source_to_settings("npm:pkg", None).unwrap());
     assert!(manager.list_configured_packages().unwrap()[0].filtered);
     assert_eq!(
@@ -285,7 +285,7 @@ fn raw_package_errors_follow_the_consumed_entry() {
             .remove_source_from_settings("npm:pkg", None)
             .unwrap()
     );
-    let (mut manager, _, _) = support::manager(&json!({"packages":["npm:pkg",{}]}));
+    let (manager, _, _) = support::manager(&json!({"packages":["npm:pkg",{}]}));
     assert!(!manager.add_source_to_settings("npm:pkg", None).unwrap());
     assert!(
         manager
@@ -297,7 +297,7 @@ fn raw_package_errors_follow_the_consumed_entry() {
 #[cfg(unix)]
 fn later_bad_entries_preserve_earlier_root_cache_effects() {
     use maestro_settings::PackageSource;
-    let (mut manager, settings, effects) = support::manager(&json!({"packages":["npm:first",{}]}));
+    let (manager, settings, effects) = support::manager(&json!({"packages":["npm:first",{}]}));
     assert!(manager.list_configured_packages().is_err());
     assert_eq!(
         *effects.calls.borrow(),
@@ -315,7 +315,7 @@ fn later_bad_entries_preserve_earlier_root_cache_effects() {
 #[cfg(unix)]
 fn local_resolution_reads_home_and_cwd_only_when_needed() {
     use maestro_packages::InstalledSourceScope::User;
-    let (mut manager, settings, effects) = support::manager(&json!({}));
+    let (manager, settings, effects) = support::manager(&json!({}));
     effects.fail_ambient.set(true);
     effects.exists.set(true);
     assert_eq!(
@@ -349,7 +349,7 @@ fn local_resolution_reads_home_and_cwd_only_when_needed() {
             .0
             .contains_key("packages")
     );
-    let mut relative = DefaultPackageManager::new(
+    let relative = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: "relative".into(),
             agent_dir: "relative-agent".into(),
@@ -391,7 +391,7 @@ fn installed_paths_require_existing_contents_in_the_selected_scope() {
         ("./local", User, "/home/reader/agent/local"),
         ("./local", Project, "/work/project/.maestro/local"),
     ] {
-        let (mut manager, _, effects) = support::manager(&json!({}));
+        let (manager, _, effects) = support::manager(&json!({}));
         assert_eq!(manager.get_installed_path(source, scope).unwrap(), None);
         effects.exists.set(true);
         assert_eq!(
@@ -416,7 +416,7 @@ fn workflow(
             .cloned()
             .unwrap_or_default(),
     ))));
-    let mut manager = DefaultPackageManager::new(
+    let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: cwd.into(),
             agent_dir: agent.into(),
@@ -476,7 +476,13 @@ fn configured_sources_work_without_acquisition() {
     std::fs::create_dir_all(maestro_path::join(&[&cwd, ".maestro/git/github.com/u/r"])).unwrap();
     std::fs::create_dir_all(maestro_path::join(&[&root, "@scope"])).unwrap();
     std::fs::write(maestro_path::join(&[&root, "@scope/pkg"]), "contents").unwrap();
-    workflow(NativePackageOperations::new(|_| false), &cwd, &agent, &root).unwrap();
+    workflow(
+        NativePackageOperations::new(|_| false, Rc::new(|| false)),
+        &cwd,
+        &agent,
+        &root,
+    )
+    .unwrap();
     let effects = Rc::new(Effects::default());
     effects
         .outputs
@@ -541,7 +547,7 @@ fn windows_scopes_keep_drive_and_namespace_identity() {
         let settings = Rc::new(RefCell::new(
             SettingsManager::in_memory(Settings::default()),
         ));
-        let mut manager = DefaultPackageManager::new(
+        let manager = DefaultPackageManager::new(
             PackageManagerOptions {
                 cwd: cwd.into(),
                 agent_dir: agent.into(),
@@ -562,7 +568,7 @@ fn windows_scopes_keep_drive_and_namespace_identity() {
 fn configuration_writes_publish_before_flush_without_rewriting_noops() {
     let storage = Arc::new(Storage::default());
     let settings = Rc::new(RefCell::new(SettingsManager::from_storage(storage.clone())));
-    let mut manager = DefaultPackageManager::new(
+    let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: "/work/project".into(),
             agent_dir: "/agent".into(),
@@ -701,11 +707,31 @@ impl PackageOperations for WorkflowOperations {
     ) -> std::io::Result<maestro_packages::CommandOutput> {
         self.0.run_command_sync(command, args)
     }
+    fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
+        self.0.create_dir_all(path)
+    }
+    fn write_file(&self, path: &str, text: &str) -> std::io::Result<()> {
+        self.0.write_file(path, text)
+    }
+    fn directory_is_empty(&self, path: &str) -> std::io::Result<bool> {
+        self.0.directory_is_empty(path)
+    }
+    fn remove_path(&self, path: &str) -> std::io::Result<()> {
+        self.0.remove_path(path)
+    }
+    fn run_command<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        cwd: Option<&'a str>,
+    ) -> maestro_packages::PackageFuture<'a, Option<i32>> {
+        self.0.run_command(command, args, cwd)
+    }
 }
 
 /// Every public walk rejects this malformed selected value without a write.
 fn rejects_packages(root: &serde_json::Value) {
-    let (mut manager, settings, _) = support::manager(&json!({"packages":root}));
+    let (manager, settings, _) = support::manager(&json!({"packages":root}));
     assert!(manager.add_source_to_settings("npm:pkg", None).is_err());
     assert!(
         manager
@@ -743,7 +769,7 @@ struct NormalizationVector {
 #[cfg(unix)]
 fn snapshot_before_lookup() -> std::io::Result<()> {
     use maestro_packages::InstalledSourceScope::{Project, User};
-    let (mut manager, settings, effects) = support::manager(&json!({"packages":["npm:first"]}));
+    let (manager, settings, effects) = support::manager(&json!({"packages":["npm:first"]}));
     settings
         .borrow_mut()
         .set_project_packages(vec![maestro_settings::PackageSource::Source(
@@ -772,7 +798,7 @@ fn snapshot_before_lookup() -> std::io::Result<()> {
 /// A relative home operand needs ambient context only for scope-relative storage.
 #[cfg(unix)]
 fn relative_home_storage_needs_cwd() -> std::io::Result<()> {
-    let (mut manager, settings, effects) = support::manager(&json!({}));
+    let (manager, settings, effects) = support::manager(&json!({}));
     *effects.home_override.borrow_mut() = Some("relative-home".into());
     effects.fail_ambient.set(true);
     let result = manager.add_source_to_settings("~", None);
@@ -802,7 +828,7 @@ fn relative_home_storage_needs_cwd() -> std::io::Result<()> {
 
 #[test]
 fn short_hosts_and_public_domains_remain_separate_settings_entries() {
-    let (mut manager, settings, _) = support::manager(&json!({}));
+    let (manager, settings, _) = support::manager(&json!({}));
     let local = "https://gitlab/group/repo";
     let public = "https://gitlab.com/group/repo";
     assert!(manager.add_source_to_settings(local, None).unwrap());
@@ -828,7 +854,7 @@ fn short_hosts_and_public_domains_remain_separate_settings_entries() {
 fn numeric_scp_namespace_matches_git_transport_in_settings() {
     let scp = "git:git@git.example:123/repo.git";
     let https = "https://git.example/123/repo";
-    let (mut manager, settings, _) = support::manager(&json!({}));
+    let (manager, settings, _) = support::manager(&json!({}));
     assert!(manager.add_source_to_settings(scp, None).unwrap());
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
@@ -844,7 +870,7 @@ fn numeric_scp_namespace_matches_git_transport_in_settings() {
 
 #[test]
 fn queried_hosted_shortcut_matches_https_for_add_and_remove() {
-    let (mut manager, settings, _) = support::manager(&json!({}));
+    let (manager, settings, _) = support::manager(&json!({}));
     let shortcut = "git:github:octocat/Hello-World?tab=readme";
     let https = "https://github.com/octocat/Hello-World";
     assert!(manager.add_source_to_settings(shortcut, None).unwrap());

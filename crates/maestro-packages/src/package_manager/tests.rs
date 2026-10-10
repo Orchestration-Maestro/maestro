@@ -69,7 +69,7 @@ fn native_empty_environment_recovery_reads_procfs() {
             result.get("MAESTRO_ENV_SENTINEL").map(String::as_str),
             Some("a=b")
         );
-        let output = NativePackageOperations::new(|_| false)
+        let output = NativePackageOperations::new(|_| false, std::rc::Rc::new(|| false))
             .run_command_sync(
                 "/bin/sh",
                 &["-c".into(), "printf '%s' \"$MAESTRO_ENV_SENTINEL\"".into()],

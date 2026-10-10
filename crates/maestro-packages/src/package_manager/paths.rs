@@ -10,13 +10,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// # Errors
     /// Returns required path, settings or command failures.
     pub(super) fn installed_path(
-        &mut self,
+        &self,
         source: &str,
         scope: InstalledSourceScope,
     ) -> io::Result<Option<String>> {
         let path = match sources::parse(source) {
-            Source::Npm(name) => match scope {
-                InstalledSourceScope::User => join(&[self.global_npm_root()?, name]),
+            Source::Npm { name, .. } => match scope {
+                InstalledSourceScope::User => join(&[&self.global_npm_root()?, name]),
                 InstalledSourceScope::Project => {
                     join(&[&self.base(scope), "npm", "node_modules", name])
                 }
@@ -47,7 +47,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.resolve_operands(&[base, source])
     }
     /// Consults ambient directories only after authored operands fail to resolve.
-    fn resolve_operands(&self, operands: &[&str]) -> io::Result<String> {
+    pub(super) fn resolve_operands(&self, operands: &[&str]) -> io::Result<String> {
         if let Ok(path) = try_resolve(operands, &[]) {
             return Ok(path);
         }

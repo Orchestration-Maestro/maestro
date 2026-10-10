@@ -496,7 +496,9 @@ for records, plus the `maestro-models` edge for environment keys and OAuth recor
 `url =2.5.8` and `percent-encoding =2.3.2` with defaults (MIT OR Apache-2.0),
 plus inherited workspace serde_json for raw scoped settings. The selected parser
 adds `getset =0.1.7` and `nom =8.0.0` (MIT); it reuses the existing URL/IDNA
-closure and the `unicode-ident =1.0.24` hold. Serde derive and Tokio's native
-`rt` feature are test-only here. Internal dependencies are settings, resources
-and the shared path utility. Native effects use the standard library and remain
-outside the browser target; browser callers supply `PackageOperations`.
+closure and the `unicode-ident =1.0.24` hold. Outside browser targets it also uses
+Tokio `=1.53.2` (MIT; defaults off, `rt` and `process`) to wait for package
+commands; no Tokio type appears in a public interface. Serde derive is test-only
+here, as is Tokio's runtime builder. Internal dependencies are settings, resources
+and the shared path utility. Native effects use the standard library and Tokio and
+remain outside the browser target; browser callers supply `PackageOperations`.

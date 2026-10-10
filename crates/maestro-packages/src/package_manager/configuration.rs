@@ -11,7 +11,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// # Errors
     /// Returns consumed settings, borrow or local resolution failures.
     pub(super) fn add_source(
-        &mut self,
+        &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
@@ -33,7 +33,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// # Errors
     /// Returns consumed settings, borrow or local resolution failures.
     pub(super) fn remove_source(
-        &mut self,
+        &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
@@ -56,7 +56,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Lists original rows in user-then-project order with per-row content lookup.
     /// # Errors
     /// Returns a consumed entry, borrow, path or root lookup failure.
-    pub(super) fn configured_packages(&mut self) -> io::Result<Vec<super::ConfiguredPackage>> {
+    pub(super) fn configured_packages(&self) -> io::Result<Vec<super::ConfiguredPackage>> {
         let snapshots = {
             let settings = self
                 .options
@@ -122,7 +122,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         Ok(match sources::parse(source) {
             Source::Local(path) => Identity::Local(self.resolve_local(path, base)?),
             Source::Git(git) => Identity::Git(git.host, git.path),
-            Source::Npm(name) => Identity::Npm(name),
+            Source::Npm { name, .. } => Identity::Npm(name),
         })
     }
 }
