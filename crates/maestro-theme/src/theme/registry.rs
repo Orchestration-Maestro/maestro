@@ -1,10 +1,12 @@
 //! Theme registration, discovery and lookup over supplied directories.
+use super::lifecycle::Lifecycle;
 use super::loading::{build_theme, parse_custom};
 use super::{Theme, ThemeError, ThemeOperations, ThemeOptions};
 use indexmap::IndexMap;
 use maestro_path::join;
 use serde_json::Value;
-use std::cell::OnceCell;
+use std::borrow::Cow;
+use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 /// Shipped theme names in discovery order.
@@ -29,13 +31,15 @@ pub struct ThemeInfo {
 /// Lazy shipped data, registrations and effects for one set of theme directories.
 pub struct ThemeState {
     /// Supplied roots.
-    directories: ThemeDirectories,
+    pub(super) directories: ThemeDirectories,
     /// File, environment and sorting effects.
-    operations: Rc<dyn ThemeOperations>,
+    pub(super) operations: Rc<dyn ThemeOperations>,
     /// Shipped documents, filled only after every one was read and parsed.
     builtins: OnceCell<[Value; 2]>,
     /// Registered instances by name, in first-registration order.
-    registered: IndexMap<String, Rc<Theme>>,
+    pub(super) registered: RefCell<IndexMap<String, Rc<Theme>>>,
+    /// Published theme, selected name, change callback and watch.
+    pub(super) lifecycle: Lifecycle,
 }
 impl ThemeState {
     /// Retain the roots and effects; nothing is read until a query needs it.
@@ -45,16 +49,18 @@ impl ThemeState {
             directories,
             operations,
             builtins: OnceCell::new(),
-            registered: IndexMap::new(),
+            registered: RefCell::default(),
+            lifecycle: Lifecycle::default(),
         }
     }
     /// Replace every registration; unnamed themes are ignored and a repeated name
     /// keeps its first position with the last instance.
-    pub fn set_registered_themes(&mut self, themes: Vec<Rc<Theme>>) {
-        self.registered.clear();
+    pub fn set_registered_themes(&self, themes: Vec<Rc<Theme>>) {
+        let mut registered = self.registered.borrow_mut();
+        registered.clear();
         for theme in themes {
             if let Some(name) = theme.name().filter(|name| !name.is_empty()) {
-                self.registered.insert(name.to_owned(), Rc::clone(&theme));
+                registered.insert(name.to_owned(), Rc::clone(&theme));
             }
         }
     }
@@ -87,10 +93,16 @@ impl ThemeState {
     /// Any loading failure is absence.
     #[must_use]
     pub fn get_theme_by_name(&self, name: &str) -> Option<Rc<Theme>> {
-        if let Some(theme) = self.registered.get(name) {
-            return Some(Rc::clone(theme));
+        self.load_named(name).ok()
+    }
+
+    /// Return the registered instance, else a new instance from shipped or custom data.
+    pub(super) fn load_named(&self, name: &str) -> Result<Rc<Theme>, ThemeError> {
+        let registered = self.registered.borrow().get(name).cloned();
+        match registered {
+            Some(theme) => Ok(theme),
+            None => self.load_theme(name).map(Rc::new),
         }
-        self.load_theme(name).ok().map(Rc::new)
     }
 
     /// Select each name's first owner: shipped, then custom entry, then registration.
@@ -102,7 +114,7 @@ impl ThemeState {
             owners.insert(name.to_owned(), Some(path));
         }
         self.add_custom_owners(&mut owners)?;
-        for (name, theme) in &self.registered {
+        for (name, theme) in &*self.registered.borrow() {
             owners
                 .entry(name.clone())
                 .or_insert_with(|| theme.source_path().map(str::to_owned));
@@ -146,31 +158,46 @@ impl ThemeState {
         serde_json::from_str(&content)
             .map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))
     }
-    /// Construct a new instance from shipped data or the named custom entry.
+    /// Construct a new instance from the document that [`Self::document`] selects.
     fn load_theme(&self, name: &str) -> Result<Theme, ThemeError> {
-        let builtins = self.builtins()?;
-        if let Some(index) = BUILTIN_NAMES.iter().position(|builtin| *builtin == name) {
-            return build_theme(
-                &builtins[index],
-                None,
-                self.operations.as_ref(),
-                ThemeOptions::default(),
-            );
-        }
-        let path = join(&[&self.directories.custom_themes_dir, &format!("{name}.json")]);
-        if !self.operations.exists(&path) {
-            return Err(ThemeError::message(format!("Theme not found: {name}")));
-        }
-        let content = self
-            .operations
-            .read_to_string(&path)
-            .map_err(ThemeError::io)?;
-        let json = parse_custom(name, &content)?;
         build_theme(
-            &json,
+            &*self.document(name)?,
             None,
             self.operations.as_ref(),
             ThemeOptions::default(),
         )
+    }
+    /// Select the document of a name: shipped data, then a registration's source file,
+    /// then the custom entry. Shipped data is borrowed from the cache; files are reread.
+    ///
+    /// # Errors
+    /// Returns a registration without a source path, a missing custom file or a read,
+    /// parse or admission failure.
+    pub(super) fn document(&self, name: &str) -> Result<Cow<'_, Value>, ThemeError> {
+        let builtins = self.builtins()?;
+        if let Some(index) = BUILTIN_NAMES.iter().position(|builtin| *builtin == name) {
+            return Ok(Cow::Borrowed(&builtins[index]));
+        }
+        let registered = self.registered.borrow().get(name).cloned();
+        let (path, label) = if let Some(theme) = registered {
+            let path = theme.source_path().filter(|path| !path.is_empty());
+            let path = path.ok_or_else(|| {
+                ThemeError::message(format!(
+                    "Theme \"{name}\" does not have a source path for export"
+                ))
+            })?;
+            (path.to_owned(), path.to_owned())
+        } else {
+            let path = join(&[&self.directories.custom_themes_dir, &format!("{name}.json")]);
+            if !self.operations.exists(&path) {
+                return Err(ThemeError::message(format!("Theme not found: {name}")));
+            }
+            (path, name.to_owned())
+        };
+        let content = self
+            .operations
+            .read_to_string(&path)
+            .map_err(ThemeError::io)?;
+        parse_custom(&label, &content).map(Cow::Owned)
     }
 }

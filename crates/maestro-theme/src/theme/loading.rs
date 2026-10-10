@@ -221,7 +221,7 @@ fn authored(value: &Value) -> Result<ColorValue, ThemeError> {
     Err(ThemeError::message(format!("Invalid color value: {value}")))
 }
 /// Follow an immutable alias chain, rejecting revisits within this color only.
-fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeError> {
+pub(super) fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeError> {
     let mut current = value;
     let mut visited = HashSet::new();
     while let Some(name) = current

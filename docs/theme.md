@@ -110,6 +110,58 @@ Constructing it reads nothing.
   ending in a case-sensitive `.json`, directories included; contents are not read. A missing custom
   directory adds nothing; shipped-data and directory-listing failures are errors.
 
+## Live theme and change callback
+
+`ThemeState::theme` returns a `LiveTheme` handle whose `get` returns the
+currently published instance; clones read the same slot, and an `Rc<Theme>` already
+returned stays what it was. Before the first publication `get` fails with
+`Theme not initialized. Call initTheme() first.`
+
+- `init_theme` selects the given name, else `dark` or `light` from the second
+  `;`-separated field of `COLORFGBG` (below 8 or no leading decimal digits selects
+  `dark`; an empty name is a name, not an omission). A failure to load the name
+  selects and publishes `dark` silently. The callback is never invoked.
+- `set_theme` selects, publishes and then invokes the callback. A load failure or a
+  callback failure publishes `dark` and is reported as `ThemeChangeResult::Failure`
+  carrying the original message; only a failure to load `dark` is an error.
+- `set_theme_instance` publishes the supplied instance, selects `<in-memory>`,
+  stops watching and invokes the callback; a callback failure is returned and the
+  instance stays published.
+- `on_theme_change` replaces the one callback. It runs outside every state borrow,
+  so it may read the state, replace itself or publish again.
+
+## Watching and reload
+
+The watcher operand of `init_theme` and `set_theme` is `Some(operations)` to start
+watching and `None` to leave any existing watch untouched. Starting stops the
+previous watch and pending reload first, then watches the custom directory
+(non-recursively) when the selected name is not empty, `dark` or `light` and
+`<name>.json` exists there. A notification names the file, has no name or an empty
+one schedules a reload 100 ms later, restarting any pending one; other names and
+stale selections are ignored. The reload rereads the file, registers the new
+instance under the selected name, publishes it and invokes the callback. A missing
+or invalid file, or a callback failure, keeps the last good theme and is not
+reported. A watch failure closes only the watch; a pending reload still runs and
+nothing rewatches. `stop_theme_watcher` cancels both and keeps the published theme.
+
+`ThemeWatchOperations` supplies the directory watch and the timer;
+`NativeThemeWatchOperations` (not built for browsers) uses operating-system
+notifications and Tokio timers on a `LocalSet` that the caller creates and drives.
+Dropping the state, a watch or a timer cancels its pending work.
+
+## Resolved colors for export
+
+`get_resolved_theme_colors` returns every color of a theme as `#rrggbb` text in
+canonical key order: array-index keys ascending, then the rest in authored order. The
+document is the shipped one, else the file of a registration (a registration
+without a source path is an error), else the custom file. Palette indices expand to
+the 16 basic colors, the 6x6x6 cube and the 24-step gray ramp; an empty color becomes
+`#000000` when the name is exactly `light` and `#e5e5e7` otherwise. The name is the
+argument, else the selected theme, else the terminal background's theme.
+`get_theme_export_colors` resolves the optional `export` fields of the same document
+and returns none of them when anything fails; an empty field is absent.
+`is_light_theme` tests only the supplied name.
+
 ## Source metadata
 
 `Theme::source_info` and `Theme::set_source_info` expose a replaceable slot holding a

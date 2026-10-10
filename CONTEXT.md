@@ -100,7 +100,7 @@ are later scope, not active foundation concepts.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
 - **Web:** The browser frontend, including the offline exported session viewer.
-- **Theme:** The shared presentation library for style resolution and caller-specific code highlighting.
+- **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances.
 
 ### Structure
 

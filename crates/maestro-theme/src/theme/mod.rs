@@ -7,8 +7,19 @@ use std::rc::Rc;
 #[cfg(not(target_arch = "wasm32"))]
 mod collation;
 mod colors;
+mod export;
+pub mod fs_watch;
+mod lifecycle;
 mod loading;
 mod registry;
+mod watching;
+pub use export::{ThemeExportColors, is_light_theme};
+#[cfg(not(target_arch = "wasm32"))]
+pub use fs_watch::NativeThemeWatchOperations;
+pub use fs_watch::{
+    ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher, watch_with_error_handler,
+};
+pub use lifecycle::{LiveTheme, ThemeChangeResult};
 #[cfg(not(target_arch = "wasm32"))]
 pub use loading::NativeThemeOperations;
 pub use loading::{ThemeOperations, load_theme_from_path};
@@ -258,6 +269,13 @@ impl ThemeError {
         Self {
             message,
             cause: Some(Box::new(cause)),
+        }
+    }
+    /// Keep a change callback's failure as the cause, displayed as itself.
+    fn from_callback(cause: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        Self {
+            message: cause.to_string(),
+            cause: Some(cause),
         }
     }
     /// Keep an I/O failure, displayed as itself.
