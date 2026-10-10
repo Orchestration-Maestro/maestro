@@ -17,7 +17,7 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use serde::Deserialize;
-use support::{Entry, FakeOps, Git, load, plain, provider};
+use support::{Entry, FakeOps, Git, load, plain, provider, target};
 #[cfg(unix)]
 use support::{Scratch, git, install_executable, probe};
 
@@ -262,8 +262,8 @@ fn footer_discovers_metadata_without_skipping_broken_inner_repo() {
     for case in cases {
         let ops = FakeOps::new(case.input.files);
         ops.fail(
-            case.input.fail_stat.unwrap_or_default(),
-            case.input.fail_read.unwrap_or_default(),
+            &case.input.fail_stat.unwrap_or_default(),
+            &case.input.fail_read.unwrap_or_default(),
         );
         *ops.current.borrow_mut() = case.input.current;
         let cwd = case.input.cwd.as_deref().unwrap_or("/repo");
@@ -677,7 +677,7 @@ fn reading_callback(
         log.borrow_mut()
             .push((name.clone(), reader.get_git_branch()));
         if pending.replace(false) {
-            reader.set_cwd("/missing".to_owned());
+            reader.set_cwd(target("/missing"));
         }
     })
 }
@@ -692,9 +692,9 @@ fn footer_cwd_change_resets_before_notifying() {
                 let calls = Rc::new(RefCell::new(0));
                 let counter = Rc::clone(&calls);
                 let _keep = provider.on_branch_change(Rc::new(move || *counter.borrow_mut() += 1));
-                provider.set_cwd("/repo".to_owned());
+                provider.set_cwd(target("/repo"));
                 assert_eq!(*calls.borrow(), expected.same);
-                provider.set_cwd("/repo/child".to_owned());
+                provider.set_cwd(target("/repo/child"));
                 assert_eq!(*calls.borrow(), expected.spelling_change);
                 provider.dispose();
                 assert_eq!(provider.get_git_branch(), expected.branch);
@@ -708,7 +708,7 @@ fn footer_cwd_change_resets_before_notifying() {
                 provider.set_available_provider_count(4.0);
                 drop(provider.on_branch_change(reading_callback(&provider, &seen, "a", true)));
                 drop(provider.on_branch_change(reading_callback(&provider, &seen, "b", false)));
-                provider.set_cwd("/repo/child".to_owned());
+                provider.set_cwd(target("/repo/child"));
                 assert_eq!(*seen.borrow(), expected.seen);
                 assert_eq!(
                     provider.get_extension_statuses().iter().collect::<Vec<_>>(),
@@ -771,10 +771,10 @@ fn footer_callbacks_follow_live_membership() {
     let remove_a = provider.on_branch_change(Rc::clone(&a));
     drop(provider.on_branch_change(Rc::clone(&a)));
     *remove_b.borrow_mut() = Some(provider.on_branch_change(logger(&seen, "b")));
-    provider.set_cwd("/changed".to_owned());
+    provider.set_cwd(target("/changed"));
     remove_a();
     remove_a();
-    provider.set_cwd("/again".to_owned());
+    provider.set_cwd(target("/again"));
     assert_eq!(
         *seen.borrow(),
         expected_seen("footer_callbacks_follow_live_membership")
@@ -816,11 +816,11 @@ fn footer_unsubscribe_tracks_callback_identity() {
             UnsubscribeCase::Identity { expected, .. } => {
                 let old = provider.on_branch_change(Rc::clone(&callback));
                 drop(provider.on_branch_change(Rc::clone(&callback)));
-                provider.set_cwd("/first".to_owned());
+                provider.set_cwd(target("/first"));
                 old();
                 drop(provider.on_branch_change(Rc::clone(&callback)));
                 old();
-                provider.set_cwd("/second".to_owned());
+                provider.set_cwd(target("/second"));
                 assert_eq!(*seen.borrow(), expected.seen);
             }
             UnsubscribeCase::Dropped {
@@ -828,7 +828,7 @@ fn footer_unsubscribe_tracks_callback_identity() {
             } => {
                 assert_eq!(input.scenario, "dropping-handle-keeps-subscription");
                 drop(provider.on_branch_change(callback));
-                provider.set_cwd("/changed".to_owned());
+                provider.set_cwd(target("/changed"));
                 assert_eq!(seen.borrow().len(), expected.calls);
             }
         }
@@ -859,7 +859,7 @@ fn footer_callbacks_revisit_reinserted_members() {
     let weak = Rc::downgrade(&a);
     *remove.borrow_mut() = Some(provider.on_branch_change(a));
     drop(provider.on_branch_change(logger(&seen, "b")));
-    provider.set_cwd("/next".to_owned());
+    provider.set_cwd(target("/next"));
     assert_eq!(
         *seen.borrow(),
         expected_seen("footer_callbacks_revisit_reinserted_members")
@@ -915,7 +915,7 @@ fn footer_readonly_aliases_keep_live_metadata() {
         }));
         owner.set_extension_status("z", Some("ready"));
         owner.set_available_provider_count(3.0);
-        owner.set_cwd("/absent".to_owned());
+        owner.set_cwd(target("/absent"));
         owner.dispose();
         assert_eq!(
             read_only(&reader),
