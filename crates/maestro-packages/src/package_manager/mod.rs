@@ -135,7 +135,7 @@ pub trait PackageManager {
     /// Updates matching configured registrations; absent or empty input selects all.
     /// Does not persist settings; matched local and pinned sources are skipped.
     /// # Errors
-    /// Returns selection, callback, command or worker-admission failures.
+    /// Returns selection, callback, filesystem, command or worker-admission failures.
     fn update(self: Rc<Self>, source: Option<&str>) -> PackageFuture<'static, ()>
     where
         Self: 'static;

@@ -11,7 +11,7 @@ use maestro_packages::{
 use maestro_settings::{Settings, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use worker_support::{Gates, bounded, driver};
+use worker_support::{Gates, driver};
 
 #[test]
 fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
@@ -742,12 +742,12 @@ fn availability_returns_typed_records_in_source_order() {
     let result = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for index in 0..4 {
-            assert_eq!(bounded(starts.recv()).await, Some(index));
+            assert_eq!(starts.recv().await, Some(index));
         }
         for index in (0..4).rev() {
             gates.finish(index);
         }
-        let result = bounded(result).await.unwrap().unwrap();
+        let result = result.await.unwrap().unwrap();
         assert_eq!(
             sources(&result),
             [
@@ -796,12 +796,12 @@ fn four_workers_claim_slots_without_global_serialization() {
     let second = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for _ in 0..8 {
-            bounded(started.recv()).await.unwrap();
+            started.recv().await.unwrap();
         }
         assert_eq!(effects.spawns.get(), 8);
         release.send(true).unwrap();
-        assert_eq!(bounded(first).await.unwrap().unwrap().len(), 4);
-        assert_eq!(bounded(second).await.unwrap().unwrap().len(), 4);
+        assert_eq!(first.await.unwrap().unwrap().len(), 4);
+        assert_eq!(second.await.unwrap().unwrap().len(), 4);
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
 }
@@ -825,10 +825,10 @@ fn first_failure_keeps_other_workers_claiming_sources() {
     let result = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for i in 0..3 {
-            assert_eq!(bounded(starts.recv()).await, Some(i));
+            assert_eq!(starts.recv().await, Some(i));
         }
         assert!(
-            bounded(result)
+            result
                 .await
                 .unwrap()
                 .unwrap_err()
@@ -836,11 +836,11 @@ fn first_failure_keeps_other_workers_claiming_sources() {
                 .contains("first failure")
         );
         gates.finish(1);
-        assert_eq!(bounded(starts.recv()).await, Some(3));
+        assert_eq!(starts.recv().await, Some(3));
         gates.finish(3);
-        assert_eq!(bounded(starts.recv()).await, Some(4));
+        assert_eq!(starts.recv().await, Some(4));
         gates.finish(4);
-        assert_eq!(bounded(starts.recv()).await, Some(5));
+        assert_eq!(starts.recv().await, Some(5));
         for i in [0, 2, 5] {
             gates.finish(i);
         }
@@ -870,12 +870,12 @@ fn availability_releases_last_owner_after_remaining_work() {
     drop(manager);
     runtime.block_on(local.run_until(async {
         for i in 0..3 {
-            assert_eq!(bounded(starts.recv()).await, Some(i));
+            assert_eq!(starts.recv().await, Some(i));
         }
-        assert!(bounded(result).await.unwrap().is_err());
+        assert!(result.await.unwrap().is_err());
         assert!(weak.upgrade().is_some());
         gates.finish(0);
-        assert_eq!(bounded(starts.recv()).await, Some(3));
+        assert_eq!(starts.recv().await, Some(3));
         for i in [1, 2, 3] {
             gates.finish(i);
         }
@@ -969,7 +969,7 @@ fn check_pool_size(count: usize) {
     let result = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for index in 0..count.min(4) {
-            assert_eq!(bounded(starts.recv()).await, Some(index));
+            assert_eq!(starts.recv().await, Some(index));
         }
         if count > 0 {
             assert_eq!(effects.spawns.get(), count.min(4));
@@ -982,10 +982,10 @@ fn check_pool_size(count: usize) {
         for (completed, index) in completion.into_iter().enumerate() {
             gates.finish(index);
             if completed + 4 < count {
-                assert_eq!(bounded(starts.recv()).await, Some(completed + 4));
+                assert_eq!(starts.recv().await, Some(completed + 4));
             }
         }
-        let result = bounded(result).await.unwrap().unwrap();
+        let result = result.await.unwrap().unwrap();
         let ordered: Vec<_> = result.iter().map(|r| r.display_name.as_str()).collect();
         let expected = &[
             "p0",

@@ -22,8 +22,7 @@ individual npm/Git checks read the value again before probing.
 
 Call [`PackageManager::update`](../crates/maestro-packages/src/package_manager/mod.rs)
 on an `Rc` manager. Absent or empty input selects all registrations; named input
-uses [configured source identity](package-sources.md). Execution retains user-then-project
-scope order and duplicates without writing settings. Selection precedes the
+uses [configured source identity](package-sources.md). Selection retains registration order and duplicates without writing settings. Selection precedes the
 offline return, so an unmatched named input still fails offline and can suggest
 the first configured shorthand match.
 

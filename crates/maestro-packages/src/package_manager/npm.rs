@@ -136,8 +136,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         rows: &[super::update::ConfiguredUpdateSource],
         scope: InstalledSourceScope,
     ) -> io::Result<()> {
-        let label = if rows.len() == 1 {
-            rows[0].source.clone()
+        let label: std::borrow::Cow<str> = if let [row] = rows {
+            (&row.source).into()
         } else {
             format!(
                 "{} npm packages",
@@ -147,6 +147,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                     "project"
                 }
             )
+            .into()
         };
         let specs: Vec<_> = rows
             .iter()

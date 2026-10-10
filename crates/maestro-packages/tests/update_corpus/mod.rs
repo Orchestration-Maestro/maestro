@@ -4,12 +4,12 @@ mod parallel;
 mod types;
 use super::support;
 use maestro_packages::{
-    DefaultPackageManager, PackageManager, PackageManagerOptions, ProgressEventType,
+    DefaultPackageManager, PackageManager, PackageManagerOptions, ProgressAction, ProgressEventType,
 };
 use maestro_settings::{PackageSource, SettingsListEntry, SettingsManager};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
-use types::{Case, Command, Event, Expected, Files, GitInput, Input, Response};
+use types::{Case, Command, Event, Expected, Files, GitInput, Input, Outcome, Response};
 
 /// Runs each committed case once, comparing every retained observation.
 pub fn replay() {
@@ -50,21 +50,25 @@ fn manager(
     (manager, settings, effects)
 }
 /// Replays one operation with controlled process responses or native repository effects.
-fn run(input: Input) -> Expected {
+fn run(input: Input) -> Outcome {
     match input {
-        Input::Native { scenario } => Expected {
-            native: Some(native::run(&scenario)),
-            ..Expected::default()
+        Input::Native { scenario } => Outcome::Native {
+            native: native::run(&scenario),
         },
         Input::Parallel {
             user_jobs,
             project_jobs,
             git_jobs,
-        } => Expected {
-            groups: Some(parallel::run(user_jobs, project_jobs, git_jobs)),
-            ..Expected::default()
+        } => Outcome::Groups {
+            groups: parallel::run(user_jobs, project_jobs, git_jobs),
         },
-        other => controlled(other),
+        Input::Named { .. } | Input::Offline { .. } => {
+            let Expected {
+                commands, error, ..
+            } = controlled(input);
+            Outcome::Selection { commands, error }
+        }
+        other => Outcome::Controlled(controlled(other)),
     }
 }
 /// Selects settings and an optional named argument for each public input class.
@@ -166,7 +170,14 @@ fn event_record(event: &maestro_packages::ProgressEvent, observer: Option<String
             ProgressEventType::Progress => "progress",
         }
         .into(),
-        action: "update".into(),
+        action: match event.action {
+            ProgressAction::Install => "install",
+            ProgressAction::Remove => "remove",
+            ProgressAction::Update => "update",
+            ProgressAction::Clone => "clone",
+            ProgressAction::Pull => "pull",
+        }
+        .into(),
         source: event.source.clone(),
         message: event.message.clone(),
         observer,

@@ -10,7 +10,7 @@ use maestro_packages::{
 use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use worker_support::{Gates, bounded, driver};
+use worker_support::{Gates, driver};
 
 #[test]
 fn updates_selected_unpinned_source_beside_pin() {
@@ -183,6 +183,45 @@ fn named_updates_preserve_both_scopes_and_duplicate_registrations() {
         settings.borrow().get_project_settings().0["packages"],
         json!(["npm:a@next", "npm:a"])
     );
+}
+
+#[test]
+fn clone_transport_aliases_select_one_git_identity() {
+    let (manager, _, effects) = configured(
+        json!(["git:github.com/acme/tool@main"]),
+        json!([
+            "https://github.com/acme/tool.git",
+            "git:github.com/acme/tool",
+            "git:github.com/acme/other"
+        ]),
+    );
+    effects.exists.set(true);
+    immediate_probes(&effects);
+    update(manager, &effects, Some("git:git@github.com:acme/tool.git")).unwrap();
+    let fetched: Vec<_> = effects
+        .calls
+        .borrow()
+        .iter()
+        .filter(|(program, args)| program == "git" && args[0] == "fetch")
+        .cloned()
+        .collect();
+    assert_eq!(fetched.len(), 2, "{fetched:?}");
+}
+
+#[test]
+fn cross_scope_suggestions_prefer_the_user_registration() {
+    for (user, project, expected) in [
+        ("npm:a@1", "npm:a", "npm:a@1"),
+        ("npm:a", "npm:a@1", "npm:a"),
+    ] {
+        let (manager, _, effects) = configured(json!([user]), json!([project]));
+        assert_eq!(
+            update(manager, &effects, Some("a"))
+                .unwrap_err()
+                .to_string(),
+            format!("No matching package found for a. Did you mean {expected}?")
+        );
+    }
 }
 
 #[test]
@@ -546,17 +585,19 @@ fn four_update_workers_preserve_order_across_independent_calls() {
         let (gates, mut starts) = Gates::install(&effects, count);
         let result = local.spawn_local(manager.update(None));
         runtime.block_on(local.run_until(async {
+            tokio::task::yield_now().await;
+            assert_eq!(effects.spawns.get(), count.min(4));
             for index in 0..count.min(4) {
-                assert_eq!(bounded(starts.recv()).await, Some(index));
+                assert_eq!(starts.recv().await, Some(index));
             }
             for index in 4..count {
                 gates.finish(index - 4);
-                assert_eq!(bounded(starts.recv()).await, Some(index));
+                assert_eq!(starts.recv().await, Some(index));
             }
             for index in (count.saturating_sub(4)..count).rev() {
                 gates.finish(index);
             }
-            bounded(result).await.unwrap().unwrap();
+            result.await.unwrap().unwrap();
             if count > 0 {
                 let args = effects.calls.borrow().last().unwrap().1.clone();
                 assert_eq!(
@@ -592,12 +633,12 @@ fn independent_calls() {
     let update = local.spawn_local(manager.update(None));
     runtime.block_on(local.run_until(async {
         for _ in 0..8 {
-            bounded(started.recv()).await.unwrap();
+            started.recv().await.unwrap();
         }
         assert_eq!(effects.spawns.get(), 8);
         release.send(true).unwrap();
-        assert_eq!(bounded(availability).await.unwrap().unwrap().len(), 4);
-        bounded(update).await.unwrap().unwrap();
+        assert_eq!(availability.await.unwrap().unwrap().len(), 4);
+        update.await.unwrap().unwrap();
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
 }
@@ -755,10 +796,13 @@ fn runtime_admission_errors_keep_accepted_work() {
             manager.clone().update(None).await.unwrap_err().to_string(),
             "admission failed"
         );
-        assert_eq!(bounded(finished.recv()).await, Some("a".into()));
-        assert_eq!(bounded(finished.recv()).await, Some("b".into()));
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
+    let mut finished_labels = Vec::new();
+    while let Ok(label) = finished.try_recv() {
+        finished_labels.push(label);
+    }
+    assert_eq!(finished_labels, ["a", "b"]);
     assert!(
         effects
             .calls
@@ -844,7 +888,7 @@ fn npm_checks_finish_before_parallel_npm_and_git_groups() {
     let operation = local.spawn_local(manager.update(None));
     runtime.block_on(local.run_until(async {
         for _ in 0..4 {
-            bounded(checking.recv()).await.unwrap();
+            checking.recv().await.unwrap();
         }
         // All check workers are blocked at their producer gates, so execution cannot advance.
         assert!(matches!(
@@ -854,13 +898,13 @@ fn npm_checks_finish_before_parallel_npm_and_git_groups() {
         release_checks.send(true).unwrap();
         let mut admitted = Vec::new();
         for _ in 0..6 {
-            admitted.push(bounded(started.recv()).await.unwrap());
+            admitted.push(started.recv().await.unwrap());
         }
         admitted.sort();
         assert_eq!(admitted, ["g0", "g1", "g2", "g3", "project", "user"]);
         release_work.send(true).unwrap();
-        assert_eq!(bounded(started.recv()).await.as_deref(), Some("g4"));
-        bounded(operation).await.unwrap().unwrap();
+        assert_eq!(started.recv().await.as_deref(), Some("g4"));
+        operation.await.unwrap().unwrap();
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
 }
@@ -902,17 +946,17 @@ fn failed_execution(failure: &'static str) -> (Vec<String>, bool, bool) {
     let operation = local.spawn_local(manager.update(None));
     let (finished, retained) = runtime.block_on(local.run_until(async {
         assert_eq!(
-            bounded(operation).await.unwrap().unwrap_err().to_string(),
+            operation.await.unwrap().unwrap_err().to_string(),
             "first execution failure"
         );
         let retained = weak.upgrade().is_some();
         for _ in 0..5 {
-            bounded(starts.recv()).await.unwrap();
+            starts.recv().await.unwrap();
         }
         release.send(true).unwrap();
         let mut finished = Vec::new();
         for _ in 0..6 {
-            finished.push(bounded(completions.recv()).await.unwrap());
+            finished.push(completions.recv().await.unwrap());
         }
         (finished, retained)
     }));
@@ -943,21 +987,19 @@ fn first_update_error_keeps_siblings_claiming_work() {
     let operation = local.spawn_local(manager.update(None));
     runtime.block_on(local.run_until(async {
         assert_eq!(
-            bounded(operation).await.unwrap().unwrap_err().to_string(),
+            operation.await.unwrap().unwrap_err().to_string(),
             "Failed to run npm root -g: first root failure"
         );
-        for index in 1..4 {
-            assert_eq!(bounded(starts.recv()).await, Some(index));
-        }
-        for index in 4..7 {
-            gates.finish(index - 3);
-            assert_eq!(bounded(starts.recv()).await, Some(index));
-        }
-        for index in 4..7 {
+        for index in 1..7 {
             gates.finish(index);
         }
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
+    let mut claimed = Vec::new();
+    while let Ok(index) = starts.try_recv() {
+        claimed.push(index);
+    }
+    assert_eq!(claimed, [1, 2, 3, 4, 5, 6]);
     assert!(
         effects
             .calls

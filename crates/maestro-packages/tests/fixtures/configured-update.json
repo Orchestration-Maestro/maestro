@@ -11,7 +11,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for git@github.com:acme/tool.git"
     }
   },
@@ -27,7 +26,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for npm:missing"
     }
   },
@@ -45,7 +43,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for a. Did you mean npm:a@1?"
     }
   },
@@ -62,7 +59,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for a@next. Did you mean npm:a@next?"
     }
   },
@@ -78,7 +74,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for @org/a. Did you mean npm:@org/a@next?"
     }
   },
@@ -95,7 +90,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for github.com/acme/tool. Did you mean git:github.com/acme/tool@v1?"
     }
   },
@@ -112,7 +106,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for github.com/acme/tool@v1. Did you mean git:github.com/acme/tool@v1?"
     }
   },
@@ -128,7 +121,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for ﻿a﻿. Did you mean npm:a?"
     }
   },
@@ -144,7 +136,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for a"
     }
   },
@@ -160,7 +151,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for A"
     }
   },
@@ -176,7 +166,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for folder"
     }
   },
@@ -193,7 +182,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for missing"
     }
   },
@@ -210,7 +198,6 @@
     },
     "expected": {
       "commands": [],
-      "events": [],
       "error": "No matching package found for npm:missing"
     }
   },
@@ -226,8 +213,7 @@
       ]
     },
     "expected": {
-      "commands": [],
-      "events": []
+      "commands": []
     }
   },
   {
@@ -242,8 +228,7 @@
       ]
     },
     "expected": {
-      "commands": [],
-      "events": []
+      "commands": []
     }
   },
   {
@@ -258,8 +243,7 @@
       ]
     },
     "expected": {
-      "commands": [],
-      "events": []
+      "commands": []
     }
   },
   {
@@ -281,8 +265,7 @@
             "a@latest"
           ]
         }
-      ],
-      "events": []
+      ]
     }
   },
   {
@@ -293,8 +276,7 @@
       "user": []
     },
     "expected": {
-      "commands": [],
-      "events": []
+      "commands": []
     }
   },
   {
@@ -3279,8 +3261,6 @@
       "gitJobs": 5
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "groups": {
         "first": {
           "user": true,
@@ -3318,8 +3298,6 @@
       "scenario": "current"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "dirty",
         "untrackedExists": true,
@@ -3338,8 +3316,6 @@
       "scenario": "one"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "updated",
         "untrackedExists": false,
@@ -3358,8 +3334,6 @@
       "scenario": "multiple"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "fourth",
         "untrackedExists": false,
@@ -3378,8 +3352,6 @@
       "scenario": "detached"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "updated",
         "untrackedExists": false,
@@ -3398,8 +3370,6 @@
       "scenario": "non-origin"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "updated",
         "untrackedExists": false,
@@ -3418,8 +3388,6 @@
       "scenario": "rewritten"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "rewritten",
         "untrackedExists": false,
@@ -3438,8 +3406,6 @@
       "scenario": "removed"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "removed-replaced",
         "untrackedExists": false,
@@ -3458,8 +3424,6 @@
       "scenario": "replacement"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "unrelated",
         "untrackedExists": false,
@@ -3478,8 +3442,6 @@
       "scenario": "pinned"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "initial",
         "untrackedExists": false,
@@ -3498,8 +3460,6 @@
       "scenario": "scope-only"
     },
     "expected": {
-      "commands": [],
-      "events": [],
       "native": {
         "content": "updated",
         "untrackedExists": false,

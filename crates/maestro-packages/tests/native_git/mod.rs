@@ -82,8 +82,16 @@ impl Repository {
         git(&self.seed, &["commit", "-m", text]);
         git(&self.seed, &["push", "--force", "origin", "main"]);
     }
-    /// Updates only the configured user registration on a caller-driven runtime.
+    /// Updates by naming the configured user registration.
     pub fn update(&self, pinned: bool) {
+        self.run_update(pinned, Some("git:github.com/acme/tool"));
+    }
+    /// Updates every configured registration, naming none.
+    pub fn update_all(&self, pinned: bool) {
+        self.run_update(pinned, None);
+    }
+    /// Updates the configured user registration on a caller-driven runtime.
+    fn run_update(&self, pinned: bool, source: Option<&str>) {
         let settings = Rc::new(RefCell::new(
             SettingsManager::in_memory(Settings::default()),
         ));
@@ -108,7 +116,7 @@ impl Repository {
             .build()
             .unwrap();
         runtime
-            .block_on(local.run_until(manager.update(Some("git:github.com/acme/tool"))))
+            .block_on(local.run_until(manager.update(source)))
             .unwrap();
         runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     }

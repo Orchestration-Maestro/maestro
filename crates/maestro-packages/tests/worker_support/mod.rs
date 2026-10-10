@@ -87,9 +87,3 @@ pub fn driver(effects: &support::Effects) -> (tokio::runtime::Runtime, Rc<tokio:
         local,
     )
 }
-/// Bounds a broken asynchronous witness without relying on a delay for correctness.
-pub async fn bounded<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::time::timeout(std::time::Duration::from_secs(5), future)
-        .await
-        .expect("controlled completion witness did not fire")
-}

@@ -35,18 +35,11 @@ pub(super) fn run(user_jobs: usize, project_jobs: usize, git_jobs: usize) -> Gro
     let operation = local.spawn_local(manager.update(None));
     let first = runtime.block_on(local.run_until(async {
         for _ in 0..user_jobs.min(1) + project_jobs.min(1) + git_jobs.min(4) {
-            tokio::time::timeout(std::time::Duration::from_secs(5), ready.recv())
-                .await
-                .unwrap()
-                .unwrap();
+            ready.recv().await.unwrap();
         }
         let first = started.borrow().clone();
         release.send(true).unwrap();
-        tokio::time::timeout(std::time::Duration::from_secs(5), operation)
-            .await
-            .unwrap()
-            .unwrap()
-            .unwrap();
+        operation.await.unwrap().unwrap();
         first
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());

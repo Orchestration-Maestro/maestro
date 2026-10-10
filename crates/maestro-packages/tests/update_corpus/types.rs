@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-/// One distinct recorded input and its entire projected observation tree.
+/// One distinct recorded input and the observations its class produces.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Case {
@@ -12,7 +12,7 @@ pub struct Case {
     /// Public input and controlled adapter responses.
     pub input: Input,
     /// Recorded observable result.
-    pub expected: Expected,
+    pub expected: Outcome,
 }
 /// The public operation scenario and the fields it consumes.
 #[derive(Deserialize)]
@@ -168,7 +168,31 @@ pub struct Groups {
     /// Jobs with after-effect completion witnesses.
     pub finished: BTreeMap<String, bool>,
 }
-/// Entire observable result; every retained field participates in equality.
+/// The observation shape each input class actually produces.
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum Outcome {
+    /// Checkout state read back from real repositories.
+    Native {
+        /// Native post-update observations.
+        native: Native,
+    },
+    /// Group memberships observed at the producer barrier.
+    Groups {
+        /// Execution group memberships.
+        groups: Groups,
+    },
+    /// Selection and offline admission, observed without a progress callback.
+    Selection {
+        /// Ordered captured and inherited commands.
+        commands: Vec<Command>,
+        /// Winning failure, if any.
+        error: Option<String>,
+    },
+    /// Commands, events and settings observed through controlled adapters.
+    Controlled(Expected),
+}
+/// Controlled-adapter observations; every retained field participates in equality.
 #[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Expected {
@@ -184,10 +208,6 @@ pub struct Expected {
     pub project: Option<Value>,
     /// Project preparation bytes.
     pub files: Option<Files>,
-    /// Native post-update observations.
-    pub native: Option<Native>,
-    /// Execution group memberships.
-    pub groups: Option<Groups>,
 }
 
 /// Independent comparisons against the remote and originally installed heads.

@@ -6,7 +6,11 @@ use crate::native_git::{Repository, git};
 pub(super) fn run(scenario: &str) -> Native {
     let repo = Repository::new();
     prepare(&repo, scenario);
-    repo.update(scenario == "pinned");
+    if scenario == "scope-only" {
+        repo.update(false);
+    } else {
+        repo.update_all(scenario == "pinned");
+    }
     let head = git(&repo.target, &["rev-parse", "HEAD"]);
     Native {
         heads: Heads {
@@ -55,7 +59,7 @@ fn prepare(repo: &Repository, scenario: &str) {
 fn replacement(repo: &Repository, scenario: &str) {
     repo.commit("second");
     repo.commit("third");
-    repo.update(false);
+    repo.update_all(false);
     if scenario == "replacement" {
         git(&repo.seed, &["checkout", "--orphan", "replacement"]);
         git(&repo.seed, &["rm", "-rf", "."]);
