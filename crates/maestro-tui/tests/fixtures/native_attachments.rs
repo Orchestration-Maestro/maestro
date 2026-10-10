@@ -155,12 +155,22 @@ pub(crate) async fn native_cases(group: &str) {
 }
 
 /// An owned child script, invoked directly without adapter shell interpolation.
+///
+/// The executable is created by a child `install`, so this process never holds a
+/// writable descriptor to a file it later runs (a concurrent fork would otherwise
+/// make `exec` fail with "Text file busy").
 #[cfg(unix)]
 pub(crate) fn child_script(tree: &Tree, source: &str) -> String {
-    use std::os::unix::fs::PermissionsExt;
+    let text = tree.0.join("child.py");
     let path = tree.0.join("child");
-    std::fs::write(&path, format!("#!/usr/bin/env python3\n{source}\n")).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    std::fs::write(&text, format!("#!/usr/bin/env python3\n{source}\n")).unwrap();
+    let status = std::process::Command::new("install")
+        .args(["-m", "0700"])
+        .arg(&text)
+        .arg(&path)
+        .status()
+        .unwrap();
+    assert!(status.success());
     path.to_str().unwrap().into()
 }
 
