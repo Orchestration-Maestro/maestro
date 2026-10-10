@@ -2,8 +2,13 @@
 use crate::{GitSource, parse_git_url};
 /// A source's identity-bearing kind.
 pub(super) enum Source<'a> {
-    /// A parsed npm name.
-    Npm(&'a str),
+    /// An npm package: the full trimmed spec and the name selected from it.
+    Npm {
+        /// The trimmed text after the `npm:` prefix.
+        spec: &'a str,
+        /// The package name within the spec.
+        name: &'a str,
+    },
     /// A selected repository.
     Git(GitSource),
     /// An authored local path.
@@ -12,7 +17,11 @@ pub(super) enum Source<'a> {
 /// Applies literal npm precedence, then shared local admission, then Git.
 pub(super) fn parse(source: &str) -> Source<'_> {
     if let Some(spec) = source.strip_prefix("npm:") {
-        return Source::Npm(npm_name(crate::trim(spec)));
+        let spec = crate::trim(spec);
+        return Source::Npm {
+            spec,
+            name: npm_name(spec),
+        };
     }
     if !maestro_resources::is_local_path(source)
         && let Some(git) = parse_git_url(source)

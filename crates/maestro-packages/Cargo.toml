@@ -14,6 +14,9 @@ url = "=2.5.8"
 percent-encoding = "=2.3.2"
 serde_json.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "process"] }
+
 [dev-dependencies]
 serde.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["rt"] }

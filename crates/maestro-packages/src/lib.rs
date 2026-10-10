@@ -1,4 +1,4 @@
-//! Configured package sources and repository identities.
+//! Package sources: identities, configuration, acquisition and removal.
 #![doc = include_str!("../../../docs/package-sources.md")]
 
 mod git;
@@ -14,6 +14,7 @@ mod package_manager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use package_manager::NativePackageOperations;
 pub use package_manager::{
-    CommandOutput, ConfiguredPackage, DefaultPackageManager, InstalledSourceScope, PackageManager,
-    PackageManagerOptions, PackageOperations,
+    CommandOutput, ConfiguredPackage, DefaultPackageManager, InstalledSourceScope, PackageFuture,
+    PackageManager, PackageManagerOptions, PackageOperations, ProgressAction, ProgressCallback,
+    ProgressEvent, ProgressEventType,
 };

@@ -10,13 +10,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// # Errors
     /// Returns required path, settings or command failures.
     pub(super) fn installed_path(
-        &mut self,
+        &self,
         source: &str,
         scope: InstalledSourceScope,
     ) -> io::Result<Option<String>> {
         let path = match sources::parse(source) {
-            Source::Npm(name) => match scope {
-                InstalledSourceScope::User => join(&[self.global_npm_root()?, name]),
+            Source::Npm { name, .. } => match scope {
+                InstalledSourceScope::User => join(&[&self.global_npm_root()?, name]),
                 InstalledSourceScope::Project => {
                     join(&[&self.base(scope), "npm", "node_modules", name])
                 }
@@ -47,45 +47,49 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.resolve_operands(&[base, source])
     }
     /// Consults ambient directories only after authored operands fail to resolve.
-    fn resolve_operands(&self, operands: &[&str]) -> io::Result<String> {
-        if let Ok(path) = try_resolve(operands, &[]) {
-            return Ok(path);
+    pub(super) fn resolve_operands(&self, operands: &[&str]) -> io::Result<String> {
+        Ok(self.resolve_together(&[operands])?.concat())
+    }
+    /// Resolves each operand group against one ambient context, read at most once.
+    pub(super) fn resolve_together(&self, groups: &[&[&str]]) -> io::Result<Vec<String>> {
+        let plain: Result<Vec<_>, _> = groups.iter().map(|g| try_resolve(g, &[])).collect();
+        if let Ok(paths) = plain {
+            return Ok(paths);
         }
         #[cfg(windows)]
-        let directory = operands
-            .iter()
-            .rev()
-            .find_map(|path| {
-                let bytes = path.as_bytes();
-                bytes
-                    .first()
-                    .filter(|letter| letter.is_ascii_alphabetic() && bytes.get(1) == Some(&b':'))
-                    .map(|letter| char::from(*letter))
-            })
-            .and_then(|drive| {
-                self.operations
-                    .drive_directory(drive)
-                    .map(|directory| (drive, directory))
-            });
+        let directories: Vec<(char, String)> = {
+            let mut found: Vec<(char, String)> = Vec::new();
+            for group in groups {
+                let letter = group.iter().rev().find_map(|path| {
+                    let bytes = path.as_bytes();
+                    bytes
+                        .first()
+                        .filter(|l| l.is_ascii_alphabetic() && bytes.get(1) == Some(&b':'))
+                        .map(|l| char::from(*l))
+                });
+                if let Some(drive) = letter.filter(|d| found.iter().all(|(known, _)| known != d)) {
+                    if let Some(directory) = self.operations.drive_directory(drive) {
+                        found.push((drive, directory));
+                    }
+                }
+            }
+            found
+        };
         #[cfg(windows)]
-        let drives: Vec<_> = directory
-            .iter()
-            .map(|(drive, path)| (*drive, path.as_str()))
-            .collect();
+        let drives: Vec<_> = directories.iter().map(|(d, p)| (*d, p.as_str())).collect();
         #[cfg(not(windows))]
         let drives = [];
-        #[cfg(windows)]
-        if let Ok(path) = try_resolve(operands, &drives) {
-            return Ok(path);
+        let with_drives: Result<Vec<_>, _> =
+            groups.iter().map(|g| try_resolve(g, &drives)).collect();
+        if let Ok(paths) = with_drives {
+            return Ok(paths);
         }
         let current = self.operations.current_dir()?;
-        Ok(resolve(
-            operands,
-            &Cwd {
-                current: &current,
-                drive_directories: &drives,
-            },
-        ))
+        let cwd = Cwd {
+            current: &current,
+            drive_directories: &drives,
+        };
+        Ok(groups.iter().map(|g| resolve(g, &cwd)).collect())
     }
     /// Normalizes local input for storage, leaving nonlocal spelling intact.
     pub(super) fn normalize_source(

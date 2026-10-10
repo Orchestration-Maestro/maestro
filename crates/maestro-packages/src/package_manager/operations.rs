@@ -1,4 +1,5 @@
 //! Replaceable native effects for package source lookup.
+use super::PackageFuture;
 use std::io;
 /// A completed child status and independently decoded streams.
 pub struct CommandOutput {
@@ -27,20 +28,55 @@ pub trait PackageOperations {
     /// # Errors
     /// Returns a native spawn or capture failure.
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput>;
+    /// Creates a directory and its missing parents.
+    /// # Errors
+    /// Returns the adapter's creation failure.
+    fn create_dir_all(&self, path: &str) -> io::Result<()>;
+    /// Writes UTF-8 text, replacing any file at the path.
+    /// # Errors
+    /// Returns the adapter's write failure.
+    fn write_file(&self, path: &str, text: &str) -> io::Result<()>;
+    /// Whether a directory has no entries.
+    /// # Errors
+    /// Returns an open or enumeration failure, including one after an earlier entry.
+    fn directory_is_empty(&self, path: &str) -> io::Result<bool>;
+    /// Removes a file, link or directory tree; a missing path succeeds.
+    /// # Errors
+    /// Returns the adapter's removal failure.
+    fn remove_path(&self, path: &str) -> io::Result<()>;
+    /// Runs a child with inherited output until it exits; `None` means it ended without a code.
+    /// # Errors
+    /// Returns the adapter's spawn or wait failure.
+    fn run_command<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        cwd: Option<&'a str>,
+    ) -> PackageFuture<'a, Option<i32>>;
 }
 
-/// Native filesystem, environment and synchronous process effects.
+/// Native filesystem, environment and process effects.
+///
+/// Its asynchronous commands must be driven by a Tokio runtime with process support.
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativePackageOperations {
     /// Caller-owned shell selection.
-    should_use_shell: fn(&str) -> bool,
+    pub(super) should_use_shell: fn(&str) -> bool,
+    /// Caller-owned query for whether output is routed to standard error.
+    pub(super) is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl NativePackageOperations {
-    /// Stores the caller's shell selection without observing it.
+    /// Stores the caller's shell and stdout-takeover queries without calling them.
     #[must_use]
-    pub fn new(should_use_shell: fn(&str) -> bool) -> Self {
-        Self { should_use_shell }
+    pub fn new(
+        should_use_shell: fn(&str) -> bool,
+        is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
+    ) -> Self {
+        Self {
+            should_use_shell,
+            is_stdout_taken_over,
+        }
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -68,50 +104,47 @@ impl PackageOperations for NativePackageOperations {
             .map(|text| text.to_string_lossy().into_owned())
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
-        use std::process::{Command, Stdio};
-        let mut child = if (self.should_use_shell)(command) {
-            let mut shell = Command::new(if cfg!(windows) { "cmd.exe" } else { "/bin/sh" });
-            if cfg!(windows) {
-                shell.args(["/d", "/s", "/c"]);
-            } else {
-                shell.arg("-c");
-            }
-            shell.arg(format!("{command} {}", args.join(" ")));
-            shell
-        } else {
-            let mut child = Command::new(command);
-            child.args(args);
-            child
+        self.capture(command, args)
+    }
+    fn create_dir_all(&self, path: &str) -> io::Result<()> {
+        std::fs::create_dir_all(path)
+    }
+    fn write_file(&self, path: &str, text: &str) -> io::Result<()> {
+        std::fs::write(path, text)
+    }
+    fn directory_is_empty(&self, path: &str) -> io::Result<bool> {
+        let mut empty = true;
+        for entry in std::fs::read_dir(path)? {
+            entry?;
+            empty = false;
+        }
+        Ok(empty)
+    }
+    fn remove_path(&self, path: &str) -> io::Result<()> {
+        let path = std::path::Path::new(path);
+        let removed = match std::fs::symlink_metadata(path) {
+            Ok(meta) if meta.is_dir() => std::fs::remove_dir_all(path),
+            Ok(_) => std::fs::remove_file(path).or_else(|error| {
+                if cfg!(windows) {
+                    std::fs::remove_dir(path)
+                } else {
+                    Err(error)
+                }
+            }),
+            Err(error) => Err(error),
         };
-        let inherited = std::env::vars_os()
-            .map(|(key, value)| {
-                (
-                    key.to_string_lossy().into_owned(),
-                    value.to_string_lossy().into_owned(),
-                )
-            })
-            .collect();
-        let environment = recover_environment(
-            if cfg!(target_os = "linux") {
-                "linux"
-            } else {
-                "other"
-            },
-            inherited,
-            || std::fs::read("/proc/self/environ"),
-        );
-        let output = child
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .env_clear()
-            .envs(environment)
-            .output()?;
-        Ok(CommandOutput {
-            status: output.status.code(),
-            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+        removed.or_else(|error| match error.kind() {
+            io::ErrorKind::NotFound => Ok(()),
+            _ => Err(error),
         })
+    }
+    fn run_command<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        cwd: Option<&'a str>,
+    ) -> PackageFuture<'a, Option<i32>> {
+        self.launch(command, args, cwd)
     }
 }
 

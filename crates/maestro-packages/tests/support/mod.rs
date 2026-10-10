@@ -1,6 +1,6 @@
 //! Controlled package operations and settings ownership.
 use maestro_packages::{
-    CommandOutput, DefaultPackageManager, PackageManagerOptions, PackageOperations,
+    CommandOutput, DefaultPackageManager, PackageFuture, PackageManagerOptions, PackageOperations,
 };
 use maestro_settings::{Settings, SettingsManager};
 use serde_json::Value;
@@ -55,6 +55,26 @@ impl PackageOperations for Controlled {
     }
     fn drive_directory(&self, _drive: char) -> Option<String> {
         None
+    }
+    fn create_dir_all(&self, _path: &str) -> io::Result<()> {
+        Ok(())
+    }
+    fn write_file(&self, _path: &str, _text: &str) -> io::Result<()> {
+        Ok(())
+    }
+    fn directory_is_empty(&self, _path: &str) -> io::Result<bool> {
+        Ok(true)
+    }
+    fn remove_path(&self, _path: &str) -> io::Result<()> {
+        Ok(())
+    }
+    fn run_command<'a>(
+        &'a self,
+        _command: &'a str,
+        _args: &'a [String],
+        _cwd: Option<&'a str>,
+    ) -> PackageFuture<'a, Option<i32>> {
+        Box::pin(async { Ok(Some(0)) })
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
         self.0
