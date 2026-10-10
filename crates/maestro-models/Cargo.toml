@@ -18,7 +18,7 @@ regex = "=1.13.1"
 rand = "=0.10.3"
 reqwest = { version = "=0.13.5", features = ["stream"] }
 futures-core = { version = "=0.3.34", default-features = false, features = ["std"] }
-futures-util = { version = "=0.3.34", default-features = false, features = ["std"] }
+futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
 httpdate = "=1.0.3"
 
 num-bigint = "=0.4.8"
@@ -43,6 +43,7 @@ getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "time", "net"] }
+tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 
 hyper = { version = "=1.11.1", default-features = false, features = ["server", "http1"] }
 hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }

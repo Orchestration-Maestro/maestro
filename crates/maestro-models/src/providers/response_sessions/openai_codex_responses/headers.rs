@@ -61,3 +61,26 @@ pub(super) fn build_sse_headers(
     normalize_request(&mut headers).map_err(diagnostic)?;
     Ok(headers)
 }
+
+/// Derive socket headers from validated request headers: the upgrade carries no content
+/// negotiation, selects the socket beta and identifies the request in both affinity fields.
+pub(super) fn build_web_socket_headers(
+    prepared: &IndexMap<String, String>,
+    request_id: &str,
+) -> Result<IndexMap<String, String>, DiagnosticErrorInfo> {
+    let mut headers: IndexMap<String, String> = prepared
+        .iter()
+        .filter(|(name, _)| !matches!(name.as_str(), "accept" | "content-type" | "openai-beta"))
+        .map(|(name, value)| (name.clone(), value.clone()))
+        .collect();
+    headers.extend([
+        (
+            "openai-beta".to_owned(),
+            "responses_websockets=2026-02-06".to_owned(),
+        ),
+        ("x-client-request-id".to_owned(), request_id.to_owned()),
+        ("session_id".to_owned(), request_id.to_owned()),
+    ]);
+    normalize_request(&mut headers).map_err(diagnostic)?;
+    Ok(headers)
+}

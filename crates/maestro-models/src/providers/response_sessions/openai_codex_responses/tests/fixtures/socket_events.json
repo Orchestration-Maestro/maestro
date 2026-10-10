@@ -1,0 +1,485 @@
+[
+  {
+    "scenario": "plain",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.created\",\"response\":{\"id\":\"r\"}}"
+      },
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.created\",\"response\":{\"id\":\"r\"}}",
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "done",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.done\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "incomplete",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.incomplete\",\"response\":{\"id\":\"r\",\"status\":\"incomplete\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"incomplete\"}}"
+    ]
+  },
+  {
+    "scenario": "empty-and-untyped",
+    "packets": [
+      {
+        "text": ""
+      },
+      {
+        "text": "{}"
+      },
+      {
+        "text": "{\"type\":null}"
+      },
+      {
+        "text": "{\"type\":4}"
+      },
+      {
+        "text": "{\"type\":\"\"}"
+      },
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "unknown",
+    "packets": [
+      {
+        "text": "{\"type\":\"new.kind\",\"kept\":[2,1,2]}"
+      },
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"new.kind\",\"kept\":[2,1,2]}",
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "non-record",
+    "packets": [
+      {
+        "text": "[]"
+      },
+      {
+        "text": "[\"response.completed\",{}]"
+      },
+      {
+        "text": "true"
+      },
+      {
+        "text": "42"
+      },
+      {
+        "text": "\"text\""
+      },
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "null-record",
+    "packets": [
+      {
+        "text": "null"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexProtocolError",
+      "message": "Invalid Codex WebSocket JSON: <native cause>"
+    }
+  },
+  {
+    "scenario": "terminal-missing-response",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.completed\"}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\"}"
+    ]
+  },
+  {
+    "scenario": "terminal-null-response",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.done\",\"response\":null}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":null}"
+    ]
+  },
+  {
+    "scenario": "terminal-status-unknown",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.done\",\"response\":{\"status\":\"new-status\",\"unknown\":1}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"unknown\":1}}"
+    ]
+  },
+  {
+    "scenario": "terminal-status-object",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.incomplete\",\"response\":{\"status\":{},\"unknown\":1}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"unknown\":1}}"
+    ]
+  },
+  {
+    "scenario": "error-message",
+    "packets": [
+      {
+        "text": "{\"type\":\"error\",\"code\":\"bad\",\"message\":\"bad input\"}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex error: bad input",
+      "code": "bad"
+    }
+  },
+  {
+    "scenario": "error-code",
+    "packets": [
+      {
+        "text": "{\"type\":\"error\",\"code\":\"bad\",\"message\":\"\"}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex error: bad",
+      "code": "bad"
+    }
+  },
+  {
+    "scenario": "error-json",
+    "packets": [
+      {
+        "text": "{\"type\":\"error\",\"code\":null,\"message\":\"\",\"extra\":3}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex error: {\"type\":\"error\",\"code\":null,\"message\":\"\",\"extra\":3}"
+    }
+  },
+  {
+    "scenario": "failed-message",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.failed\",\"response\":{\"error\":{\"code\":\"bad\",\"message\":\"failed\"}}}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexApiError",
+      "message": "failed",
+      "code": "bad"
+    }
+  },
+  {
+    "scenario": "failed-default",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.failed\"}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexApiError",
+      "message": "Codex response failed"
+    }
+  },
+  {
+    "scenario": "invalid",
+    "packets": [
+      {
+        "text": "{bad}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexProtocolError",
+      "message": "Invalid Codex WebSocket JSON: <native cause>"
+    }
+  },
+  {
+    "scenario": "whitespace",
+    "packets": [
+      {
+        "text": "   "
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexProtocolError",
+      "message": "Invalid Codex WebSocket JSON: <native cause>"
+    }
+  },
+  {
+    "scenario": "done-token",
+    "packets": [
+      {
+        "text": "[DONE]"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexProtocolError",
+      "message": "Invalid Codex WebSocket JSON: <native cause>"
+    }
+  },
+  {
+    "scenario": "bom-text",
+    "packets": [
+      {
+        "text": "﻿{}"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "CodexProtocolError",
+      "message": "Invalid Codex WebSocket JSON: <native cause>"
+    }
+  },
+  {
+    "scenario": "binary-bom",
+    "packets": [
+      {
+        "bytes": [
+          239,
+          187,
+          191,
+          123,
+          34,
+          116,
+          121,
+          112,
+          101,
+          34,
+          58,
+          34,
+          114,
+          101,
+          115,
+          112,
+          111,
+          110,
+          115,
+          101,
+          46,
+          99,
+          111,
+          109,
+          112,
+          108,
+          101,
+          116,
+          101,
+          100,
+          34,
+          44,
+          34,
+          114,
+          101,
+          115,
+          112,
+          111,
+          110,
+          115,
+          101,
+          34,
+          58,
+          123,
+          34,
+          105,
+          100,
+          34,
+          58,
+          34,
+          114,
+          34,
+          44,
+          34,
+          115,
+          116,
+          97,
+          116,
+          117,
+          115,
+          34,
+          58,
+          34,
+          99,
+          111,
+          109,
+          112,
+          108,
+          101,
+          116,
+          101,
+          100,
+          34,
+          125,
+          125
+        ]
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "duplicate-type",
+    "packets": [
+      {
+        "text": "{\"type\":\"error\",\"type\":\"response.done\",\"response\":{\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "deep-unread",
+    "packets": [
+      {
+        "text": "{\"type\":\"future.event\",\"unread\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}"
+      },
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"future.event\",\"unread\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "retained-repeated",
+    "packets": [
+      {
+        "text": "{\"type\":\"future.event\",\"order\":[2,1,2],\"other\":{\"b\":1,\"a\":2}}"
+      },
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"future.event\",\"order\":[2,1,2],\"other\":{\"b\":1,\"a\":2}}",
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "queued-terminal",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      },
+      {
+        "text": "{bad}"
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "close-before",
+    "packets": [
+      {
+        "close": {
+          "code": 1009,
+          "reason": ""
+        }
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "WebSocketCloseError",
+      "message": "WebSocket closed 1009 message too big",
+      "code": 1009
+    }
+  },
+  {
+    "scenario": "close-after",
+    "packets": [
+      {
+        "text": "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+      },
+      {
+        "close": {
+          "code": 1000,
+          "reason": "ok"
+        }
+      }
+    ],
+    "events": [
+      "{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\"}}"
+    ]
+  },
+  {
+    "scenario": "error-before",
+    "packets": [
+      {
+        "error": "transport failed"
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "Error",
+      "message": "IO error: transport failed"
+    }
+  },
+  {
+    "scenario": "aborted",
+    "packets": [
+      {
+        "abort": true
+      }
+    ],
+    "events": [],
+    "error": {
+      "name": "Error",
+      "message": "Request was aborted"
+    }
+  }
+]

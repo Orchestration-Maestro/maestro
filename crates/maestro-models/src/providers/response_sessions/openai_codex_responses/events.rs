@@ -1,10 +1,17 @@
 //! Provider-specific SSE selection before the shared response reducer.
 
-use super::{CodexError, request::diagnostic};
+use super::{CodexError, OpenAICodexResponsesOptions, request::diagnostic};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{HttpBody, Raced, ServerSentEvent, SseMessages, race};
 use crate::providers::json_text::{compact_raw, member, raw_json};
-use crate::{Cancellation, DiagnosticErrorInfo};
+use crate::providers::nullable::Nullable;
+use crate::providers::responses::openai_responses_shared::{
+    OpenAIResponsesStreamOptions, process_responses_stream,
+};
+use crate::{
+    AssistantMessageEventStream, Cancellation, DiagnosticErrorInfo, Model, SharedAssistantMessage,
+    Usage,
+};
 use futures_util::StreamExt;
 use indexmap::IndexMap;
 use serde_json::value::RawValue;
@@ -97,19 +104,27 @@ impl Source {
             error.name = Some("CodexProtocolError".to_owned());
             CodexError::Protocol(error)
         })?;
-        let Some(kind) = string(raw, "type").filter(|kind| !kind.is_empty()) else {
-            return Ok(None);
-        };
-        match kind.as_str() {
-            "error" | "response.failed" => Err(api_error(raw, &kind)?),
-            "response.done" | "response.completed" | "response.incomplete" => {
-                self.ended = true;
-                terminal(raw)
-                    .map(Some)
-                    .map_err(|error| CodexError::Protocol(diagnostic(error.to_string())))
+        match map_codex_event(raw)? {
+            Some((text, terminal)) => {
+                self.ended = terminal;
+                Ok(Some(text))
             }
-            _ => Ok(Some(text.to_owned())),
+            None => Ok(None),
         }
+    }
+}
+
+/// Select the retained event text and whether it ends the response; untyped events yield none.
+pub(super) fn map_codex_event(raw: &RawValue) -> Result<Option<(String, bool)>, CodexError> {
+    let Some(kind) = string(raw, "type").filter(|kind| !kind.is_empty()) else {
+        return Ok(None);
+    };
+    match kind.as_str() {
+        "error" | "response.failed" => Err(api_error(raw, &kind)?),
+        "response.done" | "response.completed" | "response.incomplete" => terminal(raw)
+            .map(|text| Some((text, true)))
+            .map_err(|error| CodexError::Protocol(diagnostic(error.to_string()))),
+        _ => Ok(Some((raw.get().to_owned(), false))),
     }
 }
 
@@ -193,3 +208,29 @@ pub(super) fn resolve_codex_service_tier(
 }
 
 pub(super) use crate::providers::responses::openai_responses::price as apply_service_tier_pricing;
+
+/// Reduce selected events into `output`, pricing the echoed tier against the requested one.
+pub(super) async fn reduce<S>(
+    events: S,
+    model: &Model,
+    options: &OpenAICodexResponsesOptions,
+    output: &SharedAssistantMessage,
+    stream: &AssistantMessageEventStream,
+) -> Result<(), DiagnosticErrorInfo>
+where
+    S: futures_core::Stream<Item = Result<String, DiagnosticErrorInfo>> + Unpin,
+{
+    let requested = match options.service_tier.as_ref() {
+        Some(Nullable::Value(tier)) => Some(tier.name()),
+        _ => None,
+    };
+    let pricing = |usage: &mut Usage, tier: Option<&str>| {
+        apply_service_tier_pricing(usage, tier, &model.id);
+    };
+    let stream_options = OpenAIResponsesStreamOptions {
+        service_tier: requested,
+        resolve_service_tier: Some(&resolve_codex_service_tier),
+        apply_service_tier_pricing: Some(&pricing),
+    };
+    process_responses_stream(events, output, stream, model, Some(&stream_options)).await
+}

@@ -35,6 +35,18 @@ pub(crate) fn compact_object(members: &Map<String, Value>) -> Result<String, ser
     Ok(text)
 }
 
+/// Serialize borrowed members as [`compact_object`] serializes an object holding them.
+///
+/// # Errors
+/// Returns the serializer failure when a string cannot be written.
+pub(crate) fn compact_members<'a>(
+    members: impl Iterator<Item = (&'a str, &'a Value)>,
+) -> Result<String, serde_json::Error> {
+    let mut text = String::new();
+    write_members(members, &mut text)?;
+    Ok(text)
+}
+
 /// Append one value to the output text.
 fn write_value(value: &Value, text: &mut String) -> Result<(), serde_json::Error> {
     match value {
@@ -65,7 +77,18 @@ fn write_number(number: &Number, text: &mut String) {
 
 /// Append an object with array-index keys first.
 fn write_object(members: &Map<String, Value>, text: &mut String) -> Result<(), serde_json::Error> {
-    let mut ordered: Vec<(&String, &Value)> = members.iter().collect();
+    write_members(
+        members.iter().map(|(key, value)| (key.as_str(), value)),
+        text,
+    )
+}
+
+/// Append members with array-index keys first.
+fn write_members<'a>(
+    members: impl Iterator<Item = (&'a str, &'a Value)>,
+    text: &mut String,
+) -> Result<(), serde_json::Error> {
+    let mut ordered: Vec<(&str, &Value)> = members.collect();
     ordered.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
     text.push('{');
     for (position, (key, value)) in ordered.into_iter().enumerate() {

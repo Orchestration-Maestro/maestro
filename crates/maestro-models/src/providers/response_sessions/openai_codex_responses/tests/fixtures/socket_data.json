@@ -1,0 +1,102 @@
+[
+  {
+    "bytes": [],
+    "text": null,
+    "expected": ""
+  },
+  {
+    "bytes": [
+      123,
+      125
+    ],
+    "text": null,
+    "expected": "{}"
+  },
+  {
+    "bytes": [
+      239,
+      187,
+      191,
+      123,
+      125
+    ],
+    "text": null,
+    "expected": "{}"
+  },
+  {
+    "bytes": [
+      239,
+      187,
+      191,
+      239,
+      187,
+      191,
+      123,
+      125
+    ],
+    "text": null,
+    "expected": "﻿{}"
+  },
+  {
+    "bytes": [
+      239
+    ],
+    "text": null,
+    "expected": "�"
+  },
+  {
+    "bytes": [
+      226,
+      130
+    ],
+    "text": null,
+    "expected": "�"
+  },
+  {
+    "bytes": [
+      240,
+      159,
+      152,
+      128
+    ],
+    "text": null,
+    "expected": "😀"
+  },
+  {
+    "bytes": [
+      255
+    ],
+    "text": null,
+    "expected": "�"
+  },
+  {
+    "bytes": [
+      97,
+      195,
+      40,
+      98
+    ],
+    "text": null,
+    "expected": "a�(b"
+  },
+  {
+    "bytes": null,
+    "text": "",
+    "expected": ""
+  },
+  {
+    "bytes": null,
+    "text": "{}",
+    "expected": "{}"
+  },
+  {
+    "bytes": null,
+    "text": "﻿{}",
+    "expected": "﻿{}"
+  },
+  {
+    "bytes": null,
+    "text": "Ω😀",
+    "expected": "Ω😀"
+  }
+]
