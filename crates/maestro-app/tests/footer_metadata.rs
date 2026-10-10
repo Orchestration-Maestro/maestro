@@ -72,6 +72,8 @@ fn footer_head_records_keep_exact_branch_text() {
                 let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations);
                 FooterDataProvider::new(scratch.join(""), native).get_git_branch()
             }
+            #[cfg(not(unix))]
+            (None, Some(_)) => continue,
             _ => panic!("case {index} names one HEAD form"),
         };
         assert_eq!(branch, Some(case.expected.branch), "case {index}");
