@@ -24568,7 +24568,7 @@
     "test": "azure_send_session_key_independently_of_cache_preference",
     "case": {
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -24696,7 +24696,7 @@
         "cacheRetention": "none"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -24824,7 +24824,7 @@
         "cacheRetention": "short"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -24952,7 +24952,7 @@
         "cacheRetention": "long"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25080,7 +25080,7 @@
         "sessionId": ""
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25213,7 +25213,7 @@
         "cacheRetention": "none"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25346,7 +25346,7 @@
         "cacheRetention": "short"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25479,7 +25479,7 @@
         "cacheRetention": "long"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25611,7 +25611,7 @@
         "sessionId": "session"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25744,7 +25744,7 @@
         "cacheRetention": "none"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -25877,7 +25877,7 @@
         "cacheRetention": "short"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -26010,7 +26010,7 @@
         "cacheRetention": "long"
       },
       "env": {
-        "PI_CACHE_RETENTION": "long"
+        "MAESTRO_CACHE_RETENTION": "long"
       }
     },
     "expected": {
@@ -29091,6 +29091,13 @@
       "context": {
         "tools": [
           {
+            "name": "second",
+            "description": "Next",
+            "parameters": {
+              "type": "object"
+            }
+          },
+          {
             "name": "double_number",
             "description": "Double",
             "parameters": {
@@ -29100,13 +29107,6 @@
                   "type": "number"
                 }
               }
-            }
-          },
-          {
-            "name": "second",
-            "description": "Next",
-            "parameters": {
-              "type": "object"
             }
           }
         ]
@@ -29142,6 +29142,15 @@
             "tools": [
               {
                 "type": "function",
+                "name": "second",
+                "description": "Next",
+                "parameters": {
+                  "type": "object"
+                },
+                "strict": false
+              },
+              {
+                "type": "function",
                 "name": "double_number",
                 "description": "Double",
                 "parameters": {
@@ -29151,15 +29160,6 @@
                       "type": "number"
                     }
                   }
-                },
-                "strict": false
-              },
-              {
-                "type": "function",
-                "name": "second",
-                "description": "Next",
-                "parameters": {
-                  "type": "object"
                 },
                 "strict": false
               }
@@ -29234,6 +29234,15 @@
             "tools": [
               {
                 "type": "function",
+                "name": "second",
+                "description": "Next",
+                "parameters": {
+                  "type": "object"
+                },
+                "strict": false
+              },
+              {
+                "type": "function",
                 "name": "double_number",
                 "description": "Double",
                 "parameters": {
@@ -29243,15 +29252,6 @@
                       "type": "number"
                     }
                   }
-                },
-                "strict": false
-              },
-              {
-                "type": "function",
-                "name": "second",
-                "description": "Next",
-                "parameters": {
-                  "type": "object"
                 },
                 "strict": false
               }
