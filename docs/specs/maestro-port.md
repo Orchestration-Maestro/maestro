@@ -176,26 +176,28 @@ dependencies apart from the optional foundation utility described below.
 |---|---|---|---|
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
 | `maestro-request` | define model-request records | — | below 0 |
+| `maestro-watch` | supply filesystem notification effects | — | below 0 |
+| `maestro-lock` | acquire file-write locks | — | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request` | 0 |
 | `maestro-resources` | discover instruction resources | `maestro-request` | 0 |
-| `maestro-settings` | own accepted preferences | — | 0 |
+| `maestro-settings` | own accepted preferences | `maestro-lock` | 0 |
 | `maestro-storage` | access transcript bytes | — | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation` | 0 |
 | `maestro-agent` | run an agent | `maestro-models` | 1 |
-| `maestro-credentials` | own accepted credentials | `maestro-models` | 1 |
+| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
-| `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request` | 1 |
+| `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials` | 2 |
 | `maestro-session` | own conversation history | `maestro-models`, `maestro-agent`, `maestro-storage` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-storage`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-storage`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -216,10 +218,31 @@ shared-types container.
 
 The crate is core, sits below layer 0 and depends on no workspace crate, including
 `maestro-path`. Only `maestro-models`, `maestro-resources`, `maestro-theme` and
-`maestro-extensions-wasm` may depend on it. No other graph permission changes:
-the guest still cannot depend on models or resources, the runtime adapter still
+`maestro-extensions-wasm` may depend on it. The guest still cannot depend on models or resources, the runtime adapter still
 targets extensions only, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its four consumers.
+
+`maestro-watch` and `maestro-lock` are core leaves below layer 0, with no
+workspace dependencies, including the path utility. Only theme and application
+may depend on watch; only settings and credentials may depend on lock.
+
+`maestro-watch::fs_watch` owns watch creation/close helpers, the injected
+watch/timer interface and the native notification adapter. Reload, refresh,
+retry and polling policy remain in their feature owners. Existing theme watch
+paths may re-export the same moved types, not retain a second implementation.
+
+`maestro-lock` acquires a caller-opened file-write lock with the existing bounded
+synchronous contention retry. File creation, permissions, persistence, unlocking
+policy and asynchronous credential acquisition remain with settings and
+credentials. Neither leaf introduces a common background runtime, scheduler,
+retry policy or listener framework. Feature-specific timing, process,
+subscription and teardown semantics and current public capabilities are retained.
+
+Implement these owners only after this amendment lands, through
+[filesystem-watch ownership](https://github.com/Orchestration-Maestro/maestro/issues/493)
+and [file-lock acquisition ownership](https://github.com/Orchestration-Maestro/maestro/issues/494).
+Size each relocation by net added production lines, showing matching moved and
+deleted lines; moving lines is not a code saving.
 
 `maestro-path` is the foundation utility for lexical path strings. It sits below
 layer 0, has no internal dependencies, and exposes platform-independent path
@@ -229,13 +252,15 @@ direct-dependency sets; every other dependency rule, including cycle and interna
 dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
-(`maestro-test-terminal`), cancellation leaf (`maestro-cancellation`) and shared
-request owner (`maestro-request`) are excluded from this permission.
+(`maestro-test-terminal`), cancellation leaf (`maestro-cancellation`), shared
+request owner (`maestro-request`), watch leaf (`maestro-watch`) and lock leaf
+(`maestro-lock`) are excluded from this permission.
 
-The graph contains 29 crates: the 28 table entries plus the foundation utility.
-It permits 91 internal production dependency edges: 68 table edges plus 23
-optional utility edges. Seven crates are leaves when utility edges are ignored,
-including the utility itself. The utility is delivered before its first consumer.
+The graph contains 31 crates: the 30 table entries plus the foundation utility.
+It permits 95 internal production dependency edges: 72 table edges plus 23
+optional utility edges. Eight crates are leaves when utility edges are ignored,
+including the utility itself. The below-layer-0 owners are delivered before
+their consumers; the utility is delivered before its first consumer.
 
 ### Crate order
 

@@ -79,7 +79,7 @@ are later scope, not active foundation concepts.
 - **Pending edit:** An unsaved preference edit captured with a revision; a successful save acknowledges only the revisions it wrote, so later or failed edits stay pending.
 - **Configuration root:** The explicitly selected user configuration directory.
 - **Session directory:** The resolved location supplied to the session owner.
-- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion, preserving application-owned ordering and a bounded retry on contention without leases, heartbeats or compromise handling; the owning [credentials documentation](docs/credentials.md) gives each schedule.
+- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, persistence, unlocking and asynchronous acquisition policy. The [credentials documentation](docs/credentials.md) gives its schedules.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
@@ -101,7 +101,7 @@ are later scope, not active foundation concepts.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
 - **Web:** The browser frontend, including the offline exported session viewer.
-- **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances.
+- **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns watch/timer effects to `maestro-watch::fs_watch`, leaving theme reload policy here.
 - **Brand pack:** One JSON file of palette, mode role aliases, fonts, type, spacing, mark paths, glyphs and terminal aliases; `maestro-theme` reads the selected pack to derive the shipped dark and light themes, resolved presentation values, CSS custom properties and filled mark templates, and no consumer hard-codes brand values.
 
 ### Structure

@@ -10,7 +10,8 @@ The extension domain may depend directly on resources. Models, resources, themes
 guest authoring may depend on the shared request-record owner, `maestro-request`, which
 has no workspace dependencies. No reverse dependency or internal dev edge is permitted.
 
-`workspace-crates.json` lists actual workspace members with string-valued classes.
+`workspace-crates.json` lists workspace members and declared-but-absent owners
+with string-valued classes.
 The binary composition root, conventions checker, terminal scenario harness and
 repository tooling are `dedicated`; all product libraries and adapters are `core`.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
@@ -18,8 +19,8 @@ no internal dependencies apart from the optional utility. Classes are not numeri
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
-Six leaves in the specification table have no internal dependencies; the
-foundation utility `maestro-path` is a seventh. Other crates may use a subset of
+Seven leaves in the specification table have no internal dependencies; the
+foundation utility `maestro-path` is an eighth. Other crates may use a subset of
 their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
@@ -42,6 +43,18 @@ Malformed metadata and command failures return diagnostics, not acceptance.
 
 The cancellation leaf has no internal dependencies; only models and the toolkit
 may depend directly on it.
+
+The [shared filesystem effect contract](specs/maestro-port.md#crates-and-delivery-order)
+declares `maestro-watch` and `maestro-lock` as core leaves below layer 0, including
+when their implementations are absent. Neither may depend on a workspace crate,
+including `maestro-path`. Only theme/application may consume watch; only
+settings/credentials may consume lock. Watch creation/close, injected watch/timer
+interfaces and native notifications belong to watch; bounded synchronous
+contention acquisition of caller-opened files belongs to lock. Feature owners
+retain reload, refresh, retry, polling, file creation, permissions, persistence,
+unlocking and asynchronous credential acquisition policy. This changes ownership,
+not public capabilities or feature-specific timing, process, subscription and
+teardown semantics; it introduces no generic executor or scheduling policy.
 
 ## Authored paths and the foundation utility
 
@@ -66,9 +79,10 @@ working directory with no drive entries yields `D:b`, not `..\b`.
 leaf and exact-set rules. Any crate in the specification table may declare it as
 a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
-adapter, shared request owner, cancellation leaf and the terminal scenario
-harness. The edge is ignored when checking a crate's complete direct set or leaf
-status, so the graph holds 29 crates and 91 permitted edges: 68 table edges plus
+adapter, shared request owner, cancellation leaf, watch leaf, lock leaf and the
+terminal scenario harness. The edge is ignored when checking a crate's complete
+direct set or leaf
+status, so the graph holds 31 crates and 95 permitted edges: 72 table edges plus
 23 utility edges. Dev-dependencies on the
 utility, dependencies from the utility, and cycles are rejected like any other
 internal edge.
@@ -178,7 +192,7 @@ maestro-models = { path = "../models" }
 `check_workspace` returns:
 
 ```text
-maestro-settings must not depend on workspace crate maestro-models
+forbidden production dependency: maestro-settings -> maestro-models
 ```
 
 Removing the dependency passes. An otherwise empty CLI fixture instead reports
