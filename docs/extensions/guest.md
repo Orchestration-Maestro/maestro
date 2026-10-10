@@ -261,8 +261,8 @@ that runs the component adapter's own functions, and compares the two transcript
 holds the continuation's wait for idle until the test saw it pending, so the command finishes
 only after that wait resumes. Afterwards the test checks that every callback, including the
 one a destructor registered, and every context and signal the host lent was dropped. The
-tests in `src/tests/event_values.rs` and `src/tests/event_transport.rs` deliver the classes of
-every property and every way an invocation can end, for the 23 event kinds they list, through
+tests in `src/tests/event_values.rs` and `src/tests/event_transport.rs` deliver their
+event-property cases and every way an invocation can end, for the 23 event kinds they list, through
 both hosts with the probe handler. `src/tests/session_events.rs` and
 `src/tests/session_records.rs` cover the session event kinds and their records.
 
