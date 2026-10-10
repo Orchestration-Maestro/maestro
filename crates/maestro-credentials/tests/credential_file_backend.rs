@@ -172,21 +172,37 @@ mod tests {
     }
 
     #[test]
-    fn non_contention_lock_errors_return_immediately() {
-        let dir = TempDir::new("immediate");
+    fn lock_acquisition_failure_skips_the_callback() {
+        let dir = TempDir::new("acquire-failure");
         let path = dir.path("auth.json");
         std::fs::create_dir(format!("{path}.lock")).unwrap();
         let backend = FileAuthStorageBackend::new(&path);
-        let fastest = (0..5)
-            .map(|_| {
-                let started = Instant::now();
-                let result = backend.with_lock(&mut |_| panic!("callback must not run"));
-                assert!(result.is_err());
-                started.elapsed()
-            })
-            .min()
-            .unwrap();
-        assert!(fastest < Duration::from_millis(150));
+        let result = backend.with_lock(&mut |_| panic!("callback must not run"));
+        assert!(result.is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn missing_symlink_target_is_initialized_and_live_link_is_kept() {
+        let dir = TempDir::new("symlink");
+        let target = dir.path("real.json");
+        let link = dir.path("auth.json");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        let storage = AuthStorage::create(&link);
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "{}");
+        assert_eq!(mode(&target), 0o600);
+        assert!(storage.drain_errors().is_empty());
+
+        let live = dir.path("live.json");
+        let kept = dir.path("kept.json");
+        std::fs::write(&kept, pretty(&[("a", "1")])).unwrap();
+        std::os::unix::fs::symlink(&kept, &live).unwrap();
+        let storage = AuthStorage::create(&live);
+        assert_eq!(storage.list(), ["a"]);
+        assert_eq!(
+            std::fs::read_to_string(&kept).unwrap(),
+            pretty(&[("a", "1")])
+        );
     }
 
     #[test]

@@ -18,18 +18,21 @@ the backend's exclusion and change only that provider in it; records other write
 added stay in the file and are not imported into memory. A persistence failure is
 recorded and nothing is rolled back. `logout` removes the stored record only.
 
-Stored text is two-space JSON without a trailing newline. Providers keep their
-stored order: a replaced record keeps its position, a new one is appended, and
-`list`, `get_all` and the rewritten file follow it. `get` and `get_all` return
+Text this owner writes is two-space JSON without a trailing newline; reloading
+existing text never rewrites it. Accepted records keep their order: a replaced
+record keeps its position, a new one is appended, and `list` and `get_all` follow
+it. A rewrite keeps the order of the freshly reread file, which another writer
+may have changed. `get` and `get_all` return
 typed copies of complete `api_key` and `oauth` objects only; `list` and `has` cover
 every stored record, whatever its shape, and rewrites keep records that do not
-decode. Whole-number expiry times are written without a fraction.
+decode. Expiry times of typed credentials you supply are written without a fraction when
+whole; preserved stored records keep their original number spelling.
 
 `has_auth` is true for a runtime override (even empty), a stored record, a usable
 provider environment value or a nonempty fallback key. `get_auth_status` reports
 the first of stored, runtime (`--api-key`), environment (first populated variable
-name) and fallback (`custom provider config`), without key values, helper runs or
-refresh. See the [request authentication documentation](request-authentication.md) for
+name) and fallback (`custom provider config`), without key values, stored helper
+resolution or refresh. The fallback resolver you supply runs as given. See the [request authentication documentation](request-authentication.md) for
 environment discovery.
 
 ## File and memory backends
@@ -38,7 +41,7 @@ environment discovery.
 path, relative paths resolving against the working directory. Missing parent
 directories are created with mode 0700 and a missing file is created, only while
 the sidecar `<path>.lock` is held, containing `{}` with mode 0600 on Unix; writes
-set mode 0600. The lock is tried ten times, 20 ms apart; other lock errors return
+set mode 0600. The lock is tried up to ten times, waiting 20 ms only between contended attempts; other lock errors return
 at once, and the lock is released after every outcome. File bytes are read as
 lossy UTF-8. `InMemoryAuthStorageBackend` runs each callback on an owned copy of
 the text with nothing held, so callbacks may reenter it and the last write wins.

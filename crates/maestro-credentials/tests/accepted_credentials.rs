@@ -157,6 +157,31 @@ mod tests {
     }
 
     #[test]
+    fn rewritten_file_keeps_reread_order_while_listing_keeps_accepted_order() {
+        let dir = TempDir::new("reordered");
+        let path = dir.path("auth.json");
+        write_file(&path, &pretty_keys(&[("a", "1"), ("b", "2")]));
+        let storage = AuthStorage::create(&path);
+        write_file(&path, &pretty_keys(&[("b", "2"), ("a", "1")]));
+        storage.set("a", api_key("3"));
+        assert_eq!(read_file(&path), pretty_keys(&[("b", "2"), ("a", "3")]));
+        assert_eq!(storage.list(), ["a", "b"]);
+    }
+
+    #[test]
+    fn preserved_float_expiry_keeps_its_fraction_on_unrelated_rewrite() {
+        let dir = TempDir::new("float-expiry");
+        let path = dir.path("auth.json");
+        write_file(
+            &path,
+            "{\"o\":{\"type\":\"oauth\",\"refresh\":\"r\",\"access\":\"a\",\"expires\":1730000000000.0}}",
+        );
+        let storage = AuthStorage::create(&path);
+        storage.set("other", api_key("x"));
+        assert!(read_file(&path).contains("\"expires\": 1730000000000.0"));
+    }
+
+    #[test]
     fn malformed_document_blocks_writes_until_reload() {
         let dir = TempDir::new("malformed");
         let path = dir.path("auth.json");

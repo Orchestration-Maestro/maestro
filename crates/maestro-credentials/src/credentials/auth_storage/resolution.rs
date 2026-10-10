@@ -10,7 +10,8 @@ impl AuthStorage {
         resolver.is_some_and(|resolve| resolve(provider).is_some_and(|key| !key.is_empty()))
     }
 
-    /// Whether any authentication is configured, without running helpers or refreshing.
+    /// Whether any authentication is configured, without resolving stored helpers or refreshing tokens;
+    /// the supplied fallback resolver is the caller's and runs as given.
     #[must_use]
     pub fn has_auth(&self, provider: &str) -> bool {
         let configured = {
@@ -20,7 +21,8 @@ impl AuthStorage {
         configured || get_env_api_key(provider).is_some() || self.fallback_supplies(provider)
     }
 
-    /// Configured-authentication metadata without key values, helpers or refresh.
+    /// Configured-authentication metadata without key values, stored helper resolution or refresh;
+    /// the supplied fallback resolver is the caller's and runs as given.
     #[must_use]
     pub fn get_auth_status(&self, provider: &str) -> AuthStatus {
         let (stored, runtime) = {

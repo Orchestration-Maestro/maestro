@@ -2,7 +2,7 @@
 use super::{AuthStorageBackend, AuthStorageError, LockUpdate};
 use std::fs::{self, File, OpenOptions, TryLockError};
 use std::io::{self, ErrorKind};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 /// Attempts made on a contended lock.
@@ -14,7 +14,7 @@ const LOCK_RETRY_DELAY: Duration = Duration::from_millis(20);
 #[derive(Debug)]
 pub struct FileAuthStorageBackend {
     /// Credential file location.
-    auth_path: PathBuf,
+    auth_path: String,
 }
 
 impl FileAuthStorageBackend {
@@ -22,21 +22,20 @@ impl FileAuthStorageBackend {
     #[must_use]
     pub fn new(auth_path: &str) -> Self {
         Self {
-            auth_path: PathBuf::from(auth_path),
+            auth_path: auth_path.to_owned(),
         }
     }
 
     /// Create missing parents privately and open the sidecar lock file.
     fn lock_file(&self) -> io::Result<File> {
-        if let Some(parent) = self.auth_path.parent() {
+        if let Some(parent) = Path::new(&self.auth_path).parent() {
             let mut builder = fs::DirBuilder::new();
             builder.recursive(true);
             #[cfg(unix)]
             std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
             builder.create(parent)?;
         }
-        let mut sidecar = self.auth_path.clone().into_os_string();
-        sidecar.push(".lock");
+        let sidecar = format!("{}.lock", self.auth_path);
         OpenOptions::new()
             .create(true)
             .write(true)
@@ -47,35 +46,38 @@ impl FileAuthStorageBackend {
     /// Lock the sidecar, retrying only while another holder has it.
     fn acquire(&self) -> Result<File, AuthStorageError> {
         let file = self.lock_file()?;
-        for attempt in 1..=LOCK_ATTEMPTS {
-            match file.try_lock() {
-                Ok(()) => return Ok(file),
-                Err(TryLockError::WouldBlock) if attempt < LOCK_ATTEMPTS => {
-                    std::thread::sleep(LOCK_RETRY_DELAY);
-                }
-                Err(error) => return Err(Box::new(error)),
-            }
-        }
-        Err(Box::new(TryLockError::WouldBlock))
+        retry_contended(|| file.try_lock())?;
+        Ok(file)
     }
 
-    /// Initialize a missing file, then read it, under the held lock.
+    /// Initialize a missing file (following a symlink), then read it, under the held lock.
     fn read(&self) -> io::Result<Option<String>> {
-        match OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&self.auth_path)
-        {
-            Ok(_) => write(&self.auth_path, "{}")?,
-            Err(error) if error.kind() == ErrorKind::AlreadyExists => {}
-            Err(error) => return Err(error),
+        let path = Path::new(&self.auth_path);
+        if !path.exists() {
+            write(path, "{}")?;
         }
-        match fs::read(&self.auth_path) {
+        match fs::read(path) {
             Ok(bytes) => Ok(Some(String::from_utf8_lossy(&bytes).into_owned())),
             Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
             Err(error) => Err(error),
         }
     }
+}
+
+/// Try up to `LOCK_ATTEMPTS` times, waiting only after a contended attempt.
+fn retry_contended(
+    mut try_lock: impl FnMut() -> Result<(), TryLockError>,
+) -> Result<(), AuthStorageError> {
+    for attempt in 1..=LOCK_ATTEMPTS {
+        match try_lock() {
+            Ok(()) => return Ok(()),
+            Err(TryLockError::WouldBlock) if attempt < LOCK_ATTEMPTS => {
+                std::thread::sleep(LOCK_RETRY_DELAY);
+            }
+            Err(error) => return Err(Box::new(error)),
+        }
+    }
+    Err(Box::new(TryLockError::WouldBlock))
 }
 
 /// Replace the text, restricting it to its owner on Unix.
@@ -97,10 +99,41 @@ impl AuthStorageBackend for FileAuthStorageBackend {
             .map_err(AuthStorageError::from)
             .and_then(|current| update(current.as_deref()))
             .and_then(|next| match next {
-                Some(next) => Ok(write(&self.auth_path, &next)?),
+                Some(next) => Ok(write(Path::new(&self.auth_path), &next)?),
                 None => Ok(()),
             });
         lock.unlock()?;
         outcome
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn non_contention_errors_are_not_retried() {
+        let mut calls = 0;
+        let result = retry_contended(|| {
+            calls += 1;
+            Err(TryLockError::Error(io::Error::other("denied")))
+        });
+        assert!(result.is_err());
+        assert_eq!(calls, 1);
+    }
+
+    #[test]
+    fn contention_is_retried_until_the_lock_is_free() {
+        let mut calls = 0;
+        let result = retry_contended(|| {
+            calls += 1;
+            if calls < 3 {
+                Err(TryLockError::WouldBlock)
+            } else {
+                Ok(())
+            }
+        });
+        assert!(result.is_ok());
+        assert_eq!(calls, 3);
     }
 }

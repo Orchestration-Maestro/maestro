@@ -27,7 +27,8 @@ pub trait AuthStorageBackend: ThreadBound {
     /// Run `update` once with the current text, then store its replacement.
     ///
     /// `None` means nothing has been stored. Acquisition and read failures
-    /// return before `update` runs; an `update` failure writes nothing.
+    /// return before `update` runs; an `update` failure supplies no
+    /// replacement, though the adapter may already have initialized missing storage.
     ///
     /// # Errors
     /// Returns the adapter's acquisition, read, write or release failure, or
