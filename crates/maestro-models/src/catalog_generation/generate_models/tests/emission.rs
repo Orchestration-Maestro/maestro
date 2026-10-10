@@ -158,6 +158,36 @@ fn complete_catalog_matches_all_descriptors() {
         .flat_map(|provider| crate::get_models(provider))
         .collect();
     assert_eq!(actual, expected);
+    for (actual, expected) in actual.iter().zip(&expected) {
+        let (mut actual_keys, mut expected_keys) = (Vec::new(), Vec::new());
+        key_sequences(
+            &serde_json::to_value(&actual.compat).unwrap(),
+            &mut actual_keys,
+        );
+        key_sequences(
+            &serde_json::to_value(&expected.compat).unwrap(),
+            &mut expected_keys,
+        );
+        assert_eq!(
+            actual_keys, expected_keys,
+            "{}/{} compat key order",
+            actual.provider, actual.id
+        );
+    }
+}
+
+/// Collect every object's key sequence, depth first, to prove key order.
+fn key_sequences(value: &serde_json::Value, out: &mut Vec<Vec<String>>) {
+    match value {
+        serde_json::Value::Object(map) => {
+            out.push(map.keys().cloned().collect());
+            for child in map.values() {
+                key_sequences(child, out);
+            }
+        }
+        serde_json::Value::Array(items) => items.iter().for_each(|item| key_sequences(item, out)),
+        _ => {}
+    }
 }
 
 /// Check literal filename identities through actual filesystem publication.
