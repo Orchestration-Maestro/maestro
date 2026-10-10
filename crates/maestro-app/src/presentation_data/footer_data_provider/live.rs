@@ -22,34 +22,22 @@ struct Entries<K, V> {
 /// moves it to the end. A walk reads the collection at each step: it skips an
 /// entry removed before its turn, yields a replaced value, reaches entries
 /// added before it ends and stays ended once it returns `None`.
-pub struct Live<K, V> {
-    /// The shared collection.
-    entries: Rc<RefCell<Entries<K, V>>>,
-}
-
-impl<K, V> Clone for Live<K, V> {
-    fn clone(&self) -> Self {
-        Self {
-            entries: Rc::clone(&self.entries),
-        }
-    }
-}
+#[derive(Clone)]
+pub struct Live<K, V>(Rc<RefCell<Entries<K, V>>>);
 
 impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     /// An empty collection.
     pub(super) fn new() -> Self {
-        Self {
-            entries: Rc::new(RefCell::new(Entries {
-                next_position: 0,
-                positions: HashMap::new(),
-                by_position: BTreeMap::new(),
-            })),
-        }
+        Self(Rc::new(RefCell::new(Entries {
+            next_position: 0,
+            positions: HashMap::new(),
+            by_position: BTreeMap::new(),
+        })))
     }
 
     /// Set `key` to `value`, appending the entry when the key is new.
     pub(super) fn insert(&self, key: K, value: V) {
-        let mut entries = self.entries.borrow_mut();
+        let mut entries = self.0.borrow_mut();
         let entries = &mut *entries;
         let position = *entries
             .positions
@@ -64,7 +52,7 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     where
         K: std::borrow::Borrow<Q>,
     {
-        let mut entries = self.entries.borrow_mut();
+        let mut entries = self.0.borrow_mut();
         if let Some(position) = entries.positions.remove(key) {
             entries.by_position.remove(&position);
         }
@@ -72,7 +60,7 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
 
     /// Remove every entry.
     pub(super) fn clear(&self) {
-        let mut entries = self.entries.borrow_mut();
+        let mut entries = self.0.borrow_mut();
         entries.positions.clear();
         entries.by_position.clear();
     }
@@ -80,7 +68,7 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     /// The number of entries.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.entries.borrow().by_position.len()
+        self.0.borrow().by_position.len()
     }
 
     /// Whether there are no entries.
@@ -89,43 +77,13 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
         self.len() == 0
     }
 
-    /// The value of `key`.
-    #[must_use]
-    pub fn get<Q: Hash + Eq + ?Sized>(&self, key: &Q) -> Option<V>
-    where
-        K: std::borrow::Borrow<Q>,
-    {
-        let entries = self.entries.borrow();
-        let (_, value) = entries.by_position.get(entries.positions.get(key)?)?;
-        Some(value.clone())
-    }
-
-    /// Whether `key` has a value.
-    #[must_use]
-    pub fn contains_key<Q: Hash + Eq + ?Sized>(&self, key: &Q) -> bool
-    where
-        K: std::borrow::Borrow<Q>,
-    {
-        self.entries.borrow().positions.contains_key(key)
-    }
-
     /// The entries in order, as owned pairs.
     #[must_use]
     pub fn iter(&self) -> LiveIter<K, V> {
         LiveIter {
             live: self.clone(),
-            from: 0,
-            ended: false,
+            from: Some(0),
         }
-    }
-}
-
-impl<K: Hash + Eq + Clone, V: Clone> IntoIterator for &Live<K, V> {
-    type Item = (K, V);
-    type IntoIter = LiveIter<K, V>;
-
-    fn into_iter(self) -> LiveIter<K, V> {
-        self.iter()
     }
 }
 
@@ -133,25 +91,36 @@ impl<K: Hash + Eq + Clone, V: Clone> IntoIterator for &Live<K, V> {
 pub struct LiveIter<K, V> {
     /// The collection being walked.
     live: Live<K, V>,
-    /// The first position not yet visited.
-    from: u64,
-    /// Whether the walk has ended.
-    ended: bool,
+    /// The first position not yet visited; `None` once the walk has ended.
+    from: Option<u64>,
 }
 
 impl<K: Hash + Eq + Clone, V: Clone> Iterator for LiveIter<K, V> {
     type Item = (K, V);
 
     fn next(&mut self) -> Option<(K, V)> {
-        let entries = self.live.entries.borrow();
-        let next = entries.by_position.range(self.from..).next();
-        let Some((position, (key, value))) = next.filter(|_| !self.ended) else {
-            self.ended = true;
-            return None;
-        };
-        self.from = position + 1;
+        let from = self.from.take()?;
+        let entries = self.live.0.borrow();
+        let (position, (key, value)) = entries.by_position.range(from..).next()?;
+        self.from = Some(position + 1);
         Some((key.clone(), value.clone()))
     }
 }
 
 impl<K: Hash + Eq + Clone, V: Clone> FusedIterator for LiveIter<K, V> {}
+
+impl Live<String, String> {
+    /// The value of `key`.
+    #[must_use]
+    pub fn get(&self, key: &str) -> Option<String> {
+        let entries = self.0.borrow();
+        let (_, value) = entries.by_position.get(entries.positions.get(key)?)?;
+        Some(value.clone())
+    }
+
+    /// Whether `key` has a value.
+    #[must_use]
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.0.borrow().positions.contains_key(key)
+    }
+}

@@ -1,7 +1,6 @@
 //! Git metadata discovery and branch selection.
 
 use std::io;
-use std::ops::ControlFlow;
 
 use maestro_path::{Cwd, dirname, join, resolve, try_resolve};
 
@@ -15,15 +14,10 @@ pub(super) struct GitPaths {
     head_path: String,
 }
 
-/// Whitespace as `String.prototype.trim` of the JavaScript specification
-/// counts it: Unicode white space, except U+0085, plus U+FEFF.
-fn is_trimmed(c: char) -> bool {
-    (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
-}
-
-/// Trim the whitespace that file-based metadata ignores around its text.
+/// Trim as `String.prototype.trim` of the JavaScript specification does:
+/// Unicode white space, except U+0085, plus U+FEFF.
 fn trim(text: &str) -> &str {
-    text.trim_matches(is_trimmed)
+    text.trim_matches(|c: char| (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}')
 }
 
 /// Resolve `paths` right to left; the working directory is read only when the
@@ -51,43 +45,6 @@ fn resolve_path(operations: &dyn FooterOperations, paths: &[&str]) -> io::Result
     Ok(resolve(paths, &cwd))
 }
 
-/// Look for metadata in `dir`, whose `.git` entry is at `git_path`.
-///
-/// `Continue` moves on to the parent; `Break` ends the walk with the
-/// repository found, or with none when the one named cannot be used.
-fn inspect(
-    operations: &dyn FooterOperations,
-    dir: &str,
-    git_path: &str,
-) -> io::Result<ControlFlow<Option<GitPaths>>> {
-    let git_dir = match operations.stat_kind(git_path)? {
-        FooterFileKind::Directory => git_path.to_owned(),
-        FooterFileKind::File => {
-            let content = operations.read_text(git_path)?;
-            let Some(target) = trim(&content).strip_prefix("gitdir: ") else {
-                return Ok(ControlFlow::Continue(()));
-            };
-            resolve_path(operations, &[dir, trim(target)])?
-        }
-        FooterFileKind::Other => return Ok(ControlFlow::Continue(())),
-    };
-    let head_path = join(&[&git_dir, "HEAD"]);
-    if !operations.exists(&head_path) {
-        return Ok(ControlFlow::Break(None));
-    }
-    let common_dir = join(&[&git_dir, "commondir"]);
-    if operations.exists(&common_dir) {
-        resolve_path(
-            operations,
-            &[&git_dir, trim(&operations.read_text(&common_dir)?)],
-        )?;
-    }
-    Ok(ControlFlow::Break(Some(GitPaths {
-        repo_dir: dir.to_owned(),
-        head_path,
-    })))
-}
-
 /// Walk from `cwd` towards its root for the nearest directory with a `.git`
 /// entry that names a repository.
 ///
@@ -95,18 +52,46 @@ fn inspect(
 /// followed and a repository without HEAD each end the walk with no result
 /// instead of falling back to an enclosing repository.
 pub(super) fn find_git_paths(operations: &dyn FooterOperations, cwd: &str) -> Option<GitPaths> {
+    discover(operations, cwd).ok().flatten()
+}
+
+/// The walk of [`find_git_paths`], with its failures.
+fn discover(operations: &dyn FooterOperations, cwd: &str) -> io::Result<Option<GitPaths>> {
     let mut dir = cwd.to_owned();
     loop {
         let git_path = join(&[&dir, ".git"]);
-        if operations.exists(&git_path) {
-            let flow = inspect(operations, &dir, &git_path).unwrap_or(ControlFlow::Break(None));
-            if let ControlFlow::Break(found) = flow {
-                return found;
+        'entry: {
+            if !operations.exists(&git_path) {
+                break 'entry;
             }
+            let (git_dir, worktree) = match operations.stat_kind(&git_path)? {
+                FooterFileKind::Directory => (git_path, false),
+                FooterFileKind::File => {
+                    let content = operations.read_text(&git_path)?;
+                    let Some(target) = trim(&content).strip_prefix("gitdir: ") else {
+                        break 'entry;
+                    };
+                    (resolve_path(operations, &[&dir, trim(target)])?, true)
+                }
+                FooterFileKind::Other => break 'entry,
+            };
+            let head_path = join(&[&git_dir, "HEAD"]);
+            if !operations.exists(&head_path) {
+                return Ok(None);
+            }
+            let common_dir = join(&[&git_dir, "commondir"]);
+            if worktree && operations.exists(&common_dir) {
+                let common = operations.read_text(&common_dir)?;
+                resolve_path(operations, &[&git_dir, trim(&common)])?;
+            }
+            return Ok(Some(GitPaths {
+                repo_dir: dir,
+                head_path,
+            }));
         }
         let parent = dirname(&dir);
         if parent == dir {
-            return None;
+            return Ok(None);
         }
         dir = parent;
     }

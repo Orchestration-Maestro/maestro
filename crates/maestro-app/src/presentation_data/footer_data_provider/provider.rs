@@ -54,10 +54,9 @@ struct State {
 impl State {
     /// The state of `cwd`, with its repository discovered and no branch looked up.
     fn new(operations: &dyn FooterOperations, cwd: String) -> Self {
-        let git_paths = find_git_paths(operations, &cwd);
         Self {
+            git_paths: find_git_paths(operations, &cwd),
             cwd,
-            git_paths,
             branch: Lookup::Pending,
         }
     }
@@ -118,7 +117,7 @@ impl FooterDataProvider {
             return;
         }
         *self.state.borrow_mut() = State::new(self.operations.as_ref(), cwd);
-        for (_, callback) in &self.callbacks {
+        for (_, callback) in self.callbacks.iter() {
             callback();
         }
     }
@@ -153,11 +152,9 @@ impl ReadonlyFooterDataProvider for FooterDataProvider {
     }
 
     fn on_branch_change(&self, callback: Rc<dyn Fn()>) -> Box<dyn Fn()> {
-        let key = identity(&callback);
-        self.callbacks.insert(key, Rc::clone(&callback));
+        self.callbacks
+            .insert(identity(&callback), Rc::clone(&callback));
         let callbacks = self.callbacks.clone();
-        Box::new(move || {
-            callbacks.remove(&identity(&callback));
-        })
+        Box::new(move || callbacks.remove(&identity(&callback)))
     }
 }

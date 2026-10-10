@@ -34,7 +34,7 @@ starts with `gitdir: `, and any other file or entry kind continues the walk. A
 `.git` entry that cannot be examined, a worktree link or its `commondir` that
 cannot be followed and a repository without `HEAD` each end the walk with no
 branch instead of falling back to an enclosing repository. `HEAD` is checked
-before `commondir`, and the working directory is read only when a worktree path
+before a worktree link's `commondir`, which a plain directory never reads, and the working directory is read only when a worktree path
 still needs it after the recorded drive directories are applied. Reading `HEAD` waits for
 the first `get_git_branch` call, and its result, absence included, is cached
 until the working directory changes.

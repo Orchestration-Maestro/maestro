@@ -6,17 +6,20 @@ mod support;
 
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
+#[cfg(unix)]
 use std::path::Path;
 use std::rc::Rc;
 
 use maestro_app::ReadonlyFooterDataProvider;
+use maestro_app::presentation_data::footer_data_provider::{ExtensionStatuses, FooterDataProvider};
+#[cfg(unix)]
 use maestro_app::presentation_data::footer_data_provider::{
-    ExtensionStatuses, FooterDataProvider, FooterOperations, NativeFooterOperations,
+    FooterOperations, NativeFooterOperations,
 };
 use serde::Deserialize;
-use support::{
-    Entry, FakeOps, Git, Scratch, git, install_executable, load, plain, probe, provider,
-};
+use support::{Entry, FakeOps, Git, load, plain, provider};
+#[cfg(unix)]
+use support::{Scratch, git, install_executable, probe};
 
 /// An optional branch as a fixture spells it.
 type Branch = Option<String>;
@@ -61,6 +64,7 @@ fn footer_head_records_keep_exact_branch_text() {
                 );
                 branch
             }
+            #[cfg(unix)]
             (None, Some(bytes)) => {
                 let scratch = Scratch::new();
                 std::fs::create_dir(scratch.join(".git")).expect("metadata directory");
@@ -145,6 +149,7 @@ fn command_dirs(commands: &[Command], args: &[String]) -> Vec<String> {
 
 #[test]
 fn footer_symbolic_lookup_uses_exact_command_and_fallback() {
+    #[cfg(unix)]
     if let Ok(repo) = std::env::var("FOOTER_PROBE_REPO") {
         let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations);
         let branch = FooterDataProvider::new(repo, native).get_git_branch();
@@ -174,9 +179,11 @@ fn footer_symbolic_lookup_uses_exact_command_and_fallback() {
         provider(&ops, "/repo").get_git_branch().as_deref(),
         Some("detached")
     );
+    #[cfg(unix)]
     native_git_observations(&args);
 }
 
+#[cfg(unix)]
 /// Run the native adapter against a stand-in `git` in a child with its own PATH.
 fn native_git_observations(args: &[String]) {
     let scratch = Scratch::new();
@@ -935,6 +942,7 @@ fn footer_readonly_aliases_keep_live_metadata() {
     }
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeCase {
@@ -944,6 +952,7 @@ struct NativeCase {
     expected: NativeExpected,
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct NativeExpected {
@@ -951,11 +960,13 @@ struct NativeExpected {
     git_output: Option<String>,
 }
 
+#[cfg(unix)]
 fn native_branch(cwd: &str) -> Branch {
     let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations);
     FooterDataProvider::new(cwd.to_owned(), native).get_git_branch()
 }
 
+#[cfg(unix)]
 #[test]
 fn footer_native_and_controlled_adapters_agree() {
     let scratch = Scratch::new();
@@ -1026,6 +1037,7 @@ struct AmbientInput {
 
 const AMBIENT: &str = "footer_paths_read_ambient_cwd_only_when_required";
 
+#[cfg(unix)]
 /// Child side: remove the working directory, then print what the native
 /// adapter finds for each case.
 fn ambient_child(root: &str) {
@@ -1059,11 +1071,10 @@ fn ambient_files() -> Rc<FakeOps> {
     ]))
 }
 
-#[test]
-fn footer_paths_read_ambient_cwd_only_when_required() {
-    if let Ok(root) = std::env::var("FOOTER_PROBE_AMBIENT") {
-        return ambient_child(&root);
-    }
+/// What the native adapter finds for each ambient case, read in a child whose
+/// working directory is gone.
+#[cfg(unix)]
+fn native_ambient_lines() -> Vec<String> {
     let scratch = Scratch::new();
     for dir in ["repo", "repo/.git", "worktree", "gone"] {
         std::fs::create_dir(scratch.join(dir)).expect("directory");
@@ -1071,11 +1082,21 @@ fn footer_paths_read_ambient_cwd_only_when_required() {
     std::fs::write(scratch.join("repo/.git/HEAD"), "ref: refs/heads/updated\n").expect("HEAD");
     std::fs::write(scratch.join("worktree/.git"), "gitdir: ../repo/.git\n").expect("gitfile");
     let root = scratch.join("");
-    let observed = probe(
+    probe(
         AMBIENT,
         Path::new(&scratch.join("gone")),
         &[("FOOTER_PROBE_AMBIENT", &root)],
-    );
+    )
+}
+
+#[test]
+fn footer_paths_read_ambient_cwd_only_when_required() {
+    #[cfg(unix)]
+    if let Ok(root) = std::env::var("FOOTER_PROBE_AMBIENT") {
+        return ambient_child(&root);
+    }
+    #[cfg(unix)]
+    let observed = native_ambient_lines();
     let controlled = ambient_files();
     for case in load::<AmbientCase>(AMBIENT) {
         let name = &case.input.name;
@@ -1088,11 +1109,14 @@ fn footer_paths_read_ambient_cwd_only_when_required() {
         let required = usize::from(name == "relative-worktree");
         assert_eq!(controlled.current_dir_calls.replace(0), required, "{name}");
         assert_eq!(branch, case.expected.branch, "{name}");
-        let native = observed
-            .iter()
-            .find_map(|line| line.strip_prefix(&format!("{name}=")));
-        let native = native.map(|found| (!found.is_empty()).then(|| found.to_owned()));
-        assert_eq!(native, Some(case.expected.branch), "{name}");
+        #[cfg(unix)]
+        {
+            let native = observed
+                .iter()
+                .find_map(|line| line.strip_prefix(&format!("{name}=")));
+            let native = native.map(|found| (!found.is_empty()).then(|| found.to_owned()));
+            assert_eq!(native, Some(case.expected.branch), "{name}");
+        }
     }
     *controlled.current.borrow_mut() = Some("/scratch/gone".to_owned());
     let resolved = provider(&controlled, "../worktree").get_git_branch();

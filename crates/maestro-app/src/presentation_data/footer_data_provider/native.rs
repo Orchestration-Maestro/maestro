@@ -2,7 +2,6 @@
 
 use std::fs;
 use std::io;
-use std::path::Path;
 use std::process::{Command, Stdio};
 
 use super::operations::{FooterFileKind, FooterOperations};
@@ -13,7 +12,7 @@ pub struct NativeFooterOperations;
 
 impl FooterOperations for NativeFooterOperations {
     fn exists(&self, path: &str) -> bool {
-        Path::new(path).exists()
+        fs::exists(path).unwrap_or(false)
     }
 
     fn stat_kind(&self, path: &str) -> io::Result<FooterFileKind> {
@@ -39,13 +38,8 @@ impl FooterOperations for NativeFooterOperations {
 
     fn symbolic_ref_sync(&self, repo_dir: &str) -> io::Result<Option<String>> {
         let output = Command::new("git")
-            .args([
-                "--no-optional-locks",
-                "symbolic-ref",
-                "--quiet",
-                "--short",
-                "HEAD",
-            ])
+            .arg("--no-optional-locks")
+            .args(["symbolic-ref", "--quiet", "--short", "HEAD"])
             .current_dir(repo_dir)
             .stdin(Stdio::null())
             .stderr(Stdio::null())
