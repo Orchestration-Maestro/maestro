@@ -68,13 +68,14 @@ impl Producer {
             send.send(()).unwrap();
             wait.recv().unwrap();
             // Read-write open never waits for a reader, which a terminated shell may never be.
-            std::fs::OpenOptions::new()
+            let mut permit = std::fs::OpenOptions::new()
                 .read(true)
                 .write(true)
                 .open(permit)
-                .unwrap()
-                .write_all(b"go\n")
                 .unwrap();
+            permit.write_all(b"go\n").unwrap();
+            // Closing the last descriptor discards unread FIFO bytes, so hold it until the capture ends.
+            wait.recv().unwrap();
         });
         Self {
             scratch,
@@ -85,8 +86,12 @@ impl Producer {
     }
     /// The shell's acknowledgement followed by its blocking read.
     fn gate(&self) -> String {
+        self.gate_after("true")
+    }
+    /// The acknowledgement, then `pause`, then the blocking read.
+    fn gate_after(&self, pause: &str) -> String {
         format!(
-            "printf ready > '{}'; read permit < '{}'",
+            "printf ready > '{}'; {pause}; read permit < '{}'",
             self.scratch.0.join("ready").display(),
             self.scratch.0.join("permit").display()
         )
@@ -274,13 +279,53 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
             .unwrap();
         (early, captured)
     }));
+    producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
     assert!(!early, "capture completed before descendant EOF");
     assert_eq!(captured, "earlytail");
 }
 
 #[test]
-#[ignore = "hangs when the shell is terminated before it opens the permit FIFO; rewritten with a frozen deadline"]
+fn capture_completes_when_the_shell_opens_the_permit_late() {
+    let producer = Producer::new();
+    let script = format!(
+        "parent=$$; (while kill -0 \"$parent\" 2>/dev/null; do :; done; {}; printf tail) & printf early; exit 0",
+        producer.gate_after("sleep 1")
+    );
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let runtime = runtime();
+    let result = local.spawn_local(async move {
+        operations
+            .run_command_capture(
+                "/bin/sh",
+                &["-c".into(), script],
+                CommandCaptureOptions {
+                    cwd: None,
+                    timeout: None,
+                    env: &[],
+                },
+            )
+            .await
+    });
+    let captured = runtime.block_on(local.run_until(async {
+        tokio::time::timeout(Duration::from_secs(5), producer.ready)
+            .await
+            .unwrap()
+            .unwrap();
+        producer.release.send(()).unwrap();
+        tokio::time::timeout(Duration::from_secs(10), result)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap()
+    }));
+    producer.release.send(()).unwrap();
+    producer.thread.join().unwrap();
+    assert_eq!(captured, "earlytail");
+}
+
+#[test]
 fn capture_timeout_covers_streams_and_sends_termination() {
     let scratch = scratch::Scratch::new().unwrap();
     let marker = scratch.0.join("terminated");
@@ -308,14 +353,6 @@ fn capture_timeout_covers_streams_and_sends_termination() {
             )
             .await
     });
-    let (finished, watch) = std::sync::mpsc::channel::<()>();
-    let watchdog = std::thread::spawn(move || {
-        if watch.recv_timeout(Duration::from_secs(60))
-            == Err(std::sync::mpsc::RecvTimeoutError::Timeout)
-        {
-            std::process::abort();
-        }
-    });
     let ready = producer.ready;
     runtime.block_on(local.run_until(async {
         // The deadline starts on a frozen clock; a blocking wait keeps the
@@ -338,9 +375,8 @@ fn capture_timeout_covers_streams_and_sends_termination() {
             expected
         );
     }));
+    producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
-    drop(finished);
-    watchdog.join().unwrap();
     assert_eq!(std::fs::read_to_string(marker).unwrap(), "terminated");
 }
 
@@ -387,6 +423,7 @@ fn capture_timeout_covers_descendant_streams() {
             expected
         );
     }));
+    producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
 }
 

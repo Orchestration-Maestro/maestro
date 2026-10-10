@@ -111,7 +111,9 @@ cancellation before it completes) or in retaining its context, closes that
 connection and clears the cached entry's context; a request cancelled after it
 completed closes its connection and keeps the context. A request on an uncached
 connection (the session's connection was busy) and a failure while preparing
-the request or connecting leave the session's context intact.
+the request or connecting leave the session's context intact, except that
+acquiring the connection first evicts an idle entry whose identity differs or
+whose socket has ended, together with its context.
 
 The `websocket-cached` and `auto` transports keep, per cached connection, the
 body, response identifier and contributed input items of the most recent
