@@ -135,3 +135,11 @@ fn maestro_editor_skips_marker_continuation_vls_when_preferred_col_falls_in_mark
 fn maestro_editor_submits_large_pasted_content_literally() {
     support::run("maestro_editor_submits_large_pasted_content_literally");
 }
+#[test]
+fn marker_snap_column_survives_resize() {
+    support::run("marker_snap_column_survives_resize");
+}
+#[test]
+fn markers_jump_and_edit_keep_separate_behavior() {
+    support::run("markers_jump_and_edit_keep_separate_behavior");
+}
