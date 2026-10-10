@@ -62,13 +62,21 @@ fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<Native
             agent_dir: root.at("agent"),
             settings_manager: Rc::new(RefCell::new(settings)),
         },
-        NativePackageOperations::new(|_| false, Rc::new(|| false)),
+        NativePackageOperations::new(
+            |_| false,
+            Rc::new(|| false),
+            &std::rc::Rc::new(tokio::task::LocalSet::new()),
+        ),
     )
 }
 
 /// Native operations that never use the shell and never take over stdout.
 fn direct() -> NativePackageOperations {
-    NativePackageOperations::new(|_| false, Rc::new(|| false))
+    NativePackageOperations::new(
+        |_| false,
+        Rc::new(|| false),
+        &std::rc::Rc::new(tokio::task::LocalSet::new()),
+    )
 }
 
 #[test]
@@ -134,6 +142,7 @@ fn stdio_launches(root: &Path) {
     let operations: Box<dyn PackageOperations> = Box::new(NativePackageOperations::new(
         |_| false,
         Rc::new(move || query.get()),
+        &Rc::new(tokio::task::LocalSet::new()),
     ));
     let runtime = runtime();
     let launch = |name: &str, cwd: Option<&str>| {
@@ -352,8 +361,11 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
 #[test]
 fn supplied_shell_choice_is_observed_for_each_command() {
     let runtime = runtime();
-    let operations: &dyn PackageOperations =
-        &NativePackageOperations::new(|command| command == "true", Rc::new(|| false));
+    let operations: &dyn PackageOperations = &NativePackageOperations::new(
+        |command| command == "true",
+        Rc::new(|| false),
+        &std::rc::Rc::new(tokio::task::LocalSet::new()),
+    );
     let args = ["a;", "exit", "7"].map(str::to_owned);
     assert_eq!(
         runtime

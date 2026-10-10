@@ -87,7 +87,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         Ok(result)
     }
     /// Takes a scoped owned snapshot before any adapter call.
-    fn snapshot(&self, scope: InstalledSourceScope) -> io::Result<Settings> {
+    pub(super) fn snapshot(&self, scope: InstalledSourceScope) -> io::Result<Settings> {
         let settings = self
             .options
             .settings_manager
@@ -118,7 +118,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         Ok(stored == input)
     }
     /// Keeps the source kind separate from its identity string.
-    fn identity<'a>(&self, source: &'a str, base: &str) -> io::Result<Identity<'a>> {
+    pub(super) fn identity<'a>(&self, source: &'a str, base: &str) -> io::Result<Identity<'a>> {
         Ok(match sources::parse(source) {
             Source::Local(path) => Identity::Local(self.resolve_local(path, base)?),
             Source::Git(git) => Identity::Git(git.host, git.path),
@@ -127,8 +127,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
 }
 /// Kind-specific source identity, independent of clone address and pins.
-#[derive(PartialEq, Eq)]
-enum Identity<'a> {
+#[derive(PartialEq, Eq, Hash)]
+pub(super) enum Identity<'a> {
     /// The package name.
     Npm(&'a str),
     /// The repository host and path.
@@ -137,7 +137,7 @@ enum Identity<'a> {
     Local(String),
 }
 /// Consumes the packages root without inspecting later entries.
-fn packages(mut snapshot: Settings) -> io::Result<Vec<Value>> {
+pub(super) fn packages(mut snapshot: Settings) -> io::Result<Vec<Value>> {
     match snapshot.0.shift_remove("packages") {
         None | Some(Value::Null) => Ok(Vec::new()),
         Some(Value::Array(entries)) => Ok(entries),
@@ -148,7 +148,7 @@ fn packages(mut snapshot: Settings) -> io::Result<Vec<Value>> {
     }
 }
 /// Reads only the source of the currently consumed entry.
-fn entry_source(entry: &Value) -> io::Result<&str> {
+pub(super) fn entry_source(entry: &Value) -> io::Result<&str> {
     entry
         .as_str()
         .or_else(|| entry.as_object()?.get("source")?.as_str())

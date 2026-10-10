@@ -52,3 +52,57 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.operations.write_file(&path, text)
     }
 }
+
+impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Compares selected installed and latest strings, suppressing probe failures.
+    pub(super) async fn npm_update_available(&self, name: &str, path: &str) -> bool {
+        if self.offline() {
+            return false;
+        }
+        let manifest = join(&[path, "package.json"]);
+        if !self.operations.exists(&manifest) {
+            return false;
+        }
+        let installed = self
+            .operations
+            .read_file(&manifest)
+            .ok()
+            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+            .and_then(|value| {
+                value
+                    .as_object()?
+                    .get("version")?
+                    .as_str()
+                    .map(str::to_owned)
+            })
+            .filter(|version| !version.is_empty());
+        let Some(installed) = installed else {
+            return false;
+        };
+        self.latest_npm_version(name)
+            .await
+            .is_ok_and(|latest| latest != installed)
+    }
+    /// Captures the live command's latest version without coercing decoded values.
+    pub(super) async fn latest_npm_version(&self, name: &str) -> io::Result<String> {
+        let (command, mut args) = self.npm_command()?;
+        args.extend(["view", name, "version", "--json"].map(str::to_owned));
+        let stdout = self
+            .operations
+            .run_command_capture(
+                &command,
+                &args,
+                super::CommandCaptureOptions {
+                    cwd: Some(&self.options.cwd),
+                    timeout: Some(std::time::Duration::from_millis(10000)),
+                    env: &[],
+                },
+            )
+            .await?;
+        let raw = crate::trim(&stdout);
+        if raw.is_empty() {
+            return Err(io::Error::other("Empty response from npm view"));
+        }
+        serde_json::from_str(raw).map_err(io::Error::other)
+    }
+}

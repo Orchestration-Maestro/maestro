@@ -477,7 +477,11 @@ fn configured_sources_work_without_acquisition() {
     std::fs::create_dir_all(maestro_path::join(&[&root, "@scope"])).unwrap();
     std::fs::write(maestro_path::join(&[&root, "@scope/pkg"]), "contents").unwrap();
     workflow(
-        NativePackageOperations::new(|_| false, Rc::new(|| false)),
+        NativePackageOperations::new(
+            |_| false,
+            Rc::new(|| false),
+            &std::rc::Rc::new(tokio::task::LocalSet::new()),
+        ),
         &cwd,
         &agent,
         &root,
@@ -688,6 +692,27 @@ use maestro_packages::PackageOperations;
 struct WorkflowOperations(Controlled);
 #[cfg(unix)]
 impl PackageOperations for WorkflowOperations {
+    fn read_file(&self, path: &str) -> std::io::Result<String> {
+        self.0.read_file(path)
+    }
+    fn offline_value(&self) -> Option<String> {
+        self.0.offline_value()
+    }
+    fn spawn(
+        &self,
+        operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
+    ) -> std::io::Result<()> {
+        self.0.spawn(operation)
+    }
+    fn run_command_capture<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: maestro_packages::CommandCaptureOptions<'a>,
+    ) -> maestro_packages::PackageFuture<'a, String> {
+        self.0.run_command_capture(command, args, options)
+    }
+
     fn exists(&self, path: &str) -> bool {
         !path.ends_with("/local")
     }
