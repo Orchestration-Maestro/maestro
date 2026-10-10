@@ -188,7 +188,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-credentials` | own accepted credentials | `maestro-models` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
-| `maestro-theme` | resolve presentation styles | `maestro-tui` | 1 |
+| `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials` | 2 |
 | `maestro-session` | own conversation history | `maestro-models`, `maestro-agent`, `maestro-storage` | 2 |
@@ -215,11 +215,11 @@ provenance construction stay with their existing owners; this is not a general
 shared-types container.
 
 The crate is core, sits below layer 0 and depends on no workspace crate, including
-`maestro-path`. Only `maestro-models`, `maestro-resources` and
+`maestro-path`. Only `maestro-models`, `maestro-resources`, `maestro-theme` and
 `maestro-extensions-wasm` may depend on it. No other graph permission changes:
 the guest still cannot depend on models or resources, the runtime adapter still
 targets extensions only, and no internal dev edge is added. Existing delivery
-layers stay unchanged; the shared owner precedes its three consumers.
+layers stay unchanged; the shared owner precedes its four consumers.
 
 `maestro-path` is the foundation utility for lexical path strings. It sits below
 layer 0, has no internal dependencies, and exposes platform-independent path
@@ -233,7 +233,7 @@ dev-dependency checks, still applies. The guest authoring crate
 request owner (`maestro-request`) are excluded from this permission.
 
 The graph contains 29 crates: the 28 table entries plus the foundation utility.
-It permits 90 internal production dependency edges: 67 table edges plus 23
+It permits 91 internal production dependency edges: 68 table edges plus 23
 optional utility edges. Seven crates are leaves when utility edges are ignored,
 including the utility itself. The utility is delivered before its first consumer.
 

@@ -130,7 +130,7 @@ are later scope, not active foundation concepts.
 - **Bracketed paste:** Text a terminal wraps in start and end markers; the input buffer delivers it as one paste event without the markers.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The `maestro-extensions-wasm` library, whose only allowed internal dependency is `maestro-request`, owning the canonical WIT source inputs and the facade extension authors write against.
-- **Shared request owner:** The core `maestro-request` library below layer 0, defining model/message/content/usage/stream/diagnostic records plus `SourceInfo` and `Skill`; only models, resources and guest authoring consume it directly, and it depends on no workspace crate.
+- **Shared request owner:** The core `maestro-request` library below layer 0, defining model/message/content/usage/stream/diagnostic records plus `SourceInfo` and `Skill`; only models, resources, theme and guest authoring consume it directly, and it depends on no workspace crate.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
