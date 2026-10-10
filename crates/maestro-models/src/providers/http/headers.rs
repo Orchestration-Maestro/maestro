@@ -57,7 +57,7 @@ pub(crate) fn normalize_request(headers: &mut IndexMap<String, String>) -> Resul
 /// # Errors
 /// Fails with the text of the first header that [`normalize_request`] rejects or whose value
 /// the default client cannot carry.
-pub(super) fn client_pairs(
+pub(crate) fn client_pairs(
     headers: &mut IndexMap<String, String>,
 ) -> Result<Vec<(HeaderName, HeaderValue)>, String> {
     normalize_request(headers)?;

@@ -1,0 +1,66 @@
+[
+  {
+    "body": {
+      "model": "m",
+      "store": false,
+      "input": [
+        {
+          "a": 1
+        },
+        {
+          "a": 2
+        },
+        {
+          "a": 1
+        }
+      ]
+    },
+    "expected": "{\"type\":\"response.create\",\"model\":\"m\",\"store\":false,\"input\":[{\"a\":1},{\"a\":2},{\"a\":1}]}"
+  },
+  {
+    "body": {
+      "2": "two",
+      "10": "ten",
+      "model": "m",
+      "nested": {
+        "z": 1,
+        "a": 2
+      },
+      "input": [],
+      "store": true
+    },
+    "expected": "{\"2\":\"two\",\"10\":\"ten\",\"type\":\"response.create\",\"model\":\"m\",\"nested\":{\"z\":1,\"a\":2},\"input\":[],\"store\":true}"
+  },
+  {
+    "body": {
+      "model": "m",
+      "type": "response.custom",
+      "input": []
+    },
+    "expected": "{\"type\":\"response.custom\",\"model\":\"m\",\"input\":[]}"
+  },
+  {
+    "body": {
+      "model": "m",
+      "temperature": 1e-07,
+      "input": [],
+      "unknown": {
+        "negative": 0,
+        "large": 1e+21
+      }
+    },
+    "expected": "{\"type\":\"response.create\",\"model\":\"m\",\"temperature\":1e-7,\"input\":[],\"unknown\":{\"negative\":0,\"large\":1e+21}}"
+  },
+  {
+    "body": {
+      "model": "m",
+      "input": [
+        {
+          "role": "user",
+          "content": "Ω😀"
+        }
+      ]
+    },
+    "expected": "{\"type\":\"response.create\",\"model\":\"m\",\"input\":[{\"role\":\"user\",\"content\":\"Ω😀\"}]}"
+  }
+]

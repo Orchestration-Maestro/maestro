@@ -1,0 +1,94 @@
+[
+  {
+    "base": "",
+    "expected": "wss://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": " ",
+    "expected": "wss://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": "﻿",
+    "expected": "wss://chatgpt.com/backend-api/codex/responses"
+  },
+  {
+    "base": "",
+    "expected": null
+  },
+  {
+    "base": "​",
+    "expected": null
+  },
+  {
+    "base": "https://EXAMPLE.test:443",
+    "expected": "wss://example.test/codex/responses"
+  },
+  {
+    "base": "http://EXAMPLE.test:80",
+    "expected": "ws://example.test/codex/responses"
+  },
+  {
+    "base": "http://127.0.0.1:8081",
+    "expected": "ws://127.0.0.1:8081/codex/responses"
+  },
+  {
+    "base": "https://example.test///",
+    "expected": "wss://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/codex",
+    "expected": "wss://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/codex/responses/",
+    "expected": "wss://example.test/codex/responses"
+  },
+  {
+    "base": "https://example.test/a/../b",
+    "expected": "wss://example.test/b/codex/responses"
+  },
+  {
+    "base": "https://münich.example/a b",
+    "expected": "wss://xn--mnich-kva.example/a%20b/codex/responses"
+  },
+  {
+    "base": "https://example.test/a?q=1#tail",
+    "expected": "wss://example.test/a?q=1#tail/codex/responses"
+  },
+  {
+    "base": " https://example.test/ ",
+    "expected": "wss://example.test/%20/codex/responses"
+  },
+  {
+    "base": "\nhttps://example.test/\t",
+    "expected": "wss://example.test//codex/responses"
+  },
+  {
+    "base": "ws://example.test",
+    "expected": "ws://example.test/codex/responses"
+  },
+  {
+    "base": "wss://example.test/x",
+    "expected": "wss://example.test/x/codex/responses"
+  },
+  {
+    "base": "ftp://example.test",
+    "expected": "ftp://example.test/codex/responses"
+  },
+  {
+    "base": "/relative",
+    "expected": null
+  },
+  {
+    "base": "not a URL",
+    "expected": null
+  },
+  {
+    "base": "https://user:pass@example.test",
+    "expected": "wss://user:pass@example.test/codex/responses"
+  },
+  {
+    "base": "https://[::1]:9443/x",
+    "expected": "wss://[::1]:9443/x/codex/responses"
+  }
+]

@@ -117,9 +117,6 @@ pub(super) fn parse_error_response(
 use super::{CodexError, OpenAICodexResponsesOptions, events::Source, request::PreparedRequest};
 use crate::providers::http::{HttpRequest, HttpResponse, Raced, race};
 use crate::providers::json_text::compact_json;
-use crate::providers::responses::openai_responses_shared::{
-    OpenAIResponsesStreamOptions, process_responses_stream,
-};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Model, ProviderResponse,
     SharedAssistantMessage,
@@ -191,21 +188,7 @@ pub(crate) async fn invoke_sse(
     let view = futures_util::stream::unfold(&mut source, |source| async move {
         source.next().await.map(|event| (event, source))
     });
-    let requested = match options.service_tier.as_ref() {
-        Some(crate::providers::nullable::Nullable::Value(tier)) => Some(tier.name()),
-        _ => None,
-    };
-    let pricing = |usage: &mut crate::Usage, tier: Option<&str>| {
-        super::events::apply_service_tier_pricing(usage, tier, &model.id);
-    };
-    let stream_options = OpenAIResponsesStreamOptions {
-        service_tier: requested,
-        resolve_service_tier: Some(&super::events::resolve_codex_service_tier),
-        apply_service_tier_pricing: Some(&pricing),
-    };
-    let result =
-        process_responses_stream(Box::pin(view), output, events, model, Some(&stream_options))
-            .await;
+    let result = super::events::reduce(Box::pin(view), model, options, output, events).await;
     result.map_err(|error| source.failure.take().unwrap_or(CodexError::Protocol(error)))
 }
 

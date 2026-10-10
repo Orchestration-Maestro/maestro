@@ -4,6 +4,8 @@ mod events;
 mod headers;
 mod http;
 mod request;
+#[cfg(not(target_arch = "wasm32"))]
+mod websocket;
 
 #[cfg(test)]
 mod tests;

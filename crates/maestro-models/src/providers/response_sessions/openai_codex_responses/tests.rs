@@ -4,6 +4,12 @@ mod requests;
 
 mod streams;
 
+#[cfg(not(target_arch = "wasm32"))]
+mod sockets;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod socket_transport;
+
 /// Build the controlled request descriptor without consulting a catalog or environment.
 fn invocation() -> (
     std::sync::Arc<crate::Model>,

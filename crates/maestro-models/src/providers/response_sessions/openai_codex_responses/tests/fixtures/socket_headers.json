@@ -1,0 +1,177 @@
+[
+  {
+    "init": {},
+    "additional": {},
+    "request_id": "req-1",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "req-1",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": "req-1"
+    }
+  },
+  {
+    "init": {
+      "X-Latin": "café",
+      "X-Edge": " x "
+    },
+    "additional": {},
+    "request_id": "req-latin",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "req-latin",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": "req-latin",
+      "x-edge": " x ",
+      "x-latin": "café"
+    }
+  },
+  {
+    "init": {
+      "X-Control": "\u0001",
+      "X-Del": ""
+    },
+    "additional": {},
+    "request_id": "req-control",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "req-control",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": "req-control",
+      "x-control": "\u0001",
+      "x-del": ""
+    }
+  },
+  {
+    "init": {
+      "X-Test": "a",
+      "x-test": "b",
+      "Cookie": "a=1",
+      "cookie": "b=2"
+    },
+    "additional": {},
+    "request_id": "req-2",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "cookie": "a=1; b=2",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "req-2",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": "req-2",
+      "x-test": "a, b"
+    }
+  },
+  {
+    "init": {
+      "X-Test": "a",
+      "x-test": "b"
+    },
+    "additional": {
+      "x-test": " replacement ",
+      "ACCEPT": "text/plain",
+      "Content-Type": "text/plain",
+      "OpenAI-Beta": "old",
+      "authorization": "wrong",
+      "chatgpt-account-id": "wrong",
+      "user-agent": "wrong",
+      "originator": "wrong",
+      "session_id": "old",
+      "x-client-request-id": "old"
+    },
+    "request_id": "req-3",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "req-3",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": "req-3",
+      "x-test": "replacement"
+    }
+  },
+  {
+    "init": {
+      "session_id": "caller",
+      "x-client-request-id": "caller"
+    },
+    "additional": {},
+    "request_id": "",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": ""
+    }
+  },
+  {
+    "init": {},
+    "additional": {},
+    "request_id": " \treq-trim\t ",
+    "expected": {
+      "authorization": "Bearer fixture-token",
+      "chatgpt-account-id": "account",
+      "openai-beta": "responses_websockets=2026-02-06",
+      "originator": "maestro",
+      "session_id": "req-trim",
+      "user-agent": "maestro (fixture)",
+      "x-client-request-id": "req-trim"
+    }
+  },
+  {
+    "init": {
+      "X-Test": "a\nb"
+    },
+    "additional": {
+      "X-Test": "valid"
+    },
+    "request_id": "req",
+    "expected": null
+  },
+  {
+    "init": {
+      "Bad Header": "x"
+    },
+    "additional": {},
+    "request_id": "req",
+    "expected": null
+  },
+  {
+    "init": {
+      "X-Test": "Ā"
+    },
+    "additional": {
+      "X-Test": "valid"
+    },
+    "request_id": "req",
+    "expected": null
+  },
+  {
+    "init": {},
+    "additional": {
+      "X-Test": "a\rb"
+    },
+    "request_id": "req",
+    "expected": null
+  },
+  {
+    "init": {},
+    "additional": {},
+    "request_id": "invalid\nrequest",
+    "expected": null
+  }
+]

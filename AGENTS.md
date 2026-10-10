@@ -141,7 +141,7 @@ toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
 Ask before adding any unapproved crate; never add one silently.
 
 `maestro-models` pins `reqwest =0.13.5` (default features plus `stream`),
-`url =2.5.8`, `futures-core =0.3.34` and `futures-util =0.3.34` (`std` only),
+`url =2.5.8`, `futures-core =0.3.34` and `futures-util =0.3.34` (`std` and `sink`),
 `httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.2`
 (`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
 `wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
@@ -437,6 +437,15 @@ dependency closure adds the internal `maestro-request` and `maestro-path` crates
 `rt-multi-thread`, `sync` and `time` features. All four libraries are MIT;
 no server dependency is declared for the browser target and no third-party
 type appears in the authorization interface.
+
+## Approved response-session socket libraries
+
+Outside browser targets, `maestro-models` uses `tokio-tungstenite =0.30.0` (MIT; defaults
+off, `connect` and `rustls-tls-native-roots`) for the authenticated socket upgrade, framing and
+TLS with the platform's trust roots. Its closure adds `tungstenite 0.30.0` (MIT OR Apache-2.0),
+`sha1 0.11.0` (MIT OR Apache-2.0) and `const-oid 0.10.2` (Apache-2.0 OR MIT); `digest 0.11.3`
+gains `alloc` and `oid`. The existing rustls, tokio-rustls, native-certs and aws-lc-rs packages
+are reused, and no browser socket library is declared. No library type appears in an interface.
 
 ## Approved completion collation libraries
 

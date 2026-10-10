@@ -22,7 +22,7 @@ pub(crate) use failure::{
     RequestFailure, endpoint_url, envelope_failure, sdk_status_failure, sdk_stream_failure,
     stream_failure,
 };
-pub(crate) use headers::{edge_whitespace, normalize_request};
+pub(crate) use headers::{client_pairs, edge_whitespace, normalize_request};
 pub(crate) use retry::{send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::{Raced, race, spawn_detached};
