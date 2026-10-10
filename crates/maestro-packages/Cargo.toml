@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+brace-expansion = "=0.1.1"
 maestro-settings = { path = "../maestro-settings" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-path = { path = "../maestro-path" }

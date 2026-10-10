@@ -554,3 +554,8 @@ for driving admitted progress futures without spawning tasks. Native tests use
 Tokio `=1.53.2` (defaults off, `rt`, `sync`, `macros`). The product adds no runtime
 or internal dependency edge. These libraries are MIT OR Apache-2.0 and MIT,
 respectively. Awaited operations are documented in [conversation turns](docs/loop.md).
+## Approved package-pattern libraries
+
+`maestro-packages` uses `brace-expansion =0.1.1` with no features or transitive
+dependencies (MIT OR Apache-2.0). The directly translated matcher source is
+BlueOak-1.0.0; see [third-party notices](THIRD-PARTY-NOTICES.md).
