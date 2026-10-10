@@ -1,6 +1,6 @@
 wasm_crates = ["maestro-cancellation", "maestro-credentials", "maestro-extensions", "maestro-models", "maestro-request", "maestro-resources", "maestro-settings", "maestro-tui"]
 test_tools = true
-spelling_words = ["ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "mone", "meight"]
+spelling_words = ["ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "SECON", "mone", "meight"]
 check_targets = [
     "aarch64-unknown-linux-gnu",
     "x86_64-apple-darwin",
