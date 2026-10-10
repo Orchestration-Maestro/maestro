@@ -1,4 +1,6 @@
 //! Configured sources through the supplied-operation manager.
+#[cfg(unix)]
+mod scratch;
 mod support;
 use maestro_packages::PackageManager;
 use maestro_packages::{DefaultPackageManager, PackageManagerOptions};
@@ -468,7 +470,7 @@ fn workflow(
 #[test]
 fn configured_sources_work_without_acquisition() {
     use maestro_packages::NativePackageOperations;
-    let scratch = Scratch::new().unwrap();
+    let scratch = scratch::Scratch::new().unwrap();
     let base = scratch.0.to_str().unwrap();
     let cwd = maestro_path::join(&[base, "project"]);
     let agent = maestro_path::join(&[base, "agent"]);
@@ -625,33 +627,6 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
         serde_json::from_str::<serde_json::Value>(&text.unwrap()).unwrap()["packages"],
         json!([])
     );
-}
-
-/// One exclusively-created disposable native directory.
-#[cfg(unix)]
-struct Scratch(pub std::path::PathBuf);
-#[cfg(unix)]
-impl Scratch {
-    /// Creates a fresh directory, never deleting someone else's path.
-    fn new() -> std::io::Result<Self> {
-        let name = format!(
-            "maestro-packages-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_err(std::io::Error::other)?
-                .as_nanos()
-        );
-        let path = std::env::temp_dir().join(name);
-        std::fs::create_dir(&path)?;
-        Ok(Self(path))
-    }
-}
-#[cfg(unix)]
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        assert!(std::fs::remove_dir_all(&self.0).is_ok());
-    }
 }
 
 use maestro_settings::{

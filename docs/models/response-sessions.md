@@ -86,7 +86,7 @@ is shared with the SSE path, but socket text is neither trimmed nor filtered for
 
 `start` is published immediately before the first selected event. A terminal
 event completes the operation without waiting for the peer to close, and later
-messages are not read. Failures keep their category: server errors are API
+messages are not reduced into the completed operation. Failures keep their category: server errors are API
 failures, unreadable messages are protocol failures, and a close or transport
 problem is a transport failure. A close reports `WebSocket closed` with its
 numeric code and reason, and an empty reason for code 1009 reads
@@ -105,14 +105,18 @@ with different values replaces it. While another operation holds the session's
 connection, a new request uses an uncached connection and releases it afterwards.
 An idle connection answers pings and discards application messages without
 reducing them, and leaves the cache when the peer closes it, the period elapses
-(close reason `idle_timeout`) or the session is closed. A failed request,
-including one cancelled before it completes, closes its connection and clears
-the session's context; a request cancelled after it completed closes its
-connection and keeps the context.
+(close reason `idle_timeout`) or the session is closed. A request that fails
+on the session's cached connection, whether in the exchange (including a
+cancellation before it completes) or in retaining its context, closes that
+connection and clears the cached entry's context; a request cancelled after it
+completed closes its connection and keeps the context. A request on an uncached
+connection (the session's connection was busy) and a failure while preparing
+the request or connecting leave the session's context intact.
 
 The `websocket-cached` and `auto` transports keep, per cached connection, the
-last completed request body, its response identifier and the input items the
-response contributes. The next request sends only the input items that follow
+body, response identifier and contributed input items of the most recent
+completion that has a nonempty response identifier; a completion without one
+leaves the earlier baseline unchanged. The next request sends only the input items that follow
 those, with `previous_response_id`, when every other member is equal and the
 earlier input and response items are a prefix of the new input; otherwise it
 sends the full request and the context is dropped. Each selected request is

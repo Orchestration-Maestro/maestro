@@ -115,8 +115,8 @@ fn execution(
 }
 
 /// Changes the selected argument and inserts an ordered extra property.
-pub fn mark(input: &mut maestro_extensions_wasm::ToolInput, name: &str) {
-    let mut value: Value = input.decode().unwrap();
+pub fn mark(input: &mut maestro_extensions_wasm::ToolInput, name: &str) -> ExtensionResult<()> {
+    let mut value: Value = input.decode().map_err(|e| e.to_string())?;
     if let Some(object) = value.as_object_mut() {
         let field = match name {
             "bash" => "command",
@@ -129,16 +129,18 @@ pub fn mark(input: &mut maestro_extensions_wasm::ToolInput, name: &str) {
     } else {
         value = json!("changed");
     }
-    *input = maestro_extensions_wasm::ToolInput::from_value(&value).unwrap();
+    *input = maestro_extensions_wasm::ToolInput::from_value(&value)?;
+    Ok(())
 }
 
 /// Inserts only the extra property observed by the source callback corpus.
-pub fn mark_extra(input: &mut maestro_extensions_wasm::ToolInput) {
-    let mut value: Value = input.decode().unwrap();
+pub fn mark_extra(input: &mut maestro_extensions_wasm::ToolInput) -> ExtensionResult<()> {
+    let mut value: Value = input.decode().map_err(|e| e.to_string())?;
     if let Some(object) = value.as_object_mut() {
         object.insert("mark".into(), json!("changed"));
-        *input = maestro_extensions_wasm::ToolInput::from_value(&value).unwrap();
+        *input = maestro_extensions_wasm::ToolInput::from_value(&value)?;
     }
+    Ok(())
 }
 
 /// Two aliases of each retained resource, owned by the callbacks until explicitly removed.
@@ -181,8 +183,11 @@ pub fn write_number(
     field: &str,
     value: f64,
 ) -> ExtensionResult<()> {
-    use maestro_extensions_wasm::*;
-    use maestro_extensions_wasm::{ExtensionEvent, Presence, ToolInput};
+    use maestro_extensions_wasm::{
+        BashToolInput, EditToolDetails, ExtensionEvent, FindToolDetails, FindToolInput,
+        GrepToolDetails, GrepToolInput, LsToolDetails, LsToolInput, Presence, ReadToolInput,
+        ToolInput,
+    };
     macro_rules! edit {
         ($carrier:expr, $ty:ty, $member:ident) => {{
             let carrier = $carrier;
