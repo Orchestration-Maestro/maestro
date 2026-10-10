@@ -39,14 +39,7 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
             .map(|s| maestro_settings::SettingsListEntry::String(s.into()))
             .to_vec(),
     ));
-    let native = Rc::new(DefaultPackageManager::new(
-        PackageManagerOptions {
-            cwd: cwd.clone(),
-            agent_dir: format!("{cwd}/agent"),
-            settings_manager: native_settings.clone(),
-        },
-        NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
-    ));
+    let native = native_manager(&cwd, native_settings.clone(), &local);
     let result = runtime.block_on(local.run_until(async {
         let controlled = controlled.check_for_available_updates().await.unwrap();
         let native = native.check_for_available_updates().await.unwrap();
@@ -69,6 +62,13 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
     assert_eq!(
         effects.calls.borrow().last().unwrap().1,
         ["view", "example", "version", "--json"]
+    );
+    replacement_manifest(
+        &format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
+        &local,
+        &runtime,
+        &native,
+        &result,
     );
 }
 
@@ -1008,14 +1008,7 @@ fn native_git_availability_leaves_head_and_contents_unchanged() {
         .enable_all()
         .build()
         .unwrap();
-    let manager = Rc::new(DefaultPackageManager::new(
-        PackageManagerOptions {
-            cwd: root.to_string_lossy().into_owned(),
-            agent_dir: root.join("agent").to_string_lossy().into_owned(),
-            settings_manager: settings.clone(),
-        },
-        NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
-    ));
+    let manager = native_manager(root.to_str().unwrap(), settings.clone(), &local);
     assert!(
         runtime
             .block_on(local.run_until(manager.check_for_available_updates()))
@@ -1125,4 +1118,40 @@ fn seed_git(root: &std::path::Path) -> (std::path::PathBuf, std::path::PathBuf) 
         ],
     );
     (author, install)
+}
+
+/// Proves replacement decoding at native file I/O before manifest selection.
+fn replacement_manifest(
+    path: &str,
+    local: &Rc<tokio::task::LocalSet>,
+    runtime: &tokio::runtime::Runtime,
+    manager: &Rc<DefaultPackageManager<NativePackageOperations>>,
+    expected: &[maestro_packages::PackageUpdate],
+) {
+    use maestro_packages::PackageOperations;
+    std::fs::write(path, b"{\"version\":\"\xff\"}").unwrap();
+    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), local);
+    assert_eq!(operations.read_file(path).unwrap(), "{\"version\":\"�\"}");
+    assert_eq!(
+        runtime
+            .block_on(local.run_until(manager.check_for_available_updates()))
+            .unwrap(),
+        expected
+    );
+}
+
+/// Wires native effects to the test's surviving settings and local runtime.
+fn native_manager(
+    cwd: &str,
+    settings: Rc<RefCell<SettingsManager>>,
+    local: &Rc<tokio::task::LocalSet>,
+) -> Rc<DefaultPackageManager<NativePackageOperations>> {
+    Rc::new(DefaultPackageManager::new(
+        PackageManagerOptions {
+            cwd: cwd.into(),
+            agent_dir: format!("{cwd}/agent"),
+            settings_manager: settings,
+        },
+        NativePackageOperations::new(|_| false, Rc::new(|| false), local),
+    ))
 }
