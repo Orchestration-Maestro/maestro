@@ -113,7 +113,8 @@ applies and returns without cancelling anything when it says no. An automatic re
 waits 20 ms for further typing while the text before the cursor ends in an `@` token
 (a quoted `@"` token keeps waiting through whitespace) or an unquoted `#` token, either
 one starting the text or following an ASCII space or tab; every other request, including
-Tab and forced requests, starts at once.
+Tab and forced requests, has no debounce and is admitted at once, though it still waits
+behind an active request as described below.
 
 Requests run on the host's `spawn_local`, one at a time: a newer request waits for the
 running one to settle, superseded waiting requests are skipped, and the newest starts
@@ -134,13 +135,15 @@ the selection starts at the item whose value equals it, else the first whose val
 with it (case-sensitive, values only, provider order kept); otherwise it starts on the
 first item. While the menu is open, copy and undo keep their usual meaning, then
 cancel closes it, up and down move through it, Tab applies the selection, and confirm
-applies it. Afterwards a non-slash prefix ends the edit with one change notification,
-and so does a menu that an application callback closed. When the menu still
-carries a slash prefix, input continues as ordinary input: submission follows the
-disabled-submit rule (with submission disabled no notification follows the application),
-and a rebound confirm key takes its ordinary action with its own undo snapshot. Every
-application takes one undo snapshot, and the hardware cursor marker is withheld while
-the menu is open.
+applies it. Once an item is applied, Tab always ends the edit with one change notification and never reaches
+ordinary input. Confirm does the same when the live prefix is not a slash prefix or an
+application callback closed the menu; when the menu still carries a slash prefix, confirm
+falls through to ordinary input: submission follows the disabled-submit rule (with
+submission disabled no notification follows the application), and a rebound confirm key
+takes its ordinary action, which captures its own undo snapshot only if that action
+changes text (a newline does; cursor movement and copy do not). Every application
+takes one undo snapshot, and the hardware cursor marker is withheld while the menu is
+open.
 
 Selection styling comes from the theme. See
 [text helpers](text.md), [keybindings](keybindings.md) and
