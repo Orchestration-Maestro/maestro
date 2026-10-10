@@ -1796,7 +1796,7 @@ dependencies = [
  "jsonschema",
  "maestro-path",
  "maestro-request",
- "notify",
+ "maestro-watch",
  "num-traits",
  "serde",
  "serde_json",
@@ -1840,6 +1840,14 @@ dependencies = [
  "maestro-tui",
  "rand",
  "rustix",
+ "tokio",
+]
+
+[[package]]
+name = "maestro-watch"
+version = "0.1.0"
+dependencies = [
+ "notify",
  "tokio",
 ]
 
