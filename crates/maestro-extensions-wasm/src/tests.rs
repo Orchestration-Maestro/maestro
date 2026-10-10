@@ -43,10 +43,12 @@ pub(crate) mod host;
 mod host_family;
 mod join;
 mod observed;
+pub(crate) mod reader_host;
 mod scenario;
 mod selection_events;
 mod session_corpus;
 mod session_events;
+mod session_reader;
 mod session_records;
 mod session_summary;
 mod shared_records;
@@ -344,6 +346,49 @@ fn assert_typed_event_export(contract: &Contract) {
     );
 }
 
+/// Reader acquisition and node traversal remain synchronous component imports.
+fn assert_reader_imports(contract: &Contract) {
+    let methods: Vec<_> = contract
+        .imports
+        .iter()
+        .filter(|(name, _)| {
+            name.starts_with("[method]")
+                && (name.contains("session-manager") || name.contains("session-tree-node"))
+        })
+        .collect();
+    assert!(methods.iter().all(|(_, asynchronous)| !asynchronous));
+    assert_eq!(
+        names(&contract.imports, false)
+            .into_iter()
+            .filter(|name| {
+                name.starts_with("[method]")
+                    && (name.contains("session-manager") || name.contains("session-tree-node"))
+            })
+            .collect::<Vec<_>>(),
+        [
+            "[method]command-context.session-manager",
+            "[method]context.session-manager",
+            "[method]readonly-session-manager.get-branch",
+            "[method]readonly-session-manager.get-cwd",
+            "[method]readonly-session-manager.get-entries",
+            "[method]readonly-session-manager.get-entry",
+            "[method]readonly-session-manager.get-header",
+            "[method]readonly-session-manager.get-label",
+            "[method]readonly-session-manager.get-leaf-entry",
+            "[method]readonly-session-manager.get-leaf-id",
+            "[method]readonly-session-manager.get-session-dir",
+            "[method]readonly-session-manager.get-session-file",
+            "[method]readonly-session-manager.get-session-id",
+            "[method]readonly-session-manager.get-session-name",
+            "[method]readonly-session-manager.get-tree",
+            "[method]session-tree-node.children",
+            "[method]session-tree-node.entry",
+            "[method]session-tree-node.label",
+            "[method]session-tree-node.label-timestamp",
+        ]
+    );
+}
+
 #[test]
 fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String> {
     let contract = contract()?;
@@ -364,6 +409,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         "preparation and release stay synchronous"
     );
     assert_typed_event_export(&contract);
+    assert_reader_imports(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [

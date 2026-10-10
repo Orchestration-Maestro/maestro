@@ -1,13 +1,14 @@
-//! Records carried by a session entry; no persistence operations.
+//! Session records and retained read-only host capabilities.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
 use crate::types::object;
-use crate::{AgentMessage, Presence, UserContent};
+use crate::{AgentMessage, ExtensionResult, Presence, UserContent};
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
 /// Identity and timestamp shared by session entries.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -204,5 +205,97 @@ impl<'de> Deserialize<'de> for SessionEntry {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
         Self::decode(raw.get()).map_err(D::Error::custom)
+    }
+}
+
+/// The header selected by the host session reader.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename = "session", rename_all = "camelCase")]
+pub struct SessionHeader {
+    /// Optional format version.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub version: Presence<f64>,
+    /// Session identity.
+    pub id: String,
+    /// Uninterpreted creation timestamp.
+    pub timestamp: String,
+    /// Authored working directory.
+    pub cwd: String,
+    /// Optional parent session file.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub parent_session: Presence<String>,
+}
+/// Retained read-only host session capability. Clones share the same owner.
+/// Host failures and selected-record decoding errors are returned to the caller.
+///
+/// ```compile_fail,E0599
+/// fn readonly_session_has_no_append_message(
+///     reader: maestro_extensions_wasm::ReadonlySessionManager,
+///     message: maestro_extensions_wasm::AgentMessage,
+/// ) {
+///     reader.append_message(message);
+/// }
+/// ```
+#[derive(Clone)]
+pub struct ReadonlySessionManager(Rc<dyn SessionReaderPort>);
+impl ReadonlySessionManager {
+    /// Retains the supplied reader port.
+    #[must_use]
+    pub fn new(port: Rc<dyn SessionReaderPort>) -> Self {
+        Self(port)
+    }
+}
+/// An independently retained node of a host-produced tree.
+#[derive(Clone)]
+pub struct SessionTreeNode(Rc<dyn SessionTreeNodePort>);
+impl SessionTreeNode {
+    /// Retains the supplied node port.
+    #[must_use]
+    pub fn new(port: Rc<dyn SessionTreeNodePort>) -> Self {
+        Self(port)
+    }
+}
+port! {
+    /// Fallible queries of a retained host capability.
+    SessionReaderPort for ReadonlySessionManager via 0 {
+        /// The current host working directory.
+        fn get_cwd() -> String;
+        /// The host session directory.
+        fn get_session_dir() -> String;
+        /// The host session identity.
+        fn get_session_id() -> String;
+        /// The host session file, when supplied.
+        fn get_session_file() -> Option<String>;
+        /// The selected leaf identity.
+        fn get_leaf_id() -> Option<String>;
+        /// The selected leaf entry.
+        fn get_leaf_entry() -> Option<SessionEntry>;
+        /// The entry for the literal identity.
+        fn get_entry(id: &str) -> Option<SessionEntry>;
+        /// The label for the literal identity.
+        fn get_label(id: &str) -> Option<String>;
+        /// The supplied branch, in host order.
+        fn get_branch(from_id: Option<&str>) -> Vec<SessionEntry>;
+        /// The selected host header.
+        fn get_header() -> Option<SessionHeader>;
+        /// The supplied entries, in host order.
+        fn get_entries() -> Vec<SessionEntry>;
+        /// The supplied roots as owned node handles.
+        fn get_tree() -> Vec<SessionTreeNode>;
+        /// The host-resolved session name.
+        fn get_session_name() -> Option<String>;
+    }
+}
+port! {
+    /// Fallible queries of a retained host capability.
+    SessionTreeNodePort for SessionTreeNode via 0 {
+        /// The entry retained by this node.
+        fn entry() -> SessionEntry;
+        /// The supplied children as owned node handles.
+        fn children() -> Vec<SessionTreeNode>;
+        /// The label retained by this node.
+        fn label() -> Option<String>;
+        /// The label timestamp retained by this node.
+        fn label_timestamp() -> Option<String>;
     }
 }

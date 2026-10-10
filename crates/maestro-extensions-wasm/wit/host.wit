@@ -19,14 +19,40 @@ interface host {
     /// Partial output delivered by an executing tool.
     resource tool-update { update: func(partial: string) -> result<_, string>; }
 
+    /// Independently retained read-only session.
+    resource readonly-session-manager {
+        get-cwd: func() -> result<string, string>;
+        get-session-dir: func() -> result<string, string>;
+        get-session-id: func() -> result<string, string>;
+        get-session-file: func() -> result<option<string>, string>;
+        get-leaf-id: func() -> result<option<string>, string>;
+        get-leaf-entry: func() -> result<option<string>, string>;
+        get-entry: func(id: string) -> result<option<string>, string>;
+        get-label: func(id: string) -> result<option<string>, string>;
+        get-branch: func(from-id: option<string>) -> result<string, string>;
+        get-header: func() -> result<option<string>, string>;
+        get-entries: func() -> result<string, string>;
+        get-tree: func() -> result<list<session-tree-node>, string>;
+        get-session-name: func() -> result<option<string>, string>;
+    }
+    /// Independently retained tree node.
+    resource session-tree-node {
+        entry: func() -> result<string, string>;
+        children: func() -> result<list<session-tree-node>, string>;
+        label: func() -> result<option<string>, string>;
+        label-timestamp: func() -> result<option<string>, string>;
+    }
+
     /// Live capabilities available to every callback.
     resource context {
         cwd: func() -> result<string, string>;
+        session-manager: func() -> result<readonly-session-manager, string>;
     }
 
     /// Context with the session-replacing operations; only commands receive it.
     resource command-context {
         cwd: func() -> result<string, string>;
+        session-manager: func() -> result<readonly-session-manager, string>;
         wait-for-idle: async func() -> result<_, string>;
         new-session: async func(
             data: new-session-command-data, with-session: option<borrow<callback>>,

@@ -27,11 +27,11 @@ impl Flag {
 }
 
 /// Counts one resource lent to the extension until the extension drops it.
-struct Lease(Rc<RefCell<Observed>>);
+pub(super) struct Lease(Rc<RefCell<Observed>>);
 
 impl Lease {
     /// Lends a resource.
-    fn new(observed: &Rc<RefCell<Observed>>) -> Self {
+    pub(super) fn new(observed: &Rc<RefCell<Observed>>) -> Self {
         observed.borrow_mut().lend();
         Self(Rc::clone(observed))
     }
@@ -94,6 +94,21 @@ pub struct ReplacedContext {
     /// The session the context is bound to.
     session: Session,
     /// Marks the resource as lent.
+    _lease: Lease,
+}
+
+/// Retained reader owner counted until its final facade alias is removed.
+pub struct Reader {
+    /// Retained session state.
+    data: super::reader_host::Reader,
+    /// Resource ownership witness.
+    _lease: Lease,
+}
+/// Retained node owner independent of its parent.
+pub struct Node {
+    /// Captured node.
+    data: super::reader_host::Node,
+    /// Resource ownership witness.
     _lease: Lease,
 }
 
@@ -164,12 +179,115 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type Reader = Reader;
+    type Node = Node;
     type Update = Update;
     type Callback = Callback;
     type Signal = Signal;
     type Context = Context;
     type CommandContext = CommandContext;
     type ReplacedContext = ReplacedContext;
+
+    fn session_manager(&self, _context: &Context) -> ExtensionResult<Reader> {
+        let data = self.observed.borrow().readers.acquire()?;
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn command_session_manager(&self, _context: &CommandContext) -> ExtensionResult<Reader> {
+        let data = self.observed.borrow().readers.acquire()?;
+        Ok(Reader {
+            data,
+            _lease: Lease::new(&self.observed),
+        })
+    }
+    fn reader_get_cwd(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource.data.string("getCwd")
+    }
+    fn reader_get_session_dir(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource.data.string("getSessionDir")
+    }
+    fn reader_get_session_id(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource.data.string("getSessionId")
+    }
+    fn reader_get_session_file(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.optional("getSessionFile", &[])
+    }
+    fn reader_get_leaf_id(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.optional("getLeafId", &[])
+    }
+    fn reader_get_leaf_entry(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.record("getLeafEntry", &[])
+    }
+    fn reader_get_entry(&self, resource: &Reader, id: &str) -> ExtensionResult<Option<String>> {
+        resource.data.record(
+            "getEntry",
+            &serde_json::json!([id]).as_array().unwrap().clone(),
+        )
+    }
+    fn reader_get_label(&self, resource: &Reader, id: &str) -> ExtensionResult<Option<String>> {
+        resource.data.optional(
+            "getLabel",
+            &serde_json::json!([id]).as_array().unwrap().clone(),
+        )
+    }
+    fn reader_get_branch(
+        &self,
+        resource: &Reader,
+        from_id: Option<&str>,
+    ) -> ExtensionResult<String> {
+        resource
+            .data
+            .record(
+                "getBranch",
+                &serde_json::json!([from_id]).as_array().unwrap().clone(),
+            )?
+            .ok_or_else(|| "missing list".into())
+    }
+    fn reader_get_header(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.record("getHeader", &[])
+    }
+    fn reader_get_entries(&self, resource: &Reader) -> ExtensionResult<String> {
+        resource
+            .data
+            .record("getEntries", &[])?
+            .ok_or_else(|| "missing list".into())
+    }
+    fn reader_get_tree(&self, resource: &Reader) -> ExtensionResult<Vec<Self::Node>> {
+        resource.data.tree().map(|nodes| {
+            nodes
+                .into_iter()
+                .map(|data| Node {
+                    data,
+                    _lease: Lease::new(&self.observed),
+                })
+                .collect()
+        })
+    }
+    fn reader_get_session_name(&self, resource: &Reader) -> ExtensionResult<Option<String>> {
+        resource.data.optional("getSessionName", &[])
+    }
+    fn node_entry(&self, resource: &Node) -> ExtensionResult<String> {
+        resource.data.entry()
+    }
+    fn node_children(&self, resource: &Node) -> ExtensionResult<Vec<Self::Node>> {
+        resource.data.children().map(|nodes| {
+            nodes
+                .into_iter()
+                .map(|data| Node {
+                    data,
+                    _lease: Lease::new(&self.observed),
+                })
+                .collect()
+        })
+    }
+    fn node_label(&self, resource: &Node) -> ExtensionResult<Option<String>> {
+        resource.data.label()
+    }
+    fn node_label_timestamp(&self, resource: &Node) -> ExtensionResult<Option<String>> {
+        resource.data.label_timestamp()
+    }
 
     fn new_callback(&self) -> (u32, Callback) {
         let id = self.observed.borrow_mut().next_identity();

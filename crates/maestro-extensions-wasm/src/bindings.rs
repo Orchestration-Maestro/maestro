@@ -25,6 +25,8 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.readonly-session-manager": crate::tests::reader_host::Reader,
+            "maestro:extension/host.session-tree-node": crate::tests::reader_host::Node,
             "maestro:extension/host.tool-update": crate::tests::host::Update,
             "maestro:extension/host.callback": crate::tests::host::Identity,
             "maestro:extension/host.abort-signal": crate::tests::host::Flag,

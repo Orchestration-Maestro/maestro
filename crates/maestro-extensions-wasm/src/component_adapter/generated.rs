@@ -24,6 +24,80 @@ impl Imports for Generated {
     type CommandContext = host::CommandContext;
     type ReplacedContext = host::ReplacedSessionContext;
 
+    type Reader = host::ReadonlySessionManager;
+    type Node = host::SessionTreeNode;
+    fn session_manager(&self, context: &Self::Context) -> ExtensionResult<Self::Reader> {
+        context.session_manager()
+    }
+    fn command_session_manager(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Self::Reader> {
+        context.session_manager()
+    }
+    fn reader_get_cwd(&self, resource: &Self::Reader) -> ExtensionResult<String> {
+        resource.get_cwd()
+    }
+    fn reader_get_session_dir(&self, resource: &Self::Reader) -> ExtensionResult<String> {
+        resource.get_session_dir()
+    }
+    fn reader_get_session_id(&self, resource: &Self::Reader) -> ExtensionResult<String> {
+        resource.get_session_id()
+    }
+    fn reader_get_session_file(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
+        resource.get_session_file()
+    }
+    fn reader_get_leaf_id(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
+        resource.get_leaf_id()
+    }
+    fn reader_get_leaf_entry(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
+        resource.get_leaf_entry()
+    }
+    fn reader_get_entry(
+        &self,
+        resource: &Self::Reader,
+        id: &str,
+    ) -> ExtensionResult<Option<String>> {
+        resource.get_entry(id)
+    }
+    fn reader_get_label(
+        &self,
+        resource: &Self::Reader,
+        id: &str,
+    ) -> ExtensionResult<Option<String>> {
+        resource.get_label(id)
+    }
+    fn reader_get_branch(
+        &self,
+        resource: &Self::Reader,
+        from_id: Option<&str>,
+    ) -> ExtensionResult<String> {
+        resource.get_branch(from_id)
+    }
+    fn reader_get_header(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
+        resource.get_header()
+    }
+    fn reader_get_entries(&self, resource: &Self::Reader) -> ExtensionResult<String> {
+        resource.get_entries()
+    }
+    fn reader_get_tree(&self, resource: &Self::Reader) -> ExtensionResult<Vec<Self::Node>> {
+        resource.get_tree()
+    }
+    fn reader_get_session_name(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
+        resource.get_session_name()
+    }
+    fn node_entry(&self, resource: &Self::Node) -> ExtensionResult<String> {
+        resource.entry()
+    }
+    fn node_children(&self, resource: &Self::Node) -> ExtensionResult<Vec<Self::Node>> {
+        resource.children()
+    }
+    fn node_label(&self, resource: &Self::Node) -> ExtensionResult<Option<String>> {
+        resource.label()
+    }
+    fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>> {
+        resource.label_timestamp()
+    }
     fn new_callback(&self) -> (u32, host::Callback) {
         let handle = host::Callback::new();
         (handle.id(), handle)

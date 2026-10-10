@@ -94,4 +94,61 @@ pub trait Imports: Clone + 'static {
 
     /// The command context bound to the replacement session.
     fn command(&self, context: &Self::ReplacedContext) -> Self::CommandContext;
+    /// Independently owned session reader.
+    type Reader: 'static;
+    /// Independently owned tree node.
+    type Node: 'static;
+    /// Acquires the current reader or returns the host rejection.
+    fn session_manager(&self, context: &Self::Context) -> ExtensionResult<Self::Reader>;
+    /// Acquires the current reader or returns the host rejection.
+    fn command_session_manager(
+        &self,
+        context: &Self::CommandContext,
+    ) -> ExtensionResult<Self::Reader>;
+    /// The current host working directory.
+    fn reader_get_cwd(&self, resource: &Self::Reader) -> ExtensionResult<String>;
+    /// The host session directory.
+    fn reader_get_session_dir(&self, resource: &Self::Reader) -> ExtensionResult<String>;
+    /// The host session identity.
+    fn reader_get_session_id(&self, resource: &Self::Reader) -> ExtensionResult<String>;
+    /// The host session file, when supplied.
+    fn reader_get_session_file(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>>;
+    /// The selected leaf identity.
+    fn reader_get_leaf_id(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>>;
+    /// The selected leaf entry.
+    fn reader_get_leaf_entry(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>>;
+    /// The entry for the literal identity.
+    fn reader_get_entry(
+        &self,
+        resource: &Self::Reader,
+        id: &str,
+    ) -> ExtensionResult<Option<String>>;
+    /// The label for the literal identity.
+    fn reader_get_label(
+        &self,
+        resource: &Self::Reader,
+        id: &str,
+    ) -> ExtensionResult<Option<String>>;
+    /// The supplied branch, in host order.
+    fn reader_get_branch(
+        &self,
+        resource: &Self::Reader,
+        from_id: Option<&str>,
+    ) -> ExtensionResult<String>;
+    /// The selected host header.
+    fn reader_get_header(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>>;
+    /// The supplied entries, in host order.
+    fn reader_get_entries(&self, resource: &Self::Reader) -> ExtensionResult<String>;
+    /// The supplied roots as owned node handles.
+    fn reader_get_tree(&self, resource: &Self::Reader) -> ExtensionResult<Vec<Self::Node>>;
+    /// The host-resolved session name.
+    fn reader_get_session_name(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>>;
+    /// The entry retained by this node.
+    fn node_entry(&self, resource: &Self::Node) -> ExtensionResult<String>;
+    /// The supplied children as owned node handles.
+    fn node_children(&self, resource: &Self::Node) -> ExtensionResult<Vec<Self::Node>>;
+    /// The label retained by this node.
+    fn node_label(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
+    /// The label timestamp retained by this node.
+    fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>>;
 }
