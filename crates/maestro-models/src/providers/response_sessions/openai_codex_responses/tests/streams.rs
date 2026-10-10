@@ -1137,6 +1137,7 @@ fn configure_lifecycle(
 
 /// Compare each settled attempt's exact body against the one retained payload result.
 fn assert_sent_bodies(observed: &LifecycleObservations, body: &Value, attempts: usize) {
+    assert_eq!(body["marker"], "replaced");
     let expected = crate::providers::json_text::compact_json(body)
         .unwrap()
         .into_bytes();
