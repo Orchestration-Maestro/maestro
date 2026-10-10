@@ -69,11 +69,14 @@ pub(super) struct Text {
     pub authored: String,
 }
 /// Authored source and the native containers enclosing the current events.
+#[derive(Clone, Copy)]
 struct Source<'a> {
     /// Normalized original input.
     text: &'a str,
     /// Container prefixes removed by the native parser on continuation lines.
     frame: Option<&'a Frame<'a>>,
+    /// Whether the events belong to a table cell, where `\|` spells a literal pipe.
+    cell: bool,
 }
 /// One enclosing native block's continuation prefix.
 struct Frame<'a> {
@@ -144,12 +147,14 @@ pub(super) fn parse(text: &str) -> Vec<Node> {
             &Source {
                 text: &source,
                 frame: None,
+                cell: false,
             },
             false,
         ),
         &Source {
             text: &source,
             frame: None,
+            cell: false,
         },
         0..source.len(),
     )
@@ -171,6 +176,7 @@ fn children<'a>(
                     .as_bytes()
                     .first()
                     .is_some_and(u8::is_ascii_punctuation)
+                    && !(source.cell && text.starts_with('|'))
                     && source.text[..range.start]
                         .bytes()
                         .rev()
@@ -261,7 +267,12 @@ fn label(nodes: &[Node], source: &Source<'_>, range: &Range<usize>, opener: usiz
     if opener == 0 {
         authored
     } else {
-        authored.replace("\\[", "[").replace("\\]", "]")
+        let authored = authored.replace("\\[", "[").replace("\\]", "]");
+        if source.cell {
+            authored.replace("\\|", "|")
+        } else {
+            authored
+        }
     }
 }
 
@@ -345,6 +356,7 @@ fn quote<'a>(
     let nested = Source {
         text: source.text,
         frame: Some(&frame),
+        cell: false,
     };
     let children = children(events, &nested, blocked);
     let extent = children
@@ -388,6 +400,7 @@ fn item<'a>(
     let nested = Source {
         text: source.text,
         frame: Some(&frame),
+        cell: false,
     };
     Kind::Item(children(events, &nested, blocked))
 }
@@ -425,7 +438,14 @@ fn table<'a>(
         match event {
             Event::Start(Tag::TableHead | Tag::TableRow) => rows.push(Vec::new()),
             Event::Start(Tag::TableCell) => {
-                let cell = children(events, source, false);
+                let cell = children(
+                    events,
+                    &Source {
+                        cell: true,
+                        ..*source
+                    },
+                    false,
+                );
                 if let Some(row) = rows.last_mut() {
                     row.push(cell);
                 }

@@ -195,3 +195,90 @@ fn markdown_table_inside_list_item_keeps_source_rows() {
 fn markdown_table_lazy_lines_follow_commonmark() {
     markdown::cases("markdown_table_lazy_lines_follow_commonmark");
 }
+
+/// Renders `text` with the supplied theme and hyperlink capability.
+fn render(
+    text: &str,
+    theme: maestro_tui::MarkdownTheme,
+    hyperlinks: bool,
+    width: usize,
+) -> Vec<String> {
+    use maestro_tui::{Component, Markdown, MarkdownOptions, TerminalCapabilities};
+    let terminal = TerminalImage::new(|_| None, || 1);
+    terminal.set_capabilities(TerminalCapabilities {
+        hyperlinks,
+        ..TerminalCapabilities::default()
+    });
+    Markdown::new(
+        text.to_owned(),
+        MarkdownOptions {
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(theme),
+        terminal,
+    )
+    .render(width)
+}
+
+#[test]
+fn markdown_table_cells_unescape_pipes_before_inline_recognition() {
+    for (cell, expected) in [
+        ("https://example.org/a\\|b", "https://example.org/a|b"),
+        ("![a\\|b](/p)", "a|b"),
+        ("[https://a.b/a\\|b](https://a.b/a\\|b)", "https://a.b/a|b"),
+    ] {
+        let rows = render(
+            &format!("| A |\n| --- |\n| {cell} |"),
+            markdown::plain(),
+            false,
+            60,
+        );
+        let body: Vec<String> = rows.iter().map(|row| shown(row)).collect();
+        assert_eq!(
+            body[3],
+            format!("│ {expected:<width$} │", width = expected.len())
+        );
+    }
+}
+
+#[test]
+fn markdown_table_narrow_fallback_keeps_authored_escaped_pipes() {
+    let rows = render("| A |\n| --- |\n| a\\|b |", markdown::plain(), false, 3);
+    assert!(rows.iter().any(|row| shown(row) == "a\\|"));
+}
+
+#[test]
+fn markdown_table_hyperlink_destinations_do_not_count_as_words() {
+    let rows = render(
+        "| A | B |\n| --- | --- |\n| [x](<https://example.org/a b>) | abcdefghij |",
+        markdown::plain(),
+        true,
+        20,
+    );
+    let shown: Vec<String> = rows.iter().map(|row| shown(row)).collect();
+    assert_eq!(
+        shown,
+        [
+            "┌───┬────────────┐",
+            "│ A │ B          │",
+            "├───┼────────────┤",
+            "│ x │ abcdefghij │",
+            "└───┴────────────┘",
+        ]
+    );
+}
+
+#[test]
+fn markdown_table_cells_render_callbacks_again_when_drawing() {
+    let calls = std::cell::Cell::new(0);
+    let mut theme = markdown::plain();
+    theme.code = Box::new(move |text| {
+        calls.set(calls.get() + 1);
+        let color = if calls.get() == 1 { 31 } else { 32 };
+        format!("\x1b[{color}m{text}\x1b[39m")
+    });
+    let rows = render("| H |\n| --- |\n| `x` |", theme, false, 20);
+    assert_eq!(rows[3].trim_end(), "│ \x1b[32mx\x1b[39m │");
+}

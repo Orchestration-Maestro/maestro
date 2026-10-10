@@ -13,12 +13,15 @@ quote text. Images display authored label markup without enclosing
 quote/list prefixes, unescaping brackets but retaining other escapes.
 Tables draw box borders, bold header cells and a rule between body rows. When the
 widest cell of every column fits, each column takes that width, at least one cell.
-Otherwise each column starts from its longest word, counted up to thirty cells, and
+Otherwise each column starts from its longest word, counted up to thirty cells over
+the visible text (terminal escapes such as link destinations are not words), and
 the remaining width is shared by how much more each column needs; if even those
 words do not fit, each column starts from one cell and the width is shared by word
-length. Cell text wraps at its column width. Alignment markers are accepted but do
-not align text. When the width cannot give every column one cell, the table's source
-rows are shown instead; a table inside a list item also shows its source rows.
+length. In a cell, `\|` is a literal pipe in text, autolinks and image labels. A drawn
+table runs each cell's callbacks once to measure and again to draw, so stateful
+callbacks see both passes. Cell text wraps at its column width. Alignment markers are
+accepted but do not align text. When the width cannot give every column one cell, the
+table's source rows are shown instead; a table inside a list item also shows its source rows.
 
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
 `DefaultTextStyle`. Its `decorations` select `TextDecoration` values; they apply in

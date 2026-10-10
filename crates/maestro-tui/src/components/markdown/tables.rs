@@ -1,6 +1,12 @@
 //! Width-aware table layout with a source-row fallback.
-use super::{Renderer, inline::Style, parse::Table};
-use crate::text::utils::{is_whitespace_scalar, visible_width, wrap_text_with_ansi};
+use super::{
+    Renderer,
+    inline::Style,
+    parse::{Cells, Table},
+};
+use crate::text::utils::{
+    extract_ansi_code, is_whitespace_scalar, visible_width, wrap_text_with_ansi,
+};
 
 /// Widest word that sets a column minimum; longer words wrap inside the cell.
 const MAX_UNBROKEN_WORD_WIDTH: usize = 30;
@@ -15,17 +21,9 @@ impl Renderer<'_> {
         else {
             return wrap_text_with_ansi(&table.authored, width);
         };
-        let header: Vec<String> = table
-            .header
-            .iter()
-            .map(|cell| self.inline(cell, style))
-            .collect();
-        let rows: Vec<Vec<String>> = table
-            .rows
-            .iter()
-            .map(|row| row.iter().map(|cell| self.inline(cell, style)).collect())
-            .collect();
-        let widths = column_widths(&header, &rows, available);
+        let (measured_header, measured_rows) = self.cells(table, style);
+        let widths = column_widths(&measured_header, &measured_rows, available);
+        let (header, rows) = self.cells(table, style);
         let separator = border(['├', '┼', '┤'], &widths);
         let mut lines = vec![border(['┌', '┬', '┐'], &widths)];
         lines.extend(cell_lines(&header, &widths, |text| (self.theme.bold)(text)));
@@ -38,6 +36,19 @@ impl Renderer<'_> {
         }
         lines.push(border(['└', '┴', '┘'], &widths));
         lines
+    }
+}
+
+impl Renderer<'_> {
+    /// Renders every header cell, then every body cell; each pass invokes the callbacks again.
+    fn cells(&self, table: &Table, style: Style<'_>) -> (Vec<String>, Vec<Vec<String>>) {
+        let render = |cells: &Cells| -> Vec<String> {
+            cells.iter().map(|cell| self.inline(cell, style)).collect()
+        };
+        (
+            render(&table.header),
+            table.rows.iter().map(render).collect(),
+        )
     }
 }
 
@@ -127,9 +138,23 @@ fn double(cells: usize) -> f64 {
     u32::try_from(cells).map_or(f64::from(u32::MAX), f64::from)
 }
 
-/// Visible width of the widest whitespace-separated word, capped at the unbroken limit.
+/// Visible width of the widest whitespace-separated word of the text without its escapes,
+/// capped at the unbroken limit.
 fn longest_word(text: &str) -> usize {
-    text.split(is_whitespace_scalar)
+    let mut visible = String::new();
+    let mut rest = text;
+    while let Some(scalar) = rest.chars().next() {
+        let length = extract_ansi_code(rest, 0).map_or_else(
+            || {
+                visible.push(scalar);
+                scalar.len_utf8()
+            },
+            |code| code.length,
+        );
+        rest = &rest[length..];
+    }
+    visible
+        .split(is_whitespace_scalar)
         .map(visible_width)
         .max()
         .unwrap_or(0)
