@@ -162,7 +162,7 @@ The following command groups are unavailable until delivered by their owners:
 | Browser library and example builds | Library `clean/build/dev/dev:tsc/check`; example `clean/build/dev/preview/check` | [#113](https://github.com/Orchestration-Maestro/maestro/issues/113) | unavailable until delivered |
 
 - `maestro-models`: model interfaces, providers and catalog data.
-- `maestro-agent`: conversation execution.
+- `maestro-agent`: [live conversation state and queued input](agent.md); execution follows in its linked issues.
 - `maestro-tui`: terminal components.
 - `maestro-app`: shared application operations.
 

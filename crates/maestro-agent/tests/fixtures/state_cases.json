@@ -1,0 +1,992 @@
+[
+  {
+    "name": "maestro_new_agent_has_inert_defaults",
+    "input": {},
+    "expected": {
+      "state": {
+        "systemPrompt": "",
+        "model": {
+          "id": "unknown",
+          "name": "unknown",
+          "api": "unknown",
+          "provider": "unknown",
+          "baseUrl": "",
+          "reasoning": false,
+          "input": [],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 0,
+          "maxTokens": 0
+        },
+        "thinkingLevel": "off",
+        "tools": [],
+        "messages": [],
+        "isStreaming": false,
+        "streamingMessage": null,
+        "pendingToolCalls": [],
+        "errorMessage": null
+      },
+      "sameDefaultModel": true,
+      "steeringMode": "one-at-a-time",
+      "followUpMode": "one-at-a-time",
+      "hasQueuedMessages": false
+    }
+  },
+  {
+    "name": "maestro_initial_state_uses_supplied_values",
+    "input": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "off",
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "off",
+      "tools": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ],
+      "isStreaming": false,
+      "streamingMessage": null,
+      "pendingToolCalls": [],
+      "errorMessage": null
+    }
+  },
+  {
+    "name": "maestro_initial_state_uses_supplied_values",
+    "input": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "minimal",
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "minimal",
+      "tools": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ],
+      "isStreaming": false,
+      "streamingMessage": null,
+      "pendingToolCalls": [],
+      "errorMessage": null
+    }
+  },
+  {
+    "name": "maestro_initial_state_uses_supplied_values",
+    "input": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "low",
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "low",
+      "tools": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ],
+      "isStreaming": false,
+      "streamingMessage": null,
+      "pendingToolCalls": [],
+      "errorMessage": null
+    }
+  },
+  {
+    "name": "maestro_initial_state_uses_supplied_values",
+    "input": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "medium",
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "medium",
+      "tools": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ],
+      "isStreaming": false,
+      "streamingMessage": null,
+      "pendingToolCalls": [],
+      "errorMessage": null
+    }
+  },
+  {
+    "name": "maestro_initial_state_uses_supplied_values",
+    "input": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "high",
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "high",
+      "tools": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ],
+      "isStreaming": false,
+      "streamingMessage": null,
+      "pendingToolCalls": [],
+      "errorMessage": null
+    }
+  },
+  {
+    "name": "maestro_initial_state_uses_supplied_values",
+    "input": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "xhigh",
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "instruction",
+      "model": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "thinkingLevel": "xhigh",
+      "tools": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "seed",
+          "timestamp": 123
+        }
+      ],
+      "isStreaming": false,
+      "streamingMessage": null,
+      "pendingToolCalls": [],
+      "errorMessage": null
+    }
+  },
+  {
+    "name": "maestro_message_collections_preserve_aliases",
+    "input": {
+      "initial": "original",
+      "outside": "outside",
+      "edit": "zulu",
+      "append": "alpha",
+      "repeatSeed": true,
+      "replacement": "replacement",
+      "oldAppend": "old-only"
+    },
+    "expected": {
+      "before": [
+        {
+          "role": "user",
+          "content": "zulu",
+          "timestamp": 123
+        },
+        {
+          "role": "user",
+          "content": "alpha",
+          "timestamp": 123
+        },
+        {
+          "role": "user",
+          "content": "zulu",
+          "timestamp": 123
+        }
+      ],
+      "old": [
+        {
+          "role": "user",
+          "content": "zulu",
+          "timestamp": 123
+        },
+        {
+          "role": "user",
+          "content": "alpha",
+          "timestamp": 123
+        },
+        {
+          "role": "user",
+          "content": "zulu",
+          "timestamp": 123
+        },
+        {
+          "role": "user",
+          "content": "old-only",
+          "timestamp": 123
+        }
+      ],
+      "current": [
+        {
+          "role": "user",
+          "content": "replacement",
+          "timestamp": 123
+        }
+      ],
+      "copiedInitial": true,
+      "newSlot": true
+    }
+  },
+  {
+    "name": "maestro_state_and_model_handles_stay_live",
+    "input": {
+      "modelId": "retained-model",
+      "systemPrompt": "updated",
+      "thinkingLevel": "xhigh"
+    },
+    "expected": {
+      "sameState": true,
+      "sameModel": true,
+      "state": {
+        "systemPrompt": "updated",
+        "model": {
+          "id": "retained-model",
+          "name": "Second",
+          "api": "test-api",
+          "provider": "local",
+          "baseUrl": "http://example.invalid",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 1,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 4
+          },
+          "contextWindow": 8192,
+          "maxTokens": 2048
+        },
+        "thinkingLevel": "xhigh",
+        "tools": [],
+        "messages": [],
+        "isStreaming": false,
+        "streamingMessage": null,
+        "pendingToolCalls": [],
+        "errorMessage": null
+      }
+    }
+  },
+  {
+    "name": "maestro_tool_collections_retain_executable_entries",
+    "input": {
+      "name": "echo",
+      "label": "Revised",
+      "mode": "sequential",
+      "replacementMode": "parallel"
+    },
+    "expected": {
+      "called": 0,
+      "copiedOuter": true,
+      "copiedAssignment": true,
+      "sameEntry": true,
+      "samePrepare": true,
+      "sameExecute": true,
+      "before": [
+        "Revised",
+        "Revised"
+      ],
+      "oldCount": 3,
+      "currentCount": 1,
+      "currentMode": "parallel"
+    }
+  },
+  {
+    "name": "maestro_steering_only_enqueues",
+    "input": {
+      "queue": "steer",
+      "text": "queued"
+    },
+    "expected": {
+      "messages": [],
+      "hasQueuedMessages": true,
+      "isStreaming": false
+    }
+  },
+  {
+    "name": "maestro_follow_up_only_enqueues",
+    "input": {
+      "queue": "followUp",
+      "text": "queued"
+    },
+    "expected": {
+      "messages": [],
+      "hasQueuedMessages": true,
+      "isStreaming": false
+    }
+  },
+  {
+    "name": "maestro_queue_modes_are_independent",
+    "input": {
+      "steeringMode": "all",
+      "followUpMode": "all"
+    },
+    "expected": {
+      "afterSteering": {
+        "steeringMode": "one-at-a-time",
+        "followUpMode": "all",
+        "hasQueuedMessages": true
+      },
+      "afterFollowUp": {
+        "steeringMode": "one-at-a-time",
+        "followUpMode": "one-at-a-time",
+        "hasQueuedMessages": true
+      },
+      "followUpRemains": true,
+      "emptyAfterClear": true
+    }
+  },
+  {
+    "name": "maestro_queue_modes_are_independent",
+    "input": {
+      "steeringMode": "all",
+      "followUpMode": "one-at-a-time"
+    },
+    "expected": {
+      "afterSteering": {
+        "steeringMode": "one-at-a-time",
+        "followUpMode": "one-at-a-time",
+        "hasQueuedMessages": true
+      },
+      "afterFollowUp": {
+        "steeringMode": "one-at-a-time",
+        "followUpMode": "all",
+        "hasQueuedMessages": true
+      },
+      "followUpRemains": true,
+      "emptyAfterClear": true
+    }
+  },
+  {
+    "name": "maestro_queue_modes_are_independent",
+    "input": {
+      "steeringMode": "one-at-a-time",
+      "followUpMode": "all"
+    },
+    "expected": {
+      "afterSteering": {
+        "steeringMode": "all",
+        "followUpMode": "all",
+        "hasQueuedMessages": true
+      },
+      "afterFollowUp": {
+        "steeringMode": "all",
+        "followUpMode": "one-at-a-time",
+        "hasQueuedMessages": true
+      },
+      "followUpRemains": true,
+      "emptyAfterClear": true
+    }
+  },
+  {
+    "name": "maestro_queue_modes_are_independent",
+    "input": {
+      "steeringMode": "one-at-a-time",
+      "followUpMode": "one-at-a-time"
+    },
+    "expected": {
+      "afterSteering": {
+        "steeringMode": "all",
+        "followUpMode": "one-at-a-time",
+        "hasQueuedMessages": true
+      },
+      "afterFollowUp": {
+        "steeringMode": "all",
+        "followUpMode": "all",
+        "hasQueuedMessages": true
+      },
+      "followUpRemains": true,
+      "emptyAfterClear": true
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "none",
+      "clear": "clearSteeringQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "none",
+      "clear": "clearFollowUpQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "none",
+      "clear": "clearAllQueues"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "steering",
+      "clear": "clearSteeringQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "steering",
+      "clear": "clearFollowUpQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": true,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "steering",
+      "clear": "clearAllQueues"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "followUp",
+      "clear": "clearSteeringQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": true,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "followUp",
+      "clear": "clearFollowUpQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "followUp",
+      "clear": "clearAllQueues"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "both",
+      "clear": "clearSteeringQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": true,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "both",
+      "clear": "clearFollowUpQueue"
+    },
+    "expected": {
+      "hasQueuedMessages": true,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_clears_only_selected_queues",
+    "input": {
+      "present": "both",
+      "clear": "clearAllQueues"
+    },
+    "expected": {
+      "hasQueuedMessages": false,
+      "messages": []
+    }
+  },
+  {
+    "name": "maestro_reset_replaces_history_and_clears_queues",
+    "input": {
+      "systemPrompt": "kept",
+      "thinkingLevel": "high",
+      "steeringMode": "all",
+      "followUpMode": "one-at-a-time"
+    },
+    "expected": {
+      "state": {
+        "systemPrompt": "kept",
+        "model": {
+          "id": "model-2",
+          "name": "Second",
+          "api": "test-api",
+          "provider": "local",
+          "baseUrl": "http://example.invalid",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 1,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 4
+          },
+          "contextWindow": 8192,
+          "maxTokens": 2048
+        },
+        "thinkingLevel": "high",
+        "tools": [
+          {
+            "name": "kept",
+            "label": "Kept",
+            "description": "kept tool",
+            "parameters": {
+              "type": "object"
+            }
+          }
+        ],
+        "messages": [],
+        "isStreaming": false,
+        "streamingMessage": null,
+        "pendingToolCalls": [],
+        "errorMessage": null
+      },
+      "oldMessages": [
+        {
+          "role": "user",
+          "content": "discard",
+          "timestamp": 123
+        }
+      ],
+      "newSlot": true,
+      "hasQueuedMessages": false,
+      "steeringMode": "all",
+      "followUpMode": "one-at-a-time"
+    }
+  },
+  {
+    "name": "maestro_custom_messages_keep_typed_payload_identity",
+    "input": {
+      "role": "widget-status",
+      "text": "changed"
+    },
+    "expected": {
+      "sameEntry": true,
+      "messages": [
+        {
+          "role": "widget-status",
+          "payload": {
+            "text": "changed"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "maestro_standard_message_variants_remain_shared",
+    "input": {
+      "role": "assistant",
+      "text": "changed"
+    },
+    "expected": {
+      "sameEntry": true,
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "changed"
+            }
+          ],
+          "api": "fixture",
+          "provider": "fixture",
+          "model": "fixture",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 123
+        }
+      ]
+    }
+  },
+  {
+    "name": "maestro_standard_message_variants_remain_shared",
+    "input": {
+      "role": "toolResult",
+      "text": "changed"
+    },
+    "expected": {
+      "sameEntry": true,
+      "messages": [
+        {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "echo",
+          "content": [
+            {
+              "type": "text",
+              "text": "changed"
+            }
+          ],
+          "details": {
+            "kept": 1
+          },
+          "isError": false,
+          "timestamp": 123
+        }
+      ]
+    }
+  },
+  {
+    "name": "maestro_assignment_moves_outer_storage_not_entries",
+    "input": {
+      "text": "assign",
+      "edit": "inside",
+      "outside": "outside"
+    },
+    "expected": {
+      "copiedOuter": true,
+      "messages": [
+        {
+          "role": "user",
+          "content": "inside",
+          "timestamp": 123
+        }
+      ]
+    }
+  }
+]
