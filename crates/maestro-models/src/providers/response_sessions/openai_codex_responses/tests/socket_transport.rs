@@ -21,7 +21,7 @@ use tokio_tungstenite::tungstenite::{Message, handshake::derive_accept_key};
 use tokio_tungstenite::{WebSocketStream, accept_async};
 
 /// Run on a real-time runtime so loopback readiness is never mistaken for idleness.
-fn run_native<F: std::future::Future>(future: F) -> F::Output {
+pub(super) fn run_native<F: std::future::Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -30,17 +30,20 @@ fn run_native<F: std::future::Future>(future: F) -> F::Output {
 }
 
 /// Everything one operation needs.
-struct Setup {
+pub(super) struct Setup {
     /// Descriptor pointing at the loopback peer.
-    model: Arc<Model>,
+    pub(super) model: Arc<Model>,
     /// Options with the credential.
-    options: OpenAICodexResponsesOptions,
+    pub(super) options: OpenAICodexResponsesOptions,
     /// Prepared request.
-    prepared: PreparedRequest,
+    pub(super) prepared: PreparedRequest,
 }
 
 /// Prepare a request for a peer at `base_url`, letting `adjust` change the options first.
-async fn setup(base_url: &str, adjust: impl FnOnce(&mut OpenAICodexResponsesOptions)) -> Setup {
+pub(super) async fn setup(
+    base_url: &str,
+    adjust: impl FnOnce(&mut OpenAICodexResponsesOptions),
+) -> Setup {
     let (model, context, mut options) = super::invocation();
     let mut model = (*model).clone();
     model.base_url = base_url.to_owned();
@@ -57,17 +60,27 @@ async fn setup(base_url: &str, adjust: impl FnOnce(&mut OpenAICodexResponsesOpti
 }
 
 /// What one operation produced.
-struct Outcome {
+pub(super) struct Outcome {
     /// Operation outcome.
-    result: Result<(), CodexError>,
+    pub(super) result: Result<(), CodexError>,
     /// The filled message.
-    output: SharedAssistantMessage,
+    pub(super) output: SharedAssistantMessage,
     /// Producer events.
-    events: AssistantMessageEventStream,
+    pub(super) events: AssistantMessageEventStream,
 }
 
 /// Run the operation with the given request identifier, counting start notifications.
-async fn operate(setup: &Setup, request_id: &str, starts: &AtomicUsize) -> Outcome {
+pub(super) async fn operate(setup: &Setup, request_id: &str, starts: &AtomicUsize) -> Outcome {
+    operate_prepared(setup, &setup.prepared, request_id, starts).await
+}
+
+/// Run the operation for an already prepared request.
+pub(super) async fn operate_prepared(
+    setup: &Setup,
+    prepared: &PreparedRequest,
+    request_id: &str,
+    starts: &AtomicUsize,
+) -> Outcome {
     let output = Arc::new(std::sync::RwLock::new(
         crate::providers::assistant_output::initial_message(&setup.model),
     ));
@@ -76,7 +89,7 @@ async fn operate(setup: &Setup, request_id: &str, starts: &AtomicUsize) -> Outco
         starts.fetch_add(1, Ordering::SeqCst);
     };
     let result = process_web_socket_stream(
-        &setup.prepared,
+        prepared,
         &setup.model,
         &setup.options,
         WebSocketOutput {
@@ -95,20 +108,20 @@ async fn operate(setup: &Setup, request_id: &str, starts: &AtomicUsize) -> Outco
 }
 
 /// Bind a loopback listener and name its endpoint.
-async fn listen() -> (TcpListener, String) {
+pub(super) async fn listen() -> (TcpListener, String) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}", listener.local_addr().unwrap());
     (listener, url)
 }
 
 /// Accept one socket and complete the server side of the upgrade.
-async fn accept(listener: &TcpListener) -> WebSocketStream<TcpStream> {
+pub(super) async fn accept(listener: &TcpListener) -> WebSocketStream<TcpStream> {
     let (stream, _) = listener.accept().await.unwrap();
     accept_async(stream).await.unwrap()
 }
 
 /// The visible text of the message.
-fn text_of(output: &SharedAssistantMessage) -> String {
+pub(super) fn text_of(output: &SharedAssistantMessage) -> String {
     let message = serde_json::to_value(output.read().unwrap().clone()).unwrap();
     message["content"][0]["text"]
         .as_str()
@@ -117,7 +130,7 @@ fn text_of(output: &SharedAssistantMessage) -> String {
 }
 
 /// Events that precede visible text, then the first delta.
-fn opening(delta: &str) -> Vec<String> {
+pub(super) fn opening(delta: &str) -> Vec<String> {
     [
         json!({"type":"response.created","response":{"id":"r1"}}),
         json!({"type":"response.output_item.added","item":{"type":"message","id":"m1","role":"assistant","status":"in_progress","content":[]}}),
@@ -130,7 +143,7 @@ fn opening(delta: &str) -> Vec<String> {
 }
 
 /// The closing events after the visible text.
-fn closing(text: &str) -> Vec<String> {
+pub(super) fn closing(text: &str) -> Vec<String> {
     [
         json!({"type":"response.output_item.done","item":{"type":"message","id":"m1","role":"assistant","status":"completed","content":[{"type":"output_text","text":text}]}}),
         json!({"type":"response.completed","response":{"id":"r1","status":"completed"}}),
@@ -141,7 +154,7 @@ fn closing(text: &str) -> Vec<String> {
 }
 
 /// Send a ping and wait for its pong, which proves the peer consumed everything sent before it.
-async fn acknowledged(socket: &mut WebSocketStream<TcpStream>) {
+pub(super) async fn acknowledged(socket: &mut WebSocketStream<TcpStream>) {
     socket.send(Message::Ping(vec![1].into())).await.unwrap();
     while let Some(message) = socket.next().await {
         if matches!(message, Ok(Message::Pong(_))) {
@@ -152,7 +165,7 @@ async fn acknowledged(socket: &mut WebSocketStream<TcpStream>) {
 }
 
 /// Read raw bytes until the peer closes or vanishes.
-async fn drain(stream: &TcpStream) {
+pub(super) async fn drain(stream: &TcpStream) {
     let mut buffer = [0_u8; 4096];
     loop {
         stream.readable().await.unwrap();
@@ -166,7 +179,9 @@ async fn drain(stream: &TcpStream) {
 }
 
 /// Read until the peer closes or vanishes, returning the close frame it sent, if any.
-async fn until_released(socket: &mut WebSocketStream<TcpStream>) -> Option<(u16, String)> {
+pub(super) async fn until_released(
+    socket: &mut WebSocketStream<TcpStream>,
+) -> Option<(u16, String)> {
     while let Some(message) = socket.next().await {
         match message {
             Ok(Message::Close(frame)) => {
@@ -559,10 +574,48 @@ async fn serve_success_then_error(listener: &TcpListener) -> Vec<Option<(u16, St
     closes
 }
 
+/// A session socket serves the next request, and its failure releases it with `done`.
+fn reuse_session_socket_until_failure() {
+    run_native(async {
+        let (listener, url) = listen().await;
+        let ready = setup(&url, |options| {
+            options.common.session_id = Some("reuse-until-failure".to_owned());
+        })
+        .await;
+        let server = async {
+            let mut socket = accept(&listener).await;
+            socket.next().await.unwrap().unwrap();
+            socket
+                .send(Message::text(closing("")[1].clone()))
+                .await
+                .unwrap();
+            socket.next().await.unwrap().unwrap();
+            socket
+                .send(Message::text(
+                    json!({"type":"error","message":"no"}).to_string(),
+                ))
+                .await
+                .unwrap();
+            until_released(&mut socket).await
+        };
+        let client = async {
+            let first = operate(&ready, "req", &AtomicUsize::new(0)).await.result;
+            let second = operate(&ready, "req", &AtomicUsize::new(0)).await.result;
+            (first, second)
+        };
+        let (closed, (first, second)) = join(server, client).await;
+        assert!(first.is_ok());
+        assert!(matches!(second, Err(CodexError::Api(_))));
+        assert_eq!(closed, Some((1000, "done".to_owned())));
+    });
+}
+
 #[test]
 fn maestro_response_sessions_close_uncached_socket() {
+    let _isolated = super::exclusive();
+    reuse_session_socket_until_failure();
     run_native(async {
-        for session in [None, Some(""), Some("session")] {
+        for session in [None, Some("")] {
             let (listener, url) = listen().await;
             let ready = setup(&url, |options| {
                 options.common.session_id = session.map(str::to_owned);

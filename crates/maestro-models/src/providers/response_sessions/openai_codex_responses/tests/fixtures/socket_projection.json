@@ -1,0 +1,463 @@
+[
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "answer Ω😀",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer Ω😀\",\"annotations\":[]}],\"status\":\"completed\",\"id\":\"msg_1\",\"phase\":\"final_answer\"}]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "summary",
+            "thinkingSignature": "{\"type\":\"reasoning\",\"id\":\"rs_1\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"summary\"}],\"encrypted_content\":\"sealed\"}"
+          },
+          {
+            "type": "toolCall",
+            "id": "call_1|fc_1",
+            "name": "lookup",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[{\"type\":\"reasoning\",\"id\":\"rs_1\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"summary\"}],\"encrypted_content\":\"sealed\"},{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"call_1\",\"name\":\"lookup\",\"arguments\":\"{\\\"z\\\":1,\\\"a\\\":2}\"}]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_1|fc_1",
+            "name": "lookup",
+            "arguments": {}
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "aborted",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call?1|item:1",
+            "name": "lookup",
+            "arguments": {}
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[{\"type\":\"function_call\",\"id\":\"item:1\",\"call_id\":\"call?1\",\"name\":\"lookup\",\"arguments\":\"{}\"}]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "answer",
+            "textSignature": "msg_old"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\",\"annotations\":[]}],\"status\":\"completed\",\"id\":\"msg_old\"}]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "summary"
+          },
+          {
+            "type": "thinking",
+            "thinking": "  "
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[]"
+    }
+  },
+  {
+    "input": {
+      "model": {
+        "id": "m",
+        "name": "test",
+        "baseUrl": "https://example.test",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "",
+            "thinkingSignature": "{\"type\":\"function_call_output\",\"call_id\":\"a\",\"output\":\"omit\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "m",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1,
+        "responseId": "r"
+      }
+    },
+    "expected": {
+      "items": "[]"
+    }
+  }
+]

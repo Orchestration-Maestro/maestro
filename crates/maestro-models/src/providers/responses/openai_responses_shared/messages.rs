@@ -161,7 +161,7 @@ fn convert_user(user: &UserMessage) -> Vec<Value> {
 }
 
 /// Convert an assistant turn into reasoning items, messages and function calls in order.
-fn convert_assistant(
+pub(crate) fn convert_assistant(
     assistant: &AssistantMessage,
     model: &Model,
     retained: usize,
