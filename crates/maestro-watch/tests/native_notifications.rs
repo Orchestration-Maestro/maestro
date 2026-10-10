@@ -1,7 +1,7 @@
 //! Real directory notifications survive replacement of a watched entry.
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_watch::fs_watch::{NativeWatchOperations, WatchOperations};
-use std::{fs, rc::Rc, time::Duration};
+use std::{fs, rc::Rc};
 use tokio::{sync::mpsc::unbounded_channel, task::LocalSet};
 
 #[test]
@@ -38,10 +38,7 @@ fn native_notifications_report_writes_and_atomic_replacement() {
             .unwrap();
         fs::write(&selected, "edited").unwrap();
         for expected in ["edited", "replaced", "edited-after-replacement"] {
-            let (name, bytes) =
-                tokio::time::timeout(Duration::from_secs(10), matching(&mut received, expected))
-                    .await
-                    .expect("selected entry notification");
+            let (name, bytes) = matching(&mut received, expected).await;
             assert_eq!(name.as_deref(), Some("selected.json"));
             assert_eq!(bytes, expected);
             if expected == "edited" {

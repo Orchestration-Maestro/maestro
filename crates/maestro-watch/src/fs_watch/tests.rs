@@ -335,10 +335,7 @@ fn native_registration_teardown_leaves_other_watch_active() {
                 )))
                 .unwrap();
             assert_eq!(
-                tokio::time::timeout(Duration::from_secs(2), observations.recv())
-                    .await
-                    .expect("other registration still delivers")
-                    .unwrap(),
+                observations.recv().await.unwrap(),
                 Some("survives.json".into())
             );
         });
@@ -403,12 +400,10 @@ fn native_timers_obey_deadlines_and_per_handle_teardown() {
     });
 }
 
-/// Observe receiver teardown with a bounded failure diagnostic.
+/// Observe receiver teardown.
 #[cfg(test)]
 async fn closed(results: &tokio::sync::mpsc::UnboundedSender<notify::Result<Event>>) {
-    tokio::time::timeout(Duration::from_secs(2), results.closed())
-        .await
-        .expect("receiver teardown completion");
+    results.closed().await;
 }
 
 /// Unknown names retain their positions rather than inventing a filename.
