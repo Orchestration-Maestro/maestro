@@ -325,7 +325,7 @@ pub(super) fn cached_entry(session: &str) -> Option<Arc<Entry>> {
 
 /// Close the session's cached connection, or every session's when none or an empty one is named.
 /// Statistics and fallback state are not touched.
-pub(crate) fn close_openai_codex_web_socket_sessions(session_id: Option<&str>) {
+pub fn close_openai_codex_web_socket_sessions(session_id: Option<&str>) {
     let closed: Vec<Arc<Entry>> = {
         let mut entries = lock(&ENTRIES);
         match session_id.filter(|id| !id.is_empty()) {

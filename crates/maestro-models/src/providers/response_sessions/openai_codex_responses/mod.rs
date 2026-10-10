@@ -1,12 +1,15 @@
-//! Internal response-session request preparation.
+#![doc = include_str!("../../../../../../docs/models/response-sessions.md")]
 
 #[cfg(not(target_arch = "wasm32"))]
 mod continuation;
 mod debug;
 mod events;
 mod headers;
+mod host;
 mod http;
 mod request;
+mod stream;
+pub use stream::{stream_openai_codex_responses, stream_simple_openai_codex_responses};
 #[cfg(not(target_arch = "wasm32"))]
 mod sessions;
 #[cfg(not(target_arch = "wasm32"))]
@@ -16,29 +19,29 @@ mod websocket;
 mod tests;
 
 use crate::StreamOptions;
-use crate::providers::nullable::Nullable;
+pub use crate::providers::nullable::Nullable;
 use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier;
 use serde::Serialize;
 
-/// Internal invocation settings.
+/// Raw invocation settings.
 #[derive(Clone, Default)]
-pub(crate) struct OpenAICodexResponsesOptions {
+pub struct OpenAICodexResponsesOptions {
     /// Shared hooks and transport selections.
-    pub(crate) common: StreamOptions,
+    pub common: StreamOptions,
     /// Omitted, explicitly null, or named service tier.
-    pub(crate) service_tier: Option<Nullable<OpenAIResponsesServiceTier>>,
+    pub service_tier: Option<Nullable<OpenAIResponsesServiceTier>>,
     /// Explicit raw effort, independent of descriptor capability.
-    pub(crate) reasoning_effort: Option<crate::ModelThinkingLevel>,
-    /// Optional summary, omission and null both select auto.
-    pub(crate) reasoning_summary: Option<OpenAICodexReasoningSummary>,
+    pub reasoning_effort: Option<crate::ModelThinkingLevel>,
+    /// Optional summary; omission and null select auto when effort is requested.
+    pub reasoning_summary: Option<OpenAICodexReasoningSummary>,
     /// Requested output verbosity.
-    pub(crate) text_verbosity: Option<OpenAICodexTextVerbosity>,
+    pub text_verbosity: Option<OpenAICodexTextVerbosity>,
 }
 
 /// Requested text detail.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum OpenAICodexTextVerbosity {
+pub enum OpenAICodexTextVerbosity {
     /// Brief text.
     Low,
     /// Intermediate detail.
@@ -50,7 +53,7 @@ pub(crate) enum OpenAICodexTextVerbosity {
 /// Requested reasoning summary style.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum OpenAICodexReasoningSummary {
+pub enum OpenAICodexReasoningSummary {
     /// Provider-selected summary.
     Auto,
     /// Brief summary.
@@ -103,3 +106,15 @@ impl From<crate::FetchError> for CodexError {
         }
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use sessions::close_openai_codex_web_socket_sessions;
+
+/// Browsers retain no authenticated response-session socket.
+#[cfg(target_arch = "wasm32")]
+pub fn close_openai_codex_web_socket_sessions(_session_id: Option<&str>) {}
+
+pub use debug::{
+    OpenAICodexWebSocketDebugStats, get_openai_codex_web_socket_debug_stats,
+    reset_openai_codex_web_socket_debug_stats,
+};

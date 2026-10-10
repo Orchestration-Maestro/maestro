@@ -1,0 +1,119 @@
+[
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "none"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "none",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "minimal"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "minimal",
+          "summary": "auto"
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "reasoningEffort": "xhigh"
+      },
+      "model_reasoning": false
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      }
+    }
+  }
+]

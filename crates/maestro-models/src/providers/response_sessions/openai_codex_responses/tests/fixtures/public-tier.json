@@ -1,0 +1,200 @@
+[
+  {
+    "input": {
+      "serviceTier": null
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "service_tier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "serviceTier": "auto"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "service_tier": "auto"
+      }
+    }
+  },
+  {
+    "input": {
+      "serviceTier": "default"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "service_tier": "default"
+      }
+    }
+  },
+  {
+    "input": {
+      "serviceTier": "flex"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "service_tier": "flex"
+      }
+    }
+  },
+  {
+    "input": {
+      "serviceTier": "scale"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "service_tier": "scale"
+      }
+    }
+  },
+  {
+    "input": {
+      "serviceTier": "priority"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "service_tier": "priority"
+      }
+    }
+  }
+]

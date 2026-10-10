@@ -168,3 +168,18 @@ fn fixture_text(text: &str) -> String {
     let prefix = crate::oauth::responses::openai_codex::tests::account_fixture_prefix();
     text.replace("<fake-account-prefix>", &prefix)
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+mod public_streams;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod dispatch;
+
+#[cfg(unix)]
+mod public_host;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod public_options;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod public_sessions;

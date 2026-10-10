@@ -1,0 +1,98 @@
+[
+  {
+    "input": {
+      "textVerbosity": "low"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "textVerbosity": "medium"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "medium"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "textVerbosity": "high"
+    },
+    "expected": {
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "high"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  }
+]

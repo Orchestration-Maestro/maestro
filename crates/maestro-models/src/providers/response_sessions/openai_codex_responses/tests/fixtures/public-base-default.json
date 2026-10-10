@@ -1,0 +1,76 @@
+[
+  {
+    "input": {
+      "options": {},
+      "model_max_tokens": 128000
+    },
+    "expected": {
+      "base": {
+        "maxTokens": 32000,
+        "apiKey": "<synthetic-account-key>"
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {},
+      "model_max_tokens": -1
+    },
+    "expected": {
+      "base": {
+        "apiKey": "<synthetic-account-key>"
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {},
+      "model_max_tokens": 0
+    },
+    "expected": {
+      "base": {
+        "apiKey": "<synthetic-account-key>"
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {},
+      "model_max_tokens": 42
+    },
+    "expected": {
+      "base": {
+        "maxTokens": 42,
+        "apiKey": "<synthetic-account-key>"
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "maxTokens": 0
+      },
+      "model_max_tokens": 128000
+    },
+    "expected": {
+      "base": {
+        "maxTokens": 0,
+        "apiKey": "<synthetic-account-key>"
+      }
+    }
+  },
+  {
+    "input": {
+      "options": {
+        "maxTokens": 100000
+      },
+      "model_max_tokens": 128000
+    },
+    "expected": {
+      "base": {
+        "maxTokens": 100000,
+        "apiKey": "<synthetic-account-key>"
+      }
+    }
+  }
+]

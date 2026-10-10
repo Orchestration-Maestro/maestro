@@ -10,11 +10,4 @@ pub(crate) mod nullable;
 pub mod reasoning;
 pub mod responses;
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "response-session transport awaits its public dispatch caller"
-    )
-)]
-mod response_sessions;
+pub mod response_sessions;

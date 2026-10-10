@@ -1,0 +1,190 @@
+[
+  {
+    "input": {
+      "transport": "sse",
+      "started": false,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "sse",
+          "fallbackTransport": "sse",
+          "eventsEmitted": false,
+          "phase": "before_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "sse",
+      "started": true,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "sse",
+          "eventsEmitted": true,
+          "phase": "after_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "websocket",
+      "started": false,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "websocket",
+          "fallbackTransport": "sse",
+          "eventsEmitted": false,
+          "phase": "before_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "websocket",
+      "started": true,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "websocket",
+          "eventsEmitted": true,
+          "phase": "after_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "websocket-cached",
+      "started": false,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "websocket-cached",
+          "fallbackTransport": "sse",
+          "eventsEmitted": false,
+          "phase": "before_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "websocket-cached",
+      "started": true,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "websocket-cached",
+          "eventsEmitted": true,
+          "phase": "after_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "auto",
+      "started": false,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "auto",
+          "fallbackTransport": "sse",
+          "eventsEmitted": false,
+          "phase": "before_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  },
+  {
+    "input": {
+      "transport": "auto",
+      "started": true,
+      "body": "{\"input\":[\"Ω😀\"],\"z\":1e-7}"
+    },
+    "expected": {
+      "diagnostic": {
+        "type": "provider_transport_failure",
+        "error": {
+          "name": "WebSocketCloseError",
+          "message": "transport Ω😀",
+          "code": 1009
+        },
+        "details": {
+          "configuredTransport": "auto",
+          "eventsEmitted": true,
+          "phase": "after_message_stream_start",
+          "requestBytes": 29
+        }
+      }
+    }
+  }
+]

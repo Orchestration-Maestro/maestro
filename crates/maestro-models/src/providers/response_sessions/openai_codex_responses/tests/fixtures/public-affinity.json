@@ -1,0 +1,246 @@
+[
+  {
+    "input": {
+      "sessionId": null,
+      "supplied": false
+    },
+    "expected": {
+      "headers": [],
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "sessionId": null,
+      "supplied": true
+    },
+    "expected": {
+      "headers": [
+        [
+          "session_id",
+          "provided-session"
+        ],
+        [
+          "x-client-request-id",
+          "provided-request"
+        ]
+      ],
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "sessionId": "",
+      "supplied": false
+    },
+    "expected": {
+      "headers": [],
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "sessionId": "",
+      "supplied": true
+    },
+    "expected": {
+      "headers": [
+        [
+          "session_id",
+          "provided-session"
+        ],
+        [
+          "x-client-request-id",
+          "provided-request"
+        ]
+      ],
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "sessionId": "affinity",
+      "supplied": false
+    },
+    "expected": {
+      "headers": [
+        [
+          "session_id",
+          "affinity"
+        ],
+        [
+          "x-client-request-id",
+          "affinity"
+        ]
+      ],
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "affinity",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  },
+  {
+    "input": {
+      "sessionId": "affinity",
+      "supplied": true
+    },
+    "expected": {
+      "headers": [
+        [
+          "session_id",
+          "affinity"
+        ],
+        [
+          "x-client-request-id",
+          "affinity"
+        ]
+      ],
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "You are a helpful assistant.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Say Ω😀"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "affinity",
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      }
+    }
+  }
+]

@@ -12,35 +12,35 @@ use {
 /// What one session's requests did; optional fields stay absent until a request or a recorded
 /// outcome sets them.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct OpenAICodexWebSocketDebugStats {
+pub struct OpenAICodexWebSocketDebugStats {
     /// Selected request attempts, counted before the send.
-    pub(crate) requests: u64,
+    pub requests: u64,
     /// Requests that opened a connection.
-    pub(crate) connections_created: u64,
+    pub connections_created: u64,
     /// Requests that reused an idle cached connection.
-    pub(crate) connections_reused: u64,
+    pub connections_reused: u64,
     /// Requests that selected a cached-context transport.
-    pub(crate) cached_context_requests: u64,
+    pub cached_context_requests: u64,
     /// Requests whose body carried `store: true`.
-    pub(crate) store_true_requests: u64,
+    pub store_true_requests: u64,
     /// Requests sent without a previous response identifier.
-    pub(crate) full_context_requests: u64,
+    pub full_context_requests: u64,
     /// Requests sent with a previous response identifier.
-    pub(crate) delta_requests: u64,
+    pub delta_requests: u64,
     /// Input length of the last request: array items, or UTF-16 units of a text input.
-    pub(crate) last_input_items: usize,
+    pub last_input_items: usize,
     /// Input length of the last delta request, absent after a full request.
-    pub(crate) last_delta_input_items: Option<usize>,
+    pub last_delta_input_items: Option<usize>,
     /// Previous response identifier of the last delta request, absent after a full request.
-    pub(crate) last_previous_response_id: Option<String>,
+    pub last_previous_response_id: Option<String>,
     /// Recorded socket failures.
-    pub(crate) websocket_failures: u64,
+    pub websocket_failures: u64,
     /// Recorded fallbacks to the other transport.
-    pub(crate) sse_fallbacks: u64,
+    pub sse_fallbacks: u64,
     /// Fallback state at the last fallback or failure record.
-    pub(crate) websocket_fallback_active: Option<bool>,
+    pub websocket_fallback_active: Option<bool>,
     /// Text of the last recorded failure.
-    pub(crate) last_web_socket_error: Option<String>,
+    pub last_web_socket_error: Option<String>,
 }
 
 /// Statistics and fallback flags, keyed by session.
@@ -93,7 +93,8 @@ pub(super) fn count_request(request: &Request, options: &StreamOptions, reused: 
 }
 
 /// An independent copy of the session's statistics, if any request or record created them.
-pub(crate) fn get_openai_codex_web_socket_debug_stats(
+#[must_use]
+pub fn get_openai_codex_web_socket_debug_stats(
     session_id: &str,
 ) -> Option<OpenAICodexWebSocketDebugStats> {
     lock().stats.get(session_id).cloned()
@@ -101,7 +102,7 @@ pub(crate) fn get_openai_codex_web_socket_debug_stats(
 
 /// Clear statistics and fallback state of one session, or of every session when none or an
 /// empty one is named. Connections are not touched.
-pub(crate) fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
+pub fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
     let mut state = lock();
     if let Some(id) = session_id.filter(|id| !id.is_empty()) {
         state.stats.remove(id);

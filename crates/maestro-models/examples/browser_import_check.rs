@@ -1,3 +1,9 @@
+use maestro_models::providers::response_sessions::openai_codex_responses::{
+    Nullable, OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
+    close_openai_codex_web_socket_sessions, get_openai_codex_web_socket_debug_stats,
+    reset_openai_codex_web_socket_debug_stats, stream_openai_codex_responses,
+    stream_simple_openai_codex_responses,
+};
 use maestro_models::{
     OPENAI_CODEX_OAUTH_PROVIDER, ProviderObjects, complete, get_model, login_openai_codex,
     refresh_openai_codex_token, register_built_in_api_providers, reset_api_providers,
@@ -29,6 +35,7 @@ fn local_client() -> (
 }
 
 fn main() {
+    response_session_surface();
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
         model,
@@ -58,6 +65,7 @@ fn main() {
     )));
     #[cfg(target_arch = "wasm32")]
     {
+        response_session_callbacks();
         let mut objects = ProviderObjects::default();
         let (client, calls) = local_client();
         objects.insert(client);
@@ -81,4 +89,57 @@ fn main() {
         assert_eq!(maestro_models::find_env_keys(provider), None);
         assert_eq!(maestro_models::get_env_api_key(provider), None);
     }
+}
+
+/// Compile the dedicated provider records and function paths on either target.
+fn response_session_surface() {
+    std::hint::black_box((
+        maestro_models::OpenAICodexResponsesOptions::default(),
+        maestro_models::OpenAICodexWebSocketDebugStats::default(),
+        Nullable::<OpenAICodexReasoningSummary>::Null,
+        OpenAICodexTextVerbosity::Low,
+        stream_openai_codex_responses,
+        stream_simple_openai_codex_responses,
+        close_openai_codex_web_socket_sessions,
+        get_openai_codex_web_socket_debug_stats,
+        reset_openai_codex_web_socket_debug_stats,
+    ));
+}
+
+/// Compile browser-local callbacks through both dedicated invocation signatures.
+#[cfg(target_arch = "wasm32")]
+fn response_session_callbacks() {
+    let Some(model) = get_model("openai-codex", "gpt-5.5") else {
+        return;
+    };
+    let state = std::rc::Rc::new(std::cell::Cell::new(0));
+    let seen = std::rc::Rc::clone(&state);
+    let common = maestro_models::StreamOptions {
+        on_payload: Some(std::sync::Arc::new(move |body, _| {
+            seen.set(seen.get() + 1);
+            Box::pin(async { Ok(body) })
+        })),
+        ..Default::default()
+    };
+    let context = maestro_models::Context {
+        system_prompt: None,
+        messages: vec![],
+        tools: None,
+    };
+    drop(stream_openai_codex_responses(
+        model.clone(),
+        context.clone(),
+        Some(maestro_models::OpenAICodexResponsesOptions {
+            common: common.clone(),
+            ..Default::default()
+        }),
+    ));
+    drop(stream_simple_openai_codex_responses(
+        model,
+        context,
+        Some(maestro_models::SimpleStreamOptions {
+            common,
+            ..Default::default()
+        }),
+    ));
 }
