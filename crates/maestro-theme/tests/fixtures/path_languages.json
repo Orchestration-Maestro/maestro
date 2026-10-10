@@ -1,0 +1,522 @@
+[
+  {
+    "path": "file.ts",
+    "language": "typescript"
+  },
+  {
+    "path": "DIR/FILE.TS",
+    "language": "typescript"
+  },
+  {
+    "path": "file.tsx",
+    "language": "typescript"
+  },
+  {
+    "path": "DIR/FILE.TSX",
+    "language": "typescript"
+  },
+  {
+    "path": "file.js",
+    "language": "javascript"
+  },
+  {
+    "path": "DIR/FILE.JS",
+    "language": "javascript"
+  },
+  {
+    "path": "file.jsx",
+    "language": "javascript"
+  },
+  {
+    "path": "DIR/FILE.JSX",
+    "language": "javascript"
+  },
+  {
+    "path": "file.mjs",
+    "language": "javascript"
+  },
+  {
+    "path": "DIR/FILE.MJS",
+    "language": "javascript"
+  },
+  {
+    "path": "file.cjs",
+    "language": "javascript"
+  },
+  {
+    "path": "DIR/FILE.CJS",
+    "language": "javascript"
+  },
+  {
+    "path": "file.py",
+    "language": "python"
+  },
+  {
+    "path": "DIR/FILE.PY",
+    "language": "python"
+  },
+  {
+    "path": "file.rb",
+    "language": "ruby"
+  },
+  {
+    "path": "DIR/FILE.RB",
+    "language": "ruby"
+  },
+  {
+    "path": "file.rs",
+    "language": "rust"
+  },
+  {
+    "path": "DIR/FILE.RS",
+    "language": "rust"
+  },
+  {
+    "path": "file.go",
+    "language": "go"
+  },
+  {
+    "path": "DIR/FILE.GO",
+    "language": "go"
+  },
+  {
+    "path": "file.java",
+    "language": "java"
+  },
+  {
+    "path": "DIR/FILE.JAVA",
+    "language": "java"
+  },
+  {
+    "path": "file.kt",
+    "language": "kotlin"
+  },
+  {
+    "path": "DIR/FILE.KT",
+    "language": "kotlin"
+  },
+  {
+    "path": "file.swift",
+    "language": "swift"
+  },
+  {
+    "path": "DIR/FILE.SWIFT",
+    "language": "swift"
+  },
+  {
+    "path": "file.c",
+    "language": "c"
+  },
+  {
+    "path": "DIR/FILE.C",
+    "language": "c"
+  },
+  {
+    "path": "file.h",
+    "language": "c"
+  },
+  {
+    "path": "DIR/FILE.H",
+    "language": "c"
+  },
+  {
+    "path": "file.cpp",
+    "language": "cpp"
+  },
+  {
+    "path": "DIR/FILE.CPP",
+    "language": "cpp"
+  },
+  {
+    "path": "file.cc",
+    "language": "cpp"
+  },
+  {
+    "path": "DIR/FILE.CC",
+    "language": "cpp"
+  },
+  {
+    "path": "file.cxx",
+    "language": "cpp"
+  },
+  {
+    "path": "DIR/FILE.CXX",
+    "language": "cpp"
+  },
+  {
+    "path": "file.hpp",
+    "language": "cpp"
+  },
+  {
+    "path": "DIR/FILE.HPP",
+    "language": "cpp"
+  },
+  {
+    "path": "file.cs",
+    "language": "csharp"
+  },
+  {
+    "path": "DIR/FILE.CS",
+    "language": "csharp"
+  },
+  {
+    "path": "file.php",
+    "language": "php"
+  },
+  {
+    "path": "DIR/FILE.PHP",
+    "language": "php"
+  },
+  {
+    "path": "file.sh",
+    "language": "bash"
+  },
+  {
+    "path": "DIR/FILE.SH",
+    "language": "bash"
+  },
+  {
+    "path": "file.bash",
+    "language": "bash"
+  },
+  {
+    "path": "DIR/FILE.BASH",
+    "language": "bash"
+  },
+  {
+    "path": "file.zsh",
+    "language": "bash"
+  },
+  {
+    "path": "DIR/FILE.ZSH",
+    "language": "bash"
+  },
+  {
+    "path": "file.fish",
+    "language": "fish"
+  },
+  {
+    "path": "DIR/FILE.FISH",
+    "language": "fish"
+  },
+  {
+    "path": "file.ps1",
+    "language": "powershell"
+  },
+  {
+    "path": "DIR/FILE.PS1",
+    "language": "powershell"
+  },
+  {
+    "path": "file.sql",
+    "language": "sql"
+  },
+  {
+    "path": "DIR/FILE.SQL",
+    "language": "sql"
+  },
+  {
+    "path": "file.html",
+    "language": "html"
+  },
+  {
+    "path": "DIR/FILE.HTML",
+    "language": "html"
+  },
+  {
+    "path": "file.htm",
+    "language": "html"
+  },
+  {
+    "path": "DIR/FILE.HTM",
+    "language": "html"
+  },
+  {
+    "path": "file.css",
+    "language": "css"
+  },
+  {
+    "path": "DIR/FILE.CSS",
+    "language": "css"
+  },
+  {
+    "path": "file.scss",
+    "language": "scss"
+  },
+  {
+    "path": "DIR/FILE.SCSS",
+    "language": "scss"
+  },
+  {
+    "path": "file.sass",
+    "language": "sass"
+  },
+  {
+    "path": "DIR/FILE.SASS",
+    "language": "sass"
+  },
+  {
+    "path": "file.less",
+    "language": "less"
+  },
+  {
+    "path": "DIR/FILE.LESS",
+    "language": "less"
+  },
+  {
+    "path": "file.json",
+    "language": "json"
+  },
+  {
+    "path": "DIR/FILE.JSON",
+    "language": "json"
+  },
+  {
+    "path": "file.yaml",
+    "language": "yaml"
+  },
+  {
+    "path": "DIR/FILE.YAML",
+    "language": "yaml"
+  },
+  {
+    "path": "file.yml",
+    "language": "yaml"
+  },
+  {
+    "path": "DIR/FILE.YML",
+    "language": "yaml"
+  },
+  {
+    "path": "file.toml",
+    "language": "toml"
+  },
+  {
+    "path": "DIR/FILE.TOML",
+    "language": "toml"
+  },
+  {
+    "path": "file.xml",
+    "language": "xml"
+  },
+  {
+    "path": "DIR/FILE.XML",
+    "language": "xml"
+  },
+  {
+    "path": "file.md",
+    "language": "markdown"
+  },
+  {
+    "path": "DIR/FILE.MD",
+    "language": "markdown"
+  },
+  {
+    "path": "file.markdown",
+    "language": "markdown"
+  },
+  {
+    "path": "DIR/FILE.MARKDOWN",
+    "language": "markdown"
+  },
+  {
+    "path": "file.dockerfile",
+    "language": "dockerfile"
+  },
+  {
+    "path": "DIR/FILE.DOCKERFILE",
+    "language": "dockerfile"
+  },
+  {
+    "path": "file.makefile",
+    "language": "makefile"
+  },
+  {
+    "path": "DIR/FILE.MAKEFILE",
+    "language": "makefile"
+  },
+  {
+    "path": "file.cmake",
+    "language": "cmake"
+  },
+  {
+    "path": "DIR/FILE.CMAKE",
+    "language": "cmake"
+  },
+  {
+    "path": "file.lua",
+    "language": "lua"
+  },
+  {
+    "path": "DIR/FILE.LUA",
+    "language": "lua"
+  },
+  {
+    "path": "file.perl",
+    "language": "perl"
+  },
+  {
+    "path": "DIR/FILE.PERL",
+    "language": "perl"
+  },
+  {
+    "path": "file.r",
+    "language": "r"
+  },
+  {
+    "path": "DIR/FILE.R",
+    "language": "r"
+  },
+  {
+    "path": "file.scala",
+    "language": "scala"
+  },
+  {
+    "path": "DIR/FILE.SCALA",
+    "language": "scala"
+  },
+  {
+    "path": "file.clj",
+    "language": "clojure"
+  },
+  {
+    "path": "DIR/FILE.CLJ",
+    "language": "clojure"
+  },
+  {
+    "path": "file.ex",
+    "language": "elixir"
+  },
+  {
+    "path": "DIR/FILE.EX",
+    "language": "elixir"
+  },
+  {
+    "path": "file.exs",
+    "language": "elixir"
+  },
+  {
+    "path": "DIR/FILE.EXS",
+    "language": "elixir"
+  },
+  {
+    "path": "file.erl",
+    "language": "erlang"
+  },
+  {
+    "path": "DIR/FILE.ERL",
+    "language": "erlang"
+  },
+  {
+    "path": "file.hs",
+    "language": "haskell"
+  },
+  {
+    "path": "DIR/FILE.HS",
+    "language": "haskell"
+  },
+  {
+    "path": "file.ml",
+    "language": "ocaml"
+  },
+  {
+    "path": "DIR/FILE.ML",
+    "language": "ocaml"
+  },
+  {
+    "path": "file.vim",
+    "language": "vim"
+  },
+  {
+    "path": "DIR/FILE.VIM",
+    "language": "vim"
+  },
+  {
+    "path": "file.graphql",
+    "language": "graphql"
+  },
+  {
+    "path": "DIR/FILE.GRAPHQL",
+    "language": "graphql"
+  },
+  {
+    "path": "file.proto",
+    "language": "protobuf"
+  },
+  {
+    "path": "DIR/FILE.PROTO",
+    "language": "protobuf"
+  },
+  {
+    "path": "file.tf",
+    "language": "hcl"
+  },
+  {
+    "path": "DIR/FILE.TF",
+    "language": "hcl"
+  },
+  {
+    "path": "file.hcl",
+    "language": "hcl"
+  },
+  {
+    "path": "DIR/FILE.HCL",
+    "language": "hcl"
+  },
+  {
+    "path": "Dockerfile",
+    "language": "dockerfile"
+  },
+  {
+    "path": "dockerfile",
+    "language": "dockerfile"
+  },
+  {
+    "path": "dir/Dockerfile",
+    "language": null
+  },
+  {
+    "path": "Makefile",
+    "language": "makefile"
+  },
+  {
+    "path": "dir/Makefile",
+    "language": null
+  },
+  {
+    "path": "ts",
+    "language": "typescript"
+  },
+  {
+    "path": "dir/ts",
+    "language": null
+  },
+  {
+    "path": "file.",
+    "language": null
+  },
+  {
+    "path": "",
+    "language": null
+  },
+  {
+    "path": ".bashrc",
+    "language": null
+  },
+  {
+    "path": "part.rs/file",
+    "language": null
+  },
+  {
+    "path": "part.rs/file.PY",
+    "language": "python"
+  },
+  {
+    "path": "file.İ",
+    "language": null
+  },
+  {
+    "path": "file.KT",
+    "language": "kotlin"
+  }
+]

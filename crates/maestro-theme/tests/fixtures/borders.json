@@ -1,0 +1,38 @@
+[
+  {
+    "level": "off",
+    "expected": "\u001b[38;5;39mborder\u001b[39m"
+  },
+  {
+    "level": "minimal",
+    "expected": "\u001b[38;5;40mborder\u001b[39m"
+  },
+  {
+    "level": "low",
+    "expected": "\u001b[38;5;41mborder\u001b[39m"
+  },
+  {
+    "level": "medium",
+    "expected": "\u001b[38;5;42mborder\u001b[39m"
+  },
+  {
+    "level": "high",
+    "expected": "\u001b[38;5;43mborder\u001b[39m"
+  },
+  {
+    "level": "xhigh",
+    "expected": "\u001b[38;5;44mborder\u001b[39m"
+  },
+  {
+    "level": "unknown",
+    "expected": "\u001b[38;5;39mborder\u001b[39m"
+  },
+  {
+    "level": "",
+    "expected": "\u001b[38;5;39mborder\u001b[39m"
+  },
+  {
+    "level": "bash",
+    "expected": "\u001b[38;5;45mborder\u001b[39m"
+  }
+]

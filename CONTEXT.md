@@ -101,8 +101,8 @@ are later scope, not active foundation concepts.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
 - **Web:** The browser frontend, including the offline exported session viewer.
-- **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances.
 - **Brand pack:** One JSON file of palette, mode role aliases, fonts, type, spacing, mark paths, glyphs and terminal aliases; `maestro-theme` reads the selected pack to derive the shipped dark and light themes, resolved presentation values, CSS custom properties and filled mark templates, and no consumer hard-codes brand values.
+- **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances. Component style callbacks read the live theme when called; border callbacks keep the instance they were created from and the settings cursor keeps the color it had at creation.
 
 ### Structure
 
