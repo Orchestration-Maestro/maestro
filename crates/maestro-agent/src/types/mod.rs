@@ -48,3 +48,9 @@ impl<C: CustomAgentMessages> Clone for AgentMessage<C> {
         }
     }
 }
+/// Conversation observations.
+mod events;
+/// Model-boundary callbacks and conversation inputs.
+mod loop_config;
+pub use events::*;
+pub use loop_config::*;
