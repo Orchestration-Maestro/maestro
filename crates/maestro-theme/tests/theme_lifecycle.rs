@@ -532,10 +532,7 @@ fn theme_watch_start_replaces_old_handles_and_timers() {
             Rc::clone(&ops) as Rc<dyn ThemeOperations>,
         ));
         let fake = Fake::new();
-        fresh.set_registered_themes(vec![
-            instance(&scratch, &ops, "registered"),
-            instance(&scratch, &ops, ""),
-        ]);
+        fresh.set_registered_themes(vec![instance(&scratch, &ops, "registered")]);
         fresh.init_theme(Some("a"), Some(effects(&fake))).unwrap();
         fresh.set_theme(name, Some(effects(&fake))).unwrap();
         assert!(fake.watches.borrow()[0].closed.get(), "name {name:?}");

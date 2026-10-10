@@ -105,7 +105,7 @@ impl ThemeState {
     /// Reread the selected file and publish it.
     ///
     /// A loading failure keeps the last good theme. A callback failure is suppressed and
-    /// leaves the new theme published.
+    /// nothing the callback changed is rolled back.
     fn reload(&self, name: &str, path: &str) {
         let _fired = self.lifecycle.watch.borrow_mut().timer.take();
         if self.lifecycle.name.borrow().as_deref() != Some(name) || !self.operations.exists(path) {

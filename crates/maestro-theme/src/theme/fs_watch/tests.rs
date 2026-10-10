@@ -249,12 +249,7 @@ fn theme_native_error_closes_through_the_state_and_releases_the_listener() {
             &[dir.join("a.json").to_str().unwrap()],
         )))
         .unwrap();
-    harness.local.block_on(&harness.runtime, async {
-        for _ in 0..16 {
-            tokio::task::yield_now().await;
-        }
-    });
-    assert!(results.is_closed());
+    harness.local.block_on(&harness.runtime, results.closed());
     assert_eq!(injecting.scheduled.get(), 0);
     drop(state);
     std::fs::remove_dir_all(&dir).unwrap();

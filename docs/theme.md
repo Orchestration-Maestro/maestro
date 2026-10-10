@@ -142,7 +142,7 @@ one schedules a reload 100 ms later, restarting any pending one; other names and
 stale selections are ignored. The reload rereads the file, registers the new
 instance under the selected name, publishes it and invokes the callback. A missing
 or invalid file keeps the last good theme and is not reported; a callback failure
-is not reported either and leaves the reloaded theme published. A watch failure closes only the watch; a pending reload still runs and
+is not reported either and nothing the callback changed is rolled back. A watch failure closes only the watch; a pending reload still runs and
 nothing rewatches. `stop_theme_watcher` cancels both and keeps the published theme.
 
 `ThemeWatchOperations` supplies the directory watch and the timer;
