@@ -150,14 +150,16 @@ fn maestro_response_sessions_bound_setup_retries() {
         .unwrap();
     runtime.block_on(async {
         for status in [400, 401, 408, 429, 500, 502, 503, 504, 505] {
-            assert_retry_sequence(status).await;
+            assert_retry_sequence(status, "plain failure").await;
         }
+        assert_retry_sequence(400, "Rate Limit exceeded").await;
+        assert_retry_sequence(429, "overloaded").await;
         assert_exhausted_retries().await;
     });
 }
 
 /// Close each scripted attempt before checking status-dependent retries and elapsed virtual time.
-async fn assert_retry_sequence(status: u16) {
+async fn assert_retry_sequence(status: u16, text: &str) {
     use std::sync::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
@@ -165,6 +167,7 @@ async fn assert_retry_sequence(status: u16) {
     let (model, context, mut options) = super::invocation();
     let times = Arc::new(Mutex::new(Vec::new()));
     let calls = Arc::clone(&times);
+    let failure = text.as_bytes().to_vec();
     let hooks = Arc::new(AtomicUsize::new(0));
     let observed = Arc::clone(&hooks);
     options.common.on_response = Some(Arc::new(move |_, _| {
@@ -181,9 +184,10 @@ async fn assert_retry_sequence(status: u16) {
             times.push(now);
             times.len()
         };
+        let failure = failure.clone();
         Box::pin(async move {
             let bytes = if count == 1 {
-                b"plain failure".to_vec()
+                failure
             } else {
                 b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec()
             };
@@ -205,16 +209,86 @@ async fn assert_retry_sequence(status: u16) {
     let events = crate::AssistantMessageEventStream::new();
     let result =
         super::super::http::invoke_sse(&prepared, &model, &options, &output, &events).await;
-    let retry = matches!(status, 429 | 500 | 502 | 503 | 504);
+    let retry = matches!(status, 429 | 500 | 502 | 503 | 504) || text != "plain failure";
     let times = times.lock().unwrap();
-    assert_eq!(times.len(), if retry { 2 } else { 1 }, "status {status}");
-    assert_eq!(hooks.load(Ordering::SeqCst), times.len());
+    assert_retry_outcome(&times, hooks.load(Ordering::SeqCst), retry, &result, text);
+}
+
+/// Check attempt count, hook count, delay between attempts and the surfaced failure.
+fn assert_retry_outcome(
+    times: &[tokio::time::Instant],
+    hooks: usize,
+    retry: bool,
+    result: &Result<(), super::super::CodexError>,
+    text: &str,
+) {
+    assert_eq!(times.len(), if retry { 2 } else { 1 }, "{text}");
+    assert_eq!(hooks, times.len());
     if retry {
         assert_eq!(times[1] - times[0], std::time::Duration::from_millis(1000));
         assert!(result.is_ok());
     } else {
-        assert_eq!(result.unwrap_err().diagnostic().message, "plain failure");
+        assert_eq!(result.as_ref().unwrap_err().diagnostic().message, text);
     }
+}
+
+#[test]
+fn maestro_response_sessions_price_requested_tier_over_echoed_default() {
+    use crate::providers::nullable::Nullable::Value;
+    use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier as Tier;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        for (id, tier, input, output, total) in [
+            ("gpt-5.1-codex", Tier::Flex, 0.5, 1.0, 1.5),
+            ("gpt-5.1-codex", Tier::Priority, 2.0, 4.0, 6.0),
+            ("gpt-5.5", Tier::Flex, 0.5, 1.0, 1.5),
+            ("gpt-5.5", Tier::Priority, 2.5, 5.0, 7.5),
+        ] {
+            let (mut model, context, mut options) = super::invocation();
+            std::sync::Arc::make_mut(&mut model).id = id.to_owned();
+            options.service_tier = Some(Value(tier));
+            let cost = priced_cost(&model, &context, options).await;
+            let expected = serde_json::json!({"input":input,"output":output,"cacheRead":0.0,"cacheWrite":0.0,"total":total});
+            assert_eq!(cost, expected, "{id} {}", tier.name());
+        }
+    });
+}
+
+/// Complete a response that echoes the default tier with one million input and output tokens.
+async fn priced_cost(
+    model: &std::sync::Arc<crate::Model>,
+    context: &crate::Context,
+    mut options: super::super::OpenAICodexResponsesOptions,
+) -> Value {
+    let bytes = event_bytes(&[
+        serde_json::json!({"type":"response.completed","response":{"status":"completed","service_tier":"default","usage":{"input_tokens":1_000_000,"output_tokens":1_000_000,"total_tokens":2_000_000}}}),
+    ]);
+    options.common.fetch = Some(std::sync::Arc::new(move |_| {
+        let bytes = bytes.clone();
+        Box::pin(async move {
+            Ok(crate::HttpResponse {
+                status: 200,
+                status_text: String::new(),
+                headers: std::collections::BTreeMap::new(),
+                body: Box::pin(stream::iter([Ok(bytes)])),
+            })
+        })
+    }));
+    let prepared =
+        super::super::request::prepare_request(model, context, &options, "maestro (browser)")
+            .await
+            .unwrap();
+    let output = std::sync::Arc::new(std::sync::RwLock::new(
+        crate::providers::assistant_output::initial_message(model),
+    ));
+    let events = crate::AssistantMessageEventStream::new();
+    super::super::http::invoke_sse(&prepared, model, &options, &output, &events)
+        .await
+        .unwrap();
+    output_value(&output)["usage"]["cost"].clone()
 }
 
 /// Invoke a finite controlled success body, returning the same supplied output.
