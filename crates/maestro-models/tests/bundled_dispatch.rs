@@ -499,7 +499,7 @@ fn expected_setup_error(protocol: &Protocol) -> serde_json::Value {
     })
 }
 
-/// Simple options carrying only a cancellation signal.
+/// Simple options carrying an optional cancellation signal and API key.
 fn signalled(
     signal: Option<&maestro_models::Cancellation>,
     key: Option<String>,

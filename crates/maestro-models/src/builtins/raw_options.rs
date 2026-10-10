@@ -328,7 +328,7 @@ struct SessionExtras {
     /// Explicit raw effort.
     #[serde(default, deserialize_with = "session_effort")]
     reasoning_effort: Option<ModelThinkingLevel>,
-    /// Summary style; null selects the adapter default.
+    /// Summary style; null and omission mean no explicit summary.
     #[serde(default, deserialize_with = "literal_or_null")]
     reasoning_summary: Option<OpenAICodexReasoningSummary>,
     /// Tier retaining explicit null.

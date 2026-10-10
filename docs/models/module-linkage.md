@@ -69,10 +69,7 @@ one as no tier; the [responses page](responses.md) describes the payload built
 from them, including what a payload hook may change. Cloud response summaries also
 accept null as no summary. Other listed fields reject null.
 
-For response sessions, missing effort omits the reasoning object; a missing or
-null summary selects `auto` only with effort. Missing verbosity selects `low`.
-Missing tier omits `service_tier`, while null emits JSON null. See the
-[response-session guide](response-sessions.md) for adapter-owned request behavior.
+See the [response-session guide](response-sessions.md) for adapter-owned request behavior.
 
 ## Objects that are not JSON
 
