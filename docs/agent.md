@@ -10,8 +10,8 @@ preferences directly, including mutable access through the shared handle.
 `AgentTool::typed` adapts a typed callback to JSON arguments and details;
 argument decoding failures return without invoking its body. Typed results can
 be read with `serde_json::from_value`. Preparation remains JSON-to-JSON.
-Arguments are decoded with `serde_json::from_value` and details encoded with
-`serde_json::to_value`; their documentation owns the conversion rules.
+Arguments are decoded with [`serde_json::from_value`](https://docs.rs/serde_json/latest/serde_json/fn.from_value.html) and details encoded with
+[`serde_json::to_value`](https://docs.rs/serde_json/latest/serde_json/fn.to_value.html); their documentation owns the conversion rules.
 Serialization failures return through the tool error channel.
 
 State collection replacement retains the supplied entry handles in new outer
