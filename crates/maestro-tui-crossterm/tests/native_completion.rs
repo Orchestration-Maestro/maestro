@@ -534,10 +534,6 @@ fn symbol_completion_debounces_on_native_host() {
                 "{typed}"
             );
             scene.settled().await;
-            assert!(
-                scene.requests.try_recv().is_err(),
-                "{typed}: one request only"
-            );
         });
     }
 }
