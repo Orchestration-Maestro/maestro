@@ -506,22 +506,22 @@ fn maestro_response_sessions_validate_headers_before_fetch() {
         .unwrap();
     runtime.block_on(async {
         for (name, value, replaced, expected) in [
-            ("bad name", "valid", false, "Header bad name:"),
+            ("Bad Header", "x", false, "Header bad header:"),
             (
-                "x-test",
-                "first\nsecond",
+                "good",
+                "a\nb",
                 false,
-                "Header x-test holds NUL or a line break.",
+                "Header good holds NUL or a line break.",
+            ),
+            (
+                "good",
+                "Ā",
+                false,
+                "Header good holds U+0100, which is not a single byte.",
             ),
             (
                 "x-test",
-                "Ω",
-                false,
-                "Header x-test holds U+03A9, which is not a single byte.",
-            ),
-            (
-                "x-test",
-                "first\nsecond",
+                "a\nb",
                 true,
                 "Header x-test holds NUL or a line break.",
             ),
@@ -545,7 +545,7 @@ async fn assert_invalid_header(name: &str, value: &str, replaced: bool, expected
     if replaced {
         options.common.headers = Some(indexmap::IndexMap::from([(
             name.to_owned(),
-            "replacement".to_owned(),
+            "good".to_owned(),
         )]));
     }
     let payloads = Arc::new(AtomicUsize::new(0));
