@@ -26,13 +26,9 @@ fn trim(text: &str) -> &str {
     text.trim_matches(is_trimmed)
 }
 
-/// Resolve `paths` right to left, reading the working directory only when no
-/// operand is rooted.
+/// Resolve `paths` right to left; the working directory is read only when the
+/// operands and the recorded drive directories leave a part open.
 fn resolve_path(operations: &dyn FooterOperations, paths: &[&str]) -> io::Result<String> {
-    if let Ok(resolved) = try_resolve(paths, &[]) {
-        return Ok(resolved);
-    }
-    let current = operations.current_dir()?;
     let drives: Vec<(char, String)> = paths
         .iter()
         .filter_map(|path| {
@@ -44,6 +40,10 @@ fn resolve_path(operations: &dyn FooterOperations, paths: &[&str]) -> io::Result
         })
         .collect();
     let drives: Vec<(char, &str)> = drives.iter().map(|(d, path)| (*d, path.as_str())).collect();
+    if let Ok(resolved) = try_resolve(paths, &drives) {
+        return Ok(resolved);
+    }
+    let current = operations.current_dir()?;
     let cwd = Cwd {
         current: &current,
         drive_directories: &drives,
@@ -67,22 +67,25 @@ fn inspect(
             let Some(target) = trim(&content).strip_prefix("gitdir: ") else {
                 return Ok(ControlFlow::Continue(()));
             };
-            let git_dir = resolve_path(operations, &[dir, trim(target)])?;
-            let common_dir = join(&[&git_dir, "commondir"]);
-            if operations.exists(&common_dir) {
-                operations.read_text(&common_dir)?;
-            }
-            git_dir
+            resolve_path(operations, &[dir, trim(target)])?
         }
         FooterFileKind::Other => return Ok(ControlFlow::Continue(())),
     };
     let head_path = join(&[&git_dir, "HEAD"]);
-    let repo_dir = dir.to_owned();
-    let found = operations.exists(&head_path).then_some(GitPaths {
-        repo_dir,
+    if !operations.exists(&head_path) {
+        return Ok(ControlFlow::Break(None));
+    }
+    let common_dir = join(&[&git_dir, "commondir"]);
+    if operations.exists(&common_dir) {
+        resolve_path(
+            operations,
+            &[&git_dir, trim(&operations.read_text(&common_dir)?)],
+        )?;
+    }
+    Ok(ControlFlow::Break(Some(GitPaths {
+        repo_dir: dir.to_owned(),
         head_path,
-    });
-    Ok(ControlFlow::Break(found))
+    })))
 }
 
 /// Walk from `cwd` towards its root for the nearest directory with a `.git`
@@ -109,7 +112,7 @@ pub(super) fn find_git_paths(operations: &dyn FooterOperations, cwd: &str) -> Op
     }
 }
 
-/// The branch HEAD names: `detached` for any other HEAD, and the branch Git
+/// The branch HEAD names: `detached` for any other readable HEAD, and the branch Git
 /// reports when HEAD holds the placeholder a reftable repository writes.
 ///
 /// A HEAD that cannot be read gives `None`.

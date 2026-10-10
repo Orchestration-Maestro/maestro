@@ -157,8 +157,7 @@ impl ReadonlyFooterDataProvider for FooterDataProvider {
         self.callbacks.insert(key, Rc::clone(&callback));
         let callbacks = self.callbacks.clone();
         Box::new(move || {
-            drop(Rc::clone(&callback));
-            callbacks.remove(&key);
+            callbacks.remove(&identity(&callback));
         })
     }
 }

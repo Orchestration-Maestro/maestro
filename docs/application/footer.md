@@ -31,14 +31,16 @@ their lexical rules are those of [`maestro-path`](../../crates/maestro-path/src/
 Construction walks from the working directory towards the root for the nearest
 `.git` entry. A directory needs a `HEAD`; a file is a worktree link when it
 starts with `gitdir: `, and any other file or entry kind continues the walk. A
-`.git` entry that cannot be examined, a worktree link that cannot be followed
-and a repository without `HEAD` each end the walk with no branch instead of
-falling back to an enclosing repository. Reading `HEAD` waits for
+`.git` entry that cannot be examined, a worktree link or its `commondir` that
+cannot be followed and a repository without `HEAD` each end the walk with no
+branch instead of falling back to an enclosing repository. `HEAD` is checked
+before `commondir`, and the working directory is read only when a worktree path
+still needs it after the recorded drive directories are applied. Reading `HEAD` waits for
 the first `get_git_branch` call, and its result, absence included, is cached
 until the working directory changes.
 
 The branch is `None` outside a repository, the text after `ref: refs/heads/`
-unchanged (even when empty) and `detached` for any other `HEAD`. A repository
+unchanged (even when empty) and `detached` for any other readable `HEAD`; an unreadable `HEAD` gives no branch. A repository
 that stores the placeholder `.invalid` asks `git --no-optional-locks
 symbolic-ref --quiet --short HEAD` in the directory that holds `.git`; a
 failed or empty answer gives `detached`. Whitespace around file text is trimmed

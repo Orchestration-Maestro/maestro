@@ -30,7 +30,7 @@ pub trait FooterOperations {
     /// # Errors
     /// Returns the failure to read the file.
     fn read_text(&self, path: &str) -> io::Result<String>;
-    /// The process working directory, read only when a relative path needs it.
+    /// The process working directory, read only when resolving a path needs it.
     ///
     /// # Errors
     /// Returns the failure to read the working directory.

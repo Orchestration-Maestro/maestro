@@ -41,7 +41,7 @@ struct HeadInput {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct HeadExpected {
     branch: String,
-    git_calls: usize,
+    git_calls: Option<usize>,
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn footer_head_records_keep_exact_branch_text() {
                 let branch = provider(&ops, "/repo").get_git_branch();
                 assert_eq!(
                     ops.git_dirs.borrow().len(),
-                    case.expected.git_calls,
+                    case.expected.git_calls.expect("fake case counts Git calls"),
                     "case {index}"
                 );
                 branch
@@ -222,6 +222,7 @@ fn native_git_observations(args: &[String]) {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct DiscoveryInput {
     name: String,
+    current: Option<String>,
     files: BTreeMap<String, Entry>,
     cwd: Option<String>,
     fail_stat: Option<Vec<String>>,
@@ -229,9 +230,11 @@ struct DiscoveryInput {
 }
 
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct BranchExpected {
     branch: Branch,
+    current_dir_calls: Option<usize>,
+    unread: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -253,13 +256,17 @@ fn footer_discovers_metadata_without_skipping_broken_inner_repo() {
             case.input.fail_stat.unwrap_or_default(),
             case.input.fail_read.unwrap_or_default(),
         );
+        *ops.current.borrow_mut() = case.input.current;
         let cwd = case.input.cwd.as_deref().unwrap_or("/repo");
-        assert_eq!(
-            provider(&ops, cwd).get_git_branch(),
-            case.expected.branch,
-            "{}",
-            case.input.name
-        );
+        let name = &case.input.name;
+        let provider = provider(&ops, cwd);
+        assert_eq!(provider.get_git_branch(), case.expected.branch, "{name}");
+        if let Some(calls) = case.expected.current_dir_calls {
+            assert_eq!(ops.current_dir_calls.get(), calls, "{name}");
+        }
+        for path in case.expected.unread.unwrap_or_default() {
+            assert_eq!(ops.reads_of(&path), 0, "{name}: {path}");
+        }
     }
 }
 
@@ -840,6 +847,7 @@ fn footer_callbacks_revisit_reinserted_members() {
         }
     });
     *me.borrow_mut() = Some(Rc::clone(&a));
+    let weak = Rc::downgrade(&a);
     *remove.borrow_mut() = Some(provider.on_branch_change(a));
     drop(provider.on_branch_change(logger(&seen, "b")));
     provider.set_cwd("/next".to_owned());
@@ -849,6 +857,8 @@ fn footer_callbacks_revisit_reinserted_members() {
     );
     provider.dispose();
     *me.borrow_mut() = None;
+    *remove.borrow_mut() = None;
+    assert!(weak.upgrade().is_none());
 }
 
 #[derive(Deserialize)]
@@ -891,7 +901,7 @@ fn footer_readonly_aliases_keep_live_metadata() {
         let witness = Rc::new(());
         let held = Rc::clone(&witness);
         let unsubscribe = reader.on_branch_change(Rc::new(move || {
-            drop(Rc::clone(&held));
+            let _ = &held;
             log.borrow_mut().push(watcher.get_git_branch());
         }));
         owner.set_extension_status("z", Some("ready"));
@@ -956,11 +966,6 @@ fn footer_native_and_controlled_adapters_agree() {
     );
     let nested = scratch.join("repo/a/b");
     std::fs::create_dir_all(&nested).expect("nested directory");
-    git(&repo, &["commit", "-q", "--allow-empty", "-m", "fixture"]);
-    git(
-        &repo,
-        &["worktree", "add", "-q", "-b", "linked-topic", &linked],
-    );
     let scenarios: BTreeMap<_, _> =
         load::<NativeCase>("footer_native_and_controlled_adapters_agree")
             .into_iter()
@@ -977,6 +982,11 @@ fn footer_native_and_controlled_adapters_agree() {
     assert_eq!(
         provider(&controlled, "/repo/a/b").get_git_branch(),
         Some(nested_case.branch.clone())
+    );
+    git(&repo, &["commit", "-q", "--allow-empty", "-m", "fixture"]);
+    git(
+        &repo,
+        &["worktree", "add", "-q", "-b", "linked-topic", &linked],
     );
     assert_eq!(
         native_branch(&linked),

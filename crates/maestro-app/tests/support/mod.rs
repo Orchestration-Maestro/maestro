@@ -146,6 +146,14 @@ pub fn load<C: DeserializeOwned>(test: &str) -> Vec<C> {
             .expect("fixture file parses");
     all.into_iter()
         .filter(|case| case["test"] == test)
+        .inspect(|case| {
+            let members = case.as_object().expect("fixture case is an object");
+            assert!(
+                members
+                    .keys()
+                    .all(|key| ["test", "input", "expected"].contains(&key.as_str()))
+            );
+        })
         .map(|case| serde_json::from_value(case).expect("fixture case matches its record"))
         .collect()
 }
@@ -158,7 +166,7 @@ pub fn plain(head: Entry) -> BTreeMap<String, Entry> {
     ])
 }
 
-/// A directory removed when dropped.
+/// A directory removed when dropped, on a best-effort basis.
 pub struct Scratch(pub PathBuf);
 
 impl Scratch {
