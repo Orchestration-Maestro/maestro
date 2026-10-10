@@ -129,7 +129,7 @@ connection with reason `debug_close`; statistics and fallback state stay. A
 request in flight sends that close, keeps reading, reduces the messages the
 peer still delivers, and ends with its own result or the peer's close, so a
 queued terminal response still completes it. A connection released without a
-close request reports reason `done`.
+close request attempts a close with reason `done`; delivery is not guaranteed.
 
 
 ## Controlled invocation

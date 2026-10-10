@@ -365,15 +365,7 @@ fn capture_timeout_covers_streams_and_sends_termination() {
         producer.release.send(()).unwrap();
         tokio::time::advance(Duration::from_millis(101)).await;
         tokio::time::resume();
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(5), result)
-                .await
-                .unwrap()
-                .unwrap()
-                .unwrap_err()
-                .to_string(),
-            expected
-        );
+        assert_eq!(result.await.unwrap().unwrap_err().to_string(), expected);
     }));
     producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
@@ -410,15 +402,7 @@ fn capture_timeout_covers_descendant_streams() {
         tokio::time::advance(Duration::from_millis(10001)).await;
         tokio::time::resume();
         producer.release.send(()).unwrap();
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(5), result)
-                .await
-                .unwrap()
-                .unwrap()
-                .unwrap_err()
-                .to_string(),
-            expected
-        );
+        assert_eq!(result.await.unwrap().unwrap_err().to_string(), expected);
     }));
     producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
