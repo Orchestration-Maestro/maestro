@@ -23,7 +23,7 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
   `package.json` (`install --omit=dev`, or plain `install` when a nonempty
   `npmCommand` is configured). The settings are read after the clone. Removal deletes the target and
   then empty ancestors strictly inside the Git root, comparing path components after
-  resolving both against one working-directory read taken only for a relative base; a failed ancestor removal ends the cleanup.
+  resolving both against a working directory captured at most once, and only when a path needs it (per-drive directory lookups are separate); a failed ancestor removal ends the cleanup.
 - **Local paths**: installation only checks that the path, resolved against the input
   base, exists (`Path does not exist: <path>` otherwise); removal does nothing.
 

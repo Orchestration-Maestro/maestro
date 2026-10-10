@@ -297,6 +297,38 @@ fn clone_creates_target(fixture: &Fixture, manifest: bool) {
 }
 
 #[test]
+fn controlled_repository_installs_checks_out_and_removes() {
+    let source = "https://example.test/team/repo@v1";
+    let fixture = Fixture::new(&json!({}));
+    fixture
+        .script
+        .hooks
+        .borrow_mut()
+        .push_back(Box::new(|call| {
+            let target = call.args.last().unwrap();
+            std::fs::create_dir_all(target).unwrap();
+            std::fs::write(format!("{target}/marker"), "one").unwrap();
+        }));
+    block_on(fixture.manager.install(source, None)).unwrap();
+    let target = fixture.agent("git/example.test/team/repo");
+    assert_eq!(sandbox::read(&format!("{target}/marker")), "one");
+    assert_eq!(sandbox::read(&fixture.agent("git/.gitignore")), IGNORE);
+    assert_eq!(
+        fixture.calls(),
+        vec![
+            call("git", &["clone", "https://example.test/team/repo", &target]),
+            Call {
+                cwd: Some(target.clone()),
+                ..call("git", &["checkout", "v1"])
+            },
+        ]
+    );
+    block_on(fixture.manager.remove(source, None)).unwrap();
+    assert!(!std::path::Path::new(&fixture.agent("git/example.test")).exists());
+    assert!(std::path::Path::new(&fixture.agent("git/.gitignore")).exists());
+}
+
+#[test]
 fn git_dependencies_use_live_configured_command() {
     let selections = [
         (json!({}), "npm", vec!["install", "--omit=dev"]),
@@ -933,7 +965,18 @@ fn manager_aliases_remain_usable_during_acquisition() {
     let uses = Rc::new(Cell::new(0));
     let counter = uses.clone();
     let replaced = sandbox::Events::default();
-    let replacement = sandbox::recorder(&replaced);
+    let (completions, log, weak_again) = (Rc::new(Cell::new(0)), replaced.clone(), weak.clone());
+    let completed = completions.clone();
+    let replacement: ProgressCallback = Rc::new(move |event| {
+        log.borrow_mut().push(event.clone());
+        if event.r#type == Phase::Complete {
+            let manager = weak_again.upgrade().unwrap();
+            assert_eq!(manager.list_configured_packages()?.len(), 2);
+            assert!(manager.get_installed_path("npm:x", User).is_ok());
+            completed.set(completed.get() + 1);
+        }
+        Ok(())
+    });
     fixture
         .manager
         .set_progress_callback(Some(Rc::new(move |event| {
@@ -952,6 +995,8 @@ fn manager_aliases_remain_usable_during_acquisition() {
     assert!(poll_once(&mut operation).is_none());
     assert_eq!(fixture.calls().len(), 1);
     assert_eq!(uses.get(), 1);
+    assert_eq!(fixture.manager.list_configured_packages().unwrap().len(), 2);
+    assert!(fixture.manager.get_installed_path("npm:x", User).is_ok());
     assert!(
         fixture
             .manager
@@ -970,6 +1015,7 @@ fn manager_aliases_remain_usable_during_acquisition() {
         stored(&fixture),
         json!(["npm:listed", "npm:held", "npm:pkg"])
     );
+    assert_eq!(completions.get(), 1);
     assert_eq!(replaced.borrow().len(), 1);
     assert_eq!(fixture.script.captures.borrow().len(), 1);
 }

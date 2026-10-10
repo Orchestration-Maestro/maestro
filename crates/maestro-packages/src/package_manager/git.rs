@@ -58,7 +58,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Removes empty ancestors of the target that lie strictly inside the root.
     ///
-    /// Root and ancestors are resolved with at most one ambient read and compared by path components, so a
+    /// Root and ancestors are resolved with the working directory captured at most once, only when required
+    /// (per-drive directory lookups are separate), and compared by path components, so a
     /// relative base prunes and a similarly named sibling directory does not. A failed
     /// removal ends the cleanup without failing the operation.
     fn prune_empty_parents(&self, target: &str, root: &str) -> io::Result<()> {

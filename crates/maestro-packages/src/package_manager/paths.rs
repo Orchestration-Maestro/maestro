@@ -50,7 +50,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     pub(super) fn resolve_operands(&self, operands: &[&str]) -> io::Result<String> {
         Ok(self.resolve_together(&[operands])?.concat())
     }
-    /// Resolves each operand group against one ambient context, read at most once.
+    /// Resolves each operand group against one ambient context: the working directory is captured at most once, and
+    /// only when required; per-drive directory lookups are separate.
     pub(super) fn resolve_together(&self, groups: &[&[&str]]) -> io::Result<Vec<String>> {
         let plain: Result<Vec<_>, _> = groups.iter().map(|g| try_resolve(g, &[])).collect();
         if let Ok(paths) = plain {
