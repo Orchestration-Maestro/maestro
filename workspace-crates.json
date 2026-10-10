@@ -4,6 +4,7 @@
   "maestro-credentials": "core",
   "maestro-extensions": "core",
   "maestro-extensions-wasm": "core",
+  "maestro-lock": "core",
   "maestro-models": "core",
   "maestro-packages": "core",
   "maestro-path": "core",
@@ -15,5 +16,6 @@
   "maestro-test-terminal": "dedicated",
   "maestro-tooling": "dedicated",
   "maestro-tui": "core",
-  "maestro-tui-crossterm": "core"
+  "maestro-tui-crossterm": "core",
+  "maestro-watch": "core"
 }

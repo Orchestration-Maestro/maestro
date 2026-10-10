@@ -95,8 +95,19 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
   crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness and cancellation leaf may not. Keep authored paths as
-  strings and convert to `PathBuf` only at I/O.
+  terminal scenario harness, cancellation leaf, watch leaf and lock leaf may not.
+  Keep authored paths as strings and convert to `PathBuf` only at I/O.
+- `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
+  no workspace dependencies, including the path utility. Only theme/application
+  may depend on watch; only settings/credentials may depend on lock. Follow the
+  [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
+  watch owns creation/close helpers, injected watch/timer interfaces and native
+  notifications; lock owns bounded synchronous acquisition of caller-opened files.
+  Feature policies remain with their owners, including asynchronous credential
+  acquisition. Add no common background runtime, scheduler or listener framework;
+  existing theme paths may re-export moved types, not duplicate implementations.
+  Land this contract before creating the leaves; size moves by net added
+  production lines with matching moved/deleted counts, not claimed savings.
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.

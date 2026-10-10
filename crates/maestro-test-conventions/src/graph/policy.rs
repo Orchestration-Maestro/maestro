@@ -10,25 +10,30 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-path", &[]),
     ("maestro-cancellation", &[]),
     ("maestro-request", &[]),
+    ("maestro-watch", &[]),
+    ("maestro-lock", &[]),
     ("maestro-extensions-wasm", &["maestro-request"]),
     (
         "maestro-models",
         &["maestro-cancellation", "maestro-request"],
     ),
     ("maestro-resources", &["maestro-request"]),
-    ("maestro-settings", &[]),
+    ("maestro-settings", &["maestro-lock"]),
     ("maestro-storage", &[]),
     ("maestro-test-conventions", &[]),
     ("maestro-tooling", &[]),
     ("maestro-tui", &["maestro-cancellation"]),
     ("maestro-agent", &["maestro-models"]),
-    ("maestro-credentials", &["maestro-models"]),
+    ("maestro-credentials", &["maestro-models", "maestro-lock"]),
     (
         "maestro-packages",
         &["maestro-settings", "maestro-resources"],
     ),
     ("maestro-test-terminal", &["maestro-tui"]),
-    ("maestro-theme", &["maestro-tui", "maestro-request"]),
+    (
+        "maestro-theme",
+        &["maestro-tui", "maestro-request", "maestro-watch"],
+    ),
     ("maestro-tui-crossterm", &["maestro-tui"]),
     (
         "maestro-catalog",
@@ -87,6 +92,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-export",
             "maestro-theme",
             "maestro-tui",
+            "maestro-watch",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),
@@ -131,7 +137,9 @@ pub(crate) fn uses_utility(name: &str) -> bool {
     name != UTILITY
         && !matches!(
             name,
-            "maestro-cancellation"
+            "maestro-watch"
+                | "maestro-lock"
+                | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"
                 | "maestro-extensions-wasmtime"
