@@ -14,7 +14,8 @@ use super::scenario::{Decision, Delivery, Driver, Encoded};
 /// supplementary character, a parent segment and surrounding spaces.
 pub const LITERAL: &str = " \u{feff}\u{85}é😀/../x ";
 
-/// The `type` tag of every delivered event kind.
+/// The `type` tag of each of the 23 event kinds the transport suites deliver with the probe
+/// handler; the session suites deliver the session kinds missing from this list.
 pub const KINDS: [&str; 23] = [
     "message_update",
     "tool_execution_start",

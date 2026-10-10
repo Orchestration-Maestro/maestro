@@ -207,7 +207,7 @@ fn maestro_tree_signals_keep_identity_and_release_owners() -> Result<(), String>
     on_both_adapters!(signals)
 }
 
-/// Refuse absent signals after payload decoding and release both refused invocations.
+/// Refuse absent signals after payload decoding and release the refused invocations.
 async fn refused_signals(
     driver: &mut impl Driver,
     event: &serde_json::Value,

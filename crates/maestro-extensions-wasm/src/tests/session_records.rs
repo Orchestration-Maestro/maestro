@@ -51,7 +51,8 @@ fn maestro_compaction_preparation_keeps_messages_settings_and_files() -> Result<
     on_both_adapters!(preparations)
 }
 
-/// Every entry variant and nested message family is carried in both entry lists.
+/// Every entry variant is carried in both entry lists; the nested message families are
+/// covered in compaction entries before compaction, and tree entries carry user messages.
 async fn entries(driver: &mut impl Driver) -> Result<(), String> {
     super::session_corpus::run(
         driver,
