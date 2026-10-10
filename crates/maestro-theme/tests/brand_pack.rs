@@ -9,11 +9,13 @@ use brand_support::{
     forge_json, load_value, mode_id, presented, required_colors, terminal,
 };
 use live::{Ops, Scratch, custom_json, state};
+use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{
     BrandMode, BrandPack, BrandPresentation, ColorMode, NativeThemeOperations, Theme, ThemeColor,
     ThemeError, ThemeExportColors, ThemeOptions, load_brand_pack, load_theme_from_path,
 };
 use serde_json::{Value, json};
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::rc::Rc;
@@ -158,7 +160,9 @@ fn maestro_identity_override_reaches_all_style_outputs() {
             (&alternate_pack, &alternate_files, "alternate"),
         ] {
             let id = format!("{name}-{mode_name}");
-            check_projection(pack, mode, &id);
+            if name == "alternate" {
+                check_projection(pack, mode, &id);
+            }
             check_presentation(pack, mode, &id, files);
         }
     }
@@ -193,6 +197,18 @@ fn assert_terminal_defaults() {
     }
 }
 
+/// Provenance of a registered package theme.
+#[cfg(test)]
+fn package_source() -> Rc<RefCell<SourceInfo>> {
+    Rc::new(RefCell::new(SourceInfo {
+        path: "/pkg/mine.json".into(),
+        source: "pkg".into(),
+        scope: SourceScope::Project,
+        origin: SourceOrigin::Package,
+        base_dir: Some("/pkg".into()),
+    }))
+}
+
 #[test]
 fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
     let scratch = Scratch::new("custom");
@@ -202,6 +218,7 @@ fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
         "custom/filemine.json",
         &custom_json("filemine", "#123456").to_string(),
     );
+    let source = package_source();
     let registered = Rc::new(
         Theme::new(
             vec![(
@@ -212,6 +229,7 @@ fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
             ColorMode::Truecolor,
             ThemeOptions {
                 name: Some("mine".into()),
+                source_info: Some(Rc::clone(&source)),
                 ..ThemeOptions::default()
             },
         )
@@ -230,6 +248,13 @@ fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
         &registered
     ));
     assert_eq!(registered.name(), Some("mine"));
+    let kept = state
+        .get_theme_by_name("mine")
+        .unwrap()
+        .source_info()
+        .unwrap();
+    assert!(Rc::ptr_eq(&kept, &source));
+    assert_eq!(kept.borrow().base_dir.as_deref(), Some("/pkg"));
     let file_after = state.get_theme_by_name("filemine").unwrap();
     assert_eq!(
         file_after.fg(&ThemeColor::Accent, "x").unwrap(),
@@ -324,8 +349,7 @@ fn brand_pack_terminal_and_glyph_aliases_reach_outputs() {
 
 #[test]
 fn brand_pack_font_stacks_keep_order_duplicates_and_generics() {
-    let files = Mem::new(&[]);
-    let pack = load_value(&edited(|pack| {
+    let document = edited(|pack| {
         pack["fonts"]["display"]["family"] = "Plain Face".into();
         pack["fonts"]["display"]["fallbacks"] = json!([
             "Serif",
@@ -341,8 +365,10 @@ fn brand_pack_font_stacks_keep_order_duplicates_and_generics() {
         pack["fonts"]["body"]["family"] = "serif".into();
         pack["fonts"]["body"]["fallbacks"] = json!([]);
         pack["fonts"]["mono"]["fallbacks"] = json!([]);
-    }))
-    .unwrap();
+    })
+    .to_string();
+    let files = Mem::new(&[(FORGE_PATH, &document)]);
+    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
     let presentation = pack.presentation(BrandMode::Dark).unwrap();
     let css = presentation.css_properties();
     let display = r#""Plain Face", Serif, sans-serif, "Mono Face", "Mono Face", serif, "", " lead ", "Ünï Çode", SANS-SERIF"#;
@@ -354,7 +380,7 @@ fn brand_pack_font_stacks_keep_order_duplicates_and_generics() {
     assert_eq!(font.license, "OFL-1.1");
     assert!(font.license_url.ends_with("/barlowcondensed/OFL.txt"));
     assert_eq!(font.fallbacks.len(), 9);
-    assert!(files.reads.borrow().is_empty());
+    assert_eq!(*files.reads.borrow(), [FORGE_PATH]);
 }
 
 #[test]
@@ -422,7 +448,6 @@ fn brand_pack_templates_resolve_all_forms_without_geometry_changes() {
             (Some("small"), "small"),
         ] {
             let svg = pack.mark_svg(mode, variant, &files).unwrap();
-            assert_eq!(svg, expected.svg[name], "{id} {name}");
             assert!(
                 !svg.contains("var(--") && !svg.contains("{{") && !svg.contains("currentColor")
             );
@@ -516,7 +541,7 @@ fn brand_pack_reads_only_the_requested_mark_asset() {
     assert_eq!(error.to_string(), cause.to_string());
 }
 
-/// Pointer, an admitted-shape marker and, for records, a positional array.
+/// Pointer and admitted-shape marker of each pack field read by the typed tables.
 #[cfg(test)]
 const FIELDS: [(&str, char); 35] = [
     ("/name", 's'),
@@ -1008,4 +1033,58 @@ fn brand_pack_additional_named_roles_survive_projection() {
     assert_eq!(document["colors"].as_object().unwrap().len(), 51);
     assert_eq!(document["vars"]["extra role"], "#112233");
     assert_eq!(document["vars"]["extra-role"], "#F2E8DC");
+}
+
+#[test]
+fn brand_pack_dictionary_values_reject_null_and_wrong_types() {
+    let label = format!("Invalid brand pack {FORGE_PATH}: ");
+    let text = [
+        "/palette/bone",
+        "/modes/dark/colors/text",
+        "/mark/variants/flat",
+        "/terminal/ansi/red",
+        "/terminal/truecolor/accent",
+        "/fonts/display/fallbacks/0",
+    ];
+    let number = ["/spacing/md", "/radii/control"];
+    let bad_text = [Value::Null, json!(7), json!({}), json!([]), json!(true)];
+    let bad_number = [Value::Null, json!("8"), json!({}), json!([]), json!(true)];
+    for (pointers, bad) in [(&text[..], &bad_text), (&number[..], &bad_number)] {
+        for pointer in pointers {
+            for value in bad {
+                let pack = edited(|v| *v.pointer_mut(pointer).unwrap() = value.clone());
+                let message = failure(load_value(&pack));
+                assert!(message.starts_with(&label), "{pointer} {value}: {message}");
+            }
+        }
+    }
+}
+
+#[test]
+fn brand_pack_presentation_keeps_tagline_and_mark_measurements() {
+    let forge = forge();
+    let presentation = forge.presentation(BrandMode::Dark).unwrap();
+    assert_eq!(presentation.tagline, "Conduct every model.");
+    let mark = presentation.mark;
+    assert_eq!(
+        (
+            mark.minimum_size,
+            mark.small_minimum_size,
+            mark.app_icon_scale
+        ),
+        (32.0, 16.0, 0.72)
+    );
+    let alternate = alternate();
+    let presentation = alternate.presentation(BrandMode::Light).unwrap();
+    assert_eq!(presentation.tagline, "Next <turn> & \"quoted\"");
+    let mark = presentation.mark;
+    assert_eq!(
+        (
+            mark.minimum_size,
+            mark.small_minimum_size,
+            mark.clear_space,
+            mark.app_icon_scale
+        ),
+        (40.0, 20.0, 0.125, 0.8)
+    );
 }

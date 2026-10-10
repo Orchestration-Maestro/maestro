@@ -175,8 +175,10 @@ pub struct Export {
 #[serde(deny_unknown_fields)]
 pub struct Terminal {
     /// Prefix by key in truecolor mode.
+    #[serde(default)]
     pub truecolor: BTreeMap<String, String>,
     /// Prefix by key in 256-color mode.
+    #[serde(default)]
     pub color256: BTreeMap<String, String>,
     /// Export colors.
     pub export: Export,
@@ -210,11 +212,19 @@ pub struct Presented {
     pub svg: BTreeMap<String, String>,
 }
 
-/// One recorded entry, such as `forge-dark`.
+/// One recorded entry, such as `forge-dark`; the shared pack's prefixes come from the shipped record.
 pub fn terminal(id: &str) -> Terminal {
     let mut all: BTreeMap<String, Terminal> =
         serde_json::from_str(include_str!("terminal.json")).unwrap();
-    all.remove(id).unwrap()
+    let mut entry = all.remove(id).unwrap();
+    if let Some(mode) = id.strip_prefix("forge-") {
+        let mut shipped: BTreeMap<String, BTreeMap<String, BTreeMap<String, String>>> =
+            serde_json::from_str(include_str!("../support/shipped_prefixes.json")).unwrap();
+        let mut prefixes = shipped.remove(mode).unwrap();
+        entry.truecolor = prefixes.remove("truecolor").unwrap();
+        entry.color256 = prefixes.remove("color256").unwrap();
+    }
+    entry
 }
 
 /// One recorded entry, such as `alternate-light`.

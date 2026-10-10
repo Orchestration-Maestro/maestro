@@ -118,7 +118,7 @@ impl BrandPack {
     ///
     /// # Errors
     /// Returns the failures of [`BrandPack::presentation`], or `Missing brand color role` for a
-    /// terminal key whose role the mode does not define.
+    /// terminal or export key whose role the mode does not define.
     pub fn theme_json(&self, mode: BrandMode) -> Result<String, ThemeError> {
         let presentation = self.presentation(mode)?;
         let roles: Roles = serde_json::from_str(ROLES)

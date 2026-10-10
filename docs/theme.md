@@ -171,7 +171,7 @@ and returns none of them when anything fails; an empty field is absent.
 
 The shipped `dark.json` and `light.json` are generated from the shared brand pack
 (`assets/brand/brand.json`, shape in the [identity guide](identity.md#pack-shape-and-swapping)),
-never edited by hand. A same-format pack changes every output below without a code change.
+never edited by hand. A same-format pack supplies the outputs below without a code change.
 
 ```sh
 cargo run -p maestro-theme --example brand_themes -- assets/brand/brand.json crates/maestro-theme/assets/theme
@@ -208,9 +208,8 @@ projection. A projection resolves a role through the mode's alias, then the pale
   `{{wordmark}}` (XML-escaped), `var(--role)` and `currentColor` (the `text` color) in one
   pass; inserted text is never scanned again.
 
-`get_resolved_theme_colors` keeps its own fallback for empty colors (black for `light`,
-`#e5e5e7` otherwise); callers that want the pack's text color read
-`BrandPresentation::colors["text"]`.
+Empty colors in exported themes follow [Resolved colors for export](#resolved-colors-for-export);
+callers that want the pack's text color read `BrandPresentation::colors["text"]`.
 
 Projection failures are `Missing brand mode: <mode>`, `Missing brand palette color: <key>`,
 `Invalid brand color: <value>` (not `#` and six hexadecimal digits), `Missing brand font: <key>`,

@@ -43,7 +43,7 @@ pub struct BrandPack {
 ///
 /// # Errors
 /// Returns the read failure, `Invalid brand pack <path>: <cause>` for malformed text or
-/// fields, or `Invalid brand measurement: <pointer>` for a size or spacing out of range.
+/// fields, or `Invalid brand measurement: <pointer>` for a type size, spacing or radius out of range.
 pub fn load_brand_pack(
     path: &str,
     operations: &dyn ThemeOperations,

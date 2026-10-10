@@ -17,7 +17,7 @@ impl BrandPack {
     /// and `currentColor` becomes the `text` color. Inserted text is not scanned again.
     ///
     /// # Errors
-    /// Returns `Unknown brand mark variant` before any read, the presentation failures, the
+    /// Returns `Unknown brand mark variant` before any read, the failures of [`BrandPack::presentation`], the
     /// template read failure, `Missing brand color role` or `Unterminated brand template color`.
     pub fn mark_svg(
         &self,
