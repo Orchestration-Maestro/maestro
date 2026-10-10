@@ -666,3 +666,81 @@ fn reserved_progress_sink(
         _ => ready(Ok(())),
     }
 }
+
+/// Waking the caller while closing progress must not hold admission.
+#[test]
+fn closing_progress_wakes_caller_without_holding_admission() {
+    wake_reentry_case();
+}
+
+/// Waker that invokes the retained update callback from another thread and reports completion.
+struct ReentrantWaker {
+    callback: Arc<Mutex<Option<maestro_agent::AgentToolUpdateCallback>>>,
+    armed: std::sync::atomic::AtomicBool,
+    reentered: std::sync::atomic::AtomicBool,
+}
+
+impl std::task::Wake for ReentrantWaker {
+    fn wake(self: Arc<Self>) {
+        self.wake_by_ref();
+    }
+    fn wake_by_ref(self: &Arc<Self>) {
+        if !self.armed.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        let Some(callback) = self.callback.lock().unwrap().clone() else {
+            return;
+        };
+        let (done, waited) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            callback(result());
+            let _ = done.send(());
+        });
+        if waited
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .is_ok()
+        {
+            self.reentered
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+}
+
+/// Close progress with a caller waker that re-enters the retained callback.
+fn wake_reentry_case() {
+    use std::{pin::Pin, task::Context};
+    let callback = Arc::new(Mutex::new(None));
+    let retained = Arc::clone(&callback);
+    let (release, released) = tokio::sync::oneshot::channel::<()>();
+    let released = Arc::new(Mutex::new(Some(released)));
+    let context = with_execute(Arc::new(move |_, _, _, update| {
+        *retained.lock().unwrap() = update;
+        let gate = released.lock().unwrap().take().unwrap();
+        Box::pin(async move {
+            gate.await.unwrap();
+            Ok(result())
+        })
+    }));
+    let config = config();
+    let mut operation = Box::pin(run_agent_loop_continue(
+        context,
+        &config,
+        Arc::new(|_| ready(Ok(()))),
+        responses(vec![tool_call()]),
+    ));
+    let waker = Arc::new(ReentrantWaker {
+        callback,
+        armed: std::sync::atomic::AtomicBool::new(false),
+        reentered: std::sync::atomic::AtomicBool::new(false),
+    });
+    let handle = std::task::Waker::from(Arc::clone(&waker));
+    let mut cx = Context::from_waker(&handle);
+    assert!(Pin::new(&mut operation).poll(&mut cx).is_pending());
+    release.send(()).unwrap();
+    waker.armed.store(true, std::sync::atomic::Ordering::SeqCst);
+    let _ = Pin::new(&mut operation).poll(&mut cx);
+    assert!(
+        waker.reentered.load(std::sync::atomic::Ordering::SeqCst),
+        "retained callback must not block on admission while closing wakes the caller"
+    );
+}

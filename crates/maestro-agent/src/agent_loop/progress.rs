@@ -50,7 +50,9 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
                 state.closed = true;
-                if state.pending == 0 {
+                let settled = state.pending == 0;
+                drop(state);
+                if settled {
                     updates.end(Some(()));
                 }
                 result
@@ -88,7 +90,9 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             state.pending -= 1;
-            if state.closed && state.pending == 0 {
+            let settled = state.closed && state.pending == 0;
+            drop(state);
+            if settled {
                 admitted.end(Some(()));
             }
         })
