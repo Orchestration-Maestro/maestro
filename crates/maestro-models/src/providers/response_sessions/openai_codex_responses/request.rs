@@ -46,7 +46,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashSet, sync::Arc};
 
-/// Immutable payload-hook result shared by transport attempts.
+/// Prepared payload, endpoint and effective headers.
 pub(crate) struct PreparedRequest {
     /// Retained wire document.
     pub(crate) body: Value,
