@@ -416,6 +416,13 @@ controlling terminal over the redirected descriptors. Its tests add rustix `pipe
 and `process` and Tokio `test-util`. No library type appears in a public
 interface except Tokio's `LocalSet`, which the caller supplies to `ProcessTerminal::new`.
 
+## Approved theme libraries
+
+`maestro-theme` uses `jsonschema =0.58.5` (MIT; defaults off, offline) for runtime
+theme admission, `indexmap =2.14.2` (default `std`) for ordered color records, and
+the workspace `serde_json`, `num-traits`. No third-party type appears in its
+interface. Its production dependency closure adds no internal crate.
+
 ## Approved subscription listener libraries
 
 `maestro-models` uses native-only Hyper `=1.11.1` (defaults off, `server`,
