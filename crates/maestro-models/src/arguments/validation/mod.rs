@@ -60,6 +60,14 @@ pub fn validate_tool_arguments(
     )))
 }
 
+/// Check the original JSON value without converting it or changing the schema.
+///
+/// # Errors
+/// Returns the existing diagnostic when schema preparation fails.
+pub fn validate_schema(schema: &Value, value: &Value) -> Result<Vec<String>, DiagnosticErrorInfo> {
+    check::check(schema, value).map_err(|error| diagnostic(error.to_string()))
+}
+
 /// Wrap a corrective message in the existing error record.
 fn diagnostic(message: String) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {
