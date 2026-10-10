@@ -1,11 +1,14 @@
 //! Resolve authored values through environment and command operations.
 use std::{
     collections::HashMap,
-    sync::{LazyLock, Mutex},
+    sync::{Arc, LazyLock, Mutex, OnceLock},
 };
 
+/// Shared initialization of one command's success or absence.
+type CommandResult = Arc<OnceLock<Option<String>>>;
+
 /// Process-wide command results, including failed resolutions.
-static COMMAND_CACHE: LazyLock<Mutex<HashMap<String, Option<String>>>> =
+static COMMAND_CACHE: LazyLock<Mutex<HashMap<String, CommandResult>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Clear cached command results.
@@ -23,6 +26,7 @@ pub trait ConfigValueOperations {
     fn execute(&self, command: &str) -> Option<Vec<u8>>;
 }
 /// Resolve a value, caching command results by the complete configured string.
+/// Concurrent misses share one initialization, including an absent result.
 pub fn resolve_config_value(
     config: &str,
     operations: &dyn ConfigValueOperations,
@@ -30,20 +34,16 @@ pub fn resolve_config_value(
     if !config.starts_with('!') {
         return resolve_config_value_uncached(config, operations);
     }
-    let cached = COMMAND_CACHE
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .get(config)
-        .cloned();
-    if let Some(value) = cached {
-        return value;
-    }
-    let value = resolve_config_value_uncached(config, operations);
-    COMMAND_CACHE
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .insert(config.to_owned(), value.clone());
-    value
+    let result = Arc::clone(
+        COMMAND_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(config.to_owned())
+            .or_default(),
+    );
+    result
+        .get_or_init(|| resolve_config_value_uncached(config, operations))
+        .clone()
 }
 /// Resolve a configured value without consulting the command cache.
 pub fn resolve_config_value_uncached(

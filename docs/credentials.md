@@ -6,8 +6,9 @@ login guidance. Credential storage and refresh are separate, not delivered here.
 Non-command values use a nonempty exact-name environment value or the unchanged
 literal. Values beginning with `!` execute the remainder as a command. Successful
 command results and absence are cached process-wide by the complete configured
-string; `clear_config_value_cache` clears them. Uncached and throwing operations
-bypass that cache without replacing it.
+string; concurrent misses share one initialization, including an absent result.
+`clear_config_value_cache` removes the cached entries. Uncached and throwing
+operations bypass that cache without replacing it.
 
 `resolve_headers` omits empty or unresolved values. `resolve_headers_or_throw`
 retains successful empty strings and stops at the first resolution error. Both

@@ -148,6 +148,80 @@ mod tests {
         );
         assert_eq!(operations.calls.borrow().len(), 3);
     }
+    /// Holds the first command execution until all callers have started.
+    struct GatedOperations {
+        /// Completed execution count, observed after every caller joins.
+        calls: std::sync::atomic::AtomicUsize,
+        /// Reports that the first execution has entered its gate.
+        entered: std::sync::mpsc::Sender<()>,
+        /// Allows the first execution to finish.
+        release: Mutex<std::sync::mpsc::Receiver<()>>,
+        /// First execution's success or absence.
+        output: Option<Vec<u8>>,
+    }
+    impl ConfigValueOperations for GatedOperations {
+        fn environment(&self, _name: &str) -> Option<String> {
+            unreachable!("command resolution must not read environment")
+        }
+        fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+            if self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
+                self.entered.send(()).unwrap();
+                self.release.lock().unwrap().recv().unwrap();
+                self.output.clone()
+            } else {
+                Some(b"duplicate-secret".to_vec())
+            }
+        }
+    }
+    /// Check all completed callers against the gated first result.
+    fn assert_concurrent_command_result(output: Option<Vec<u8>>) {
+        clear_config_value_cache();
+        let (entered, started) = std::sync::mpsc::channel();
+        let (release, released) = std::sync::mpsc::channel();
+        let operations = GatedOperations {
+            calls: std::sync::atomic::AtomicUsize::new(0),
+            entered,
+            release: Mutex::new(released),
+            output: output.clone(),
+        };
+        let barrier = std::sync::Barrier::new(9);
+        let contend = || {
+            barrier.wait();
+            resolve_config_value("!concurrent", &operations)
+        };
+        let results = std::thread::scope(|scope| {
+            let first = scope.spawn(|| resolve_config_value("!concurrent", &operations));
+            started.recv().unwrap();
+            let contenders: Vec<_> = (0..8).map(|_| scope.spawn(contend)).collect();
+            barrier.wait();
+            release.send(()).unwrap();
+            std::iter::once(first)
+                .chain(contenders)
+                .map(|caller| caller.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        assert_eq!(
+            operations.calls.load(std::sync::atomic::Ordering::SeqCst),
+            1
+        );
+        let expected = output.map(|bytes| String::from_utf8(bytes).unwrap());
+        assert!(
+            results.iter().all(|result| *result == expected),
+            "{results:?}"
+        );
+        assert_eq!(resolve_config_value("!concurrent", &operations), expected);
+        assert_eq!(
+            operations.calls.load(std::sync::atomic::Ordering::SeqCst),
+            1
+        );
+    }
+    #[test]
+    fn concurrent_command_misses_share_success_and_absence() {
+        let _serial = SERIAL.lock().unwrap();
+        for output in [Some(b"first-secret".to_vec()), None] {
+            assert_concurrent_command_result(output);
+        }
+    }
     #[test]
     fn config_throwing_values_keep_empty_literals_and_error_text() {
         let operations = Operations::default();
@@ -478,7 +552,10 @@ mod tests {
         let root = Directory::new("timeout");
         let ready = root.0.join("ready");
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
-        let command = format!("!printf ready > '{}'; exec sleep 11", ready.display());
+        let command = format!(
+            "!printf ready > '{}'; printf secret; exec sleep 11",
+            ready.display()
+        );
         assert_eq!(resolve_config_value_uncached(&command, &operations), None);
         assert_eq!(std::fs::read_to_string(ready).unwrap(), "ready");
     }
