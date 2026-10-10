@@ -1,4 +1,4 @@
-//! Custom-theme file watching with a debounced reload that keeps the last good theme.
+//! Custom-theme file watching with a debounced reload; a failed load keeps the last good theme.
 use super::fs_watch::{
     ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher, watch_with_error_handler,
 };
@@ -102,7 +102,10 @@ impl ThemeState {
         self.lifecycle.watch.borrow_mut().timer = Some(timer);
     }
 
-    /// Reread the selected file and publish it; any failure keeps the last good theme.
+    /// Reread the selected file and publish it.
+    ///
+    /// A loading failure keeps the last good theme. A callback failure is suppressed and
+    /// nothing the callback changed is rolled back.
     fn reload(&self, name: &str, path: &str) {
         let _fired = self.lifecycle.watch.borrow_mut().timer.take();
         if self.lifecycle.name.borrow().as_deref() != Some(name) || !self.operations.exists(path) {

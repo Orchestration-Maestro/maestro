@@ -1,5 +1,7 @@
 //! Native adapter: notification projection and error delivery.
 use super::native::{NativeThemeWatchOperations, entry_names};
+use super::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher};
+use crate::theme::{NativeThemeOperations, ThemeDirectories, ThemeState};
 use notify::event::{
     AccessKind, CreateKind, DataChange, MetadataKind, ModifyKind, RemoveKind, RenameMode,
 };
@@ -7,6 +9,7 @@ use notify::{Event, EventKind};
 use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::time::Duration;
 use tokio::task::LocalSet;
 
 /// An event of `kind` about the given paths.
@@ -188,41 +191,66 @@ fn theme_native_drop_inside_a_callback_stops_queued_notifications() {
     std::fs::remove_dir_all(&dir).unwrap();
 }
 
+/// Native effects that keep each watch's result channel so a test can inject results.
+struct Injecting {
+    /// Native effects that create the watches and timers.
+    operations: NativeThemeWatchOperations,
+    /// Result channel of the latest watch.
+    results: RefCell<Option<tokio::sync::mpsc::UnboundedSender<notify::Result<Event>>>>,
+    /// Number of reloads scheduled.
+    scheduled: Cell<usize>,
+}
+
+impl ThemeWatchOperations for Injecting {
+    fn watch(
+        &self,
+        path: &str,
+        listener: Rc<dyn Fn(Option<String>)>,
+        on_error: Rc<dyn Fn()>,
+    ) -> std::io::Result<Box<dyn ThemeWatcher>> {
+        let (watcher, results) = self.operations.open(path, listener, on_error)?;
+        *self.results.borrow_mut() = Some(results);
+        Ok(Box::new(watcher))
+    }
+
+    fn schedule(&self, delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn ThemeReloadTimer> {
+        self.scheduled.set(self.scheduled.get() + 1);
+        self.operations.schedule(delay, callback)
+    }
+}
+
 #[test]
-fn theme_native_error_closes_through_the_handler_and_releases_the_listener() {
+fn theme_native_error_closes_through_the_state_and_releases_the_listener() {
     let dir = std::env::temp_dir().join(format!("maestro-watch-error-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("a.json"), "{}").unwrap();
     let harness = Harness::new();
-    let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
-    let delivered = Rc::new(Cell::new(0));
-    let (close, count) = (Rc::clone(&slot), Rc::clone(&delivered));
-    let (watcher, results) = harness
-        .operations
-        .open(
-            dir.to_str().unwrap(),
-            Rc::new(move |_| count.set(count.get() + 1)),
-            Rc::new(move || {
-                let closing = close.borrow_mut().take();
-                if let Some(mut watcher) = closing {
-                    super::ThemeWatcher::close(&mut watcher).unwrap();
-                }
-            }),
-        )
-        .unwrap();
-    *slot.borrow_mut() = Some(watcher);
+    let injecting = Rc::new(Injecting {
+        operations: NativeThemeWatchOperations::new(Rc::clone(&harness.local)),
+        results: RefCell::default(),
+        scheduled: Cell::new(0),
+    });
+    let state = Rc::new(ThemeState::new(
+        ThemeDirectories {
+            themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme").to_owned(),
+            custom_themes_dir: dir.to_str().unwrap().to_owned(),
+        },
+        Rc::new(NativeThemeOperations),
+    ));
+    state.select("a");
+    state.start_theme_watcher(Some(Rc::clone(&injecting) as Rc<dyn ThemeWatchOperations>));
+    let results = injecting.results.borrow().clone().unwrap();
     results
         .send(Err(notify::Error::generic("simulated failure")))
         .unwrap();
-    let path = dir.join("after.json");
     results
         .send(Ok(event(
             EventKind::Create(CreateKind::File),
-            &[path.to_str().unwrap()],
+            &[dir.join("a.json").to_str().unwrap()],
         )))
         .unwrap();
     harness.local.block_on(&harness.runtime, results.closed());
-    assert_eq!(delivered.get(), 0);
-    assert!(slot.borrow().is_none());
-    assert_eq!(Rc::strong_count(&delivered), 1);
+    assert_eq!(injecting.scheduled.get(), 0);
+    drop(state);
     std::fs::remove_dir_all(&dir).unwrap();
 }

@@ -224,16 +224,114 @@ fn theme_named_switch_reports_failure_after_fallback() {
     assert_eq!(published(&state), "dark");
     assert_eq!(seen.borrow().len(), 2);
 
-    let broken = Rc::new(ThemeState::new(
+    scratch.write("custom/invalid.json", "{");
+    let selection = match state.set_theme("invalid", None).unwrap() {
+        ThemeChangeResult::Failure { error } => error,
+        ThemeChangeResult::Success => panic!("an unparsable file must not load"),
+    };
+    let broken = broken_shipped_state(&scratch, &ops);
+    let error = broken.set_theme("invalid", None).unwrap_err().to_string();
+    assert_ne!(error, selection);
+    assert_eq!(error, "No such file or directory (os error 2)");
+    assert!(broken.theme().get().is_err());
+}
+
+/// A state whose shipped theme directory does not exist, so no fallback can load.
+#[cfg(test)]
+fn broken_shipped_state(scratch: &Scratch, ops: &Rc<Ops>) -> Rc<ThemeState> {
+    Rc::new(ThemeState::new(
         maestro_theme::ThemeDirectories {
             themes_dir: scratch.path("absent"),
             custom_themes_dir: scratch.path("custom"),
         },
-        Rc::clone(&ops) as Rc<dyn ThemeOperations>,
-    ));
-    let error = broken.set_theme("missing", None).unwrap_err();
-    assert!(!error.to_string().contains("Theme not found"), "{error}");
+        Rc::clone(ops) as Rc<dyn ThemeOperations>,
+    ))
+}
+
+#[test]
+fn theme_failed_initialization_reports_the_fallback_error_not_the_selection_error() {
+    let scratch = Scratch::new("init-errors");
+    let ops = Ops::new(&[]);
+    scratch.write("custom/invalid.json", "{");
+    let healthy = state(&scratch, &ops);
+    healthy.init_theme(Some("invalid"), None).unwrap();
+    assert_eq!(published(&healthy), "dark");
+
+    let broken = broken_shipped_state(&scratch, &ops);
+    let error = broken.init_theme(Some("invalid"), None).unwrap_err();
+    assert_eq!(error.to_string(), "No such file or directory (os error 2)");
     assert!(broken.theme().get().is_err());
+}
+
+/// Effects that run `during_load` once, inside the first read of the custom file.
+#[cfg(test)]
+struct ProbeOps {
+    /// Real effects.
+    inner: Rc<Ops>,
+    /// File whose first read triggers the probe.
+    target: String,
+    /// Probe to run, taken on first use.
+    during_load: RefCell<Option<Box<dyn FnOnce()>>>,
+}
+
+#[cfg(test)]
+impl ThemeOperations for ProbeOps {
+    fn read_to_string(&self, path: &str) -> std::io::Result<String> {
+        let probe = if path == self.target {
+            self.during_load.borrow_mut().take()
+        } else {
+            None
+        };
+        if let Some(probe) = probe {
+            probe();
+        }
+        self.inner.read_to_string(path)
+    }
+    fn environment(&self, name: &str) -> Option<String> {
+        self.inner.environment(name)
+    }
+    fn exists(&self, path: &str) -> bool {
+        self.inner.exists(path)
+    }
+    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
+        self.inner.read_dir(path)
+    }
+    fn sort_by_name(&self, themes: &mut [maestro_theme::ThemeInfo]) -> std::io::Result<()> {
+        self.inner.sort_by_name(themes)
+    }
+}
+
+#[test]
+fn theme_selected_name_is_recorded_before_loading() {
+    let scratch = Scratch::new("select-first");
+    let ops = Ops::new(&[]);
+    put(&scratch, "a.json", "a", "#112233");
+    let seen = Rc::new(RefCell::new(None));
+    let slot: Rc<RefCell<Option<Rc<ThemeState>>>> = Rc::default();
+    let (probe_state, probe_seen) = (Rc::clone(&slot), Rc::clone(&seen));
+    let probe = Rc::new(ProbeOps {
+        inner: Rc::clone(&ops),
+        target: custom_path(&scratch, "a.json"),
+        during_load: RefCell::new(Some(Box::new(move || {
+            let state = probe_state.borrow().clone().unwrap();
+            *probe_seen.borrow_mut() = Some(state.get_resolved_theme_colors(None));
+        }))),
+    });
+    let state = Rc::new(ThemeState::new(
+        maestro_theme::ThemeDirectories {
+            themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme").to_owned(),
+            custom_themes_dir: scratch.path("custom"),
+        },
+        probe as Rc<dyn ThemeOperations>,
+    ));
+    *slot.borrow_mut() = Some(Rc::clone(&state));
+    state.init_theme(Some("dark"), None).unwrap();
+
+    state.init_theme(Some("a"), None).unwrap();
+    let resolved = seen.borrow_mut().take().unwrap().unwrap();
+    let accent = resolved.iter().find(|(key, _)| key == "accent").unwrap();
+    assert_eq!(accent.1, "#112233");
+    *slot.borrow_mut() = None;
 }
 
 #[test]
@@ -424,7 +522,8 @@ fn theme_watch_start_replaces_old_handles_and_timers() {
     assert_eq!(fake.watches.borrow().len(), 2);
     assert_eq!(fake.watches.borrow()[1].path, scratch.path("custom"));
 
-    for name in ["dark", "light", "registered"] {
+    put(&scratch, ".json", "", "#010203");
+    for name in ["dark", "light", "registered", ""] {
         let fresh = Rc::new(ThemeState::new(
             maestro_theme::ThemeDirectories {
                 themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme").to_owned(),
@@ -725,4 +824,26 @@ fn theme_drop_cancels_pending_reload() {
     fake.advance(200);
     assert_eq!(calls.get(), 0);
     assert_eq!(live.get().unwrap().name(), Some("a"));
+}
+
+#[test]
+fn theme_native_watch_stop_releases_operations_and_task_set_without_reads() {
+    let scratch = Scratch::new("native-stop");
+    let ops = Ops::new(&[]);
+    let state = state(&scratch, &ops);
+    put(&scratch, "a.json", "a", "#112233");
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let native: Rc<dyn ThemeWatchOperations> = Rc::new(
+        maestro_theme::NativeThemeWatchOperations::new(Rc::clone(&local)),
+    );
+    state.init_theme(Some("a"), Some(native)).unwrap();
+    assert_eq!(Rc::strong_count(&local), 2);
+    assert!(Rc::weak_count(&state) > 0);
+
+    state.stop_theme_watcher();
+    assert_eq!(Rc::strong_count(&local), 1);
+    let local = Rc::into_inner(local).expect("the state released its operations");
+    drop(local);
+    assert_eq!(Rc::weak_count(&state), 0);
+    assert_eq!(published(&state), "a");
 }
