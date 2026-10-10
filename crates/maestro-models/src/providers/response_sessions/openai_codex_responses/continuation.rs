@@ -42,7 +42,8 @@ impl Request {
     }
 }
 
-/// What a cached connection remembers of its last completed request.
+/// What a cached connection remembers of its most recent completion with a nonempty response
+/// identifier.
 pub(super) struct Continuation {
     /// Complete prepared body of the completed request.
     body: Value,

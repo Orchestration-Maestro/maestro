@@ -207,7 +207,7 @@ impl PackageOperations for Sandbox {
     }
 }
 
-pub use super::native_support::Scratch;
+pub use super::scratch::Scratch;
 
 /// The shared progress log.
 pub type Events = Rc<RefCell<Vec<ProgressEvent>>>;

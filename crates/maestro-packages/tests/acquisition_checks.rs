@@ -2,6 +2,7 @@
 #![cfg(test)]
 mod native_support;
 mod sandbox;
+mod scratch;
 use maestro_packages::{
     InstalledSourceScope::{Project, User},
     PackageManager, ProgressAction, ProgressCallback, ProgressEventType as Phase, parse_git_url,

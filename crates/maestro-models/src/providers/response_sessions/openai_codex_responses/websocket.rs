@@ -413,7 +413,10 @@ async fn connect(
 /// Send one request over the session's cached socket or a new one: the input suffix with the
 /// previous response identifier when the cached-context transport is selected and [`select`]
 /// accepts the retained context, otherwise the full request. The result decides what the lease
-/// keeps: see [`retain`] and `Lease::keep`; a failure clears the context.
+/// keeps: see [`retain`] and `Lease::keep`; an exchange or retention failure on a cached entry
+/// clears its context, while an uncached connection and earlier failures leave the owner's
+/// context intact, except that acquiring the connection first evicts a mismatched or ended idle
+/// entry with its context.
 pub(crate) async fn process_web_socket_stream(
     prepared: &PreparedRequest,
     model: &Arc<Model>,

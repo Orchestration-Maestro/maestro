@@ -420,7 +420,7 @@ impl Probe {
         }
         apply_event_edits(event, &directive)?;
         if directive.mark {
-            mark(event);
+            mark(event)?;
         }
         if let Some(document) = directive.replace_with {
             *event = event_from(document)?;
@@ -515,7 +515,7 @@ fn assign_result_number(result: &mut ExtensionEventResult, number: f64) {
 }
 
 /// Edits the field of the event that tells the kinds apart.
-fn mark(event: &mut ExtensionEvent) {
+fn mark(event: &mut ExtensionEvent) -> ExtensionResult<()> {
     let changed = || "changed".to_owned();
     match event {
         ExtensionEvent::ModelSelect(event) => event.model.name = changed(),
@@ -557,11 +557,14 @@ fn mark(event: &mut ExtensionEvent) {
         }
         ExtensionEvent::BeforeProviderRequest(request) => request.payload = changed(),
         ExtensionEvent::AfterProviderResponse(response) => response.status = 201.0,
-        ExtensionEvent::ToolCall(event) => tool_author::mark(&mut event.input, &event.tool_name),
+        ExtensionEvent::ToolCall(event) => {
+            return tool_author::mark(&mut event.input, &event.tool_name);
+        }
         ExtensionEvent::ToolResult(event) => event.is_error = !event.is_error,
         ExtensionEvent::UserBash(event) => event.command = changed(),
         ExtensionEvent::Input(input) => input.text = changed(),
     }
+    Ok(())
 }
 
 /// The event a document describes, tagged with its kind; a compaction gets a signal that is
@@ -702,7 +705,11 @@ fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> 
                 Event::Done { message, .. } => message,
                 Event::Error { error, .. } => error,
             };
-            shared.write().unwrap().usage.total_tokens = value;
+            shared
+                .write()
+                .map_err(|e| e.to_string())?
+                .usage
+                .total_tokens = value;
         }
         ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => match field {
             Some("reserveTokens") => compact.preparation.settings.reserve_tokens = value,
@@ -815,7 +822,7 @@ fn apply_event_edits(event: &mut ExtensionEvent, directive: &Directive) -> Exten
     if directive.session_edit.as_deref() == Some("tool extra")
         && let ExtensionEvent::ToolCall(event) = event
     {
-        tool_author::mark_extra(&mut event.input);
+        tool_author::mark_extra(&mut event.input)?;
     }
     if let Some(edit) = &directive.session_edit {
         edit_session(event, edit);

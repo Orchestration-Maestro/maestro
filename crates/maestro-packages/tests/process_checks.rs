@@ -1,43 +1,25 @@
 //! Real children launched through the native package operations.
 #![cfg(unix)]
 #![cfg(test)]
+mod scratch;
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
     PackageOperations,
 };
 use maestro_settings::{Settings, SettingsManager};
+use scratch::Scratch;
 use serde_json::json;
 use std::{
     cell::{Cell, RefCell},
     io::Read,
-    path::{Path, PathBuf},
+    path::Path,
     process::Command,
     rc::Rc,
 };
 
-/// A disposable directory removed on drop.
-struct Scratch(PathBuf);
-impl Scratch {
-    /// Creates a fresh directory with an unused name.
-    fn new() -> Self {
-        let nanos = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("maestro-process-{}-{nanos}", std::process::id()));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
-    }
-    /// A path below the directory.
-    fn at(&self, relative: &str) -> String {
-        self.0.join(relative).to_string_lossy().into_owned()
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        assert!(std::fs::remove_dir_all(&self.0).is_ok());
-    }
+/// A path below the directory.
+fn at(root: &Scratch, relative: &str) -> String {
+    root.0.join(relative).to_string_lossy().into_owned()
 }
 
 /// A runtime with process support for driving native futures.
@@ -58,8 +40,8 @@ fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<Native
     ));
     DefaultPackageManager::new(
         PackageManagerOptions {
-            cwd: root.at("project"),
-            agent_dir: root.at("agent"),
+            cwd: at(root, "project"),
+            agent_dir: at(root, "agent"),
             settings_manager: Rc::new(RefCell::new(settings)),
         },
         NativePackageOperations::new(
@@ -80,8 +62,19 @@ fn direct() -> NativePackageOperations {
 }
 
 #[test]
+fn parallel_scratch_directories_are_all_created_and_distinct() {
+    let threads: Vec<_> = (0..32)
+        .map(|_| std::thread::spawn(|| Scratch::new().unwrap()))
+        .collect();
+    let scratches: Vec<_> = threads.into_iter().map(|t| t.join().unwrap()).collect();
+    let paths: std::collections::HashSet<_> = scratches.iter().map(|s| s.0.clone()).collect();
+    assert_eq!(paths.len(), 32);
+    assert!(scratches.iter().all(|s| s.0.is_dir()));
+}
+
+#[test]
 fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
-    let root = Scratch::new();
+    let root = Scratch::new().unwrap();
     let runtime = runtime();
     let install = |script: &str| {
         let manager = manager_running(script, &root);
@@ -97,7 +90,7 @@ fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
         "/bin/sh -c kill -9 $$ # install -g x failed with code null"
     );
 
-    let (held, done) = (root.at("held.fifo"), root.at("done.fifo"));
+    let (held, done) = (at(&root, "held.fifo"), at(&root, "done.fifo"));
     for fifo in [&held, &done] {
         assert!(Command::new("mkfifo").arg(fifo).status().unwrap().success());
     }
@@ -163,12 +156,12 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
         stdio_launches(Path::new(&root));
         return;
     }
-    let root = Scratch::new();
+    let root = Scratch::new().unwrap();
     for directory in ["ambient", "target"] {
-        std::fs::create_dir(root.at(directory)).unwrap();
+        std::fs::create_dir(at(&root, directory)).unwrap();
     }
-    std::fs::write(root.at("input"), "line1\nline2\nline3\n").unwrap();
-    let (out, err) = (root.at("out"), root.at("err"));
+    std::fs::write(at(&root, "input"), "line1\nline2\nline3\n").unwrap();
+    let (out, err) = (at(&root, "out"), at(&root, "err"));
     let status = Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
@@ -176,8 +169,8 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
             "--nocapture",
         ])
         .env(STDIO_CHILD, &root.0)
-        .current_dir(root.at("ambient"))
-        .stdin(std::fs::File::open(root.at("input")).unwrap())
+        .current_dir(at(&root, "ambient"))
+        .stdin(std::fs::File::open(at(&root, "input")).unwrap())
         .stdout(std::fs::File::create(&out).unwrap())
         .stderr(std::fs::File::create(&err).unwrap())
         .status()
@@ -282,8 +275,8 @@ fn native_local_repository_installs_checks_out_and_removes() {
         repository_scenario(Path::new(&root));
         return;
     }
-    let root = Scratch::new();
-    let repository = root.at("origin");
+    let root = Scratch::new().unwrap();
+    let repository = at(&root, "origin");
     std::fs::create_dir(&repository).unwrap();
     git(&repository, &["init", "-q"]);
     for (text, tag) in [("one", true), ("two", false)] {
@@ -336,7 +329,7 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
         None
     );
 
-    let root = Scratch::new();
+    let root = Scratch::new().unwrap();
     let settings = Rc::new(RefCell::new(SettingsManager::in_memory(Settings(
         json!({"npmCommand": ["/nonexistent/maestro-binary"]})
             .as_object()
@@ -345,8 +338,8 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
     ))));
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
-            cwd: root.at("project"),
-            agent_dir: root.at("agent"),
+            cwd: at(&root, "project"),
+            agent_dir: at(&root, "agent"),
             settings_manager: settings,
         },
         direct(),

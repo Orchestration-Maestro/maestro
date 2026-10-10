@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 mod native_support;
+mod scratch;
 use maestro_packages::{CommandCaptureOptions, NativePackageOperations, PackageOperations};
 use std::{io, rc::Rc, time::Duration};
 
@@ -33,7 +34,7 @@ fn shell(script: &str, timeout: Option<Duration>) -> io::Result<String> {
 /// One descendant controlled through native FIFO producer acknowledgements.
 struct Producer {
     /// Owned paths.
-    scratch: native_support::Scratch,
+    scratch: scratch::Scratch,
     /// Release sent only after the producer's readiness witness.
     release: std::sync::mpsc::Sender<()>,
     /// The joined native FIFO peer.
@@ -44,13 +45,14 @@ struct Producer {
 impl Producer {
     /// Creates native pipes, with a thread that acknowledges and waits for release.
     fn new() -> Self {
-        use std::io::Read;
-        let scratch = native_support::Scratch::new().unwrap();
+        use std::io::{Read, Write};
+        let scratch = scratch::Scratch::new().unwrap();
         let ready = scratch.0.join("ready");
         let permit = scratch.0.join("permit");
+        let written = scratch.0.join("written");
         assert!(
             std::process::Command::new("mkfifo")
-                .args([&ready, &permit])
+                .args([&ready, &permit, &written])
                 .status()
                 .unwrap()
                 .success()
@@ -66,7 +68,21 @@ impl Producer {
             assert_eq!(text, "ready");
             send.send(()).unwrap();
             wait.recv().unwrap();
-            std::fs::write(permit, "go\n").unwrap();
+            // Read-write open never waits for a reader, which a terminated shell may never be.
+            let mut permit = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(permit)
+                .unwrap();
+            permit.write_all(b"go\n").unwrap();
+            let mut written = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(written)
+                .unwrap();
+            written.write_all(b"x\n").unwrap();
+            // Closing the last descriptor discards unread FIFO bytes, so hold it until the capture ends.
+            wait.recv().unwrap();
         });
         Self {
             scratch,
@@ -75,10 +91,21 @@ impl Producer {
             ready: receive,
         }
     }
+    /// The pause that returns only once the permit has been written.
+    fn after_permit_written(&self) -> String {
+        format!(
+            "read written < '{}'",
+            self.scratch.0.join("written").display()
+        )
+    }
     /// The shell's acknowledgement followed by its blocking read.
     fn gate(&self) -> String {
+        self.gate_after("true")
+    }
+    /// The acknowledgement, then `pause`, then the blocking read.
+    fn gate_after(&self, pause: &str) -> String {
         format!(
-            "printf ready > '{}'; read permit < '{}'",
+            "printf ready > '{}'; {pause}; read permit < '{}'",
             self.scratch.0.join("ready").display(),
             self.scratch.0.join("permit").display()
         )
@@ -143,12 +170,42 @@ fn capture_failure_keeps_stream_precedence_and_signal() {
     );
 }
 
+/// The inherited path the re-executed test binary runs with.
+const INHERITED_PATH: &str = "/usr/bin:/bin:/maestro-inherited";
+
 #[test]
 fn capture_inherits_environment_and_applies_scoped_overrides() {
-    let scratch = native_support::Scratch::new().unwrap();
+    use std::io::Write;
+    const NAME: &str = "capture_inherits_environment_and_applies_scoped_overrides";
+    if std::env::var_os("MAESTRO_CAPTURE_REEXEC").is_none() {
+        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", NAME, "--test-threads=1"])
+            .env("MAESTRO_CAPTURE_REEXEC", "1")
+            .env("MAESTRO_INHERITED", "parent")
+            .env("PATH", INHERITED_PATH)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(b"parent stdin bytes\n")
+            .unwrap();
+        let output = child.wait_with_output().unwrap();
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(output.status.success(), "{text}");
+        assert!(text.contains("1 passed"), "{text}");
+        return;
+    }
+    let scratch = scratch::Scratch::new().unwrap();
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
-    let args=["-c", "test -n \"$PATH\"; test -z \"$(cat)\"; printf '%s|%s|%s' \"$MAESTRO_CAPTURE_VALUE\" \"$PWD\" \"$1\"", "fixture", "a; b  c"].map(str::to_owned);
+    let script = format!(
+        "test \"$PATH\" = '{INHERITED_PATH}' && test \"$MAESTRO_INHERITED\" = parent && test -z \"$(cat)\" && printf '%s|%s|%s' \"$MAESTRO_CAPTURE_VALUE\" \"$PWD\" \"$1\""
+    );
+    let args = ["-c", &script, "fixture", "a; b  c"].map(str::to_owned);
     let cwd = scratch.0.to_string_lossy();
     let output = runtime()
         .block_on(operations.run_command_capture(
@@ -223,28 +280,54 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
             .await
     });
     let (early, captured) = runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
-            .await
-            .unwrap()
-            .unwrap();
+        producer.ready.await.unwrap();
         let early = result.is_finished();
         producer.release.send(()).unwrap();
-        let captured = tokio::time::timeout(Duration::from_secs(5), result)
-            .await
-            .unwrap()
-            .unwrap()
-            .unwrap();
+        let captured = result.await.unwrap().unwrap();
         (early, captured)
     }));
+    producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
     assert!(!early, "capture completed before descendant EOF");
     assert_eq!(captured, "earlytail");
 }
 
 #[test]
-#[ignore = "hangs when the shell is terminated before it opens the permit FIFO; rewritten with a frozen deadline"]
+fn capture_completes_when_the_shell_opens_the_permit_late() {
+    let producer = Producer::new();
+    let script = format!(
+        "parent=$$; (while kill -0 \"$parent\" 2>/dev/null; do :; done; {}; printf tail) & printf early; exit 0",
+        producer.gate_after(&producer.after_permit_written())
+    );
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let runtime = runtime();
+    let result = local.spawn_local(async move {
+        operations
+            .run_command_capture(
+                "/bin/sh",
+                &["-c".into(), script],
+                CommandCaptureOptions {
+                    cwd: None,
+                    timeout: None,
+                    env: &[],
+                },
+            )
+            .await
+    });
+    let captured = runtime.block_on(local.run_until(async {
+        producer.ready.await.unwrap();
+        producer.release.send(()).unwrap();
+        result.await.unwrap().unwrap()
+    }));
+    producer.release.send(()).unwrap();
+    producer.thread.join().unwrap();
+    assert_eq!(captured, "earlytail");
+}
+
+#[test]
 fn capture_timeout_covers_streams_and_sends_termination() {
-    let scratch = native_support::Scratch::new().unwrap();
+    let scratch = scratch::Scratch::new().unwrap();
     let marker = scratch.0.join("terminated");
     native_support::write(marker.to_str().unwrap(), "waiting");
     let producer = Producer::new();
@@ -270,25 +353,21 @@ fn capture_timeout_covers_streams_and_sends_termination() {
             )
             .await
     });
+    let ready = producer.ready;
     runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
+        // The deadline starts on a frozen clock; a blocking wait keeps the
+        // clock from advancing until the child has installed its trap.
+        tokio::time::pause();
+        tokio::task::spawn_blocking(move || ready.blocking_recv())
             .await
             .unwrap()
             .unwrap();
-        tokio::time::pause();
+        producer.release.send(()).unwrap();
         tokio::time::advance(Duration::from_millis(101)).await;
         tokio::time::resume();
-        producer.release.send(()).unwrap();
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(5), result)
-                .await
-                .unwrap()
-                .unwrap()
-                .unwrap_err()
-                .to_string(),
-            expected
-        );
+        assert_eq!(result.await.unwrap().unwrap_err().to_string(), expected);
     }));
+    producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
     assert_eq!(std::fs::read_to_string(marker).unwrap(), "terminated");
 }
@@ -318,30 +397,20 @@ fn capture_timeout_covers_descendant_streams() {
             .await
     });
     runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
-            .await
-            .unwrap()
-            .unwrap();
+        producer.ready.await.unwrap();
         tokio::time::pause();
         tokio::time::advance(Duration::from_millis(10001)).await;
         tokio::time::resume();
         producer.release.send(()).unwrap();
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(5), result)
-                .await
-                .unwrap()
-                .unwrap()
-                .unwrap_err()
-                .to_string(),
-            expected
-        );
+        assert_eq!(result.await.unwrap().unwrap_err().to_string(), expected);
     }));
+    producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
 }
 
 #[test]
 fn capture_spawn_error_does_not_gain_command_wrapping() {
-    let scratch = native_support::Scratch::new().unwrap();
+    let scratch = scratch::Scratch::new().unwrap();
     let missing = scratch.0.join("missing").to_string_lossy().into_owned();
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);

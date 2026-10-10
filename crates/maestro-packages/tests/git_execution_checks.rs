@@ -73,6 +73,7 @@ fn git_fetch_compares_refreshed_heads_before_replacement() {
 
 mod native_git;
 mod native_support;
+mod scratch;
 
 #[test]
 fn git_native_current_preserves_dirty_and_untracked_contents() {

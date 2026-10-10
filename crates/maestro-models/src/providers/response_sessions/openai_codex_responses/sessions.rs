@@ -85,7 +85,7 @@ pub(super) struct Entry {
     state: Mutex<State>,
     /// The close request, kept even while nothing listens.
     close: watch::Sender<Option<CloseReason>>,
-    /// Context of the last completed request.
+    /// Context of the most recent completion with a nonempty response identifier.
     pub(super) continuation: Mutex<Option<Continuation>>,
 }
 

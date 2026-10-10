@@ -2,10 +2,12 @@
 #![cfg(test)]
 #![cfg(unix)]
 mod native_support;
+mod scratch;
 mod support;
 mod worker_support;
 use maestro_packages::{
-    DefaultPackageManager, InstalledSourceScope, NativePackageOperations, PackageManagerOptions,
+    CommandCaptureOptions, CommandOutput, DefaultPackageManager, InstalledSourceScope,
+    NativePackageOperations, PackageFuture, PackageManagerOptions, PackageOperations,
     PackageUpdateType,
 };
 use maestro_settings::{Settings, SettingsManager};
@@ -23,7 +25,7 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
     effects.exists.set(true);
     let controlled = Rc::new(manager);
     let (runtime, local) = driver(&effects);
-    let scratch = native_support::Scratch::new().unwrap();
+    let scratch = scratch::Scratch::new().unwrap();
     let cwd = scratch.0.to_string_lossy().into_owned();
     native_support::write(
         &format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
@@ -896,9 +898,108 @@ fn git_at(path: &std::path::Path, args: &[&str]) -> String {
     assert!(output.status.success(), "sandbox Git command failed");
     String::from_utf8(output.stdout).unwrap().trim().into()
 }
+/// Native effects that record every captured command's arguments.
+struct RecordingNative {
+    /// The real adapter every call is delegated to.
+    inner: NativePackageOperations,
+    /// Arguments of each captured command, in call order.
+    captured: Rc<RefCell<Vec<Vec<String>>>>,
+}
+impl PackageOperations for RecordingNative {
+    fn read_file(&self, path: &str) -> std::io::Result<String> {
+        self.inner.read_file(path)
+    }
+    fn offline_value(&self) -> Option<String> {
+        self.inner.offline_value()
+    }
+    fn run_command_capture<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: CommandCaptureOptions<'a>,
+    ) -> PackageFuture<'a, String> {
+        let mut call = vec![command.to_owned()];
+        call.extend_from_slice(args);
+        self.captured.borrow_mut().push(call);
+        self.inner.run_command_capture(command, args, options)
+    }
+    fn spawn(
+        &self,
+        operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
+    ) -> std::io::Result<()> {
+        self.inner.spawn(operation)
+    }
+    fn exists(&self, path: &str) -> bool {
+        self.inner.exists(path)
+    }
+    fn home_dir(&self) -> std::io::Result<String> {
+        self.inner.home_dir()
+    }
+    fn current_dir(&self) -> std::io::Result<String> {
+        self.inner.current_dir()
+    }
+    fn drive_directory(&self, drive: char) -> Option<String> {
+        self.inner.drive_directory(drive)
+    }
+    fn run_command_sync(&self, command: &str, args: &[String]) -> std::io::Result<CommandOutput> {
+        self.inner.run_command_sync(command, args)
+    }
+    fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
+        self.inner.create_dir_all(path)
+    }
+    fn write_file(&self, path: &str, text: &str) -> std::io::Result<()> {
+        self.inner.write_file(path, text)
+    }
+    fn directory_is_empty(&self, path: &str) -> std::io::Result<bool> {
+        self.inner.directory_is_empty(path)
+    }
+    fn remove_path(&self, path: &str) -> std::io::Result<()> {
+        self.inner.remove_path(path)
+    }
+    fn run_command<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        cwd: Option<&'a str>,
+    ) -> PackageFuture<'a, Option<i32>> {
+        self.inner.run_command(command, args, cwd)
+    }
+}
+
+/// Wires recording native effects to the test's surviving settings and local runtime.
+fn recording_manager(
+    cwd: &str,
+    settings: &Rc<RefCell<SettingsManager>>,
+    local: &Rc<tokio::task::LocalSet>,
+    captured: &Rc<RefCell<Vec<Vec<String>>>>,
+) -> Rc<DefaultPackageManager<RecordingNative>> {
+    Rc::new(DefaultPackageManager::new(
+        PackageManagerOptions {
+            cwd: cwd.into(),
+            agent_dir: format!("{cwd}/agent"),
+            settings_manager: settings.clone(),
+        },
+        RecordingNative {
+            inner: NativePackageOperations::new(|_| false, Rc::new(|| false), local),
+            captured: captured.clone(),
+        },
+    ))
+}
+
+/// Asserts the availability check ran Git, and only its two read-only queries.
+fn assert_only_read_commands(calls: &[Vec<String>]) {
+    assert!(!calls.is_empty());
+    assert!(
+        calls
+            .iter()
+            .all(|call| call[0] == "git" && matches!(call[1].as_str(), "rev-parse" | "ls-remote")),
+        "{calls:?}"
+    );
+}
+
 #[test]
 fn native_git_availability_leaves_head_and_contents_unchanged() {
-    let scratch = native_support::Scratch::new().unwrap();
+    let scratch = scratch::Scratch::new().unwrap();
     let root = &scratch.0;
     let (author, install) = seed_git(root);
     let original = git_at(&install, &["rev-parse", "HEAD"]);
@@ -916,7 +1017,9 @@ fn native_git_availability_leaves_head_and_contents_unchanged() {
         .enable_all()
         .build()
         .unwrap();
-    let manager = native_manager(root.to_str().unwrap(), settings.clone(), &local);
+    let captured = Rc::new(RefCell::new(Vec::new()));
+    let manager = recording_manager(root.to_str().unwrap(), &settings, &local, &captured);
+    std::fs::write(install.join("untracked"), "mine").unwrap();
     assert!(
         runtime
             .block_on(local.run_until(manager.check_for_available_updates()))
@@ -949,6 +1052,11 @@ fn native_git_availability_leaves_head_and_contents_unchanged() {
         std::fs::read_to_string(install.join("contents")).unwrap(),
         "one"
     );
+    assert_eq!(
+        std::fs::read_to_string(install.join("untracked")).unwrap(),
+        "mine"
+    );
+    assert_only_read_commands(&captured.borrow());
     assert_eq!(settings.borrow().get_project_settings(), before);
 }
 
