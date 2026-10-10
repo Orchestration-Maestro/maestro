@@ -1,4 +1,4 @@
-//! Four owned workers with indexed results and independent failure delivery.
+//! Up to four owned workers with indexed results and independent failure delivery.
 use super::{
     DefaultPackageManager, PackageOperations,
     update::{Candidate, PackageUpdate},

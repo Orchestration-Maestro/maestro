@@ -22,7 +22,7 @@ individual npm/Git checks read the value again before probing.
 
 Pass a caller-owned `Rc<tokio::task::LocalSet>` to `NativePackageOperations::new`
 and drive it inside a Tokio runtime with process and timer support. The adapter
-retains the local set weakly. Four workers preserve input result order, even when
+retains the local set weakly. Up to four workers preserve input result order, even when
 checks finish out of order. The first worker error rejects the check; admitted
 siblings continue claiming sources while the caller drives the local runtime.
 A dropped runtime rejects admission when work is required; an empty or offline
@@ -30,7 +30,7 @@ check needs no admission.
 
 ## Captured commands
 
-`PackageOperations::run_command_capture` takes literal arguments and
+`PackageOperations::run_command_capture` takes arguments, which a shell-selected command interpolates as authored text, and
 `CommandCaptureOptions` for cwd, an optional deadline and environment overrides.
 Native capture returns trimmed stdout after child exit and both pipe EOFs;
 success does not substitute stderr. It ignores stdin and does not query stdout

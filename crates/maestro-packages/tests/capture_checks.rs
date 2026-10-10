@@ -246,17 +246,55 @@ fn capture_timeout_covers_streams_and_sends_termination() {
     let scratch = native_support::Scratch::new().unwrap();
     let marker = scratch.0.join("terminated");
     native_support::write(marker.to_str().unwrap(), "waiting");
+    let producer = Producer::new();
     let script = format!(
-        "trap 'printf terminated > {}; exit 0' TERM; while :; do :; done",
-        marker.display()
+        "trap 'printf terminated > {}; exit 0' TERM; {}; while :; do :; done",
+        marker.display(),
+        producer.gate()
     );
-    assert_eq!(
-        shell(&script, Some(Duration::from_millis(100)))
-            .unwrap_err()
-            .to_string(),
-        format!("/bin/sh -c {script} timed out after 100ms")
-    );
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let runtime = runtime();
+    let expected = format!("/bin/sh -c {script} timed out after 100ms");
+    let result = local.spawn_local(async move {
+        operations
+            .run_command_capture(
+                "/bin/sh",
+                &["-c".into(), script],
+                CommandCaptureOptions {
+                    cwd: None,
+                    timeout: Some(Duration::from_millis(100)),
+                    env: &[],
+                },
+            )
+            .await
+    });
+    runtime.block_on(local.run_until(async {
+        tokio::time::timeout(Duration::from_secs(5), producer.ready)
+            .await
+            .unwrap()
+            .unwrap();
+        tokio::time::pause();
+        tokio::time::advance(Duration::from_millis(101)).await;
+        tokio::time::resume();
+        producer.release.send(()).unwrap();
+        assert_eq!(
+            tokio::time::timeout(Duration::from_secs(5), result)
+                .await
+                .unwrap()
+                .unwrap()
+                .unwrap_err()
+                .to_string(),
+            expected
+        );
+    }));
+    producer.thread.join().unwrap();
     assert_eq!(std::fs::read_to_string(marker).unwrap(), "terminated");
+}
+
+#[test]
+fn capture_timeout_covers_descendant_streams() {
+    let runtime = runtime();
     let producer = Producer::new();
     let script = format!(
         "parent=$$; (while kill -0 \"$parent\" 2>/dev/null; do :; done; {}; printf tail) & exit 0",
@@ -264,7 +302,6 @@ fn capture_timeout_covers_streams_and_sends_termination() {
     );
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
-    let runtime = runtime();
     let expected = format!("/bin/sh -c {script} timed out after 10000ms");
     let result = local.spawn_local(async move {
         operations
@@ -328,41 +365,7 @@ fn capture_spawn_error_does_not_gain_command_wrapping() {
 }
 
 #[test]
-fn capture_decodes_split_utf8_without_loss() {
-    let producer = Producer::new();
-    let script = format!("printf '\\342'; {}; printf '\\202\\254'", producer.gate());
-    let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
-    let runtime = runtime();
-    let result = local.spawn_local(async move {
-        operations
-            .run_command_capture(
-                "/bin/sh",
-                &["-c".into(), script],
-                CommandCaptureOptions {
-                    cwd: None,
-                    timeout: None,
-                    env: &[],
-                },
-            )
-            .await
-    });
-    runtime.block_on(local.run_until(async {
-        tokio::time::timeout(Duration::from_secs(5), producer.ready)
-            .await
-            .unwrap()
-            .unwrap();
-        producer.release.send(()).unwrap();
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(5), result)
-                .await
-                .unwrap()
-                .unwrap()
-                .unwrap(),
-            "€"
-        );
-    }));
-    producer.thread.join().unwrap();
+fn capture_replaces_invalid_utf8() {
     assert_eq!(shell("printf '\\342'", None).unwrap(), "�");
     assert_eq!(shell("printf '\\377'", None).unwrap(), "�");
 }

@@ -35,6 +35,8 @@ pub struct Effects {
     pub outputs: RefCell<VecDeque<io::Result<CommandOutput>>>,
     /// Whether contents exist.
     pub exists: std::cell::Cell<bool>,
+    /// Path prefixes whose contents are absent even when `exists` is set.
+    pub absent_under: RefCell<Vec<String>>,
     /// Demand-driven ambient reads.
     pub reads: RefCell<Vec<&'static str>>,
     /// Whether ambient reads fail.
@@ -116,6 +118,12 @@ impl PackageOperations for Controlled {
     fn exists(&self, path: &str) -> bool {
         self.0.paths.borrow_mut().push(path.into());
         self.0.exists.get()
+            && !self
+                .0
+                .absent_under
+                .borrow()
+                .iter()
+                .any(|prefix| path.starts_with(prefix.as_str()))
     }
     fn home_dir(&self) -> io::Result<String> {
         self.0.reads.borrow_mut().push("home");

@@ -145,3 +145,38 @@ fn exit_status(status: ExitStatus) -> String {
     }
     "signal unknown".into()
 }
+#[cfg(test)]
+mod tests {
+    use super::read_stream;
+    use std::{
+        io,
+        pin::Pin,
+        task::{Context, Poll},
+    };
+    use tokio::io::{AsyncRead, ReadBuf};
+
+    /// A reader that hands the consumer exactly one chunk per read.
+    struct Chunks(std::vec::IntoIter<&'static [u8]>);
+    impl AsyncRead for Chunks {
+        fn poll_read(
+            mut self: Pin<&mut Self>,
+            _: &mut Context<'_>,
+            buf: &mut ReadBuf<'_>,
+        ) -> Poll<io::Result<()>> {
+            if let Some(chunk) = self.0.next() {
+                buf.put_slice(chunk);
+            }
+            Poll::Ready(Ok(()))
+        }
+    }
+
+    #[test]
+    fn bytes_split_across_consumed_reads_decode_as_one_character() {
+        let chunks = Chunks(vec![&b"\xE2"[..], &b"\x82\xAC"[..]].into_iter());
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        let bytes = runtime.block_on(read_stream(Some(chunks))).unwrap();
+        assert_eq!(String::from_utf8_lossy(&bytes), "€");
+    }
+}

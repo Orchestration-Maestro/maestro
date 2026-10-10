@@ -201,14 +201,13 @@ fn availability_preserves_first_same_scope_source_and_pin_precedence() {
         &json!({"packages":["npm:shadow","npm:missing"]}),
         &json!([{"source":"npm:first","skills":["x"]}, "npm:first@1", "npm:shadow@latest", "npm:missing"]),
     );
+    effects.exists.set(true);
+    effects
+        .absent_under
+        .borrow_mut()
+        .push("/work/project/.maestro/npm/node_modules/missing".into());
     *effects.capture_hook.borrow_mut() = Some(Rc::new(|_, args, _| {
         assert_eq!(args[1], "first");
-        Box::pin(async { Ok("\"2\"".into()) })
-    }));
-    let absent = effects.clone();
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, args, _| {
-        assert_eq!(args[1], "first");
-        absent.exists.set(false);
         Box::pin(async { Ok("\"2\"".into()) })
     }));
     let original = settings.borrow().get_project_settings();
