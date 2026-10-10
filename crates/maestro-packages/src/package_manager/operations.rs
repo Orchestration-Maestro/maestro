@@ -10,8 +10,39 @@ pub struct CommandOutput {
     /// Captured standard error.
     pub stderr: String,
 }
+/// Operands for a captured child command.
+pub struct CommandCaptureOptions<'a> {
+    /// Authored child working directory.
+    pub cwd: Option<&'a str>,
+    /// Deadline measured after spawn; absent means unbounded.
+    pub timeout: Option<std::time::Duration>,
+    /// Environment pairs overlaid on the inherited environment.
+    pub env: &'a [(&'a str, &'a str)],
+}
 /// Effects supplied to the configured-source manager.
 pub trait PackageOperations {
+    /// Reads text with replacement decoding for invalid UTF-8.
+    /// # Errors
+    /// Returns a filesystem read failure.
+    fn read_file(&self, path: &str) -> io::Result<String>;
+    /// Reads the current offline setting from the environment.
+    fn offline_value(&self) -> Option<String>;
+    /// Captures stdout until child exit and both stream EOFs.
+    /// # Errors
+    /// Returns spawn, read, wait, deadline or unsuccessful-status failures.
+    fn run_command_capture<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: CommandCaptureOptions<'a>,
+    ) -> PackageFuture<'a, String>;
+    /// Admits owned local work into the caller-driven runtime.
+    /// # Errors
+    /// Returns the adapter's admission failure.
+    fn spawn(
+        &self,
+        operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
+    ) -> io::Result<()>;
     /// Whether a file or directory exists at the authored path.
     fn exists(&self, path: &str) -> bool;
     /// Returns the user's home directory.
@@ -62,6 +93,8 @@ pub trait PackageOperations {
 pub struct NativePackageOperations {
     /// Caller-owned shell selection.
     pub(super) should_use_shell: fn(&str) -> bool,
+    /// Weak handle to the caller-driven local runtime.
+    local: std::rc::Weak<tokio::task::LocalSet>,
     /// Caller-owned query for whether output is routed to standard error.
     pub(super) is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
 }
@@ -72,8 +105,10 @@ impl NativePackageOperations {
     pub fn new(
         should_use_shell: fn(&str) -> bool,
         is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
+        local: &std::rc::Rc<tokio::task::LocalSet>,
     ) -> Self {
         Self {
+            local: std::rc::Rc::downgrade(local),
             should_use_shell,
             is_stdout_taken_over,
         }
@@ -81,6 +116,31 @@ impl NativePackageOperations {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl PackageOperations for NativePackageOperations {
+    fn read_file(&self, path: &str) -> io::Result<String> {
+        std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+    }
+    fn offline_value(&self) -> Option<String> {
+        std::env::var("MAESTRO_OFFLINE").ok()
+    }
+    fn run_command_capture<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: CommandCaptureOptions<'a>,
+    ) -> PackageFuture<'a, String> {
+        Box::pin(self.capture_async(command, args, options))
+    }
+    fn spawn(
+        &self,
+        operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
+    ) -> io::Result<()> {
+        let local = self
+            .local
+            .upgrade()
+            .ok_or_else(|| io::Error::other("package runtime is no longer available"))?;
+        drop(local.spawn_local(operation));
+        Ok(())
+    }
     fn exists(&self, path: &str) -> bool {
         std::path::Path::new(path).exists()
     }

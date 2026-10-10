@@ -10,7 +10,7 @@ use std::{
 
 impl NativePackageOperations {
     /// Builds a child with the selected shell form and the recovered environment.
-    fn command(&self, command: &str, args: &[String]) -> Command {
+    pub(super) fn command(&self, command: &str, args: &[String]) -> Command {
         let mut child = if (self.should_use_shell)(command) {
             let mut shell = Command::new(if cfg!(windows) { "cmd.exe" } else { "/bin/sh" });
             if cfg!(windows) {

@@ -10,7 +10,6 @@ use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
     io,
-    path::PathBuf,
     rc::Rc,
     task::{Context, Poll, Waker},
 };
@@ -110,6 +109,27 @@ impl Sandbox {
     }
 }
 impl PackageOperations for Sandbox {
+    fn read_file(&self, path: &str) -> std::io::Result<String> {
+        self.native.read_file(path)
+    }
+    fn offline_value(&self) -> Option<String> {
+        self.native.offline_value()
+    }
+    fn spawn(
+        &self,
+        operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
+    ) -> std::io::Result<()> {
+        self.native.spawn(operation)
+    }
+    fn run_command_capture<'a>(
+        &'a self,
+        command: &'a str,
+        args: &'a [String],
+        options: maestro_packages::CommandCaptureOptions<'a>,
+    ) -> maestro_packages::PackageFuture<'a, String> {
+        self.native.run_command_capture(command, args, options)
+    }
+
     fn exists(&self, path: &str) -> bool {
         self.native.exists(path)
     }
@@ -187,29 +207,7 @@ impl PackageOperations for Sandbox {
     }
 }
 
-/// One exclusively-created disposable directory, removed on drop.
-pub struct Scratch(pub PathBuf);
-impl Scratch {
-    /// Creates a fresh directory with an unused name.
-    pub fn new() -> io::Result<Self> {
-        let name = format!(
-            "maestro-acquire-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_err(io::Error::other)?
-                .as_nanos()
-        );
-        let path = std::env::temp_dir().join(name);
-        std::fs::create_dir(&path)?;
-        Ok(Self(path))
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        assert!(std::fs::remove_dir_all(&self.0).is_ok());
-    }
-}
+pub use super::native_support::Scratch;
 
 /// The shared progress log.
 pub type Events = Rc<RefCell<Vec<ProgressEvent>>>;
@@ -250,7 +248,11 @@ impl Fixture {
         let script = Rc::new(Script::default());
         let operations = Sandbox {
             script: script.clone(),
-            native: NativePackageOperations::new(|_| false, Rc::new(|| false)),
+            native: NativePackageOperations::new(
+                |_| false,
+                Rc::new(|| false),
+                &std::rc::Rc::new(tokio::task::LocalSet::new()),
+            ),
             home: format!("{root}/home"),
         };
         let manager = Rc::new(DefaultPackageManager::new(
@@ -349,11 +351,6 @@ pub fn poll_once<T>(future: &mut PackageFuture<'_, T>) -> Option<io::Result<T>> 
     }
 }
 
-/// Creates a file with its parents.
-pub fn write(path: &str, text: &str) {
-    std::fs::create_dir_all(std::path::Path::new(path).parent().unwrap()).unwrap();
-    std::fs::write(path, text).unwrap();
-}
 /// Reads a file's text.
 pub fn read(path: &str) -> String {
     std::fs::read_to_string(path).unwrap()

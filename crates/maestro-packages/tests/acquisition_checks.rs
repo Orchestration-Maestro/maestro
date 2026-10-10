@@ -1,5 +1,6 @@
 //! Explicit install and removal through scripted children over disposable native files.
 #![cfg(test)]
+mod native_support;
 mod sandbox;
 use maestro_packages::{
     InstalledSourceScope::{Project, User},
@@ -149,10 +150,10 @@ fn project_npm_files_are_exact_and_existing_files_survive() {
         let fixture = Fixture::new(&json!({}));
         let root = fixture.project(".maestro/npm");
         if ignore {
-            sandbox::write(&format!("{root}/.gitignore"), "kept ignore");
+            native_support::write(&format!("{root}/.gitignore"), "kept ignore");
         }
         if manifest {
-            sandbox::write(&format!("{root}/package.json"), "{ kept");
+            native_support::write(&format!("{root}/package.json"), "{ kept");
         }
         block_on(fixture.manager.install("npm:pkg", Some(Project))).unwrap();
         let read = |name: &str| sandbox::read(&format!("{root}/{name}"));
@@ -398,9 +399,9 @@ fn git_existing_target_does_not_read_command_or_modify_files() {
         let fixture = Fixture::new(&json!({"npmCommand": [""]}));
         let target = fixture.agent("git/github.com/user/repo");
         if as_file {
-            sandbox::write(&target, "a file");
+            native_support::write(&target, "a file");
         } else {
-            sandbox::write(&format!("{target}/package.json"), "keep");
+            native_support::write(&format!("{target}/package.json"), "keep");
         }
         let source = "https://github.com/user/repo#pinned";
         block_on(fixture.manager.install(source, None)).unwrap();
@@ -440,7 +441,7 @@ fn git_project_paths_preserve_parent_and_ignore_files() {
         } else {
             fixture.agent("git")
         };
-        sandbox::write(&format!("{root}/.gitignore"), "kept");
+        native_support::write(&format!("{root}/.gitignore"), "kept");
         let seen = Rc::new(Cell::new(false));
         let witness = seen.clone();
         let parent_dir = format!("{root}/{parent}");
@@ -548,7 +549,7 @@ fn git_failures_stop_after_the_completed_effect() {
 fn local_install_uses_cwd_without_copying() {
     for scope in [None, Some(Project)] {
         let fixture = Fixture::new(&json!({}));
-        sandbox::write(&fixture.project("file.txt"), "bytes");
+        native_support::write(&fixture.project("file.txt"), "bytes");
         std::fs::create_dir_all(fixture.project("dir")).unwrap();
         let absolute = fixture.project("dir");
         for source in ["./file.txt", "  ./dir  ", "dir", &absolute, "", "   "] {
@@ -577,7 +578,7 @@ fn local_missing_path_reports_resolved_error() {
 #[test]
 fn local_remove_has_no_filesystem_or_command_effect() {
     let fixture = Fixture::new(&json!({}));
-    sandbox::write(&fixture.project("here/file.txt"), "bytes");
+    native_support::write(&fixture.project("here/file.txt"), "bytes");
     fixture.script.ambient_fails.set(true);
     for source in ["./here", "./gone", "~/gone", "relative"] {
         block_on(fixture.manager.remove(source, None)).unwrap();
@@ -650,9 +651,9 @@ fn git_removal_prunes_only_empty_parents_inside_root() {
     let source = "https://github.com/user/repo";
     let fixture = Fixture::new(&json!({}));
     let root = fixture.agent("git");
-    sandbox::write(&format!("{root}/.gitignore"), IGNORE);
-    sandbox::write(&format!("{root}/github.com/user/repo/file"), "x");
-    sandbox::write(&format!("{root}/github.com/other/keep/file"), "x");
+    native_support::write(&format!("{root}/.gitignore"), IGNORE);
+    native_support::write(&format!("{root}/github.com/user/repo/file"), "x");
+    native_support::write(&format!("{root}/github.com/other/keep/file"), "x");
     block_on(fixture.manager.remove(source, None)).unwrap();
     assert!(!std::path::Path::new(&format!("{root}/github.com/user")).exists());
     assert_eq!(
@@ -662,15 +663,15 @@ fn git_removal_prunes_only_empty_parents_inside_root() {
 
     let fixture = Fixture::new(&json!({}));
     let root = fixture.agent("git");
-    sandbox::write(&format!("{root}/.gitignore"), IGNORE);
-    sandbox::write(&format!("{root}/github.com/user/repo/file"), "x");
+    native_support::write(&format!("{root}/.gitignore"), IGNORE);
+    native_support::write(&format!("{root}/github.com/user/repo/file"), "x");
     block_on(fixture.manager.remove(source, None)).unwrap();
     assert!(!std::path::Path::new(&format!("{root}/github.com")).exists());
     assert_eq!(sandbox::read(&format!("{root}/.gitignore")), IGNORE);
 
     let fixture = Fixture::new(&json!({}));
     let root = fixture.agent("git");
-    sandbox::write(&format!("{root}/github.com/user/sibling/file"), "x");
+    native_support::write(&format!("{root}/github.com/user/sibling/file"), "x");
     block_on(fixture.manager.remove(source, None)).unwrap();
     assert!(std::path::Path::new(&format!("{root}/github.com/user/sibling/file")).exists());
 }
@@ -689,7 +690,7 @@ fn git_removal_handles_links_and_vanished_parents() {
 
     let fixture = Fixture::new(&json!({}));
     let target = fixture.agent("git/github.com/user/repo");
-    sandbox::write(&fixture.path("referent/file"), "kept");
+    native_support::write(&fixture.path("referent/file"), "kept");
     std::fs::create_dir_all(fixture.agent("git/github.com/user")).unwrap();
     symlink(fixture.path("referent"), &target).unwrap();
     block_on(fixture.manager.remove(source, None)).unwrap();
@@ -698,7 +699,7 @@ fn git_removal_handles_links_and_vanished_parents() {
 
     let fixture = Fixture::new(&json!({}));
     let target = fixture.agent("git/github.com/user/repo");
-    sandbox::write(&format!("{target}/file"), "x");
+    native_support::write(&format!("{target}/file"), "x");
     let parent = fixture.agent("git/github.com/user");
     *fixture.script.after_remove.borrow_mut() = Some(Box::new(move |_| {
         std::fs::remove_dir(&parent).unwrap();
@@ -712,7 +713,7 @@ fn git_pruning_distinguishes_read_and_remove_failures() {
     let source = "https://github.com/user/repo";
     let build = || {
         let fixture = Fixture::new(&json!({}));
-        sandbox::write(&fixture.agent("git/github.com/user/repo/file"), "x");
+        native_support::write(&fixture.agent("git/github.com/user/repo/file"), "x");
         fixture
     };
     let fixture = build();
@@ -1067,7 +1068,7 @@ fn persistence_happens_after_completed_acquisition() {
     assert!(!block_on(manager.remove_and_persist("npm:pkg", None)).unwrap());
     assert_eq!(stored(&fixture), json!([]));
 
-    sandbox::write(&fixture.project("pkgdir/file"), "x");
+    native_support::write(&fixture.project("pkgdir/file"), "x");
     block_on(manager.install_and_persist("./pkgdir", Some(Project))).unwrap();
     let project = fixture.settings.borrow().get_project_settings().0["packages"].clone();
     assert_eq!(project, json!(["../pkgdir"]));
@@ -1085,7 +1086,7 @@ fn persistence_failure_does_not_undo_completed_contents() {
         .borrow_mut()
         .push_back(Box::new(|call| {
             let target = call.args.last().unwrap();
-            sandbox::write(&format!("{target}/kept"), "cloned");
+            native_support::write(&format!("{target}/kept"), "cloned");
         }));
     let error = block_on(fixture.manager.install_and_persist(source, None)).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
@@ -1099,7 +1100,7 @@ fn persistence_failure_does_not_undo_completed_contents() {
 
     let fixture = Fixture::new(&json!({"packages": [5]}));
     let target = fixture.agent("git/github.com/user/repo");
-    sandbox::write(&format!("{target}/file"), "x");
+    native_support::write(&format!("{target}/file"), "x");
     assert!(block_on(fixture.manager.remove_and_persist(source, None)).is_err());
     assert!(!std::path::Path::new(&target).exists());
     assert_eq!(fixture.phases().last().unwrap().0, Phase::Complete);
@@ -1300,21 +1301,21 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     assert_eq!(hidden.path, "..hidden/repo");
 
     let fixture = Fixture::relative_agent();
-    sandbox::write(&fixture.agent("git/github.com/user/repo/file"), "x");
+    native_support::write(&fixture.agent("git/github.com/user/repo/file"), "x");
     block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
     assert!(std::path::Path::new(&fixture.agent("git")).is_dir());
     assert_eq!(*fixture.script.reads.borrow(), ["cwd"]);
 
     let fixture = Fixture::new(&json!({}));
-    sandbox::write(&fixture.agent("git/github.com/user/repo/file"), "x");
+    native_support::write(&fixture.agent("git/github.com/user/repo/file"), "x");
     fixture.script.ambient_fails.set(true);
     block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
     assert!(fixture.script.reads.borrow().is_empty());
 
     let fixture = Fixture::new(&json!({}));
-    sandbox::write(&fixture.agent("git-cache/team/repo/file"), "x");
+    native_support::write(&fixture.agent("git-cache/team/repo/file"), "x");
     block_on(
         fixture
             .manager
@@ -1325,7 +1326,7 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     assert!(std::path::Path::new(&fixture.agent("git-cache/team")).is_dir());
 
     let fixture = Fixture::new(&json!({}));
-    sandbox::write(&fixture.agent("git/github.com/..hidden/repo/file"), "x");
+    native_support::write(&fixture.agent("git/github.com/..hidden/repo/file"), "x");
     block_on(
         fixture
             .manager

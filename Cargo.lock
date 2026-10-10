@@ -1714,6 +1714,7 @@ dependencies = [
  "maestro-resources",
  "maestro-settings",
  "percent-encoding",
+ "rustix",
  "serde",
  "serde_json",
  "tokio",
