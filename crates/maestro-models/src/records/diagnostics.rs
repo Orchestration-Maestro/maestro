@@ -17,7 +17,8 @@ pub fn create_assistant_message_diagnostic(
 }
 
 /// Return the current timestamp as milliseconds since the Unix epoch.
-pub(crate) fn timestamp_now() -> f64 {
+#[must_use]
+pub fn timestamp_now() -> f64 {
     #[cfg(not(target_arch = "wasm32"))]
     {
         std::time::SystemTime::now()

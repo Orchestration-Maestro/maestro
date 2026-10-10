@@ -8,8 +8,9 @@ pub use credentials::auth_guidance::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use credentials::auth_storage::FileAuthStorageBackend;
 pub use credentials::auth_storage::{
-    ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
-    AuthStorageData, AuthStorageError, InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
+    ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage,
+    AuthStorageBackend, AuthStorageData, AuthStorageError, AuthStorageFuture,
+    InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use credentials::resolve_config_value::ProcessConfigValueOperations;

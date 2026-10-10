@@ -7,8 +7,9 @@ mod tests {
     use super::support::{TempDir, is_child, run_child};
     use indexmap::IndexMap;
     use maestro_credentials::{
-        ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
-        AuthStorageData, InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
+        ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage,
+        AuthStorageBackend, AuthStorageData, AuthStorageError, AuthStorageFuture,
+        InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
     };
     use serde_json::{Value, json};
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -63,6 +64,22 @@ mod tests {
                 Some(_) => Err("write refused".into()),
                 None => Ok(None),
             })
+        }
+
+        fn with_lock_async<'a>(
+            &'a self,
+            update: AsyncLockUpdate<'a>,
+        ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
+            self.0
+                .with_lock_async(Box::new(|current| Box::pin(refuse_writes(update, current))))
+        }
+    }
+
+    /// Run `update` and refuse any replacement text.
+    async fn refuse_writes(update: AsyncLockUpdate<'_>, current: Option<String>) -> LockUpdate {
+        match update(current).await? {
+            Some(_) => Err("write refused".into()),
+            None => Ok(None),
         }
     }
 

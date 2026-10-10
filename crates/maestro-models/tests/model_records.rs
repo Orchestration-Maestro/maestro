@@ -112,6 +112,10 @@ mod tests {
         );
         let after = now();
         assert!(diagnostic.timestamp >= before && diagnostic.timestamp <= after);
+        let root = maestro_models::timestamp_now();
+        let module = maestro_models::records::diagnostics::timestamp_now();
+        assert!(root >= before && module >= root && module <= now());
+        assert!(root.fract().abs() < f64::EPSILON);
         assert_eq!(diagnostic.r#type, "retry");
         assert_eq!(
             diagnostic.details,

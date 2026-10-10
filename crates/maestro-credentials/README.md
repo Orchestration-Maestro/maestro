@@ -1,8 +1,8 @@
 # Maestro credentials
 
 Resolve configured credential values and ordered headers, keep stored
-credentials behind a replaceable file or memory backend, and format login guidance.
-Key selection and OAuth refresh are not provided by this crate yet.
+credentials behind a replaceable file or memory backend, select request keys,
+log in and refresh saved OAuth tokens, and format login guidance.
 
 ```rust
 use maestro_credentials::{

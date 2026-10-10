@@ -1,4 +1,5 @@
 //! Temporary directories and isolated child test processes shared by the storage tests.
+#![allow(dead_code)] // each test binary uses a different part of these helpers
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -52,4 +53,23 @@ pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+/// Run `future` to completion on a fresh current-thread runtime.
+pub fn block_on<F: std::future::Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
+/// Run `future` on a current-thread runtime whose clock advances only when idle.
+pub fn block_on_paused<F: std::future::Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()
+        .unwrap()
+        .block_on(future)
 }

@@ -48,7 +48,7 @@ pub use records::api_registry::{
 pub use records::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo, DiagnosticInput,
     append_assistant_message_diagnostic, create_assistant_message_diagnostic,
-    extract_diagnostic_error, format_thrown_value,
+    extract_diagnostic_error, format_thrown_value, timestamp_now,
 };
 pub use records::event_stream::EventStream;
 pub use records::event_stream::create_assistant_message_event_stream;

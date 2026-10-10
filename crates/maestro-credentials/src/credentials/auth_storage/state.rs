@@ -29,9 +29,11 @@ pub(super) struct State {
 /// Accepted stored credentials over a raw-text backend.
 pub struct AuthStorage {
     /// Raw-text storage.
-    storage: Box<dyn AuthStorageBackend>,
+    pub(super) storage: Box<dyn AuthStorageBackend>,
     /// Accepted state.
     state: Mutex<State>,
+    /// Current epoch milliseconds; tests substitute a fixed reading.
+    pub(super) clock: fn() -> f64,
 }
 
 impl AuthStorage {
@@ -48,9 +50,17 @@ impl AuthStorage {
         let auth_storage = Self {
             storage: Box::new(storage),
             state: Mutex::default(),
+            clock: maestro_models::timestamp_now,
         };
         auth_storage.reload();
         auth_storage
+    }
+
+    /// Replace the clock read for expiry decisions.
+    #[cfg(test)]
+    pub(super) fn with_clock(mut self, clock: fn() -> f64) -> Self {
+        self.clock = clock;
+        self
     }
 
     /// Store credentials in memory, seeded with `data`.
