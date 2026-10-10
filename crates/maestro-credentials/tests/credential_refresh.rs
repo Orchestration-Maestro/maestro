@@ -275,6 +275,9 @@ mod tests {
             );
             let outcome = request(&storage, "r2-extract").await;
             assert_eq!(outcome.unwrap_err().to_string(), "extract failed");
+            let errors = storage.drain_errors();
+            assert_eq!(errors.len(), 1);
+            assert_eq!(errors[0].to_string(), "extract failed");
             assert_eq!(provider.refreshes.load(Ordering::SeqCst), 0);
             assert!(probe.writes.lock().unwrap().is_empty());
             assert!(matches!(

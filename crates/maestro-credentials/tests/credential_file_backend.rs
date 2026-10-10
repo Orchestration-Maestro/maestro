@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn async_memory_callbacks_are_unlocked_and_last_write_wins() {
         block_on(async {
-            let outcomes = [Ok(None), Ok(Some("b")), Err("refused")];
+            let outcomes = [Ok(None), Ok(Some("b")), Ok(Some("")), Err("refused")];
             for (initial, outcome) in [None, Some(""), Some("a")]
                 .into_iter()
                 .flat_map(|initial| outcomes.map(|outcome| (initial, outcome)))
