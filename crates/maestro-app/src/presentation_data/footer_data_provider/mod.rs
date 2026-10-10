@@ -12,10 +12,11 @@ mod live;
 mod native;
 mod operations;
 mod provider;
+mod watch;
 
 #[cfg(unix)]
 pub use native::NativeFooterOperations;
-pub use operations::{FooterFileKind, FooterOperations};
+pub use operations::{FooterFileKind, FooterFileStats, FooterOperations};
 pub use provider::{FooterDataProvider, ReadonlyFooterDataProvider};
 
 /// Extension status texts by key, in insertion order; clones share one

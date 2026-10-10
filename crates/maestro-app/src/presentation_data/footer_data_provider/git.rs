@@ -9,9 +9,11 @@ use super::operations::{FooterFileKind, FooterOperations};
 /// Where a repository keeps the HEAD that names its branch.
 pub(super) struct GitPaths {
     /// The directory whose `.git` entry named the repository.
-    repo_dir: String,
+    pub(super) repo_dir: String,
     /// The HEAD file that names the checked-out branch.
-    head_path: String,
+    pub(super) head_path: String,
+    /// Shared metadata directory for this repository or linked worktree.
+    pub(super) common_git_dir: String,
 }
 
 /// Trim as `String.prototype.trim` of the JavaScript specification does:
@@ -80,13 +82,16 @@ fn discover(operations: &dyn FooterOperations, cwd: &str) -> io::Result<Option<G
                 return Ok(None);
             }
             let common_dir = join(&[&git_dir, "commondir"]);
-            if worktree && operations.exists(&common_dir) {
+            let common_git_dir = if worktree && operations.exists(&common_dir) {
                 let common = operations.read_text(&common_dir)?;
-                resolve_path(operations, &[&git_dir, trim(&common)])?;
-            }
+                resolve_path(operations, &[&git_dir, trim(&common)])?
+            } else {
+                git_dir
+            };
             return Ok(Some(GitPaths {
                 repo_dir: dir,
                 head_path,
+                common_git_dir,
             }));
         }
         let parent = dirname(&dir);
@@ -105,18 +110,38 @@ pub(super) fn resolve_branch(
     operations: &dyn FooterOperations,
     paths: &GitPaths,
 ) -> Option<String> {
-    let head = operations.read_text(&paths.head_path).ok()?;
-    let Some(branch) = trim(&head).strip_prefix("ref: refs/heads/") else {
-        return Some("detached".to_owned());
-    };
-    if branch != ".invalid" {
-        return Some(branch.to_owned());
+    match read_branch(operations, paths) {
+        BranchRead::Ready(branch) => branch,
+        BranchRead::Query(repo) => Some(git_answer(
+            operations.symbolic_ref_sync(&repo).ok().flatten(),
+        )),
     }
-    let output = operations.symbolic_ref_sync(&paths.repo_dir).ok().flatten();
-    Some(
-        output
-            .map(|stdout| trim(&stdout).to_owned())
-            .filter(|branch| !branch.is_empty())
-            .unwrap_or_else(|| "detached".to_owned()),
-    )
+}
+/// HEAD selection or the directory requiring a symbolic-reference query.
+pub(super) enum BranchRead {
+    /// A completed HEAD read, including unreadable or absent metadata.
+    Ready(Option<String>),
+    /// A placeholder requiring Git in this repository directory.
+    Query(String),
+}
+/// Select a readable HEAD before deciding whether Git is needed.
+pub(super) fn read_branch(operations: &dyn FooterOperations, paths: &GitPaths) -> BranchRead {
+    let Ok(head) = operations.read_text(&paths.head_path) else {
+        return BranchRead::Ready(None);
+    };
+    let Some(branch) = trim(&head).strip_prefix("ref: refs/heads/") else {
+        return BranchRead::Ready(Some("detached".to_owned()));
+    };
+    if branch == ".invalid" {
+        BranchRead::Query(paths.repo_dir.clone())
+    } else {
+        BranchRead::Ready(Some(branch.to_owned()))
+    }
+}
+/// Trim successful stdout, falling back to detached on failure or empty text.
+pub(super) fn git_answer(output: Option<String>) -> String {
+    output
+        .map(|stdout| trim(&stdout).to_owned())
+        .filter(|branch| !branch.is_empty())
+        .unwrap_or_else(|| "detached".to_owned())
 }

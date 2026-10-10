@@ -9,7 +9,7 @@ use super::live::Live;
 use super::operations::FooterOperations;
 
 /// Branch-change callbacks keyed by the identity of their `Rc`.
-type Callbacks = Live<usize, Rc<dyn Fn()>>;
+pub(super) type Callbacks = Live<usize, Rc<dyn Fn()>>;
 
 /// The identity a callback is registered and unsubscribed by.
 fn identity(callback: &Rc<dyn Fn()>) -> usize {
@@ -19,22 +19,22 @@ fn identity(callback: &Rc<dyn Fn()>) -> usize {
 /// What frontends and extensions may read of the footer metadata.
 pub trait ReadonlyFooterDataProvider {
     /// The current branch: `None` outside a repository, `detached` for a
-    /// detached HEAD. The first lookup is cached until the working directory
-    /// changes.
+    /// detached HEAD. Reads are cached until a refresh or working-directory change.
     fn get_git_branch(&self) -> Option<String>;
     /// The extension status texts; the result stays live.
     fn get_extension_statuses(&self) -> ExtensionStatuses;
     /// The supplied count of providers with available models.
     fn get_available_provider_count(&self) -> f64;
-    /// Call `callback` when the working directory changes.
+    /// Call `callback` on working-directory changes and changed cached branches.
     ///
     /// Registering the same `Rc` twice keeps one registration. The returned
-    /// function removes that registration; dropping it does not.
+    /// function removes that registration; dropping it does not. Holding the
+    /// function retains the watch lifecycle.
     fn on_branch_change(&self, callback: Rc<dyn Fn()>) -> Box<dyn Fn()>;
 }
 
 /// Whether the branch has been looked up since the working directory changed.
-enum Lookup {
+pub(super) enum Lookup {
     /// No lookup yet.
     Pending,
     /// The branch found, which is absent outside a repository.
@@ -42,13 +42,13 @@ enum Lookup {
 }
 
 /// Mutable provider state; never borrowed while a callback runs.
-struct State {
+pub(super) struct State {
     /// The working directory as authored.
     cwd: String,
     /// The repository found from `cwd`.
-    git_paths: Option<GitPaths>,
+    pub(super) git_paths: Option<GitPaths>,
     /// The branch lookup of `cwd`, once made.
-    branch: Lookup,
+    pub(super) branch: Lookup,
 }
 
 impl State {
@@ -65,6 +65,8 @@ impl State {
 /// Owner of the footer metadata. Clones share one state.
 #[derive(Clone)]
 pub struct FooterDataProvider {
+    /// Watch lifecycle shared by provider and unsubscribe aliases.
+    watch: Rc<super::watch::Watching>,
     /// The supplied file-system and process effects.
     operations: Rc<dyn FooterOperations>,
     /// The working directory, repository and cached branch.
@@ -78,15 +80,24 @@ pub struct FooterDataProvider {
 }
 
 impl FooterDataProvider {
-    /// A provider for `cwd`, which discovers repository metadata at once and
-    /// reads HEAD on the first branch lookup.
+    /// Discover metadata and install available watches for `cwd`. Branch lookup
+    /// remains lazy until a getter or refresh.
     #[must_use]
     pub fn new(cwd: String, operations: Rc<dyn FooterOperations>) -> Self {
+        let state = Rc::new(RefCell::new(State::new(operations.as_ref(), cwd)));
+        let callbacks = Live::new();
+        let watch = super::watch::Watching::new(
+            Rc::clone(&operations),
+            Rc::clone(&state),
+            callbacks.clone(),
+        );
+        watch.setup();
         Self {
-            state: Rc::new(RefCell::new(State::new(operations.as_ref(), cwd))),
             operations,
+            state,
+            callbacks,
+            watch,
             statuses: Live::new(),
-            callbacks: Live::new(),
             available_provider_count: Rc::new(Cell::new(0.0)),
         }
     }
@@ -116,16 +127,18 @@ impl FooterDataProvider {
         if self.state.borrow().cwd == cwd {
             return;
         }
+        self.watch.changed_cwd();
         *self.state.borrow_mut() = State::new(self.operations.as_ref(), cwd);
+        self.watch.setup();
         for (_, callback) in self.callbacks.iter() {
             callback();
         }
     }
 
-    /// Drop every branch-change subscription. Statuses, the count and the
+    /// End watch work and clear subscriptions. Statuses, the count and the
     /// cached branch stay readable.
     pub fn dispose(&self) {
-        self.callbacks.clear();
+        self.watch.dispose();
     }
 }
 
@@ -154,7 +167,7 @@ impl ReadonlyFooterDataProvider for FooterDataProvider {
     fn on_branch_change(&self, callback: Rc<dyn Fn()>) -> Box<dyn Fn()> {
         self.callbacks
             .insert(identity(&callback), Rc::clone(&callback));
-        let callbacks = self.callbacks.clone();
-        Box::new(move || callbacks.remove(&identity(&callback)))
+        let watch = Rc::clone(&self.watch);
+        Box::new(move || watch.callbacks.remove(&identity(&callback)))
     }
 }

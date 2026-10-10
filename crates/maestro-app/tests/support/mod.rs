@@ -3,13 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::io;
-#[cfg(unix)]
-use std::path::{Path, PathBuf};
-#[cfg(unix)]
-use std::process::Command;
 use std::rc::Rc;
-#[cfg(unix)]
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use maestro_app::presentation_data::footer_data_provider::{
     FooterDataProvider, FooterFileKind, FooterOperations,
@@ -112,6 +106,26 @@ fn failure() -> io::Error {
 }
 
 impl FooterOperations for FakeOps {
+    fn symbolic_ref_async(
+        &self,
+        repo: &str,
+        callback: Box<dyn FnOnce(io::Result<Option<String>>)>,
+    ) {
+        callback(self.symbolic_ref_sync(repo));
+    }
+    fn watch_file(
+        &self,
+        _: &str,
+        _: std::time::Duration,
+        _: Rc<
+            dyn Fn(
+                maestro_app::presentation_data::footer_data_provider::FooterFileStats,
+                maestro_app::presentation_data::footer_data_provider::FooterFileStats,
+            ),
+        >,
+    ) -> Box<dyn maestro_watch::fs_watch::FsWatcher> {
+        unreachable!("controlled metadata adapter rejects watch registration")
+    }
     fn exists(&self, path: &str) -> bool {
         self.files.borrow().contains_key(path)
     }
@@ -204,80 +218,28 @@ pub fn plain(head: Entry) -> BTreeMap<String, Entry> {
 }
 
 #[cfg(unix)]
-/// A directory removed when dropped, on a best-effort basis.
-pub struct Scratch(pub PathBuf);
-
+mod native;
 #[cfg(unix)]
-impl Scratch {
-    pub fn new() -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-footer-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&path).expect("scratch directory is new");
-        Self(path)
-    }
+pub use native::{Scratch, git, install_executable, probe};
 
-    pub fn join(&self, name: &str) -> String {
-        self.0.join(name).to_string_lossy().into_owned()
+impl maestro_watch::fs_watch::WatchOperations for FakeOps {
+    fn watch(
+        &self,
+        _: &str,
+        _: Rc<dyn Fn(Option<String>)>,
+        _: Rc<dyn Fn()>,
+    ) -> io::Result<Box<dyn maestro_watch::fs_watch::FsWatcher>> {
+        Err(failure())
     }
-}
-
-#[cfg(unix)]
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+    fn schedule(
+        &self,
+        _: std::time::Duration,
+        _: Box<dyn FnOnce()>,
+    ) -> Box<dyn maestro_watch::fs_watch::WatchTimer> {
+        Box::new(Cancel)
     }
 }
-
-#[cfg(unix)]
-/// Run `git` with fixed identity and no user configuration.
-pub fn git(dir: &str, args: &[&str]) -> String {
-    let output = Command::new("git")
-        .args([
-            "-c",
-            "user.name=Fixture",
-            "-c",
-            "user.email=fixture@example.invalid",
-        ])
-        .args(["-c", "commit.gpgsign=false"])
-        .args(args)
-        .current_dir(dir)
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .output()
-        .expect("git starts");
-    assert!(output.status.success(), "git {args:?} failed");
-    String::from_utf8_lossy(&output.stdout).into_owned()
-}
-
-#[cfg(unix)]
-/// Run this test binary again for the single test `name`, with `envs`, and
-/// return the `PROBE ` lines the child printed.
-pub fn probe(name: &str, current_dir: &Path, envs: &[(&str, &str)]) -> Vec<String> {
-    let output = Command::new(std::env::current_exe().expect("test binary path"))
-        .args(["--exact", name, "--nocapture", "--test-threads=1"])
-        .current_dir(current_dir)
-        .envs(envs.iter().copied())
-        .output()
-        .expect("child starts");
-    assert!(output.status.success(), "child probe failed");
-    String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| line.strip_prefix("PROBE ").map(str::to_owned))
-        .collect()
-}
-
-#[cfg(unix)]
-/// Copy `source` to `target` as an executable through a child process.
-pub fn install_executable(source: &Path, target: &Path) {
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(source)
-        .arg(target)
-        .status()
-        .expect("install starts");
-    assert!(status.success(), "install failed");
+struct Cancel;
+impl maestro_watch::fs_watch::WatchTimer for Cancel {
+    fn cancel(&mut self) {}
 }

@@ -7,6 +7,14 @@ repository.workspace = true
 
 [dependencies]
 maestro-path = { path = "../maestro-path" }
+maestro-watch = { path = "../maestro-watch" }
+
+[target.'cfg(unix)'.dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "process"] }
+num-traits = "=0.2.19"
+
+[target.'cfg(unix)'.dev-dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["sync", "test-util"] }
 
 [dev-dependencies]
 serde.workspace = true

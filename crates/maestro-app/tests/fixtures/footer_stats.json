@@ -1,0 +1,158 @@
+[
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "calls": 0
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 11,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 10,
+      "ctimeMs": 21,
+      "size": 2
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 11,
+      "ctimeMs": 21,
+      "size": 2
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 3
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 11,
+      "ctimeMs": 20,
+      "size": 3
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 10,
+      "ctimeMs": 21,
+      "size": 3
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 11,
+      "ctimeMs": 21,
+      "size": 3
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 0,
+      "ctimeMs": 0,
+      "size": 0
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 0,
+      "ctimeMs": 0,
+      "size": 0
+    },
+    "after": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "calls": 1
+  },
+  {
+    "before": {
+      "mtimeMs": 0,
+      "ctimeMs": 0,
+      "size": 0
+    },
+    "after": {
+      "mtimeMs": 0,
+      "ctimeMs": 0,
+      "size": 0
+    },
+    "calls": 0
+  },
+  {
+    "before": {
+      "mtimeMs": 10,
+      "ctimeMs": 20,
+      "size": 2
+    },
+    "after": {
+      "mtimeMs": 10,
+      "ctimeMs": 20.001,
+      "size": 2
+    },
+    "calls": 1
+  }
+]

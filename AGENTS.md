@@ -559,3 +559,14 @@ respectively. Awaited operations are documented in [conversation turns](docs/loo
 `maestro-packages` uses `brace-expansion =0.1.1` with no features or transitive
 dependencies (MIT OR Apache-2.0). The directly translated matcher source is
 BlueOak-1.0.0; see [third-party notices](THIRD-PARTY-NOTICES.md).
+
+## Approved footer-effects libraries
+
+On Unix, `maestro-app` uses Tokio `=1.53.2` (defaults off; `rt`, `time`,
+`process`) for asynchronous Git queries and reference-table polling on a
+caller-driven `LocalSet`, plus `num-traits =0.2.19` (defaults) for timestamp
+conversion without integer-millisecond truncation. Tests add Tokio `sync` and
+`test-util`. Tokio is MIT and num-traits is MIT OR Apache-2.0. Notifications and
+one-shot timers reuse `maestro-watch`; no notification library is duplicated in
+the application. Other targets supply `FooterOperations` without these native
+process/stat edges.

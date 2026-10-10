@@ -1,0 +1,26 @@
+[
+  {
+    "filename": null,
+    "branch": "new"
+  },
+  {
+    "filename": "",
+    "branch": "new"
+  },
+  {
+    "filename": "HEAD",
+    "branch": "new"
+  },
+  {
+    "filename": "head",
+    "branch": "old"
+  },
+  {
+    "filename": "HEAD.lock",
+    "branch": "old"
+  },
+  {
+    "filename": "nested/HEAD",
+    "branch": "old"
+  }
+]

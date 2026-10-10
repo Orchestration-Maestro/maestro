@@ -1,6 +1,8 @@
 //! The file-system and process effects footer metadata needs.
 
-use std::io;
+use std::{io, rc::Rc, time::Duration};
+
+use maestro_watch::fs_watch::{FsWatcher, WatchOperations};
 
 /// What a path names after following symbolic links.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -13,11 +15,31 @@ pub enum FooterFileKind {
     Other,
 }
 
-/// Effects behind footer metadata, supplied by the caller.
-///
-/// Implementations report effects only; branch selection and text trimming
-/// stay with the provider.
-pub trait FooterOperations {
+/// The three metadata values selected by footer polling; a failed stat uses zero.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct FooterFileStats {
+    /// Modification time in milliseconds.
+    pub mtime_ms: f64,
+    /// Metadata change time in milliseconds.
+    pub ctime_ms: f64,
+    /// File size in bytes.
+    pub size: f64,
+}
+/// Replaceable footer effects; branch selection and trimming stay with the provider.
+pub trait FooterOperations: WatchOperations {
+    /// Complete once with untrimmed stdout, absence on unsuccessful exit, or an I/O error.
+    fn symbolic_ref_async(
+        &self,
+        repo_dir: &str,
+        callback: Box<dyn FnOnce(io::Result<Option<String>>)>,
+    );
+    /// Poll current and previous samples through an independently closable registration.
+    fn watch_file(
+        &self,
+        path: &str,
+        interval: Duration,
+        listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
+    ) -> Box<dyn FsWatcher>;
     /// Whether `path` exists; an error while checking counts as absent.
     fn exists(&self, path: &str) -> bool;
     /// The kind of `path`, following symbolic links.

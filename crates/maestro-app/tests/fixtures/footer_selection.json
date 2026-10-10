@@ -1,0 +1,80 @@
+[
+  {
+    "cwd": "/repo",
+    "paths": [
+      "/repo/.git"
+    ],
+    "polls": [],
+    "entries": [
+      "/repo/.git",
+      "/repo/.git/HEAD"
+    ]
+  },
+  {
+    "cwd": "/repo",
+    "paths": [
+      "/repo/.git",
+      "/repo/.git/reftable"
+    ],
+    "polls": [],
+    "entries": [
+      "/repo/.git",
+      "/repo/.git/HEAD",
+      "/repo/.git/reftable"
+    ]
+  },
+  {
+    "cwd": "/repo",
+    "paths": [
+      "/repo/.git",
+      "/repo/.git/reftable",
+      "/repo/.git/reftable/tables.list"
+    ],
+    "polls": [
+      {
+        "path": "/repo/.git/reftable/tables.list",
+        "interval": 250
+      }
+    ],
+    "entries": [
+      "/repo/.git",
+      "/repo/.git/HEAD",
+      "/repo/.git/reftable",
+      "/repo/.git/reftable/tables.list"
+    ]
+  },
+  {
+    "cwd": "/repo",
+    "paths": [],
+    "polls": [],
+    "entries": []
+  },
+  {
+    "cwd": "/repo",
+    "paths": [],
+    "polls": [],
+    "entries": [
+      "/repo/.git"
+    ]
+  },
+  {
+    "cwd": "/repo [one]*",
+    "paths": [
+      "/repo [one]*/.git",
+      "/repo [one]*/.git/reftable",
+      "/repo [one]*/.git/reftable/tables.list"
+    ],
+    "polls": [
+      {
+        "path": "/repo [one]*/.git/reftable/tables.list",
+        "interval": 250
+      }
+    ],
+    "entries": [
+      "/repo [one]*/.git",
+      "/repo [one]*/.git/HEAD",
+      "/repo [one]*/.git/reftable",
+      "/repo [one]*/.git/reftable/tables.list"
+    ]
+  }
+]
