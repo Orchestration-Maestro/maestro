@@ -1,6 +1,11 @@
 //! Typed model selection and ordered descriptor composition.
-use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ThinkingLevelMap};
-use serde::Deserialize;
+use maestro_models::{
+    Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel, ThinkingLevelMap,
+};
+use serde::{
+    Deserialize,
+    de::{IgnoredAny, MapAccess, Visitor},
+};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -74,20 +79,39 @@ struct CostOverride {
     /// Cache write price.
     cache_write: Option<f64>,
 }
-/// Select declared thinking keys before decoding their typed values.
+/// A thinking-map key: a declared level, or any other member ignored unread.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Level {
+    /// Declared reasoning level.
+    Declared(ModelThinkingLevel),
+    /// Undeclared member.
+    Other(IgnoredAny),
+}
+/// Collects declared thinking levels from a map, skipping other members unread.
+struct Selected;
+impl<'de> Visitor<'de> for Selected {
+    type Value = ThinkingLevelMap;
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("a thinking level map")
+    }
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+        let mut levels = ThinkingLevelMap::new();
+        while let Some(key) = map.next_key::<Level>()? {
+            if let Level::Declared(level) = key {
+                levels.insert(level, map.next_value()?);
+            } else {
+                map.next_value::<IgnoredAny>()?;
+            }
+        }
+        Ok(levels)
+    }
+}
+/// Select declared thinking levels without building undeclared values.
 fn thinking<'de, D: serde::Deserializer<'de>>(
     decoder: D,
 ) -> Result<Option<ThinkingLevelMap>, D::Error> {
-    let mut object = Map::<String, Value>::deserialize(decoder)?;
-    object.retain(|key, _| {
-        matches!(
-            key.as_str(),
-            "off" | "minimal" | "low" | "medium" | "high" | "xhigh"
-        )
-    });
-    ThinkingLevelMap::deserialize(Value::Object(object))
-        .map(Some)
-        .map_err(serde::de::Error::custom)
+    decoder.deserialize_map(Selected).map(Some)
 }
 /// Enumerate provider keys with canonical numeric indices before other keys.
 pub(super) fn providers(value: &Value) -> Result<Vec<(String, ProviderConfig)>, serde_json::Error> {
@@ -223,26 +247,37 @@ fn apply(model: &mut Model, fields: ModelOverride) {
     }
     model.compat = merge_compat(model.compat.take(), fields.compat);
 }
-/// Overlay compatibility with one-level routing-object merges.
+/// Overlay compatibility; a routing slot merges one level only when either side is truthy.
 fn merge_compat(base: Option<ModelCompat>, overlay: Option<ModelCompat>) -> Option<ModelCompat> {
     let Some(overlay) = overlay else {
         return base;
     };
     let mut base = base.unwrap_or_default();
     for (key, value) in overlay.0 {
-        if matches!(key.as_str(), "openRouterRouting" | "vercelGatewayRouting") {
+        let routing = matches!(key.as_str(), "openRouterRouting" | "vercelGatewayRouting");
+        if routing && (truthy(base.0.get(&key)) || truthy(Some(&value))) {
             let slot = base.0.entry(key).or_insert(Value::Null);
-            let mut routing = match std::mem::take(slot) {
+            let mut merged = match std::mem::take(slot) {
                 Value::Object(object) => object,
                 _ => Map::new(),
             };
             if let Value::Object(value) = value {
-                routing.extend(value);
+                merged.extend(value);
             }
-            *slot = Value::Object(routing);
+            *slot = Value::Object(merged);
         } else {
             base.0.insert(key, value);
         }
     }
     Some(base)
+}
+/// Whether a JSON value is truthy.
+fn truthy(value: Option<&Value>) -> bool {
+    match value {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(flag)) => *flag,
+        Some(Value::Number(number)) => number.as_f64() != Some(0.0),
+        Some(Value::String(text)) => !text.is_empty(),
+        Some(_) => true,
+    }
 }

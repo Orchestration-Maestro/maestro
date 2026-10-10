@@ -9,7 +9,7 @@ repository.workspace = true
 maestro-models = { path = "../maestro-models" }
 maestro-credentials = { path = "../maestro-credentials" }
 serde.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["unbounded_depth"] }
 
 [lints]
 workspace = true
