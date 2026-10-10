@@ -1,9 +1,10 @@
 //! Buffer normalization and cursor-local edits.
-use super::{Buffer, Editing, Editor, LastAction, markers};
+use super::{Buffer, Editing, LastAction, Owner, markers};
 use crate::{autocomplete::CursorPosition, is_whitespace_char};
-impl Editor {
+impl Owner {
     /// Replaces normalized text, captures changed content and always notifies.
-    pub fn set_text(&self, text: &str) {
+    pub(super) fn set_text(&self, text: &str) {
+        self.cancel_autocomplete();
         let text = normalize(text);
         {
             let mut state = self.state.borrow_mut();
@@ -25,10 +26,11 @@ impl Editor {
         self.notify();
     }
     /// Splices normalized text as one undoable edit; empty input has no effect.
-    pub fn insert_text_at_cursor(&self, text: &str) {
+    pub(super) fn insert_text_at_cursor(&self, text: &str) {
         if text.is_empty() {
             return;
         }
+        self.cancel_autocomplete();
         {
             let mut state = self.state.borrow_mut();
             state.snapshot();
@@ -54,6 +56,7 @@ impl Editor {
             state.set_col(col);
         }
         self.notify();
+        self.complete_typed(text);
     }
 }
 impl Editing {

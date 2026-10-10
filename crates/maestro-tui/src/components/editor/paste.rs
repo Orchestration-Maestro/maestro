@@ -1,5 +1,5 @@
 //! Bracketed paste framing, cleaning and large-paste storage.
-use super::{Editing, Editor, markers, text};
+use super::{Editing, Owner, markers, text};
 use crate::tui::InputHandler;
 
 /// Begins a bracketed paste.
@@ -11,13 +11,9 @@ const MAX_LINES: usize = 10;
 /// Largest paste kept inline, in Unicode scalars.
 const MAX_SCALARS: usize = 1000;
 
-impl Editor {
-    /// Returns the text with each stored paste substituted for its canonical markers.
-    ///
-    /// Every stored paste gets one literal replacement pass in creation order,
-    /// so text a pass inserts is eligible only for later passes.
-    #[must_use]
-    pub fn get_expanded_text(&self) -> String {
+impl Owner {
+    /// Substitutes each stored paste for its canonical markers in the current text.
+    pub(super) fn get_expanded_text(&self) -> String {
         self.state.borrow().expand(&self.get_text())
     }
 
@@ -53,6 +49,7 @@ impl Editor {
 
     /// Inserts one nonempty raw paste as a single undoable edit, even when cleaning leaves no text.
     fn paste(&self, raw: &str) {
+        self.cancel_autocomplete();
         {
             let mut state = self.state.borrow_mut();
             state.history_index = None;

@@ -1,6 +1,6 @@
 //! Original-byte visual positions with retained cell-column intent.
 use super::{
-    Editing, Editor, LastAction, markers,
+    Editing, LastAction, Owner, markers,
     wrapping::{atoms, word_wrap_line},
 };
 use crate::autocomplete::CursorPosition;
@@ -34,7 +34,7 @@ impl VisualRow {
         }
     }
 }
-impl Editor {
+impl Owner {
     /// Chooses history only at its admitted empty or visual-edge branches.
     pub(super) fn vertical_input(&self, down: bool) {
         let history = {
@@ -345,7 +345,7 @@ pub(super) enum Direction {
     /// Earlier scalar starts and logical lines.
     Backward,
 }
-impl Editor {
+impl Owner {
     /// Consumes pending printable searches; other controls cancel and fall through.
     pub(super) fn pending_jump(&self, data: &str, bindings: &crate::KeybindingsManager) -> bool {
         let Some(direction) = self.state.borrow_mut().jump.take() else {

@@ -1,4 +1,6 @@
 #![doc = include_str!("../../../../../docs/terminal/editor.md")]
+mod completion;
+mod completion_input;
 mod history;
 mod input;
 mod kill;
@@ -10,14 +12,16 @@ mod text;
 mod wrapping;
 use crate::{
     Component, FocusFlag, Focusable, SelectListTheme, TUI,
-    autocomplete::CursorPosition,
-    editor_component::BorderColor,
-    tui::{InputHandler, TerminalHandle},
+    autocomplete::{AutocompleteProvider, CursorPosition},
+    editor_component::{BorderColor, TextCallback},
+    tui::{InputHandler, TerminalHandle, TuiRuntime},
     undo_stack::UndoStack,
 };
+use completion::Completion;
+use maestro_cancellation::Cancellation;
 use std::{
     cell::{Cell, RefCell},
-    rc::Rc,
+    rc::{Rc, Weak},
 };
 pub use wrapping::{TextChunk, word_wrap_line};
 /// Styles the border and retains selection styling for completion.
@@ -35,10 +39,18 @@ pub struct EditorOptions {
     /// Finite completion maxima are floored and clamped to 3..20; nonfinite values use 5.
     pub autocomplete_max_visible: Option<f64>,
 }
-/// Synchronous text notification.
-type TextCallback = Rc<dyn Fn(&str)>;
 /// Multiline editable terminal component.
+///
+/// A handle on one retained owner; delayed and asynchronous completion work holds
+/// only a weak reference to that owner.
 pub struct Editor {
+    /// The single retained state.
+    owner: Rc<Owner>,
+}
+/// Retained editor state shared by the handle and its weakly held completion work.
+struct Owner {
+    /// Weak self reference for work that outlives a call.
+    me: Weak<Owner>,
     /// Buffer, cursor and snapshots.
     state: RefCell<Editing>,
     /// Focus controlled by the writer.
@@ -47,8 +59,10 @@ pub struct Editor {
     terminal: TerminalHandle,
     /// Weak request to the writer.
     request: Rc<dyn Fn()>,
+    /// Host for the completion debounce and request futures.
+    runtime: Rc<dyn TuiRuntime>,
     /// Supplied theme retains all callable identities.
-    _theme: EditorTheme,
+    theme: EditorTheme,
     /// Replaceable border styling.
     border: RefCell<BorderColor>,
     /// Change notification.
@@ -65,6 +79,8 @@ pub struct Editor {
     scroll: Cell<usize>,
     /// Layout width committed by the latest render.
     width: Cell<usize>,
+    /// Provider, menu and request state.
+    completion: RefCell<Completion>,
 }
 /// Text and byte cursor captured together.
 #[derive(Clone)]
@@ -128,103 +144,159 @@ impl Editor {
     #[must_use]
     pub fn new(tui: &TUI, theme: EditorTheme, options: EditorOptions) -> Self {
         Self {
-            state: RefCell::default(),
-            focus: FocusFlag::default(),
-            terminal: Rc::clone(tui.terminal()),
-            request: tui.weak_render_request(),
-            border: RefCell::new(Rc::clone(&theme.border_color)),
-            _theme: theme,
-            change: RefCell::default(),
-            submit: RefCell::default(),
-            disabled: Cell::new(false),
-            padding: Cell::new(normalize_padding(options.padding_x.unwrap_or(0.0))),
-            maximum: Cell::new(normalize(
-                options.autocomplete_max_visible.unwrap_or(5.0),
-                3,
-                20,
-                5,
-            )),
-            scroll: Cell::new(0),
-            width: Cell::new(80),
+            owner: Rc::new_cyclic(|me| Owner {
+                me: me.clone(),
+                state: RefCell::default(),
+                focus: FocusFlag::default(),
+                terminal: Rc::clone(tui.terminal()),
+                request: tui.weak_render_request(),
+                runtime: tui.runtime(),
+                border: RefCell::new(Rc::clone(&theme.border_color)),
+                theme,
+                change: RefCell::default(),
+                submit: RefCell::default(),
+                disabled: Cell::new(false),
+                padding: Cell::new(normalize_padding(options.padding_x.unwrap_or(0.0))),
+                maximum: Cell::new(normalize(
+                    options.autocomplete_max_visible.unwrap_or(5.0),
+                    3,
+                    20,
+                    5,
+                )),
+                scroll: Cell::new(0),
+                width: Cell::new(80),
+                completion: RefCell::default(),
+            }),
         }
     }
     /// Returns the requested horizontal padding.
     #[must_use]
     pub fn get_padding_x(&self) -> f64 {
-        self.padding.get()
+        self.owner.padding.get()
     }
     /// Changes padding and requests a frame only when the normalized value changes.
     pub fn set_padding_x(&self, padding: f64) {
         let value = normalize_padding(padding);
-        if self.padding.replace(value).partial_cmp(&value) != Some(std::cmp::Ordering::Equal) {
-            (self.request)();
+        if self.owner.padding.replace(value).partial_cmp(&value) != Some(std::cmp::Ordering::Equal)
+        {
+            (self.owner.request)();
         }
     }
     /// Returns the retained completion-list maximum.
     #[must_use]
     pub fn get_autocomplete_max_visible(&self) -> usize {
-        self.maximum.get()
+        self.owner.maximum.get()
     }
     /// Changes the completion-list maximum, requesting a frame on change.
     pub fn set_autocomplete_max_visible(&self, maximum: f64) {
         let value = normalize(maximum, 3, 20, 5);
-        if self.maximum.replace(value) != value {
-            (self.request)();
+        if self.owner.maximum.replace(value) != value {
+            (self.owner.request)();
         }
     }
     /// Returns joined logical lines.
     #[must_use]
     pub fn get_text(&self) -> String {
-        self.state.borrow().current.lines.join("\n")
+        self.owner.get_text()
     }
     /// Returns independent owned logical lines.
     #[must_use]
     pub fn get_lines(&self) -> Vec<String> {
-        self.state.borrow().current.lines.clone()
+        self.owner.state.borrow().current.lines.clone()
     }
     /// Returns the stored byte cursor.
     #[must_use]
     pub fn get_cursor(&self) -> CursorPosition {
-        self.state.borrow().current.cursor
+        self.owner.state.borrow().current.cursor
+    }
+    /// Returns the text with each stored paste substituted for its canonical markers.
+    ///
+    /// Every stored paste gets one literal replacement pass in creation order,
+    /// so text a pass inserts is eligible only for later passes.
+    #[must_use]
+    pub fn get_expanded_text(&self) -> String {
+        self.owner.get_expanded_text()
+    }
+    /// Replaces normalized text, captures changed content, cancels completion and always notifies.
+    pub fn set_text(&self, text: &str) {
+        self.owner.set_text(text);
+    }
+    /// Splices normalized text as one undoable edit and cancels completion; empty input has no effect.
+    pub fn insert_text_at_cursor(&self, text: &str) {
+        self.owner.insert_text_at_cursor(text);
+    }
+    /// Adds a trimmed nonempty prompt, suppressing the newest duplicate and retaining 100 entries.
+    pub fn add_to_history(&self, text: &str) {
+        self.owner.add_to_history(text);
     }
     /// Returns a retained border callable.
     #[must_use]
     pub fn border_color(&self) -> BorderColor {
-        self.border.borrow().clone()
+        self.owner.border_color()
     }
     /// Replaces border styling without requesting a frame.
     pub fn set_border_color(&self, color: BorderColor) {
-        let old = self.border.replace(color);
+        let old = self.owner.border.replace(color);
         drop(old);
     }
     /// Returns a retained change callable.
     #[must_use]
     pub fn on_change(&self) -> Option<TextCallback> {
-        self.change.borrow().clone()
+        self.owner.on_change()
     }
     /// Replaces or removes change notification.
     pub fn set_on_change(&self, callback: Option<TextCallback>) {
-        let old = self.change.replace(callback);
+        let old = self.owner.change.replace(callback);
         drop(old);
     }
     /// Returns a retained submission callable.
     #[must_use]
     pub fn on_submit(&self) -> Option<TextCallback> {
-        self.submit.borrow().clone()
+        self.owner.on_submit()
     }
     /// Replaces or removes submission notification.
     pub fn set_on_submit(&self, callback: Option<TextCallback>) {
-        let old = self.submit.replace(callback);
+        let old = self.owner.submit.replace(callback);
         drop(old);
     }
     /// Returns whether submission is disabled.
     #[must_use]
     pub fn disable_submit(&self) -> bool {
-        self.disabled.get()
+        self.owner.disabled.get()
     }
     /// Gates submission without changing text.
     pub fn set_disable_submit(&self, disabled: bool) {
-        self.disabled.set(disabled);
+        self.owner.disabled.set(disabled);
+    }
+    /// Replaces the completion provider, cancelling admitted completion and clearing its menu.
+    pub fn set_autocomplete_provider(
+        &self,
+        provider: Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
+    ) {
+        self.owner.set_provider(provider);
+    }
+    /// Whether a completion menu is visible, regardless of any running request.
+    #[must_use]
+    pub fn is_showing_autocomplete(&self) -> bool {
+        self.owner.is_showing_autocomplete()
+    }
+}
+impl Owner {
+    /// Returns joined logical lines.
+    fn get_text(&self) -> String {
+        self.state.borrow().current.lines.join("\n")
+    }
+    /// Returns a retained border callable.
+    fn border_color(&self) -> BorderColor {
+        self.border.borrow().clone()
+    }
+    /// Returns a retained change callable.
+    fn on_change(&self) -> Option<TextCallback> {
+        self.change.borrow().clone()
+    }
+    /// Returns a retained submission callable.
+    fn on_submit(&self) -> Option<TextCallback> {
+        self.submit.borrow().clone()
     }
     /// Notifies from a committed buffer without holding a state borrow.
     fn notify(&self) {
@@ -258,17 +330,22 @@ fn normalize(value: f64, minimum: usize, maximum: usize, fallback: usize) -> usi
 }
 impl Focusable for Editor {
     fn focus_flag(&self) -> &FocusFlag {
-        &self.focus
+        &self.owner.focus
     }
 }
 impl Component for Editor {
     fn render(&self, width: usize) -> Vec<String> {
-        self.draw(width)
+        self.owner.draw(width)
     }
     fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
     fn focusable(&self) -> Option<&dyn Focusable> {
         Some(self)
+    }
+}
+impl InputHandler for Editor {
+    fn handle_input(&self, data: &str) {
+        self.owner.handle_input(data);
     }
 }

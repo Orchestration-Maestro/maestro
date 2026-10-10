@@ -1,5 +1,5 @@
 //! Directional deleted text and callback-separated ring rotation.
-use super::{Editing, Editor, LastAction};
+use super::{Editing, LastAction, Owner};
 use crate::kill_ring::KillRingOptions;
 /// Cursor-local kill selection.
 #[derive(Clone, Copy)]
@@ -87,7 +87,7 @@ impl Editing {
         self.revision = self.revision.wrapping_add(1);
     }
 }
-impl Editor {
+impl Owner {
     /// Preserves deletion notification before reading and rotating the live ring.
     pub(super) fn yank(&self, rotate: bool) {
         {

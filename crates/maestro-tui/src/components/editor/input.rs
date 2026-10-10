@@ -1,13 +1,15 @@
 //! Registered key dispatch for basic editing.
 use super::kill::Kill;
 use super::navigation::Direction;
-use super::{Buffer, Editor};
+use super::{Buffer, Owner};
 use crate::{KeybindingsManager, get_keybindings, matches_key, tui::InputHandler};
 /// Basic actions in dispatch precedence order.
 #[derive(Clone, Copy)]
 enum Action {
-    /// Parent copy or provider-less Tab.
+    /// Parent copy.
     Consume,
+    /// Explicit completion request.
+    Tab,
     /// Restore a snapshot.
     Undo,
     /// Delete preceding cluster.
@@ -49,10 +51,15 @@ enum Action {
     /// Wait for a literal search target.
     Jump(Direction),
 }
-impl InputHandler for Editor {
+impl InputHandler for Owner {
     fn handle_input(&self, data: &str) {
         let bindings = get_keybindings();
         if self.pending_jump(data, &bindings) || self.frame_paste(data) {
+            return;
+        }
+        let owned =
+            bindings.matches(data, "tui.input.copy") || bindings.matches(data, "tui.editor.undo");
+        if !owned && self.menu_input(data, &bindings) {
             return;
         }
         if let Some(action) = action(data, &bindings) {
@@ -64,11 +71,12 @@ impl InputHandler for Editor {
         }
     }
 }
-impl Editor {
+impl Owner {
     /// Applies one action, releasing mutable storage before notification.
     fn apply(&self, action: Action, data: &str, bindings: &KeybindingsManager) {
         match action {
             Action::Consume => {}
+            Action::Tab => self.tab_completion(),
             Action::Jump(direction) => self.state.borrow_mut().jump = Some(direction),
             Action::Up | Action::Down | Action::PageUp | Action::PageDown => self.navigate(action),
             Action::Kill(kind) => {
@@ -86,10 +94,12 @@ impl Editor {
             Action::Backspace => {
                 self.state.borrow_mut().backspace();
                 self.notify();
+                self.complete_deleted();
             }
             Action::Delete => {
                 self.state.borrow_mut().delete();
                 self.notify();
+                self.complete_deleted();
             }
             Action::Home | Action::End => {
                 let mut state = self.state.borrow_mut();
@@ -143,6 +153,7 @@ impl Editor {
     }
     /// Inserts one newline after capturing a snapshot.
     fn newline(&self) {
+        self.cancel_autocomplete();
         {
             let mut state = self.state.borrow_mut();
             state.snapshot();
@@ -179,9 +190,11 @@ impl Editor {
     fn erase_backslash(&self) {
         self.state.borrow_mut().backspace();
         self.notify();
+        self.complete_deleted();
     }
     /// Clears state before change notification and selects the live submission callable afterward.
     fn submit_value(&self) {
+        self.cancel_autocomplete();
         let value = self
             .get_expanded_text()
             .trim_matches(crate::text::utils::is_whitespace_scalar)
@@ -208,7 +221,7 @@ fn initial_action(data: &str, bindings: &KeybindingsManager) -> Option<Action> {
     let first = [
         ("tui.input.copy", Action::Consume),
         ("tui.editor.undo", Action::Undo),
-        ("tui.input.tab", Action::Consume),
+        ("tui.input.tab", Action::Tab),
         ("tui.editor.deleteToLineEnd", Action::Kill(Kill::LineEnd)),
         (
             "tui.editor.deleteToLineStart",

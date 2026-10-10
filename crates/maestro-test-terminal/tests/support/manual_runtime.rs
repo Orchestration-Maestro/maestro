@@ -2,9 +2,12 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::rc::{Rc, Weak};
+use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 
 use maestro_tui::tui::{LogContext, RenderCallback, RenderTimer, TuiRuntime};
@@ -28,6 +31,9 @@ struct Pending {
     callback: RenderCallback,
 }
 
+/// A future the editor handed to the host.
+type Local = Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error>>>>>;
+
 /// The controlled world.
 #[derive(Default)]
 struct State {
@@ -41,6 +47,8 @@ struct State {
     environment: HashMap<String, String>,
     /// Log effects in the order requested.
     files: Vec<FileEffect>,
+    /// Futures handed over and not yet finished.
+    futures: Vec<Local>,
 }
 
 /// Shared handle to the controlled host; clones observe the same world.
@@ -161,6 +169,38 @@ impl ManualRuntime {
         }
     }
 
+    /// Futures handed over that have not finished.
+    pub fn futures(&self) -> usize {
+        self.state.borrow().futures.len()
+    }
+
+    /// Polls every handed-over future, repeating while any finishes or new ones arrive.
+    ///
+    /// Finished futures are dropped; their errors are returned unchanged in completion order.
+    pub fn drain_futures(&self) -> Vec<Box<dyn std::error::Error>> {
+        let mut errors = Vec::new();
+        let mut context = Context::from_waker(Waker::noop());
+        loop {
+            let batch = std::mem::take(&mut self.state.borrow_mut().futures);
+            let before = batch.len();
+            let mut pending = Vec::new();
+            for mut future in batch {
+                match future.as_mut().poll(&mut context) {
+                    Poll::Pending => pending.push(future),
+                    Poll::Ready(result) => errors.extend(result.err()),
+                }
+            }
+            let progressed = pending.len() < before;
+            let mut state = self.state.borrow_mut();
+            let spawned = !state.futures.is_empty();
+            pending.append(&mut state.futures);
+            state.futures = pending;
+            if !progressed && !spawned {
+                return errors;
+            }
+        }
+    }
+
     /// Removes and returns the earliest callback that is due.
     fn take_due(&self) -> Option<Pending> {
         let mut state = self.state.borrow_mut();
@@ -191,6 +231,10 @@ impl TuiRuntime for ManualRuntime {
             state: Rc::downgrade(&self.state),
             id,
         })
+    }
+
+    fn spawn_local(&self, future: Local) {
+        self.state.borrow_mut().futures.push(future);
     }
 
     fn environment(&self, key: &str) -> Option<String> {

@@ -1,8 +1,10 @@
 //! Effects the frame writer asks of its host: time, deferred work, environment and files.
 
 use std::cell::RefCell;
+use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -13,6 +15,10 @@ pub type TerminalHandle = Rc<RefCell<dyn Terminal>>;
 
 /// Work a runtime runs after its delay; the driver of the runtime receives its error.
 pub type RenderCallback = Box<dyn FnOnce() -> io::Result<()>>;
+
+/// A fallible future the host runs on the current thread.
+pub type LocalFuture =
+    Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error>>> + 'static>>;
 
 /// A pending [`RenderCallback`].
 pub trait RenderTimer {
@@ -46,6 +52,12 @@ pub trait TuiRuntime {
     /// Runs `callback` after `delay`, never before this call returns, even for a zero
     /// delay.
     fn schedule(&self, delay: Duration, callback: RenderCallback) -> Box<dyn RenderTimer>;
+
+    /// Runs `future` to completion on the current thread, never before this call returns.
+    ///
+    /// The host owns the future and reports an error it returns; the writer never
+    /// prints it.
+    fn spawn_local(&self, future: LocalFuture);
 
     /// The value of an environment variable, if set.
     fn environment(&self, key: &str) -> Option<String>;

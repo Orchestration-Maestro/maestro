@@ -31,7 +31,9 @@ pub use input::{InputListener, InputListenerResult};
 pub use overlay_types::{
     OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
 };
-pub use runtime::{LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime};
+pub use runtime::{
+    LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
+};
 
 /// Writes components to a terminal as retained frames.
 ///

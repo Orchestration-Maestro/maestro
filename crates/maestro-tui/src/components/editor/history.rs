@@ -1,9 +1,9 @@
 //! Retained prompt admission and browsing.
-use super::{Buffer, Editor};
+use super::{Buffer, Owner};
 use crate::autocomplete::CursorPosition;
-impl Editor {
+impl Owner {
     /// Adds a trimmed nonempty prompt, suppressing the newest duplicate and retaining 100 entries.
-    pub fn add_to_history(&self, text: &str) {
+    pub(super) fn add_to_history(&self, text: &str) {
         let text = text.trim_matches(crate::text::utils::is_whitespace_scalar);
         let mut state = self.state.borrow_mut();
         if text.is_empty() || state.history.first().is_some_and(|latest| latest == text) {
