@@ -28,7 +28,8 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
   base, exists (`Path does not exist: <path>` otherwise); removal does nothing.
 
 Installation does not consult the offline setting. [Available-update
-checks](package-updates.md) consult it without acquiring contents.
+checks](package-updates.md) consult it without acquiring contents. Configured
+execution selects registrations before applying the offline return.
 
 ## Progress
 

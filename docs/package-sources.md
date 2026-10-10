@@ -5,7 +5,7 @@ contents; see [package installation and removal](packages.md). Supply a live
 `SettingsManager` and `PackageOperations`; native callers can use
 `NativePackageOperations` with their own shell-selection function and stdout
 takeover query and a caller-driven `Rc<tokio::task::LocalSet>`.
-For read-only availability, see [package update checks](package-updates.md).
+For read-only availability and configured execution, see [package updates](package-updates.md).
 
 The direct `parse_git_url` parser accepts explicit HTTP, HTTPS, SSH and Git URLs;
 shorthand requires the `git:` prefix. Its result separates the clone address,

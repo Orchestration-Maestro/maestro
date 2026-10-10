@@ -23,12 +23,20 @@ pub struct Effects {
     pub offline_sequence: RefCell<VecDeque<Option<String>>>,
     /// Retained offline environment value.
     pub offline: RefCell<Option<String>>,
+    /// Optional inherited-command behavior.
+    pub run_hook: RefCell<Option<RunHook>>,
+    /// The admission index at which spawning fails.
+    pub fail_spawn_at: std::cell::Cell<Option<usize>>,
     /// Admission count.
     pub spawns: std::cell::Cell<usize>,
     /// Command invocations.
     pub calls: RefCell<Vec<(String, Vec<String>)>>,
     /// A one-shot settings edit during completed root lookup.
     pub on_command: RefCell<Option<Box<dyn FnOnce()>>>,
+    /// Whether controlled file creation fails.
+    pub fail_write: std::cell::Cell<bool>,
+    /// Authored file writes at the filesystem boundary.
+    pub writes: RefCell<Vec<(String, String)>>,
     /// Paths checked for existing contents.
     pub paths: RefCell<Vec<String>>,
     /// Responses consumed by commands.
@@ -50,6 +58,8 @@ pub type CaptureOperands = (
     Option<std::time::Duration>,
     Vec<(String, String)>,
 );
+/// A stateful callback that returns owned inherited-command work.
+pub type RunHook = Rc<dyn Fn(&str, &[String], Option<&str>) -> PackageFuture<'static, Option<i32>>>;
 /// A stateful callback that returns owned captured work.
 pub type CaptureHook = Rc<dyn Fn(&str, &[String], Option<&str>) -> PackageFuture<'static, String>>;
 /// Replaceable adapter sharing its observations with the caller.
@@ -80,7 +90,11 @@ impl PackageOperations for Controlled {
             .borrow()
             .upgrade()
             .ok_or_else(|| io::Error::other("stopped runtime"))?;
-        self.0.spawns.set(self.0.spawns.get() + 1);
+        let index = self.0.spawns.get();
+        if self.0.fail_spawn_at.get() == Some(index) {
+            return Err(io::Error::other("admission failed"));
+        }
+        self.0.spawns.set(index + 1);
         drop(local.spawn_local(operation));
         Ok(())
     }
@@ -150,7 +164,11 @@ impl PackageOperations for Controlled {
     fn create_dir_all(&self, _path: &str) -> io::Result<()> {
         Ok(())
     }
-    fn write_file(&self, _path: &str, _text: &str) -> io::Result<()> {
+    fn write_file(&self, path: &str, text: &str) -> io::Result<()> {
+        if self.0.fail_write.get() {
+            return Err(io::Error::other("file write failed"));
+        }
+        self.0.writes.borrow_mut().push((path.into(), text.into()));
         Ok(())
     }
     fn directory_is_empty(&self, _path: &str) -> io::Result<bool> {
@@ -161,10 +179,18 @@ impl PackageOperations for Controlled {
     }
     fn run_command<'a>(
         &'a self,
-        _command: &'a str,
-        _args: &'a [String],
-        _cwd: Option<&'a str>,
+        command: &'a str,
+        args: &'a [String],
+        cwd: Option<&'a str>,
     ) -> PackageFuture<'a, Option<i32>> {
+        self.0
+            .calls
+            .borrow_mut()
+            .push((command.into(), args.to_vec()));
+        let hook = self.0.run_hook.borrow().clone();
+        if let Some(hook) = hook {
+            return hook(command, args, cwd);
+        }
         Box::pin(async { Ok(Some(0)) })
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {

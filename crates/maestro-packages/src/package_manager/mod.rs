@@ -132,6 +132,13 @@ pub trait PackageManager {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()>;
+    /// Updates matching configured registrations; absent or empty input selects all.
+    /// Does not persist settings; matched local and pinned sources are skipped.
+    /// # Errors
+    /// Returns selection, callback, filesystem, command or worker-admission failures.
+    fn update(self: Rc<Self>, source: Option<&str>) -> PackageFuture<'static, ()>
+    where
+        Self: 'static;
     /// Removes a source's managed contents; `None` means user scope.
     /// # Errors
     /// Returns callback, path, filesystem or command failures.
@@ -191,6 +198,12 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
         Box::pin(self.acquire_and_persist(source, scope))
+    }
+    fn update(self: Rc<Self>, source: Option<&str>) -> PackageFuture<'static, ()>
+    where
+        Self: 'static,
+    {
+        Box::pin(self.update_configured(source.map(str::to_owned)))
     }
     fn remove<'a>(
         &'a self,

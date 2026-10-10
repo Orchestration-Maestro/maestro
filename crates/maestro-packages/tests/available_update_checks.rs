@@ -3,6 +3,7 @@
 #![cfg(unix)]
 mod native_support;
 mod support;
+mod worker_support;
 use maestro_packages::{
     DefaultPackageManager, InstalledSourceScope, NativePackageOperations, PackageManagerOptions,
     PackageUpdateType,
@@ -10,6 +11,7 @@ use maestro_packages::{
 use maestro_settings::{Settings, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
+use worker_support::{Gates, driver};
 
 #[test]
 fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
@@ -729,99 +731,6 @@ fn check_calls_do_not_hold_settings_borrows_across_effects() {
     );
 }
 
-/// Controls a capture at its first awaited probe for each source.
-struct Gates {
-    /// Completion permits indexed by selected source.
-    release: RefCell<std::collections::BTreeMap<usize, tokio::sync::oneshot::Sender<()>>>,
-    /// Admission witnesses from the producer.
-    starts: tokio::sync::mpsc::UnboundedSender<usize>,
-}
-impl Gates {
-    /// Creates one gate per source and observes admission at the capture boundary.
-    fn install(
-        effects: &support::Effects,
-        count: usize,
-    ) -> (Rc<Self>, tokio::sync::mpsc::UnboundedReceiver<usize>) {
-        let (starts, receive) = tokio::sync::mpsc::unbounded_channel();
-        let gates = Rc::new(Self {
-            release: RefCell::default(),
-            starts,
-        });
-        let (release, mut wait): (
-            std::collections::BTreeMap<_, _>,
-            std::collections::BTreeMap<_, _>,
-        ) = (0..count)
-            .map(|i| {
-                let (tx, rx) = tokio::sync::oneshot::channel();
-                ((i, tx), (i, rx))
-            })
-            .unzip();
-        *gates.release.borrow_mut() = release;
-        let wait = Rc::new(RefCell::new(std::mem::take(&mut wait)));
-        let observed = gates.clone();
-        *effects.capture_hook.borrow_mut() = Some(gated_capture(observed, wait));
-        (gates, receive)
-    }
-    /// Releases exactly one admitted capture.
-    fn finish(&self, index: usize) {
-        let release = self.release.borrow_mut().remove(&index).unwrap();
-        release.send(()).unwrap();
-    }
-}
-/// Produces native-kind responses around one gated initial probe.
-fn gated_capture(
-    observed: Rc<Gates>,
-    wait: Rc<RefCell<std::collections::BTreeMap<usize, tokio::sync::oneshot::Receiver<()>>>>,
-) -> support::CaptureHook {
-    Rc::new(move |command, args, cwd| {
-        let initial = command != "git" || args == ["rev-parse", "HEAD"];
-        if !initial {
-            let text = if args[0] == "rev-parse" {
-                String::new()
-            } else {
-                format!("{}\tHEAD", "b".repeat(40))
-            };
-            return Box::pin(async move { Ok(text) });
-        }
-        let label = if command == "git" {
-            cwd.unwrap().rsplit('/').next().unwrap()
-        } else {
-            args[1].as_str()
-        };
-        let index: usize = label.strip_prefix('p').unwrap().parse().unwrap();
-        let gate = wait.borrow_mut().remove(&index).unwrap();
-        let starts = observed.starts.clone();
-        let text = if command == "git" {
-            "a".repeat(40)
-        } else {
-            "\"2\"".into()
-        };
-        Box::pin(async move {
-            starts.send(index).unwrap();
-            gate.await.unwrap();
-            Ok(text)
-        })
-    })
-}
-/// Native local runtime used by concurrency witnesses.
-fn driver(effects: &support::Effects) -> (tokio::runtime::Runtime, Rc<tokio::task::LocalSet>) {
-    let local = Rc::new(tokio::task::LocalSet::new());
-    *effects.local.borrow_mut() = Rc::downgrade(&local);
-    (
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap(),
-        local,
-    )
-}
-/// Bounds a broken asynchronous witness without relying on a delay for correctness.
-async fn bounded<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::time::timeout(std::time::Duration::from_secs(5), future)
-        .await
-        .expect("controlled completion witness did not fire")
-}
-
 #[test]
 fn availability_returns_typed_records_in_source_order() {
     let (manager, _, effects) = configured(
@@ -833,12 +742,12 @@ fn availability_returns_typed_records_in_source_order() {
     let result = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for index in 0..4 {
-            assert_eq!(bounded(starts.recv()).await, Some(index));
+            assert_eq!(starts.recv().await, Some(index));
         }
         for index in (0..4).rev() {
             gates.finish(index);
         }
-        let result = bounded(result).await.unwrap().unwrap();
+        let result = result.await.unwrap().unwrap();
         assert_eq!(
             sources(&result),
             [
@@ -887,12 +796,12 @@ fn four_workers_claim_slots_without_global_serialization() {
     let second = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for _ in 0..8 {
-            bounded(started.recv()).await.unwrap();
+            started.recv().await.unwrap();
         }
         assert_eq!(effects.spawns.get(), 8);
         release.send(true).unwrap();
-        assert_eq!(bounded(first).await.unwrap().unwrap().len(), 4);
-        assert_eq!(bounded(second).await.unwrap().unwrap().len(), 4);
+        assert_eq!(first.await.unwrap().unwrap().len(), 4);
+        assert_eq!(second.await.unwrap().unwrap().len(), 4);
     }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
 }
@@ -916,10 +825,10 @@ fn first_failure_keeps_other_workers_claiming_sources() {
     let result = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for i in 0..3 {
-            assert_eq!(bounded(starts.recv()).await, Some(i));
+            assert_eq!(starts.recv().await, Some(i));
         }
         assert!(
-            bounded(result)
+            result
                 .await
                 .unwrap()
                 .unwrap_err()
@@ -927,11 +836,11 @@ fn first_failure_keeps_other_workers_claiming_sources() {
                 .contains("first failure")
         );
         gates.finish(1);
-        assert_eq!(bounded(starts.recv()).await, Some(3));
+        assert_eq!(starts.recv().await, Some(3));
         gates.finish(3);
-        assert_eq!(bounded(starts.recv()).await, Some(4));
+        assert_eq!(starts.recv().await, Some(4));
         gates.finish(4);
-        assert_eq!(bounded(starts.recv()).await, Some(5));
+        assert_eq!(starts.recv().await, Some(5));
         for i in [0, 2, 5] {
             gates.finish(i);
         }
@@ -961,12 +870,12 @@ fn availability_releases_last_owner_after_remaining_work() {
     drop(manager);
     runtime.block_on(local.run_until(async {
         for i in 0..3 {
-            assert_eq!(bounded(starts.recv()).await, Some(i));
+            assert_eq!(starts.recv().await, Some(i));
         }
-        assert!(bounded(result).await.unwrap().is_err());
+        assert!(result.await.unwrap().is_err());
         assert!(weak.upgrade().is_some());
         gates.finish(0);
-        assert_eq!(bounded(starts.recv()).await, Some(3));
+        assert_eq!(starts.recv().await, Some(3));
         for i in [1, 2, 3] {
             gates.finish(i);
         }
@@ -1060,7 +969,7 @@ fn check_pool_size(count: usize) {
     let result = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
         for index in 0..count.min(4) {
-            assert_eq!(bounded(starts.recv()).await, Some(index));
+            assert_eq!(starts.recv().await, Some(index));
         }
         if count > 0 {
             assert_eq!(effects.spawns.get(), count.min(4));
@@ -1073,10 +982,10 @@ fn check_pool_size(count: usize) {
         for (completed, index) in completion.into_iter().enumerate() {
             gates.finish(index);
             if completed + 4 < count {
-                assert_eq!(bounded(starts.recv()).await, Some(completed + 4));
+                assert_eq!(starts.recv().await, Some(completed + 4));
             }
         }
-        let result = bounded(result).await.unwrap().unwrap();
+        let result = result.await.unwrap().unwrap();
         let ordered: Vec<_> = result.iter().map(|r| r.display_name.as_str()).collect();
         let expected = &[
             "p0",

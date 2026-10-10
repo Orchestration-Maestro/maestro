@@ -44,3 +44,23 @@ fn npm_name(spec: &str) -> &str {
     }
     spec
 }
+
+/// Builds the configured lookup failure with the first matching shorthand.
+pub(super) fn no_match_message(source: &str, configured: &[String]) -> String {
+    let input = crate::trim(source);
+    let suggestion = configured.iter().find(|stored| match parse(stored) {
+        Source::Npm { name, spec } => input == name || input == spec,
+        Source::Git(git) => {
+            let shorthand = format!("{}/{}", git.host, git.path);
+            input == shorthand
+                || git
+                    .r#ref
+                    .is_some_and(|reference| input == format!("{shorthand}@{reference}"))
+        }
+        Source::Local(_) => false,
+    });
+    suggestion.map_or_else(
+        || format!("No matching package found for {source}"),
+        |suggestion| format!("No matching package found for {source}. Did you mean {suggestion}?"),
+    )
+}

@@ -1,4 +1,4 @@
-# Available package updates
+# Package updates
 
 Call `DefaultPackageManager::check_for_available_updates` on an `Rc` manager to
 check installed, unpinned npm and Git sources. Returned `PackageUpdate` records
@@ -17,6 +17,28 @@ can reject the operation. Checks do not install, persist settings or emit progre
 `MAESTRO_OFFLINE` enables offline mode only for `1`, case-insensitive `true` or
 case-insensitive `yes`, without trimming. Offline returns before reading settings;
 individual npm/Git checks read the value again before probing.
+
+## Configured execution
+
+Call [`PackageManager::update`](../crates/maestro-packages/src/package_manager/mod.rs)
+on an `Rc` manager. Absent or empty input selects all registrations; named input
+uses [configured source identity](package-sources.md). Selection retains registration order and duplicates without writing settings. Selection precedes the
+offline return, so an unmatched named input still fails offline and can suggest
+the first configured shorthand match.
+
+Matched local sources and explicit npm versions/tags/ranges or Git refs are skipped
+before inspecting installed contents. Unknown installed npm versions and failed
+latest-version lookups cause an update, unlike availability checking. npm batches
+preserve candidate order as `name@latest` within each scope. After npm checking,
+nonempty scope batches and Git work are admitted concurrently through the same
+private worker helper used for availability. Command configuration and progress
+callbacks are read live during execution.
+
+Missing unpinned Git contents use the existing installation operation. Existing
+contents select an origin upstream or origin-HEAD fallback, fetch its targeted
+ref, and compare refreshed and local heads. Equal heads preserve dirty and
+untracked contents; different heads cause reset, clean and optional dependency
+installation. Completed effects are not rolled back on failure.
 
 ## Native runtime
 

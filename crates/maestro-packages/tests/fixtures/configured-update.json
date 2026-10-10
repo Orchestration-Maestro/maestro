@@ -1,0 +1,3474 @@
+[
+  {
+    "id": "select-bare-scp-is-local",
+    "input": {
+      "kind": "named",
+      "user": [
+        "git:github.com/acme/tool"
+      ],
+      "project": [],
+      "source": "git@github.com:acme/tool.git"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for git@github.com:acme/tool.git"
+    }
+  },
+  {
+    "id": "select-no-match",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:b"
+      ],
+      "project": [],
+      "source": "npm:missing"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for npm:missing"
+    }
+  },
+  {
+    "id": "suggest-name",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:a@1",
+        "npm:a",
+        "npm:a@1"
+      ],
+      "project": [],
+      "source": "a"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for a. Did you mean npm:a@1?"
+    }
+  },
+  {
+    "id": "suggest-spec",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:a@1",
+        "npm:a@next"
+      ],
+      "project": [],
+      "source": "a@next"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for a@next. Did you mean npm:a@next?"
+    }
+  },
+  {
+    "id": "suggest-scope-name",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:@org/a@next"
+      ],
+      "project": [],
+      "source": "@org/a"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for @org/a. Did you mean npm:@org/a@next?"
+    }
+  },
+  {
+    "id": "suggest-git",
+    "input": {
+      "kind": "named",
+      "user": [
+        "git:github.com/acme/tool@v1",
+        "git:github.com/acme/tool"
+      ],
+      "project": [],
+      "source": "github.com/acme/tool"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for github.com/acme/tool. Did you mean git:github.com/acme/tool@v1?"
+    }
+  },
+  {
+    "id": "suggest-git-ref",
+    "input": {
+      "kind": "named",
+      "user": [
+        "git:github.com/acme/tool@v2",
+        "git:github.com/acme/tool@v1"
+      ],
+      "project": [],
+      "source": "github.com/acme/tool@v1"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for github.com/acme/tool@v1. Did you mean git:github.com/acme/tool@v1?"
+    }
+  },
+  {
+    "id": "suggest-bom",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:a"
+      ],
+      "project": [],
+      "source": "﻿a﻿"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for ﻿a﻿. Did you mean npm:a?"
+    }
+  },
+  {
+    "id": "suggest-next-line",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:a"
+      ],
+      "project": [],
+      "source": "a"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for a"
+    }
+  },
+  {
+    "id": "suggest-case",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:a"
+      ],
+      "project": [],
+      "source": "A"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for A"
+    }
+  },
+  {
+    "id": "suggest-local",
+    "input": {
+      "kind": "named",
+      "user": [
+        "./folder"
+      ],
+      "project": [],
+      "source": "folder"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for folder"
+    }
+  },
+  {
+    "id": "suggest-unknown",
+    "input": {
+      "kind": "named",
+      "user": [
+        "npm:a",
+        "git:github.com/acme/tool"
+      ],
+      "project": [],
+      "source": "missing"
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for missing"
+    }
+  },
+  {
+    "id": "offline-no-match",
+    "input": {
+      "kind": "offline",
+      "source": "npm:missing",
+      "offline": "1",
+      "user": [
+        "npm:a@1",
+        "./local"
+      ]
+    },
+    "expected": {
+      "commands": [],
+      "error": "No matching package found for npm:missing"
+    }
+  },
+  {
+    "id": "offline-selected",
+    "input": {
+      "kind": "offline",
+      "source": "npm:a",
+      "offline": "YES",
+      "user": [
+        "npm:a@1",
+        "./local"
+      ]
+    },
+    "expected": {
+      "commands": []
+    }
+  },
+  {
+    "id": "offline-local",
+    "input": {
+      "kind": "offline",
+      "source": "/fixture/agent/local",
+      "offline": "true",
+      "user": [
+        "npm:a@1",
+        "./local"
+      ]
+    },
+    "expected": {
+      "commands": []
+    }
+  },
+  {
+    "id": "offline-pinned",
+    "input": {
+      "kind": "offline",
+      "source": "npm:a@1",
+      "offline": "1",
+      "user": [
+        "npm:a@1",
+        "./local"
+      ]
+    },
+    "expected": {
+      "commands": []
+    }
+  },
+  {
+    "id": "offline-not-trimmed",
+    "input": {
+      "kind": "offline",
+      "offline": " true ",
+      "user": [
+        "npm:a"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "-g",
+            "a@latest"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "empty-config-offline",
+    "input": {
+      "kind": "offline",
+      "offline": "1",
+      "user": []
+    },
+    "expected": {
+      "commands": []
+    }
+  },
+  {
+    "id": "skip-fixed",
+    "input": {
+      "kind": "skip",
+      "source": "npm:a@1.0.0"
+    },
+    "expected": {
+      "commands": [],
+      "events": []
+    }
+  },
+  {
+    "id": "skip-tag",
+    "input": {
+      "kind": "skip",
+      "source": "npm:a@next"
+    },
+    "expected": {
+      "commands": [],
+      "events": []
+    }
+  },
+  {
+    "id": "skip-range",
+    "input": {
+      "kind": "skip",
+      "source": "npm:a@^1"
+    },
+    "expected": {
+      "commands": [],
+      "events": []
+    }
+  },
+  {
+    "id": "skip-scoped-tag",
+    "input": {
+      "kind": "skip",
+      "source": "npm:@org/a@latest"
+    },
+    "expected": {
+      "commands": [],
+      "events": []
+    }
+  },
+  {
+    "id": "skip-git-pin",
+    "input": {
+      "kind": "skip",
+      "source": "git:github.com/acme/tool@main"
+    },
+    "expected": {
+      "commands": [],
+      "events": []
+    }
+  },
+  {
+    "id": "skip-local",
+    "input": {
+      "kind": "skip",
+      "source": "./absent"
+    },
+    "expected": {
+      "commands": [],
+      "events": []
+    }
+  },
+  {
+    "id": "npm-missing",
+    "input": {
+      "kind": "npm",
+      "installed": null,
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-manifest-absent",
+    "input": {
+      "kind": "npm",
+      "installed": "NO_FILE",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-malformed",
+    "input": {
+      "kind": "npm",
+      "installed": "{",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-version-absent",
+    "input": {
+      "kind": "npm",
+      "installed": "{}",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-version-null",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":null}",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-version-empty",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"\"}",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-version-whitespace",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\" \"}",
+      "latest": "\" \""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        }
+      ],
+      "events": []
+    }
+  },
+  {
+    "id": "npm-current",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1\"}",
+      "latest": "\"1\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        }
+      ],
+      "events": []
+    }
+  },
+  {
+    "id": "npm-changed",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1\"}",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-distinct-spelling",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1.0\"}",
+      "latest": "\"1.0.0\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-latest-error",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1\"}",
+      "latest": {
+        "error": "lookup failed"
+      }
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-latest-empty",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1\"}",
+      "latest": "﻿"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-latest-invalid",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1\"}",
+      "latest": "{"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-latest-null",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"1\"}",
+      "latest": "null"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-manifest-unreadable",
+    "input": {
+      "kind": "npm",
+      "installed": "DIRECTORY",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "npm-last-version",
+    "input": {
+      "kind": "npm",
+      "installed": "{\"version\":\"2\",\"version\":\"1\",\"unused\":{\"x\":4}}",
+      "latest": "\"2\""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "view",
+            "a",
+            "version",
+            "--json"
+          ],
+          "cwd": "/fixture/cwd",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "batch-user",
+    "input": {
+      "kind": "batch",
+      "user": [
+        "npm:z",
+        "npm:a",
+        "npm:z"
+      ],
+      "project": [],
+      "existing": false
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "-g",
+            "z@latest",
+            "a@latest",
+            "z@latest"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "user npm packages",
+          "message": "Updating user npm packages..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "user npm packages"
+        }
+      ],
+      "settings": {
+        "packages": [
+          "npm:z",
+          "npm:a",
+          "npm:z"
+        ]
+      },
+      "project": {
+        "packages": []
+      }
+    }
+  },
+  {
+    "id": "batch-project",
+    "input": {
+      "kind": "batch",
+      "user": [],
+      "project": [
+        "npm:z",
+        "npm:a"
+      ],
+      "existing": false
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "z@latest",
+            "a@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "project npm packages",
+          "message": "Updating project npm packages..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "project npm packages"
+        }
+      ],
+      "settings": {
+        "packages": []
+      },
+      "project": {
+        "packages": [
+          "npm:z",
+          "npm:a"
+        ]
+      },
+      "files": {
+        "manifest": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}",
+        "ignore": "*\n!.gitignore\n"
+      }
+    }
+  },
+  {
+    "id": "batch-both",
+    "input": {
+      "kind": "batch",
+      "user": [
+        "npm:z"
+      ],
+      "project": [
+        "npm:z"
+      ],
+      "command": [
+        "runner",
+        "fixed"
+      ],
+      "existing": false
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "runner",
+          "args": [
+            "fixed",
+            "install",
+            "-g",
+            "z@latest"
+          ]
+        },
+        {
+          "program": "runner",
+          "args": [
+            "fixed",
+            "install",
+            "z@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:z",
+          "message": "Updating npm:z..."
+        },
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:z",
+          "message": "Updating npm:z..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:z"
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:z"
+        }
+      ],
+      "settings": {
+        "packages": [
+          "npm:z"
+        ]
+      },
+      "project": {
+        "packages": [
+          "npm:z"
+        ]
+      },
+      "files": {
+        "manifest": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}",
+        "ignore": "*\n!.gitignore\n"
+      }
+    }
+  },
+  {
+    "id": "batch-filtered",
+    "input": {
+      "kind": "batch",
+      "user": [
+        {
+          "source": "npm:z",
+          "extensions": [],
+          "custom": "kept"
+        }
+      ],
+      "project": [],
+      "existing": false
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "-g",
+            "z@latest"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:z",
+          "message": "Updating npm:z..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:z"
+        }
+      ],
+      "settings": {
+        "packages": [
+          {
+            "source": "npm:z",
+            "extensions": [],
+            "custom": "kept"
+          }
+        ]
+      },
+      "project": {
+        "packages": []
+      }
+    }
+  },
+  {
+    "id": "batch-existing-files",
+    "input": {
+      "kind": "batch",
+      "user": [],
+      "project": [
+        "npm:z"
+      ],
+      "existing": true
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "z@latest",
+            "--prefix",
+            "/fixture/cwd/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:z",
+          "message": "Updating npm:z..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:z"
+        }
+      ],
+      "settings": {
+        "packages": []
+      },
+      "project": {
+        "packages": [
+          "npm:z"
+        ]
+      },
+      "files": {
+        "manifest": "existing manifest",
+        "ignore": "existing ignore"
+      }
+    }
+  },
+  {
+    "id": "callback-start",
+    "input": {
+      "kind": "callback",
+      "phase": "start"
+    },
+    "expected": {
+      "commands": [],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        }
+      ],
+      "error": "callback start"
+    }
+  },
+  {
+    "id": "callback-complete",
+    "input": {
+      "kind": "callback",
+      "phase": "complete"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "-g",
+            "a@latest"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a"
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "npm:a",
+          "message": "callback complete"
+        }
+      ],
+      "error": "callback complete"
+    }
+  },
+  {
+    "id": "callback-error",
+    "input": {
+      "kind": "callback",
+      "phase": "error"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "-g",
+            "a@latest"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "npm:a",
+          "message": "command failed"
+        }
+      ],
+      "error": "callback error"
+    }
+  },
+  {
+    "id": "callback-replace",
+    "input": {
+      "kind": "callback",
+      "phase": "replace"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "-g",
+            "a@latest"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:a",
+          "message": "Updating npm:a..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:a",
+          "observer": "new"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-upstream",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/feature/x"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/feature/x:refs/remotes/origin/feature/x"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-trim-bom",
+    "input": {
+      "kind": "git",
+      "upstream": "﻿origin/main﻿"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-trim-next-line",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-origin-nonprefix",
+    "input": {
+      "kind": "git",
+      "upstream": {
+        "error": "none"
+      },
+      "symbolic": "refs/remotes/other/main"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/refs/remotes/other/main:refs/remotes/origin/refs/remotes/other/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-other-remote",
+    "input": {
+      "kind": "git",
+      "upstream": "upstream/main"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-empty-branch",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-upstream-error",
+    "input": {
+      "kind": "git",
+      "upstream": {
+        "error": "no upstream"
+      }
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-upstream-head-error",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "upstreamHead": {
+        "error": "missing"
+      }
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-origin-query-error",
+    "input": {
+      "kind": "git",
+      "upstream": {
+        "error": "none"
+      },
+      "symbolic": {
+        "error": "none"
+      }
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+HEAD:refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-origin-empty",
+    "input": {
+      "kind": "git",
+      "upstream": {
+        "error": "none"
+      },
+      "symbolic": ""
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+HEAD:refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-origin-set-head-error",
+    "input": {
+      "kind": "git",
+      "upstream": {
+        "error": "none"
+      },
+      "setHeadError": true
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-origin-head-error",
+    "input": {
+      "kind": "git",
+      "upstream": {
+        "error": "none"
+      },
+      "originHead": {
+        "error": "missing origin"
+      }
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "remote",
+            "set-head",
+            "origin",
+            "-a"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "missing origin"
+        }
+      ],
+      "error": "missing origin"
+    }
+  },
+  {
+    "id": "git-current",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "current": true
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-fetch-error",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "fail": "fetch"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "failed fetch"
+        }
+      ],
+      "error": "failed fetch"
+    }
+  },
+  {
+    "id": "git-reset-error",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "fail": "reset"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "failed reset"
+        }
+      ],
+      "error": "failed reset"
+    }
+  },
+  {
+    "id": "git-clean-error",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "fail": "clean"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "failed clean"
+        }
+      ],
+      "error": "failed clean"
+    }
+  },
+  {
+    "id": "git-local-head-error",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "failCapture": "HEAD"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "capture failed HEAD"
+        }
+      ],
+      "error": "capture failed HEAD"
+    }
+  },
+  {
+    "id": "git-refreshed-head-error",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "failCapture": "REFRESH"
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "error",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "capture failed @{upstream}"
+        }
+      ],
+      "error": "capture failed @{upstream}"
+    }
+  },
+  {
+    "id": "git-dependencies-default",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "manifest": true
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "npm",
+          "args": [
+            "install",
+            "--omit=dev"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-dependencies-configured",
+    "input": {
+      "kind": "git",
+      "upstream": "origin/main",
+      "manifest": true,
+      "command": [
+        "runner",
+        "fixed"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--abbrev-ref",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "fetch",
+            "--prune",
+            "--no-tags",
+            "origin",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "clean",
+            "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "runner",
+          "args": [
+            "fixed",
+            "install"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "git-missing",
+    "input": {
+      "kind": "git",
+      "missing": true
+    },
+    "expected": {
+      "commands": [
+        {
+          "program": "git",
+          "args": [
+            "clone",
+            "https://github.com/acme/tool",
+            "/fixture/agent/git/github.com/acme/tool"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "git:github.com/acme/tool",
+          "message": "Updating git:github.com/acme/tool..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "git:github.com/acme/tool"
+        }
+      ]
+    }
+  },
+  {
+    "id": "parallel-groups",
+    "input": {
+      "kind": "parallel",
+      "userJobs": 1,
+      "projectJobs": 1,
+      "gitJobs": 5
+    },
+    "expected": {
+      "groups": {
+        "first": {
+          "user": true,
+          "project": true,
+          "acme/tool-0": true,
+          "acme/tool-1": true,
+          "acme/tool-2": true,
+          "acme/tool-3": true
+        },
+        "started": {
+          "user": true,
+          "project": true,
+          "acme/tool-0": true,
+          "acme/tool-1": true,
+          "acme/tool-2": true,
+          "acme/tool-3": true,
+          "acme/tool-4": true
+        },
+        "finished": {
+          "user": true,
+          "project": true,
+          "acme/tool-0": true,
+          "acme/tool-1": true,
+          "acme/tool-2": true,
+          "acme/tool-3": true,
+          "acme/tool-4": true
+        }
+      }
+    }
+  },
+  {
+    "id": "native-current",
+    "input": {
+      "kind": "native",
+      "scenario": "current"
+    },
+    "expected": {
+      "native": {
+        "content": "dirty",
+        "untrackedExists": true,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": true
+        }
+      }
+    }
+  },
+  {
+    "id": "native-one",
+    "input": {
+      "kind": "native",
+      "scenario": "one"
+    },
+    "expected": {
+      "native": {
+        "content": "updated",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-multiple",
+    "input": {
+      "kind": "native",
+      "scenario": "multiple"
+    },
+    "expected": {
+      "native": {
+        "content": "fourth",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-detached",
+    "input": {
+      "kind": "native",
+      "scenario": "detached"
+    },
+    "expected": {
+      "native": {
+        "content": "updated",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-non-origin",
+    "input": {
+      "kind": "native",
+      "scenario": "non-origin"
+    },
+    "expected": {
+      "native": {
+        "content": "updated",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-rewritten",
+    "input": {
+      "kind": "native",
+      "scenario": "rewritten"
+    },
+    "expected": {
+      "native": {
+        "content": "rewritten",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-removed",
+    "input": {
+      "kind": "native",
+      "scenario": "removed"
+    },
+    "expected": {
+      "native": {
+        "content": "removed-replaced",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-replacement",
+    "input": {
+      "kind": "native",
+      "scenario": "replacement"
+    },
+    "expected": {
+      "native": {
+        "content": "unrelated",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  },
+  {
+    "id": "native-pinned",
+    "input": {
+      "kind": "native",
+      "scenario": "pinned"
+    },
+    "expected": {
+      "native": {
+        "content": "initial",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": false,
+          "original": true
+        }
+      }
+    }
+  },
+  {
+    "id": "native-scope-only",
+    "input": {
+      "kind": "native",
+      "scenario": "scope-only"
+    },
+    "expected": {
+      "native": {
+        "content": "updated",
+        "untrackedExists": false,
+        "projectAcquired": false,
+        "heads": {
+          "remote": true,
+          "original": false
+        }
+      }
+    }
+  }
+]
