@@ -1,4 +1,5 @@
 {
+  "maestro-app": "core",
   "maestro-cancellation": "core",
   "maestro-credentials": "core",
   "maestro-extensions": "core",
