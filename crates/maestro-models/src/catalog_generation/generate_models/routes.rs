@@ -215,7 +215,7 @@ pub(super) fn route(mut model: Model, raw: &RawValue) -> Option<Model> {
 }
 /// Attach typed completion compatibility.
 fn completion_compat(model: &mut Model, compat: OpenAICompletionsCompat) {
-    model.compat = Some(ModelCompat::OpenAICompletions(Box::new(compat)));
+    model.compat = Some(ModelCompat::from(compat));
 }
 /// Exact deprecated flag used by the two authored provider groups.
 fn deprecated(raw: &RawValue) -> bool {
@@ -323,12 +323,10 @@ fn copilot(model: &mut Model) {
     } else if claude
         && ["claude-haiku-4.5", "claude-sonnet-4", "claude-sonnet-4.5"].contains(&model.id.as_str())
     {
-        model.compat = Some(ModelCompat::AnthropicMessages(
-            crate::AnthropicMessagesCompat {
-                supports_eager_tool_input_streaming: Some(false),
-                ..Default::default()
-            },
-        ));
+        model.compat = Some(ModelCompat::from(crate::AnthropicMessagesCompat {
+            supports_eager_tool_input_streaming: Some(false),
+            ..Default::default()
+        }));
     }
 }
 

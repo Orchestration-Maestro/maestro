@@ -1,5 +1,5 @@
 //! Ordered corrections to acquired descriptors.
-use crate::{Model, ModelCompat, ThinkingFormat};
+use crate::{Model, ModelCompat};
 
 /// Repair acquired cache prices, contexts and router rates in place.
 pub(super) fn correct_models(models: &mut [Model]) {
@@ -62,13 +62,12 @@ pub(super) fn deepseek_compat(models: &mut [Model]) {
         .iter_mut()
         .filter(|model| model.api == "openai-completions" && model.id.contains("deepseek-v4"))
     {
-        let compat = model
-            .compat
-            .get_or_insert_with(|| ModelCompat::OpenAICompletions(Box::default()));
-        if let ModelCompat::OpenAICompletions(compat) = compat {
-            compat.requires_reasoning_content_on_assistant_messages = Some(true);
-            compat.thinking_format = Some(ThinkingFormat::Deepseek);
-        }
+        let compat = model.compat.get_or_insert_with(ModelCompat::default);
+        compat.0.insert(
+            "requiresReasoningContentOnAssistantMessages".into(),
+            true.into(),
+        );
+        compat.0.insert("thinkingFormat".into(), "deepseek".into());
         super::thinking::deepseek_levels(model);
     }
 }

@@ -262,3 +262,106 @@ fn maestro_custom_protocol_selection_retains_selected_and_previous_compatibility
 -> Result<(), String> {
     on_both_adapters!(custom_protocol_compatibility)
 }
+
+/// One recorded model transport query.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompatibilityCase {
+    /// Descriptor supplied to both adapters.
+    input: Value,
+    /// Source-observed compatibility and protocol.
+    expected: Value,
+}
+/// Check retained member order recursively in the returned object.
+fn assert_order(actual: &Value, expected: &Value) {
+    match (actual, expected) {
+        (Value::Object(actual), Value::Object(expected)) => {
+            assert_eq!(
+                actual.keys().collect::<Vec<_>>(),
+                expected.keys().collect::<Vec<_>>()
+            );
+            for (key, value) in expected {
+                assert_order(&actual[key], value);
+            }
+        }
+        (Value::Array(actual), Value::Array(expected)) => {
+            assert_eq!(actual.len(), expected.len());
+            for (actual, expected) in actual.iter().zip(expected) {
+                assert_order(actual, expected);
+            }
+        }
+        _ => assert_eq!(actual, expected),
+    }
+}
+/// Replay the shared transport corpus through each author driver.
+async fn mixed_compatibility(driver: &mut impl Driver) -> Result<(), String> {
+    let cases: Vec<CompatibilityCase> = serde_json::from_str(include_str!(
+        "../../../maestro-request/tests/fixtures/model_compatibility.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    for case in cases {
+        let descriptor: crate::Model =
+            serde_json::from_value(case.input).map_err(|error| error.to_string())?;
+        let descriptor = serde_json::to_value(descriptor).map_err(|error| error.to_string())?;
+        let event = json!({"type":"model_select","model":descriptor,"previousModel":descriptor,"source":"set"});
+        let answer = ask(driver, &event, &json!({})).await?;
+        let returned = answer.event.as_ref().ok_or("missing event")?;
+        for member in ["model", "previousModel"] {
+            for (key, value) in case.expected.as_object().ok_or("expected object")? {
+                assert_order(&returned[member][key], value);
+            }
+        }
+        assert_eq!(answer, Answer::returned(&event, None));
+    }
+    Ok(())
+}
+/// Author mutation changes only the selected compatibility map.
+async fn edit_compatibility(driver: &mut impl Driver) -> Result<(), String> {
+    let mut selected = model();
+    selected["api"] = json!("custom");
+    selected["compat"] = json!({"open":false,"nested":{"order":["b","a","b"]}});
+    let mut event =
+        json!({"type":"model_select","model":selected,"previousModel":model(),"source":"set"});
+    let answer = ask(
+        driver,
+        &event,
+        &json!({"compatibilityEdit":{"changed":true}}),
+    )
+    .await?;
+    event["model"]["compat"]["open"] = json!({"changed":true});
+    assert_eq!(answer, Answer::returned(&event, None));
+    Ok(())
+}
+/// Numeric compatibility members preserve native finite bits across both crossings.
+async fn compatibility_bits(driver: &mut impl Driver) -> Result<(), String> {
+    for number in [0.845_512_408_225_570_1_f64, -0.0, 9_007_199_254_740_991.0] {
+        let mut descriptor = model();
+        descriptor["api"] = json!("custom");
+        descriptor["compat"] = json!({"open":number});
+        let event = json!({"type":"model_select","model":descriptor,"previousModel":descriptor,"source":"set"});
+        let answer = ask(driver, &event, &json!({})).await?;
+        let returned = answer.event.as_ref().ok_or("missing event")?;
+        for member in ["model", "previousModel"] {
+            assert_eq!(
+                returned[member]["compat"]["open"]
+                    .as_f64()
+                    .ok_or("number")?
+                    .to_bits(),
+                number.to_bits()
+            );
+        }
+    }
+    Ok(())
+}
+#[test]
+fn maestro_selection_retains_mixed_and_open_compatibility() -> Result<(), String> {
+    on_both_adapters!(mixed_compatibility)
+}
+#[test]
+fn maestro_selection_compatibility_edits_return_on_both_adapters() -> Result<(), String> {
+    on_both_adapters!(edit_compatibility)
+}
+#[test]
+fn maestro_selection_retains_compatibility_number_bits() -> Result<(), String> {
+    on_both_adapters!(compatibility_bits)
+}

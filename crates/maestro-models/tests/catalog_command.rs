@@ -3,8 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_models::catalog_generation::generate_models::generate_models;
 use maestro_models::{
-    Fetch, HttpResponse, MaxTokensField, Model, ModelCompat, ModelCost, ModelInput,
-    ModelThinkingLevel, OpenAICompletionsCompat, ThinkingFormat,
+    Fetch, HttpResponse, Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel,
 };
 use std::{
     fs,

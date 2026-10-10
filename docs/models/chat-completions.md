@@ -77,8 +77,9 @@ token-limit field, the reasoning convention (`openai`, `openrouter`, `deepseek`,
 markers, session affinity and the one-hour cache lifetime. A zero or NaN token limit is
 omitted; a zero temperature is sent. A NaN or infinite temperature and an infinite token
 limit are sent as `null`, the way JSON text writes them. `OpenRouter` routing preferences are
-forwarded only when the base URL contains `openrouter.ai`, and gateway routing preferences
-only when it contains `ai-gateway.vercel.sh` and they set `only` or `order`.
+forwarded without field selection when the base URL contains `openrouter.ai` and the
+supplied value is truthy. Gateway routing selects only truthy `only` and `order`, in
+that order, when the base URL contains `ai-gateway.vercel.sh`; empty arrays are truthy.
 
 Reasoning follows the model's convention. A model that does not reason sends no
 reasoning fields. For one that does, `openai` sends a requested level as

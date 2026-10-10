@@ -86,11 +86,14 @@ fn provider_source(models: &indexmap::IndexMap<String, Model>) -> String {
     source
 }
 /// Format a finite number, normalizing both zero signs to positive zero.
-fn number(value: f64) -> String {
+pub(super) fn number(value: f64) -> String {
     if value == 0.0 {
         return "0.0".into();
     }
-    let text = format!("{value:?}");
+    number_text(&format!("{value:?}"))
+}
+/// Group the digits of an already rendered native numeric literal.
+pub(super) fn number_text(text: &str) -> String {
     let boundary = text.find('e').unwrap_or(text.len());
     let mantissa = &text[..boundary];
     let mut result = match mantissa.split_once('.') {
@@ -105,7 +108,7 @@ fn number(value: f64) -> String {
     result
 }
 /// Group long native literal digit runs without changing their numeric value.
-fn separate_digits(text: &str, from_right: bool) -> String {
+pub(super) fn separate_digits(text: &str, from_right: bool) -> String {
     if text.len() < 5 {
         return text.into();
     }

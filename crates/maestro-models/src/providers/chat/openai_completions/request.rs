@@ -12,7 +12,8 @@ use super::messages::{
     OpenAICompatCacheControl, convert_messages,
 };
 use super::payload::{
-    ChatTemplateKwargs, GatewayOptions, IncludeUsage, Payload, Reasoning, Thinking, ToolParam,
+    ChatTemplateKwargs, GatewayOptions, GatewayRouting, IncludeUsage, Payload, Reasoning, Thinking,
+    ToolParam,
 };
 use crate::arguments::json_parse::whitespace;
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
@@ -313,14 +314,30 @@ impl<'a> Invocation<'a> {
 
     /// Forward routing preferences to the gateways that understand them.
     fn apply_routing<'p>(&'p self, payload: &mut Payload<'p>) {
+        let option = |name| {
+            self.model
+                .compat
+                .as_ref()
+                .and_then(|compat| compat.0.get(name))
+                .filter(|value| super::compat::supplied(value))
+        };
         if self.model.base_url.contains("openrouter.ai") {
-            payload.provider = self.compat.open_router_routing.as_ref();
+            payload.provider = option("openRouterRouting");
         }
         if self.model.base_url.contains("ai-gateway.vercel.sh")
-            && let Some(routing) = &self.compat.vercel_gateway_routing
-            && (routing.only.is_some() || routing.order.is_some())
+            && let Some(routing) = option("vercelGatewayRouting")
         {
-            payload.provider_options = Some(GatewayOptions { gateway: routing });
+            let only = routing
+                .get("only")
+                .filter(|value| super::compat::supplied(value));
+            let order = routing
+                .get("order")
+                .filter(|value| super::compat::supplied(value));
+            if only.is_some() || order.is_some() {
+                payload.provider_options = Some(GatewayOptions {
+                    gateway: GatewayRouting { only, order },
+                });
+            }
         }
     }
 }

@@ -15,14 +15,7 @@ cost: crate::ModelCost { input: 0.6, output: 2.5, cache_read: 0.15, cache_write:
 context_window: 131_072.0,
 max_tokens: 16_384.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -40,14 +33,7 @@ cost: crate::ModelCost { input: 0.6, output: 2.5, cache_read: 0.15, cache_write:
 context_window: 262_144.0,
 max_tokens: 262_144.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -65,14 +51,7 @@ cost: crate::ModelCost { input: 0.6, output: 2.5, cache_read: 0.15, cache_write:
 context_window: 262_144.0,
 max_tokens: 262_144.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -90,14 +69,7 @@ cost: crate::ModelCost { input: 1.15, output: 8.0, cache_read: 0.15, cache_write
 context_window: 262_144.0,
 max_tokens: 262_144.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -115,14 +87,7 @@ cost: crate::ModelCost { input: 2.4, output: 10.0, cache_read: 0.6, cache_write:
 context_window: 262_144.0,
 max_tokens: 262_144.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -140,14 +105,7 @@ cost: crate::ModelCost { input: 0.6, output: 3.0, cache_read: 0.1, cache_write: 
 context_window: 262_144.0,
 max_tokens: 262_144.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -165,14 +123,7 @@ cost: crate::ModelCost { input: 0.95, output: 4.0, cache_read: 0.16, cache_write
 context_window: 262_144.0,
 max_tokens: 262_144.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-supports_developer_role: Some(false),
-supports_reasoning_effort: Some(false),
-supports_strict_mode: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("supportsDeveloperRole".into(), serde_json::Value::Bool(false)),("supportsReasoningEffort".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("supportsStrictMode".into(), serde_json::Value::Bool(false))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

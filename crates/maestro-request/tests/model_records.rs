@@ -98,7 +98,7 @@ mod tests {
     }
 
     fn compatibility_contracts() {
-        use maestro_request::types::{Model, ModelCompat};
+        use maestro_request::types::Model;
         let completion = json!({"supportsStore":false,"supportsDeveloperRole":true,"supportsReasoningEffort":false,"supportsUsageInStreaming":true,"maxTokensField":"max_completion_tokens","requiresToolResultName":true,"requiresAssistantAfterToolResult":true,"requiresThinkingAsText":false,"requiresReasoningContentOnAssistantMessages":true,"thinkingFormat":"qwen-chat-template","openRouterRouting":{"allow_fallbacks":false,"require_parameters":true,"data_collection":"deny","zdr":true,"enforce_distillable_text":true,"order":["b","a"],"only":["b"],"ignore":["c"],"quantizations":["fp16"],"sort":{"by":"price","partition":null},"max_price":{"prompt":1.0,"completion":"2","image":3.0,"audio":"4","request":5.0},"preferred_min_throughput":{"p50":1.0,"p75":2.0,"p90":3.0,"p99":4.0},"preferred_max_latency":5.0},"vercelGatewayRouting":{"only":["b"],"order":["b","a"]},"zaiToolStream":false,"supportsStrictMode":false,"cacheControlFormat":"anthropic","sendSessionAffinityHeaders":true,"supportsLongCacheRetention":false});
         for (api, compat) in [
             ("openai-completions", completion),
@@ -113,17 +113,10 @@ mod tests {
         ] {
             let fixture = model_fixture(api, &compat);
             let model: Model = serde_json::from_value(fixture.clone()).unwrap();
-            assert!(matches!(
-                (&model.api[..], &model.compat),
-                (
-                    "openai-completions",
-                    Some(ModelCompat::OpenAICompletions(_))
-                ) | ("openai-responses", Some(ModelCompat::OpenAIResponses(_)))
-                    | (
-                        "anthropic-messages",
-                        Some(ModelCompat::AnthropicMessages(_))
-                    )
-            ));
+            assert_eq!(
+                model.compat.as_ref().map(|value| &value.0),
+                compat.as_object()
+            );
             assert_eq!(serde_json::to_value(model).unwrap(), fixture);
             let empty = model_fixture(api, &json!({}));
             let model: Model = serde_json::from_value(empty.clone()).unwrap();
@@ -206,7 +199,7 @@ mod tests {
                 "custom",
                 &json!({"supportsStore":true,"sendSessionIdHeader":false})
             ))
-            .is_err()
+            .is_ok()
         );
         let standalone = TextContent {
             text: "standalone".into(),

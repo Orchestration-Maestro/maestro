@@ -41,7 +41,7 @@ fn converted(row: &Value) -> TestResult<Value> {
     let mut model = model(&row["model"])?;
     if let Some(overrides) = row.get("compat") {
         let compat: OpenAICompletionsCompat = serde_json::from_value(overrides.clone())?;
-        model.compat = Some(ModelCompat::OpenAICompletions(Box::new(compat)));
+        model.compat = Some(ModelCompat::from(compat));
     }
     let compat = ResolvedOpenAICompletionsCompat::from(&model);
     let wire = convert_messages(&model, &context(&row["context"])?, &compat)?;
@@ -448,8 +448,8 @@ fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
             !requests_tool_stream(&model, true).await?,
             "an unmarked model does not"
         );
-        if let Some(ModelCompat::OpenAICompletions(compat)) = &mut model.compat {
-            compat.zai_tool_stream = Some(true);
+        if let Some(compat) = &mut model.compat {
+            compat.0.insert("zaiToolStream".into(), true.into());
         }
         assert!(
             requests_tool_stream(&model, true).await?,
@@ -800,5 +800,175 @@ fn maestro_chat_omits_unrepresentable_replayed_signatures() -> TestResult {
     let message = replayed_with_signature(r#"{"\ud800":7,"keep":1}"#)?;
     assert!(message.get("reasoning_details").is_none(), "{message}");
     assert_eq!(message["tool_calls"][0]["id"], "call");
+    Ok(())
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompatibilityQuery {
+    test: String,
+    input: Value,
+    expected: Value,
+}
+
+async fn open_chat_options(wrong_types: bool) -> TestResult {
+    let rows: Vec<CompatibilityQuery> =
+        serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
+    for (index, row) in rows
+        .into_iter()
+        .enumerate()
+        .filter(|(_, row)| row.test == "chat")
+    {
+        let unconventional = row.input["compat"]
+            .as_object()
+            .ok_or("compat object")?
+            .values()
+            .any(|value| {
+                value.is_null() || value.is_number() || value.is_array() || value.is_object()
+            });
+        if unconventional != wrong_types {
+            continue;
+        }
+        let case = json!({"model":{"compat":row.input["compat"]},"context":{"messages":[],"tools":[{"name":"test","description":"controlled","parameters":{"type":"object"}}]},"options":{"apiKey":"fixture-key","maxTokens":7,"sessionId":"session","cacheRetention":row.input["retention"]}});
+        let observed = run_case(&case).await?;
+        let body = &observed.requests[0]["body"];
+        for key in [
+            "store",
+            "stream_options",
+            "max_tokens",
+            "max_completion_tokens",
+            "tool_stream",
+            "prompt_cache_retention",
+            "tools",
+        ] {
+            assert_eq!(body[key], row.expected[key], "row {index} {key}");
+        }
+        for (key, expected) in row.expected["affinity"]
+            .as_object()
+            .ok_or("expected object")?
+        {
+            assert_eq!(
+                observed.requests[0]["headers"][key], *expected,
+                "row {index} header"
+            );
+        }
+    }
+    open_reasoning_options(wrong_types).await?;
+    if wrong_types {
+        open_history_options()?;
+    }
+    Ok(())
+}
+#[test]
+fn chat_open_options_control_flags_and_literals() -> TestResult {
+    chat::block_on(false, open_chat_options(false))
+}
+#[test]
+fn chat_open_options_keep_nullish_and_strict_decisions() -> TestResult {
+    chat::block_on(false, open_chat_options(true))
+}
+
+async fn routing_options(gateway: bool) -> TestResult {
+    let rows: Vec<CompatibilityQuery> =
+        serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
+    for (index, row) in rows
+        .into_iter()
+        .enumerate()
+        .filter(|(_, row)| row.test == "routing")
+    {
+        let authored_gateway = row.input["compat"].get("vercelGatewayRouting").is_some();
+        if authored_gateway != gateway {
+            continue;
+        }
+        let observed = run_case(&json!({"model":{"baseUrl":row.input["baseUrl"],"compat":row.input["compat"]},"context":{"messages":[]},"options":{"apiKey":"fixture-key"}})).await?;
+        for key in ["provider", "providerOptions"] {
+            assert_eq!(
+                observed.requests[0]["body"][key], row.expected[key],
+                "routing row {index} {key}"
+            );
+            if let Some(expected) = row.expected[key].as_object() {
+                assert_eq!(
+                    observed.requests[0]["body"][key]
+                        .as_object()
+                        .ok_or("returned object")?
+                        .keys()
+                        .collect::<Vec<_>>(),
+                    expected.keys().collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+    Ok(())
+}
+#[test]
+fn chat_forwards_router_values_without_narrowing() -> TestResult {
+    chat::block_on(false, routing_options(false))
+}
+#[test]
+fn chat_gateway_selects_only_requested_routing_fields() -> TestResult {
+    chat::block_on(false, routing_options(true))
+}
+
+async fn open_reasoning_options(wrong_types: bool) -> TestResult {
+    let rows: Vec<CompatibilityQuery> =
+        serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
+    for (index, row) in rows
+        .into_iter()
+        .enumerate()
+        .filter(|(_, row)| row.test == "reasoning")
+    {
+        let unconventional = row.input["compat"]
+            .as_object()
+            .ok_or("object")?
+            .values()
+            .any(|value| {
+                value.is_null() || value.is_number() || value.is_array() || value.is_object()
+            });
+        if unconventional != wrong_types {
+            continue;
+        }
+        let observed = run_case(&json!({"model":{"compat":row.input["compat"],"thinkingLevelMap":row.input["thinkingLevelMap"]},"context":{"messages":[]},"options":row.input["options"]})).await?;
+        for key in [
+            "enable_thinking",
+            "chat_template_kwargs",
+            "thinking",
+            "reasoning_effort",
+            "reasoning",
+        ] {
+            assert_eq!(
+                observed.requests[0]["body"][key], row.expected[key],
+                "reasoning row {index} {key}"
+            );
+        }
+    }
+    Ok(())
+}
+fn open_history_options() -> TestResult {
+    let all: Vec<Value> = serde_json::from_str(FIXTURE)?;
+    for row in all.iter().filter(|row| {
+        row["compat"]
+            .as_object()
+            .is_some_and(|fields| fields.values().any(|flag| flag == &json!(true)))
+    }) {
+        for value in [json!(1), json!("enabled"), json!({}), json!([])] {
+            let mut changed = row.clone();
+            for flag in changed["compat"]
+                .as_object_mut()
+                .ok_or("compat")?
+                .values_mut()
+                .filter(|flag| **flag == json!(true))
+            {
+                *flag = value.clone();
+            }
+            let target = model(&changed["model"])?;
+            let mut target = target;
+            target.compat = Some(ModelCompat(serde_json::from_value(
+                changed["compat"].clone(),
+            )?));
+            let compat = ResolvedOpenAICompletionsCompat::from(&target);
+            let actual = convert_messages(&target, &context(&changed["context"])?, &compat)?;
+            assert_eq!(serde_json::to_value(actual)?, row["expected"]);
+        }
+    }
     Ok(())
 }

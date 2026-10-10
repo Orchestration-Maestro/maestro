@@ -2,10 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::{
-    CacheControlFormat, MaxTokensField, Model, ModelCompat, OpenAICompletionsCompat,
-    OpenRouterRouting, ThinkingFormat, VercelGatewayRouting,
-};
+use crate::{CacheControlFormat, MaxTokensField, Model, ModelCompat, ThinkingFormat};
 
 /// One boolean request capability of a chat-completion endpoint.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -63,10 +60,6 @@ pub struct ResolvedOpenAICompletionsCompat {
     pub(super) max_tokens_field: MaxTokensField,
     /// Convention used to request reasoning.
     pub(super) thinking_format: ThinkingFormat,
-    /// `OpenRouter` routing the model supplied.
-    pub(super) open_router_routing: Option<OpenRouterRouting>,
-    /// Gateway routing the model supplied.
-    pub(super) vercel_gateway_routing: Option<VercelGatewayRouting>,
     /// Prompt-cache marker convention.
     pub(super) cache_control_format: Option<CacheControlFormat>,
 }
@@ -163,24 +156,54 @@ fn detected(capability: Capability, families: &BTreeSet<Family>) -> bool {
     }
 }
 
-/// The model's explicit setting for a capability, if it made one.
-fn overridden(capability: Capability, compat: &OpenAICompletionsCompat) -> Option<bool> {
-    match capability {
-        Capability::SupportsStore => compat.supports_store,
-        Capability::SupportsDeveloperRole => compat.supports_developer_role,
-        Capability::SupportsReasoningEffort => compat.supports_reasoning_effort,
-        Capability::SupportsUsageInStreaming => compat.supports_usage_in_streaming,
-        Capability::RequiresToolResultName => compat.requires_tool_result_name,
-        Capability::RequiresAssistantAfterToolResult => compat.requires_assistant_after_tool_result,
-        Capability::RequiresThinkingAsText => compat.requires_thinking_as_text,
+/// The model's nonnull setting for a capability.
+fn overridden(capability: Capability, compat: Option<&ModelCompat>) -> Option<bool> {
+    let name = match capability {
+        Capability::SupportsStore => "supportsStore",
+        Capability::SupportsDeveloperRole => "supportsDeveloperRole",
+        Capability::SupportsReasoningEffort => "supportsReasoningEffort",
+        Capability::SupportsUsageInStreaming => "supportsUsageInStreaming",
+        Capability::RequiresToolResultName => "requiresToolResultName",
+        Capability::RequiresAssistantAfterToolResult => "requiresAssistantAfterToolResult",
+        Capability::RequiresThinkingAsText => "requiresThinkingAsText",
         Capability::RequiresReasoningContentOnAssistantMessages => {
-            compat.requires_reasoning_content_on_assistant_messages
+            "requiresReasoningContentOnAssistantMessages"
         }
-        Capability::ZaiToolStream => compat.zai_tool_stream,
-        Capability::SupportsStrictMode => compat.supports_strict_mode,
-        Capability::SendSessionAffinityHeaders => compat.send_session_affinity_headers,
-        Capability::SupportsLongCacheRetention => compat.supports_long_cache_retention,
+        Capability::ZaiToolStream => "zaiToolStream",
+        Capability::SupportsStrictMode => "supportsStrictMode",
+        Capability::SendSessionAffinityHeaders => "sendSessionAffinityHeaders",
+        Capability::SupportsLongCacheRetention => "supportsLongCacheRetention",
+    };
+    let value = compat?.0.get(name).filter(|value| !value.is_null())?;
+    Some(
+        if matches!(
+            capability,
+            Capability::SupportsUsageInStreaming | Capability::SupportsStrictMode
+        ) {
+            value != &serde_json::Value::Bool(false)
+        } else {
+            supplied(value)
+        },
+    )
+}
+/// Whether a supplied open option enables its caller's conditional branch.
+pub(super) fn supplied(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Null => false,
+        serde_json::Value::Bool(value) => *value,
+        serde_json::Value::Number(value) => value.as_f64().is_some_and(|number| number != 0.0),
+        serde_json::Value::String(value) => !value.is_empty(),
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
     }
+}
+/// Read a nonnull literal without interpreting other JSON types as text.
+fn literal<'a>(model: &'a Model, name: &str, default: &'a str) -> &'a str {
+    model
+        .compat
+        .as_ref()
+        .and_then(|compat| compat.0.get(name))
+        .filter(|value| !value.is_null())
+        .map_or(default, |value| value.as_str().unwrap_or(""))
 }
 
 impl From<&Model> for ResolvedOpenAICompletionsCompat {
@@ -188,11 +211,6 @@ impl From<&Model> for ResolvedOpenAICompletionsCompat {
         let families = detect_families(model);
         let has = |family| families.contains(&family);
         let url = model.base_url.as_str();
-        let defaults = OpenAICompletionsCompat::default();
-        let overrides = match &model.compat {
-            Some(ModelCompat::OpenAICompletions(overrides)) => overrides.as_ref(),
-            _ => &defaults,
-        };
         let router = model.provider == "openrouter";
         let max_tokens_field =
             if url.contains("chutes.ai") || has(Family::Moonshot) || has(Family::Gateway) {
@@ -215,15 +233,55 @@ impl From<&Model> for ResolvedOpenAICompletionsCompat {
             capabilities: CAPABILITIES
                 .into_iter()
                 .filter(|capability| {
-                    overridden(*capability, overrides)
+                    overridden(*capability, model.compat.as_ref())
                         .unwrap_or_else(|| detected(*capability, &families))
                 })
                 .collect(),
-            max_tokens_field: overrides.max_tokens_field.unwrap_or(max_tokens_field),
-            thinking_format: overrides.thinking_format.unwrap_or(thinking_format),
-            open_router_routing: overrides.open_router_routing.clone(),
-            vercel_gateway_routing: overrides.vercel_gateway_routing.clone(),
-            cache_control_format: overrides.cache_control_format.or(cache_control_format),
+            max_tokens_field: if literal(
+                model,
+                "maxTokensField",
+                match max_tokens_field {
+                    MaxTokensField::MaxTokens => "max_tokens",
+                    MaxTokensField::MaxCompletionTokens => "max_completion_tokens",
+                },
+            ) == "max_tokens"
+            {
+                MaxTokensField::MaxTokens
+            } else {
+                MaxTokensField::MaxCompletionTokens
+            },
+            thinking_format: resolved_thinking(model, thinking_format),
+            cache_control_format: (literal(
+                model,
+                "cacheControlFormat",
+                if cache_control_format.is_some() {
+                    "anthropic"
+                } else {
+                    ""
+                },
+            ) == "anthropic")
+                .then_some(CacheControlFormat::Anthropic),
         }
+    }
+}
+
+/// Select known thinking conventions; unknown literals use ordinary effort handling.
+fn resolved_thinking(model: &Model, thinking_format: ThinkingFormat) -> ThinkingFormat {
+    match literal(
+        model,
+        "thinkingFormat",
+        match thinking_format {
+            ThinkingFormat::Deepseek => "deepseek",
+            ThinkingFormat::Zai => "zai",
+            ThinkingFormat::Openrouter => "openrouter",
+            _ => "openai",
+        },
+    ) {
+        "deepseek" => ThinkingFormat::Deepseek,
+        "zai" => ThinkingFormat::Zai,
+        "openrouter" => ThinkingFormat::Openrouter,
+        "qwen" => ThinkingFormat::Qwen,
+        "qwen-chat-template" => ThinkingFormat::QwenChatTemplate,
+        _ => ThinkingFormat::Openai,
     }
 }

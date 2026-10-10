@@ -212,9 +212,7 @@ cost: crate::ModelCost { input: 7.25, output: 19.5, cache_read: 3.75, cache_writ
 context_window: 123_456.0,
 max_tokens: 6789.0,
 headers: Some(indexmap::IndexMap::from([])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([].into_iter().collect())),
 }
 }
 /// Construct a controlled descriptor.
@@ -232,12 +230,7 @@ cost: crate::ModelCost { input: 7.25, output: 19.5, cache_read: 3.75, cache_writ
 context_window: 123_456.0,
 max_tokens: 6789.0,
 headers: Some(indexmap::IndexMap::from([("z".into(), "Z".into()),("a".into(), "A".into())])),
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-supports_store: Some(false),
-max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
-thinking_format: Some(crate::ThinkingFormat::Deepseek),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("maxTokensField".into(), serde_json::Value::String("max_tokens".into())),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a controlled descriptor.
@@ -420,6 +413,24 @@ headers: None,
 compat: None,
 }
 }
+/// Construct a controlled descriptor.
+fn model_23() -> crate::Model {
+crate::Model {
+id: "boundary/\"\\\n\0😀".into(),
+name: "Name \"\\\n\0😀".into(),
+api: "openai-completions".into(),
+provider: "openrouter".into(),
+base_url: "https://openrouter.ai/api/v1".into(),
+reasoning: false,
+thinking_level_map: None,
+input: vec![crate::ModelInput::Text,crate::ModelInput::Image],
+cost: crate::ModelCost { input: 1.0, output: 2.0, cache_read: 0.0, cache_write: 0.0 },
+context_window: 4096.0,
+max_tokens: 4096.0,
+headers: None,
+compat: Some(crate::ModelCompat([("supportsStore".into(), serde_json::Value::Bool(false)),("sendSessionIdHeader".into(), serde_json::Value::Bool(true)),("openRouterRouting".into(), serde_json::Value::Object([("unknown".into(), serde_json::Value::Object([("values".into(), serde_json::Value::Array(vec![serde_json::Value::String("b".into()),serde_json::Value::String("a".into()),serde_json::Value::String("b".into())]))].into_iter().collect()))].into_iter().collect())),("open".into(), serde_json::Value::Null),("precise".into(), serde_json::Value::from(0.845_512_408_225_570_1)),("zero".into(), serde_json::Value::from(-0.0))].into_iter().collect())),
+}
+}
 /// Construct one descriptor.
 type Constructor = fn() -> crate::Model;
 /// Controlled descriptor constructors.
@@ -448,6 +459,7 @@ const CASES: &[(&str, Constructor)] = &[
 ("number--12.5/0", model_20),
 ("number-123.45678901234567/0", model_21),
 ("command-boundary", model_22),
+("open-compatibility", model_23),
 ];
 /// Reconstruct the controlled descriptors through native expressions.
 pub(super) fn cases() -> Vec<(&'static str, crate::Model)> {

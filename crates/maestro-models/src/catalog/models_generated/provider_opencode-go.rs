@@ -15,11 +15,7 @@ cost: crate::ModelCost { input: 0.14, output: 0.28, cache_read: 0.0028, cache_wr
 context_window: 1_000_000.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-requires_reasoning_content_on_assistant_messages: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Deepseek),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -37,11 +33,7 @@ cost: crate::ModelCost { input: 1.74, output: 3.48, cache_read: 0.0145, cache_wr
 context_window: 1_000_000.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-requires_reasoning_content_on_assistant_messages: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Deepseek),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -239,10 +231,7 @@ cost: crate::ModelCost { input: 0.2, output: 1.2, cache_read: 0.02, cache_write:
 context_window: 262_144.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-thinking_format: Some(crate::ThinkingFormat::Qwen),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("thinkingFormat".into(), serde_json::Value::String("qwen".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -260,10 +249,7 @@ cost: crate::ModelCost { input: 0.5, output: 3.0, cache_read: 0.05, cache_write:
 context_window: 262_144.0,
 max_tokens: 65_536.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-thinking_format: Some(crate::ThinkingFormat::Qwen),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("thinkingFormat".into(), serde_json::Value::String("qwen".into()))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

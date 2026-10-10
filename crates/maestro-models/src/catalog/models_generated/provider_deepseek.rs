@@ -15,11 +15,7 @@ cost: crate::ModelCost { input: 0.14, output: 0.28, cache_read: 0.0028, cache_wr
 context_window: 1_000_000.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-requires_reasoning_content_on_assistant_messages: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Deepseek),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct a model descriptor.
@@ -37,11 +33,7 @@ cost: crate::ModelCost { input: 0.435, output: 0.87, cache_read: 0.003_625, cach
 context_window: 1_000_000.0,
 max_tokens: 384_000.0,
 headers: None,
-compat: Some(crate::ModelCompat::OpenAICompletions(Box::new(crate::OpenAICompletionsCompat {
-requires_reasoning_content_on_assistant_messages: Some(true),
-thinking_format: Some(crate::ThinkingFormat::Deepseek),
-..crate::OpenAICompletionsCompat::default()
-}))),
+compat: Some(crate::ModelCompat([("requiresReasoningContentOnAssistantMessages".into(), serde_json::Value::Bool(true)),("thinkingFormat".into(), serde_json::Value::String("deepseek".into()))].into_iter().collect())),
 }
 }
 /// Construct one model descriptor.

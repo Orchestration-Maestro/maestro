@@ -1,6 +1,7 @@
 //! Model descriptors with protocol compatibility and routing preferences.
-use super::{Api, Provider, ThinkingLevelMap};
+use super::{Api, JsonObject, Provider, ThinkingLevelMap};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 /// Select the accepted completion token-limit field.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -267,20 +268,13 @@ pub struct ModelCost {
     /// Cache write.
     pub cache_write: f64,
 }
-/// Carry typed compatibility fields; custom protocols select a lossless family on decode.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum ModelCompat {
-    /// `OpenAICompletions`.
-    OpenAICompletions(Box<OpenAICompletionsCompat>),
-    /// `OpenAIResponses`.
-    OpenAIResponses(OpenAIResponsesCompat),
-    /// `AnthropicMessages`.
-    AnthropicMessages(AnthropicMessagesCompat),
-}
+/// Retain the complete ordered compatibility-option object independently of protocol.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ModelCompat(pub JsonObject);
 /// Supply an invocable model descriptor independently of catalog membership.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", remote = "Self")]
+#[serde(rename_all = "camelCase")]
 pub struct Model {
     /// Id.
     pub id: String,
@@ -309,48 +303,259 @@ pub struct Model {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub headers: Option<indexmap::IndexMap<String, String>>,
     /// Compat.
-    #[serde(default, skip_serializing_if = "Option::is_none", skip_deserializing)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compat: Option<ModelCompat>,
 }
 
-impl Serialize for Model {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        Self::serialize(self, serializer)
+impl From<OpenAICompletionsCompat> for ModelCompat {
+    fn from(value: OpenAICompletionsCompat) -> Self {
+        let mut object = completion_prefix(&value);
+        insert(
+            &mut object,
+            "openRouterRouting",
+            value.open_router_routing.map(router),
+        );
+        insert(
+            &mut object,
+            "vercelGatewayRouting",
+            value.vercel_gateway_routing.map(gateway),
+        );
+        insert(&mut object, "zaiToolStream", value.zai_tool_stream);
+        insert(
+            &mut object,
+            "supportsStrictMode",
+            value.supports_strict_mode,
+        );
+        insert(
+            &mut object,
+            "cacheControlFormat",
+            value.cache_control_format.map(cache_control_format),
+        );
+        insert(
+            &mut object,
+            "sendSessionAffinityHeaders",
+            value.send_session_affinity_headers,
+        );
+        insert(
+            &mut object,
+            "supportsLongCacheRetention",
+            value.supports_long_cache_retention,
+        );
+        Self(object)
     }
 }
-impl<'de> Deserialize<'de> for Model {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let mut wire = serde_json::Value::deserialize(deserializer)?;
-        let compat = wire
-            .as_object_mut()
-            .and_then(|object| object.remove("compat"));
-        let mut model = Self::deserialize(wire).map_err(serde::de::Error::custom)?;
-        model.compat = compat
-            .map(|wire| decode_compat(&model.api, wire))
-            .transpose()
-            .map_err(serde::de::Error::custom)?;
-        Ok(model)
+
+impl From<OpenAIResponsesCompat> for ModelCompat {
+    fn from(value: OpenAIResponsesCompat) -> Self {
+        let mut object = JsonObject::new();
+        insert(
+            &mut object,
+            "sendSessionIdHeader",
+            value.send_session_id_header,
+        );
+        insert(
+            &mut object,
+            "supportsLongCacheRetention",
+            value.supports_long_cache_retention,
+        );
+        Self(object)
     }
 }
-/// Accept a family only when encoding it retains every supplied compatibility member.
-fn decode_exact_compat<T: serde::de::DeserializeOwned>(
-    wire: &serde_json::Value,
-    family: impl FnOnce(T) -> ModelCompat,
-) -> Option<ModelCompat> {
-    let decoded = family(T::deserialize(wire).ok()?);
-    (serde_json::to_value(&decoded).ok()?.eq(wire)).then_some(decoded)
-}
-/// Decode built-in protocol options or a lossless compatibility family for other protocols.
-fn decode_compat(api: &str, wire: serde_json::Value) -> Result<ModelCompat, serde_json::Error> {
-    match api {
-        "openai-completions" => serde_json::from_value(wire).map(ModelCompat::OpenAICompletions),
-        "openai-responses" => serde_json::from_value(wire).map(ModelCompat::OpenAIResponses),
-        "anthropic-messages" => serde_json::from_value(wire).map(ModelCompat::AnthropicMessages),
-        _ => decode_exact_compat(&wire, ModelCompat::OpenAICompletions)
-            .or_else(|| decode_exact_compat(&wire, ModelCompat::OpenAIResponses))
-            .or_else(|| decode_exact_compat(&wire, ModelCompat::AnthropicMessages))
-            .ok_or_else(|| {
-                serde::de::Error::custom("compatibility fields do not match a supported family")
-            }),
+
+impl From<AnthropicMessagesCompat> for ModelCompat {
+    fn from(value: AnthropicMessagesCompat) -> Self {
+        let mut object = JsonObject::new();
+        insert(
+            &mut object,
+            "supportsEagerToolInputStreaming",
+            value.supports_eager_tool_input_streaming,
+        );
+        insert(
+            &mut object,
+            "supportsLongCacheRetention",
+            value.supports_long_cache_retention,
+        );
+        Self(object)
     }
+}
+
+/// Construct the supplied routing members in declaration order.
+fn router(value: OpenRouterRouting) -> Value {
+    let mut object = JsonObject::new();
+    insert(&mut object, "allow_fallbacks", value.allow_fallbacks);
+    insert(&mut object, "require_parameters", value.require_parameters);
+    insert(
+        &mut object,
+        "data_collection",
+        value.data_collection.as_ref().map(data_collection),
+    );
+    insert(&mut object, "zdr", value.zdr);
+    insert(
+        &mut object,
+        "enforce_distillable_text",
+        value.enforce_distillable_text,
+    );
+    insert(&mut object, "order", value.order);
+    insert(&mut object, "only", value.only);
+    insert(&mut object, "ignore", value.ignore);
+    insert(&mut object, "quantizations", value.quantizations);
+    insert(&mut object, "sort", value.sort.map(sort));
+    insert(&mut object, "max_price", value.max_price.map(prices));
+    insert(
+        &mut object,
+        "preferred_min_throughput",
+        value.preferred_min_throughput.as_ref().map(threshold),
+    );
+    insert(
+        &mut object,
+        "preferred_max_latency",
+        value.preferred_max_latency.as_ref().map(threshold),
+    );
+    Value::Object(object)
+}
+
+/// Construct the supplied routing members in declaration order.
+fn gateway(value: VercelGatewayRouting) -> Value {
+    let mut object = JsonObject::new();
+    insert(&mut object, "only", value.only);
+    insert(&mut object, "order", value.order);
+    Value::Object(object)
+}
+
+/// Construct the supplied routing members in declaration order.
+fn prices(value: MaxPrice) -> Value {
+    let mut object = JsonObject::new();
+    insert(&mut object, "prompt", value.prompt.map(price));
+    insert(&mut object, "completion", value.completion.map(price));
+    insert(&mut object, "image", value.image.map(price));
+    insert(&mut object, "audio", value.audio.map(price));
+    insert(&mut object, "request", value.request.map(price));
+    Value::Object(object)
+}
+
+/// Insert only supplied optional fields.
+fn insert<T: Into<Value>>(object: &mut JsonObject, key: &str, value: Option<T>) {
+    if let Some(value) = value {
+        object.insert(key.into(), value.into());
+    }
+}
+/// Encode the exact token-field literal.
+fn max_tokens_field(value: MaxTokensField) -> Value {
+    Value::from(match value {
+        MaxTokensField::MaxCompletionTokens => "max_completion_tokens",
+        MaxTokensField::MaxTokens => "max_tokens",
+    })
+}
+/// Encode the exact reasoning convention literal.
+fn thinking_format(value: ThinkingFormat) -> Value {
+    Value::from(match value {
+        ThinkingFormat::Openai => "openai",
+        ThinkingFormat::Openrouter => "openrouter",
+        ThinkingFormat::Deepseek => "deepseek",
+        ThinkingFormat::Zai => "zai",
+        ThinkingFormat::Qwen => "qwen",
+        ThinkingFormat::QwenChatTemplate => "qwen-chat-template",
+    })
+}
+/// Encode the cache marker literal.
+fn cache_control_format(value: CacheControlFormat) -> Value {
+    match value {
+        CacheControlFormat::Anthropic => Value::from("anthropic"),
+    }
+}
+/// Encode the routing privacy literal.
+fn data_collection(value: &DataCollection) -> Value {
+    Value::from(match value {
+        DataCollection::Allow => "allow",
+        DataCollection::Deny => "deny",
+    })
+}
+/// Encode a routing sort, retaining explicit null partitions.
+fn sort(value: RoutingSort) -> Value {
+    match value {
+        RoutingSort::Name(name) => name.into(),
+        RoutingSort::Fields { by, partition } => {
+            let mut object = JsonObject::new();
+            insert(&mut object, "by", by);
+            insert(
+                &mut object,
+                "partition",
+                partition.map(|value| value.map_or(Value::Null, Value::from)),
+            );
+            Value::Object(object)
+        }
+    }
+}
+/// Encode numeric prices with native nonfinite handling.
+fn price(value: RoutingPrice) -> Value {
+    match value {
+        RoutingPrice::Number(number) => number.into(),
+        RoutingPrice::Text(text) => text.into(),
+    }
+}
+/// Encode scalar or percentile thresholds.
+fn threshold(value: &RoutingThreshold) -> Value {
+    match value {
+        RoutingThreshold::Number(number) => (*number).into(),
+        RoutingThreshold::Percentiles { p50, p75, p90, p99 } => {
+            let mut object = JsonObject::new();
+            insert(&mut object, "p50", *p50);
+            insert(&mut object, "p75", *p75);
+            insert(&mut object, "p90", *p90);
+            insert(&mut object, "p99", *p99);
+            Value::Object(object)
+        }
+    }
+}
+
+/// Construct completion capability members preceding routing preferences.
+fn completion_prefix(value: &OpenAICompletionsCompat) -> JsonObject {
+    let mut object = JsonObject::new();
+    insert(&mut object, "supportsStore", value.supports_store);
+    insert(
+        &mut object,
+        "supportsDeveloperRole",
+        value.supports_developer_role,
+    );
+    insert(
+        &mut object,
+        "supportsReasoningEffort",
+        value.supports_reasoning_effort,
+    );
+    insert(
+        &mut object,
+        "supportsUsageInStreaming",
+        value.supports_usage_in_streaming,
+    );
+    insert(
+        &mut object,
+        "maxTokensField",
+        value.max_tokens_field.map(max_tokens_field),
+    );
+    insert(
+        &mut object,
+        "requiresToolResultName",
+        value.requires_tool_result_name,
+    );
+    insert(
+        &mut object,
+        "requiresAssistantAfterToolResult",
+        value.requires_assistant_after_tool_result,
+    );
+    insert(
+        &mut object,
+        "requiresThinkingAsText",
+        value.requires_thinking_as_text,
+    );
+    insert(
+        &mut object,
+        "requiresReasoningContentOnAssistantMessages",
+        value.requires_reasoning_content_on_assistant_messages,
+    );
+    insert(
+        &mut object,
+        "thinkingFormat",
+        value.thinking_format.map(thinking_format),
+    );
+    object
 }

@@ -199,13 +199,11 @@ fn deepseek_deepseek_v4_flash() -> Model {
     Model {
         id: "deepseek-v4-flash".into(),
         name: "DeepSeek V4 Flash".into(),
-        compat: Some(ModelCompat::OpenAICompletions(Box::new(
-            OpenAICompletionsCompat {
-                requires_reasoning_content_on_assistant_messages: Some(true),
-                thinking_format: Some(ThinkingFormat::Deepseek),
-                ..OpenAICompletionsCompat::default()
-            },
-        ))),
+        compat: Some(ModelCompat::from(OpenAICompletionsCompat {
+            requires_reasoning_content_on_assistant_messages: Some(true),
+            thinking_format: Some(ThinkingFormat::Deepseek),
+            ..OpenAICompletionsCompat::default()
+        })),
         ..deepseek_base()
     }
 }
@@ -221,13 +219,11 @@ fn deepseek_deepseek_v4_pro() -> Model {
             cache_read: 0.003_625,
             cache_write: 0.0,
         },
-        compat: Some(ModelCompat::OpenAICompletions(Box::new(
-            OpenAICompletionsCompat {
-                requires_reasoning_content_on_assistant_messages: Some(true),
-                thinking_format: Some(ThinkingFormat::Deepseek),
-                ..OpenAICompletionsCompat::default()
-            },
-        ))),
+        compat: Some(ModelCompat::from(OpenAICompletionsCompat {
+            requires_reasoning_content_on_assistant_messages: Some(true),
+            thinking_format: Some(ThinkingFormat::Deepseek),
+            ..OpenAICompletionsCompat::default()
+        })),
         ..deepseek_base()
     }
 }
