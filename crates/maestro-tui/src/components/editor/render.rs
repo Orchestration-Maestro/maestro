@@ -73,7 +73,6 @@ impl Editor {
             format!("{indicator}{}", "─".repeat(width - cells))
         } else {
             truncate_to_width(&indicator, width, crate::TruncateOptions::default())
-                .replace("\x1b[0m", "")
         };
         (self.border_color())(&text)
     }

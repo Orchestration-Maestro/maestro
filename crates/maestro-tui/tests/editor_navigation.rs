@@ -391,3 +391,43 @@ fn vertical_move_onto_zero_width_only_line_follows_requested_column() {
     );
     assert_eq!(up_then_insert("\u{200b}\nabcd", &[]), "\u{200b}|\nabcd");
 }
+
+#[test]
+fn page_navigation_preserves_clipped_border_resets() {
+    let _guard = support::globals();
+    let (tui, _, _) = support::host(16);
+    let editor = Editor::new(&tui, support::theme(), EditorOptions::default());
+    let text = "a\nb\nc\nd\ne\nf\ng";
+    editor.set_text(text);
+    let cursor = "\x1b[7m \x1b[0m";
+    let blank = " ".repeat(8);
+    let bottom = [
+        "─── ↑ 2\x1b[0m...\x1b[0m".to_owned(),
+        format!("{:<10}", "c"),
+        format!("{:<10}", "d"),
+        format!("{:<10}", "e"),
+        format!("{:<10}", "f"),
+        format!("g{cursor}{blank}"),
+        "──────────".to_owned(),
+    ];
+    let middle = [
+        "─── ↑ 1\x1b[0m...\x1b[0m".to_owned(),
+        format!("b{cursor}{blank}"),
+        format!("{:<10}", "c"),
+        format!("{:<10}", "d"),
+        format!("{:<10}", "e"),
+        format!("{:<10}", "f"),
+        "─── ↓ 1\x1b[0m...\x1b[0m".to_owned(),
+    ];
+    for (key, rows, line) in [
+        ("", &bottom, 6),
+        ("\x1b[5~", &middle, 1),
+        ("\x1b[6~", &bottom, 6),
+    ] {
+        editor.handle_input(key);
+        assert_eq!(editor.render(10), *rows, "{key:?}");
+        assert_eq!(editor.get_text(), text, "{key:?}");
+        let position = editor.get_cursor();
+        assert_eq!((position.line, position.col), (line, 1), "{key:?}");
+    }
+}
