@@ -79,28 +79,28 @@ impl AuthStorage {
         provider_id: &str,
         operations: &dyn ConfigValueOperations,
     ) -> Selection {
-        let (runtime, record) = {
+        let (known_kind, decoded) = {
             let state = self.state();
+            if let Some(key) = state
+                .runtime_overrides
+                .get(provider_id)
+                .filter(|key| !key.is_empty())
+            {
+                return Selection::Done(Ok(Some(key.clone())));
+            }
+            let Some(record) = state.data.get(provider_id) else {
+                return Selection::Ambient;
+            };
             (
-                state
-                    .runtime_overrides
-                    .get(provider_id)
-                    .filter(|key| !key.is_empty())
-                    .cloned(),
-                state.data.get(provider_id).cloned(),
+                matches!(
+                    record.get("type").and_then(|kind| kind.as_str()),
+                    Some("api_key" | "oauth")
+                ),
+                decode(record),
             )
         };
-        if let Some(key) = runtime {
-            return Selection::Done(Ok(Some(key)));
-        }
-        let Some(record) = record else {
-            return Selection::Ambient;
-        };
-        match (
-            record.get("type").and_then(|kind| kind.as_str()),
-            decode(&record),
-        ) {
-            (Some("api_key" | "oauth"), None) => Selection::Done(Ok(None)),
+        match (known_kind, decoded) {
+            (true, None) => Selection::Done(Ok(None)),
             (_, Some(AuthCredential::ApiKey(stored))) => {
                 Selection::Done(Ok(resolve_config_value(&stored.key, operations)))
             }
@@ -166,10 +166,10 @@ impl AuthStorage {
     /// stored keys resolve before it is built. Stored records decide as follows.
     /// - A complete `api_key` record resolves through the cached configured-value
     ///   resolver; `None` and the empty string stop the lookup.
-    /// - A malformed `api_key` or `oauth` record, or one of an unregistered provider,
+    /// - A malformed `api_key` or `oauth` record, or an `oauth` record of an unregistered provider,
     ///   yields `None` without consulting later sources.
     /// - An unexpired token yields the provider's extracted key; an extraction failure is returned.
-    /// - An expired token refreshes under the backend's asynchronous lock. Failures are
+    /// - An expired token refreshes through the backend's `with_lock_async`. Failures are
     ///   recorded for [`AuthStorage::drain_errors`] and the store is reloaded; only a stored
     ///   `oauth` record valid at that moment then supplies a key, otherwise the result is
     ///   `None` with no environment or fallback lookup. A refresh that yields nothing

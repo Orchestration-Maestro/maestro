@@ -39,7 +39,8 @@ pub fn credentials(access: &str, expires: f64) -> OAuthCredentials {
 pub type RefreshBehavior =
     Box<dyn Fn(OAuthCredentials) -> BoxFuture<Result<OAuthCredentials, OAuthError>> + Send + Sync>;
 
-/// Provider whose key is the access token; the access token `extract-fails` has no key.
+/// Provider whose key is the access token; the access token `extract-fails` has no key and
+/// `extension-key` takes the stored `enterpriseUrl` member as its key.
 pub struct ControlledProvider {
     /// Registered identifier.
     id: String,
@@ -110,6 +111,13 @@ impl OAuthProviderInterface for ControlledProvider {
     fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
         if credentials.access == "extract-fails" {
             return Err(error("extract failed"));
+        }
+        if credentials.access == "extension-key" {
+            return credentials
+                .extra
+                .get("enterpriseUrl")
+                .and_then(|url| url.as_str())
+                .ok_or_else(|| error("no enterpriseUrl"));
         }
         Ok(&credentials.access)
     }

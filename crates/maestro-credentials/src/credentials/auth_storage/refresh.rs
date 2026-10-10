@@ -37,12 +37,14 @@ impl AuthStorage {
     }
 
     /// The registered OAuth providers in registration order, sharing their implementations.
+    ///
+    /// The registry itself is documented by `maestro_models::get_oauth_providers`.
     #[must_use]
     pub fn get_oauth_providers(&self) -> Vec<OAuthProviderHandle> {
         maestro_models::get_oauth_providers()
     }
 
-    /// Refresh under the backend's asynchronous exclusion, returning the selected key.
+    /// Refresh through the backend's `with_lock_async`, returning the selected key.
     ///
     /// `None` means the stored record is no longer a complete OAuth record.
     pub(super) async fn refresh_oauth_token_with_lock(
@@ -76,9 +78,9 @@ impl AuthStorage {
             let mut state = self.state();
             state.data = parse_storage_data(current.as_deref())?;
             state.load_error = false;
-            state.data.get(provider_id).cloned()
+            state.data.get(provider_id).and_then(decode)
         };
-        let Some(AuthCredential::OAuth(credentials)) = record.as_ref().and_then(decode) else {
+        let Some(AuthCredential::OAuth(credentials)) = record else {
             return Ok((None, None));
         };
         if (self.clock)() < credentials.expires {

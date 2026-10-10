@@ -662,11 +662,24 @@ mod tests {
         let path = expired_file(&dir, "f6-wait");
         let storage = AuthStorage::create(&path);
         let holder = hold_lock(&path);
+        let idle = Arc::strong_count(&provider);
         let mut request = storage.get_api_key("f6-wait", true, &operations);
         assert!(poll_once(&mut request).is_pending());
+        assert_eq!(Arc::strong_count(&provider), idle + 1);
         drop(request);
-        tokio::time::advance(Duration::from_secs(60)).await;
+        assert_eq!(Arc::strong_count(&provider), idle);
         assert_eq!(provider.refreshes.load(Ordering::SeqCst), 0);
+        let released = Arc::new(AtomicBool::new(false));
+        let witness = DropWitness(released.clone());
+        let backend = FileAuthStorageBackend::new(&path);
+        let mut waiting = backend.with_lock_async(Box::new(move |_| {
+            let _witness = &witness;
+            Box::pin(async { Ok(None) })
+        }));
+        assert!(poll_once(&mut waiting).is_pending());
+        assert!(!released.load(Ordering::SeqCst));
+        drop(waiting);
+        assert!(released.load(Ordering::SeqCst));
         drop(holder);
         let key = storage.get_api_key("f6-wait", true, &operations).await;
         assert_eq!(key.unwrap().as_deref(), Some("new"));

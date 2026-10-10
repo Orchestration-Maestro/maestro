@@ -13,6 +13,8 @@ mod tests {
     };
     use std::cell::RefCell;
     use std::collections::HashMap;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     /// Controlled environment and command output with the commands it ran.
     #[derive(Default)]
@@ -215,11 +217,15 @@ mod tests {
             r#"{"type":"api_key"}"#.to_owned(),
             r#"{"type":"api_key","key":null}"#.to_owned(),
             r#"{"type":"api_key","key":7}"#.to_owned(),
+            r#"{"type":"api_key","key":{"a":1}}"#.to_owned(),
+            r#"{"type":"api_key","key":["k"]}"#.to_owned(),
         ];
         let oauth = [
             oauth_record(&format!(r#","access":"a",{expires}"#)),
             oauth_record(&format!(r#","refresh":null,"access":"a",{expires}"#)),
             oauth_record(&format!(r#","refresh":"r",{expires}"#)),
+            oauth_record(&format!(r#","refresh":"r","access":null,{expires}"#)),
+            oauth_record(&format!(r#","refresh":7,"access":"a",{expires}"#)),
             oauth_record(&format!(r#","refresh":"r","access":3,{expires}"#)),
             oauth_record(r#","refresh":"r","access":"a""#),
             oauth_record(r#","refresh":"r","access":"a","expires":null"#),
@@ -252,11 +258,10 @@ mod tests {
             let key = storage.get_api_key("k4-other", true, &operations).await;
             assert_eq!(key.unwrap().as_deref(), Some("fallback"), "{record}");
         }
-        let fields =
-            r#","refresh":"r","access":"extra-access","expires":4102444800000,"enterpriseUrl":"u""#;
+        let fields = r#","refresh":"r","access":"extension-key","expires":4102444800000,"enterpriseUrl":"u""#;
         let valid = fallback_storage("k4-oauth", &oauth_record(fields));
         let key = valid.get_api_key("k4-oauth", true, &operations).await;
-        assert_eq!(key.unwrap().as_deref(), Some("extra-access"));
+        assert_eq!(key.unwrap().as_deref(), Some("u"));
     }
 
     #[test]
@@ -278,15 +283,24 @@ mod tests {
         storage
     }
 
-    /// Key for `openai` under the fallback `fallback` (none when `None`) and `include_fallback`.
-    async fn openai_key(fallback: Option<&'static str>, include_fallback: bool) -> Option<String> {
+    /// Key for `openai` and the number of fallback calls, under the fallback `fallback`
+    /// (none when `None`) and `include_fallback`.
+    async fn openai_key(
+        fallback: Option<&'static str>,
+        include_fallback: bool,
+    ) -> (Option<String>, usize) {
         let storage = storage_with("{}");
+        let calls = Arc::new(AtomicUsize::new(0));
         if let Some(fallback) = fallback {
-            storage.set_fallback_resolver(move |_| Some(fallback.to_owned()));
+            let counter = calls.clone();
+            storage.set_fallback_resolver(move |_| {
+                counter.fetch_add(1, Ordering::SeqCst);
+                Some(fallback.to_owned())
+            });
         }
         let operations = Operations::default();
         let key = storage.get_api_key("openai", include_fallback, &operations);
-        key.await.unwrap()
+        (key.await.unwrap(), calls.load(Ordering::SeqCst))
     }
 
     /// Check one environment scenario inside its child process.
@@ -297,13 +311,17 @@ mod tests {
                 .then(|| "env-key".to_owned())
                 .or_else(|| ambient_free.map(str::to_owned))
         };
+        let ran = usize::from(!populated);
         assert_eq!(
             openai_key(Some("fallback"), true).await,
-            expected(Some("fallback"))
+            (expected(Some("fallback")), ran)
         );
-        assert_eq!(openai_key(Some("fallback"), false).await, expected(None));
-        assert_eq!(openai_key(Some(""), true).await, expected(Some("")));
-        assert_eq!(openai_key(None, true).await, expected(None));
+        assert_eq!(
+            openai_key(Some("fallback"), false).await,
+            (expected(None), 0)
+        );
+        assert_eq!(openai_key(Some(""), true).await, (expected(Some("")), ran));
+        assert_eq!(openai_key(None, true).await, (expected(None), 0));
     }
 
     #[test]

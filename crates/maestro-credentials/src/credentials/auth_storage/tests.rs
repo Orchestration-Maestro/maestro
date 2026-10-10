@@ -108,7 +108,7 @@ fn storage_at_1000(id: &str, access: &str, expires: f64) -> AuthStorage {
     AuthStorage::in_memory(data).with_clock(|| 1000.0)
 }
 
-/// Register a provider and return it with the id's unregistration guard.
+/// Register a provider and return the shared handle.
 fn register(provider: Counting) -> Arc<Counting> {
     let provider = Arc::new(provider);
     register_oauth_provider(provider.clone());

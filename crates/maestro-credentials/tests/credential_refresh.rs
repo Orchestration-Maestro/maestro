@@ -8,8 +8,10 @@ mod support;
 #[cfg(test)]
 mod tests {
     use super::gate_support::gated;
-    use super::oauth_support::{ControlledProvider, FUTURE, Unregister, credentials, error};
-    use super::support::{TempDir, block_on};
+    use super::oauth_support::{
+        ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials, error,
+    };
+    use super::support::{TempDir, block_on, is_child, run_child};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
         AuthStorageFuture, ConfigValueOperations, InMemoryAuthStorageBackend, LockUpdate,
@@ -46,6 +48,8 @@ mod tests {
         lock_fails: AtomicBool,
         /// Replacement text is refused.
         write_fails: AtomicBool,
+        /// Asynchronous operations fail after acquiring, instead of reading.
+        read_fails: AtomicBool,
         /// Synchronous operations (reloads and setters) fail.
         sync_fails: AtomicBool,
         /// Run after the asynchronous read, before the callback.
@@ -86,8 +90,11 @@ mod tests {
             Box::new(move |current| Box::pin(self.locked(update, current)))
         }
 
-        /// Run `update` under the asynchronous exclusion with the hooks in place.
+        /// Run `update` with the hooks in place.
         async fn locked(&self, update: AsyncLockUpdate<'_>, current: Option<String>) -> LockUpdate {
+            if self.read_fails.load(Ordering::SeqCst) {
+                return Err("read failed".into());
+            }
             fire(&self.in_lock);
             let next = update(current).await?;
             if next.is_some() {
@@ -301,67 +308,84 @@ mod tests {
         });
     }
 
-    /// Make the failure named `kind` happen for provider `id`.
-    fn break_refresh(kind: &str, id: &str, probe: &Probe) -> Option<ControlledProvider> {
+    /// Provider `openai` whose refresh fails in the provider or in key extraction when `kind`
+    /// names that phase, and otherwise succeeds with access token `new`.
+    fn provider_failing_in(kind: &str) -> ControlledProvider {
+        let refresh: RefreshBehavior = match kind {
+            "provider" => Box::new(|_| Box::pin(async { Err(error("remote detail")) })),
+            "extract" => Box::new(|_| Box::pin(async { Ok(credentials("extract-fails", FUTURE)) })),
+            _ => Box::new(|_| Box::pin(async { Ok(credentials("new", FUTURE)) })),
+        };
+        ControlledProvider::refreshing("openai", refresh)
+    }
+
+    /// Make the lock, read, parse or write phase named `kind` fail.
+    fn break_refresh(kind: &str, probe: &Probe) {
         match kind {
             "lock" => probe.lock_fails.store(true, Ordering::SeqCst),
+            "read" => probe.read_fails.store(true, Ordering::SeqCst),
             "parse" => probe
                 .inner
                 .with_lock(&mut |_| Ok(Some("not json".into())))
                 .unwrap(),
             "write" => probe.write_fails.store(true, Ordering::SeqCst),
-            "provider" => {
-                return Some(ControlledProvider::refreshing(
-                    id,
-                    Box::new(|_| Box::pin(async { Err(error("remote detail")) })),
-                ));
-            }
-            _ => {
-                return Some(ControlledProvider::refreshing(
-                    id,
-                    Box::new(|_| Box::pin(async { Ok(credentials("extract-fails", FUTURE)) })),
-                ));
-            }
+            _ => {}
         }
-        None
+    }
+
+    /// With `OPENAI_API_KEY` and a fallback available, each refresh phase failure ends the
+    /// lookup with its own recorded error, and the stored login recovers once the phase works.
+    async fn refresh_failures_block_ambient_sources() {
+        let expected = [
+            ("lock", "lock failed"),
+            ("read", "read failed"),
+            ("parse", ""),
+            ("write", "write failed"),
+            ("provider", "Failed to refresh OAuth token for openai"),
+            ("extract", "extract failed"),
+        ];
+        for (kind, message) in expected {
+            let (probe, storage) = setup(&json!({"openai": record("old", 1000.0)}));
+            storage.set_fallback_resolver(|_| Some("fallback".into()));
+            let _provider = provider_failing_in(kind).register();
+            let _cleanup = Unregister("openai".into());
+            break_refresh(kind, &probe);
+            assert_eq!(request(&storage, "openai").await.unwrap(), None, "{kind}");
+            let errors = storage.drain_errors();
+            if kind == "parse" {
+                assert_eq!(errors.len(), 2);
+                assert!(errors[0].downcast_ref::<serde_json::Error>().is_some());
+            } else {
+                assert_eq!(errors.len(), 1, "{kind}");
+                assert_eq!(errors[0].to_string(), message, "{kind}");
+                assert!(matches!(
+                    storage.get("openai"),
+                    Some(AuthCredential::OAuth(_))
+                ));
+            }
+            if matches!(kind, "provider" | "extract") {
+                continue;
+            }
+            probe.lock_fails.store(false, Ordering::SeqCst);
+            probe.read_fails.store(false, Ordering::SeqCst);
+            probe.write_fails.store(false, Ordering::SeqCst);
+            replace_text(&probe, &json!({"openai": record("old", 1000.0)}));
+            let recovered = request(&storage, "openai").await.unwrap();
+            assert_eq!(recovered.as_deref(), Some("new"), "{kind}");
+        }
     }
 
     #[test]
     fn maestro_refresh_failure_blocks_ambient_fallback() {
-        block_on(async {
-            let expected = [
-                ("lock", "lock failed"),
-                ("write", "write failed"),
-                ("provider", "Failed to refresh OAuth token for r4-provider"),
-                ("extract", "extract failed"),
-            ];
-            for (kind, message) in expected {
-                let id = format!("r4-{kind}");
-                let (probe, storage) = setup(&json!({id.clone(): record("old", 1000.0)}));
-                storage.set_fallback_resolver(|_| Some("fallback".into()));
-                let provider = break_refresh(kind, &id, &probe)
-                    .unwrap_or_else(|| ControlledProvider::new(&id));
-                provider.register();
-                let _cleanup = Unregister(id.clone());
-                assert_eq!(request(&storage, &id).await.unwrap(), None, "{kind}");
-                let errors = storage.drain_errors();
-                assert_eq!(errors[0].to_string(), message, "{kind}");
-                assert_eq!(
-                    storage
-                        .get(&id)
-                        .map(|stored| matches!(stored, AuthCredential::OAuth(_))),
-                    Some(true)
-                );
-            }
-            let (probe, storage) = setup(&json!({"r4-parse": record("old", 1000.0)}));
-            ControlledProvider::new("r4-parse").register();
-            let _cleanup = Unregister("r4-parse".into());
-            break_refresh("parse", "r4-parse", &probe);
-            assert_eq!(request(&storage, "r4-parse").await.unwrap(), None);
-            let errors = storage.drain_errors();
-            assert!(errors[0].downcast_ref::<serde_json::Error>().is_some());
-            assert_eq!(errors.len(), 2);
-        });
+        if is_child() {
+            return block_on(refresh_failures_block_ambient_sources());
+        }
+        let dir = TempDir::new("refresh-failures");
+        run_child(
+            "tests::maestro_refresh_failure_blocks_ambient_fallback",
+            dir.root(),
+            &[("OPENAI_API_KEY", "env-key")],
+        );
     }
 
     /// Provider whose refresh stores `recovery` (as another process would) and then fails.

@@ -20,7 +20,7 @@ pub(super) struct State {
     pub(super) runtime_overrides: HashMap<String, String>,
     /// Lookup consulted after stored and environment keys.
     pub(super) fallback_resolver: Option<Arc<dyn FallbackResolver>>,
-    /// Whether the last load failed; writes are skipped until a reload succeeds.
+    /// Whether the last load failed; writes are skipped until a reload or a locked refresh reread succeeds.
     pub(super) load_error: bool,
     /// Failures in recording order.
     pub(super) errors: Vec<AuthStorageError>,

@@ -21,8 +21,8 @@ recorded and nothing is rolled back. `logout` removes the stored record only.
 Text this owner writes is two-space JSON without a trailing newline; reloading
 existing text never rewrites it. Accepted records keep their order: a replaced
 record keeps its position, a new one is appended, and `list` and `get_all` follow
-it. A rewrite keeps the order of the freshly reread file, which another writer
-may have changed. `get` and `get_all` return
+it. A `set` or `remove` rewrite keeps the order of the freshly reread file, which another
+writer may have changed; a refresh accepts the order of the file it rereads. `get` and `get_all` return
 typed copies of complete `api_key` and `oauth` objects only; `list` and `has` cover
 every stored record, whatever its shape, and rewrites keep records that do not
 decode. Expiry times of typed credentials you supply are written without a fraction when
@@ -57,13 +57,15 @@ runtime override and stored key are resolved before it is built.
 
 ### Refresh and login
 
-An expired token is refreshed under the backend's asynchronous lock. The stored
+An expired token is refreshed through the backend's `with_lock_async` (the file adapter
+holds its sidecar lock meanwhile; the memory adapter holds nothing, see below). The stored
 text is reread and accepted, publishing it and clearing a recorded load failure.
 A record that is then absent, no longer `oauth` or no longer complete gives an empty
 result, and the lookup continues with the environment and the fallback resolver as
 they are at that moment. A token with `now < expires` is reused. Otherwise the
-model library refreshes it once; the result replaces that provider's record in the
-accepted records as they are after the refresh (so edits and reloads made while the
+model library's [`get_oauth_api_key`](models/oauth.md), which checks expiry itself,
+refreshes it; the result replaces that provider's record in the
+accepted records as they are after the refresh (so edits and reloads of other providers' records made while the
 refresh was pending are kept), is published, and the whole accepted document is then
 written.
 
@@ -81,7 +83,8 @@ callback; effects already completed, including published accepted records, are n
 credentials it returns as an `oauth` record, persisting like `set`; an unregistered
 provider fails with `Unknown OAuth provider: <id>`. `get_oauth_providers` returns the
 model library's registered providers in registration order, sharing their
-implementations.
+implementations; see the [OAuth documentation](models/oauth.md) for the provider
+interface.
 
 ## File and memory backends
 

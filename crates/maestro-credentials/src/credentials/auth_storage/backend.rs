@@ -30,11 +30,11 @@ pub type AuthStorageFuture<'a, T> =
 #[cfg(target_arch = "wasm32")]
 pub type AuthStorageFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 'a>>;
 
-/// Single awaited callback run under exclusion by `with_lock_async`.
+/// Single awaited callback run by `with_lock_async`; each adapter documents what it holds meanwhile.
 #[cfg(not(target_arch = "wasm32"))]
 pub type AsyncLockUpdate<'a> =
     Box<dyn FnOnce(Option<String>) -> AuthStorageFuture<'a, LockUpdate> + Send + 'a>;
-/// Single awaited callback run under exclusion by `with_lock_async`.
+/// Single awaited callback run by `with_lock_async`; each adapter documents what it holds meanwhile.
 #[cfg(target_arch = "wasm32")]
 pub type AsyncLockUpdate<'a> =
     Box<dyn FnOnce(Option<String>) -> AuthStorageFuture<'a, LockUpdate> + 'a>;
