@@ -3,7 +3,7 @@
 use std::fs;
 use std::io;
 use std::os::unix::fs::MetadataExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::{rc::Rc, time::Duration};
 
@@ -74,7 +74,7 @@ impl FooterOperations for NativeFooterOperations {
         repo_dir: &str,
         callback: Box<dyn FnOnce(io::Result<Option<String>>)>,
     ) {
-        let repo_dir = repo_dir.to_owned();
+        let repo_dir = anchor(repo_dir);
         self.local.spawn_local(async move {
             let output = tokio::process::Command::new("git")
                 .arg("--no-optional-locks")
@@ -141,6 +141,11 @@ impl FooterOperations for NativeFooterOperations {
     }
 }
 
+/// Bind an effect's path now, retaining lexical fallback when resolution fails.
+fn anchor(path: &str) -> PathBuf {
+    std::path::absolute(path).unwrap_or_else(|_| path.into())
+}
+
 /// Start one stat poll on the registration-time absolute path, with its metadata as the previous sample.
 fn poll(
     local: &LocalSet,
@@ -148,7 +153,7 @@ fn poll(
     interval: Duration,
     listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
 ) -> JoinHandle<()> {
-    let path = std::path::absolute(path).unwrap_or_else(|_| path.into());
+    let path = anchor(path);
     let mut last = stats(&path);
     let mut previous = last.unwrap_or_default();
     local.spawn_local(async move {

@@ -59,8 +59,10 @@ Until disposed, the provider watches the directory containing `HEAD`. Registrati
 proceeds in order and stops at the first failure or absent path: when the common
 metadata directory's `reftable` directory is present and registered, it is watched
 too, and when its `tables.list` file is then present and registered, that file is
-watched and polled every 250 ms. A relative polling path is anchored to the working
-directory current at registration. HEAD-directory events with an unknown,
+watched and polled every 250 ms. Native polling paths and asynchronous Git query
+directories are anchored when their operations are called, before the task set
+runs; if absolute resolution fails, the original path is retained.
+HEAD-directory events with an unknown,
 empty or exact `HEAD` filename request refresh; reference-table events need no
 filename filter. Polling requests refresh when modification time, metadata change
 time or size differs. The native poll retains the last successful sample through
