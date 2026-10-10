@@ -8,78 +8,66 @@ use maestro_theme::{
 use serde_json::json;
 use support::{Controlled, dark, fg, load, required_colors};
 
-/// Every typed foreground key.
-fn foreground_keys() -> Vec<ThemeColor> {
-    use ThemeColor::{
-        Accent, BashMode, Border, BorderAccent, BorderMuted, CustomMessageLabel, CustomMessageText,
-        Dim, Error, MdCode, MdCodeBlock, MdCodeBlockBorder, MdHeading, MdHr, MdLink, MdLinkUrl,
-        MdListBullet, MdQuote, MdQuoteBorder, Muted, Success, SyntaxComment, SyntaxFunction,
-        SyntaxKeyword, SyntaxNumber, SyntaxOperator, SyntaxPunctuation, SyntaxString, SyntaxType,
-        SyntaxVariable, Text, ThinkingHigh, ThinkingLow, ThinkingMedium, ThinkingMinimal,
-        ThinkingOff, ThinkingText, ThinkingXhigh, ToolDiffAdded, ToolDiffContext, ToolDiffRemoved,
-        ToolOutput, ToolTitle, UserMessageText, Warning,
-    };
+/// Every typed foreground key with its literal theme-file name.
+fn foreground_keys() -> Vec<(ThemeColor, &'static str)> {
     vec![
-        Accent,
-        Border,
-        BorderAccent,
-        BorderMuted,
-        Success,
-        Error,
-        Warning,
-        Muted,
-        Dim,
-        Text,
-        ThinkingText,
-        UserMessageText,
-        CustomMessageText,
-        CustomMessageLabel,
-        ToolTitle,
-        ToolOutput,
-        MdHeading,
-        MdLink,
-        MdLinkUrl,
-        MdCode,
-        MdCodeBlock,
-        MdCodeBlockBorder,
-        MdQuote,
-        MdQuoteBorder,
-        MdHr,
-        MdListBullet,
-        ToolDiffAdded,
-        ToolDiffRemoved,
-        ToolDiffContext,
-        SyntaxComment,
-        SyntaxKeyword,
-        SyntaxFunction,
-        SyntaxVariable,
-        SyntaxString,
-        SyntaxNumber,
-        SyntaxType,
-        SyntaxOperator,
-        SyntaxPunctuation,
-        ThinkingOff,
-        ThinkingMinimal,
-        ThinkingLow,
-        ThinkingMedium,
-        ThinkingHigh,
-        ThinkingXhigh,
-        BashMode,
+        (ThemeColor::Accent, "accent"),
+        (ThemeColor::Border, "border"),
+        (ThemeColor::BorderAccent, "borderAccent"),
+        (ThemeColor::BorderMuted, "borderMuted"),
+        (ThemeColor::Success, "success"),
+        (ThemeColor::Error, "error"),
+        (ThemeColor::Warning, "warning"),
+        (ThemeColor::Muted, "muted"),
+        (ThemeColor::Dim, "dim"),
+        (ThemeColor::Text, "text"),
+        (ThemeColor::ThinkingText, "thinkingText"),
+        (ThemeColor::UserMessageText, "userMessageText"),
+        (ThemeColor::CustomMessageText, "customMessageText"),
+        (ThemeColor::CustomMessageLabel, "customMessageLabel"),
+        (ThemeColor::ToolTitle, "toolTitle"),
+        (ThemeColor::ToolOutput, "toolOutput"),
+        (ThemeColor::MdHeading, "mdHeading"),
+        (ThemeColor::MdLink, "mdLink"),
+        (ThemeColor::MdLinkUrl, "mdLinkUrl"),
+        (ThemeColor::MdCode, "mdCode"),
+        (ThemeColor::MdCodeBlock, "mdCodeBlock"),
+        (ThemeColor::MdCodeBlockBorder, "mdCodeBlockBorder"),
+        (ThemeColor::MdQuote, "mdQuote"),
+        (ThemeColor::MdQuoteBorder, "mdQuoteBorder"),
+        (ThemeColor::MdHr, "mdHr"),
+        (ThemeColor::MdListBullet, "mdListBullet"),
+        (ThemeColor::ToolDiffAdded, "toolDiffAdded"),
+        (ThemeColor::ToolDiffRemoved, "toolDiffRemoved"),
+        (ThemeColor::ToolDiffContext, "toolDiffContext"),
+        (ThemeColor::SyntaxComment, "syntaxComment"),
+        (ThemeColor::SyntaxKeyword, "syntaxKeyword"),
+        (ThemeColor::SyntaxFunction, "syntaxFunction"),
+        (ThemeColor::SyntaxVariable, "syntaxVariable"),
+        (ThemeColor::SyntaxString, "syntaxString"),
+        (ThemeColor::SyntaxNumber, "syntaxNumber"),
+        (ThemeColor::SyntaxType, "syntaxType"),
+        (ThemeColor::SyntaxOperator, "syntaxOperator"),
+        (ThemeColor::SyntaxPunctuation, "syntaxPunctuation"),
+        (ThemeColor::ThinkingOff, "thinkingOff"),
+        (ThemeColor::ThinkingMinimal, "thinkingMinimal"),
+        (ThemeColor::ThinkingLow, "thinkingLow"),
+        (ThemeColor::ThinkingMedium, "thinkingMedium"),
+        (ThemeColor::ThinkingHigh, "thinkingHigh"),
+        (ThemeColor::ThinkingXhigh, "thinkingXhigh"),
+        (ThemeColor::BashMode, "bashMode"),
     ]
 }
 
-/// Every typed background key.
-fn background_keys() -> Vec<ThemeBg> {
-    use ThemeBg::{
-        CustomMessageBg, SelectedBg, ToolErrorBg, ToolPendingBg, ToolSuccessBg, UserMessageBg,
-    };
+/// Every typed background key with its literal theme-file name.
+fn background_keys() -> Vec<(ThemeBg, &'static str)> {
     vec![
-        SelectedBg,
-        UserMessageBg,
-        CustomMessageBg,
-        ToolPendingBg,
-        ToolSuccessBg,
-        ToolErrorBg,
+        (ThemeBg::SelectedBg, "selectedBg"),
+        (ThemeBg::UserMessageBg, "userMessageBg"),
+        (ThemeBg::CustomMessageBg, "customMessageBg"),
+        (ThemeBg::ToolPendingBg, "toolPendingBg"),
+        (ThemeBg::ToolSuccessBg, "toolSuccessBg"),
+        (ThemeBg::ToolErrorBg, "toolErrorBg"),
     ]
 }
 
@@ -100,31 +88,17 @@ fn theme_routes_every_required_key_to_its_ansi_plane() {
     let foregrounds = foreground_keys();
     let backgrounds = background_keys();
     assert_eq!(foregrounds.len() + backgrounds.len(), 51);
-    for key in &foregrounds {
-        let expected = format!("\x1b[38;5;{}m", position(key.as_str()));
-        assert_eq!(
-            theme.get_fg_ansi(key).unwrap(),
-            expected,
-            "{}",
-            key.as_str()
-        );
-        assert!(
-            theme
-                .get_bg_ansi(&ThemeBg::Named(key.as_str().into()))
-                .is_err()
-        );
+    for (key, name) in &foregrounds {
+        let expected = format!("\x1b[38;5;{}m", position(name));
+        assert_eq!(theme.get_fg_ansi(key).unwrap(), expected, "{name}");
+        assert!(theme.get_bg_ansi(&ThemeBg::Named((*name).into())).is_err());
     }
-    for key in &backgrounds {
-        let expected = format!("\x1b[48;5;{}m", position(key.as_str()));
-        assert_eq!(
-            theme.get_bg_ansi(key).unwrap(),
-            expected,
-            "{}",
-            key.as_str()
-        );
+    for (key, name) in &backgrounds {
+        let expected = format!("\x1b[48;5;{}m", position(name));
+        assert_eq!(theme.get_bg_ansi(key).unwrap(), expected, "{name}");
         assert!(
             theme
-                .get_fg_ansi(&ThemeColor::Named(key.as_str().into()))
+                .get_fg_ansi(&ThemeColor::Named((*name).into()))
                 .is_err()
         );
     }
