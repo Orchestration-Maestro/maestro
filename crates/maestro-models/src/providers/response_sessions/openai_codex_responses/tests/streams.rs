@@ -271,7 +271,7 @@ fn maestro_response_sessions_require_terminal_events() {
             let (result, output) = finite_body(bytes).await;
             assert_eq!(result.unwrap_err().diagnostic().message, "Response stream ended before a terminal event");
             if let Some(retained) = retained {
-                assert_eq!(serde_json::to_value(&output.read().unwrap().content).unwrap()[0]["text"], retained);
+                assert_eq!(output_value(&output)["content"][0]["text"], retained);
             }
         }
         assert_tool_eof().await;
@@ -662,7 +662,7 @@ async fn assert_cancelled_read() {
         "Request was aborted"
     );
     assert_eq!(
-        serde_json::to_value(&output.read().unwrap().content).unwrap()[0]["text"],
+        output_value(&output)["content"][0]["text"],
         "before cancellation"
     );
     assert!(dropped.load(Ordering::SeqCst));
@@ -815,20 +815,20 @@ fn maestro_response_sessions_reduce_shared_content() {
 
 /// Inspect canonical output after provisional content was replaced and scratch discarded.
 fn assert_reduced_content(output: &crate::SharedAssistantMessage) {
-    let output = output.read().unwrap();
-    let content = serde_json::to_value(&output.content).unwrap();
+    let wire = output_value(output);
+    let content = &wire["content"];
     assert_eq!(content[0]["thinking"], "final thinking");
     assert_eq!(content[1]["text"], "final text");
     assert_eq!(
         content[2],
         serde_json::json!({"type":"toolCall","id":"call_one|fc_item","name":"lookup","arguments":{"lookup":17}})
     );
-    assert_eq!(output.response_id.as_deref(), Some("r_final"));
-    assert_eq!(output.stop_reason, crate::StopReason::ToolUse);
-    let usage = serde_json::to_value(&output.usage).unwrap();
+    assert_eq!(wire["responseId"], "r_final");
+    assert_eq!(wire["stopReason"], "toolUse");
+    let usage = &wire["usage"];
     assert_eq!(
         usage,
-        serde_json::json!({"input":60.0,"output":20.0,"cacheRead":40.0,"cacheWrite":0.0,"totalTokens":120.0,
+        &serde_json::json!({"input":60.0,"output":20.0,"cacheRead":40.0,"cacheWrite":0.0,"totalTokens":120.0,
         "cost":{"input":0.000_059_999_999_999_999_995,"output":0.000_039_999_999_999_999_996,"cacheRead":0.00012,"cacheWrite":0.0,"total":0.000_219_999_999_999_999_98}})
     );
 }
@@ -902,10 +902,7 @@ fn maestro_response_sessions_use_native_http() {
                 "missing {name}"
             );
         }
-        assert_eq!(
-            serde_json::to_value(&output.read().unwrap().content).unwrap()[0]["text"],
-            "native Ω🧭"
-        );
+        assert_eq!(output_value(&output)["content"][0]["text"], "native Ω🧭");
         assert_eq!(output.read().unwrap().stop_reason, crate::StopReason::Stop);
         closed_receiver.await.unwrap();
     });
@@ -1019,10 +1016,7 @@ async fn assert_lifecycle(row: LifecycleCase) {
     assert_eq!(observed.payloads.load(Ordering::SeqCst), 1);
     assert_eq!(observed.hooks.load(Ordering::SeqCst), row.hooks);
     assert_sent_bodies(&observed, &prepared.body, row.attempts);
-    assert_eq!(
-        serde_json::to_value(&output.read().unwrap().stop_reason).unwrap(),
-        row.reason
-    );
+    assert_eq!(output_value(&output)["stopReason"], row.reason);
     let started = matches!(
         row.scenario.as_str(),
         "terminal" | "incomplete" | "no-terminal" | "malformed"
@@ -1313,7 +1307,7 @@ async fn assert_tool_eof() {
         "Response stream ended before a terminal event"
     );
     assert_eq!(
-        serde_json::to_value(&output.read().unwrap().content).unwrap()[0],
+        output_value(&output)["content"][0],
         serde_json::json!({"type":"toolCall","id":"pending|fc_pending","name":"lookup","arguments":{"value":23}})
     );
 }
@@ -1403,4 +1397,10 @@ async fn assert_response_hook_await() {
         events.next().await,
         Some(crate::AssistantMessageEvent::Start { .. })
     ));
+}
+
+/// Copy only the closed canonical record under the lock; run serialization after releasing it.
+fn output_value(output: &crate::SharedAssistantMessage) -> Value {
+    let snapshot = output.read().unwrap().clone();
+    serde_json::to_value(snapshot).unwrap()
 }
