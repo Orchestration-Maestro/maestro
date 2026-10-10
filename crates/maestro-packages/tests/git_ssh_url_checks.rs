@@ -185,3 +185,46 @@ fn numeric_scp_namespace_is_not_a_port() {
         })
     );
 }
+
+#[test]
+fn hosted_shortcut_identity_uses_url_path_not_query() {
+    for (shortcut, host, path) in [
+        (
+            "github:octocat/Hello-World",
+            "github.com",
+            "octocat/Hello-World",
+        ),
+        ("gitlab:group/repository", "gitlab.com", "group/repository"),
+        (
+            "bitbucket:team/repository",
+            "bitbucket.org",
+            "team/repository",
+        ),
+        ("gist:user/abcdef", "gist.github.com", "user/abcdef"),
+        (
+            "sourcehut:~user/repository",
+            "git.sr.ht",
+            "~user/repository",
+        ),
+        ("octocat/Hello-World", "github.com", "octocat/Hello-World"),
+    ] {
+        for (suffix, reference) in [("?tab=readme", None), ("?tab=readme#main", Some("main"))] {
+            let target = if host == "gist.github.com" {
+                "abcdef"
+            } else {
+                path
+            };
+            assert_eq!(
+                parse_git_url(&format!("git:{shortcut}{suffix}")),
+                Some(GitSource {
+                    repo: format!("https://{host}/{target}"),
+                    host: host.into(),
+                    path: path.into(),
+                    r#ref: reference.map(str::to_owned),
+                    pinned: reference.is_some(),
+                }),
+                "{shortcut}{suffix}"
+            );
+        }
+    }
+}

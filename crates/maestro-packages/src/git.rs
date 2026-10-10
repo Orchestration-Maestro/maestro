@@ -287,15 +287,15 @@ fn hosted(source: &str) -> Option<GitSource> {
     let shortcut = (!tail.starts_with("//")).then_some(());
     let (provider, user, project, reference) = if shortcut.is_some() {
         let provider = Provider::by_shortcut(scheme)?;
-        let (path, hash) = tail.split_once('#').unwrap_or((tail, ""));
-        let path = path.strip_prefix('/').unwrap_or(path);
+        let url = Url::parse(source).ok()?;
+        let path = url.path().strip_prefix('/').unwrap_or(url.path());
         let path = path.split_once('@').map_or(path, |(_, after)| after);
         let (user, project) = path.rsplit_once('/').unwrap_or(("null", path));
         (
             provider,
             user.to_owned(),
             project.to_owned(),
-            hash.to_owned(),
+            url.fragment().unwrap_or_default().to_owned(),
         )
     } else {
         let url = Url::parse(source).ok()?;

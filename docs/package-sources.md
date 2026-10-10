@@ -9,6 +9,8 @@ shorthand requires the `git:` prefix. Its result separates the clone address,
 host/path identity and optional ref. The manager checks the literal `npm:` prefix
 first, then the resource owner's local-path classification, then Git parsing.
 Git identity ignores transport and ref; npm identity uses the package name.
+Hosted shortcuts select their identity from the URL path, excluding the query;
+a fragment can select the ref.
 
 Ordinary local paths use the supplied working directory as their input base;
 stored locals use their scope's base. Local storage uses `maestro-path` relative-path calculation from the

@@ -841,3 +841,21 @@ fn numeric_scp_namespace_matches_git_transport_in_settings() {
         json!([])
     );
 }
+
+#[test]
+fn queried_hosted_shortcut_matches_https_for_add_and_remove() {
+    let (mut manager, settings, _) = support::manager(&json!({}));
+    let shortcut = "git:github:octocat/Hello-World?tab=readme";
+    let https = "https://github.com/octocat/Hello-World";
+    assert!(manager.add_source_to_settings(shortcut, None).unwrap());
+    assert!(!manager.add_source_to_settings(https, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([shortcut])
+    );
+    assert!(manager.remove_source_from_settings(https, None).unwrap());
+    assert_eq!(
+        settings.borrow().get_global_settings().0["packages"],
+        json!([])
+    );
+}
