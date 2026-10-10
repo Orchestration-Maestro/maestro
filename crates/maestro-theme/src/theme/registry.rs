@@ -1,5 +1,5 @@
 //! Theme registration, discovery and lookup over supplied directories.
-use super::loading::{build_theme, parse_custom, parse_json};
+use super::loading::{build_theme, parse_custom};
 use super::{Theme, ThemeError, ThemeOperations, ThemeOptions};
 use indexmap::IndexMap;
 use maestro_path::join;
@@ -15,7 +15,7 @@ const BUILTIN_NAMES: [&str; 2] = ["dark", "light"];
 pub struct ThemeDirectories {
     /// Directory holding the shipped `dark.json` and `light.json`.
     pub themes_dir: String,
-    /// Directory holding user theme files named `<theme>.json`.
+    /// Directory holding user theme entries named `<theme>.json`.
     pub custom_themes_dir: String,
 }
 /// One inventory entry.
@@ -23,7 +23,7 @@ pub struct ThemeDirectories {
 pub struct ThemeInfo {
     /// Theme name.
     pub name: String,
-    /// Source file of the first owner of the name, when it has one.
+    /// Source path of the first owner of the name, when it has one.
     pub path: Option<String>,
 }
 /// Lazy shipped data, registrations and effects for one set of theme directories.
@@ -93,7 +93,7 @@ impl ThemeState {
         self.load_theme(name).ok().map(Rc::new)
     }
 
-    /// Select each name's first owner: shipped, then custom file, then registration.
+    /// Select each name's first owner: shipped, then custom entry, then registration.
     fn owners(&self) -> Result<IndexMap<String, Option<String>>, ThemeError> {
         self.builtins()?;
         let mut owners = IndexMap::new();
@@ -109,7 +109,7 @@ impl ThemeState {
         }
         Ok(owners)
     }
-    /// Add each custom `.json` file name not owned yet, when the custom directory exists.
+    /// Add each custom `.json` entry name not owned yet, when the custom directory exists.
     fn add_custom_owners(
         &self,
         owners: &mut IndexMap<String, Option<String>>,
@@ -143,9 +143,10 @@ impl ThemeState {
             .operations
             .read_to_string(&path)
             .map_err(ThemeError::io)?;
-        parse_json(&path, &content)
+        serde_json::from_str(&content)
+            .map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))
     }
-    /// Construct a new instance from shipped data or the named custom file.
+    /// Construct a new instance from shipped data or the named custom entry.
     fn load_theme(&self, name: &str) -> Result<Theme, ThemeError> {
         let builtins = self.builtins()?;
         if let Some(index) = BUILTIN_NAMES.iter().position(|builtin| *builtin == name) {

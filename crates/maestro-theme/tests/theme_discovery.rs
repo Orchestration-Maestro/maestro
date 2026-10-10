@@ -17,7 +17,7 @@ const SHIPPED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme");
 #[cfg(test)]
 const TRUECOLOR_ACCENT: &str = "\x1b[38;2;138;190;183m";
 
-/// A scratch directory removed on drop.
+/// A scratch directory whose removal is attempted on drop.
 #[cfg(test)]
 struct Scratch(PathBuf);
 
@@ -48,7 +48,9 @@ impl Drop for Scratch {
     }
 }
 
-/// Real files with a controlled environment, recording each read and environment lookup.
+/// Real files with controlled environment lookups, recording each read and lookup.
+/// Name sorting still uses the process locale, so assertions through it must not
+/// depend on locale-specific case order.
 #[cfg(test)]
 struct Real {
     env: RefCell<HashMap<String, String>>,
@@ -498,15 +500,9 @@ fn theme_lists_json_names_with_ordinal_order() {
 }
 
 #[test]
-fn theme_path_inventory_keeps_first_owner_and_locale_order() {
+fn theme_path_inventory_keeps_first_owner_and_sorted_names() {
     let scratch = Scratch::new("owners");
-    for file in [
-        "a.json",
-        "A.json",
-        "dark.json",
-        "z.json",
-        "custom-only.json",
-    ] {
+    for file in ["a.json", "dark.json", "z.json", "custom-only.json"] {
         scratch.write(&format!("custom/{file}"), "not json");
     }
     let custom = scratch.path("custom");
@@ -522,7 +518,7 @@ fn theme_path_inventory_keeps_first_owner_and_locale_order() {
         format!("{SHIPPED}/dark.json"),
         format!("{SHIPPED}/light.json"),
     );
-    let (a, big_a) = (format!("{custom}/a.json"), format!("{custom}/A.json"));
+    let a = format!("{custom}/a.json");
     let (only, z) = (
         format!("{custom}/custom-only.json"),
         format!("{custom}/z.json"),
@@ -531,13 +527,37 @@ fn theme_path_inventory_keeps_first_owner_and_locale_order() {
         names(&listed),
         [
             ("a", Some(a.as_str())),
-            ("A", Some(big_a.as_str())),
             ("custom-only", Some(only.as_str())),
             ("dark", Some(dark.as_str())),
             ("light", Some(light.as_str())),
             ("reg-empty", Some("")),
             ("reg-none", None),
             ("z", Some(z.as_str())),
+        ]
+    );
+}
+
+#[test]
+fn theme_path_inventory_orders_canonically_equal_names_by_directory_byte_order() {
+    let scratch = Scratch::new("canonical");
+    scratch.write("custom/\u{e9}.json", "x");
+    scratch.write("custom/e\u{301}.json", "x");
+    let custom = scratch.path("custom");
+    let ops = Real::new(&[]);
+    let listed = make(&ops, &custom)
+        .get_available_themes_with_paths()
+        .unwrap();
+    let composed = format!("{custom}/\u{e9}.json");
+    let decomposed = format!("{custom}/e\u{301}.json");
+    let tied: Vec<_> = names(&listed)
+        .into_iter()
+        .filter(|(name, _)| name.contains('\u{e9}') || name.contains('\u{301}'))
+        .collect();
+    assert_eq!(
+        tied,
+        [
+            ("e\u{301}", Some(decomposed.as_str())),
+            ("\u{e9}", Some(composed.as_str())),
         ]
     );
 }
@@ -622,10 +642,11 @@ fn theme_discovery_propagates_loading_failures() {
         Rc::clone(&malformed) as Rc<dyn ThemeOperations>,
     );
     let error = state.get_available_themes().unwrap_err();
+    assert!(!error.to_string().contains("Failed to parse theme"));
     assert!(
         error
-            .to_string()
-            .starts_with("Failed to parse theme /themes/light.json: ")
+            .source()
+            .is_some_and(|cause| cause.downcast_ref::<serde_json::Error>().is_some())
     );
 
     let scratch = Scratch::new("not-directory");
@@ -712,6 +733,28 @@ fn theme_lookup_suppresses_load_failures() {
         Real::new(&[]),
     );
     assert!(broken.get_theme_by_name("dark").is_none());
+}
+
+#[test]
+fn theme_lookup_rejects_shipped_data_without_a_colors_object() {
+    for colors in [serde_json::Value::Null, serde_json::json!(["x"])] {
+        let scratch = Scratch::new("no-colors");
+        let mut doc = shipped_dark();
+        doc["colors"] = colors;
+        scratch.write("themes/dark.json", &doc.to_string());
+        scratch.write("themes/light.json", &theme_text("light", "#778899"));
+        scratch.write("custom/mine.json", &theme_text("mine", "#123456"));
+        let state = ThemeState::new(
+            ThemeDirectories {
+                themes_dir: scratch.path("themes"),
+                custom_themes_dir: scratch.path("custom"),
+            },
+            Real::new(&[]),
+        );
+        assert!(state.get_theme_by_name("dark").is_none());
+        assert!(state.get_theme_by_name("light").is_some());
+        assert!(state.get_theme_by_name("mine").is_some());
+    }
 }
 
 #[test]

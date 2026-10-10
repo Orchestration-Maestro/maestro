@@ -43,9 +43,14 @@ impl ThemeOperations for NativeThemeOperations {
         std::path::Path::new(path).exists()
     }
     fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
-        std::fs::read_dir(path)?
-            .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().into_owned()))
-            .collect()
+        let mut names = std::fs::read_dir(path)?
+            .map(|entry| entry.map(|entry| entry.file_name()))
+            .collect::<std::io::Result<Vec<_>>>()?;
+        names.sort();
+        Ok(names
+            .into_iter()
+            .map(|name| name.to_string_lossy().into_owned())
+            .collect())
     }
     fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()> {
         let collator = super::collation::collator(&|name| self.environment(name))?;
@@ -87,17 +92,13 @@ pub fn load_theme_from_path(
 }
 /// Parse theme text and admit it against the runtime schema.
 pub(super) fn parse_custom(label: &str, content: &str) -> Result<Value, ThemeError> {
-    let json = parse_json(label, content)?;
+    let json = serde_json::from_str(content).map_err(|cause| {
+        ThemeError::caused_by(format!("Failed to parse theme {label}: {cause}"), cause)
+    })?;
     validate(label, &json)?;
     Ok(json)
 }
-/// Parse theme text without admission, as for the trusted shipped themes.
-pub(super) fn parse_json(label: &str, content: &str) -> Result<Value, ThemeError> {
-    serde_json::from_str(content).map_err(|cause| {
-        ThemeError::caused_by(format!("Failed to parse theme {label}: {cause}"), cause)
-    })
-}
-/// Resolve and construct a theme from an admitted document, borrowing its colors.
+/// Resolve and construct a theme from a parsed document, borrowing its colors.
 ///
 /// The document's name is authored; `options` supplies the rest of the metadata.
 pub(super) fn build_theme(
@@ -109,14 +110,15 @@ pub(super) fn build_theme(
     let mode = mode.unwrap_or_else(|| detect_mode(operations));
     let mut fg = Vec::new();
     let mut bg = Vec::new();
-    if let Some(colors) = json["colors"].as_object() {
-        for (key, value) in colors {
-            let color = resolve(value, &json["vars"])?;
-            if is_background(key) {
-                bg.push((ThemeBg::Named(key.clone()), color));
-            } else {
-                fg.push((ThemeColor::Named(key.clone()), color));
-            }
+    let colors = json["colors"]
+        .as_object()
+        .ok_or_else(|| ThemeError::message("Theme colors must be an object".to_owned()))?;
+    for (key, value) in colors {
+        let color = resolve(value, &json["vars"])?;
+        if is_background(key) {
+            bg.push((ThemeBg::Named(key.clone()), color));
+        } else {
+            fg.push((ThemeColor::Named(key.clone()), color));
         }
     }
     options.name = json["name"].as_str().map(str::to_owned);
