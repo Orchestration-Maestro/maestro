@@ -21,6 +21,7 @@ impl Renderer<'_> {
                 Kind::Quote(children, _) => rows.extend(self.quote(children, width)),
                 Kind::Rule => rows.push((self.theme.hr)(&"─".repeat(width.min(80)))),
                 Kind::List(start, items) => rows.extend(self.list(*start, items, 0, style)),
+                Kind::Table(table) => rows.extend(self.table(table, width, style)),
                 Kind::Gap => rows.push(String::new()),
                 _ => {}
             }
@@ -86,7 +87,7 @@ impl Renderer<'_> {
 fn separates(current: &Kind, next: &Kind) -> bool {
     match current {
         Kind::Paragraph(_) => !matches!(next, Kind::Gap | Kind::List(..)),
-        Kind::Heading(..) | Kind::CodeBlock(..) | Kind::Quote(..) | Kind::Rule => {
+        Kind::Heading(..) | Kind::CodeBlock(..) | Kind::Quote(..) | Kind::Rule | Kind::Table(_) => {
             !matches!(next, Kind::Gap)
         }
         _ => false,

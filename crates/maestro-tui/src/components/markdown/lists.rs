@@ -77,7 +77,7 @@ impl Renderer<'_> {
                         .map(Row::Nested),
                 ),
                 Kind::Paragraph(children) => rows.push(Row::Content(self.inline(children, style))),
-                Kind::Heading(..) | Kind::Quote(..) => {
+                Kind::Heading(..) | Kind::Quote(..) | Kind::Table(_) => {
                     rows.push(Row::Content(self.inline(std::iter::once(node), style)));
                 }
                 Kind::CodeBlock(text, info) => rows.extend(

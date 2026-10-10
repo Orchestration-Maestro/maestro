@@ -1,5 +1,5 @@
 //! Typed native Markdown nodes with authored source ranges.
-use pulldown_cmark::{CodeBlockKind, Event, LinkType, Options, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use std::ops::Range;
 
 /// A native node together with its source extent.
@@ -47,6 +47,19 @@ pub(super) enum Kind {
     Code(String),
     /// A visible line break.
     Break,
+    /// Header and body cells with the authored rows.
+    Table(Table),
+}
+/// Inline children of each cell in one table row.
+pub(super) type Cells = Vec<Vec<Node>>;
+/// A native table; the parser supplies one body cell per header column.
+pub(super) struct Table {
+    /// Header cells in column order.
+    pub header: Cells,
+    /// Body rows in authored order.
+    pub rows: Vec<Cells>,
+    /// Authored rows without container prefixes or the final line terminator.
+    pub authored: String,
 }
 /// One native text unit with separate display and authored spellings.
 pub(super) struct Text {
@@ -122,7 +135,7 @@ pub(super) fn parse(text: &str) -> Vec<Node> {
         .replace('\0', "\u{fffd}");
     let parser = Parser::new_ext(
         &source,
-        Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS,
+        Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS | Options::ENABLE_TABLES,
     );
     let mut events = parser.into_offset_iter();
     gaps(
@@ -201,6 +214,12 @@ fn gaps(nodes: Vec<Node>, source: &Source<'_>, extent: Range<usize>) -> Vec<Node
             });
         }
         end = node.range.end;
+        if matches!(node.kind, Kind::Table(_)) {
+            end += source.text[end..extent.end]
+                .bytes()
+                .take_while(|byte| *byte == b'\n')
+                .count();
+        }
         if matches!(node.kind, Kind::List(..)) {
             let trimmed = source.text[node.range.clone()].trim_end_matches(['\n', ' ', '\t']);
             end = (node.range.start + trimmed.len() + 1).min(end);
@@ -307,6 +326,7 @@ fn container<'a>(
         ),
         Tag::List(start) => Kind::List(start, children(events, source, blocked)),
         Tag::Item => item(events, source, blocked, range),
+        Tag::Table(_) => table(events, source, range),
         _ => Kind::Paragraph(children(events, source, blocked)),
     }
 }
@@ -392,4 +412,46 @@ fn code_block<'a>(
             CodeBlockKind::Fenced(info) => Some(info.into_string()),
         },
     )
+}
+
+/// Collects header and body cells; alignment markers do not affect layout.
+fn table<'a>(
+    events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>,
+    source: &Source<'_>,
+    range: &Range<usize>,
+) -> Kind {
+    let mut rows: Vec<Cells> = Vec::new();
+    while let Some((event, _)) = events.next() {
+        match event {
+            Event::Start(Tag::TableHead | Tag::TableRow) => rows.push(Vec::new()),
+            Event::Start(Tag::TableCell) => {
+                let cell = children(events, source, false);
+                if let Some(row) = rows.last_mut() {
+                    row.push(cell);
+                }
+            }
+            Event::End(TagEnd::Table) => break,
+            _ => {}
+        }
+    }
+    let mut rows = rows.into_iter();
+    let header = rows.next().unwrap_or_default();
+    let line = &source.text[source.text[..range.start]
+        .rfind('\n')
+        .map_or(0, |index| index + 1)..range.start];
+    let lead = source.frame.map_or(line, |frame| frame.strip(line));
+    let indent = if lead.bytes().all(|byte| byte == b' ') {
+        lead
+    } else {
+        ""
+    };
+    let authored = source.authored(range.clone());
+    Kind::Table(Table {
+        header,
+        rows: rows.collect(),
+        authored: format!(
+            "{indent}{}",
+            authored.strip_suffix('\n').unwrap_or(&authored)
+        ),
+    })
 }

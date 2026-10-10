@@ -62,7 +62,8 @@ impl Renderer<'_> {
                 | Kind::HtmlBlock(text)
                 | Kind::Image(text)
                 | Kind::Heading(_, _, text)
-                | Kind::Quote(_, text) => (
+                | Kind::Quote(_, text)
+                | Kind::Table(super::parse::Table { authored: text, .. }) => (
                     text.split('\n')
                         .map(|part| self.style(part, style))
                         .collect::<Vec<_>>()

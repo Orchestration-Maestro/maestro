@@ -5,6 +5,7 @@ mod blocks;
 mod inline;
 mod lists;
 mod parse;
+mod tables;
 
 use super::background::fill_row;
 use crate::text::utils::{is_whitespace_scalar, wrap_text_with_ansi};
