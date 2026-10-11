@@ -1,0 +1,424 @@
+//! Recorded response invocations exercised through public dispatch.
+
+use crate::{bundled, chat, child_process, json::canonical, messages, transport};
+use chat::TestResult;
+use maestro_models::{CacheRetention, Context, Model, ThinkingLevel};
+use serde::Deserialize;
+use serde_json::{Value, json};
+use std::collections::{BTreeMap, HashSet};
+
+#[path = "response_qualification/histories.rs"]
+mod histories;
+#[path = "response_qualification/invocation.rs"]
+mod invocation;
+
+/// One independently recorded query and its observations.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Row {
+    /// Scenario label, safe to print.
+    id: String,
+    /// Exact owning test path.
+    test: String,
+    /// Public operation inputs.
+    input: Input,
+    /// Retained observations.
+    expected: Expected,
+}
+
+/// Catalog lookup or wire invocation.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Input {
+    /// Effective model invocation.
+    Wire(Box<Wire>),
+    /// Ordered catalog queries.
+    Catalog(Catalog),
+}
+
+/// Inputs passed to existing public model operations.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Wire {
+    /// Catalog descriptor with explicit overrides.
+    model: Value,
+    /// Conversation, before adding default message clocks.
+    context: Value,
+    /// Invocation controls.
+    options: Options,
+    /// Native server events.
+    events: Vec<Value>,
+    /// Success, failure, or cancellation phase.
+    phase: Phase,
+    /// Public operation selected by the source.
+    route: Route,
+    /// Controlled child environment.
+    #[serde(default)]
+    env: BTreeMap<String, String>,
+}
+
+/// Typed controls, rejecting unused fixture fields.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct Options {
+    /// Synthetic key supplied to the adapter.
+    api_key: String,
+    /// Simple reasoning policy.
+    reasoning: Option<ThinkingLevel>,
+    /// Raw response reasoning effort.
+    reasoning_effort: Option<String>,
+    /// Raw message thinking switch.
+    thinking_enabled: Option<bool>,
+    /// Raw message budget.
+    thinking_budget_tokens: Option<f64>,
+    /// Account transport selection.
+    transport: Option<maestro_models::Transport>,
+    /// Deployment override.
+    azure_deployment_name: Option<String>,
+    /// Cache retention control.
+    cache_retention: Option<CacheRetention>,
+    /// Session identity including present-empty.
+    session_id: Option<String>,
+    /// Caller headers.
+    headers: Option<BTreeMap<String, String>>,
+}
+
+/// Invocation lifecycle chosen by the recorded input.
+#[derive(Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum Phase {
+    /// Finite successful body.
+    Success,
+    /// Finite body ending with a provider failure.
+    #[serde(rename = "error")]
+    Failure,
+    /// Signal already cancelled before dispatch.
+    Pre,
+    /// Cancel after the pending-read witness.
+    Mid,
+}
+
+/// Public dispatch operations.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+enum Route {
+    /// Raw streaming.
+    Stream,
+    /// Raw completion.
+    Complete,
+    /// Simple completion.
+    CompleteSimple,
+}
+
+/// Ordered catalog enumeration operands.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Catalog {
+    /// Catalog operation tag.
+    operation: String,
+    /// Authored model rows.
+    pairs: Vec<Pair>,
+}
+
+/// One catalog identity with an optional explicit API.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct Pair {
+    /// Provider key.
+    provider: String,
+    /// Model key.
+    model: String,
+    /// Authored protocol override.
+    api_override: Option<String>,
+}
+
+/// Every retained expected subtree is compared.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Expected {
+    /// Ordered catalog APIs including absent models.
+    apis: Option<Vec<Option<String>>>,
+    /// Payload callback observations.
+    payloads: Option<Vec<Value>>,
+    /// Application-owned wire request observations.
+    requests: Option<Vec<Value>>,
+    /// Terminal assistant record without its clock.
+    result: Option<Value>,
+    /// Ordered stream events without their shared handles.
+    events: Option<Vec<Value>>,
+}
+
+/// Closed ownership counts prevent silently dropped fixture cases.
+const OWNERS: [(&str, usize); 21] = [
+    (
+        "crates/maestro-models/tests/history_handoffs/cases.rs::maestro_handoff_table_keeps_distinct_routes",
+        1,
+    ),
+    (
+        "crates/maestro-models/tests/response_identity.rs::maestro_public_routes_retain_response_ids",
+        9,
+    ),
+    (
+        "crates/maestro-models/tests/response_identity.rs::maestro_failed_responses_keep_partial_identity",
+        3,
+    ),
+    (
+        "crates/maestro-models/tests/response_reasoning_replay.rs::maestro_replay_omits_aborted_reasoning",
+        2,
+    ),
+    (
+        "crates/maestro-models/tests/response_reasoning_replay.rs::maestro_handoff_omits_foreign_reasoning_pair_ids",
+        1,
+    ),
+    (
+        "crates/maestro-models/tests/response_reasoning_replay.rs::maestro_handoff_preserves_response_identity",
+        2,
+    ),
+    (
+        "crates/maestro-models/tests/response_reasoning_replay.rs::maestro_replay_selects_signatures_by_full_identity",
+        32,
+    ),
+    (
+        "crates/maestro-models/tests/response_affinity.rs::maestro_response_cache_keys_follow_retention",
+        9,
+    ),
+    (
+        "crates/maestro-models/tests/response_session_affinity.rs::maestro_account_sse_keeps_session_affinity",
+        7,
+    ),
+    (
+        "crates/maestro-models/tests/response_tool_images.rs::maestro_tool_images_stay_with_function_results",
+        8,
+    ),
+    (
+        "crates/maestro-models/tests/response_tool_images.rs::maestro_tool_outputs_preserve_content_classes",
+        8,
+    ),
+    (
+        "crates/maestro-models/tests/interleaved_reasoning.rs::maestro_reasoning_survives_tool_continuations",
+        4,
+    ),
+    (
+        "crates/maestro-models/tests/invocation_cancellation.rs::maestro_public_routes_honor_preabort",
+        13,
+    ),
+    (
+        "crates/maestro-models/tests/invocation_cancellation.rs::maestro_cancelled_streams_keep_partials_and_continue",
+        29,
+    ),
+    (
+        "crates/maestro-models/tests/history_handoffs/replay.rs::maestro_handoffs_generate_and_replay_each_route",
+        60,
+    ),
+    (
+        "crates/maestro-models/tests/history_handoffs/replay.rs::maestro_handoffs_consume_other_histories_in_order",
+        30,
+    ),
+    (
+        "crates/maestro-models/tests/handoff_tool_ids.rs::maestro_generated_tool_ids_survive_both_handoffs",
+        4,
+    ),
+    (
+        "crates/maestro-models/tests/handoff_tool_ids.rs::maestro_long_prefilled_ids_keep_result_pairing",
+        2,
+    ),
+    (
+        "crates/maestro-models/tests/history_handoffs/cases.rs::maestro_handoff_auth_selection_keeps_upstream_headers",
+        4,
+    ),
+    (
+        "crates/maestro-models/tests/history_handoffs/replay.rs::maestro_handoff_failures_keep_payload_evidence",
+        4,
+    ),
+    (
+        "crates/maestro-models/tests/handoff_tool_ids.rs::maestro_handoffs_pair_each_tool_occurrence",
+        5,
+    ),
+];
+
+/// Load the strict corpus and reject duplicate identities and effective inputs.
+fn rows() -> TestResult<Vec<Row>> {
+    let source = include_str!("../fixtures/response_qualification.json");
+    let raw: Vec<Value> = serde_json::from_str(source)?;
+    let mut ids = HashSet::new();
+    let mut inputs = HashSet::new();
+    for row in &raw {
+        assert!(ids.insert(row["id"].to_string()), "duplicate scenario");
+        assert!(inputs.insert(row["input"].to_string()), "duplicate query");
+    }
+    for (owner, count) in OWNERS {
+        assert_eq!(
+            raw.iter().filter(|row| row["test"] == owner).count(),
+            count,
+            "{owner} case inventory"
+        );
+    }
+    assert_eq!(
+        raw.len(),
+        OWNERS.iter().map(|(_, count)| count).sum::<usize>(),
+        "owned corpus size"
+    );
+    Ok(serde_json::from_str(source)?)
+}
+
+/// Run a test's recorded inputs in one isolated child process.
+pub fn assert_rows(test: &str) -> TestResult {
+    let all = rows()?;
+    let owned: Vec<_> = all
+        .iter()
+        .filter(|row| row.test.ends_with(&format!("::{test}")))
+        .collect();
+    assert!(!owned.is_empty(), "unowned test");
+    if child_process::child_case().is_none() {
+        let env = environment(&owned, &all)?;
+        let full_name = if owned[0].test.contains("history_handoffs/") {
+            let module = owned[0]
+                .test
+                .split("history_handoffs/")
+                .nth(1)
+                .ok_or("module")?;
+            format!(
+                "history_handoffs::{}::{test}",
+                module.split('.').next().ok_or("module")?
+            )
+        } else {
+            test.into()
+        };
+        return child_process::rerun(
+            &full_name,
+            "responses",
+            &env.into_iter().collect::<Vec<_>>(),
+        );
+    }
+    let _registry = bundled::registry();
+    maestro_models::reset_api_providers();
+    chat::block_on(false, async {
+        let mut results = histories::Results::new();
+        for row in owned {
+            match &row.input {
+                Input::Wire(wire) => execute(row, wire, &all, &mut results).await?,
+                Input::Catalog(catalog) => catalog_rows(row, catalog),
+            }
+        }
+        Ok(())
+    })
+}
+
+/// Observe API keys in authored order, retaining absent catalog entries.
+fn catalog_rows(row: &Row, catalog: &Catalog) {
+    assert_eq!(catalog.operation, "catalog");
+    let models: Vec<_> = catalog
+        .pairs
+        .iter()
+        .map(|pair| maestro_models::get_model(&pair.provider, &pair.model))
+        .collect();
+    let mut routes = Vec::new();
+    for (pair, model) in catalog.pairs.iter().zip(&models) {
+        if let Some(model) = model {
+            assert_eq!(model.provider, pair.provider, "catalog provider identity");
+            assert_eq!(model.id, pair.model, "catalog model identity");
+            let api = pair.api_override.as_deref().unwrap_or(&model.api);
+            if bundled::apis().contains(&api) {
+                routes.push((&model.provider, api, &model.id));
+            }
+        }
+    }
+    assert_eq!(routes.len(), 30, "invocable route sequence");
+    assert_eq!(
+        routes.iter().collect::<HashSet<_>>().len(),
+        30,
+        "distinct route identities"
+    );
+    let apis: Vec<_> = catalog
+        .pairs
+        .iter()
+        .zip(models)
+        .map(|(pair, model)| model.map(|model| pair.api_override.clone().unwrap_or(model.api)))
+        .collect();
+    assert_eq!(Some(apis), row.expected.apis, "{} ordered routes", row.id);
+}
+
+/// Verify descriptor provenance before applying source-authored overrides.
+fn descriptor(wire: &Wire) -> TestResult<Model> {
+    let expected: Model = serde_json::from_value(wire.model.clone())?;
+    let mut model =
+        maestro_models::get_model(&expected.provider, &expected.id).ok_or("catalog model")?;
+    if expected.provider == "openai" && expected.api == "openai-completions" {
+        model.api.clone_from(&expected.api);
+        model.compat = None;
+    }
+    if wire.model["input"] == json!(["text"]) {
+        model.input.clone_from(&expected.input);
+    }
+    assert!(
+        canonical(serde_json::to_value(&model)?) == canonical(wire.model.clone()),
+        "catalog descriptor"
+    );
+    Ok(model)
+}
+
+/// Remove only top-level message clocks from a comparison value.
+fn without_clocks(mut context: Value) -> Value {
+    if let Some(messages) = context["messages"].as_array_mut() {
+        for message in messages {
+            if let Some(object) = message.as_object_mut() {
+                object.remove("timestamp");
+            }
+        }
+    }
+    context
+}
+
+/// Compatible controlled variables also cover prerequisites from another owner.
+fn environment<'a>(owned: &[&'a Row], all: &'a [Row]) -> TestResult<BTreeMap<&'a str, &'a str>> {
+    let mut env = BTreeMap::new();
+    let mut pending = owned.to_vec();
+    let mut visited = HashSet::new();
+    while let Some(row) = pending.pop() {
+        if !visited.insert(&row.id) {
+            continue;
+        }
+        let Input::Wire(wire) = &row.input else {
+            continue;
+        };
+        for (name, value) in &wire.env {
+            let previous = env.insert(name.as_str(), value.as_str());
+            assert!(
+                previous.is_none_or(|previous| previous == value),
+                "conflicting environment"
+            );
+        }
+        for id in wire.context["messages"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|message| message["responseId"].as_str())
+        {
+            let source_id = id
+                .strip_prefix("response_")
+                .ok_or("prerequisite identity")?;
+            pending.push(
+                all.iter()
+                    .find(|row| row.id == source_id)
+                    .ok_or("prerequisite environment")?,
+            );
+        }
+    }
+    Ok(env)
+}
+
+/// One public operation publishes an actual result to this test's local history set.
+async fn execute(
+    row: &Row,
+    wire: &Wire,
+    all: &[Row],
+    results: &mut histories::Results,
+) -> TestResult {
+    let context = histories::context(row, wire, all, results).await?;
+    let result = invocation::invoke(row, wire, context).await?;
+    let message = result.read().map_err(|_| "result poisoned")?.clone();
+    if let Some(id) = &message.response_id {
+        results.insert(id.clone(), message);
+    }
+    Ok(())
+}
