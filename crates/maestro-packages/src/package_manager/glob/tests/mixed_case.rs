@@ -101,7 +101,7 @@ impl PackageOperations for Local {
     fn create_dir_all(&self, _: &str) -> io::Result<()> {
         panic!("unexpected create")
     }
-    fn write_file(&self, _: &str, _: &str) -> io::Result<()> {
+    fn write_file(&self, _: &str, _: &str, _: bool) -> io::Result<()> {
         panic!("unexpected write")
     }
     fn directory_is_empty(&self, _: &str) -> io::Result<bool> {

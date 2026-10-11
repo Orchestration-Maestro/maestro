@@ -220,13 +220,18 @@ impl PackageOperations for Controlled {
         }
         Ok(())
     }
-    fn write_file(&self, path: &str, text: &str) -> io::Result<()> {
+    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> io::Result<()> {
         if self.0.fail_write.get() {
             return Err(io::Error::other("file write failed"));
         }
         self.0.writes.borrow_mut().push((path.into(), text.into()));
         if self.0.native_exists {
-            return std::fs::write(path, text);
+            return maestro_packages::NativePackageOperations::new(
+                |_| false,
+                Rc::new(|| false),
+                &Rc::new(tokio::task::LocalSet::new()),
+            )
+            .write_file(path, text, exclusive);
         }
         Ok(())
     }

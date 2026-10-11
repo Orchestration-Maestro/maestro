@@ -37,7 +37,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.run_npm(&["uninstall", name, "--prefix", &root], None)
             .await
     }
-    /// Writes a file into a directory unless one is already there, creating the directory first.
+    /// Creates parents and a missing bootstrap file, accepting a competing creation collision.
+    /// Other creation failures propagate without rolling back earlier effects.
     pub(super) fn ensure_file(&self, dir: &str, name: &str, text: &str) -> io::Result<()> {
         if !self.operations.exists(dir) {
             self.operations.create_dir_all(dir)?;
@@ -46,7 +47,10 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if self.operations.exists(&path) {
             return Ok(());
         }
-        self.operations.write_file(&path, text)
+        match self.operations.write_file(&path, text, true) {
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => Ok(()),
+            result => result,
+        }
     }
 }
 

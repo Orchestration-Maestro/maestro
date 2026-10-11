@@ -1,0 +1,4 @@
+{
+  "gitignore": "*\n!.gitignore\n",
+  "package_json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
+}
