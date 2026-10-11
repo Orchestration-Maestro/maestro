@@ -1,4 +1,4 @@
-# Package installation and removal
+# Package resources and acquisition
 
 `PackageManager::install` and `remove` acquire or delete the contents of one source
 for the user scope or, with `Some(InstalledSourceScope::Project)`, the project scope;
@@ -114,8 +114,8 @@ Directory patterns such as `a/**/` match `a` itself; `a/**` selects only descend
 The deepest matching directory decides, with later rules winning
 within that directory. Native Unix
 listings use byte-name order; replacement filesystem adapters supply their own
-order through `PackageOperations::resource_operations`. Returned records retain
-the first authored path and provenance after per-kind canonical deduplication.
+order through `PackageOperations::resource_operations`. Returned records keep their authored path spellings; configured ownership is
+described in [configured resource resolution](#configured-resource-resolution).
 Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).
 
@@ -157,4 +157,51 @@ keeps earlier local kinds and stops that source's remaining kinds; the next
 local source can still contribute. Installed remote collection propagates the
 malformed-list failure.
 
-Configured/automatic merging and filters are tracked in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).
+## Configured resource resolution
+
+`PackageManager::resolve` captures user and project settings before acquisition.
+It selects project packages before user packages, keeping the first registration
+of each source identity. Source identity belongs to [configured
+sources](package-sources.md); acquisition reuses the operations described above.
+
+The optional borrowed missing-source callback runs sequentially for missing remote
+contents or a mismatched npm pin, after the offline check. `MissingSourceAction::Install`
+acquires before collection, `Skip` omits the source, and `Error` returns
+`Missing source: <source>` with the stored spelling. Without a callback, online
+resolution acquires; offline resolution omits sources needing acquisition without
+calling the callback. Callback and acquisition failures stop resolution. No install
+progress or settings edit is added by resolution acquisition.
+
+Package object filters select each resource kind independently. An omitted filter
+falls back to its conventional directory when the manifest list is absent, null,
+false, zero or an empty string; otherwise it uses that list. A present filter selects from manifest-admitted candidates, falling back
+to conventions when that manifest list is empty or absent; an empty filter disables
+those candidates. User exclusions retain disabled records, whereas manifest
+exclusions remove candidates before user filtering. A local file remains an enabled
+extension regardless of package filters. A selected malformed filter keeps prior
+local kinds and ends that source's discovery; remote filter failures propagate.
+
+Top-level resource entries use the user configuration directory or the project's
+`.maestro` directory as their base. Only a leading `!`, `+`, `-`, or any `*` or `?`
+classifies a pattern; patterns select discovered literal-entry candidates, not new
+files. Positive patterns select matches before exclusions, exact restorations and
+exact removals, using the [file-pattern operation](package-patterns.md). Disabled
+candidates remain in the returned lists.
+
+Automatic roots are the four conventional directories in each configuration base.
+Automatic prompts and themes are shallow; configured document directories recurse.
+Conventional skill roots admit loose root Markdown, while `.agents/skills` roots
+admit skill-directory entries. The project also visits `.agents/skills` from its
+working directory through the nearest `.git` marker, inclusive, or to the filesystem
+root; the home `.agents/skills` root is user-scoped. Its discovery paths keep the
+joined home-root spelling; only the ancestor comparison resolves that home root.
+Exact overrides can therefore select the authored home paths. Automatic selection
+uses only modifier overrides from that scope's resource list, not positive patterns.
+
+For each resource kind, identical authored paths retain the better precedence
+owner, keeping the first on equal rank and replacing at the existing key position.
+Stable ranking orders project local, project automatic, user local, user automatic,
+then package records; canonical deduplication retains the first ranked record,
+including when it is disabled. Filtered manifest candidates use survivor-then-restoration
+order; unfiltered manifest and top-level collectors emit their original candidate order
+before authored-path merging and ranked canonical deduplication.

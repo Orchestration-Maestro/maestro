@@ -1,0 +1,7755 @@
+[
+  {
+    "case": "home-required",
+    "recipe": {
+      "homeFailure": true
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "home unavailable"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "home-avoided",
+    "recipe": {
+      "homeFailure": true,
+      "project": {
+        "packages": [
+          "npm:p"
+        ]
+      },
+      "action": "error"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:p"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:p"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "cwd-avoided",
+    "recipe": {
+      "cwdFailure": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "cwd-required",
+    "recipe": {
+      "cwdFailure": true,
+      "managerCwd": "relative"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "cwd unavailable"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "locals-extensions",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "z.ts",
+          "a.ts",
+          "z.ts"
+        ]
+      },
+      "project": {
+        "extensions": [
+          "p.ts"
+        ]
+      },
+      "files": {
+        "user/z.ts": "",
+        "user/a.ts": "",
+        "project/.maestro/p.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/p.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "locals-skills",
+    "recipe": {
+      "global": {
+        "skills": [
+          "z.md",
+          "a.md",
+          "z.md"
+        ]
+      },
+      "project": {
+        "skills": [
+          "p.md"
+        ]
+      },
+      "files": {
+        "user/z.md": "",
+        "user/a.md": "",
+        "project/.maestro/p.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/project/.maestro/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/z.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "locals-prompts",
+    "recipe": {
+      "global": {
+        "prompts": [
+          "z.md",
+          "a.md",
+          "z.md"
+        ]
+      },
+      "project": {
+        "prompts": [
+          "p.md"
+        ]
+      },
+      "files": {
+        "user/z.md": "",
+        "user/a.md": "",
+        "project/.maestro/p.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/z.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "locals-themes",
+    "recipe": {
+      "global": {
+        "themes": [
+          "z.json",
+          "a.json",
+          "z.json"
+        ]
+      },
+      "project": {
+        "themes": [
+          "p.json"
+        ]
+      },
+      "files": {
+        "user/z.json": "",
+        "user/a.json": "",
+        "project/.maestro/p.json": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": [
+          {
+            "path": "$BASE/project/.maestro/p.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/z.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/a.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-0",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-1",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "*.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-2",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-3",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+../local/a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-4",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "+../local/a.ts",
+          "!*.ts",
+          "-../local/a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-5",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "-../local/a.ts",
+          "+../local/a.ts",
+          "!*.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-6",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!**/alpha"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!**/alpha"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-7",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!**/alpha",
+          "+skills/alpha"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!**/alpha",
+          "+../pkg/skills/alpha"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-8",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-9",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+./../local/a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-10",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+../local/*.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-11",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+$BASE/local/a.ts",
+          "+$BASE/local/skip.ts",
+          "-$BASE/local/skip.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-12",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!**/@(skip|z).ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-13",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "../local/a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-14",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "*.md",
+          "+../local/a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-15",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+skills/alpha/"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!*.md",
+          "+../pkg/skills/alpha/"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-16",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+alpha"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!*.md",
+          "+alpha"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-17",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "../local/?([az]).ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-18",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "../local/*.{ts,js}"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-19",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+.\\../local/a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-20",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "*.ts",
+          "!a.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-pattern-21",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../local",
+          "!*.ts",
+          "+../local/a.ts",
+          "+../local/z.ts"
+        ]
+      },
+      "files": {
+        "local/z.ts": "",
+        "local/a.ts": "",
+        "local/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/local/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "literal-brackets-braces",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "odd[ab].ts",
+          "odd{a,b}.ts",
+          "?absent",
+          "*absent"
+        ]
+      },
+      "files": {
+        "user/odd[ab].ts": "",
+        "user/odd{a,b}.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/user/odd[ab].ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/odd{a,b}.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-0",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": []
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-1",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "*.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-2",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-3",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+extensions/a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-4",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "+extensions/a.ts",
+              "!*.ts",
+              "-extensions/a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-5",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "-extensions/a.ts",
+              "+extensions/a.ts",
+              "!*.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-6",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!**/alpha"
+            ],
+            "skills": [
+              "!**/alpha"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ],
+          "skills": [
+            "skills"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-7",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!**/alpha",
+              "+skills/alpha"
+            ],
+            "skills": [
+              "!**/alpha",
+              "+skills/alpha"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ],
+          "skills": [
+            "skills"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-8",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-9",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+./extensions/a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-10",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+extensions/*.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-11",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+$BASE/pkg/extensions/a.ts",
+              "+$BASE/pkg/extensions/skip.ts",
+              "-$BASE/pkg/extensions/skip.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-12",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!**/@(skip|z).ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-13",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "extensions/a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-14",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "*.md",
+              "+extensions/a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-15",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+skills/alpha/"
+            ],
+            "skills": [
+              "!*.md",
+              "+skills/alpha/"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ],
+          "skills": [
+            "skills"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-16",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+alpha"
+            ],
+            "skills": [
+              "!*.md",
+              "+alpha"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ],
+          "skills": [
+            "skills"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-17",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "extensions/?([az]).ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-18",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "extensions/*.{ts,js}"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-19",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+.\\extensions/a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-20",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "*.ts",
+              "!a.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-21",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "!*.ts",
+              "+extensions/a.ts",
+              "+extensions/z.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/skip.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "manifest-order-true",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "*"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions",
+            "!a.ts",
+            "+extensions/a.ts"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/z.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "manifest-order-false",
+    "recipe": {
+      "global": {
+        "packages": [
+          "../pkg"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions",
+            "!a.ts",
+            "+extensions/a.ts"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": "",
+        "pkg/extensions/z.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "literal-star-base",
+    "recipe": {
+      "agentDir": "$BASE/user*",
+      "global": {
+        "extensions": [
+          "entry.ts"
+        ]
+      },
+      "files": {
+        "user*/entry.ts": "selected",
+        "user-decoy/entry.ts": "decoy"
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/user*/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "configured-entry-manifest",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "../pkg"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "other.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/other.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-skill-pattern",
+    "recipe": {
+      "global": {
+        "skills": [
+          "../pkg/skills",
+          "!alpha",
+          "+../pkg/skills/alpha",
+          "-../pkg/skills/beta"
+        ]
+      },
+      "files": {
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-other-patterns",
+    "recipe": {
+      "global": {
+        "themes": [
+          "../pkg/themes",
+          "*-dark.json"
+        ],
+        "prompts": [
+          "../pkg/prompts",
+          "!skip.md",
+          "+../pkg/prompts/a.md"
+        ]
+      },
+      "files": {
+        "pkg/themes/a-dark.json": "",
+        "pkg/themes/a-light.json": "",
+        "pkg/prompts/a.md": "",
+        "pkg/prompts/skip.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/pkg/prompts/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/prompts/skip.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$BASE/pkg/themes/a-dark.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/themes/a-light.json",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-other-restores",
+    "recipe": {
+      "global": {
+        "themes": [
+          "../pkg/themes",
+          "!*.json",
+          "+../pkg/themes/a.json"
+        ],
+        "prompts": [
+          "../pkg/prompts",
+          "!*.md",
+          "+../pkg/prompts/a.md"
+        ]
+      },
+      "files": {
+        "pkg/themes/a.json": "",
+        "pkg/themes/b.json": "",
+        "pkg/prompts/a.md": "",
+        "pkg/prompts/b.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/pkg/prompts/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/prompts/b.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$BASE/pkg/themes/a.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/themes/b.json",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "agents-git-directory",
+    "recipe": {
+      "cwd": "$BASE/repo/child",
+      "noGit": true,
+      "dirs": [
+        "repo/.git"
+      ],
+      "files": {
+        "repo/.agents/skills/r/SKILL.md": "",
+        ".agents/skills/outside/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/repo/.agents/skills/r/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/repo/child/.maestro"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "agents-ignored-root",
+    "recipe": {
+      "files": {
+        "home/.agents/skills/.ignore": "/SKILL.md\n",
+        "home/.agents/skills/SKILL.md": "",
+        "home/.agents/skills/child/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/home/.agents/skills/child/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "manifest-layer",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": [
+              "+extensions/skip.ts"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "extensions",
+            "!skip.ts"
+          ]
+        }
+      },
+      "files": {
+        "pkg/extensions/z.ts": "",
+        "pkg/extensions/skip.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-absent",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg"
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {}
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-empty",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg"
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": []
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-empty-filter",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": []
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": []
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-filtered",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": []
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {}
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-null",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg"
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": null
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-kinds",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "skills": [
+              "!alpha",
+              "+skills/alpha",
+              "-skills/beta"
+            ],
+            "prompts": [
+              "*.md",
+              "!skip.md"
+            ],
+            "themes": [
+              "*-dark.json"
+            ]
+          }
+        ]
+      },
+      "files": {
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": "",
+        "pkg/prompts/a.md": "",
+        "pkg/prompts/skip.md": "",
+        "pkg/themes/a-dark.json": "",
+        "pkg/themes/a-light.json": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$BASE/pkg/prompts/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/prompts/skip.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$BASE/pkg/themes/a-dark.json",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/themes/a-light.json",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "empty-filter-dir",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../empty"
+          }
+        ]
+      },
+      "dirs": [
+        "empty"
+      ]
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "filter-file",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../a.data",
+            "extensions": []
+          }
+        ]
+      },
+      "files": {
+        "a.data": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/a.data",
+            "enabled": true,
+            "metadata": {
+              "source": "../a.data",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-missing",
+    "recipe": {
+      "global": {
+        "packages": [
+          "../gone"
+        ]
+      },
+      "action": "error"
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-bad-filter",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "skills": null
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ],
+          "skills": [
+            "skill.md"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "remote-bad-filter",
+    "recipe": {
+      "project": {
+        "packages": [
+          {
+            "source": "npm:p",
+            "skills": null
+          }
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ],
+          "skills": [
+            "skill.md"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "kind": "InvalidData"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "duplicate-filter",
+    "recipe": {
+      "project": {
+        "packages": [
+          {
+            "source": "$BASE/pkg",
+            "extensions": []
+          },
+          {
+            "source": "$BASE/pkg",
+            "extensions": [
+              "*"
+            ]
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "$BASE/pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "scope-identity",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "npm:p@1",
+            "extensions": []
+          },
+          "$BASE/other"
+        ]
+      },
+      "project": {
+        "packages": [
+          "npm:p@2"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        },
+        "other": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "offline": "1"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/other/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$BASE/other",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/other"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "local-identity",
+    "recipe": {
+      "global": {
+        "packages": [
+          "../pkg"
+        ]
+      },
+      "project": {
+        "packages": [
+          "../../pkg"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../../pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "git-identity",
+    "recipe": {
+      "project": {
+        "packages": [
+          "https://github.com/team/repo@a",
+          "git:git@github.com:team/repo@b",
+          "git:ssh://git@github.com/team/repo@c",
+          "git:github.com/team/repo@d",
+          "https://github.com/team/repo.git",
+          "https://github.com/team/other"
+        ]
+      },
+      "action": "skip"
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "https://github.com/team/repo@a",
+        "https://github.com/team/other"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "canonical-ranks",
+    "recipe": {
+      "project": {
+        "packages": [
+          "$BASE/pkg"
+        ],
+        "extensions": [
+          "manual.ts"
+        ]
+      },
+      "global": {
+        "extensions": [
+          "manual.ts"
+        ]
+      },
+      "files": {
+        "actual.ts": "",
+        "project/.maestro/auto.ts": "",
+        "user/auto.ts": ""
+      },
+      "links": {
+        "pkg/entry.ts": "actual.ts",
+        "project/.maestro/manual.ts": "actual.ts",
+        "user/manual.ts": "actual.ts",
+        "project/.maestro/extensions/automatic.ts": "actual.ts",
+        "user/extensions/automatic.ts": "actual.ts"
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/manual.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "all-ranks-extensions",
+    "recipe": {
+      "project": {
+        "packages": [
+          "$BASE/pkg"
+        ],
+        "extensions": [
+          "../Z.ts",
+          "../A.ts"
+        ]
+      },
+      "global": {
+        "extensions": [
+          "U.ts"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "files": {
+        "project/Z.ts": "",
+        "project/A.ts": "",
+        "project/.maestro/extensions/P.ts": "",
+        "user/U.ts": "",
+        "user/extensions/V.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/Z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/A.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/extensions/P.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/U.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/extensions/V.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$BASE/pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "all-ranks-skills",
+    "recipe": {
+      "project": {
+        "packages": [
+          "$BASE/pkg"
+        ],
+        "skills": [
+          "../Z.md",
+          "../A.md"
+        ]
+      },
+      "global": {
+        "skills": [
+          "U.md"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "skills": [
+            "entry.ts"
+          ]
+        }
+      },
+      "files": {
+        "project/Z.md": "",
+        "project/A.md": "",
+        "project/.maestro/skills/P.md": "",
+        "user/U.md": "",
+        "user/skills/V.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/project/Z.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/A.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/skills/P.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/U.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/skills/V.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$BASE/pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "all-ranks-prompts",
+    "recipe": {
+      "project": {
+        "packages": [
+          "$BASE/pkg"
+        ],
+        "prompts": [
+          "../Z.md",
+          "../A.md"
+        ]
+      },
+      "global": {
+        "prompts": [
+          "U.md"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "prompts": [
+            "entry.ts"
+          ]
+        }
+      },
+      "files": {
+        "project/Z.md": "",
+        "project/A.md": "",
+        "project/.maestro/prompts/P.md": "",
+        "user/U.md": "",
+        "user/prompts/V.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/project/Z.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/A.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/prompts/P.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/U.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/V.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$BASE/pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "all-ranks-themes",
+    "recipe": {
+      "project": {
+        "packages": [
+          "$BASE/pkg"
+        ],
+        "themes": [
+          "../Z.json",
+          "../A.json"
+        ]
+      },
+      "global": {
+        "themes": [
+          "U.json"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "themes": [
+            "entry.ts"
+          ]
+        }
+      },
+      "files": {
+        "project/Z.json": "",
+        "project/A.json": "",
+        "project/.maestro/themes/P.json": "",
+        "user/U.json": "",
+        "user/themes/V.json": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": [
+          {
+            "path": "$BASE/project/Z.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/A.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/themes/P.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/U.json",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/themes/V.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$BASE/pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "disabled-alias",
+    "recipe": {
+      "project": {
+        "extensions": [
+          "manual.ts",
+          "!manual.ts"
+        ]
+      },
+      "files": {
+        "actual.ts": ""
+      },
+      "links": {
+        "project/.maestro/manual.ts": "actual.ts",
+        "user/extensions/auto.ts": "actual.ts"
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/manual.ts",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "callback-gate",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:a",
+          "npm:b"
+        ]
+      },
+      "callbackGate": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/a/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:a",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/a"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/b/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:b",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/b"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "a",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "b",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm:a",
+        "npm:b"
+      ],
+      "second": null,
+      "pending": {
+        "calls": [],
+        "callbacks": [
+          "npm:a"
+        ]
+      }
+    }
+  },
+  {
+    "case": "user-acquire",
+    "recipe": {
+      "global": {
+        "packages": [
+          "npm:p"
+        ]
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/global_node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/global_node_modules/p"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "root",
+            "-g"
+          ]
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "-g",
+            "p"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm:p"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "late-field",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p"
+        ],
+        "extensions": 42
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "kind": "InvalidData"
+      },
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "p",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm:p"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "null-lists",
+    "recipe": {
+      "global": {
+        "packages": null,
+        "extensions": null,
+        "skills": null,
+        "prompts": null,
+        "themes": null,
+        "unread": {
+          "deeper": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "disabled-identical-path",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": []
+          }
+        ],
+        "extensions": [
+          "../pkg/entry.ts"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "disabled-alias-correction",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "extensions": []
+          }
+        ],
+        "extensions": [
+          "alias.ts"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "links": {
+        "user/alias.ts": "pkg/entry.ts"
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/user/alias.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "equal-ranked-authored-path",
+    "recipe": {
+      "global": {
+        "packages": [
+          "../pkg-a",
+          "../pkg-b"
+        ]
+      },
+      "packages": {
+        "pkg-a": {
+          "extensions": [
+            "$BASE/entry.ts"
+          ]
+        },
+        "pkg-b": {
+          "extensions": [
+            "$BASE/entry.ts"
+          ]
+        }
+      },
+      "files": {
+        "entry.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg-a",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg-a"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "replacement-keeps-authored-slot",
+    "recipe": {
+      "global": {
+        "packages": [
+          "../pkg"
+        ],
+        "extensions": [
+          "other.ts",
+          "../pkg/entry.ts"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "files": {
+        "user/other.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/user/other.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "same-authored-path",
+    "recipe": {
+      "global": {
+        "packages": [
+          "../pkg"
+        ],
+        "extensions": [
+          "../pkg/entry.ts"
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-denied",
+    "recipe": {
+      "files": {
+        "user/prompts/hidden.md": "",
+        "user/themes/kept.json": ""
+      },
+      "denied": [
+        "user/prompts"
+      ]
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": [
+          {
+            "path": "$BASE/user/themes/kept.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-shallow",
+    "recipe": {
+      "files": {
+        "user/prompts/a.md": "",
+        "user/prompts/deep/b.md": "",
+        "user/themes/a.json": "",
+        "user/themes/deep/b.json": "",
+        "project/.maestro/prompts/p.md": "",
+        "project/.maestro/themes/p.json": "",
+        "user/prompts/.hidden.md": "",
+        "user/prompts/node_modules/x.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$BASE/project/.maestro/themes/p.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/themes/a.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-extensions",
+    "recipe": {
+      "files": {
+        "user/extensions/top.ts": "",
+        "user/extensions/child/index.ts": "",
+        "user/extensions/child/helper.ts": "",
+        "user/extensions/none/helper.ts": "",
+        "project/.maestro/extensions/main.js": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/extensions/main.js",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/extensions/child/index.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/user/extensions/top.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-skill-modes",
+    "recipe": {
+      "files": {
+        "user/skills/root.md": "",
+        "user/skills/nested/loose.md": "",
+        "user/skills/nested/deep/SKILL.md": "",
+        "home/.agents/skills/loose.md": "",
+        "home/.agents/skills/one/SKILL.md": "",
+        "project/.maestro/skills/root.md": "",
+        "project/.agents/skills/loose.md": "",
+        "project/.agents/skills/two/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/project/.maestro/skills/root.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/project/.agents/skills/two/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/skills/nested/deep/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/user/skills/root.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/home/.agents/skills/one/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-skill-stop",
+    "recipe": {
+      "files": {
+        "user/skills/SKILL.md": "",
+        "user/skills/loose.md": "",
+        "user/skills/sub/SKILL.md": "",
+        "home/.agents/skills/SKILL.md": "",
+        "home/.agents/skills/sub/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/user/skills/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/home/.agents/skills/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "agents-ancestry",
+    "recipe": {
+      "cwd": "$BASE/repo/child",
+      "noGit": true,
+      "files": {
+        "repo/.git": "gitdir: elsewhere",
+        "repo/child/.agents/skills/c/SKILL.md": "",
+        "repo/.agents/skills/r/SKILL.md": "",
+        ".agents/skills/outside/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/repo/child/.agents/skills/c/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/repo/child/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/repo/.agents/skills/r/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/repo/child/.maestro"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "agents-home",
+    "recipe": {
+      "cwd": "$BASE/home/sub",
+      "home": "$BASE/home",
+      "noGit": true,
+      "files": {
+        "home/.agents/skills/u/SKILL.md": "",
+        "home/sub/.agents/skills/p/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/home/sub/.agents/skills/p/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/home/sub/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/home/.agents/skills/u/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-link",
+    "recipe": {
+      "files": {
+        "home/.agents/skills/a/SKILL.md": "",
+        "user/prompts/real.md": "",
+        "project/.maestro/prompts/real.md": ""
+      },
+      "links": {
+        "user/skills": "home/.agents/skills",
+        "user/prompts/alias.md": "user/prompts/real.md",
+        "project/.maestro/prompts/alias.md": "user/prompts/real.md",
+        "user/prompts/broken.md": "missing"
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/user/skills/a/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/prompts/alias.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/prompts/real.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "ignore-root",
+    "recipe": {
+      "files": {
+        "project/.gitignore": "*.md\n",
+        "project/.maestro/prompts/keep.md": "",
+        "user/prompts/.gitignore": "drop.md\n",
+        "user/prompts/drop.md": "",
+        "user/prompts/keep.md": "",
+        "user/skills/.ignore": "bad/\n",
+        "user/skills/bad/SKILL.md": "",
+        "user/skills/good/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/user/skills/good/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/prompts/keep.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/keep.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-overrides",
+    "recipe": {
+      "global": {
+        "prompts": [
+          "*.none",
+          "!*.md",
+          "+prompts/a.md",
+          "-prompts/b.md"
+        ]
+      },
+      "project": {
+        "prompts": [
+          "!*.md",
+          "+prompts/p.md"
+        ]
+      },
+      "files": {
+        "user/prompts/a.md": "",
+        "user/prompts/b.md": "",
+        "user/prompts/z.md": "",
+        "project/.maestro/prompts/p.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/b.md",
+            "enabled": false,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/z.md",
+            "enabled": false,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "npm-default",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm: p",
+          "npm:second"
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm: p",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/second/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:second",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/second"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "p",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "second",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "npm-skip",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm: p",
+          "npm:second"
+        ]
+      },
+      "action": "skip"
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm: p",
+        "npm:second"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "npm-error",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm: p",
+          "npm:second"
+        ]
+      },
+      "action": "error"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm: p"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm: p"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "npm-install",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm: p",
+          "npm:second"
+        ]
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm: p",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/second/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:second",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/second"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "p",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "second",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm: p",
+        "npm:second"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "npm-throw",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm: p",
+          "npm:second"
+        ]
+      },
+      "action": "throw"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "callback failed"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm: p"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "git-default",
+    "recipe": {
+      "project": {
+        "packages": [
+          "https://github.com/team/repo",
+          "npm:second"
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/git/github.com/team/repo/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/git/github.com/team/repo"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/second/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:second",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/second"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "git",
+          "args": [
+            "clone",
+            "https://github.com/team/repo",
+            "$BASE/project/.maestro/git/github.com/team/repo"
+          ]
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install"
+          ],
+          "options": {
+            "cwd": "$BASE/project/.maestro/git/github.com/team/repo"
+          }
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "second",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "git-skip",
+    "recipe": {
+      "project": {
+        "packages": [
+          "https://github.com/team/repo",
+          "npm:second"
+        ]
+      },
+      "action": "skip"
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "https://github.com/team/repo",
+        "npm:second"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "git-error",
+    "recipe": {
+      "project": {
+        "packages": [
+          "https://github.com/team/repo",
+          "npm:second"
+        ]
+      },
+      "action": "error"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: https://github.com/team/repo"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "https://github.com/team/repo"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "git-install",
+    "recipe": {
+      "project": {
+        "packages": [
+          "https://github.com/team/repo",
+          "npm:second"
+        ]
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/git/github.com/team/repo/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/git/github.com/team/repo"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/second/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:second",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/second"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "git",
+          "args": [
+            "clone",
+            "https://github.com/team/repo",
+            "$BASE/project/.maestro/git/github.com/team/repo"
+          ]
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install"
+          ],
+          "options": {
+            "cwd": "$BASE/project/.maestro/git/github.com/team/repo"
+          }
+        },
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "second",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "https://github.com/team/repo",
+        "npm:second"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "git-throw",
+    "recipe": {
+      "project": {
+        "packages": [
+          "https://github.com/team/repo",
+          "npm:second"
+        ]
+      },
+      "action": "throw"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "callback failed"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "https://github.com/team/repo"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_1_",
+    "recipe": {
+      "offline": "1",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_true_",
+    "recipe": {
+      "offline": "true",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_TRUE_",
+    "recipe": {
+      "offline": "TRUE",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_yes_",
+    "recipe": {
+      "offline": "yes",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_YeS_",
+    "recipe": {
+      "offline": "YeS",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/ready/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:ready",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/ready"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_0_",
+    "recipe": {
+      "offline": "0",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-_false_",
+    "recipe": {
+      "offline": "false",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-__true__",
+    "recipe": {
+      "offline": " true ",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "offline-__",
+    "recipe": {
+      "offline": "",
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "unpinned",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p",
+          "https://github.com/team/repo"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        },
+        "project/.maestro/git/github.com/team/repo": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "error"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          },
+          {
+            "path": "$BASE/project/.maestro/git/github.com/team/repo/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "https://github.com/team/repo",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/git/github.com/team/repo"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "pin-1.0.0",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p@1.0.0"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p@1.0.0",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "pin-2.0.0",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p@2.0.0"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p@2.0.0",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "p@2.0.0",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm:p@2.0.0"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "pin-^1.0.0",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:p@^1.0.0"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/p": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "action": "install"
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/npm/node_modules/p/entry.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "npm:p@^1.0.0",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$BASE/project/.maestro/npm/node_modules/p"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "p@^1.0.0",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm:p@^1.0.0"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "install-failure",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:a",
+          "npm:b"
+        ]
+      },
+      "action": "install",
+      "failInstall": true
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "acquire failed"
+      },
+      "calls": [
+        {
+          "command": "npm",
+          "args": [
+            "install",
+            "a",
+            "--prefix",
+            "$BASE/project/.maestro/npm"
+          ]
+        }
+      ],
+      "events": [],
+      "callbacks": [
+        "npm:a"
+      ],
+      "second": null
+    }
+  },
+  {
+    "case": "snapshot",
+    "recipe": {
+      "project": {
+        "packages": [
+          "npm:missing"
+        ],
+        "extensions": [
+          "before.ts"
+        ]
+      },
+      "files": {
+        "project/.maestro/before.ts": "",
+        "project/.maestro/after.ts": ""
+      },
+      "action": "skip",
+      "editDuringCallback": {
+        "project": {
+          "extensions": [
+            "after.ts"
+          ]
+        }
+      },
+      "twice": true
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/before.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/after.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "project",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    }
+  },
+  {
+    "case": "path-efbbbf2e2e2f6c6f63616c2e7473efbbbf",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "\ufeff../local.ts\ufeff"
+        ]
+      },
+      "files": {
+        "local.ts": "",
+        "home/file.ts": "",
+        "homefile.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/local.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "path-c2852e2e2f6c6f63616c2e7473c285",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "\u0085../local.ts\u0085"
+        ]
+      },
+      "files": {
+        "local.ts": "",
+        "home/file.ts": "",
+        "homefile.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "path-7e66696c652e7473",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "~file.ts"
+        ]
+      },
+      "files": {
+        "local.ts": "",
+        "home/file.ts": "",
+        "homefile.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/home/file.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "path-7e2f66696c652e7473",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "~/file.ts"
+        ]
+      },
+      "files": {
+        "local.ts": "",
+        "home/file.ts": "",
+        "homefile.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/home/file.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "path-7e",
+    "recipe": {
+      "global": {
+        "extensions": [
+          "~"
+        ]
+      },
+      "files": {
+        "local.ts": "",
+        "home/file.ts": "",
+        "homefile.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/home/file.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "agents-unanchored-root",
+    "recipe": {
+      "files": {
+        "home/.agents/skills/.ignore": "SKILL.md\n",
+        "home/.agents/skills/SKILL.md": "",
+        "home/.agents/skills/child/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-false",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg"
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": false
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-zero",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg"
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": 0
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "default-empty-string",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg"
+          }
+        ]
+      },
+      "packages": {
+        "pkg": {
+          "extensions": ""
+        }
+      },
+      "files": {
+        "pkg/extensions/a.ts": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/pkg/extensions/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-positive-pattern-only",
+    "recipe": {
+      "global": {
+        "prompts": [
+          "*.none"
+        ]
+      },
+      "files": {
+        "user/prompts/a.md": "",
+        "user/prompts/b.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$BASE/user/prompts/a.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          },
+          {
+            "path": "$BASE/user/prompts/b.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "user",
+              "origin": "top-level",
+              "baseDir": "$BASE/user"
+            }
+          }
+        ],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "project-home-before-user-decode",
+    "recipe": {
+      "global": {
+        "extensions": 42
+      },
+      "project": {
+        "extensions": [
+          "~file.ts"
+        ]
+      },
+      "homeFailure": true
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "home unavailable"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-four-kind-links",
+    "recipe": {
+      "files": {
+        "shared/extensions/shared.ts": "export default function() {}",
+        "shared/skills/shared-skill/SKILL.md": "---\nname: shared-skill\ndescription: Shared skill\n---\nContent",
+        "shared/prompts/shared.md": "Shared prompt",
+        "shared/themes/shared.json": "{\"name\":\"shared-theme\"}"
+      },
+      "links": {
+        "user/extensions": "shared/extensions",
+        "project/.maestro/extensions": "shared/extensions",
+        "user/skills": "shared/skills",
+        "project/.maestro/skills": "shared/skills",
+        "user/prompts": "shared/prompts",
+        "project/.maestro/prompts": "shared/prompts",
+        "user/themes": "shared/themes",
+        "project/.maestro/themes": "shared/themes"
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/extensions/shared.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/project/.maestro/skills/shared-skill/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/prompts/shared.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$BASE/project/.maestro/themes/shared.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  }
+]

@@ -4,7 +4,7 @@ use super::{
     configuration::{entry_source, packages},
     sources::{self, Source},
 };
-use std::{collections::HashSet, io, rc::Rc};
+use std::{io, rc::Rc};
 
 /// The kind of an available package change.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -60,23 +60,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     fn selected_candidates(&self) -> io::Result<Vec<ConfiguredUpdateSource>> {
         let user = self.snapshot(InstalledSourceScope::User)?;
         let project = self.snapshot(InstalledSourceScope::Project)?;
-        let project = packages(project)?;
-        let user = packages(user)?;
-        let entries: Vec<_> = project
-            .into_iter()
-            .map(|v| (InstalledSourceScope::Project, v))
-            .chain(user.into_iter().map(|v| (InstalledSourceScope::User, v)))
-            .collect();
-        let mut identities = HashSet::new();
         let mut selected = Vec::new();
-        for (scope, entry) in &entries {
-            let source = entry_source(entry)?;
-            if identities.insert(self.identity(source, &self.base(*scope))?) {
-                selected.push(ConfiguredUpdateSource {
-                    source: source.to_owned(),
-                    scope: *scope,
-                });
-            }
+        for (scope, entry) in self.selected_package_entries(&user, &project)? {
+            selected.push(ConfiguredUpdateSource {
+                source: entry_source(entry)?.to_owned(),
+                scope,
+            });
         }
         Ok(selected)
     }

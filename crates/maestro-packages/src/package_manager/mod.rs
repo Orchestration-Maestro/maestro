@@ -1,16 +1,19 @@
 //! Configured-source policy over supplied effects and a live settings owner.
 mod acquisition;
+mod automatic_resources;
 #[cfg(not(target_arch = "wasm32"))]
 mod capture;
 mod commands;
 mod concurrency;
 mod configuration;
+mod configured_resolution;
 mod git;
 mod git_checks;
 mod glob;
 mod manifest;
 mod npm;
 mod operations;
+mod package_filters;
 mod paths;
 #[cfg(not(target_arch = "wasm32"))]
 mod process;
@@ -32,6 +35,20 @@ pub use update::{PackageUpdate, PackageUpdateType};
 
 /// An object-safe fallible asynchronous operation.
 pub type PackageFuture<'a, T> = Pin<Box<dyn Future<Output = io::Result<T>> + 'a>>;
+
+/// The action for a missing configured remote source.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MissingSourceAction {
+    /// Acquire the contents before collecting resources.
+    Install,
+    /// Omit this source.
+    Skip,
+    /// Fail resolution with the original source spelling.
+    Error,
+}
+
+/// An operation-local missing-source callback with a borrowed future.
+type MissingCallback<'a> = dyn Fn(&str) -> PackageFuture<'a, MissingSourceAction> + 'a;
 
 /// The configuration scope selected for source lookup.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -97,6 +114,16 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
 /// Source acquisition, removal and configured-source operations.
 pub trait PackageManager {
+    /// Resolves configured packages, local entries and automatic resources.
+    /// The borrowed callback decides missing remote acquisition after the offline check.
+    /// Without one, online resolution installs missing contents.
+    /// See the [configured resource guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/packages.md#configured-resource-resolution).
+    /// # Errors
+    /// Returns selected configuration, callback, acquisition or required path failures.
+    fn resolve<'a>(
+        &'a self,
+        on_missing: Option<&'a MissingCallback<'a>>,
+    ) -> PackageFuture<'a, ResolvedPaths>;
     /// Resolves explicit sources sequentially, acquiring missing remote contents when online.
     /// npm pins require acquisition when the literal installed version differs.
     /// Only existing, unpinned, online temporary Git refreshes.
@@ -186,6 +213,12 @@ pub trait PackageManager {
     ) -> PackageFuture<'a, bool>;
 }
 impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
+    fn resolve<'a>(
+        &'a self,
+        on_missing: Option<&'a MissingCallback<'a>>,
+    ) -> PackageFuture<'a, ResolvedPaths> {
+        Box::pin(self.resolve_configured(on_missing))
+    }
     fn resolve_extension_sources<'a>(
         &'a self,
         sources: &'a [String],

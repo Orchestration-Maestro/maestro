@@ -43,16 +43,23 @@ pub(super) fn collect_resource_files(
         return Ok(entries);
     }
     let mut rules = ScopedIgnoreRules::default();
-    Ok(collect_files(dir, dir, kind, operations, &mut rules))
+    Ok(collect_files(
+        dir,
+        dir,
+        Discovery::Conventional(kind),
+        operations,
+        &mut rules,
+    ))
 }
 /// Recurses through conventional resource directories.
 fn collect_files(
     dir: &str,
     root: &str,
-    kind: ResourceType,
+    mode: Discovery,
     operations: &dyn ResourceOperations,
     rules: &mut ScopedIgnoreRules,
 ) -> Vec<String> {
+    let kind = mode.kind();
     let mut result = Vec::new();
     if !operations.exists(Path::new(dir)) {
         return result;
@@ -82,14 +89,15 @@ fn collect_files(
         ) {
             continue;
         }
-        if file_type == ResourceFileType::Directory {
-            match collect_child(&path, root, kind, operations, rules) {
+        if file_type == ResourceFileType::Directory && !matches!(mode, Discovery::Shallow(_)) {
+            match collect_child(&path, root, mode, operations, rules) {
                 Ok(entries) => result.extend(entries),
                 Err(_) => break,
             }
         } else if file_type == ResourceFileType::File
             && kind.accepts(&name)
-            && (!matches!(kind, ResourceType::Skills) || dir == root)
+            && (!matches!(kind, ResourceType::Skills)
+                || (dir == root && !matches!(mode, Discovery::Agents)))
         {
             result.push(path);
         }
@@ -197,14 +205,14 @@ fn entry_type(
 fn collect_child(
     dir: &str,
     root: &str,
-    kind: ResourceType,
+    mode: Discovery,
     operations: &dyn ResourceOperations,
     rules: &mut ScopedIgnoreRules,
 ) -> io::Result<Vec<String>> {
-    if matches!(kind, ResourceType::Extensions) {
+    if matches!(mode.kind(), ResourceType::Extensions) {
         resolve_extension_entries(dir, operations).map(Option::unwrap_or_default)
     } else {
-        Ok(collect_files(dir, root, kind, operations, rules))
+        Ok(collect_files(dir, root, mode, operations, rules))
     }
 }
 /// Determines whether a file-like skill entry overrides directory scanning.
@@ -247,5 +255,72 @@ pub(super) fn resolve_entry_path(
             current: &current,
             drive_directories: &drives,
         },
+    ))
+}
+
+/// Collects files and resource directories from already-resolved literal paths.
+pub(super) fn collect_files_from_paths(
+    paths: Vec<String>,
+    kind: ResourceType,
+    operations: &dyn ResourceOperations,
+) -> Vec<String> {
+    let mut files = Vec::new();
+    for path in paths {
+        if !operations.exists(Path::new(&path)) {
+            continue;
+        }
+        match operations.metadata(Path::new(&path)) {
+            Ok(ResourceFileType::File) => files.push(path),
+            Ok(ResourceFileType::Directory) => {
+                if let Ok(entries) = collect_resource_files(&path, kind, operations) {
+                    files.extend(entries);
+                }
+            }
+            _ => {}
+        }
+    }
+    files
+}
+
+/// Scan framing chosen by the resource entry point.
+#[derive(Clone, Copy)]
+enum Discovery {
+    /// Conventional recursive resources.
+    Conventional(ResourceType),
+    /// Directory-based skill entries without loose root Markdown.
+    Agents,
+    /// Direct prompt or theme entries only.
+    Shallow(ResourceType),
+}
+impl Discovery {
+    /// The resource suffix and terminal entry policy.
+    fn kind(self) -> ResourceType {
+        match self {
+            Self::Conventional(kind) | Self::Shallow(kind) => kind,
+            Self::Agents => ResourceType::Skills,
+        }
+    }
+}
+/// Collects automatic resources with the root's skill mode and shallow document framing.
+pub(super) fn collect_auto_files(
+    dir: &str,
+    kind: ResourceType,
+    agents: bool,
+    operations: &dyn ResourceOperations,
+) -> io::Result<Vec<String>> {
+    if matches!(kind, ResourceType::Extensions) {
+        return collect_resource_files(dir, kind, operations);
+    }
+    let mode = match kind {
+        ResourceType::Skills if agents => Discovery::Agents,
+        ResourceType::Skills => Discovery::Conventional(kind),
+        _ => Discovery::Shallow(kind),
+    };
+    Ok(collect_files(
+        dir,
+        dir,
+        mode,
+        operations,
+        &mut ScopedIgnoreRules::default(),
     ))
 }
