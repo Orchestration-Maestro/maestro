@@ -21,7 +21,7 @@ mod qualification;
 
 use chat::TestResult;
 
-/// First distinct reported model and first response identifier stay retained.
+/// First distinct nonempty reported model and first nonempty response identifier stay retained.
 #[test]
 fn maestro_chat_retains_routed_model_identity() -> TestResult {
     qualification::assert_rows("maestro_chat_retains_routed_model_identity")

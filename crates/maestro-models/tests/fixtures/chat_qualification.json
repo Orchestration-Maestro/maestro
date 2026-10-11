@@ -9143,30 +9143,34 @@
     "test": "crates/maestro-models/tests/chat_response_identity.rs::maestro_chat_preserves_provider_finish_outcomes",
     "input": {
       "model": {
-        "id": "gpt-4o-mini",
-        "name": "GPT-4o mini",
+        "id": "glm-5.1",
+        "name": "GLM-5.1",
         "api": "openai-completions",
-        "provider": "openai",
-        "baseUrl": "https://api.openai.com/v1",
-        "reasoning": false,
+        "provider": "zai",
+        "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+        "compat": {
+          "supportsDeveloperRole": false,
+          "thinkingFormat": "zai",
+          "zaiToolStream": true
+        },
+        "reasoning": true,
         "input": [
-          "text",
-          "image"
+          "text"
         ],
         "cost": {
-          "input": 0.15,
-          "output": 0.6,
-          "cacheRead": 0.08,
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
           "cacheWrite": 0
         },
-        "contextWindow": 128000,
-        "maxTokens": 16384
+        "contextWindow": 200000,
+        "maxTokens": 131072
       },
       "context": {
         "messages": [
           {
             "role": "user",
-            "content": "hi",
+            "content": "Hi",
             "timestamp": 1
           }
         ]
@@ -9181,9 +9185,27 @@
               "delta": {
                 "content": "partial"
               },
-              "finish_reason": "network_error"
+              "finish_reason": null
             }
           ]
+        },
+        {
+          "choices": [
+            {
+              "delta": {},
+              "finish_reason": "network_error"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          }
         }
       ],
       "route": "streamSimple"
@@ -9191,24 +9213,24 @@
     "expected": {
       "requests": [
         {
-          "url": "https://api.openai.com/v1/chat/completions",
+          "url": "https://api.z.ai/api/coding/paas/v4/chat/completions",
           "headers": {
             "authorization": "Bearer test"
           },
           "body": {
-            "model": "gpt-4o-mini",
+            "model": "glm-5.1",
             "messages": [
               {
                 "role": "user",
-                "content": "hi"
+                "content": "Hi"
               }
             ],
             "stream": true,
             "stream_options": {
               "include_usage": true
             },
-            "store": false,
-            "max_completion_tokens": 16384
+            "max_completion_tokens": 32000,
+            "enable_thinking": false
           }
         }
       ],
@@ -9244,14 +9266,14 @@
           }
         ],
         "api": "openai-completions",
-        "provider": "openai",
-        "model": "gpt-4o-mini",
+        "provider": "zai",
+        "model": "glm-5.1",
         "usage": {
-          "input": 0,
-          "output": 0,
+          "input": 1,
+          "output": 1,
           "cacheRead": 0,
           "cacheWrite": 0,
-          "totalTokens": 0,
+          "totalTokens": 2,
           "cost": {
             "input": 0,
             "output": 0,
