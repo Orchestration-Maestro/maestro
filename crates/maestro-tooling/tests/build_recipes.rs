@@ -544,7 +544,6 @@ fn maestro_watch_stops_its_children_on_panic() {
         workspace.command("models-dev"),
         Path::new(env!("CARGO_BIN_EXE_development")),
     );
-    let group = child.0.id();
     wait_for_build(
         &receive,
         &mut String::new(),
@@ -555,12 +554,8 @@ fn maestro_watch_stops_its_children_on_panic() {
         let _child = child;
         panic!("controlled panic after starting the watch");
     }));
-    let disconnected = close_watch_output(group, receive, threads);
+    close_watch_output(receive, threads);
     assert!(panic.is_err());
-    assert!(
-        disconnected,
-        "watch descendants retained their output pipes after panic"
-    );
 }
 
 /// Real instrumented descendants write outside merge inputs, even with literal checkout paths.
@@ -596,12 +591,8 @@ fn maestro_watch_profiles_are_isolated_before_group_start() {
             "profile producer",
         );
         let produced = scratch.is_dir().then(|| profile_snapshot(&scratch));
-        let group = child.0.id();
         drop(child);
-        assert!(
-            close_watch_output(group, receive, threads),
-            "profile fixture retained its output after cleanup"
-        );
+        close_watch_output(receive, threads);
         assert_eq!(
             profile_snapshot(&merge),
             control,
@@ -645,15 +636,11 @@ fn maestro_watch_profile_isolation_survives_panic_cleanup() {
     );
     let scratch = workspace.0.join("target/watch-profiles");
     let produced = scratch.is_dir().then(|| profile_snapshot(&scratch));
-    let group = child.0.id();
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _child = child;
         panic!("controlled panic after profile child exit");
     }));
-    assert!(
-        close_watch_output(group, receive, threads),
-        "profile fixture retained its output after cleanup"
-    );
+    close_watch_output(receive, threads);
     assert!(panic.is_err());
     assert_eq!(
         profile_snapshot(&merge),
@@ -722,30 +709,17 @@ fn profile_snapshot(directory: &Path) -> Vec<(std::ffi::OsString, Vec<u8>)> {
     files
 }
 
-/// Drains output, rescues lingering descendants and joins readers, returning whether output closed.
+/// Drains output to disconnection after teardown and joins the reader.
 #[cfg(unix)]
 fn close_watch_output(
-    group: u32,
     receive: std::sync::mpsc::Receiver<String>,
     threads: [std::thread::JoinHandle<()>; 1],
-) -> bool {
-    let disconnected = loop {
-        match receive.recv_timeout(std::time::Duration::from_secs(10)) {
-            Ok(_) => {}
-            Err(error) => break error == std::sync::mpsc::RecvTimeoutError::Disconnected,
-        }
-    };
-    if !disconnected {
-        Command::new("kill")
-            .args(["-KILL", "--", &format!("-{group}")])
-            .status()
-            .unwrap();
-    }
+) {
+    while receive.recv().is_ok() {}
     drop(receive);
     for thread in threads {
         thread.join().unwrap();
     }
-    disconnected
 }
 
 #[cfg(unix)]
@@ -882,8 +856,8 @@ fn wait_for_marker(
     diagnostics: &str,
 ) {
     while !has_rebuild_marker(transcript, marker) {
-        let line = receive.recv_timeout(std::time::Duration::from_secs(10)).unwrap_or_else(|error| {
-            panic!("marker {marker}: {error} (10 s wait); {diagnostics}; watcher output:\n{transcript}")
+        let line = receive.recv().unwrap_or_else(|error| {
+            panic!("marker {marker}: {error}; {diagnostics}; watcher output:\n{transcript}")
         });
         transcript.push_str(&line);
         transcript.push('\n');
@@ -955,14 +929,12 @@ fn wait_for_build(
     let started = std::time::Instant::now();
     let mut compiled = false;
     loop {
-        let line = receive
-            .recv_timeout(std::time::Duration::from_secs(10))
-            .unwrap_or_else(|error| {
-                panic!(
-                    "{phase}: {error} after {} ms (10 s wait); {diagnostics}; watcher output:\n{transcript}",
-                    started.elapsed().as_millis()
-                )
-            });
+        let line = receive.recv().unwrap_or_else(|error| {
+            panic!(
+                "{phase}: {error} after {} ms; {diagnostics}; watcher output:\n{transcript}",
+                started.elapsed().as_millis()
+            )
+        });
         transcript.push_str(&line);
         transcript.push('\n');
         compiled |= line.contains("Finished `dev`");

@@ -141,6 +141,21 @@ scratch workspaces, not certified as delivered capabilities.
 
 ## Quality checks
 
+Tests wait on completion signals; shared CI bounds the whole job. Conventions
+report recognized test-owned timer calls with file and line: Tokio
+`timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,
+`wait_timeout_while` and `std::thread::park_timeout`. Test ownership comes from
+test file layouts, test-support members and explicit `cfg(test)` scopes,
+including impl/trait methods and associated-constant initializers.
+Direct paths and known imported, renamed, grouped or namespace-alias timer forms
+are checked; known timer-module globs are recognized. Direct timer paths take
+precedence over aliases; competing known aliases are retained. Aliases apply file-wide;
+local shadowing is not modelled. Production deadlines remain allowed. Comments
+and literal contents are not call syntax. The scan does not expand macros,
+infer receiver types, resolve arbitrary re-exports/function values, evaluate
+compound configurations or follow unparsed fragments. These forms and sleep-based
+watchdogs remain source-review obligations.
+
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
