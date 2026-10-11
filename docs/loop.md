@@ -7,7 +7,9 @@ only generated entries. Empty history and an assistant tail are rejected before
 observations or request conversion; custom tails are converted by the caller.
 
 Each lifecycle observation is awaited. Context transformation precedes conversion;
-the credential resolver runs for each request. A missing or empty resolved key
+the credential resolver runs for each request. When `AgentLoopConfig::thinking_budgets`
+is present, the request snapshots that retained handle after credential resolution;
+when absent, it keeps `options.thinking_budgets`. A missing or empty resolved key
 uses the configured key. Invocation cancellation replaces configured cancellation,
 including when absent. A replacement stream receives simple settings plus open
 settings and typed objects; default dispatch uses the registered simple adapter.

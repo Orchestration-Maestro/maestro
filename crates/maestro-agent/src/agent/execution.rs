@@ -1,6 +1,8 @@
-//! Prompt normalization and independently submitted execution.
+//! Prompt and continuation admission with independently submitted execution.
 use super::{Agent, AgentMessage, CustomAgentMessages, Native, lock, read, write};
-use crate::{AgentContext, AgentLoopConfig, AgentLoopOptions, run_agent_loop};
+use crate::{
+    AgentContext, AgentLoopConfig, AgentLoopOptions, run_agent_loop, run_agent_loop_continue,
+};
 use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, EventStream, ImageContent, Message,
     ModelThinkingLevel, ProviderObjects, SimpleStreamOptions, StreamOptions, TextContent,
@@ -63,6 +65,68 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
     ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
         self.start(input)
     }
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Reserve continuation without replaying history; queued assistant tails restart prompting.
+    pub fn r#continue(self: &Arc<Self>) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
+    where
+        C: Send + Sync,
+    {
+        self.continue_start()
+    }
+    #[cfg(target_arch = "wasm32")]
+    /// Reserve continuation without replaying history; queued assistant tails restart prompting.
+    pub fn r#continue(self: &Arc<Self>) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
+        self.continue_start()
+    }
+    /// Validate continuation under the shared reservation before consuming input.
+    fn continue_start(self: &Arc<Self>) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
+    where
+        C: Native,
+    {
+        let mut active = lock(&self.active);
+        let error = if active.is_some() {
+            Some("Agent is already processing. Wait for completion before continuing.")
+        } else {
+            let state = read(&self.state);
+            match read(state.messages()).last() {
+                None => Some("No messages to continue from"),
+                Some(AgentMessage::Assistant(_)) if !self.has_queued_messages() => {
+                    Some("Cannot continue from message role: assistant")
+                }
+                _ => None,
+            }
+        };
+        if let Some(error) = error {
+            return Box::pin(std::future::ready(Err(failure(error))));
+        }
+        let Some(spawn) = read(&self.spawn).clone() else {
+            return Box::pin(std::future::ready(Err(failure(
+                "Agent requires a task spawner before continuing.",
+            ))));
+        };
+        let assistant = matches!(
+            read(read(&self.state).messages()).last(),
+            Some(AgentMessage::Assistant(_))
+        );
+        let (prompts, skip) = if assistant {
+            let steering = self.drain_steering();
+            if steering.is_empty() {
+                (Some(self.drain_follow_up()), false)
+            } else {
+                (Some(steering), true)
+            }
+        } else {
+            (None, false)
+        };
+        let Admitted {
+            spawn,
+            task,
+            observe,
+        } = self.admit(&mut active, prompts, spawn, skip);
+        drop(active);
+        spawn(task);
+        observe
+    }
     /// Reject busy runs before normalizing input.
     fn start(self: &Arc<Self>, input: PromptInput<C>) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
     where
@@ -98,7 +162,7 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
             spawn,
             task,
             observe,
-        } = self.admit(&mut active, prompts, spawn);
+        } = self.admit(&mut active, Some(prompts), spawn, false);
         drop(active);
         spawn(task);
         observe
@@ -107,8 +171,9 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
     fn admit(
         self: &Arc<Self>,
         active: &mut Option<ActiveRun>,
-        prompts: Vec<AgentMessage<C>>,
+        prompts: Option<Vec<AgentMessage<C>>>,
         spawn: AgentSpawner,
+        skip: bool,
     ) -> Admitted
     where
         C: Native,
@@ -127,7 +192,8 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
         let model = Arc::clone(&state.model);
         let reasoning = state.thinking_level.clone();
         drop(state);
-        let config = Self::loop_config(model, &reasoning);
+        let mut config = self.loop_config(model, &reasoning);
+        self.install_queues(&mut config, skip);
         let stream_fn = read(&self.stream_fn).clone();
         *active = Some(ActiveRun {
             signal: signal.clone(),
@@ -145,7 +211,10 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
                 signal: Some(signal.clone()),
                 stream_fn,
             };
-            let outcome = run_agent_loop(prompts, context, &config, emit, options).await;
+            let outcome = match prompts {
+                Some(prompts) => run_agent_loop(prompts, context, &config, emit, options).await,
+                None => run_agent_loop_continue(context, &config, emit, options).await,
+            };
             let outcome = match outcome {
                 Ok(_) => Ok(()),
                 Err(error) => agent.handle_failure(error, signal).await,
@@ -161,39 +230,54 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
             observe,
         }
     }
-    /// Defaults and standard-record conversion for the admitted run.
+    /// Capture live queue polls for only this task, with a one-shot steering skip.
+    fn install_queues(self: &Arc<Self>, config: &mut AgentLoopConfig<C>, skip: bool)
+    where
+        C: Native,
+    {
+        let steering = Arc::clone(self);
+        let skip = std::sync::atomic::AtomicBool::new(skip);
+        config.get_steering_messages = Some(Arc::new(move || {
+            let messages = if skip.swap(false, std::sync::atomic::Ordering::Relaxed) {
+                Vec::new()
+            } else {
+                steering.drain_steering()
+            };
+            Box::pin(std::future::ready(Ok(messages)))
+        }));
+        let follow_up = Arc::clone(self);
+        config.get_follow_up_messages = Some(Arc::new(move || {
+            Box::pin(std::future::ready(Ok(follow_up.drain_follow_up())))
+        }));
+    }
+    /// Capture request callbacks, scalar settings and retained object handles.
     fn loop_config(
+        &self,
         model: Arc<RwLock<maestro_models::Model>>,
         reasoning: &ModelThinkingLevel,
     ) -> AgentLoopConfig<C> {
-        let convert: crate::ConvertToLlm<C> = Arc::new(|history| {
-            let messages = read(&history)
-                .iter()
-                .filter_map(|entry| match entry {
-                    AgentMessage::User(value) => Some(Message::User(read(value).clone())),
-                    AgentMessage::Assistant(value) => Some(Message::Assistant(read(value).clone())),
-                    AgentMessage::ToolResult(value) => {
-                        Some(Message::ToolResult(read(value).clone()))
-                    }
-                    AgentMessage::Custom(_) => None,
-                })
-                .collect();
-            Box::pin(std::future::ready(Ok(messages)))
-        });
+        let execution = *read(&self.tool_execution);
         AgentLoopConfig {
             model,
-            convert_to_llm: convert,
-            transform_context: None,
-            get_api_key: None,
-            before_tool_call: None,
-            after_tool_call: None,
+            thinking_budgets: read(&self.thinking_budgets).clone(),
+            convert_to_llm: read(&self.convert_to_llm).clone(),
+            transform_context: read(&self.transform_context).clone(),
+            get_api_key: read(&self.get_api_key).clone(),
+            before_tool_call: read(&self.before_tool_call).clone(),
+            after_tool_call: read(&self.after_tool_call).clone(),
             should_stop_after_turn: None,
             get_steering_messages: None,
             get_follow_up_messages: None,
-            tool_execution: Some(crate::ToolExecutionMode::Parallel),
-            extra: [("toolExecution".into(), "parallel".into())]
-                .into_iter()
-                .collect(),
+            tool_execution: Some(execution),
+            extra: [(
+                "toolExecution".into(),
+                match execution {
+                    crate::ToolExecutionMode::Parallel => "parallel".into(),
+                    crate::ToolExecutionMode::Sequential => "sequential".into(),
+                },
+            )]
+            .into_iter()
+            .collect(),
             objects: ProviderObjects::default(),
             options: SimpleStreamOptions {
                 reasoning: match reasoning {
@@ -205,13 +289,33 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
                     ModelThinkingLevel::Xhigh => Some(maestro_models::ThinkingLevel::Xhigh),
                 },
                 common: StreamOptions {
-                    transport: Some(maestro_models::Transport::Auto),
+                    transport: Some(read(&self.transport).clone()),
+                    session_id: read(&self.session_id).clone(),
+                    max_retry_delay_ms: *read(&self.max_retry_delay_ms),
+                    on_payload: read(&self.on_payload).clone(),
+                    on_response: read(&self.on_response).clone(),
                     ..Default::default()
                 },
                 ..Default::default()
             },
         }
     }
+}
+
+/// Filter standard roles into owned model records at the request boundary.
+pub(super) fn default_converter<C: CustomAgentMessages>() -> crate::ConvertToLlm<C> {
+    Arc::new(|history| {
+        let messages = read(&history)
+            .iter()
+            .filter_map(|entry| match entry {
+                AgentMessage::User(value) => Some(Message::User(read(value).clone())),
+                AgentMessage::Assistant(value) => Some(Message::Assistant(read(value).clone())),
+                AgentMessage::ToolResult(value) => Some(Message::ToolResult(read(value).clone())),
+                AgentMessage::Custom(_) => None,
+            })
+            .collect();
+        Box::pin(std::future::ready(Ok(messages)))
+    })
 }
 
 /// Submitted work and its independent observer.

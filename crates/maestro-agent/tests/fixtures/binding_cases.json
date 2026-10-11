@@ -1,0 +1,316 @@
+[
+  {
+    "input": {
+      "case": "inert_construction"
+    },
+    "expected": {
+      "calls": [],
+      "transport": "auto",
+      "execution": "parallel",
+      "sessionAbsent": true,
+      "budgetsAbsent": true,
+      "retryAbsent": true,
+      "streaming": false
+    }
+  },
+  {
+    "input": {
+      "case": "retained_budget_and_model"
+    },
+    "expected": {
+      "records": [
+        {
+          "high": 20,
+          "provider": "after",
+          "id": "edited",
+          "sessionId": "old-session",
+          "key": "key-0"
+        },
+        {
+          "high": 30,
+          "provider": "after",
+          "id": "edited",
+          "sessionId": "old-session",
+          "key": "key-1"
+        },
+        {
+          "high": 99,
+          "provider": "replacement",
+          "id": "replacement",
+          "sessionId": "new-session",
+          "key": "key-2"
+        }
+      ],
+      "providers": [
+        "before",
+        "after",
+        "replacement"
+      ]
+    }
+  },
+  {
+    "input": {
+      "case": "captured_configuration",
+      "operation": "prompt"
+    },
+    "expected": {
+      "requests": [
+        {
+          "tag": "old",
+          "messages": [
+            "history:old",
+            "prompt:old",
+            "transform-old:old"
+          ],
+          "session": "session-old",
+          "budget": 10,
+          "transport": "sse",
+          "retry": 0.5,
+          "execution": "sequential",
+          "key": "old-key-0",
+          "payload": {
+            "untouched": true,
+            "tag": "old"
+          }
+        },
+        {
+          "tag": "next",
+          "messages": [
+            "history:next",
+            "prompt:next",
+            "assistant",
+            "toolResult",
+            "next-prompt:next",
+            "transform-next:next"
+          ],
+          "session": "session-next",
+          "budget": 99,
+          "transport": "websocket",
+          "retry": 99,
+          "execution": "parallel",
+          "key": "next-key-1",
+          "payload": {
+            "untouched": true,
+            "tag": "next"
+          }
+        }
+      ],
+      "trace": [
+        "transform:old",
+        "convert:old",
+        "key:old",
+        "stream:old",
+        "payload:old",
+        "response:old",
+        "before:old",
+        "after:old",
+        "transform:next",
+        "convert:next",
+        "key:next",
+        "stream:next",
+        "payload:next",
+        "response:next",
+        "before:next",
+        "after:next"
+      ],
+      "removed": {
+        "messages": [
+          "user",
+          "user",
+          "assistant",
+          "toolResult",
+          "user",
+          "assistant",
+          "toolResult",
+          "user"
+        ],
+        "defined": [
+          "transport",
+          "toolExecution"
+        ],
+        "transport": "auto",
+        "execution": "parallel"
+      }
+    }
+  },
+  {
+    "input": {
+      "case": "captured_configuration",
+      "operation": "continue"
+    },
+    "expected": {
+      "requests": [
+        {
+          "tag": "old",
+          "messages": [
+            "history:old",
+            "transform-old:old"
+          ],
+          "session": "session-old",
+          "budget": 10,
+          "transport": "sse",
+          "retry": 0.5,
+          "execution": "sequential",
+          "key": "old-key-0",
+          "payload": {
+            "untouched": true,
+            "tag": "old"
+          }
+        },
+        {
+          "tag": "next",
+          "messages": [
+            "history:next",
+            "assistant",
+            "toolResult",
+            "next-prompt:next",
+            "transform-next:next"
+          ],
+          "session": "session-next",
+          "budget": 99,
+          "transport": "websocket",
+          "retry": 99,
+          "execution": "parallel",
+          "key": "next-key-1",
+          "payload": {
+            "untouched": true,
+            "tag": "next"
+          }
+        }
+      ],
+      "trace": [
+        "transform:old",
+        "convert:old",
+        "key:old",
+        "stream:old",
+        "payload:old",
+        "response:old",
+        "before:old",
+        "after:old",
+        "transform:next",
+        "convert:next",
+        "key:next",
+        "stream:next",
+        "payload:next",
+        "response:next",
+        "before:next",
+        "after:next"
+      ],
+      "removed": {
+        "messages": [
+          "user",
+          "assistant",
+          "toolResult",
+          "user",
+          "assistant",
+          "toolResult",
+          "user"
+        ],
+        "defined": [
+          "transport",
+          "toolExecution"
+        ],
+        "transport": "auto",
+        "execution": "parallel"
+      }
+    }
+  },
+  {
+    "input": {
+      "case": "busy_continue",
+      "resetHistory": false
+    },
+    "expected": {
+      "error": "Agent is already processing. Wait for completion before continuing.",
+      "queuedWhileBusy": true,
+      "events": [
+        "agent_start",
+        "turn_start",
+        "message_start",
+        "message_end",
+        "message_start",
+        "message_end",
+        "turn_end",
+        "turn_start",
+        "message_start",
+        "message_end",
+        "message_start",
+        "message_end",
+        "turn_end",
+        "agent_end"
+      ],
+      "history": [
+        "user",
+        "assistant",
+        "user",
+        "assistant"
+      ]
+    }
+  },
+  {
+    "input": {
+      "case": "busy_continue",
+      "resetHistory": true
+    },
+    "expected": {
+      "error": "Agent is already processing. Wait for completion before continuing.",
+      "queuedWhileBusy": true,
+      "events": [
+        "agent_start",
+        "turn_start",
+        "message_start",
+        "message_end",
+        "message_start",
+        "message_end",
+        "turn_end",
+        "turn_start",
+        "message_start",
+        "message_end",
+        "message_start",
+        "message_end",
+        "turn_end",
+        "agent_end"
+      ],
+      "history": [
+        "assistant",
+        "user",
+        "assistant"
+      ]
+    }
+  },
+  {
+    "input": {
+      "case": "active_control",
+      "action": "abort"
+    },
+    "expected": {
+      "immediate": {
+        "queued": true,
+        "aborted": true,
+        "signalPresent": true
+      },
+      "queuedAfter": true,
+      "roles": [
+        "user",
+        "assistant"
+      ]
+    }
+  },
+  {
+    "input": {
+      "case": "active_control",
+      "action": "reset"
+    },
+    "expected": {
+      "immediate": {
+        "queued": false,
+        "aborted": false,
+        "signalPresent": true
+      },
+      "queuedAfter": false,
+      "roles": [
+        "assistant"
+      ]
+    }
+  }
+]

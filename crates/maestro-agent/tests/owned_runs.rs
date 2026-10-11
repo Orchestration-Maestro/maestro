@@ -502,7 +502,6 @@ fn abort_is_cooperative_and_signals_are_fresh() {
         let (agent, tasks) = agent();
         agent.abort();
         assert!(agent.signal().is_none());
-        agent.steer(support::user("queued"));
         let entered = Arc::new(Notify::new());
         let e = entered.clone();
         *agent.stream_fn.write().unwrap() = Some(Arc::new(move |_, _, options, _| {
@@ -518,6 +517,8 @@ fn abort_is_cooperative_and_signals_are_fresh() {
         let first_signal = agent.signal().unwrap();
         let task = tokio::spawn(tasks.take());
         entered.notified().await;
+        // Entry steering has already been polled; this input remains unconsumed.
+        agent.steer(support::user("queued"));
         agent.abort();
         agent.abort();
         observer.await.unwrap();
@@ -531,10 +532,18 @@ fn abort_is_cooperative_and_signals_are_fresh() {
             stream.end(Some(support::assistant("fresh")));
             support::ready(Ok(stream))
         }));
+        let owner = Arc::downgrade(&agent);
+        let late_input = agent.subscribe(Arc::new(move |event, _| {
+            if matches!(&*event.read().unwrap(), AgentEvent::AgentEnd { .. }) {
+                owner.upgrade().unwrap().steer(support::user("late"));
+            }
+            support::ready(Ok(()))
+        }));
         let next = agent.prompt(input("next"));
         assert!(!agent.signal().unwrap().is_aborted());
         tasks.take().await;
         next.await.unwrap();
+        late_input.unsubscribe();
         assert!(first_signal.is_aborted());
         assert!(agent.has_queued_messages());
     });

@@ -39,6 +39,9 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         {
             options.common.api_key = Some(key);
         }
+        if let Some(budgets) = &self.config.thinking_budgets {
+            options.thinking_budgets = Some(read(budgets).clone());
+        }
         options.common.signal = self.options.signal.clone();
         let model = read(&self.config.model).clone();
         let stream = match &self.options.stream_fn {
