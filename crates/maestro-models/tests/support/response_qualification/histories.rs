@@ -118,16 +118,14 @@ async fn generate(id: &str, all: &[Row], results: &mut Results) -> TestResult<As
     Ok(message)
 }
 
-/// Compute the source helper's result from the actual returned call operands.
+/// Compute witnessed addition or multiplication from the actual returned call operands.
 fn arithmetic(call: &ToolCall) -> TestResult<String> {
     assert_eq!(call.name, "math_operation", "selected arithmetic tool");
     let a = call.arguments["a"].as_f64().ok_or("first operand")?;
     let b = call.arguments["b"].as_f64().ok_or("second operand")?;
     let result = match call.arguments["operation"].as_str().ok_or("operation")? {
         "add" => a + b,
-        "subtract" => a - b,
         "multiply" => a * b,
-        "divide" => a / b,
         _ => return Err("unknown arithmetic operation".into()),
     };
     Ok(result.to_string())

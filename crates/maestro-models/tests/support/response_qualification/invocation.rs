@@ -226,7 +226,7 @@ pub(super) async fn invoke(
     Ok(result)
 }
 
-/// Reject HTTP fallback for native sockets; finite HTTP bodies retain their MIME type.
+/// Reject HTTP fallback for native sockets; label controlled HTTP responses as SSE.
 fn fetch_for(transport: &transport::Transport, socket: bool) -> maestro_models::Fetch {
     if socket {
         return Arc::new(|_| Box::pin(async { Err(maestro_models::FetchError::Aborted) }));
@@ -312,7 +312,8 @@ async fn streamed(
     ))
 }
 
-/// Observe a public text delta before cancellation, then drain terminal and await body release.
+/// Collect public events through the gate and await producer release.
+/// Cancellation gates observe a text delta before cancelling; argument gates release fragments.
 async fn collect(
     started: &maestro_models::AssistantMessageEventStream,
     mut gate: progress::Gate<'_>,

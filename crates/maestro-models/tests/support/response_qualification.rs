@@ -431,7 +431,7 @@ fn catalog_rows(row: &Row, catalog: &Catalog) {
     assert_eq!(Some(apis), row.expected.apis, "{} ordered routes", row.id);
 }
 
-/// Verify descriptor provenance before applying source-authored overrides.
+/// Accept authored custom descriptors; verify catalog descriptors with source-authored overrides.
 fn descriptor(wire: &Wire) -> TestResult<Model> {
     let expected: Model = serde_json::from_value(wire.model.clone())?;
     if expected.provider == "ollama" {

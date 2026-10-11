@@ -13,7 +13,7 @@ use tokio_tungstenite::{
     },
 };
 
-/// Peer failures retain their native error and are joined by the caller.
+/// Peer failures retain their native error; the caller joins after successful model observations.
 type PeerResult = Result<HttpRequest, Box<dyn std::error::Error + Send + Sync>>;
 
 /// Bind before dispatch; the returned task owns one finite peer exchange.
