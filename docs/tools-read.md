@@ -1,7 +1,7 @@
-# Tool output helpers
+# Tool output and image helpers
 
-`maestro-tools` delivers portable output selection and native streamed-output
-accumulation. Read execution is not part of this interface.
+`maestro-tools` delivers output selection, native streamed-output accumulation
+and callable image preparation. Read execution is not part of this interface.
 
 ## Limits and selection
 
@@ -91,3 +91,58 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 ```
+
+## Inline image preparation
+
+[`utils::image_resize`](../crates/maestro-tools/src/utils/image_resize.rs) owns
+independent defaults: width and height 2000, base64 byte cap 4718592, and first
+JPEG quality 80. It retains authored data and MIME when oriented dimensions fit
+inclusive bounds and the authored text is strictly below the byte cap. Otherwise
+it scales width before height, with positive half-up rounding and a one-pixel
+minimum for positive bounds; a zero dimension bound returns no result.
+
+At each geometry it tries PNG, then distinct JPEG qualities in first-occurrence
+order `[requested, 85, 70, 55, 40]`, returning the first payload strictly below the
+cap. JPEG is skipped when either axis exceeds 65535 pixels. If no encoding fits,
+each non-unit axis shrinks to the floor of three quarters, clamped to one; after
+an exhausted 1×1 candidate the result is absent. Each candidate is sampled from
+the oriented original. The dimension note is present only after re-encoding,
+including re-encoding at unchanged dimensions; it reports the original/displayed
+width ratio to two decimal places.
+
+[`utils::image_convert`](../crates/maestro-tools/src/utils/image_convert.rs) passes
+exact `image/png` input through unchanged. Other MIME labels use shared byte
+decoding and orientation before PNG encoding; an undecodable input has no result.
+The shared decoder accepts standard or URL-safe, padded or unpadded base64 with
+ASCII whitespace. Fitting input keeps its authored spelling.
+
+[`utils::exif_orientation`](../crates/maestro-tools/src/utils/exif_orientation.rs)
+selects the first primary JPEG/WebP orientation, including optional WebP EXIF
+prefixes and padded chunks. Unreadable or out-of-range orientation leaves pixels
+unchanged; unrelated later metadata errors do not discard a readable first value.
+The eight orientations use flips and integer quarter-turn pixel permutations.
+Pixel decoding, Lanczos3 resampling and encoding are delegated to the
+[image libraries](libraries/tools-output.md#image-libraries).
+
+```rust
+use maestro_models::ImageContent;
+use maestro_tools::utils::image_resize::{ImageResizeOptions, resize_image};
+
+let image = ImageContent {
+    data: "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7".into(),
+    mime_type: "image/gif".into(),
+};
+let result = resize_image(&image, ImageResizeOptions::default()).unwrap();
+assert_eq!((result.width, result.height), (1, 1));
+assert!(!result.was_resized);
+```
+
+On native targets,
+[`utils::mime`](../crates/maestro-tools/src/utils/mime.rs) opens the supplied path
+and takes one read of at most 4100 bytes, ignoring its extension. Its supported
+results are JPEG (excluding JPEG-LS), GIF, WebP and sampled PNG without an animation
+header before image data. Sampled chunk-header decisions do not validate a whole
+PNG. BOM/ID3 prefixes retain the detector's 256 re-entry ceiling. Unsupported
+content returns absence; file opening/reading failures remain native I/O errors.
+Pure image operations build on native and browser targets; the file opener is
+native-only.
