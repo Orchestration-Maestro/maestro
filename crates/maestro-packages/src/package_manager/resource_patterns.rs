@@ -65,13 +65,20 @@ pub(super) fn apply_patterns<'a>(
     let includes = exact_patterns(entries, '+');
     let removals = exact_patterns(entries, '-');
     let mut enabled = HashSet::new();
-    if files.is_empty() {
-        return Ok(enabled);
-    }
-    let root = super::resource_discovery::resolve_entry_path(root, "", operations)?;
+    let mut matcher_root = None;
     for file in files {
-        let views = PathViews::new(file, &root);
-        let parent = (views.name == "SKILL.md").then(|| PathViews::new(&dirname(file), &root));
+        if exclusions.is_empty() && removals.is_empty() {
+            enabled.insert(file.as_str());
+            continue;
+        }
+        let root = matcher_root
+            .get_or_insert_with(|| {
+                super::resource_discovery::resolve_entry_path(root, "", operations)
+            })
+            .as_ref()
+            .map_err(|error| io::Error::new(error.kind(), error.to_string()))?;
+        let views = PathViews::new(file, root);
+        let parent = (views.name == "SKILL.md").then(|| PathViews::new(&dirname(file), root));
         let mut excluded = false;
         for pattern in &exclusions {
             if views.matches(pattern)?
@@ -85,14 +92,16 @@ pub(super) fn apply_patterns<'a>(
                 break;
             }
         }
-        let restored = views.exact(&includes)
-            || parent
-                .as_ref()
-                .is_some_and(|parent| parent.exact(&includes));
-        let removed = views.exact(&removals)
-            || parent
-                .as_ref()
-                .is_some_and(|parent| parent.exact(&removals));
+        let restored = excluded
+            && (views.exact(&includes)
+                || parent
+                    .as_ref()
+                    .is_some_and(|parent| parent.exact(&includes)));
+        let removed = (!excluded || restored)
+            && (views.exact(&removals)
+                || parent
+                    .as_ref()
+                    .is_some_and(|parent| parent.exact(&removals)));
         if (!excluded || restored) && !removed {
             enabled.insert(file.as_str());
         }

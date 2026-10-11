@@ -789,3 +789,54 @@ fn relative_manifest_literals_are_excluded_from_installed_packages() {
         Ok(())
     })).unwrap();
 }
+
+/// Unfiltered absolute candidates under a relative root do not need ambient context.
+#[test]
+fn unfiltered_relative_manifest_does_not_read_ambient_context() {
+    block_on(Box::pin(assert_context_free_manifest(false))).unwrap();
+}
+
+/// Already admitted candidates do not need exact restoration matching.
+#[test]
+fn restoration_only_relative_manifest_does_not_read_ambient_context() {
+    block_on(Box::pin(assert_context_free_manifest(true))).unwrap();
+}
+
+/// Checks every returned field for an installed absolute candidate with unavailable cwd.
+async fn assert_context_free_manifest(restore: bool) -> std::io::Result<()> {
+    let mut entries = vec!["$ROOT/src/a.ts"];
+    if restore {
+        entries.push("+src/a.ts");
+    }
+    let (result, reads, root) =
+        resolve_relative_manifest(serde_json::json!({"extensions": entries}), true).await;
+    let result = result.expect("selection without matching must not require cwd");
+    assert_eq!(reads, 0);
+    assert_eq!(result.extensions.len(), 1);
+    let extension = &result.extensions[0];
+    assert_eq!(extension.path, maestro_path::join(&[&root, "src/a.ts"]));
+    assert!(extension.enabled);
+    assert_eq!(extension.metadata.source, "git:https://example.com/org/pkg");
+    assert_eq!(
+        extension.metadata.scope,
+        maestro_resources::SourceScope::User
+    );
+    assert_eq!(
+        extension.metadata.origin,
+        maestro_resources::SourceOrigin::Package
+    );
+    let current = std::env::current_dir().unwrap();
+    let base = maestro_path::relative(
+        &current.to_string_lossy(),
+        &root,
+        &maestro_path::Cwd {
+            current: "",
+            drive_directories: &[],
+        },
+    );
+    assert_eq!(extension.metadata.base_dir.as_deref(), Some(base.as_str()));
+    assert!(result.skills.is_empty());
+    assert!(result.prompts.is_empty());
+    assert!(result.themes.is_empty());
+    Ok(())
+}

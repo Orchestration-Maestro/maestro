@@ -113,6 +113,8 @@ removals (`-path`) last. Exclusions use the existing
 `SKILL.md` also offers its parent directory. Exact overrides compare relative or
 absolute paths, including skill-parent paths, after stripping one `./` or `.\`
 prefix. Selection inserts admitted candidates in their original candidate order.
+Without exclusions or removals, candidates remain admitted without matching,
+including when only restoration modifiers are supplied.
 
 Lists are consumed in extension, skill, prompt and theme order. A malformed list
 keeps earlier local kinds and stops that source's remaining kinds; the next
