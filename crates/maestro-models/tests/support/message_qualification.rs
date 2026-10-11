@@ -72,8 +72,6 @@ struct Wire {
     events: Vec<Value>,
     /// Public operation used by this scenario.
     route: Route,
-    /// Observe the surviving caller context.
-    observe_caller: Option<bool>,
     /// Count whole-word pong occurrences.
     pongs: Option<bool>,
     /// Apply the source smoke assertion's trimming.
@@ -134,7 +132,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
     for row in &raw {
         assert!(ids.insert(row["id"].to_string()), "duplicate row id");
         let mut query = row["input"].clone();
-        for field in ["observeCaller", "pongs", "smokeText"] {
+        for field in ["pongs", "smokeText"] {
             query.as_object_mut().ok_or("input object")?.remove(field);
         }
         assert!(
@@ -423,9 +421,6 @@ fn assertion_outputs(
     result: &maestro_models::SharedAssistantMessage,
     output: &mut Value,
 ) -> TestResult {
-    if wire.observe_caller == Some(true) {
-        output["contextAfter"] = serde_json::to_value(&wire.context)?;
-    }
     let text = bundled::text_of(result);
     if wire.pongs == Some(true) {
         output["pongCount"] = json!(

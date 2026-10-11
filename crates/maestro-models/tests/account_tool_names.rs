@@ -42,7 +42,8 @@ fn maestro_account_keeps_unrelated_tool_names() -> TestResult {
     qualification::assert_rows("maestro_account_keeps_unrelated_tool_names")
 }
 
-/// Wire history naming preserves the caller context and first declared spelling.
+/// History names are canonicalized on the wire; inbound names retain first-declared spelling.
+/// Caller isolation is ownership-enforced.
 #[test]
 fn maestro_account_projects_names_without_mutating_callers() -> TestResult {
     qualification::assert_rows("maestro_account_projects_names_without_mutating_callers")

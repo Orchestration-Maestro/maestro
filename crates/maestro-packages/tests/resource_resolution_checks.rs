@@ -644,8 +644,8 @@ async fn resolve_relative_manifest(
     usize,
     String,
 ) {
-    let scratch = scratch::Scratch::new().unwrap();
     let current = std::env::current_dir().unwrap();
+    let scratch = scratch::Scratch::new_in(&current).unwrap();
     let agent = maestro_path::relative(
         &current.to_string_lossy(),
         &scratch.0.to_string_lossy(),
@@ -659,11 +659,12 @@ async fn resolve_relative_manifest(
     fs::create_dir_all(root.join("skills/demo")).unwrap();
     fs::write(root.join("src/a.ts"), "").unwrap();
     fs::write(root.join("skills/demo/SKILL.md"), "").unwrap();
+    let encoded_root = serde_json::to_string(&root.to_string_lossy()).unwrap();
     fs::write(
         root.join("package.json"),
         serde_json::json!({"maestro":entries})
             .to_string()
-            .replace("$ROOT", &root.to_string_lossy()),
+            .replace("$ROOT", &encoded_root[1..encoded_root.len() - 1]),
     )
     .unwrap();
     let reads = Rc::new(std::cell::Cell::new(0));

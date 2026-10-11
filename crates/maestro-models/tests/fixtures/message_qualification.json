@@ -25975,8 +25975,7 @@
           "type": "message_stop"
         }
       ],
-      "route": "stream",
-      "observeCaller": true
+      "route": "stream"
     },
     "expected": {
       "requests": [
@@ -26155,108 +26154,7 @@
           "type": "done",
           "reason": "toolUse"
         }
-      ],
-      "contextAfter": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "read",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "claude-sonnet-4-6",
-            "content": [
-              {
-                "type": "toolCall",
-                "id": "call_1",
-                "name": "read",
-                "arguments": {
-                  "value": "kept"
-                }
-              }
-            ],
-            "usage": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 0,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "toolUse",
-            "timestamp": 1
-          },
-          {
-            "role": "toolResult",
-            "toolCallId": "call_1",
-            "toolName": "read",
-            "content": [
-              {
-                "type": "text",
-                "text": "done"
-              }
-            ],
-            "isError": false,
-            "timestamp": 2
-          }
-        ],
-        "tools": [
-          {
-            "name": "read",
-            "description": "Look up a value",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value"
-              ]
-            }
-          },
-          {
-            "name": "find",
-            "description": "Look up a value",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value"
-              ]
-            }
-          },
-          {
-            "name": "write",
-            "description": "Look up a value",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value"
-              ]
-            }
-          }
-        ]
-      }
+      ]
     }
   },
   {
@@ -26397,8 +26295,7 @@
           "type": "message_stop"
         }
       ],
-      "route": "stream",
-      "observeCaller": true
+      "route": "stream"
     },
     "expected": {
       "requests": [
@@ -26542,48 +26439,7 @@
           "type": "done",
           "reason": "toolUse"
         }
-      ],
-      "contextAfter": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Hello",
-            "timestamp": 0
-          }
-        ],
-        "tools": [
-          {
-            "name": "rEaD",
-            "description": "Look up a value",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value"
-              ]
-            }
-          },
-          {
-            "name": "read",
-            "description": "Look up a value",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value"
-              ]
-            }
-          }
-        ]
-      }
+      ]
     }
   },
   {

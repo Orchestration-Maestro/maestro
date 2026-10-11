@@ -113,8 +113,9 @@ The message cases cover:
   `claude-opus-4-6` and `claude-opus-4-7`; raw calls distinguish absent, false
   and true enablement. Effort mappings, display modes, signed thinking fragments
   and exact arithmetic text have separate controlled observations.
-- Subscription tool-name conversion, first-declared inbound spelling and
-  unchanged caller context; ordinary keys and unrelated names provide contrasts.
+- Subscription tool-name conversion and first-declared inbound spelling;
+  ordinary keys and unrelated names provide contrasts. Caller isolation is
+  enforced by Rust ownership, not a dynamic observation.
   Tool-end observations inspect the same invocation's shared message handle.
 - Account authentication and headers, user/assistant initiator and image input;
   interleaved beta controls are crossed with thinking enablement and adaptive

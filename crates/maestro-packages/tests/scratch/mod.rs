@@ -12,12 +12,16 @@ static NEXT: AtomicUsize = AtomicUsize::new(0);
 impl Scratch {
     /// Creates a fresh directory whose name is unique within the process.
     pub fn new() -> io::Result<Self> {
+        Self::new_in(&std::env::temp_dir())
+    }
+    /// Creates a fresh directory on the supplied parent's drive.
+    pub fn new_in(parent: &std::path::Path) -> io::Result<Self> {
         let name = format!(
             "maestro-packages-{}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         );
-        let path = std::env::temp_dir().join(name);
+        let path = parent.join(name);
         std::fs::create_dir(&path)?;
         Ok(Self(path))
     }

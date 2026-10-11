@@ -120,7 +120,12 @@ fn setup(row: &Row, root: &str) {
     if row.manifest_directory {
         fs::create_dir(&manifest).unwrap();
     } else if !row.no_manifest {
-        write(&manifest, &row.text.replace("$ROOT", root));
+        let encoded_root = serde_json::to_string(root).unwrap();
+        write(
+            &manifest,
+            &row.text
+                .replace("$ROOT", &encoded_root[1..encoded_root.len() - 1]),
+        );
     }
     if row.alias {
         #[cfg(unix)]
@@ -136,7 +141,7 @@ fn compare(actual: &[ResolvedResource], expected: &[Resource], root: &str, id: &
     for (actual, expected) in actual.iter().zip(expected) {
         assert_eq!(
             actual.path,
-            expected.path.replace("$ROOT", root),
+            maestro_path::normalize(&expected.path.replace("$ROOT", root)),
             "{id}: path"
         );
         assert_eq!(actual.enabled, expected.enabled, "{id}: enabled");
@@ -159,7 +164,7 @@ fn compare(actual: &[ResolvedResource], expected: &[Resource], root: &str, id: &
                 .metadata
                 .base_dir
                 .as_ref()
-                .map(|s| s.replace("$ROOT", root)),
+                .map(|s| maestro_path::normalize(&s.replace("$ROOT", root))),
             "{id}: base"
         );
     }
@@ -179,6 +184,13 @@ fn cases(test: &str) {
         .rows
         .into_iter()
         .filter(|row| row.test == test)
+        .filter(|row| {
+            !cfg!(windows)
+                || !matches!(
+                    row.id.as_str(),
+                    "literal_metachar_files" | "literal_star_candidate" | "literal_star_removal"
+                )
+        })
         .collect();
     assert!(!rows.is_empty(), "test must own recorded cases");
     tokio::runtime::Builder::new_current_thread()
@@ -201,8 +213,8 @@ async fn run_case(row: Row) {
     });
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
-            cwd: format!("{root}/project"),
-            agent_dir: format!("{root}/agent"),
+            cwd: maestro_path::join(&[&root, "project"]),
+            agent_dir: maestro_path::join(&[&root, "agent"]),
             settings_manager: settings,
         },
         support::Controlled(effects.clone()),
