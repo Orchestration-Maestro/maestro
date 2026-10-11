@@ -2678,7 +2678,7 @@
     },
     {
       "input": " plan ",
-      "expected": "chosen",
+      "expected": "chosen with spaces",
       "decoy": null
     },
     {

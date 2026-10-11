@@ -48,10 +48,10 @@ pub(super) struct FlagExpected {
     pub value: Option<Value>,
 }
 
-/// Flag-only corpus used by the flag transport witness.
+/// Recorded command, shortcut, completion and flag transport cases.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct FlagCorpus {
+pub(super) struct RegistrationCorpus {
     /// All independent kind/default/override combinations.
     pub flags: Vec<Case<FlagInput, FlagExpected>>,
     /// Command option combinations.

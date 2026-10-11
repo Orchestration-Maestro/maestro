@@ -4,7 +4,7 @@ use serde_json::json;
 
 /// Exercises distinct callbacks and independent releases with optional metadata.
 async fn forwarding(driver: &mut impl Driver) -> Result<(), String> {
-    let corpus: super::registration_corpus::FlagCorpus =
+    let corpus: super::registration_corpus::RegistrationCorpus =
         serde_json::from_str(include_str!("registration_corpus.json")).unwrap();
     command_corpus(driver, corpus.commands).await?;
     shortcut_corpus(driver, corpus.shortcuts).await?;
@@ -37,7 +37,7 @@ async fn read_flag(
 
 /// Checks kind/default independence and exact host replies against recorded cases.
 async fn flags(driver: &mut impl Driver) -> Result<(), String> {
-    use super::registration_corpus::FlagCorpus;
+    use super::registration_corpus::RegistrationCorpus;
     assert_eq!(
         driver.flag_registrations().first(),
         Some(&(
@@ -45,7 +45,7 @@ async fn flags(driver: &mut impl Driver) -> Result<(), String> {
             json!({"description":"","type":"string","default":false})
         ))
     );
-    let corpus: FlagCorpus =
+    let corpus: RegistrationCorpus =
         serde_json::from_str(include_str!("registration_corpus.json")).unwrap();
     flag_combinations(driver, corpus.flags).await?;
     literal_flags(driver, corpus.literal_flags).await?;
@@ -105,7 +105,7 @@ fn candidates(
 
 /// Exercises literal inputs and None/empty/list results, including barrier-held futures.
 async fn completions(driver: &mut impl Driver) -> Result<(), String> {
-    let corpus: super::registration_corpus::FlagCorpus =
+    let corpus: super::registration_corpus::RegistrationCorpus =
         serde_json::from_str(include_str!("registration_corpus.json")).unwrap();
     completion_corpus(driver, corpus.completions).await?;
     driver
@@ -197,7 +197,7 @@ async fn failure_call(
 /// Host and author failures retain supplied text and earlier effects without poisoning dispatch.
 async fn errors(driver: &mut impl Driver) -> Result<(), String> {
     host_errors(driver).await?;
-    let corpus: super::registration_corpus::FlagCorpus =
+    let corpus: super::registration_corpus::RegistrationCorpus =
         serde_json::from_str(include_str!("registration_corpus.json")).unwrap();
     callback_errors(driver, corpus.callback_errors).await?;
     invalid_dispatch(driver).await?;
@@ -228,19 +228,47 @@ async fn pending(driver: &mut impl Driver) -> Result<(), String> {
         .run_plain_command("capture", "pending-registrations")
         .await?;
     let completion = driver.identity("completion pending")?;
+    let diagnostic = driver.callback_error(completion);
     driver.pending_pair(completion, false).await?;
+    let released = driver.reborrow(driver.dropped().last().copied().unwrap())?;
+    assert_eq!(
+        driver.completion(released, "released").await.unwrap_err(),
+        diagnostic
+    );
     assert!(
         driver
             .transcript()
             .contains(&r#"entry released "pending completion""#.into())
     );
     let shortcut = driver.identity("shortcut pending")?;
+    let diagnostic = driver.callback_error(shortcut);
     driver.pending_pair(shortcut, true).await?;
+    let released = driver.reborrow(driver.dropped().last().copied().unwrap())?;
+    assert_eq!(
+        driver
+            .shortcut(released, "/released-origin")
+            .await
+            .unwrap_err(),
+        diagnostic
+    );
     assert!(
         driver
             .transcript()
             .contains(&r#"entry released "pending shortcut""#.into())
     );
+    context_aliases(driver).await?;
+    driver.release_all().await;
+    assert_eq!(
+        driver.live(),
+        0,
+        "ownership transcript: {:?}",
+        driver.transcript()
+    );
+    Ok(())
+}
+
+/// A retained context alias survives removal of its sibling until the last alias drops.
+async fn context_aliases(driver: &mut impl Driver) -> Result<(), String> {
     let live = driver.live();
     driver
         .run_plain_command("context-control", "report")
@@ -261,13 +289,6 @@ async fn pending(driver: &mut impl Driver) -> Result<(), String> {
         .run_plain_command("context-control", "drop-all")
         .await?;
     assert_eq!(driver.live(), live - 1);
-    driver.release_all().await;
-    assert_eq!(
-        driver.live(),
-        0,
-        "ownership transcript: {:?}",
-        driver.transcript()
-    );
     Ok(())
 }
 
@@ -368,17 +389,16 @@ async fn command_corpus(
         let command = driver.identity("command run Ω")?;
         let shortcut = driver.identity(&format!("shortcut {key}"))?;
         assert_ne!(command, shortcut);
+        let start = driver.transcript().len();
         driver.run_plain_command("run Ω", "literal args Ω").await?;
+        assert!(driver.transcript()[start..].contains(
+            &r#"entry registered-command {"args":"literal args Ω","cwd":"/work"}"#.into()
+        ));
+        let start = driver.transcript().len();
         driver.shortcut(shortcut, "/ordinary-origin").await?;
         assert!(
-            driver.transcript().iter().any(|entry| entry
-                == r#"entry registered-command {"args":"literal args Ω","cwd":"/work"}"#)
-        );
-        assert!(
-            driver
-                .transcript()
-                .iter()
-                .any(|entry| entry == r#"entry registered-shortcut "/ordinary-origin""#)
+            driver.transcript()[start..]
+                .contains(&r#"entry registered-shortcut "/ordinary-origin""#.into())
         );
         release_command(driver, completion, command, description).await?;
         assert!(driver.release(&format!("shortcut {key}")).await);
@@ -565,7 +585,7 @@ async fn completion_corpus(
     Ok(())
 }
 
-/// Rejected callbacks and identities are destroyed after the rejecting operation ends.
+/// Checks that rejected captures and identities have been destroyed when rejection returns.
 async fn rejected_ownership(driver: &mut impl Driver) -> Result<(), String> {
     for completion in [false, true] {
         driver.registration_error(Some("registration refused: Ω\nline".into()));
