@@ -294,3 +294,99 @@ mod second_alias {
         callback
     }
 }
+
+/// Tool progress invokes the first listener before returning, but awaits it before the next.
+#[test]
+fn tool_updates_publish_first_listener_synchronously() {
+    support::run(tool_updates_publish_first_listener_synchronously_case());
+}
+/// Observe synchronous callback effects from the executing tool itself.
+async fn tool_updates_publish_first_listener_synchronously_case() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let (agent, tasks) = agent();
+    *agent.stream_fn.write().unwrap() = support::responses(vec![support::tool_call()]).stream_fn;
+    let first = Arc::new(AtomicBool::new(false));
+    let completed = Arc::new(AtomicBool::new(false));
+    let second = Arc::new(AtomicBool::new(false));
+    let release = Arc::new(tokio::sync::Notify::new());
+    subscribe_progress_witnesses(&agent, &first, &completed, &second, &release);
+    let owner = Arc::downgrade(&agent);
+    let observed = second.clone();
+    let context = support::with_execute(Arc::new(move |_, _, _, update| {
+        update.unwrap()(support::result());
+        assert!(
+            first.load(Ordering::SeqCst),
+            "first listener deferred past update return"
+        );
+        assert!(
+            !observed.load(Ordering::SeqCst),
+            "second listener invoked eagerly"
+        );
+        let owner = owner.upgrade().unwrap();
+        let state = owner.state().read().unwrap();
+        assert!(state.is_streaming());
+        assert_eq!(state.pending_tool_calls().as_ref(), ["id"]);
+        assert!(state.streaming_message().is_none());
+        release.notify_one();
+        support::ready(Ok(support::result()))
+    }));
+    agent
+        .state()
+        .write()
+        .unwrap()
+        .set_tools(context.tools.unwrap().read().unwrap().clone());
+    let run = agent.prompt(input("progress"));
+    tasks.take().await;
+    run.await.unwrap();
+    assert!(completed.load(Ordering::SeqCst));
+    assert!(second.load(Ordering::SeqCst));
+    assert!(
+        agent
+            .state()
+            .read()
+            .unwrap()
+            .pending_tool_calls()
+            .is_empty()
+    );
+}
+
+/// Register a gated first callback and its completion-ordered successor.
+fn subscribe_progress_witnesses(
+    agent: &Arc<maestro_agent::Agent>,
+    first: &Arc<std::sync::atomic::AtomicBool>,
+    completed: &Arc<std::sync::atomic::AtomicBool>,
+    second: &Arc<std::sync::atomic::AtomicBool>,
+    release: &Arc<tokio::sync::Notify>,
+) {
+    use std::sync::atomic::Ordering;
+    let (seen, effect, gate) = (first.clone(), completed.clone(), release.clone());
+    agent.subscribe(Arc::new(move |event, _| {
+        if !matches!(
+            &*event.read().unwrap(),
+            AgentEvent::ToolExecutionUpdate { .. }
+        ) {
+            return support::ready(Ok(()));
+        }
+        seen.store(true, Ordering::SeqCst);
+        let (effect, gate) = (effect.clone(), gate.clone());
+        Box::pin(async move {
+            gate.notified().await;
+            effect.store(true, Ordering::SeqCst);
+            Ok(())
+        })
+    }));
+    let (seen, effect) = (second.clone(), completed.clone());
+    agent.subscribe(Arc::new(move |event, _| {
+        if matches!(
+            &*event.read().unwrap(),
+            AgentEvent::ToolExecutionUpdate { .. }
+        ) {
+            assert!(
+                effect.load(Ordering::SeqCst),
+                "second listener preceded first completion"
+            );
+            seen.store(true, Ordering::SeqCst);
+        }
+        support::ready(Ok(()))
+    }));
+}

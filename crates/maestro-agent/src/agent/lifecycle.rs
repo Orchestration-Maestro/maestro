@@ -28,7 +28,7 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
     }
     /// Publish original failure history before awaiting synthetic end listeners.
     pub(super) async fn handle_failure(
-        &self,
+        self: &Arc<Self>,
         error: DiagnosticErrorInfo,
         signal: Cancellation,
     ) -> Result<(), DiagnosticErrorInfo> {

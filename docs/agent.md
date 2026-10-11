@@ -20,9 +20,10 @@ admitted work; synthetic failure records use the current live model.
 
 `subscribe` deduplicates callback allocation identity, including independently
 coerced aliases. Either alias's removal handle removes that callback.
-Dispatch reduces state before awaiting
-live listeners in registration order; additions and removals can affect an ongoing
-walk. Listeners share a mutable event handle. `Subscription::unsubscribe` removes
+Dispatch synchronously reduces state and invokes the first live listener, including
+inside a tool progress callback. It awaits that listener before invoking the next;
+additions and removals can affect the ongoing registration-order walk. Listeners
+share a mutable event handle. `Subscription::unsubscribe` removes
 the callback identity explicitly; dropping the subscription does not remove it.
 Caller-created strong captures of the Agent require explicit deregistration.
 

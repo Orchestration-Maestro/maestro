@@ -137,9 +137,7 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
         let emit_agent = Arc::clone(&agent);
         let emit_signal = signal.clone();
         let emit = Arc::new(move |event| {
-            let agent = Arc::clone(&emit_agent);
-            let signal = emit_signal.clone();
-            Box::pin(async move { agent.emit(event, signal).await }) as BoxFuture<_>
+            Box::pin(emit_agent.emit(event, emit_signal.clone())) as BoxFuture<_>
         });
         let task = Box::pin(async move {
             drop(retired);

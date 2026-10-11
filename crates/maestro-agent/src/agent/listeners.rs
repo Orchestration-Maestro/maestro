@@ -83,27 +83,34 @@ impl<C: CustomAgentMessages> Subscription<C> {
     }
 }
 impl<C: CustomAgentMessages + 'static> Agent<C> {
-    /// Reduce, then await current live registrations without holding ownership guards.
-    pub(super) async fn emit(
-        &self,
+    /// Reduce and invoke the first listener now; await live successors without guards.
+    pub(super) fn emit(
+        self: &Arc<Self>,
         event: AgentEvent<C>,
         signal: Cancellation,
-    ) -> Result<(), DiagnosticErrorInfo> {
+    ) -> impl std::future::Future<Output = Result<(), DiagnosticErrorInfo>> + use<C> {
         self.reduce(&event);
         let event = Arc::new(RwLock::new(event));
         let mut next = 0;
-        loop {
-            let listener = lock(&self.listeners)
+        let agent = Arc::clone(self);
+        let mut invoke_next = move || {
+            let listener = lock(&agent.listeners)
                 .entries
                 .range(next..)
                 .next()
                 .map(|(id, listener)| (*id, Arc::clone(listener)));
-            let Some((id, listener)) = listener else {
-                break;
-            };
-            next = id + 1;
-            listener(Arc::clone(&event), signal.clone()).await?;
+            listener.map(|(id, listener)| {
+                next = id + 1;
+                listener(Arc::clone(&event), signal.clone())
+            })
+        };
+        let mut pending = invoke_next();
+        async move {
+            while let Some(future) = pending {
+                future.await?;
+                pending = invoke_next();
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
