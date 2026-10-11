@@ -1,0 +1,212 @@
+//! Formatting and projection of application conversation messages.
+use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone};
+use maestro_agent::AgentMessage;
+use maestro_models::{Message, TextContent, UserBlock, UserContent, UserMessage};
+pub use maestro_request::messages::{
+    BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage, CustomMessage,
+};
+use maestro_request::presence::Presence;
+use std::convert::Infallible;
+
+/// Format a recorded shell execution for model input.
+#[must_use]
+pub fn bash_execution_to_text(message: &BashExecutionMessage) -> String {
+    let mut text = format!("Ran `{}`\n", message.command);
+    if message.output.is_empty() {
+        text.push_str("(no output)");
+    } else {
+        text.push_str("```\n");
+        text.push_str(&message.output);
+        text.push_str("\n```");
+    }
+    if message.cancelled {
+        text.push_str("\n\n(command cancelled)");
+    } else if let Presence::Present(code) = message.exit_code
+        && code != 0.0
+    {
+        text.push_str("\n\nCommand exited with code ");
+        text.push_str(ryu_js::Buffer::new().format(code));
+    }
+    if message.truncated
+        && let Presence::Present(path) = &message.full_output_path
+        && !path.is_empty()
+    {
+        text.push_str("\n\n[Output truncated. Full output: ");
+        text.push_str(path);
+        text.push(']');
+    }
+    text
+}
+
+/// Retain a branch summary with its parsed timestamp.
+#[must_use]
+pub fn create_branch_summary_message(
+    summary: String,
+    from_id: String,
+    timestamp: &str,
+) -> BranchSummaryMessage {
+    BranchSummaryMessage {
+        summary,
+        from_id,
+        timestamp: timestamp_millis(timestamp),
+    }
+}
+
+/// Retain a compaction summary with its parsed timestamp.
+#[must_use]
+pub fn create_compaction_summary_message(
+    summary: String,
+    tokens_before: f64,
+    timestamp: &str,
+) -> CompactionSummaryMessage {
+    CompactionSummaryMessage {
+        summary,
+        tokens_before,
+        timestamp: timestamp_millis(timestamp),
+    }
+}
+
+/// Parse ISO instants, UTC calendar dates or local date-times into epoch milliseconds.
+fn timestamp_millis(text: &str) -> f64 {
+    if let Ok(date) = DateTime::parse_from_rfc3339(text) {
+        return millis_number(date.timestamp_millis());
+    }
+    if let Ok(date) = NaiveDate::parse_from_str(text, "%Y-%m-%d") {
+        return date.and_hms_opt(0, 0, 0).map_or(f64::NAN, |time| {
+            millis_number(time.and_utc().timestamp_millis())
+        });
+    }
+    NaiveDateTime::parse_from_str(text, "%Y-%m-%dT%H:%M:%S%.f")
+        .ok()
+        .and_then(|date| Local.from_local_datetime(&date).earliest())
+        .map_or(f64::NAN, |date| millis_number(date.timestamp_millis()))
+}
+
+/// Retain injected content, visibility and details with a parsed timestamp.
+pub fn create_custom_message<T>(
+    custom_type: String,
+    content: maestro_models::UserContent,
+    display: bool,
+    details: Presence<T>,
+    timestamp: &str,
+) -> CustomMessage<T> {
+    CustomMessage {
+        custom_type,
+        content,
+        display,
+        details,
+        timestamp: timestamp_millis(timestamp),
+    }
+}
+
+/// Application message roles plus caller-defined entries.
+pub enum CustomAgentMessages<T = serde_json::Value, C = Infallible> {
+    /// Recorded shell execution.
+    BashExecution(BashExecutionMessage),
+    /// Injected content.
+    Custom(CustomMessage<T>),
+    /// Branch summary.
+    BranchSummary(BranchSummaryMessage),
+    /// Compaction summary.
+    CompactionSummary(CompactionSummaryMessage),
+    /// Caller-defined role.
+    Other(C),
+}
+impl<T, C: maestro_agent::CustomAgentMessages> maestro_agent::CustomAgentMessages
+    for CustomAgentMessages<T, C>
+{
+    fn role(&self) -> &str {
+        match self {
+            Self::BashExecution(_) => "bashExecution",
+            Self::Custom(_) => "custom",
+            Self::BranchSummary(_) => "branchSummary",
+            Self::CompactionSummary(_) => "compactionSummary",
+            Self::Other(message) => message.role(),
+        }
+    }
+}
+
+/// Project application entries into an owned, ordered model transcript.
+#[must_use]
+pub fn convert_to_llm<T, C: maestro_agent::CustomAgentMessages>(
+    messages: &[AgentMessage<CustomAgentMessages<T, C>>],
+) -> Vec<Message> {
+    messages
+        .iter()
+        .filter_map(|entry| match entry {
+            AgentMessage::Custom(entry) => {
+                let message = read(entry);
+                project_custom(&message)
+            }
+            AgentMessage::User(entry) => Some(Message::User(read(entry).clone())),
+            AgentMessage::Assistant(entry) => Some(Message::Assistant(read(entry).clone())),
+            AgentMessage::ToolResult(entry) => Some(Message::ToolResult(read(entry).clone())),
+        })
+        .collect()
+}
+
+/// Convert plain text into one block, retaining existing block arrays.
+fn user_message(content: UserContent, timestamp: f64) -> Message {
+    let content = match content {
+        UserContent::Text(text) => UserContent::Blocks(vec![UserBlock::Text(TextContent {
+            text,
+            text_signature: None,
+        })]),
+        blocks @ UserContent::Blocks(_) => blocks,
+    };
+    Message::User(UserMessage { content, timestamp })
+}
+
+/// Opening wrapper for compaction summaries.
+pub const COMPACTION_SUMMARY_PREFIX: &str = "The conversation history before this point was compacted into the following summary:\n\n<summary>\n";
+/// Closing wrapper for compaction summaries.
+pub const COMPACTION_SUMMARY_SUFFIX: &str = "\n</summary>";
+/// Opening wrapper for branch summaries.
+pub const BRANCH_SUMMARY_PREFIX: &str =
+    "The following is a summary of a branch that this conversation came back from:\n\n<summary>\n";
+/// Closing wrapper for branch summaries.
+pub const BRANCH_SUMMARY_SUFFIX: &str = "</summary>";
+
+/// Convert integer epoch milliseconds to the floating-point message representation.
+fn millis_number(millis: i64) -> f64 {
+    millis.to_string().parse().unwrap_or(f64::NAN)
+}
+
+/// Select model content from one application entry.
+fn project_custom<T, C>(message: &CustomAgentMessages<T, C>) -> Option<Message> {
+    match message {
+        CustomAgentMessages::Custom(message) => {
+            Some(user_message(message.content.clone(), message.timestamp))
+        }
+        CustomAgentMessages::BranchSummary(message) => Some(user_message(
+            UserContent::Text(format!(
+                "{BRANCH_SUMMARY_PREFIX}{}{BRANCH_SUMMARY_SUFFIX}",
+                message.summary
+            )),
+            message.timestamp,
+        )),
+        CustomAgentMessages::CompactionSummary(message) => Some(user_message(
+            UserContent::Text(format!(
+                "{COMPACTION_SUMMARY_PREFIX}{}{COMPACTION_SUMMARY_SUFFIX}",
+                message.summary
+            )),
+            message.timestamp,
+        )),
+        CustomAgentMessages::BashExecution(message)
+            if !matches!(message.exclude_from_context, Presence::Present(true)) =>
+        {
+            Some(user_message(
+                UserContent::Text(bash_execution_to_text(message)),
+                message.timestamp,
+            ))
+        }
+        CustomAgentMessages::BashExecution(_) | CustomAgentMessages::Other(_) => None,
+    }
+}
+
+/// Borrow a retained entry, recovering its data after poisoning.
+fn read<T>(entry: &std::sync::RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
+    entry
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}

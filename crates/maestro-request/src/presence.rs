@@ -5,9 +5,8 @@ use serde::ser::{Error as _, Serialize, Serializer};
 
 /// An optional property of a record: omitted, explicitly null, or a value.
 ///
-/// Every delivered record field of this type is skipped on serialization only while it is
-/// [`Missing`](Presence::Missing) and defaults to it when the property is absent. Empty and
-/// false values are [`Present`](Presence::Present); null is never omission.
+/// Record fields may skip [`Missing`](Presence::Missing) during serialization and default
+/// to it when absent. Null is distinct from omission.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub enum Presence<T> {
     /// The property is absent.
@@ -22,7 +21,7 @@ pub enum Presence<T> {
 impl<T> Presence<T> {
     /// Whether the property is absent; the predicate that decides which fields serialization
     /// skips.
-    pub(crate) fn is_missing(&self) -> bool {
+    pub fn is_missing(&self) -> bool {
         matches!(self, Self::Missing)
     }
 }

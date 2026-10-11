@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 use serde::de::value::MapAccessDeserializer;
 use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
 
-use super::presence::Presence;
+use super::Presence;
 
 /// A record read from a JSON object.
 struct Object<T>(T);

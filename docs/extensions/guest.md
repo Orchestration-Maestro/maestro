@@ -3,7 +3,7 @@
 `maestro-extensions-wasm` is the Rust library an extension author links to. It owns the
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
-async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
+async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model, resource and application message records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
@@ -365,9 +365,10 @@ empty strings, empty lists and `false`. Such an event field is a
 serialization only while it is `Missing`. Serializing `Missing` on its own, outside a property,
 is an error; `Null` serializes as `null` and `Present` as its value.
 
-Shared records retain their own optional-field serialization: ordinary `Option` fields
-collapse missing and null, while existing nested options retain explicit null. They
-have no added `Presence` wrapper. The inventory record
+Shared model records retain their own optional-field serialization: ordinary `Option` fields
+collapse missing and null, while existing nested options retain explicit null.
+[Application message records](../records.md#application-message-records) keep their existing
+`Presence` fields; model records have no added wrapper. The inventory record
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 also uses standard `Option` decoding for `description`: missing and null both become `None`.
 

@@ -1,0 +1,2541 @@
+[
+  {
+    "id": "shell-empty",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "",
+        "output": "",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran ``\n(no output)",
+    "test": "shell_transcript_keeps_authored_text"
+  },
+  {
+    "id": "shell-multiline",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "echo `literal`\nnext",
+        "output": "one\ntwo\n",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `echo `literal`\nnext`\n```\none\ntwo\n\n```",
+    "test": "shell_transcript_keeps_authored_text"
+  },
+  {
+    "id": "shell-unicode",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "echo café",
+        "output": "λ🦀",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `echo café`\n```\nλ🦀\n```",
+    "test": "shell_transcript_keeps_authored_text"
+  },
+  {
+    "id": "shell-whitespace",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": " \t",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\n \t\n```",
+    "test": "shell_transcript_keeps_authored_text"
+  },
+  {
+    "id": "shell-fences",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "```\nraw",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\n```\nraw\n```",
+    "test": "shell_transcript_keeps_authored_text"
+  },
+  {
+    "id": "status-absent",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": {
+          "$undefined": true
+        },
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-null",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-zero",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-negative_zero",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": {
+          "$number": "-0"
+        },
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-error",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 127,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\nCommand exited with code 127",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-negative",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": -9,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\nCommand exited with code -9",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-fraction",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 1.25,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\nCommand exited with code 1.25",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-cancelled_error",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 127,
+        "cancelled": true,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\n(command cancelled)",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "status-cancelled_zero",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": true,
+        "truncated": false,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\n(command cancelled)",
+    "test": "shell_status_uses_cancellation_before_exit"
+  },
+  {
+    "id": "truncation-not_truncated",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": false,
+        "timestamp": 41,
+        "fullOutputPath": "/tmp/full"
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_truncation_requires_flag_and_path"
+  },
+  {
+    "id": "truncation-absent",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": true,
+        "timestamp": 41
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_truncation_requires_flag_and_path"
+  },
+  {
+    "id": "truncation-null",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": true,
+        "timestamp": 41,
+        "fullOutputPath": null
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_truncation_requires_flag_and_path"
+  },
+  {
+    "id": "truncation-empty",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": true,
+        "timestamp": 41,
+        "fullOutputPath": ""
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```",
+    "test": "shell_truncation_requires_flag_and_path"
+  },
+  {
+    "id": "truncation-present",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 0,
+        "cancelled": false,
+        "truncated": true,
+        "timestamp": 41,
+        "fullOutputPath": "/tmp/full λ"
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\n[Output truncated. Full output: /tmp/full λ]",
+    "test": "shell_truncation_requires_flag_and_path"
+  },
+  {
+    "id": "truncation-cancelled",
+    "operation": "bashExecutionToText",
+    "args": [
+      {
+        "role": "bashExecution",
+        "command": "printf x",
+        "output": "x",
+        "exitCode": 2,
+        "cancelled": true,
+        "truncated": true,
+        "timestamp": 41,
+        "fullOutputPath": "full"
+      }
+    ],
+    "expected": "Ran `printf x`\n```\nx\n```\n\n(command cancelled)\n\n[Output truncated. Full output: full]",
+    "test": "shell_truncation_requires_flag_and_path"
+  },
+  {
+    "id": "branch-date-epoch",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "1970-01-01T00:00:00.000Z"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 0
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 0
+    }
+  },
+  {
+    "id": "compaction-date-epoch",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "1970-01-01T00:00:00.000Z"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 0
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 0
+    }
+  },
+  {
+    "id": "custom-date-epoch",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "1970-01-01T00:00:00.000Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 0
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 0
+    }
+  },
+  {
+    "id": "branch-date-generated",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "compaction-date-generated",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "custom-date-generated",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "branch-date-seconds",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04T05:06:07Z"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767000
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767000
+    }
+  },
+  {
+    "id": "compaction-date-seconds",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04T05:06:07Z"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767000
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767000
+    }
+  },
+  {
+    "id": "custom-date-seconds",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04T05:06:07Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767000
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767000
+    }
+  },
+  {
+    "id": "branch-date-positive_offset",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04T05:06:07.008+05:30"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741044967008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741044967008
+    }
+  },
+  {
+    "id": "compaction-date-positive_offset",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04T05:06:07.008+05:30"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741044967008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741044967008
+    }
+  },
+  {
+    "id": "custom-date-positive_offset",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04T05:06:07.008+05:30"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741044967008
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741044967008
+    }
+  },
+  {
+    "id": "branch-date-negative_offset",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04T05:06:07.008-04:00"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741079167008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741079167008
+    }
+  },
+  {
+    "id": "compaction-date-negative_offset",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04T05:06:07.008-04:00"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741079167008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741079167008
+    }
+  },
+  {
+    "id": "custom-date-negative_offset",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04T05:06:07.008-04:00"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741079167008
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741079167008
+    }
+  },
+  {
+    "id": "branch-date-date",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741046400000
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741046400000
+    }
+  },
+  {
+    "id": "compaction-date-date",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741046400000
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741046400000
+    }
+  },
+  {
+    "id": "custom-date-date",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741046400000
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741046400000
+    }
+  },
+  {
+    "id": "branch-date-submillis",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04T05:06:07.0089Z"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "compaction-date-submillis",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04T05:06:07.0089Z"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "custom-date-submillis",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04T05:06:07.0089Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "branch-date-before_epoch",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "1969-12-31T23:59:59.9999Z"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": -1
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": -1
+    }
+  },
+  {
+    "id": "compaction-date-before_epoch",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "1969-12-31T23:59:59.9999Z"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": -1
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": -1
+    }
+  },
+  {
+    "id": "custom-date-before_epoch",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "1969-12-31T23:59:59.9999Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": -1
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": -1
+    }
+  },
+  {
+    "id": "branch-date-local",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "2025-03-04T05:06:07.008"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "compaction-date-local",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "2025-03-04T05:06:07.008"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767008
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "custom-date-local",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "2025-03-04T05:06:07.008"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "branch-date-invalid",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      "not-a-date"
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": {
+        "$number": "NaN"
+      }
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": null
+    }
+  },
+  {
+    "id": "compaction-date-invalid",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      "not-a-date"
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": {
+        "$number": "NaN"
+      }
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": null
+    }
+  },
+  {
+    "id": "custom-date-invalid",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      "not-a-date"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": {
+        "$number": "NaN"
+      }
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": null
+    }
+  },
+  {
+    "id": "branch-date-empty",
+    "operation": "createBranchSummaryMessage",
+    "args": [
+      "Σ\nbranch",
+      "from-9",
+      ""
+    ],
+    "expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": {
+        "$number": "NaN"
+      }
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "branchSummary",
+      "summary": "Σ\nbranch",
+      "fromId": "from-9",
+      "timestamp": null
+    }
+  },
+  {
+    "id": "compaction-date-empty",
+    "operation": "createCompactionSummaryMessage",
+    "args": [
+      "Σ\ncompacted",
+      19.5,
+      ""
+    ],
+    "expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": {
+        "$number": "NaN"
+      }
+    },
+    "test": "summary_constructors_preserve_fields_and_time",
+    "serialized_expected": {
+      "role": "compactionSummary",
+      "summary": "Σ\ncompacted",
+      "tokensBefore": 19.5,
+      "timestamp": null
+    }
+  },
+  {
+    "id": "custom-date-empty",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "x": null
+      },
+      ""
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": {
+        "$number": "NaN"
+      }
+    },
+    "test": "custom_constructor_preserves_time",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "x": null
+      },
+      "timestamp": null
+    }
+  },
+  {
+    "id": "custom-empty_text-hidden",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "",
+      false,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "",
+      "display": false,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "",
+      "display": false,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-empty_text-hidden",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": "",
+          "display": false,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-empty_text-visible",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "",
+      true,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "",
+      "display": true,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "",
+      "display": true,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-empty_text-visible",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": "",
+          "display": true,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-text-hidden",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "café\n🦀",
+      false,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "café\n🦀",
+      "display": false,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "café\n🦀",
+      "display": false,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-text-hidden",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": "café\n🦀",
+          "display": false,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "café\n🦀"
+          }
+        ],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-text-visible",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "café\n🦀",
+      true,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "café\n🦀",
+      "display": true,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "café\n🦀",
+      "display": true,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-text-visible",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": "café\n🦀",
+          "display": true,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "café\n🦀"
+          }
+        ],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-empty_blocks-hidden",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      [],
+      false,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [],
+      "display": false,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [],
+      "display": false,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-empty_blocks-hidden",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": [],
+          "display": false,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-empty_blocks-visible",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      [],
+      true,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [],
+      "display": true,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [],
+      "display": true,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-empty_blocks-visible",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": [],
+          "display": true,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-blocks-hidden",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      [
+        {
+          "type": "text",
+          "text": "repeat"
+        },
+        {
+          "type": "image",
+          "data": "aW1n",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "repeat"
+        }
+      ],
+      false,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [
+        {
+          "type": "text",
+          "text": "repeat"
+        },
+        {
+          "type": "image",
+          "data": "aW1n",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "repeat"
+        }
+      ],
+      "display": false,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [
+        {
+          "type": "text",
+          "text": "repeat"
+        },
+        {
+          "type": "image",
+          "data": "aW1n",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "repeat"
+        }
+      ],
+      "display": false,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-blocks-hidden",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": [
+            {
+              "type": "text",
+              "text": "repeat"
+            },
+            {
+              "type": "image",
+              "data": "aW1n",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "repeat"
+            }
+          ],
+          "display": false,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "repeat"
+          },
+          {
+            "type": "image",
+            "data": "aW1n",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "repeat"
+          }
+        ],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "custom-blocks-visible",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      [
+        {
+          "type": "text",
+          "text": "repeat"
+        },
+        {
+          "type": "image",
+          "data": "aW1n",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "repeat"
+        }
+      ],
+      true,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [
+        {
+          "type": "text",
+          "text": "repeat"
+        },
+        {
+          "type": "image",
+          "data": "aW1n",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "repeat"
+        }
+      ],
+      "display": true,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": [
+        {
+          "type": "text",
+          "text": "repeat"
+        },
+        {
+          "type": "image",
+          "data": "aW1n",
+          "mimeType": "image/png"
+        },
+        {
+          "type": "text",
+          "text": "repeat"
+        }
+      ],
+      "display": true,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "convert-custom-blocks-visible",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "custom",
+          "customType": "kind",
+          "content": [
+            {
+              "type": "text",
+              "text": "repeat"
+            },
+            {
+              "type": "image",
+              "data": "aW1n",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "repeat"
+            }
+          ],
+          "display": true,
+          "details": {
+            "ignored": true
+          },
+          "timestamp": 77
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "repeat"
+          },
+          {
+            "type": "image",
+            "data": "aW1n",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "repeat"
+          }
+        ],
+        "timestamp": 77
+      }
+    ],
+    "test": "custom_projection_keeps_block_order_and_ignores_visibility"
+  },
+  {
+    "id": "details-absent",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "$undefined": true
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "$undefined": true
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "details-null",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      null,
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": null,
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": null,
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "details-object",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      {
+        "zero": 0,
+        "list": [
+          true,
+          "v"
+        ]
+      },
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "zero": 0,
+        "list": [
+          true,
+          "v"
+        ]
+      },
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": {
+        "zero": 0,
+        "list": [
+          true,
+          "v"
+        ]
+      },
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "details-array",
+    "operation": "createCustomMessage",
+    "args": [
+      "kind",
+      "text",
+      false,
+      [
+        1,
+        null
+      ],
+      "2025-03-04T05:06:07.008Z"
+    ],
+    "expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": [
+        1,
+        null
+      ],
+      "timestamp": 1741064767008
+    },
+    "test": "custom_constructor_keeps_content_visibility_and_details",
+    "serialized_expected": {
+      "role": "custom",
+      "customType": "kind",
+      "content": "text",
+      "display": false,
+      "details": [
+        1,
+        null
+      ],
+      "timestamp": 1741064767008
+    }
+  },
+  {
+    "id": "wrappers-73",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "branchSummary",
+          "summary": "",
+          "fromId": "from-9",
+          "timestamp": 1
+        },
+        {
+          "role": "compactionSummary",
+          "summary": "",
+          "tokensBefore": 0,
+          "timestamp": 2
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\n</summary>"
+          }
+        ],
+        "timestamp": 1
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\n\n</summary>"
+          }
+        ],
+        "timestamp": 2
+      }
+    ],
+    "test": "summary_projection_keeps_distinct_newline_wrappers"
+  },
+  {
+    "id": "wrappers-74",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "branchSummary",
+          "summary": "Σ\nline",
+          "fromId": "from-9",
+          "timestamp": 1
+        },
+        {
+          "role": "compactionSummary",
+          "summary": "Σ\nline",
+          "tokensBefore": 0,
+          "timestamp": 2
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nΣ\nline</summary>"
+          }
+        ],
+        "timestamp": 1
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nΣ\nline\n</summary>"
+          }
+        ],
+        "timestamp": 2
+      }
+    ],
+    "test": "summary_projection_keeps_distinct_newline_wrappers"
+  },
+  {
+    "id": "wrappers-75",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "branchSummary",
+          "summary": "literal </summary>",
+          "fromId": "from-9",
+          "timestamp": 1
+        },
+        {
+          "role": "compactionSummary",
+          "summary": "literal </summary>",
+          "tokensBefore": 0,
+          "timestamp": 2
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nliteral </summary></summary>"
+          }
+        ],
+        "timestamp": 1
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nliteral </summary>\n</summary>"
+          }
+        ],
+        "timestamp": 2
+      }
+    ],
+    "test": "summary_projection_keeps_distinct_newline_wrappers"
+  },
+  {
+    "id": "base-sequence",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "toolResult",
+          "toolCallId": "call-1",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "repeat"
+            },
+            {
+              "type": "image",
+              "data": "aW1n",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "repeat"
+            }
+          ],
+          "details": {
+            "nested": null
+          },
+          "isError": true,
+          "timestamp": 8
+        },
+        {
+          "role": "user",
+          "content": "original user",
+          "timestamp": 6
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "plan"
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            },
+            {
+              "type": "toolCall",
+              "id": "call-1",
+              "name": "read",
+              "arguments": {
+                "path": "x"
+              }
+            }
+          ],
+          "api": "test-api",
+          "provider": "test-provider",
+          "model": "test-model",
+          "usage": {
+            "input": 2,
+            "output": 3,
+            "cacheRead": 4,
+            "cacheWrite": 5,
+            "totalTokens": 14,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.3,
+              "cacheWrite": 0.4,
+              "total": 1
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 7
+        },
+        {
+          "role": "user",
+          "content": "original user",
+          "timestamp": 6
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "toolResult",
+        "toolCallId": "call-1",
+        "toolName": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "repeat"
+          },
+          {
+            "type": "image",
+            "data": "aW1n",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "repeat"
+          }
+        ],
+        "details": {
+          "nested": null
+        },
+        "isError": true,
+        "timestamp": 8
+      },
+      {
+        "role": "user",
+        "content": "original user",
+        "timestamp": 6
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "plan"
+          },
+          {
+            "type": "text",
+            "text": "answer"
+          },
+          {
+            "type": "toolCall",
+            "id": "call-1",
+            "name": "read",
+            "arguments": {
+              "path": "x"
+            }
+          }
+        ],
+        "api": "test-api",
+        "provider": "test-provider",
+        "model": "test-model",
+        "usage": {
+          "input": 2,
+          "output": 3,
+          "cacheRead": 4,
+          "cacheWrite": 5,
+          "totalTokens": 14,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.3,
+            "cacheWrite": 0.4,
+            "total": 1
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 7
+      },
+      {
+        "role": "user",
+        "content": "original user",
+        "timestamp": 6
+      }
+    ],
+    "test": "conversion_keeps_base_values_order_and_duplicates"
+  },
+  {
+    "id": "all-roles",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": "original user",
+          "timestamp": 6
+        },
+        {
+          "role": "bashExecution",
+          "command": "printf x",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 41,
+          "excludeFromContext": {
+            "$undefined": true
+          }
+        },
+        {
+          "role": "bashExecution",
+          "command": "printf x",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 41,
+          "excludeFromContext": false
+        },
+        {
+          "role": "bashExecution",
+          "command": "printf x",
+          "output": "x",
+          "exitCode": 0,
+          "cancelled": false,
+          "truncated": false,
+          "timestamp": 41,
+          "excludeFromContext": true
+        },
+        {
+          "role": "future.notice"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "plan"
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            },
+            {
+              "type": "toolCall",
+              "id": "call-1",
+              "name": "read",
+              "arguments": {
+                "path": "x"
+              }
+            }
+          ],
+          "api": "test-api",
+          "provider": "test-provider",
+          "model": "test-model",
+          "usage": {
+            "input": 2,
+            "output": 3,
+            "cacheRead": 4,
+            "cacheWrite": 5,
+            "totalTokens": 14,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.3,
+              "cacheWrite": 0.4,
+              "total": 1
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 7
+        },
+        {
+          "role": "custom",
+          "customType": "x",
+          "content": "hidden but included",
+          "display": false,
+          "timestamp": 10
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call-1",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "repeat"
+            },
+            {
+              "type": "image",
+              "data": "aW1n",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "repeat"
+            }
+          ],
+          "details": {
+            "nested": null
+          },
+          "isError": true,
+          "timestamp": 8
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": "original user",
+        "timestamp": 6
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `printf x`\n```\nx\n```"
+          }
+        ],
+        "timestamp": 41
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Ran `printf x`\n```\nx\n```"
+          }
+        ],
+        "timestamp": 41
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "plan"
+          },
+          {
+            "type": "text",
+            "text": "answer"
+          },
+          {
+            "type": "toolCall",
+            "id": "call-1",
+            "name": "read",
+            "arguments": {
+              "path": "x"
+            }
+          }
+        ],
+        "api": "test-api",
+        "provider": "test-provider",
+        "model": "test-model",
+        "usage": {
+          "input": 2,
+          "output": 3,
+          "cacheRead": 4,
+          "cacheWrite": 5,
+          "totalTokens": 14,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.3,
+            "cacheWrite": 0.4,
+            "total": 1
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 7
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "hidden but included"
+          }
+        ],
+        "timestamp": 10
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call-1",
+        "toolName": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "repeat"
+          },
+          {
+            "type": "image",
+            "data": "aW1n",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "repeat"
+          }
+        ],
+        "details": {
+          "nested": null
+        },
+        "isError": true,
+        "timestamp": 8
+      }
+    ],
+    "test": "conversion_drops_only_suppressed_shell_and_unknown_roles"
+  },
+  {
+    "id": "empty-conversion",
+    "operation": "convertToLlm",
+    "args": [
+      []
+    ],
+    "expected": [],
+    "test": "conversion_drops_only_suppressed_shell_and_unknown_roles"
+  },
+  {
+    "id": "alias-before",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "role": "user",
+          "content": "original user",
+          "timestamp": 6
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": "original user",
+        "timestamp": 6
+      }
+    ],
+    "test": "conversion_observes_changes_through_retained_inputs"
+  },
+  {
+    "id": "alias-after",
+    "operation": "convertToLlm",
+    "args": [
+      [
+        {
+          "content": "edited through retained input"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "role": "user",
+        "content": "edited through retained input",
+        "timestamp": 6
+      }
+    ],
+    "test": "conversion_observes_changes_through_retained_inputs"
+  }
+]
