@@ -416,7 +416,7 @@ fn default_stream_uses_registered_model_adapter() {
         Some("loop-controlled-test".into()),
     );
     let mut config = config();
-    config.model.api = "loop-controlled".into();
+    config.model.write().unwrap().api = "loop-controlled".into();
     config.options.common.temperature = Some(0.5);
     let result = run(maestro_agent::run_agent_loop_continue(
         context(),
@@ -799,7 +799,7 @@ async fn retired_entry_drops_after_guard_case() {
     let dropped = Arc::new(AtomicBool::new(false));
     let emit = cleanup_sink(messages, Arc::clone(&blocked), Arc::clone(&dropped));
     let config = maestro_agent::AgentLoopConfig {
-        model: model(),
+        model: Arc::new(RwLock::new(model())),
         options: maestro_models::SimpleStreamOptions::default(),
         extra: maestro_models::JsonObject::new(),
         objects: maestro_models::ProviderObjects::default(),

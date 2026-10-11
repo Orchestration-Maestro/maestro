@@ -23,9 +23,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         call: &ToolCall,
         execute: &ExecuteTool,
         arguments: serde_json::Value,
-    ) -> impl std::future::Future<
-        Output = Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo>,
-    > + use<C> {
+    ) -> BoxFuture<Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo>> {
         let updates = EventStream::new(
             |_: &BoxFuture<Result<(), DiagnosticErrorInfo>>| false,
             |_| (),
@@ -39,13 +37,22 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             self.options.signal.clone(),
             Some(callback),
         );
-        let progress = futures_util::stream::unfold(updates.clone(), |updates| async {
+        let pending = futures_util::stream::unfold(updates.clone(), |updates| async move {
             updates.next().await.map(|future| (future, updates))
-        })
-        .map(futures_util::stream::once)
-        .flatten_unordered(None)
-        .collect::<Vec<_>>();
-        async move {
+        });
+        #[cfg(not(target_arch = "wasm32"))]
+        let pending = pending.boxed();
+        #[cfg(target_arch = "wasm32")]
+        let pending = pending.boxed_local();
+        let progress = pending
+            .map(futures_util::stream::once)
+            .flatten_unordered(None);
+        #[cfg(not(target_arch = "wasm32"))]
+        let progress = progress.boxed();
+        #[cfg(target_arch = "wasm32")]
+        let progress = progress.boxed_local();
+        let progress = progress.collect::<Vec<_>>();
+        Box::pin(async move {
             let (result, progress) = join(
                 async {
                     let result = execution.await;
@@ -59,7 +66,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                 settled?;
             }
             Ok(result)
-        }
+        })
     }
     /// Reserve observation entry before invoking foreign code without a lock.
     fn progress_callback(

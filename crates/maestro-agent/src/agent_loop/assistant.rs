@@ -33,14 +33,14 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             tools,
         };
         let mut options = self.config.options.clone();
+        let provider = read(&self.config.model).provider.clone();
         if let Some(resolve) = &self.config.get_api_key
-            && let Some(key) = resolve(self.config.model.provider.clone())
-                .await?
-                .filter(|key| !key.is_empty())
+            && let Some(key) = resolve(provider).await?.filter(|key| !key.is_empty())
         {
             options.common.api_key = Some(key);
         }
         options.common.signal = self.options.signal.clone();
+        let model = read(&self.config.model).clone();
         let stream = match &self.options.stream_fn {
             Some(stream) => {
                 let open = ProviderStreamOptions {
@@ -48,9 +48,9 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                     extra: self.config.extra.clone(),
                     objects: self.config.objects.clone(),
                 };
-                stream(self.config.model.clone(), context, options, open).await?
+                stream(model, context, options, open).await?
             }
-            None => stream_simple(self.config.model.clone(), context, Some(options))?,
+            None => stream_simple(model, context, Some(options))?,
         };
         self.consume(stream).await
     }

@@ -403,7 +403,7 @@ fn config(input: &Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentLo
     options.common.session_id = Some("session".into());
     options.common.temperature = Some(0.25);
     let mut config = AgentLoopConfig {
-        model: super::model(),
+        model: Arc::new(RwLock::new(super::model())),
         options,
         extra: JsonObject::from_iter([(
             "customField".into(),
@@ -431,9 +431,9 @@ fn config(input: &Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentLo
         get_follow_up_messages: None,
         tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
     };
-    config.model.input = vec![ModelInput::Text];
-    config.model.context_window = 8192.0;
-    config.model.max_tokens = 2048.0;
+    config.model.write().unwrap().input = vec![ModelInput::Text];
+    config.model.write().unwrap().context_window = 8192.0;
+    config.model.write().unwrap().max_tokens = 2048.0;
     install_transform(&mut config, Arc::clone(input), Arc::clone(&observations));
     install_key(&mut config, input, observations);
     if input.flag("richOptions") {

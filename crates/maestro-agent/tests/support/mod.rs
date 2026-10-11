@@ -53,7 +53,7 @@ pub fn model() -> Model {
 #[must_use]
 pub fn config() -> AgentLoopConfig {
     AgentLoopConfig {
-        model: model(),
+        model: Arc::new(RwLock::new(model())),
         options: SimpleStreamOptions::default(),
         extra: JsonObject::new(),
         objects: ProviderObjects::default(),
@@ -178,3 +178,7 @@ pub fn result() -> maestro_agent::AgentToolResult {
         terminate: Some(true),
     }
 }
+/// Caller-owned queued execution for lifecycle tests.
+pub mod owned;
+/// Recorded owned-run response and reduction evidence.
+pub mod owner_corpus;

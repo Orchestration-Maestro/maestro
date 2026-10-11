@@ -391,6 +391,7 @@ fn maestro_reset_replaces_history_and_clears_queues() {
             },
             steering_mode: Some(mode(&take::<String>(&mut case.input, "steeringMode"))),
             follow_up_mode: Some(mode(&take::<String>(&mut case.input, "followUpMode"))),
+            ..Default::default()
         });
         let old = Arc::clone(agent.state().read().unwrap().messages());
         let pending = Arc::clone(agent.state().read().unwrap().pending_tool_calls());
@@ -539,6 +540,12 @@ fn tool_mode(text: &str) -> ToolExecutionMode {
         _ => panic!("unknown tool mode"),
     }
 }
+/// Native teardown callbacks retain thread-safe captures.
+#[cfg(not(target_arch = "wasm32"))]
+type DropCallback = Box<dyn Fn() + Send + Sync>;
+/// Browser teardown callbacks admit local captures.
+#[cfg(target_arch = "wasm32")]
+type DropCallback = Box<dyn Fn()>;
 /// A non-Clone caller-defined message with a destruction observer.
 struct Widget {
     /// Open caller-selected role.
@@ -546,7 +553,7 @@ struct Widget {
     /// Mutable typed payload.
     text: String,
     /// Optional synchronous lifetime observer.
-    on_drop: Option<Box<dyn Fn() + Send + Sync>>,
+    on_drop: Option<DropCallback>,
 }
 impl CustomAgentMessages for Widget {
     fn role(&self) -> &str {
