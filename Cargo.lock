@@ -1740,6 +1740,7 @@ dependencies = [
  "httpdate",
  "hyper",
  "hyper-util",
+ "icu_collator",
  "icu_normalizer",
  "idna",
  "indexmap",
