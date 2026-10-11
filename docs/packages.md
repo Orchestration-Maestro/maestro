@@ -70,8 +70,9 @@ already-installed unpinned npm sources or Git sources in user/project scope. `No
 user scope; temporary scope currently admits only local sources.
 
 Conventional directories are `extensions`, `skills`, `prompts` and `themes`.
-A local directory with none of these paths is returned as an extension root;
-an existing conventional path suppresses that fallback even when discovery is empty.
+Without a present package-root manifest, a local directory with none of these
+paths is returned as an extension root; an existing conventional path suppresses
+that fallback even when discovery is empty.
 Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
 paths before `index.ts` or `index.js`. Other extension discovery admits top-level
 source files and entry-bearing children. Skills stop at an admitted `SKILL.md`;
@@ -93,6 +94,33 @@ the first authored path and provenance after per-kind canonical deduplication.
 Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).
 
-Package-root resource manifests and expansion are tracked in [#452](https://github.com/Orchestration-Maestro/maestro/issues/452),
-missing/pinned-npm/temporary remote admission in [#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
+## Package-root manifests
+
+A present `maestro` member in `package.json` selects resources instead of
+conventional discovery; missing, null, false, zero or empty-string members use
+conventions. Object members select `extensions`, `skills`, `prompts` and `themes`;
+other present shapes have no named lists. Omitted lists add no resources.
+
+Manifest source paths are literal, resolved against the package root without
+trimming. Direct files need no suffix check; directories use the
+[conventional collectors](#conventional-resource-discovery).
+Positive wildcard source expansion is tracked in
+[#548](https://github.com/Orchestration-Maestro/maestro/issues/548).
+
+Exclusions (`!pattern`) run before exact restorations (`+path`), with exact
+removals (`-path`) last. Exclusions use the existing
+[file matcher](package-patterns.md) on relative, basename and absolute views;
+`SKILL.md` also offers its parent directory. Exact overrides compare relative or
+absolute paths, including skill-parent paths, after stripping one `./` or `.\`
+prefix. Selection inserts admitted candidates in their original candidate order.
+Without exclusions or removals, candidates remain admitted without matching,
+including when only restoration modifiers are supplied.
+
+Lists are consumed in extension, skill, prompt and theme order. A malformed list
+keeps earlier local kinds and stops that source's remaining kinds; the next
+local source can still contribute. Installed remote collection propagates the
+malformed-list failure.
+
+Missing/pinned-npm/temporary remote admission is tracked in
+[#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
 and configured/automatic merging and filters in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).

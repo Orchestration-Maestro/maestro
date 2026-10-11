@@ -14,7 +14,7 @@ maestro-path = { path = "../maestro-path" }
 git-url-parse = "=0.6.0"
 url = "=2.5.8"
 percent-encoding = "=2.3.2"
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

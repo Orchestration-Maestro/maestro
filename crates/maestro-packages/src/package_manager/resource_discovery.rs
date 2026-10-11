@@ -119,13 +119,14 @@ fn resolve_extension_entries(
         && let Some(manifest) =
             super::manifest::read_maestro_manifest_file(&manifest_path, operations)
         && let Some(entries) = manifest
-            .get("extensions")
-            .and_then(serde_json::Value::as_array)
+            .field("extensions")
+            .filter(|raw| raw.get().starts_with('['))
     {
         let mut found = Vec::new();
+        let entries: Vec<String> = serde_json::from_str(entries.get())
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         for entry in entries {
-            let entry = entry.as_str().ok_or(io::ErrorKind::InvalidData)?;
-            let path = resolve_entry_path(dir, entry, operations)?;
+            let path = resolve_entry_path(dir, &entry, operations)?;
             if operations.exists(Path::new(&path)) {
                 found.push(path);
             }
@@ -240,7 +241,7 @@ fn admitted_skill(
     })
 }
 /// Resolves literal manifest operands, consulting ambient directories only on demand.
-fn resolve_entry_path(
+pub(super) fn resolve_entry_path(
     dir: &str,
     entry: &str,
     operations: &dyn ResourceOperations,

@@ -16,6 +16,7 @@ mod process;
 mod progress;
 mod resolution;
 mod resource_discovery;
+mod resource_patterns;
 mod sources;
 use maestro_resources::SourceScope;
 pub use resolution::{ResolvedPaths, ResolvedResource};
@@ -86,7 +87,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
 /// Source acquisition, removal and configured-source operations.
 pub trait PackageManager {
-    /// Resolves explicit sources using conventional resource discovery.
+    /// Resolves explicit sources using package manifests with conventional fallback.
+    /// See the [package guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/packages.md).
     /// # Errors
     /// Returns required path, installed-source lookup or installed-resource discovery failures.
     fn resolve_extension_sources<'a>(
