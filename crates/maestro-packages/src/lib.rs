@@ -20,9 +20,9 @@ mod package_manager;
 pub use package_manager::NativePackageOperations;
 pub use package_manager::{
     CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager,
-    InstalledSourceScope, PackageFuture, PackageManager, PackageManagerOptions, PackageOperations,
-    PackageUpdate, PackageUpdateType, ProgressAction, ProgressCallback, ProgressEvent,
-    ProgressEventType, ResolvedPaths, ResolvedResource,
+    InstalledSourceScope, MissingSourceAction, PackageFuture, PackageManager,
+    PackageManagerOptions, PackageOperations, PackageUpdate, PackageUpdateType, ProgressAction,
+    ProgressCallback, ProgressEvent, ProgressEventType, ResolvedPaths, ResolvedResource,
 };
 
 pub use maestro_pattern::{PatternError, minimatch};

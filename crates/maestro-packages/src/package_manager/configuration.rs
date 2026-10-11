@@ -86,6 +86,29 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         Ok(result)
     }
+    /// Selects original project-first entries by lexical package identity.
+    pub(super) fn selected_package_entries<'a>(
+        &self,
+        user: &'a Settings,
+        project: &'a Settings,
+    ) -> io::Result<Vec<(InstalledSourceScope, &'a Value)>> {
+        let mut selected = Vec::new();
+        let mut identities = std::collections::HashSet::new();
+        let entries = package_rows(project)?
+            .iter()
+            .map(|entry| (InstalledSourceScope::Project, entry))
+            .chain(
+                package_rows(user)?
+                    .iter()
+                    .map(|entry| (InstalledSourceScope::User, entry)),
+            );
+        for (scope, entry) in entries {
+            if identities.insert(self.identity(entry_source(entry)?, &self.base(scope))?) {
+                selected.push((scope, entry));
+            }
+        }
+        Ok(selected)
+    }
     /// Takes a scoped owned snapshot before any adapter call.
     pub(super) fn snapshot(&self, scope: InstalledSourceScope) -> io::Result<Settings> {
         let settings = self
@@ -153,4 +176,16 @@ pub(super) fn entry_source(entry: &Value) -> io::Result<&str> {
         .as_str()
         .or_else(|| entry.as_object()?.get("source")?.as_str())
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "package source is not a string"))
+}
+
+/// Borrows the configured package root without consuming filter fields.
+fn package_rows(snapshot: &Settings) -> io::Result<&[Value]> {
+    match snapshot.0.get("packages") {
+        None | Some(Value::Null) => Ok(&[]),
+        Some(Value::Array(entries)) => Ok(entries),
+        Some(_) => Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "packages is not an array",
+        )),
+    }
 }

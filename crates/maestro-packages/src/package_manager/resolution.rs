@@ -6,7 +6,7 @@ pub struct ResolvedResource {
     pub path: String,
     /// Whether the resource is enabled.
     pub enabled: bool,
-    /// The source that first supplied this path.
+    /// The retained source owner after resource precedence selection.
     pub metadata: PathMetadata,
 }
 /// Resources separated by their discovery kind.
@@ -28,7 +28,20 @@ use super::{
 };
 use maestro_path::{dirname, join};
 use maestro_resources::{SourceOrigin, SourceScope, canonicalize_path, skills::ResourceFileType};
-use std::{collections::HashSet, io, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+    path::Path,
+};
+/// Source spelling, configuration scope and optional raw object filters.
+pub(super) struct ResolutionSource<'a> {
+    /// Original source spelling.
+    pub(super) source: &'a str,
+    /// Lookup scope.
+    pub(super) scope: SourceScope,
+    /// Deferred resource filters.
+    pub(super) filter: Option<&'a serde_json::Map<String, serde_json::Value>>,
+}
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Resolves each explicit source sequentially before final canonical deduplication.
     pub(super) async fn resolve_sources(
@@ -39,26 +52,31 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let scope = scope.unwrap_or(SourceScope::User);
         let mut result = Accumulator::default();
         for source in sources {
-            self.resolve_source(source, scope, &mut result).await?;
+            self.resolve_source(
+                ResolutionSource {
+                    source,
+                    scope,
+                    filter: None,
+                },
+                None,
+                &mut result,
+            )
+            .await?;
         }
-        for kind in ResourceType::ALL {
-            let mut seen = HashSet::new();
-            result.paths.items(kind).retain(|resource| {
-                seen.insert(canonicalize_path(
-                    &resource.path,
-                    self.operations.resource_operations(),
-                ))
-            });
-        }
-        Ok(result.paths)
+        Ok(result.finish(self.operations.resource_operations()))
     }
     /// Admits local sources and acquires or refreshes remote contents before collection.
-    async fn resolve_source(
-        &self,
-        source: &str,
-        scope: SourceScope,
+    pub(super) async fn resolve_source<'a>(
+        &'a self,
+        input: ResolutionSource<'_>,
+        on_missing: Option<&'a super::MissingCallback<'a>>,
         result: &mut Accumulator,
     ) -> io::Result<()> {
+        let ResolutionSource {
+            source,
+            scope,
+            filter,
+        } = input;
         let parsed = sources::parse(source);
         let mut metadata = PathMetadata {
             source: source.to_owned(),
@@ -73,7 +91,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
             let path = self.resolve_local(path, &base)?;
-            self.collect_local(path, &mut metadata, result);
+            self.collect_local(path, &mut metadata, filter, result);
             return Ok(());
         }
         let path = self.remote_path(&parsed, scope)?;
@@ -81,7 +99,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let mismatched = exists
             && matches!(&parsed, Source::Npm { spec, name } if spec != name && self.installed_npm_version(&path).as_deref() != Some(&spec[name.len()+1..]));
         if !exists || mismatched {
-            if self.offline() {
+            if !self.admit_missing(source, on_missing).await? {
                 return Ok(());
             }
             match &parsed {
@@ -97,11 +115,38 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             self.refresh_temporary_git(git, source).await;
         }
         metadata.base_dir = Some(path.clone());
-        self.collect_conventional(&path, &metadata, result)?;
+        self.collect_package(&path, &metadata, filter, result)?;
         Ok(())
     }
+    /// Applies offline refusal before invoking the operation-local missing callback.
+    async fn admit_missing<'a>(
+        &'a self,
+        source: &str,
+        on_missing: Option<&'a super::MissingCallback<'a>>,
+    ) -> io::Result<bool> {
+        if self.offline() {
+            return Ok(false);
+        }
+        let action = match on_missing {
+            Some(callback) => callback(source).await?,
+            None => super::MissingSourceAction::Install,
+        };
+        match action {
+            super::MissingSourceAction::Install => Ok(true),
+            super::MissingSourceAction::Skip => Ok(false),
+            super::MissingSourceAction::Error => {
+                Err(io::Error::other(format!("Missing source: {source}")))
+            }
+        }
+    }
     /// Suppresses local stat and discovery failures after path resolution.
-    fn collect_local(&self, path: String, metadata: &mut PathMetadata, result: &mut Accumulator) {
+    fn collect_local(
+        &self,
+        path: String,
+        metadata: &mut PathMetadata,
+        filter: Option<&serde_json::Map<String, serde_json::Value>>,
+        result: &mut Accumulator,
+    ) {
         let operations = self.operations.resource_operations();
         if !operations.exists(Path::new(&path)) {
             return;
@@ -113,7 +158,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             }
             Ok(ResourceFileType::Directory) => {
                 metadata.base_dir = Some(path.clone());
-                if let Ok(false) = self.collect_conventional(&path, metadata, result) {
+                if let Ok(false) = self.collect_package(&path, metadata, filter, result) {
                     result.insert(ResourceType::Extensions, path, metadata);
                 }
             }
@@ -142,7 +187,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         Ok(())
     }
     /// Collects conventional paths, retaining results produced by earlier kinds.
-    fn collect_conventional(
+    pub(super) fn collect_conventional(
         &self,
         path: &str,
         metadata: &PathMetadata,
@@ -181,23 +226,66 @@ impl ResolvedPaths {
     }
 }
 
-/// First-authored-path ownership before canonical conversion.
+/// Authored-path ownership before ranked canonical selection.
 #[derive(Default)]
-struct Accumulator {
+pub(super) struct Accumulator {
     /// Ordered resources.
     paths: ResolvedPaths,
     /// Authored identities already admitted for each kind.
-    seen: [HashSet<String>; 4],
+    seen: [HashMap<String, usize>; 4],
 }
 impl Accumulator {
-    /// Retains the first metadata for each authored identity.
-    fn insert(&mut self, kind: ResourceType, path: String, metadata: &PathMetadata) {
-        if self.seen[kind as usize].insert(path.clone()) {
-            self.paths.items(kind).push(ResolvedResource {
-                path,
-                enabled: true,
-                metadata: metadata.clone(),
-            });
+    /// Stably ranks resources before retaining the first canonical identity.
+    pub(super) fn finish(
+        mut self,
+        operations: &dyn maestro_resources::skills::ResourceOperations,
+    ) -> ResolvedPaths {
+        for kind in ResourceType::ALL {
+            let items = self.paths.items(kind);
+            items.sort_by_key(|resource| precedence(&resource.metadata));
+            let mut seen = HashSet::new();
+            items.retain(|resource| seen.insert(canonicalize_path(&resource.path, operations)));
+        }
+        self.paths
+    }
+    /// Inserts an enabled candidate with precedence-aware authored ownership.
+    pub(super) fn insert(&mut self, kind: ResourceType, path: String, metadata: &PathMetadata) {
+        self.insert_enabled(kind, path, metadata, true);
+    }
+    /// Replaces a worse-ranked owner in its existing authored-key position.
+    pub(super) fn insert_enabled(
+        &mut self,
+        kind: ResourceType,
+        path: String,
+        metadata: &PathMetadata,
+        enabled: bool,
+    ) {
+        let items = self.paths.items(kind);
+        let seen = &mut self.seen[kind as usize];
+        let resource = ResolvedResource {
+            path,
+            enabled,
+            metadata: metadata.clone(),
+        };
+        if let Some(&index) = seen.get(&resource.path) {
+            if precedence(metadata) < precedence(&items[index].metadata) {
+                items[index] = resource;
+            }
+        } else {
+            seen.insert(resource.path.clone(), items.len());
+            items.push(resource);
         }
     }
+}
+/// Ranks top-level scope ownership ahead of package ownership.
+fn precedence(metadata: &PathMetadata) -> u8 {
+    if metadata.origin == SourceOrigin::Package {
+        return 4;
+    }
+    let scope = if metadata.scope == SourceScope::Project {
+        0
+    } else {
+        2
+    };
+    scope + u8::from(metadata.source != "local")
 }

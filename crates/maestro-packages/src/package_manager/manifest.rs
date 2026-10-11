@@ -37,7 +37,7 @@ pub(super) fn read_maestro_manifest_file(
     Some(Manifest { fields })
 }
 /// Distinguishes absent-like JSON scalars from present lists and records.
-fn truthy(raw: &RawValue) -> bool {
+pub(super) fn truthy(raw: &RawValue) -> bool {
     match raw.get() {
         "null" | "false" => false,
         text if text.starts_with('"') => {
@@ -57,8 +57,7 @@ pub(super) fn collect_manifest_entries(
     kind: super::resource_discovery::ResourceType,
     operations: &dyn ResourceOperations,
 ) -> io::Result<Vec<String>> {
-    use super::resource_discovery::{collect_resource_files, resolve_entry_path};
-    use maestro_resources::skills::ResourceFileType;
+    use super::resource_discovery::{collect_files_from_paths, resolve_entry_path};
     let mut paths = Vec::new();
     for entry in entries
         .iter()
@@ -70,20 +69,5 @@ pub(super) fn collect_manifest_entries(
             paths.push(resolve_entry_path(root, entry, operations)?);
         }
     }
-    let mut files = Vec::new();
-    for path in paths {
-        if !operations.exists(Path::new(&path)) {
-            continue;
-        }
-        match operations.metadata(Path::new(&path)) {
-            Ok(ResourceFileType::File) => files.push(path),
-            Ok(ResourceFileType::Directory) => {
-                if let Ok(entries) = collect_resource_files(&path, kind, operations) {
-                    files.extend(entries);
-                }
-            }
-            _ => {}
-        }
-    }
-    Ok(files)
+    Ok(collect_files_from_paths(paths, kind, operations))
 }

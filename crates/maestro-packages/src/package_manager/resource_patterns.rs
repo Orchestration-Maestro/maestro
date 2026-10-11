@@ -50,13 +50,50 @@ impl PathViews {
         Ok(false)
     }
 }
-/// Selects admitted identities; the caller retains candidate emission order.
+/// Selected identities in survivor-then-restoration order.
+pub(super) struct Selection<'a> {
+    /// Ordered selected candidate identities.
+    pub(super) ordered: Vec<&'a str>,
+    /// Membership for candidate-ordered callers.
+    members: HashSet<&'a str>,
+}
+impl Selection<'_> {
+    /// Tests whether a candidate survives selection.
+    pub(super) fn contains(&self, path: &str) -> bool {
+        self.members.contains(path)
+    }
+}
+/// Applies only manifest and automatic modifier patterns.
 pub(super) fn apply_patterns<'a>(
     files: &'a [String],
     entries: &[String],
     root: &str,
     operations: &dyn maestro_resources::skills::ResourceOperations,
-) -> io::Result<HashSet<&'a str>> {
+) -> io::Result<Selection<'a>> {
+    selection(files, entries, root, operations, false)
+}
+/// Selects positive matches, exclusions, exact restorations and final removals.
+pub(super) fn select_patterns<'a>(
+    files: &'a [String],
+    entries: &[String],
+    root: &str,
+    operations: &dyn maestro_resources::skills::ResourceOperations,
+) -> io::Result<Selection<'a>> {
+    selection(files, entries, root, operations, true)
+}
+/// Shares ordered selection while retaining the caller's positive-pattern framing.
+fn selection<'a>(
+    files: &'a [String],
+    entries: &[String],
+    root: &str,
+    operations: &dyn maestro_resources::skills::ResourceOperations,
+    positive: bool,
+) -> io::Result<Selection<'a>> {
+    let positives: Vec<_> = entries
+        .iter()
+        .filter(|entry| positive && !entry.starts_with(['!', '+', '-']))
+        .map(|entry| posix(entry))
+        .collect();
     let exclusions: Vec<_> = entries
         .iter()
         .filter_map(|entry| entry.strip_prefix('!'))
@@ -64,11 +101,12 @@ pub(super) fn apply_patterns<'a>(
         .collect();
     let includes = exact_patterns(entries, '+');
     let removals = exact_patterns(entries, '-');
-    let mut enabled = HashSet::new();
+    let mut selected = Vec::new();
+    let mut restored = Vec::new();
     let mut matcher_root = None;
     for file in files {
-        if exclusions.is_empty() && removals.is_empty() {
-            enabled.insert(file.as_str());
+        if positives.is_empty() && exclusions.is_empty() && removals.is_empty() {
+            selected.push(file.as_str());
             continue;
         }
         let root = match matcher_root {
@@ -79,34 +117,45 @@ pub(super) fn apply_patterns<'a>(
         };
         let views = PathViews::new(file, root);
         let parent = (views.name == "SKILL.md").then(|| PathViews::new(&dirname(file), root));
-        let mut excluded = false;
-        for pattern in &exclusions {
-            if views.matches(pattern)?
-                || parent
-                    .as_ref()
-                    .map(|parent| parent.matches(pattern))
-                    .transpose()?
-                    .unwrap_or(false)
-            {
-                excluded = true;
-                break;
-            }
+        let exact = |patterns| {
+            views.exact(patterns) || parent.as_ref().is_some_and(|parent| parent.exact(patterns))
+        };
+        let admitted = positives.is_empty() || matches_any(&views, parent.as_ref(), &positives)?;
+        let surviving = admitted && !matches_any(&views, parent.as_ref(), &exclusions)?;
+        if exact(&removals) {
+            continue;
         }
-        let restored = excluded
-            && (views.exact(&includes)
-                || parent
-                    .as_ref()
-                    .is_some_and(|parent| parent.exact(&includes)));
-        let removed = (!excluded || restored)
-            && (views.exact(&removals)
-                || parent
-                    .as_ref()
-                    .is_some_and(|parent| parent.exact(&removals)));
-        if (!excluded || restored) && !removed {
-            enabled.insert(file.as_str());
+        if surviving {
+            selected.push(file.as_str());
+        } else if exact(&includes) {
+            restored.push(file.as_str());
         }
     }
-    Ok(enabled)
+    let mut members = HashSet::new();
+    selected.extend(restored);
+    selected.retain(|path| members.insert(*path));
+    Ok(Selection {
+        ordered: selected,
+        members,
+    })
+}
+/// Matches either a file or its skill-directory views against the supplied patterns.
+fn matches_any(
+    views: &PathViews,
+    parent: Option<&PathViews>,
+    patterns: &[String],
+) -> io::Result<bool> {
+    for pattern in patterns {
+        if views.matches(pattern)?
+            || parent
+                .map(|parent| parent.matches(pattern))
+                .transpose()?
+                .unwrap_or(false)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// Normalizes exact overrides by removing at most one authored dot prefix.
