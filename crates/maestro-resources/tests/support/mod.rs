@@ -64,6 +64,9 @@ impl ResourceOperations for Unresolvable {
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
         NativeResourceOperations.metadata(path)
     }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        NativeResourceOperations.symlink_metadata(path)
+    }
     fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
         Err(io::Error::other("controlled canonical failure"))
     }
@@ -122,6 +125,10 @@ impl ResourceOperations for Controlled {
         self.check("metadata", path)?;
         NativeResourceOperations.metadata(path)
     }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        self.check("symlink_metadata", path)?;
+        NativeResourceOperations.symlink_metadata(path)
+    }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         self.check("canonicalize", path)?;
         NativeResourceOperations.canonicalize(path)
@@ -148,6 +155,9 @@ impl ResourceOperations for Rooted {
     }
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
         NativeResourceOperations.metadata(&self.0.join(path))
+    }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        NativeResourceOperations.symlink_metadata(&self.0.join(path))
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         NativeResourceOperations.canonicalize(&self.0.join(path))

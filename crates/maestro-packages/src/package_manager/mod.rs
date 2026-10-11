@@ -7,6 +7,7 @@ mod concurrency;
 mod configuration;
 mod git;
 mod git_checks;
+mod glob;
 mod manifest;
 mod npm;
 mod operations;

@@ -8,6 +8,7 @@ use std::collections::BTreeSet;
 mod assert_valid_pattern;
 mod ast;
 mod brace_expressions;
+mod preprocess;
 pub use assert_valid_pattern::PatternError;
 
 /// Matches a path against a package file pattern, including classes and nested groups.
@@ -28,9 +29,11 @@ pub fn minimatch(path: &str, pattern: &str) -> Result<bool, PatternError> {
 
 /// Native path framing policy.
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Platform {
+pub enum Platform {
     /// Slash-separated paths.
     Posix,
+    /// Slash framing with case-insensitive magic components.
+    Darwin,
     /// Native input separators and drive/UNC identity.
     Windows,
 }
@@ -54,7 +57,7 @@ fn match_platform(path: &str, pattern: &str, platform: Platform) -> Result<bool,
         path
     };
     let file = slash_split(path, platform);
-    let hit = brace_expand(pattern).iter().any(|alternative| {
+    let hit = brace_expand(pattern, None).iter().any(|alternative| {
         let pattern = optimize_pattern(slash_split(alternative, platform));
         let mut parts = compile_parts(&pattern, platform);
         let (file_start, pattern_start) = align_roots(&file, &mut parts, platform);
@@ -64,12 +67,17 @@ fn match_platform(path: &str, pattern: &str, platform: Platform) -> Result<bool,
 }
 
 /// Expands only patterns containing a same-line brace pair.
-fn brace_expand(pattern: &str) -> Vec<String> {
+pub(super) fn brace_expand(pattern: &str, maximum: Option<usize>) -> Vec<String> {
     let mut open = false;
     for c in pattern.chars() {
         match c {
             '{' => open = true,
-            '}' if open => return brace_expansion::expand(pattern),
+            '}' if open => {
+                return maximum.map_or_else(
+                    || brace_expansion::expand(pattern),
+                    |max| brace_expansion::expand_with_max(pattern, max),
+                );
+            }
             '\n' | '\r' | '\u{2028}' | '\u{2029}' => open = false,
             _ => {}
         }
@@ -327,3 +335,115 @@ pub(crate) fn canonical(scalar: char) -> char {
 
 #[cfg(test)]
 mod tests;
+
+/// Fixed matcher policy selected by filesystem expansion.
+#[derive(Clone, Copy)]
+pub enum MinimatchOptions {
+    /// Native framing with comments and leading negation disabled.
+    Filesystem(Platform),
+}
+/// A prepared filesystem component.
+pub enum ParseReturnFiltered {
+    /// Decoded text for a literal filesystem lookup.
+    Literal(String),
+    /// A recursive wildcard between components.
+    Globstar,
+    /// One component evaluated by the shared matcher.
+    Pattern(MmRegExp),
+}
+/// Compiled component syntax without filesystem effects.
+pub struct MmRegExp {
+    /// Shared parsed syntax.
+    ast: ast::Ast,
+    /// Lowercased fast suffix with optional scalar cardinality.
+    suffix: Option<(String, Option<usize>)>,
+}
+impl MmRegExp {
+    /// Selects case predicates or the existing literal-suffix evaluation branch.
+    fn new(mut ast: ast::Ast, authored: &str, platform: Platform) -> Self {
+        let suffix = (platform != Platform::Posix)
+            .then(|| fast_suffix(authored))
+            .flatten();
+        if platform != Platform::Posix && suffix.is_none() {
+            ast.fold_case();
+        }
+        Self { ast, suffix }
+    }
+
+    /// Evaluates one native entry name.
+    #[must_use]
+    pub fn test(&self, text: &str) -> bool {
+        if let Some((suffix, length)) = &self.suffix {
+            return !text.starts_with('.')
+                && !text.is_empty()
+                && length.is_none_or(|n| text.chars().count() == n)
+                && text.to_lowercase().ends_with(suffix);
+        }
+        self.ast.matches(text)
+    }
+}
+/// Ordered prepared alternatives for filesystem expansion.
+pub struct Minimatch {
+    /// Compiled alternatives aligned with authored components.
+    set: Vec<Vec<ParseReturnFiltered>>,
+    /// Prepared authored components before literal escape decoding.
+    glob_parts: Vec<Vec<String>>,
+}
+impl Minimatch {
+    /// Prepares a filesystem pattern under its selected native policy.
+    ///
+    /// # Errors
+    /// Returns the existing pattern-length error.
+    pub fn new(pattern: &str, options: MinimatchOptions) -> Result<Self, PatternError> {
+        assert_valid_pattern::assert_valid_pattern(pattern)?;
+        let MinimatchOptions::Filesystem(platform) = options;
+        let glob_parts = preprocess::prepare(pattern, platform);
+        let set = glob_parts
+            .iter()
+            .map(|parts| {
+                let borrowed: Vec<_> = parts.iter().map(String::as_str).collect();
+                compile_parts(&borrowed, platform)
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, part)| match part {
+                        Part::Globstar => ParseReturnFiltered::Globstar,
+                        Part::Segment(ast::Ast::Literal(text)) => {
+                            ParseReturnFiltered::Literal(text)
+                        }
+                        Part::Segment(ast) => ParseReturnFiltered::Pattern(MmRegExp::new(
+                            ast,
+                            &parts[index],
+                            platform,
+                        )),
+                    })
+                    .collect()
+            })
+            .collect();
+        Ok(Self { set, glob_parts })
+    }
+    /// Borrows the ordered compiled component alternatives.
+    #[must_use]
+    pub fn set(&self) -> &[Vec<ParseReturnFiltered>] {
+        &self.set
+    }
+    /// Borrows the aligned prepared authored components.
+    #[must_use]
+    pub fn glob_parts(&self) -> &[Vec<String>] {
+        &self.glob_parts
+    }
+}
+
+/// Selects the dependency's literal-suffix shortcuts after component parsing.
+fn fast_suffix(pattern: &str) -> Option<(String, Option<usize>)> {
+    let operator = pattern.chars().next()?;
+    if !matches!(operator, '*' | '?') {
+        return None;
+    }
+    let count = pattern.chars().take_while(|c| *c == operator).count();
+    let suffix = &pattern[count..];
+    if suffix.contains(['+', '@', '!', '?', '*', '[', '(']) {
+        return None;
+    }
+    let length = (operator == '?').then_some(count + suffix.chars().count());
+    Some((suffix.to_lowercase(), length))
+}

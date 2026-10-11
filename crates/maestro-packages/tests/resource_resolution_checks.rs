@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod resolution_support;
 mod resource_output;
+mod resource_cases;
 mod scratch;
 use resolution_support::run as block_on;
 mod support;
@@ -12,7 +13,7 @@ use std::{fs, rc::Rc};
 #[test]
 fn explicit_files_and_empty_inputs_keep_scope_bases() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "empty_sources",
             "missing_local",
             "explicit_opaque_file",
@@ -30,7 +31,7 @@ fn explicit_files_and_empty_inputs_keep_scope_bases() {
 #[test]
 fn conventional_resources_keep_kind_order_and_provenance() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["all_kinds"]).await;
+        resource_cases::cases(&["all_kinds"]).await;
         Ok(())
     }))
     .unwrap();
@@ -39,7 +40,7 @@ fn conventional_resources_keep_kind_order_and_provenance() {
 #[test]
 fn package_root_fallback_requires_absent_conventions() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["root_fallback", "empty_convention", "convention_file"]).await;
+        resource_cases::cases(&["root_fallback", "empty_convention", "convention_file"]).await;
         Ok(())
     }))
     .unwrap();
@@ -48,7 +49,7 @@ fn package_root_fallback_requires_absent_conventions() {
 #[test]
 fn extension_roots_choose_manifest_before_indexes() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "root_index_ts",
             "root_index_js",
             "root_index_directory",
@@ -63,8 +64,7 @@ fn extension_roots_choose_manifest_before_indexes() {
 #[test]
 fn extension_children_select_entries_without_loading_helpers() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["child_entry_rules", "child_manifest", "literal_manifest"])
-            .await;
+        resource_cases::cases(&["child_entry_rules", "child_manifest", "literal_manifest"]).await;
         Ok(())
     }))
     .unwrap();
@@ -73,7 +73,7 @@ fn extension_children_select_entries_without_loading_helpers() {
 #[test]
 fn skill_entry_files_stop_descent_and_loose_markdown_is_root_only() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["skill_stop", "skill_loose_root"]).await;
+        resource_cases::cases(&["skill_stop", "skill_loose_root"]).await;
         Ok(())
     }))
     .unwrap();
@@ -82,7 +82,7 @@ fn skill_entry_files_stop_descent_and_loose_markdown_is_root_only() {
 #[test]
 fn ignore_files_keep_declared_order_and_directory_prefixes() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "ignore_order",
             "ignore_parent_pruning",
             "ignore_nested",
@@ -103,7 +103,7 @@ fn ignore_files_keep_declared_order_and_directory_prefixes() {
 #[test]
 fn source_paths_keep_authored_whitespace_semantics() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ecma_trim"]).await;
+        resource_cases::cases(&["ecma_trim"]).await;
         Ok(())
     }))
     .unwrap();
@@ -113,7 +113,7 @@ fn source_paths_keep_authored_whitespace_semantics() {
 #[test]
 fn entry_manifests_fall_back_without_admitted_entries() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "manifest_native_read_failure",
             "manifest_empty_list",
             "manifest_missing_field",
@@ -135,7 +135,7 @@ fn entry_manifests_fall_back_without_admitted_entries() {
 #[test]
 fn entry_manifests_select_last_members_without_consuming_unrelated_fields() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["manifest_duplicate", "manifest_unknown_members"]).await;
+        resource_cases::cases(&["manifest_duplicate", "manifest_unknown_members"]).await;
         Ok(())
     }))
     .unwrap();
@@ -145,7 +145,7 @@ fn entry_manifests_select_last_members_without_consuming_unrelated_fields() {
 #[test]
 fn entry_manifests_keep_literal_paths_and_directory_entries() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["manifest_explicit_unusual"]).await;
+        resource_cases::cases(&["manifest_explicit_unusual"]).await;
         Ok(())
     }))
     .unwrap();
@@ -155,7 +155,7 @@ fn entry_manifests_keep_literal_paths_and_directory_entries() {
 #[test]
 fn directory_failures_preserve_already_collected_resources() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "read_dir_partial",
             "native_permission_partial",
             "local_stat_failure",
@@ -171,8 +171,8 @@ fn directory_failures_preserve_already_collected_resources() {
 #[test]
 fn canonical_duplicates_keep_first_authored_path_and_metadata() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["canonical_first"]).await;
-        resolution_support::first_authored_metadata().await;
+        resource_cases::cases(&["canonical_first"]).await;
+        resource_cases::first_authored_metadata().await;
         Ok(())
     }))
     .unwrap();
@@ -182,7 +182,7 @@ fn canonical_duplicates_keep_first_authored_path_and_metadata() {
 #[test]
 fn source_and_resource_sequences_preserve_first_insertion() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["source_order"]).await;
+        resource_cases::cases(&["source_order"]).await;
         Ok(())
     }))
     .unwrap();
@@ -192,7 +192,7 @@ fn source_and_resource_sequences_preserve_first_insertion() {
 #[test]
 fn ignore_matching_keeps_case_policy_and_literal_braces() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_case_braces"]).await;
+        resource_cases::cases(&["ignore_case_braces"]).await;
         Ok(())
     }))
     .unwrap();
@@ -202,7 +202,7 @@ fn ignore_matching_keeps_case_policy_and_literal_braces() {
 #[test]
 fn escaped_ignore_punctuation_stays_literal() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_escaped_punctuation"]).await;
+        resource_cases::cases(&["ignore_escaped_punctuation"]).await;
         Ok(())
     }))
     .unwrap();
@@ -211,7 +211,7 @@ fn escaped_ignore_punctuation_stays_literal() {
 #[test]
 fn discovery_skips_hidden_dependencies_and_wrong_suffixes() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["suffix_hidden_dependencies"]).await;
+        resource_cases::cases(&["suffix_hidden_dependencies"]).await;
         Ok(())
     }))
     .unwrap();
@@ -220,7 +220,7 @@ fn discovery_skips_hidden_dependencies_and_wrong_suffixes() {
 #[test]
 fn ignored_or_nonfile_skill_entries_allow_remaining_discovery() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["skill_ignored_entry", "skill_entry_directory"]).await;
+        resource_cases::cases(&["skill_ignored_entry", "skill_entry_directory"]).await;
         Ok(())
     }))
     .unwrap();
@@ -229,7 +229,7 @@ fn ignored_or_nonfile_skill_entries_allow_remaining_discovery() {
 #[test]
 fn entry_item_failures_keep_their_source_catch_boundaries() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "manifest_bad_item_root",
             "manifest_bad_item_child",
             "earlier_source_survives_bad_root",
@@ -244,7 +244,7 @@ fn entry_item_failures_keep_their_source_catch_boundaries() {
 #[test]
 fn native_links_follow_targets_and_skip_broken_entries() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["link_files"]).await;
+        resource_cases::cases(&["link_files"]).await;
         Ok(())
     }))
     .unwrap();
@@ -254,7 +254,7 @@ fn native_links_follow_targets_and_skip_broken_entries() {
 #[test]
 fn native_cycles_use_filesystem_failures_without_global_visited_sets() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "self_link",
             "growing_link",
             "finite_repeated_link",
@@ -270,7 +270,7 @@ fn native_cycles_use_filesystem_failures_without_global_visited_sets() {
 #[test]
 fn installed_sources_keep_scope_paths_without_acquisition() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "installed_npm_user",
             "installed_npm_project",
             "installed_git_user",
@@ -419,7 +419,7 @@ fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
         );
         assert_eq!(&effects.reads.borrow()[start..], &["home"]);
         #[cfg(unix)]
-        resolution_support::ambient_entry_resolution().await;
+        resource_cases::ambient_entry_resolution().await;
         Ok(())
     }))
     .unwrap();
@@ -429,7 +429,7 @@ fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
 #[test]
 fn ignore_directory_prefixes_are_literal_identities() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_literal_directories"]).await;
+        resource_cases::cases(&["ignore_literal_directories"]).await;
         Ok(())
     }))
     .unwrap();
@@ -440,7 +440,7 @@ fn ignore_directory_prefixes_are_literal_identities() {
 #[test]
 fn nested_ignore_directory_rules_keep_native_normalization() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "ignore_scoped_directory_normalization",
             "ignore_scoped_escaped_slash",
             "ignore_deeper_negation",
@@ -455,7 +455,7 @@ fn nested_ignore_directory_rules_keep_native_normalization() {
 #[test]
 fn ignore_matching_folds_unicode_literal_names() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_unicode_case"]).await;
+        resource_cases::cases(&["ignore_unicode_case"]).await;
         Ok(())
     }))
     .unwrap();
@@ -465,7 +465,7 @@ fn ignore_matching_folds_unicode_literal_names() {
 #[test]
 fn ignore_files_strip_one_leading_byte_order_mark() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_file_bom"]).await;
+        resource_cases::cases(&["ignore_file_bom"]).await;
         Ok(())
     }))
     .unwrap();
@@ -475,7 +475,7 @@ fn ignore_files_strip_one_leading_byte_order_mark() {
 #[test]
 fn nonroot_skill_entry_stops_deeper_skill_discovery() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["skill_nonroot_stop"]).await;
+        resource_cases::cases(&["skill_nonroot_stop"]).await;
         Ok(())
     }))
     .unwrap();
@@ -485,7 +485,7 @@ fn nonroot_skill_entry_stops_deeper_skill_discovery() {
 #[test]
 fn ignore_case_matching_preserves_authored_range_members() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "ignore_cross_case_range",
             "ignore_ascii_range",
             "unicode_accent_member",
@@ -505,7 +505,7 @@ fn ignore_case_matching_preserves_authored_range_members() {
 #[test]
 fn invalid_ignore_range_keeps_following_rules_active() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "ignore_invalid_range_continuation",
             "unicode_malformed_range",
         ])
@@ -519,7 +519,7 @@ fn invalid_ignore_range_keeps_following_rules_active() {
 #[test]
 fn unicode_ignore_literals_select_equivalent_names() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["unicode_greek_literals"]).await;
+        resource_cases::cases(&["unicode_greek_literals"]).await;
         Ok(())
     }))
     .unwrap();
@@ -529,7 +529,7 @@ fn unicode_ignore_literals_select_equivalent_names() {
 #[test]
 fn ignore_question_counts_scalars_without_grapheme_folding() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["unicode_scalar_question", "unicode_scalar_pair"]).await;
+        resource_cases::cases(&["unicode_scalar_question", "unicode_scalar_pair"]).await;
         Ok(())
     }))
     .unwrap();
@@ -539,7 +539,7 @@ fn ignore_question_counts_scalars_without_grapheme_folding() {
 #[test]
 fn unicode_directory_rules_prune_before_readmission() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["unicode_directory_pruning"]).await;
+        resource_cases::cases(&["unicode_directory_pruning"]).await;
         Ok(())
     }))
     .unwrap();
@@ -550,7 +550,7 @@ fn unicode_directory_rules_prune_before_readmission() {
 #[test]
 fn escaped_ignore_metacharacters_select_literal_names() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["unicode_escaped_syntax"]).await;
+        resource_cases::cases(&["unicode_escaped_syntax"]).await;
         Ok(())
     }))
     .unwrap();
@@ -560,7 +560,7 @@ fn escaped_ignore_metacharacters_select_literal_names() {
 #[test]
 fn terminal_directory_globstars_keep_zero_directory_matches() {
     block_on(Box::pin(async {
-        resolution_support::cases(&[
+        resource_cases::cases(&[
             "directory_globstar",
             "anchored_directory_globstar",
             "repeated_directory_globstar",
@@ -579,7 +579,7 @@ fn terminal_directory_globstars_keep_zero_directory_matches() {
 #[test]
 fn ignore_ingress_selects_comments_before_rule_preparation() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_bom_comment"]).await;
+        resource_cases::cases(&["ignore_bom_comment"]).await;
         Ok(())
     }))
     .unwrap();
@@ -589,7 +589,7 @@ fn ignore_ingress_selects_comments_before_rule_preparation() {
 #[test]
 fn ignore_ingress_preserves_a_second_rule_bom() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_double_bom"]).await;
+        resource_cases::cases(&["ignore_double_bom"]).await;
         Ok(())
     }))
     .unwrap();

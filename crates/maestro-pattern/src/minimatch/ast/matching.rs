@@ -85,7 +85,12 @@ impl Evaluation<'_> {
             return true;
         }
         let magic = |t: Option<&&Token>| {
-            t.is_some_and(|t| matches!(t, Token::Star | Token::Question | Token::Class(_)))
+            t.is_some_and(|t| {
+                matches!(
+                    t,
+                    Token::Star | Token::Question | Token::Class(_) | Token::Folded(_)
+                )
+            })
         };
         let dot = |index: usize| {
             tokens

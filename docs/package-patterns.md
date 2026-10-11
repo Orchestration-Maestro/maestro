@@ -101,3 +101,23 @@ and outer negation. These names select the following Unicode categories:
 Named space excludes U+0085 and U+FEFF. Printable membership excludes controls,
 formats, unassigned and private-use scalars. Unknown or differently cased named
 syntax follows ordinary bracket parsing.
+
+## Filesystem expansion policy
+
+`maestro_pattern::Minimatch::new` with `MinimatchOptions::Filesystem` prepares
+ordered component alternatives without I/O. `set()` borrows literal operands,
+recursive wildcards and compiled component predicates; `glob_parts()` borrows
+aligned authored components. Package manifests select this policy separately
+from the default matching operation above.
+
+Comments and leading negation are disabled. Preparation expands at most 10,000
+brace alternatives, removes covered alternatives and reduces eligible dot,
+parent and adjacent recursive components. Windows drive and UNC roots survive
+parent cancellation. POSIX magic is case-sensitive; Windows and Darwin magic
+select case-insensitive predicates. Literal components remain native lookup
+operands. Named Unicode classes retain Unicode case equivalence; ordinary
+predicates do not fold non-ASCII values into ASCII. Literal-suffix shortcuts
+compare lowercased strings, including expanding lowercase mappings.
+
+[Package discovery](packages.md#package-root-manifests) owns filesystem traversal,
+collection, override order and resource provenance.

@@ -77,7 +77,11 @@ struct Expansion {
 fn brace_arrays_keep_expected_order() {
     let cases: Vec<Expansion> = serde_json::from_str(include_str!("brace_vectors.json")).unwrap();
     for (index, case) in cases.into_iter().enumerate() {
-        assert_eq!(brace_expand(&case.pattern), case.expected, "case {index}");
+        assert_eq!(
+            brace_expand(&case.pattern, None),
+            case.expected,
+            "case {index}"
+        );
     }
 }
 

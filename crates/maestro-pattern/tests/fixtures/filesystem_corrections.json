@@ -1,0 +1,47 @@
+[
+  {
+    "pattern": "x!(a|)",
+    "input": "xa",
+    "expected": false
+  },
+  {
+    "pattern": "x@(a\\|b|c)",
+    "input": "xa|b",
+    "expected": true
+  },
+  {
+    "pattern": "x@(a\\|b|c)",
+    "input": "xa",
+    "expected": false
+  },
+  {
+    "pattern": "x@(a\\|b|c)",
+    "input": "xb",
+    "expected": false
+  },
+  {
+    "pattern": "+(a|?(b))",
+    "input": "",
+    "expected": true
+  },
+  {
+    "pattern": "@(*()|a)",
+    "input": "*()",
+    "expected": true
+  },
+  {
+    "pattern": "x@(?)z",
+    "input": "x😀z",
+    "expected": true
+  },
+  {
+    "pattern": "x@(??)z",
+    "input": "x😀z",
+    "expected": false
+  },
+  {
+    "pattern": "x@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(b@(b+(ba))))))))))))))))))))))))))))))))z",
+    "input": "xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaz",
+    "expected": true
+  }
+]

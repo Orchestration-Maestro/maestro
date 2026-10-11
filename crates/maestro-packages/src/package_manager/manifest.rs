@@ -50,7 +50,7 @@ fn truthy(raw: &RawValue) -> bool {
     }
 }
 
-/// Collects literal candidates without canonicalizing authored identities.
+/// Expands positive operands before collecting their resource kinds.
 pub(super) fn collect_manifest_entries(
     entries: &[String],
     root: &str,
@@ -59,12 +59,19 @@ pub(super) fn collect_manifest_entries(
 ) -> io::Result<Vec<String>> {
     use super::resource_discovery::{collect_resource_files, resolve_entry_path};
     use maestro_resources::skills::ResourceFileType;
-    let mut files = Vec::new();
+    let mut paths = Vec::new();
     for entry in entries
         .iter()
         .filter(|entry| !entry.starts_with(['!', '+', '-']))
     {
-        let path = resolve_entry_path(root, entry, operations)?;
+        if entry.contains(['*', '?']) {
+            paths.extend(super::glob::glob_sync(entry, root, operations)?);
+        } else {
+            paths.push(resolve_entry_path(root, entry, operations)?);
+        }
+    }
+    let mut files = Vec::new();
+    for path in paths {
         if !operations.exists(Path::new(&path)) {
             continue;
         }

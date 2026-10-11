@@ -8,7 +8,7 @@ mod parse;
 use super::brace_expressions::{Class, ParsedClass, parse_class, parse_ignore_class};
 
 /// One basic segment token.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub(super) enum Token {
     /// An authored literal scalar.
     Literal(char),
@@ -20,6 +20,10 @@ pub(super) enum Token {
     Class(Class),
     /// An impossible component selection.
     Never,
+    /// A library-owned case predicate consuming one scalar.
+    Folded(regress::Regex),
+    /// An ordinary case-folded literal retaining scalar identity.
+    FoldedLiteral(char),
     /// A group in the flat syntax arena.
     Group(usize),
 }
@@ -79,7 +83,7 @@ impl Ast {
             });
             tail = chars.as_str();
         }
-        tokens.dedup_by(|a, b| *a == Token::Star && *b == Token::Star);
+        tokens.dedup_by(|a, b| matches!(a, Token::Star) && matches!(b, Token::Star));
         let literal: Option<String> = tokens
             .iter()
             .map(|t| match t {
@@ -88,6 +92,8 @@ impl Ast {
                 | Token::Question
                 | Token::Class(_)
                 | Token::Never
+                | Token::Folded(_)
+                | Token::FoldedLiteral(_)
                 | Token::Group(_) => None,
             })
             .collect();
@@ -108,6 +114,24 @@ impl Ast {
         match self {
             Self::Literal(text) => Some(text),
             Self::Pattern(_) | Self::Ignore(_) | Self::Groups(_) => None,
+        }
+    }
+
+    /// Compiles case predicates once without changing authored syntax.
+    pub(super) fn fold_case(&mut self) {
+        let unicode = match self {
+            Self::Pattern(tokens) => tokens.iter().any(Token::unicode),
+            Self::Groups(groups) => groups.sequences.iter().flatten().any(Token::unicode),
+            Self::Literal(_) | Self::Ignore(_) => false,
+        };
+        match self {
+            Self::Pattern(tokens) => tokens.iter_mut().for_each(|t| t.fold(unicode)),
+            Self::Groups(groups) => groups
+                .sequences
+                .iter_mut()
+                .flatten()
+                .for_each(|t| t.fold(unicode)),
+            Self::Literal(_) | Self::Ignore(_) => {}
         }
     }
 
@@ -149,11 +173,11 @@ fn match_pattern(tokens: &[Token], text: &str, dot: bool) -> bool {
         || (!dot
             && (text == "."
                 || text == ".."
-                || (text.starts_with('.') && tokens.first() != Some(&Token::Literal('.')))))
+                || (text.starts_with('.') && !matches!(tokens.first(), Some(Token::Literal('.'))))))
     {
         return false;
     }
-    if tokens.first() == Some(&Token::Star)
+    if matches!(tokens.first(), Some(Token::Star))
         && let Some(suffix) = tokens[1..]
             .iter()
             .map(|token| match token {
@@ -162,6 +186,8 @@ fn match_pattern(tokens: &[Token], text: &str, dot: bool) -> bool {
                 | Token::Question
                 | Token::Class(_)
                 | Token::Never
+                | Token::Folded(_)
+                | Token::FoldedLiteral(_)
                 | Token::Group(_) => None,
             })
             .collect::<Option<String>>()
@@ -188,6 +214,13 @@ fn advance(tokens: &[Token], position: usize, scalar: char) -> Option<usize> {
         Some(Token::Question) => Some(position + 1),
         Some(Token::Class(class)) if class.matches(scalar) => Some(position + 1),
         Some(Token::Literal(c)) if *c == scalar => Some(position + 1),
+        Some(Token::FoldedLiteral(c)) if *c == super::canonical(scalar) => Some(position + 1),
+        Some(Token::Folded(predicate)) => {
+            let mut bytes = [0; 4];
+            predicate
+                .find(scalar.encode_utf8(&mut bytes))
+                .map(|_| position + 1)
+        }
         _ => None,
     }
 }
@@ -197,8 +230,47 @@ fn close_stars(tokens: &[Token], reachable: &mut BTreeSet<usize>) {
     let advances: Vec<_> = reachable
         .iter()
         .copied()
-        .filter(|i| tokens.get(*i) == Some(&Token::Star))
+        .filter(|i| matches!(tokens.get(*i), Some(Token::Star)))
         .map(|i| i + 1)
         .collect();
     reachable.extend(advances);
+}
+
+/// Case-predicate preparation shared by plain and grouped syntax.
+impl Token {
+    /// Whether a named class enables Unicode case equivalence.
+    fn unicode(&self) -> bool {
+        matches!(self, Self::Class(class) if class.unicode())
+    }
+    /// Replaces a literal or class by a library-owned scalar predicate.
+    fn fold(&mut self, unicode: bool) {
+        if !unicode {
+            match self {
+                Self::Literal('.') => return,
+                Self::Literal(c) => *self = Self::FoldedLiteral(super::canonical(*c)),
+                Self::Class(class) => class.fold_ordinary_case(),
+                _ => {}
+            }
+            return;
+        }
+        let expression = match self {
+            Self::Literal('.') => return,
+            Self::Literal(c) => format!("^{}$", scalar_expression(*c)),
+            Self::Class(class) => class.expression(),
+            _ => return,
+        };
+        if let Ok(predicate) =
+            regress::Regex::with_flags(&expression, if unicode { "iu" } else { "i" })
+        {
+            *self = Self::Folded(predicate);
+        }
+    }
+}
+/// Quotes a scalar as a literal in a regular-expression atom or member.
+pub(super) fn scalar_expression(c: char) -> String {
+    if c.is_ascii() {
+        format!("\\x{:02x}", u32::from(c))
+    } else {
+        c.to_string()
+    }
 }
