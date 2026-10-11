@@ -67,7 +67,7 @@ pub fn create_compaction_summary_message(
 }
 
 /// Parse ISO instants, UTC calendar dates or local date-times into epoch milliseconds.
-fn timestamp_millis(text: &str) -> f64 {
+pub(crate) fn timestamp_millis(text: &str) -> f64 {
     if let Ok(date) = DateTime::parse_from_rfc3339(text) {
         return millis_number(date.timestamp_millis());
     }

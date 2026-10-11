@@ -1,0 +1,7574 @@
+[
+  {
+    "id": "source-1",
+    "test": "empty_history_has_default_context",
+    "operation": "context",
+    "args": [
+      []
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "source-2",
+    "test": "one_user_entry_becomes_context",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "source-3",
+    "test": "conversation_keeps_message_order",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi there"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "how are you",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "great"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi there"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "how are you",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "great"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-4",
+    "test": "thinking_changes_select_latest_value",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "thinking_level_change",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "thinking hard"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "thinking hard"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "high",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-5",
+    "test": "assistant_selects_recorded_model",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-6",
+    "test": "assistant_overrides_model_selection",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "model_change",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "provider": "openai",
+          "modelId": "gpt-4"
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-7",
+    "test": "compaction_precedes_kept_and_later_messages",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response1"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response2"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "5",
+          "parentId": "4",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Summary of first two turns",
+          "firstKeptEntryId": "3",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "message",
+          "id": "6",
+          "parentId": "5",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "third",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "7",
+          "parentId": "6",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response3"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "Summary of first two turns",
+            "tokensBefore": 1000,
+            "timestamp": 1735689600000
+          },
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response2"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "third",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response3"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-8",
+    "test": "compaction_can_keep_the_first_entry",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Empty summary",
+          "firstKeptEntryId": "1",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "Empty summary",
+            "tokensBefore": 1000,
+            "timestamp": 1735689600000
+          },
+          {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-9",
+    "test": "newest_path_compaction_wins",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "b"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "First summary",
+          "firstKeptEntryId": "1",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "c",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "5",
+          "parentId": "4",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "d"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "6",
+          "parentId": "5",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Second summary",
+          "firstKeptEntryId": "4",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "message",
+          "id": "7",
+          "parentId": "6",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "e",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "Second summary",
+            "tokensBefore": 1000,
+            "timestamp": 1735689600000
+          },
+          {
+            "role": "user",
+            "content": "c",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "d"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "e",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-10",
+    "test": "leaf_selection_chooses_its_ancestry",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "branch A",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "branch B",
+            "timestamp": 1
+          }
+        }
+      ],
+      "3"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "branch A",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-11",
+    "test": "leaf_selection_chooses_its_ancestry",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "branch A",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "branch B",
+            "timestamp": 1
+          }
+        }
+      ],
+      "4"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "branch B",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-12",
+    "test": "branch_summary_occupies_its_path_position",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "abandoned path",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "branch_summary",
+          "id": "4",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Summary of abandoned work",
+          "fromId": "3"
+        },
+        {
+          "type": "message",
+          "id": "5",
+          "parentId": "4",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "new direction",
+            "timestamp": 1
+          }
+        }
+      ],
+      "5"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "branchSummary",
+            "summary": "Summary of abandoned work",
+            "fromId": "3",
+            "timestamp": 1735689600000
+          },
+          {
+            "role": "user",
+            "content": "new direction",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-13",
+    "test": "branches_keep_independent_compaction_paths",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r1"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "q2",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r2"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "5",
+          "parentId": "4",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Compacted history",
+          "firstKeptEntryId": "3",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "message",
+          "id": "6",
+          "parentId": "5",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "q3",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "7",
+          "parentId": "6",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r3"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "8",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "wrong path",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "9",
+          "parentId": "8",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "wrong response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "branch_summary",
+          "id": "10",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Tried wrong approach",
+          "fromId": "9"
+        },
+        {
+          "type": "message",
+          "id": "11",
+          "parentId": "10",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "better approach",
+            "timestamp": 1
+          }
+        }
+      ],
+      "7"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "Compacted history",
+            "tokensBefore": 1000,
+            "timestamp": 1735689600000
+          },
+          {
+            "role": "user",
+            "content": "q2",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r2"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "q3",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r3"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-14",
+    "test": "branches_keep_independent_compaction_paths",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r1"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "q2",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r2"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "5",
+          "parentId": "4",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Compacted history",
+          "firstKeptEntryId": "3",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "message",
+          "id": "6",
+          "parentId": "5",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "q3",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "7",
+          "parentId": "6",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r3"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "8",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "wrong path",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "9",
+          "parentId": "8",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "wrong response"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "branch_summary",
+          "id": "10",
+          "parentId": "3",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "summary": "Tried wrong approach",
+          "fromId": "9"
+        },
+        {
+          "type": "message",
+          "id": "11",
+          "parentId": "10",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "better approach",
+            "timestamp": 1
+          }
+        }
+      ],
+      "11"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "start",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "r1"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "q2",
+            "timestamp": 1
+          },
+          {
+            "role": "branchSummary",
+            "summary": "Tried wrong approach",
+            "fromId": "9",
+            "timestamp": 1735689600000
+          },
+          {
+            "role": "user",
+            "content": "better approach",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-15",
+    "test": "unknown_leaf_uses_last_entry",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ],
+      "nonexistent"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "source-16",
+    "test": "orphan_keeps_its_reachable_suffix",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": "hello",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": "missing",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "orphan"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        }
+      ],
+      "2"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "orphan"
+              }
+            ],
+            "api": "anthropic-messages",
+            "provider": "anthropic",
+            "model": "claude-test",
+            "usage": {
+              "input": 1,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 2,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-test"
+        }
+      }
+    }
+  },
+  {
+    "id": "parse-empty",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      ""
+    ],
+    "expected": {
+      "ok": []
+    }
+  },
+  {
+    "id": "parse-lines",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      "\n {\"type\":\"future\",\"z\":1,\"a\":2,\"z\":3,\"payload\":{\"x\":null}}\r\ninvalid\n[1,2]\nnull\ntrue\n0\n\"text\"\n {"
+    ],
+    "expected": {
+      "ok": [
+        {
+          "type": "future",
+          "z": 3,
+          "a": 2,
+          "payload": {
+            "x": null
+          }
+        },
+        [
+          1,
+          2
+        ],
+        null,
+        true,
+        0,
+        "text"
+      ]
+    }
+  },
+  {
+    "id": "parse-bom-outer",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      "﻿{\"id\":\"first\"}\n{\"id\":\"last\"}﻿"
+    ],
+    "expected": {
+      "ok": [
+        {
+          "id": "first"
+        },
+        {
+          "id": "last"
+        }
+      ]
+    }
+  },
+  {
+    "id": "parse-bom-middle",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      "{\"id\":\"first\"}\n﻿{\"id\":\"middle\"}\n{\"id\":\"last\"}"
+    ],
+    "expected": {
+      "ok": [
+        {
+          "id": "first"
+        },
+        {
+          "id": "last"
+        }
+      ]
+    }
+  },
+  {
+    "id": "parse-non-json-spaces",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      "{\"id\":\"a\"}\n {\"id\":\"b\"} \n{\"id\":\"c\"}"
+    ],
+    "expected": {
+      "ok": [
+        {
+          "id": "c"
+        }
+      ]
+    }
+  },
+  {
+    "id": "parse-whitespace",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      "﻿ \t\r\n   \n"
+    ],
+    "expected": {
+      "ok": []
+    }
+  },
+  {
+    "id": "parse-header-not-required",
+    "test": "jsonl_framing_keeps_accepted_values",
+    "operation": "parse",
+    "args": [
+      "{\"type\":\"message\",\"id\":\"a\",\"message\":{\"role\":\"future\",\"content\":{\"version\":9}}}\n{\"type\":\"session\",\"id\":42}"
+    ],
+    "expected": {
+      "ok": [
+        {
+          "type": "message",
+          "id": "a",
+          "message": {
+            "role": "future",
+            "content": {
+              "version": 9
+            }
+          }
+        },
+        {
+          "type": "session",
+          "id": 42
+        }
+      ]
+    }
+  },
+  {
+    "id": "raw-member-order",
+    "test": "raw_records_keep_order_duplicates_and_presence",
+    "operation": "keys",
+    "args": [
+      "{\"z\":0,\"a\":1,\"z\":2,\"details\":null,\"future\":3}"
+    ],
+    "expected": {
+      "ok": {
+        "keys": [
+          "z",
+          "a",
+          "details",
+          "future"
+        ],
+        "value": {
+          "z": 2,
+          "a": 1,
+          "details": null,
+          "future": 3
+        },
+        "hasData": false,
+        "hasDetails": true
+      }
+    }
+  },
+  {
+    "id": "leaf-null",
+    "test": "leaf_presence_controls_empty_and_fallback",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      null,
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "leaf-empty",
+    "test": "leaf_presence_controls_empty_and_fallback",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      "",
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "leaf-omitted",
+    "test": "leaf_presence_controls_empty_and_fallback",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "leaf-unknown",
+    "test": "leaf_presence_controls_empty_and_fallback",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      "missing",
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "null-empty-list",
+    "test": "leaf_presence_controls_empty_and_fallback",
+    "operation": "context",
+    "args": [
+      [],
+      null,
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "external-index",
+    "test": "supplied_index_is_authoritative",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      "external",
+      [
+        [
+          "external",
+          {
+            "type": "message",
+            "id": "external",
+            "parentId": "a",
+            "timestamp": "2025-01-02T03:04:05.678Z",
+            "message": {
+              "role": "user",
+              "content": "outside",
+              "timestamp": 1
+            }
+          }
+        ],
+        [
+          "a",
+          {
+            "type": "message",
+            "id": "different-id",
+            "parentId": null,
+            "timestamp": "2025-01-02T03:04:05.678Z",
+            "message": {
+              "role": "user",
+              "content": "indexed root",
+              "timestamp": 1
+            }
+          }
+        ]
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "indexed root",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "outside",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "empty-index",
+    "test": "supplied_index_is_authoritative",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      []
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "index-overrides-parent",
+    "test": "supplied_index_is_authoritative",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        }
+      ],
+      "b",
+      [
+        [
+          "b",
+          {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "timestamp": "2025-01-02T03:04:05.678Z",
+            "message": {
+              "role": "user",
+              "content": "second",
+              "timestamp": 1
+            }
+          }
+        ],
+        [
+          "a",
+          {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "timestamp": "2025-01-02T03:04:05.678Z",
+            "message": {
+              "role": "user",
+              "content": "replacement root",
+              "timestamp": 1
+            }
+          }
+        ]
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "replacement root",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "second",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "duplicate-id",
+    "test": "duplicate_ids_keep_last_lookup",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "old",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "new",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "leaf",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "new",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "leaf",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "duplicate-fallback",
+    "test": "duplicate_ids_keep_last_lookup",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "old",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "middle",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "last",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "last",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "repeated-text",
+    "test": "cycles_terminate_without_dropping_finite_paths",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "same",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "same",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "same",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "same",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "same",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "same",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "precompaction-thinking-survives",
+    "test": "settings_observe_the_entire_selected_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "t",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "t",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "absent"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "high",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "settings-sequence",
+    "test": "settings_observe_the_entire_selected_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "t1",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "model_change",
+          "id": "m1",
+          "parentId": "t1",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "first",
+          "modelId": "one"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "m1",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "absent"
+        },
+        {
+          "type": "thinking_level_change",
+          "id": "t2",
+          "parentId": "c",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": "custom-effort"
+        },
+        {
+          "type": "model_change",
+          "id": "m2",
+          "parentId": "t2",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "second",
+          "modelId": "two"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "custom-effort",
+        "model": {
+          "provider": "second",
+          "modelId": "two"
+        }
+      }
+    }
+  },
+  {
+    "id": "model-after-assistant",
+    "test": "settings_observe_the_entire_selected_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "assistant",
+            "provider": "prior",
+            "model": "prior-model",
+            "content": [],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "model_change",
+          "id": "m",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "later",
+          "modelId": "later-model"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "assistant",
+            "provider": "prior",
+            "model": "prior-model",
+            "content": [],
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "later",
+          "modelId": "later-model"
+        }
+      }
+    }
+  },
+  {
+    "id": "kept-absent",
+    "test": "kept_range_uses_the_precompaction_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "before",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom",
+          "id": "marker",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "state",
+          "data": {
+            "x": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "marker",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "absent"
+        },
+        {
+          "type": "message",
+          "id": "after",
+          "parentId": "c",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "kept-c",
+    "test": "kept_range_uses_the_precompaction_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "before",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom",
+          "id": "marker",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "state",
+          "data": {
+            "x": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "marker",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "c"
+        },
+        {
+          "type": "message",
+          "id": "after",
+          "parentId": "c",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "kept-after",
+    "test": "kept_range_uses_the_precompaction_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "before",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom",
+          "id": "marker",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "state",
+          "data": {
+            "x": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "marker",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "after"
+        },
+        {
+          "type": "message",
+          "id": "after",
+          "parentId": "c",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "kept-a",
+    "test": "kept_range_uses_the_precompaction_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "before",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom",
+          "id": "marker",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "state",
+          "data": {
+            "x": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "marker",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "a"
+        },
+        {
+          "type": "message",
+          "id": "after",
+          "parentId": "c",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "before",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "kept-marker",
+    "test": "kept_range_uses_the_precompaction_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "before",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom",
+          "id": "marker",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "state",
+          "data": {
+            "x": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "marker",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "marker"
+        },
+        {
+          "type": "message",
+          "id": "after",
+          "parentId": "c",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "empty-compaction-summary",
+    "test": "generated_messages_keep_raw_fields",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "",
+          "tokensBefore": 0,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "",
+            "tokensBefore": 0,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "invisible-custom-and-summaries",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom",
+          "id": "state",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "skip",
+          "data": {
+            "secret": "not context"
+          }
+        },
+        {
+          "type": "custom_message",
+          "id": "hidden",
+          "parentId": "state",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": [
+            {
+              "type": "text",
+              "text": "hidden"
+            },
+            {
+              "type": "text",
+              "text": "hidden"
+            },
+            {
+              "type": "image",
+              "data": "aA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "display": false,
+          "details": {
+            "v": 1
+          }
+        },
+        {
+          "type": "branch_summary",
+          "id": "empty",
+          "parentId": "hidden",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "",
+          "fromId": "lost"
+        },
+        {
+          "type": "branch_summary",
+          "id": "space",
+          "parentId": "empty",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": " ",
+          "fromId": "old"
+        },
+        {
+          "type": "label",
+          "id": "label",
+          "parentId": "space",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "targetId": "hidden",
+          "label": "bookmark"
+        },
+        {
+          "type": "session_info",
+          "id": "info",
+          "parentId": "label",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "name": "named"
+        },
+        {
+          "type": "future",
+          "id": "future",
+          "parentId": "info",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "x": 1
+        },
+        {
+          "type": "message",
+          "id": "final",
+          "parentId": "future",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "last",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": [
+              {
+                "type": "text",
+                "text": "hidden"
+              },
+              {
+                "type": "text",
+                "text": "hidden"
+              },
+              {
+                "type": "image",
+                "data": "aA==",
+                "mimeType": "image/png"
+              }
+            ],
+            "display": false,
+            "details": {
+              "v": 1
+            },
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "branchSummary",
+            "summary": " ",
+            "fromId": "old",
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "last",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "details-missing",
+    "test": "generated_messages_keep_raw_fields",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": true
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": true,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "details-null",
+    "test": "generated_messages_keep_raw_fields",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": true,
+          "details": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": true,
+            "details": null,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "details-value",
+    "test": "generated_messages_keep_raw_fields",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": true,
+          "details": {
+            "order": [
+              "z",
+              "a",
+              "z"
+            ]
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": true,
+            "details": {
+              "order": [
+                "z",
+                "a",
+                "z"
+              ]
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "future-content",
+    "test": "projection_defers_typed_message_reads",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "future",
+          "content": [
+            {
+              "type": "future",
+              "data": {
+                "x": 1
+              }
+            }
+          ],
+          "display": false,
+          "details": {
+            "x": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "future",
+            "content": [
+              {
+                "type": "future",
+                "data": {
+                  "x": 1
+                }
+              }
+            ],
+            "display": false,
+            "details": {
+              "x": 1
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "raw-user-content",
+    "test": "projection_defers_typed_message_reads",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": 42,
+            "timestamp": 1,
+            "unknown": {
+              "a": 2
+            }
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": 42,
+            "timestamp": 1,
+            "unknown": {
+              "a": 2
+            }
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "unknown-role",
+    "test": "projection_defers_typed_message_reads",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "domain-event",
+            "payload": {
+              "x": 1
+            }
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "domain-event",
+            "payload": {
+              "x": 1
+            }
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "unused-fields",
+    "test": "projection_defers_typed_message_reads",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": 42,
+          "data": {
+            "x": 1
+          }
+        },
+        {
+          "type": "label",
+          "id": "label",
+          "parentId": "x",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "label": [],
+          "targetId": 42
+        },
+        {
+          "type": "message",
+          "id": "last",
+          "parentId": "label",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "last",
+            "timestamp": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "last",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "overwritten-wrong-settings",
+    "test": "settings_keep_raw_values_until_consumed",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "t",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": {
+            "future": 1
+          }
+        },
+        {
+          "type": "model_change",
+          "id": "m",
+          "parentId": "t",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": 42,
+          "modelId": null
+        },
+        {
+          "type": "thinking_level_change",
+          "id": "t2",
+          "parentId": "m",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "model_change",
+          "id": "m2",
+          "parentId": "t2",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "provider",
+          "modelId": "model"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "high",
+        "model": {
+          "provider": "provider",
+          "modelId": "model"
+        }
+      }
+    }
+  },
+  {
+    "id": "wrong-final-settings",
+    "test": "settings_keep_raw_values_until_consumed",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "t",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": null
+        },
+        {
+          "type": "model_change",
+          "id": "m",
+          "parentId": "t",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": 42
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": null,
+        "model": {
+          "provider": 42,
+          "modelId": {
+            "$undefined": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "missing-message",
+    "test": "projection_reads_message_role_before_emission",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "x",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "error": {
+        "field": "role"
+      }
+    }
+  },
+  {
+    "id": "null-before-empty-selection",
+    "test": "index_construction_precedes_null_selection",
+    "operation": "context",
+    "args": [
+      [
+        null
+      ],
+      null,
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "error": {
+        "field": "id"
+      }
+    }
+  },
+  {
+    "id": "supplied-index-avoids-invalid-read",
+    "test": "index_construction_precedes_null_selection",
+    "operation": "context",
+    "args": [
+      [
+        null
+      ],
+      null,
+      []
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "latest-empty",
+    "test": "latest_compaction_uses_reverse_input_order",
+    "operation": "latest",
+    "args": [
+      []
+    ],
+    "expected": {
+      "ok": null
+    }
+  },
+  {
+    "id": "latest-none",
+    "test": "latest_compaction_uses_reverse_input_order",
+    "operation": "latest",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "first",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": null
+    }
+  },
+  {
+    "id": "latest-last",
+    "test": "latest_compaction_uses_reverse_input_order",
+    "operation": "latest",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary a",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "b",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "type": "compaction",
+        "id": "c",
+        "parentId": null,
+        "timestamp": "2025-01-02T03:04:05.678Z",
+        "summary": "summary c",
+        "tokensBefore": 23.5,
+        "firstKeptEntryId": "none"
+      }
+    }
+  },
+  {
+    "id": "latest-null-before",
+    "test": "latest_compaction_uses_reverse_input_order",
+    "operation": "latest",
+    "args": [
+      [
+        null,
+        {
+          "type": "compaction",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary a",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "b",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "type": "compaction",
+        "id": "c",
+        "parentId": null,
+        "timestamp": "2025-01-02T03:04:05.678Z",
+        "summary": "summary c",
+        "tokensBefore": 23.5,
+        "firstKeptEntryId": "none"
+      }
+    }
+  },
+  {
+    "id": "latest-null-after",
+    "test": "latest_compaction_uses_reverse_input_order",
+    "operation": "latest",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary a",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "b",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        },
+        null
+      ]
+    ],
+    "expected": {
+      "error": {
+        "field": "type"
+      }
+    }
+  },
+  {
+    "id": "entry-types",
+    "test": "typed_record_views_cover_each_entry_kind",
+    "operation": "parse",
+    "args": [
+      "{\"type\":\"session\",\"version\":3,\"id\":\"h\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"cwd\":\"/work\"}\n{\"type\":\"message\",\"id\":\"0\",\"parentId\":null,\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"thinking_level_change\",\"id\":\"1\",\"parentId\":\"0\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"model_change\",\"id\":\"2\",\"parentId\":\"1\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"compaction\",\"id\":\"3\",\"parentId\":\"2\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"branch_summary\",\"id\":\"4\",\"parentId\":\"3\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"custom\",\"id\":\"5\",\"parentId\":\"4\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"custom_message\",\"id\":\"6\",\"parentId\":\"5\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"label\",\"id\":\"7\",\"parentId\":\"6\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}\n{\"type\":\"session_info\",\"id\":\"8\",\"parentId\":\"7\",\"timestamp\":\"2025-01-02T03:04:05.678Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1},\"thinkingLevel\":\"off\",\"provider\":\"p\",\"modelId\":\"m\",\"summary\":\"summary\",\"tokensBefore\":2,\"firstKeptEntryId\":\"0\",\"fromId\":\"a\",\"customType\":\"x\",\"content\":\"custom\",\"display\":false,\"details\":null,\"data\":{\"x\":1},\"targetId\":\"0\",\"label\":\"label\",\"name\":\"name\",\"fromHook\":false}"
+    ],
+    "expected": {
+      "ok": [
+        {
+          "type": "session",
+          "version": 3,
+          "id": "h",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "cwd": "/work"
+        },
+        {
+          "type": "message",
+          "id": "0",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "thinking_level_change",
+          "id": "1",
+          "parentId": "0",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "model_change",
+          "id": "2",
+          "parentId": "1",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "compaction",
+          "id": "3",
+          "parentId": "2",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "branch_summary",
+          "id": "4",
+          "parentId": "3",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "custom",
+          "id": "5",
+          "parentId": "4",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "custom_message",
+          "id": "6",
+          "parentId": "5",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "label",
+          "id": "7",
+          "parentId": "6",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        },
+        {
+          "type": "session_info",
+          "id": "8",
+          "parentId": "7",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          "thinkingLevel": "off",
+          "provider": "p",
+          "modelId": "m",
+          "summary": "summary",
+          "tokensBefore": 2,
+          "firstKeptEntryId": "0",
+          "fromId": "a",
+          "customType": "x",
+          "content": "custom",
+          "display": false,
+          "details": null,
+          "data": {
+            "x": 1
+          },
+          "targetId": "0",
+          "label": "label",
+          "name": "name",
+          "fromHook": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "latest-alias",
+    "test": "latest_compaction_retains_the_selected_entry",
+    "operation": "latest_identity",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "same",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary same",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        },
+        {
+          "type": "compaction",
+          "id": "same",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary same",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "none"
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "selectedIndex": 1
+      }
+    }
+  },
+  {
+    "id": "dates-2025-01-02T03:04:05.678Z",
+    "test": "context_timestamps_use_local_time_only_for_offsetless_datetimes",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "x",
+          "content": "c",
+          "display": false
+        },
+        {
+          "type": "branch_summary",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "s",
+          "fromId": "a"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "compact",
+          "firstKeptEntryId": "a",
+          "tokensBefore": 1
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "compact",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "custom",
+            "customType": "x",
+            "content": "c",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "branchSummary",
+            "summary": "s",
+            "fromId": "a",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "dates-2025-01-02",
+    "test": "context_timestamps_use_local_time_only_for_offsetless_datetimes",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02",
+          "customType": "x",
+          "content": "c",
+          "display": false
+        },
+        {
+          "type": "branch_summary",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02",
+          "summary": "s",
+          "fromId": "a"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02",
+          "summary": "compact",
+          "firstKeptEntryId": "a",
+          "tokensBefore": 1
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "compact",
+            "tokensBefore": 1,
+            "timestamp": 1735776000000
+          },
+          {
+            "role": "custom",
+            "customType": "x",
+            "content": "c",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735776000000
+          },
+          {
+            "role": "branchSummary",
+            "summary": "s",
+            "fromId": "a",
+            "timestamp": 1735776000000
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "dates-2025-01-02T03:04:05.678",
+    "test": "context_timestamps_use_local_time_only_for_offsetless_datetimes",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678",
+          "customType": "x",
+          "content": "c",
+          "display": false
+        },
+        {
+          "type": "branch_summary",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678",
+          "summary": "s",
+          "fromId": "a"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678",
+          "summary": "compact",
+          "firstKeptEntryId": "a",
+          "tokensBefore": 1
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "compact",
+            "tokensBefore": 1,
+            "timestamp": 1735805045678
+          },
+          {
+            "role": "custom",
+            "customType": "x",
+            "content": "c",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735805045678
+          },
+          {
+            "role": "branchSummary",
+            "summary": "s",
+            "fromId": "a",
+            "timestamp": 1735805045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "dates-invalid",
+    "test": "context_timestamps_use_local_time_only_for_offsetless_datetimes",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "invalid",
+          "customType": "x",
+          "content": "c",
+          "display": false
+        },
+        {
+          "type": "branch_summary",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "invalid",
+          "summary": "s",
+          "fromId": "a"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "b",
+          "timestamp": "invalid",
+          "summary": "compact",
+          "firstKeptEntryId": "a",
+          "tokensBefore": 1
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "compact",
+            "tokensBefore": 1,
+            "timestamp": null
+          },
+          {
+            "role": "custom",
+            "customType": "x",
+            "content": "c",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": null
+          },
+          {
+            "role": "branchSummary",
+            "summary": "s",
+            "fromId": "a",
+            "timestamp": null
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "cycle-self",
+    "test": "cycles_terminate_without_dropping_finite_paths",
+    "operation": "cycle",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "cycle-pair",
+    "test": "cycles_terminate_without_dropping_finite_paths",
+    "operation": "cycle",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": "b",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "b",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "b",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-thinking_level_change-thinkingLevel-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "thinking_level_change-thinkingLevel-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": {
+          "$undefined": true
+        },
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-thinking_level_change-thinkingLevel-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "thinking_level_change-thinkingLevel-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": null,
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-thinking_level_change-thinkingLevel-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "thinking_level_change-thinkingLevel-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": "high"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "high",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-thinking_level_change-thinkingLevel-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "thinking_level_change-thinkingLevel-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": [
+            "other"
+          ]
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": [
+          "other"
+        ],
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-model_change-provider-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-provider-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "modelId": "m"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": {
+            "$undefined": true
+          },
+          "modelId": "m"
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-provider-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-provider-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": null,
+          "modelId": "m"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": null,
+          "modelId": "m"
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-provider-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-provider-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "p",
+          "modelId": "m"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "p",
+          "modelId": "m"
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-provider-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-provider-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": [
+            "other"
+          ],
+          "modelId": "m"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": [
+            "other"
+          ],
+          "modelId": "m"
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-modelId-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-modelId-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "p"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "p",
+          "modelId": {
+            "$undefined": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-modelId-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-modelId-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "p",
+          "modelId": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "p",
+          "modelId": null
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-modelId-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-modelId-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "p",
+          "modelId": "m"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "p",
+          "modelId": "m"
+        }
+      }
+    }
+  },
+  {
+    "id": "field-model_change-modelId-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model_change-modelId-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "provider": "p",
+          "modelId": [
+            "other"
+          ]
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "p",
+          "modelId": [
+            "other"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-summary-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-summary-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "fromId": "origin"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-summary-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-summary-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": null,
+          "fromId": "origin"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-summary-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-summary-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "fromId": "origin"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": "summary",
+            "fromId": "origin",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-summary-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-summary-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": [
+            "other"
+          ],
+          "fromId": "origin"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": [
+              "other"
+            ],
+            "fromId": "origin",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-fromId-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-fromId-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": "summary",
+            "fromId": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-fromId-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-fromId-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "fromId": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": "summary",
+            "fromId": null,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-fromId-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-fromId-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "fromId": "origin"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": "summary",
+            "fromId": "origin",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-branch_summary-fromId-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "branch_summary-fromId-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "fromId": [
+            "other"
+          ]
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": "summary",
+            "fromId": [
+              "other"
+            ],
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-summary-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-summary-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "tokensBefore": 1,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": {
+              "$undefined": true
+            },
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-summary-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-summary-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": null,
+          "tokensBefore": 1,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": null,
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-summary-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-summary-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": 1,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-summary-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-summary-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": [
+            "other"
+          ],
+          "tokensBefore": 1,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": [
+              "other"
+            ],
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-tokensBefore-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-tokensBefore-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-tokensBefore-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-tokensBefore-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": null,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": null,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-tokensBefore-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-tokensBefore-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": 1,
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-tokensBefore-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "compaction",
+          "id": "compaction-tokensBefore-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": [
+            "other"
+          ],
+          "firstKeptEntryId": "none"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": [
+              "other"
+            ],
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-firstKeptEntryId-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compaction-firstKeptEntryId-missing",
+          "parentId": "keep",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": 1
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-firstKeptEntryId-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compaction-firstKeptEntryId-null",
+          "parentId": "keep",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": 1,
+          "firstKeptEntryId": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-firstKeptEntryId-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compaction-firstKeptEntryId-admitted",
+          "parentId": "keep",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": 1,
+          "firstKeptEntryId": "keep"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-compaction-firstKeptEntryId-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compaction-firstKeptEntryId-wrong",
+          "parentId": "keep",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary",
+          "tokensBefore": 1,
+          "firstKeptEntryId": [
+            "other"
+          ]
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary",
+            "tokensBefore": 1,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-customType-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-customType-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": {
+              "$undefined": true
+            },
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-customType-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-customType-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": null,
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": null,
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-customType-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-customType-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-customType-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-customType-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": [
+            "other"
+          ],
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": [
+              "other"
+            ],
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-content-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-content-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": {
+              "$undefined": true
+            },
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-content-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-content-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": null,
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": null,
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-content-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-content-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-content-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-content-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": [
+            "other"
+          ],
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": [
+              "other"
+            ],
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-display-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-display-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": {
+              "$undefined": true
+            },
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-display-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-display-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": null,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-display-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-display-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-display-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-display-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": [
+            "other"
+          ]
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": [
+              "other"
+            ],
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-details-missing",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-details-missing",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": {
+              "$undefined": true
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-details-null",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-details-null",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false,
+          "details": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": null,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-details-admitted",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-details-admitted",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false,
+          "details": {
+            "n": 1
+          }
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": {
+              "n": 1
+            },
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "field-custom_message-details-wrong",
+    "test": "selected_fields_keep_presence_until_their_consumer",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "custom_message-details-wrong",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "text",
+          "display": false,
+          "details": [
+            "other"
+          ]
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "custom",
+            "customType": "note",
+            "content": "text",
+            "display": false,
+            "details": [
+              "other"
+            ],
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "late-role-failure-wins",
+    "test": "projection_reads_message_role_before_emission",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "custom_message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "future",
+          "content": 42,
+          "display": false
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": "a",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": null
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "error": {
+        "field": "role"
+      }
+    }
+  },
+  {
+    "id": "duplicates-at-selected-depth",
+    "test": "nested_duplicates_collapse_before_typed_views",
+    "operation": "parse_context",
+    "args": [
+      "{\"type\":\"message\",\"id\":\"a\",\"parentId\":null,\"message\":{\"role\":\"user\",\"content\":42,\"content\":[{\"type\":\"text\",\"text\":\"old\",\"text\":\"new\"}],\"timestamp\":1}}"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new"
+              }
+            ],
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "escaped-ids",
+    "test": "escaped_identifiers_match_by_decoded_value",
+    "operation": "parse_context",
+    "args": [
+      "{\"type\":\"message\",\"id\":\"\\u0061\",\"parentId\":null,\"message\":{\"role\":\"user\",\"content\":\"root\",\"timestamp\":1}}\n{\"type\":\"message\",\"id\":\"b\",\"parentId\":\"a\",\"message\":{\"role\":\"user\",\"content\":\"leaf\",\"timestamp\":2}}"
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "root",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": "leaf",
+            "timestamp": 2
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-false",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "false",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": false,
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-zero",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "zero",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": 0,
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-negative-zero",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "negative-zero",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": {
+            "$number": "-0"
+          },
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-nonzero",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "nonzero",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": 1,
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": 1,
+            "fromId": "old",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-true",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "true",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": true,
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": true,
+            "fromId": "old",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-empty-array",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "empty-array",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": [],
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": [],
+            "fromId": "old",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "branch-truth-empty-object",
+    "test": "custom_messages_and_summaries_select_only_message_kinds",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "branch_summary",
+          "id": "empty-object",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": {},
+          "fromId": "old"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "branchSummary",
+            "summary": {},
+            "fromId": "old",
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": null
+      }
+    }
+  },
+  {
+    "id": "context-to-model",
+    "test": "projected_context_reaches_the_shared_converter",
+    "operation": "context_model",
+    "args": [
+      [
+        {
+          "type": "message",
+          "id": "u",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom_message",
+          "id": "custom",
+          "parentId": "u",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "customType": "note",
+          "content": "hidden text",
+          "display": false,
+          "details": null
+        },
+        {
+          "type": "branch_summary",
+          "id": "branch",
+          "parentId": "custom",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "branch text",
+          "fromId": "old"
+        },
+        {
+          "type": "compaction",
+          "id": "compact",
+          "parentId": "branch",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary compact",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "u"
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "context": {
+          "messages": [
+            {
+              "role": "compactionSummary",
+              "summary": "summary compact",
+              "tokensBefore": 23.5,
+              "timestamp": 1735787045678
+            },
+            {
+              "role": "user",
+              "content": "kept",
+              "timestamp": 1
+            },
+            {
+              "role": "custom",
+              "customType": "note",
+              "content": "hidden text",
+              "display": false,
+              "details": null,
+              "timestamp": 1735787045678
+            },
+            {
+              "role": "branchSummary",
+              "summary": "branch text",
+              "fromId": "old",
+              "timestamp": 1735787045678
+            }
+          ],
+          "thinkingLevel": "off",
+          "model": null
+        },
+        "modelMessages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nsummary compact\n</summary>"
+              }
+            ],
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "hidden text"
+              }
+            ],
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch text</summary>"
+              }
+            ],
+            "timestamp": 1735787045678
+          }
+        ]
+      }
+    }
+  }
+]

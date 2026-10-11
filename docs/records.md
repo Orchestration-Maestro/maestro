@@ -179,3 +179,12 @@ in record serializers; serializing Missing on its own returns an error.
 The guest re-exports these records, with `CustomMessage` selecting string details.
 The native [conversation projection](sessions/messages.md) re-exports the shared
 records and converts their model-visible content.
+
+## Stored session entries
+
+[Stored-entry context](sessions/session_manager.md) owns the session header and
+entry views in `maestro_session::session_manager`. Raw ordered JSON remains the
+file-entry representation; typed views are explicit consuming reads. Shared
+message records remain in `maestro-request`, and the existing
+[conversation projection](sessions/messages.md) converts typed messages into
+model input. `Presence<T>` is copyable when its payload is copyable.
