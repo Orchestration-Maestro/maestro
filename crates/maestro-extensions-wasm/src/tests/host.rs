@@ -347,11 +347,77 @@ impl host::Host for State {
     fn register_command(
         &mut self,
         name: String,
-        _description: Option<String>,
+        description: Option<String>,
+        completions: Option<Resource<Identity>>,
         handler: Resource<Identity>,
     ) -> wasmtime::Result<Result<(), String>> {
+        if let Some(error) = &self.observed.registrations.error {
+            return Ok(Err(error.clone()));
+        }
         self.observed.register_command(&name, handler.rep());
+        self.observed.registrations.commands.push((
+            name.clone(),
+            description,
+            completions.is_some(),
+        ));
+        if let Some(completions) = completions {
+            self.observed
+                .register(format!("completion {name}"), completions.rep());
+        }
         Ok(Ok(()))
+    }
+    fn register_shortcut(
+        &mut self,
+        shortcut: String,
+        description: Option<String>,
+        handler: Resource<Identity>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        if let Some(error) = &self.observed.registrations.error {
+            return Ok(Err(error.clone()));
+        }
+        self.observed
+            .registrations
+            .shortcuts
+            .push((shortcut.clone(), description));
+        self.observed
+            .register(format!("shortcut {shortcut}"), handler.rep());
+        Ok(Ok(()))
+    }
+    fn register_flag(
+        &mut self,
+        name: String,
+        options: host::FlagOptions,
+    ) -> wasmtime::Result<Result<(), String>> {
+        if let Some(error) = &self.observed.registrations.error {
+            return Ok(Err(error.clone()));
+        }
+        let options = crate::FlagOptions {
+            description: options.description,
+            type_: match options.type_ {
+                host::FlagType::Boolean => crate::FlagType::Boolean,
+                host::FlagType::String => crate::FlagType::String,
+            },
+            default: options.default.map(|v| match v {
+                host::FlagValue::Boolean(v) => crate::FlagValue::Boolean(v),
+                host::FlagValue::String(v) => crate::FlagValue::String(v),
+            }),
+        };
+        self.observed
+            .registrations
+            .flags
+            .push((name, super::registration_host::options(&options)));
+        Ok(Ok(()))
+    }
+    fn get_flag(
+        &mut self,
+        name: String,
+    ) -> wasmtime::Result<Result<Option<host::FlagValue>, String>> {
+        Ok(self.observed.registrations.value(&name).map(|v| {
+            v.map(|v| match v {
+                crate::FlagValue::Boolean(v) => host::FlagValue::Boolean(v),
+                crate::FlagValue::String(v) => host::FlagValue::String(v),
+            })
+        }))
     }
 
     fn register_tool(
@@ -495,6 +561,17 @@ fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
 }
 
 impl Harness {
+    /// Formats the callback-table diagnostic using the resource's logical identity.
+    pub fn callback_error(&self, key: u32) -> String {
+        let id = self
+            .store
+            .data()
+            .table
+            .get(&Resource::<Identity>::new_borrow(key))
+            .unwrap()
+            .0;
+        format!("no callback registered for identity {id}")
+    }
     /// Instantiates the component and runs its factory.
     pub async fn start(path: &Path) -> wasmtime::Result<Self> {
         let (engine, component) = compiled(path)?;

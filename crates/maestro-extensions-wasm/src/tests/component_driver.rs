@@ -317,6 +317,148 @@ impl Driver for ComponentDriver {
         self.observed(|o| o.updates.clone())
     }
 
+    async fn completion(
+        &mut self,
+        handler: u32,
+        prefix: &str,
+    ) -> Result<Option<Vec<serde_json::Value>>, String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let result = harness
+            .store
+            .run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_completion(accessor, borrow(handler), prefix.to_owned())
+                    .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?;
+        result.map(|items| items.map(|items| items.into_iter().map(|item| serde_json::json!({"value":item.value, "label":item.label, "description":item.description})).collect()))
+    }
+    async fn completion_held(
+        &mut self,
+        handler: u32,
+        prefix: &str,
+    ) -> Result<Option<Vec<serde_json::Value>>, String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let (pause, pending, proceed) = gate();
+        harness.observed().hold_next_idle(pause);
+        let exports = harness.exports.clone();
+        let result = harness
+            .store
+            .run_concurrent(async |accessor| {
+                let call =
+                    exports.call_invoke_completion(accessor, borrow(handler), prefix.to_owned());
+                super::join::alongside(call, release_held(accessor, Some((pending, proceed)))).await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?;
+        result.map(|items| items.map(|items| items.into_iter().map(|item| serde_json::json!({"value":item.value,"label":item.label,"description":item.description})).collect()))
+    }
+    async fn shortcut(&mut self, handler: u32, cwd: &str) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let ctx = harness.ordinary(cwd).map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_shortcut(accessor, borrow(handler), ctx)
+                    .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    fn registrations(&self) -> super::scenario::Registrations {
+        self.observed(|o| {
+            (
+                o.registrations.commands.clone(),
+                o.registrations.shortcuts.clone(),
+            )
+        })
+    }
+    async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let start = harness.store.data().observed.transcript.len();
+        let (hold_first, entered_first, open_first) = gate();
+        let (hold_second, entered_second, open_second) = gate();
+        harness.observed().hold_next_idle(hold_first);
+        harness.observed().hold_next_idle(hold_second);
+        let first_ctx = shortcut
+            .then(|| harness.ordinary("/first"))
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        let second_ctx = shortcut
+            .then(|| harness.ordinary("/second"))
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let observe = async |phase| {
+                    pending_observation(accessor, &exports, (handler, start, shortcut), phase)
+                        .await;
+                };
+                let (first, second) = super::join::ordered(
+                    pending_call(accessor, &exports, handler, "/first", first_ctx),
+                    pending_call(accessor, &exports, handler, "/second", second_ctx),
+                    [(entered_first, open_first), (entered_second, open_second)],
+                    observe,
+                )
+                .await;
+                first?;
+                second?;
+                Ok(())
+            })
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    fn callback_error(&self, handler: u32) -> String {
+        self.harness.as_ref().unwrap().callback_error(handler)
+    }
+    async fn command_held(&mut self, name: &str, args: &str) -> Result<(), String> {
+        self.run_command(name, args, true)
+            .await
+            .map_err(|e| format!("{e:#}"))
+    }
+    async fn shortcut_held(&mut self, handler: u32, cwd: &str) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let ctx = harness.ordinary(cwd).map_err(|e| e.to_string())?;
+        let (pause, pending, proceed) = gate();
+        harness.observed().hold_next_idle(pause);
+        let exports = harness.exports.clone();
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let call = exports.call_invoke_shortcut(accessor, borrow(handler), ctx);
+                super::join::alongside(call, release_held(accessor, Some((pending, proceed)))).await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    fn registration_error(&mut self, error: Option<String>) {
+        started(&mut self.harness)
+            .unwrap()
+            .observed()
+            .registrations
+            .error = error;
+    }
+    fn flag_reply(&mut self, name: &str, value: Result<Option<serde_json::Value>, String>) {
+        started(&mut self.harness)
+            .unwrap()
+            .observed()
+            .registrations
+            .values
+            .insert(name.into(), value);
+    }
+    fn flag_registrations(&self) -> Vec<(String, serde_json::Value)> {
+        self.observed(|o| o.registrations.flags.clone())
+    }
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
         self.run_command(name, args, false)
             .await
@@ -385,4 +527,57 @@ impl Driver for ComponentDriver {
     fn live(&self) -> usize {
         self.observed(|observed| observed.live)
     }
+}
+
+/// Calls an admitted completion or shortcut with an independently bound input.
+async fn pending_call(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    exports: &crate::bindings::host_side::exports::maestro::extension::guest::Guest,
+    handler: u32,
+    origin: &str,
+    ctx: Option<Resource<super::host::Ordinary>>,
+) -> Result<(), String> {
+    if let Some(ctx) = ctx {
+        exports
+            .call_invoke_shortcut(accessor, borrow(handler), ctx)
+            .await
+            .map_err(|e| e.to_string())?
+    } else {
+        let items = exports
+            .call_invoke_completion(accessor, borrow(handler), origin.into())
+            .await
+            .map_err(|e| e.to_string())??;
+        assert_eq!(items.unwrap()[0].value, origin);
+        Ok(())
+    }
+}
+
+/// Releases the registration at the pending barrier, then checks the closed observation set.
+async fn pending_observation(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    exports: &crate::bindings::host_side::exports::maestro::extension::guest::Guest,
+    state: (u32, usize, bool),
+    phase: super::join::Phase,
+) {
+    let (handler, start, shortcut) = state;
+    if matches!(phase, super::join::Phase::BothPending) {
+        let name = if shortcut {
+            "shortcut pending"
+        } else {
+            "completion pending"
+        };
+        accessor.with(|mut a| {
+            assert_eq!(a.get().observed.take_registration(name), Some(handler));
+        });
+        exports
+            .func_release()
+            .call_concurrent(accessor, (borrow(handler),))
+            .await
+            .unwrap();
+    }
+    accessor.with(|mut a| {
+        a.get()
+            .observed
+            .assert_pending_phase(phase, start, shortcut);
+    });
 }

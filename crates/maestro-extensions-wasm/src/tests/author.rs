@@ -22,6 +22,13 @@ mod bus_author;
 mod catalog_author;
 #[path = "reader_author.rs"]
 mod reader_author;
+#[path = "registration_author.rs"]
+mod registration_author;
+#[cfg(target_arch = "wasm32")]
+#[path = "registration_fixture.rs"]
+mod registration_fixture;
+#[cfg(not(target_arch = "wasm32"))]
+use super::registration_fixture;
 #[path = "tool_author.rs"]
 mod tool_author;
 
@@ -60,6 +67,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         register_reentrant(&api)?;
         register_trim(&api)?;
         register_note(&api)?;
+        registration_author::factory_flag(&api)?;
         register_probe(&api)
     })
 }
@@ -214,6 +222,7 @@ fn register_command(api: &ExtensionAPI) -> Result<(), String> {
     api.register_command(
         "replace",
         CommandOptions {
+            get_argument_completions: None,
             description: Some("Replaces the session".to_owned()),
             handler: Rc::new(move |args, ctx| {
                 let _ = &released;
@@ -371,6 +380,7 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
     api.register_command(
         "capture",
         CommandOptions {
+            get_argument_completions: None,
             description: None,
             handler: Rc::new(move |args, ctx| {
                 let api = tool_api.clone();
@@ -381,6 +391,9 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     }
                     if let Some(request) = args.strip_prefix("bus ") {
                         return bus_author::run(&api, request).await;
+                    }
+                    if let Some(result) = registration_author::dispatch(&api, &args, &ctx) {
+                        return result;
                     }
                     if args == "catalog" {
                         return catalog_author::register(&api);

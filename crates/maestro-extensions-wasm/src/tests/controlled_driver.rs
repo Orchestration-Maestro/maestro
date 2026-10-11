@@ -206,6 +206,104 @@ impl Driver for ControlledDriver {
         self.host.observed().updates.clone()
     }
 
+    async fn completion(
+        &mut self,
+        handler: u32,
+        prefix: &str,
+    ) -> Result<Option<Vec<serde_json::Value>>, String> {
+        self.exports().invoke_completion(handler, prefix.into()).await.map(|items| items.map(|items| items.into_iter().map(|item| serde_json::json!({"value":item.value, "label":item.label, "description":item.description})).collect()))
+    }
+    async fn completion_held(
+        &mut self,
+        handler: u32,
+        prefix: &str,
+    ) -> Result<Option<Vec<serde_json::Value>>, String> {
+        let exports = self.exports();
+        let run = exports.invoke_completion(handler, prefix.into());
+        self.held(run).await.map(|items| items.map(|items| items.into_iter().map(|item| serde_json::json!({"value":item.value,"label":item.label,"description":item.description})).collect()))
+    }
+    async fn shortcut(&mut self, handler: u32, cwd: &str) -> Result<(), String> {
+        self.exports()
+            .invoke_shortcut(handler, self.host.context(cwd))
+            .await
+    }
+    fn registrations(&self) -> super::scenario::Registrations {
+        let observed = self.host.observed();
+        (
+            observed.registrations.commands.clone(),
+            observed.registrations.shortcuts.clone(),
+        )
+    }
+    async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String> {
+        let exports = self.exports();
+        let start = self.transcript().len();
+        let (hold_first, entered_first, open_first) = gate();
+        let (hold_second, entered_second, open_second) = gate();
+        self.host.observe().hold_next_idle(hold_first);
+        self.host.observe().hold_next_idle(hold_second);
+        let call = async |origin: &str| {
+            if shortcut {
+                exports
+                    .invoke_shortcut(handler, self.host.context(origin))
+                    .await
+            } else {
+                let items = exports.invoke_completion(handler, origin.into()).await?;
+                assert_eq!(items.unwrap()[0].value, origin);
+                Ok(())
+            }
+        };
+        let name = if shortcut {
+            "shortcut pending"
+        } else {
+            "completion pending"
+        };
+        let observe = async |phase| {
+            if matches!(phase, super::join::Phase::BothPending) {
+                assert_eq!(self.host.observe().take_registration(name), Some(handler));
+                release(handler);
+            }
+            self.host
+                .observed()
+                .assert_pending_phase(phase, start, shortcut);
+        };
+        let (first, second) = super::join::ordered(
+            call("/first"),
+            call("/second"),
+            [(entered_first, open_first), (entered_second, open_second)],
+            observe,
+        )
+        .await;
+        first?;
+        second?;
+        Ok(())
+    }
+    fn callback_error(&self, handler: u32) -> String {
+        format!("no callback registered for identity {handler}")
+    }
+    async fn command_held(&mut self, name: &str, args: &str) -> Result<(), String> {
+        let handler = self.identity(&format!("command {name}"))?;
+        let exports = self.exports();
+        self.held(exports.invoke_command(handler, args.into(), self.host.command_context("/work")))
+            .await
+    }
+    async fn shortcut_held(&mut self, handler: u32, cwd: &str) -> Result<(), String> {
+        let exports = self.exports();
+        self.held(exports.invoke_shortcut(handler, self.host.context(cwd)))
+            .await
+    }
+    fn registration_error(&mut self, error: Option<String>) {
+        self.host.observe().registrations.error = error;
+    }
+    fn flag_reply(&mut self, name: &str, value: Result<Option<serde_json::Value>, String>) {
+        self.host
+            .observe()
+            .registrations
+            .values
+            .insert(name.into(), value);
+    }
+    fn flag_registrations(&self) -> Vec<(String, serde_json::Value)> {
+        self.host.observed().registrations.flags.clone()
+    }
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String> {
         let handler = self.identity(&format!("command {name}"))?;
         let ctx = self.host.command_context("/work");

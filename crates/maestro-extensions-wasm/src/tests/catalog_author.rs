@@ -76,6 +76,7 @@ fn register_command(api: &ExtensionAPI, kept: Rc<RefCell<Kept>>) -> ExtensionRes
     api.register_command(
         "catalog",
         CommandOptions {
+            get_argument_completions: None,
             description: None,
             handler: Rc::new(move |args, ctx| {
                 let kept = Rc::clone(&kept);

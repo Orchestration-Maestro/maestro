@@ -48,6 +48,10 @@ mod host_family;
 mod join;
 mod observed;
 pub(crate) mod reader_host;
+mod registration_callbacks;
+mod registration_corpus;
+mod registration_fixture;
+mod registration_host;
 mod scenario;
 mod selection_events;
 mod session_corpus;
@@ -250,6 +254,10 @@ fn spell(ty: &Type, resources: &[(String, ResourceType)]) -> String {
                 .map(|field| format!("{}: {}", field.name, spell(&field.ty, resources)));
             format!("record {{{}}}", fields.collect::<Vec<_>>().join(", "))
         }
+        Type::Enum(enumeration) => format!(
+            "enum {{{}}}",
+            enumeration.names().collect::<Vec<_>>().join(", ")
+        ),
         Type::Variant(variant) => {
             let cases = variant.cases().map(|case| match case.ty {
                 Some(ty) => format!("{}({})", case.name, spell(&ty, resources)),
@@ -293,6 +301,9 @@ fn names(functions: &[(String, bool)], asynchronous: bool) -> Vec<&str> {
     names
 }
 
+/// A component function's spelled parameter and result sequences.
+type Signature = (Vec<String>, Vec<String>);
+
 /// The interfaces and functions of the built component: its guest exports, its host imports,
 /// the signature of the event export and the names of every other import.
 struct Contract {
@@ -306,6 +317,8 @@ struct Contract {
     event_params: Vec<String>,
     /// The results of `invoke-event`.
     event_results: Vec<String>,
+    /// Typed registration imports and callback exports.
+    registration_signatures: Vec<Signature>,
     /// Signatures of the new retained-capability and usage routes.
     catalog_signatures: Vec<Vec<String>>,
 }
@@ -348,6 +361,7 @@ fn contract() -> Result<Contract, String> {
             signature(&engine, &host, name, &resources(&engine, &host)).map(|(_, result)| result)
         })
         .collect::<Result<_, _>>()?,
+        registration_signatures: registration_signatures(&engine, &host, &guest)?,
         event_params,
         event_results,
     })
@@ -470,7 +484,9 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         names(&contract.exports, true),
         [
             "invoke-command",
+            "invoke-completion",
             "invoke-event",
+            "invoke-shortcut",
             "invoke-tail",
             "invoke-tool",
             "invoke-with-session",
@@ -486,6 +502,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_typed_event_export(&contract);
     assert_reader_imports(&contract);
     assert_catalog_imports(&contract);
+    assert_registration_contract(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [
@@ -517,4 +534,46 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         .filter(|name| name.starts_with("wasi:"));
     assert!(wasi.clone().count() > 0 && wasi.into_iter().all(|name| name.contains("@0.2.")));
     Ok(())
+}
+
+/// Reads canonical registration input/output types from the built component.
+fn registration_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+    guest: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    let resources = resources(engine, host);
+    [
+        (host, "register-command"),
+        (host, "register-shortcut"),
+        (host, "register-flag"),
+        (host, "get-flag"),
+        (guest, "invoke-completion"),
+        (guest, "invoke-shortcut"),
+    ]
+    .into_iter()
+    .map(|(interface, name)| signature(engine, interface, name, &resources))
+    .collect()
+}
+
+/// Typed callback resources and flag variants preserve the synchronous/native-async split.
+fn assert_registration_contract(contract: &Contract) {
+    let sync = names(&contract.imports, false);
+    for name in [
+        "register-command",
+        "register-shortcut",
+        "register-flag",
+        "get-flag",
+    ] {
+        assert!(sync.contains(&name));
+    }
+    let expected = [
+        (vec!["name: string", "description: option<string>", "completions: option<borrow<callback>>", "handler: borrow<callback>"], vec!["result<_, string>"]),
+        (vec!["shortcut: string", "description: option<string>", "handler: borrow<callback>"], vec!["result<_, string>"]),
+        (vec!["name: string", "options: record {description: option<string>, type: enum {boolean, string}, default: option<variant {boolean(bool), string(string)}>}"], vec!["result<_, string>"]),
+        (vec!["name: string"], vec!["result<option<variant {boolean(bool), string(string)}>, string>"]),
+        (vec!["handler: borrow<callback>", "prefix: string"], vec!["result<option<list<record {value: string, label: string, description: option<string>}>>, string>"]),
+        (vec!["handler: borrow<callback>", "ctx: own<context>"], vec!["result<_, string>"]),
+    ].map(|(params, results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(), results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
+    assert_eq!(contract.registration_signatures, expected);
 }

@@ -46,6 +46,12 @@ pub struct ToolRun<'a> {
     pub held: bool,
 }
 
+/// Ordered command and shortcut registrations recorded at the host boundary.
+pub type Registrations = (
+    Vec<(String, Option<String>, bool)>,
+    Vec<(String, Option<String>)>,
+);
+
 /// One adapter driven through the scenario. A delivery resolves to the description of what the
 /// handler answered, or to the message it failed with, and the scenario writes it to the
 /// transcript.
@@ -114,6 +120,36 @@ pub trait Driver {
     fn bus_emissions(&self) -> Vec<(String, serde_json::Value)>;
     /// Partial outputs received by this host.
     fn updates(&self) -> Vec<String>;
+    /// Invokes a completion identity, preserving the optional ordered candidate list.
+    async fn completion(
+        &mut self,
+        handler: u32,
+        prefix: &str,
+    ) -> Result<Option<Vec<serde_json::Value>>, String>;
+    /// Completes with a named wait-for-idle barrier observed before it opens.
+    async fn completion_held(
+        &mut self,
+        handler: u32,
+        prefix: &str,
+    ) -> Result<Option<Vec<serde_json::Value>>, String>;
+    /// Invokes a shortcut with a distinctly bound ordinary context.
+    async fn shortcut(&mut self, handler: u32, cwd: &str) -> Result<(), String>;
+    /// Command and shortcut registration observations in order.
+    fn registrations(&self) -> Registrations;
+    /// Runs two calls with distinct inputs through named entry/completion barriers.
+    async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String>;
+    /// The exact missing/wrong-kind diagnostic for a lent callback resource.
+    fn callback_error(&self, handler: u32) -> String;
+    /// Runs a command with its first host barrier held until witnessed.
+    async fn command_held(&mut self, name: &str, args: &str) -> Result<(), String>;
+    /// Runs a shortcut with its first host barrier held until witnessed.
+    async fn shortcut_held(&mut self, handler: u32, cwd: &str) -> Result<(), String>;
+    /// Configures a recoverable registration-import error.
+    fn registration_error(&mut self, error: Option<String>);
+    /// Installs a supplied flag reply without performing default policy.
+    fn flag_reply(&mut self, name: &str, value: Result<Option<serde_json::Value>, String>);
+    /// Flag registrations observed at the host boundary.
+    fn flag_registrations(&self) -> Vec<(String, serde_json::Value)>;
     /// Runs the command registered as `name` against a command context in `/work`.
     async fn run_plain_command(&mut self, name: &str, args: &str) -> Result<(), String>;
     /// Runs the command that starts a new session; its continuation waits for idle, and the

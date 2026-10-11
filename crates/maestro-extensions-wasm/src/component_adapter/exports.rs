@@ -14,6 +14,7 @@ use crate::loader::Extension;
 use crate::types::{
     CommandHandler, EventData, ExtensionAPI, ExtensionHandler, ExtensionResult, WithSession,
 };
+use crate::{ArgumentCompletions, AutocompleteItem, ShortcutHandler};
 
 /// Serves the exports an extension component provides on top of its host.
 pub(crate) struct Exports<I: Imports> {
@@ -71,6 +72,22 @@ impl<I: Imports> Exports<I> {
         command(args, contexts::command_context(&self.imports, ctx)).await
     }
 
+    /// Runs argument completion without interpreting the prefix or results.
+    pub(crate) async fn invoke_completion(
+        &self,
+        handler: u32,
+        prefix: String,
+    ) -> ExtensionResult<Option<Vec<AutocompleteItem>>> {
+        callbacks::find::<ArgumentCompletions>(handler)?(prefix).await
+    }
+    /// Runs a shortcut with the supplied ordinary context.
+    pub(crate) async fn invoke_shortcut(
+        &self,
+        handler: u32,
+        ctx: I::Context,
+    ) -> ExtensionResult<()> {
+        callbacks::find::<ShortcutHandler>(handler)?(contexts::context(&self.imports, ctx)).await
+    }
     /// Runs the continuation pending under `handler`.
     pub(crate) async fn invoke_with_session(
         &self,

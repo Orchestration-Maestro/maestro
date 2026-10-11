@@ -9,6 +9,8 @@
 #[macro_use]
 mod port;
 mod agent;
+mod autocomplete;
+pub use autocomplete::*;
 mod event_bus;
 pub use event_bus::*;
 mod bash_executor;

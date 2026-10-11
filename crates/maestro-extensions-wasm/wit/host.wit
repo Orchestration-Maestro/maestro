@@ -130,9 +130,37 @@ interface host {
 
     /// Registers one handler for an event name.
     on: func(event: string, handler: borrow<callback>) -> result<_, string>;
+    /// One completion candidate.
+    record autocomplete-item {
+        /// Text inserted by the consumer.
+        value: string,
+        /// Authored display label.
+        label: string,
+        /// Optional authored description.
+        description: option<string>,
+    }
+    /// Declared flag kind, independent of its default's variant.
+    enum flag-type { boolean, %string }
+    /// One supplied flag value.
+    variant flag-value { boolean(bool), %string(string) }
+    /// Registration options; the host chooses when the default applies.
+    record flag-options {
+        /// Optional authored description.
+        description: option<string>,
+        /// Declared parser kind.
+        %type: flag-type,
+        /// Optional default, independently typed from the kind.
+        %default: option<flag-value>,
+    }
+    /// Registers a literal shortcut.
+    register-shortcut: func(shortcut: string, description: option<string>, handler: borrow<callback>) -> result<_, string>;
+    /// Registers a flag.
+    register-flag: func(name: string, options: flag-options) -> result<_, string>;
+    /// Reads the host-resolved flag value.
+    get-flag: func(name: string) -> result<option<flag-value>, string>;
     /// Registers a command.
     register-command: func(
-        name: string, description: option<string>, handler: borrow<callback>,
+        name: string, description: option<string>, completions: option<borrow<callback>>, handler: borrow<callback>,
     ) -> result<_, string>;
     /// Registers authored tool data and callbacks.
     register-tool: func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>) -> result<_, string>;
