@@ -568,13 +568,55 @@ impl Imports for Controlled {
     fn register_command(
         &self,
         name: &str,
-        _description: Option<&str>,
+        description: Option<&str>,
+        completions: Option<&Callback>,
         handler: &Callback,
     ) -> ExtensionResult<()> {
+        let mut observed = self.observed.borrow_mut();
+        if let Some(error) = &observed.registrations.error {
+            return Err(error.clone());
+        }
+        observed.register_command(name, handler.id);
+        observed.registrations.commands.push((
+            name.into(),
+            description.map(str::to_owned),
+            completions.is_some(),
+        ));
+        if let Some(completions) = completions {
+            observed.register(format!("completion {name}"), completions.id);
+        }
+        Ok(())
+    }
+    fn register_shortcut(
+        &self,
+        shortcut: &str,
+        description: Option<&str>,
+        handler: &Callback,
+    ) -> ExtensionResult<()> {
+        let mut observed = self.observed.borrow_mut();
+        if let Some(error) = &observed.registrations.error {
+            return Err(error.clone());
+        }
+        observed
+            .registrations
+            .shortcuts
+            .push((shortcut.into(), description.map(str::to_owned)));
+        observed.register(format!("shortcut {shortcut}"), handler.id);
+        Ok(())
+    }
+    fn register_flag(&self, name: &str, options: &crate::FlagOptions) -> ExtensionResult<()> {
+        if let Some(error) = &self.observed.borrow().registrations.error {
+            return Err(error.clone());
+        }
         self.observed
             .borrow_mut()
-            .register_command(name, handler.id);
+            .registrations
+            .flags
+            .push((name.into(), super::registration_host::options(options)));
         Ok(())
+    }
+    fn get_flag(&self, name: &str) -> ExtensionResult<Option<crate::FlagValue>> {
+        self.observed.borrow().registrations.value(name)
     }
 
     fn register_tool(

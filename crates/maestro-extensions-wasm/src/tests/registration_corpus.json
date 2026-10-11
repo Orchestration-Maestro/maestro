@@ -1,0 +1,3204 @@
+{
+  "commands": [
+    {
+      "input": {
+        "name": "run Ω",
+        "description": null,
+        "completion": false
+      },
+      "expected": {
+        "name": "run Ω",
+        "description": null,
+        "completion": false
+      }
+    },
+    {
+      "input": {
+        "name": "run Ω",
+        "description": null,
+        "completion": true
+      },
+      "expected": {
+        "name": "run Ω",
+        "description": null,
+        "completion": true
+      }
+    },
+    {
+      "input": {
+        "name": "run Ω",
+        "description": "",
+        "completion": false
+      },
+      "expected": {
+        "name": "run Ω",
+        "description": "",
+        "completion": false
+      }
+    },
+    {
+      "input": {
+        "name": "run Ω",
+        "description": "",
+        "completion": true
+      },
+      "expected": {
+        "name": "run Ω",
+        "description": "",
+        "completion": true
+      }
+    },
+    {
+      "input": {
+        "name": "run Ω",
+        "description": "Description Ω",
+        "completion": false
+      },
+      "expected": {
+        "name": "run Ω",
+        "description": "Description Ω",
+        "completion": false
+      }
+    },
+    {
+      "input": {
+        "name": "run Ω",
+        "description": "Description Ω",
+        "completion": true
+      },
+      "expected": {
+        "name": "run Ω",
+        "description": "Description Ω",
+        "completion": true
+      }
+    }
+  ],
+  "completions": [
+    {
+      "input": {
+        "prefix": "",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": " ",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": " ",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": " ",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": " ",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": " ",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": " ",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": " ",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": " ",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": " ",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": " ",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": " ",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": " ",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "\tbefore  after\n",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "\tbefore  after\n",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "\tbefore  after\n",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "\tbefore  after\n",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "\tbefore  after\n",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "\tbefore  after\n",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "\tbefore  after\n",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "\tbefore  after\n",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "\tbefore  after\n",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "\tbefore  after\n",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "\tbefore  after\n",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "\tbefore  after\n",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "﻿dev",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "﻿dev",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "﻿dev",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "﻿dev",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "﻿dev",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "﻿dev",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "﻿dev",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "﻿dev",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "﻿dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "﻿dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "﻿dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "﻿dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "dev",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "dev",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "dev",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "dev",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "dev",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "dev",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "dev",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "dev",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "dev",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "雪 é 😀",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "雪 é 😀",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "雪 é 😀",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "雪 é 😀",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "雪 é 😀",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "雪 é 😀",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "雪 é 😀",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "雪 é 😀",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "雪 é 😀",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "雪 é 😀",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "雪 é 😀",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "雪 é 😀",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": null,
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": null,
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": null
+      }
+    },
+    {
+      "input": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": [],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": [],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": []
+      }
+    },
+    {
+      "input": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "immediate"
+      },
+      "expected": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ],
+        "mode": "pending"
+      },
+      "expected": {
+        "prefix": "/dir/../x \"quoted\"",
+        "answer": [
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "a",
+            "label": "second",
+            "description": ""
+          },
+          {
+            "value": "z",
+            "label": "third"
+          },
+          {
+            "value": "z",
+            "label": "first",
+            "description": "Ω"
+          },
+          {
+            "value": "",
+            "label": "empty value"
+          },
+          {
+            "value": "﻿x",
+            "label": ""
+          },
+          {
+            "value": " \"../Ω 😀\" ",
+            "label": "\tlabel\n",
+            "description": "﻿"
+          }
+        ]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "input": {
+        "key": "ctrl+t",
+        "description": null,
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+t",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+t",
+        "description": null,
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+t",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+t",
+        "description": "",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+t",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+t",
+        "description": "",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+t",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+t",
+        "description": "Description Ω",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+t",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+t",
+        "description": "Description Ω",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+t",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+shift+p",
+        "description": null,
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+shift+p",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+shift+p",
+        "description": null,
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+shift+p",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+shift+p",
+        "description": "",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+shift+p",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+shift+p",
+        "description": "",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+shift+p",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+shift+p",
+        "description": "Description Ω",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+shift+p",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "ctrl+shift+p",
+        "description": "Description Ω",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "ctrl+shift+p",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "shift+ctrl+p",
+        "description": null,
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "shift+ctrl+p",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "shift+ctrl+p",
+        "description": null,
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "shift+ctrl+p",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "shift+ctrl+p",
+        "description": "",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "shift+ctrl+p",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "shift+ctrl+p",
+        "description": "",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "shift+ctrl+p",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "shift+ctrl+p",
+        "description": "Description Ω",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "shift+ctrl+p",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "shift+ctrl+p",
+        "description": "Description Ω",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "shift+ctrl+p",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "super+k",
+        "description": null,
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "super+k",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "super+k",
+        "description": null,
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "super+k",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "super+k",
+        "description": "",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "super+k",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "super+k",
+        "description": "",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "super+k",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "super+k",
+        "description": "Description Ω",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "super+k",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "super+k",
+        "description": "Description Ω",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "super+k",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "pageUp",
+        "description": null,
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "pageUp",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "pageUp",
+        "description": null,
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "pageUp",
+        "description": null,
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "pageUp",
+        "description": "",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "pageUp",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "pageUp",
+        "description": "",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "pageUp",
+        "description": "",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "pageUp",
+        "description": "Description Ω",
+        "mode": "immediate",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "pageUp",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    },
+    {
+      "input": {
+        "key": "pageUp",
+        "description": "Description Ω",
+        "mode": "pending",
+        "cwd": "/ordinary/雪"
+      },
+      "expected": {
+        "key": "pageUp",
+        "description": "Description Ω",
+        "cwd": "/ordinary/雪"
+      }
+    }
+  ],
+  "flags": [
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": null,
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": null,
+        "value": null
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": null,
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": null,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": null,
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": null,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": null,
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": null,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": null,
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": null,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": false,
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": false,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": false,
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": false,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": false,
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": false,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": false,
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": false,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": false,
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": false,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": true,
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": true,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": true,
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": true,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": true,
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": true,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": true,
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": true,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": true,
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": true,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": "",
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": "",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": "",
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": "",
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": "",
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": "",
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": "",
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": "",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": "",
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": "",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": "value Ω",
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": "value Ω",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": "value Ω",
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": "value Ω",
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "boolean",
+        "default": "value Ω",
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "boolean",
+        "default": "value Ω",
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": "value Ω",
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "boolean",
+        "default": "value Ω",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "boolean",
+        "default": "value Ω",
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "boolean",
+        "default": "value Ω",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": null,
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": null,
+        "value": null
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": null,
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": null,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": null,
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": null,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": null,
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": null,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": null,
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": null,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": false,
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": false,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": false,
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": false,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": false,
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": false,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": false,
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": false,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": false,
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": false,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": true,
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": true,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": true,
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": true,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": true,
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": true,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": true,
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": true,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": true,
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": true,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": "",
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": "",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": "",
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": "",
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": "",
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": "",
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": "",
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": "",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": "",
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": "",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": "value Ω",
+        "override": null
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": "value Ω",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": "value Ω",
+        "override": false
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": "value Ω",
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "Description Ω",
+        "type": "string",
+        "default": "value Ω",
+        "override": true
+      },
+      "expected": {
+        "unknown": null,
+        "description": "Description Ω",
+        "type": "string",
+        "default": "value Ω",
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": null,
+        "type": "string",
+        "default": "value Ω",
+        "override": ""
+      },
+      "expected": {
+        "unknown": null,
+        "description": null,
+        "type": "string",
+        "default": "value Ω",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "name": "mode Ω",
+        "description": "",
+        "type": "string",
+        "default": "value Ω",
+        "override": "value Ω"
+      },
+      "expected": {
+        "unknown": null,
+        "description": "",
+        "type": "string",
+        "default": "value Ω",
+        "value": "value Ω"
+      }
+    }
+  ],
+  "literalFlags": [
+    {
+      "input": "",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": "--plan",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": "plan",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": "Plan",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": " plan ",
+      "expected": "chosen with spaces",
+      "decoy": null
+    },
+    {
+      "input": "﻿plan",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": "plan",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": "模式",
+      "expected": "chosen",
+      "decoy": null
+    },
+    {
+      "input": "__proto__",
+      "expected": "chosen",
+      "decoy": null
+    }
+  ],
+  "replacements": [
+    {
+      "input": {
+        "first": null,
+        "second": null
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": null,
+        "value": null
+      }
+    },
+    {
+      "input": {
+        "first": null,
+        "second": false
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": false,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "first": null,
+        "second": true
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": true,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "first": null,
+        "second": ""
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "first": null,
+        "second": "value Ω"
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "value Ω",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "first": false,
+        "second": null
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": null,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "first": false,
+        "second": false
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": false,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "first": false,
+        "second": true
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": true,
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "first": false,
+        "second": ""
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "",
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "first": false,
+        "second": "value Ω"
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "value Ω",
+        "value": false
+      }
+    },
+    {
+      "input": {
+        "first": true,
+        "second": null
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": null,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "first": true,
+        "second": false
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": false,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "first": true,
+        "second": true
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": true,
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "first": true,
+        "second": ""
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "",
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "first": true,
+        "second": "value Ω"
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "value Ω",
+        "value": true
+      }
+    },
+    {
+      "input": {
+        "first": "",
+        "second": null
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": null,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "first": "",
+        "second": false
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": false,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "first": "",
+        "second": true
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": true,
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "first": "",
+        "second": ""
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "first": "",
+        "second": "value Ω"
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "value Ω",
+        "value": ""
+      }
+    },
+    {
+      "input": {
+        "first": "value Ω",
+        "second": null
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": null,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "first": "value Ω",
+        "second": false
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": false,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "first": "value Ω",
+        "second": true
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": true,
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "first": "value Ω",
+        "second": ""
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "",
+        "value": "value Ω"
+      }
+    },
+    {
+      "input": {
+        "first": "value Ω",
+        "second": "value Ω"
+      },
+      "expected": {
+        "description": "second",
+        "type": "string",
+        "default": "value Ω",
+        "value": "value Ω"
+      }
+    }
+  ],
+  "liveReads": [
+    {
+      "input": false,
+      "expected": [
+        false,
+        "",
+        false,
+        null
+      ]
+    },
+    {
+      "input": true,
+      "expected": [
+        true,
+        "",
+        false,
+        null
+      ]
+    },
+    {
+      "input": "",
+      "expected": [
+        "",
+        "",
+        false,
+        null
+      ]
+    },
+    {
+      "input": "value Ω",
+      "expected": [
+        "value Ω",
+        "",
+        false,
+        null
+      ]
+    }
+  ],
+  "callbackErrors": [
+    {
+      "input": {
+        "kind": "command",
+        "mode": "immediate",
+        "error": "command rejected: Ω\nsecond line"
+      },
+      "expected": {
+        "error": "command rejected: Ω\nsecond line",
+        "effects": [
+          "command before failure"
+        ]
+      }
+    },
+    {
+      "input": {
+        "kind": "command",
+        "mode": "pending",
+        "error": "command rejected: Ω\nsecond line"
+      },
+      "expected": {
+        "error": "command rejected: Ω\nsecond line",
+        "effects": [
+          "command before failure"
+        ]
+      }
+    },
+    {
+      "input": {
+        "kind": "completion",
+        "mode": "immediate",
+        "error": "completion rejected: Ω\nsecond line"
+      },
+      "expected": {
+        "error": "completion rejected: Ω\nsecond line",
+        "effects": [
+          "completion before failure"
+        ]
+      }
+    },
+    {
+      "input": {
+        "kind": "completion",
+        "mode": "pending",
+        "error": "completion rejected: Ω\nsecond line"
+      },
+      "expected": {
+        "error": "completion rejected: Ω\nsecond line",
+        "effects": [
+          "completion before failure"
+        ]
+      }
+    },
+    {
+      "input": {
+        "kind": "shortcut",
+        "mode": "immediate",
+        "error": "shortcut rejected: Ω\nsecond line"
+      },
+      "expected": {
+        "error": "shortcut rejected: Ω\nsecond line",
+        "effects": [
+          "shortcut before failure"
+        ]
+      }
+    },
+    {
+      "input": {
+        "kind": "shortcut",
+        "mode": "pending",
+        "error": "shortcut rejected: Ω\nsecond line"
+      },
+      "expected": {
+        "error": "shortcut rejected: Ω\nsecond line",
+        "effects": [
+          "shortcut before failure"
+        ]
+      }
+    }
+  ],
+  "example": [
+    {
+      "input": "",
+      "expected": [
+        {
+          "value": "dev",
+          "label": "dev"
+        },
+        {
+          "value": "staging",
+          "label": "staging"
+        },
+        {
+          "value": "prod",
+          "label": "prod"
+        }
+      ]
+    },
+    {
+      "input": "d",
+      "expected": [
+        {
+          "value": "dev",
+          "label": "dev"
+        }
+      ]
+    },
+    {
+      "input": "st",
+      "expected": [
+        {
+          "value": "staging",
+          "label": "staging"
+        }
+      ]
+    },
+    {
+      "input": "pr",
+      "expected": [
+        {
+          "value": "prod",
+          "label": "prod"
+        }
+      ]
+    },
+    {
+      "input": "dev",
+      "expected": [
+        {
+          "value": "dev",
+          "label": "dev"
+        }
+      ]
+    },
+    {
+      "input": "unknown",
+      "expected": null
+    },
+    {
+      "input": " dev",
+      "expected": null
+    },
+    {
+      "input": "DEV",
+      "expected": null
+    },
+    {
+      "input": "dev suffix",
+      "expected": null
+    },
+    {
+      "input": "﻿dev",
+      "expected": null
+    },
+    {
+      "input": "dev",
+      "expected": null
+    }
+  ]
+}

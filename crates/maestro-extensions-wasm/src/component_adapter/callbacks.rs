@@ -89,6 +89,8 @@ kinds! {
         Event(ExtensionHandler),
         Listener(crate::EventListener),
         Command(CommandHandler),
+        Completion(crate::ArgumentCompletions),
+        Shortcut(crate::ShortcutHandler),
         Prepare(crate::PrepareArguments),
         Tool(crate::ToolExecute),
     }

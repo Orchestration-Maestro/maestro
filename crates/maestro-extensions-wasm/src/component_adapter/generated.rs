@@ -11,6 +11,7 @@ use crate::bindings::maestro::extension::host;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::loader::Extension;
 use crate::types::{ExtensionFuture, ExtensionResult};
+use crate::{AutocompleteItem, FlagOptions, FlagValue};
 
 /// The generated host imports and resources.
 #[derive(Clone, Copy)]
@@ -256,9 +257,24 @@ impl Imports for Generated {
         &self,
         name: &str,
         description: Option<&str>,
+        completions: Option<&host::Callback>,
         handler: &host::Callback,
     ) -> ExtensionResult<()> {
-        host::register_command(name, description, handler)
+        host::register_command(name, description, completions, handler)
+    }
+    fn register_shortcut(
+        &self,
+        shortcut: &str,
+        description: Option<&str>,
+        handler: &host::Callback,
+    ) -> ExtensionResult<()> {
+        host::register_shortcut(shortcut, description, handler)
+    }
+    fn register_flag(&self, name: &str, options: &FlagOptions) -> ExtensionResult<()> {
+        host::register_flag(name, options)
+    }
+    fn get_flag(&self, name: &str) -> ExtensionResult<Option<FlagValue>> {
+        host::get_flag(name)
     }
 
     fn register_tool(
@@ -365,6 +381,20 @@ impl<E: Extension> Guest for Glue<E> {
     ) -> ExtensionResult<()> {
         Exports::new(Generated)
             .invoke_command(handler.id(), args, ctx)
+            .await
+    }
+
+    async fn invoke_completion(
+        handler: &host::Callback,
+        prefix: String,
+    ) -> ExtensionResult<Option<Vec<AutocompleteItem>>> {
+        Exports::new(Generated)
+            .invoke_completion(handler.id(), prefix)
+            .await
+    }
+    async fn invoke_shortcut(handler: &host::Callback, ctx: host::Context) -> ExtensionResult<()> {
+        Exports::new(Generated)
+            .invoke_shortcut(handler.id(), ctx)
             .await
     }
 

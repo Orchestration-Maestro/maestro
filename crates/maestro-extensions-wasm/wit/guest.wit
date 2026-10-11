@@ -2,7 +2,7 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{callback-emitter, tool-update, callback, abort-signal, context, command-context, replaced-session-context};
+    use host.{autocomplete-item, callback-emitter, tool-update, callback, abort-signal, context, command-context, replaced-session-context};
 
     /// Host resources lent to one event callback; the signal accompanies a compaction.
     record capabilities { ctx: context, signal: option<abort-signal> }
@@ -33,12 +33,16 @@ interface guest {
 
     /// Runs the extension factory; returns when it has completed.
     start: async func() -> result<_, string>;
-    /// Drops the closure behind a registered callback and its identity.
+    /// Removes the callback table entry; independent aliases and admitted futures may retain captures.
     release: func(handler: borrow<callback>);
     /// Runs a command handler.
     invoke-command: async func(
         handler: borrow<callback>, args: string, ctx: command-context,
     ) -> result<_, string>;
+    /// Runs the optional argument-completion callback.
+    invoke-completion: async func(handler: borrow<callback>, prefix: string) -> result<option<list<autocomplete-item>>, string>;
+    /// Runs a shortcut callback with an ordinary context.
+    invoke-shortcut: async func(handler: borrow<callback>, ctx: context) -> result<_, string>;
     /// Runs the continuation of a session operation.
     invoke-with-session: async func(
         handler: borrow<callback>, ctx: replaced-session-context,

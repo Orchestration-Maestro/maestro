@@ -2,6 +2,7 @@
 
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};
+use crate::{FlagOptions, FlagValue};
 
 /// The host's imports and resources at the wire level: the generated bindings inside a
 /// component, an in-process host where the same logic runs natively.
@@ -67,8 +68,20 @@ pub trait Imports: Clone + 'static {
         &self,
         name: &str,
         description: Option<&str>,
+        completions: Option<&Self::Callback>,
         handler: &Self::Callback,
     ) -> ExtensionResult<()>;
+    /// Registers a shortcut with its literal key.
+    fn register_shortcut(
+        &self,
+        shortcut: &str,
+        description: Option<&str>,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<()>;
+    /// Forwards flag options unchanged.
+    fn register_flag(&self, name: &str, options: &FlagOptions) -> ExtensionResult<()>;
+    /// Returns the host-resolved value.
+    fn get_flag(&self, name: &str) -> ExtensionResult<Option<FlagValue>>;
 
     /// Registers authored metadata with optional preparation and required execution.
     ///

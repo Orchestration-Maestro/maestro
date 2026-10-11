@@ -26,7 +26,10 @@ pub use tools::*;
 
 pub use agent_events::*;
 pub use agent_results::*;
-pub use api::{CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost};
+pub use api::{
+    ArgumentCompletions, CommandHandler, CommandOptions, ExtensionAPI, ExtensionHost, FlagOptions,
+    FlagType, FlagValue, ShortcutHandler, ShortcutOptions,
+};
 pub use context::{
     AbortSignal, CommandContextPort, ContextPort, ContextUsage, ExtensionCommandContext,
     ExtensionContext, ExtensionUIContext, ExtensionUIContextPort, NewSessionCommandOptions,

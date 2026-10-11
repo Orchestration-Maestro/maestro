@@ -5,7 +5,7 @@ canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
-families, tool callbacks, command contexts, session continuations, session readers,
+families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations and model catalog queries.
 
 ## Build a component
@@ -39,11 +39,52 @@ factory's next statement runs. Whether and when the host treats the extension as
 the host's decision; the `start` export resolves when the factory's future completes. `on`
 forwards each handler under its event name, including names the host does not define, and
 `register_command` forwards a command and `register_tool` forwards one tool definition. A rejected registration returns the host's message and
-retains nothing.
+adds no callbacks to the guest table.
 
-Each closure you register stays alive in the guest until the host releases it, exactly once,
-and never while the guest's closure table is borrowed. A destructor may register again while
-its own closure is released.
+Releasing a callback table entry removes that registration's ownership. Independent authored
+aliases and admitted futures can retain its captures after release. Entries leave the table
+before captures are destroyed, so a destructor may register another callback.
+
+`CommandOptions` owns its handler and optional `get_argument_completions` callback.
+Completion receives literal argument text and returns `None`, an empty list or an ordered
+list of `AutocompleteItem` records. The guest forwards each value, label and optional
+description without rewriting, sorting or deduplicating them. Command and completion
+registrations release independently.
+
+`register_shortcut` forwards the literal key and optional description in `ShortcutOptions`.
+Its handler receives an ordinary [`ExtensionContext`](../../crates/maestro-extensions-wasm/src/types/context.rs),
+not a command context. Immediate and suspended callback results retain supplied errors.
+
+`register_flag` forwards `FlagOptions`: optional description, declared `FlagType` and an
+independently typed optional `FlagValue` default. `get_flag` reads the host's current reply,
+including absence, false and empty strings. The host owns default and override resolution;
+the guest neither caches values nor infers the kind from the default.
+
+### Environment completion example
+
+```rust
+use std::rc::Rc;
+use maestro_extensions_wasm::{AutocompleteItem, CommandOptions, ExtensionAPI, ExtensionResult};
+
+fn register_environment(api: &ExtensionAPI) -> ExtensionResult<()> {
+    api.register_command("environment", CommandOptions {
+        description: None,
+        handler: Rc::new(|_, _| Box::pin(async { Ok(()) })),
+        get_argument_completions: Some(Rc::new(|prefix| Box::pin(async move {
+            let items = ["dev", "staging", "prod"].into_iter()
+                .filter(|name| name.starts_with(&prefix))
+                .map(|name| AutocompleteItem {
+                    value: name.into(), label: name.into(), description: None,
+                })
+                .collect::<Vec<_>>();
+            Ok((!items.is_empty()).then_some(items))
+        }))),
+    })
+}
+```
+
+The example callback filters its own environment names; the adapter does not perform
+completion matching.
 
 ## Tools
 

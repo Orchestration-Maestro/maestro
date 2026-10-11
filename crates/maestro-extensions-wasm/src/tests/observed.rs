@@ -73,6 +73,8 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Registration transport observations and supplied flag replies.
+    pub registrations: super::registration_host::Bank,
     /// Event-channel observations.
     pub bus: super::bus_host::Bank,
     /// Lines in time order.
@@ -96,12 +98,30 @@ pub struct Observed {
     /// Registrations in order, until released.
     order: VecDeque<(String, u32)>,
     /// The hold set for the next wait for idle.
-    hold: Option<Hold>,
+    hold: VecDeque<Hold>,
     /// Whether the next session operation fails without running its continuation.
     reject_session: bool,
 }
 
 impl Observed {
+    /// Checks only effects whose producers are closed by the named barrier phase.
+    pub fn assert_pending_phase(&self, phase: super::join::Phase, start: usize, shortcut: bool) {
+        let lines = &self.transcript[start..];
+        match phase {
+            super::join::Phase::BothPending => {
+                let guard = if shortcut {
+                    r#"entry released "pending shortcut""#
+                } else {
+                    r#"entry released "pending completion""#
+                };
+                assert!(!lines.contains(&guard.into()));
+            }
+            super::join::Phase::FirstCompleted => {
+                assert!(lines.contains(&r#"entry pending-done "/first""#.into()));
+                assert!(!lines.contains(&r#"entry pending-done "/second""#.into()));
+            }
+        }
+    }
     /// Appends a line to the transcript.
     pub fn log(&mut self, line: impl Into<String>) {
         self.transcript.push(line.into());
@@ -188,7 +208,7 @@ impl Observed {
     }
 
     /// Remembers the key a callback was registered under.
-    fn register(&mut self, name: String, key: u32) {
+    pub(super) fn register(&mut self, name: String, key: u32) {
         self.order.push_back((name.clone(), key));
         self.registered.insert(name, key);
     }
@@ -221,12 +241,12 @@ impl Observed {
 
     /// Keeps the next wait for idle pending.
     pub fn hold_next_idle(&mut self, hold: Hold) {
-        self.hold = Some(hold);
+        self.hold.push_back(hold);
     }
 
     /// Takes the hold set for the wait for idle that is starting.
     pub fn take_hold(&mut self) -> Option<Hold> {
-        self.hold.take()
+        self.hold.pop_front()
     }
 
     /// Makes the next session operation fail without running its continuation.

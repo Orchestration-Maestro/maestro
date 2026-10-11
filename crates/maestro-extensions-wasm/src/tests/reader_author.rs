@@ -69,6 +69,7 @@ pub fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_command(
         "reader",
         CommandOptions {
+            get_argument_completions: None,
             description: None,
             handler: Rc::new(move |args, ctx| {
                 let kept = Rc::clone(&kept);
