@@ -245,3 +245,87 @@ impl maestro_models::OAuthLoginCallbacks for NoInteraction {
         panic!("unexpected prompt")
     }
 }
+
+/// Rich account failure with two supplied nested causes.
+#[must_use]
+pub fn account_failure(message: &str) -> maestro_models::OAuthError {
+    let root = maestro_models::DiagnosticErrorInfo {
+        message: "root cause".into(),
+        name: None,
+        stack: None,
+        code: None,
+    }
+    .into();
+    let inner = maestro_models::OAuthError {
+        diagnostic: Box::new(maestro_models::DiagnosticErrorInfo {
+            message: "inner cause".into(),
+            name: Some("Inner".into()),
+            stack: Some("inner stack".into()),
+            code: Some(maestro_models::DiagnosticCode::Text("EINNER".into())),
+        }),
+        errno: Some(maestro_models::DiagnosticCode::Number(5.0)),
+        cause: Some(Box::new(root)),
+    };
+    maestro_models::OAuthError {
+        diagnostic: Box::new(diagnostic(message)),
+        errno: Some(maestro_models::DiagnosticCode::Number(13.0)),
+        cause: Some(Box::new(inner)),
+    }
+}
+
+/// Inspect the account wrapper and each supplied cause through native errors.
+/// # Panics
+/// Panics if any retained field or source differs.
+pub fn assert_account_failure(error: &maestro_catalog::CatalogError, message: &str) {
+    use std::error::Error;
+    assert!(matches!(error, maestro_catalog::CatalogError::OAuth(_)));
+    assert_eq!(error.to_string(), message);
+    assert_eq!(error.diagnostic(), &diagnostic(message));
+    let account = error
+        .source()
+        .unwrap()
+        .downcast_ref::<maestro_models::OAuthError>()
+        .unwrap();
+    assert!(std::ptr::eq(
+        error.diagnostic(),
+        account.diagnostic.as_ref()
+    ));
+    assert_eq!(
+        account.errno,
+        Some(maestro_models::DiagnosticCode::Number(13.0))
+    );
+    let inner = account
+        .source()
+        .unwrap()
+        .downcast_ref::<maestro_models::OAuthError>()
+        .unwrap();
+    assert_eq!(
+        *inner.diagnostic,
+        maestro_models::DiagnosticErrorInfo {
+            message: "inner cause".into(),
+            name: Some("Inner".into()),
+            stack: Some("inner stack".into()),
+            code: Some(maestro_models::DiagnosticCode::Text("EINNER".into())),
+        }
+    );
+    assert_eq!(
+        inner.errno,
+        Some(maestro_models::DiagnosticCode::Number(5.0))
+    );
+    let root = inner
+        .source()
+        .unwrap()
+        .downcast_ref::<maestro_models::OAuthError>()
+        .unwrap();
+    assert_eq!(
+        *root.diagnostic,
+        maestro_models::DiagnosticErrorInfo {
+            message: "root cause".into(),
+            name: None,
+            stack: None,
+            code: None,
+        }
+    );
+    assert!(root.errno.is_none());
+    assert!(root.source().is_none());
+}

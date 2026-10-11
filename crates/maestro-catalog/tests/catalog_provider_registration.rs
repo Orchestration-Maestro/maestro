@@ -23,13 +23,23 @@ fn registration_checks_incoming_fields_before_any_effect() {
     let api = maestro_models::get_api_provider("openai-completions").unwrap();
     for case in 0..9 {
         let config = invalid_config(case);
+        let error: maestro_catalog::CatalogError =
+            registry.register_provider("p", config).unwrap_err();
+        assert!(matches!(
+            error,
+            maestro_catalog::CatalogError::Diagnostic(_)
+        ));
+        assert_eq!(error.to_string(), invalid_message(case));
         assert_eq!(
-            registry
-                .register_provider("p", config)
-                .unwrap_err()
-                .to_string(),
-            invalid_message(case)
+            error.diagnostic(),
+            &maestro_models::DiagnosticErrorInfo {
+                message: invalid_message(case).into(),
+                name: None,
+                stack: None,
+                code: None,
+            }
         );
+        assert!(std::error::Error::source(&error).is_none());
         assert!(Arc::ptr_eq(&old, &registry.get_all()));
         assert!(Arc::ptr_eq(
             &oauth,

@@ -5,6 +5,16 @@ model file. `create` uses native file operations; `with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential owner.
 
+## Errors
+
+Construction, registration, refresh, removal and provider-key lookup return
+`maestro_catalog::CatalogError`.
+Its diagnostic accessor borrows the retained record; Display writes the supplied
+message, including an empty message. The OAuth variant exposes the original
+[account error](models/oauth.md) as its source. Authored catalog diagnostics have
+no account source. File failures remain available through `get_error`, and
+`ResolvedRequestAuth::Error` retains a message string.
+
 ## Loading and composition
 
 The file's `providers` object supplies provider defaults, custom `models` and

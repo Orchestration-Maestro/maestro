@@ -2,6 +2,8 @@
 mod auth_metadata;
 mod composition;
 mod dynamic_providers;
+mod error;
+pub use error::CatalogError;
 mod loading;
 mod provider_config;
 pub use provider_config::{ProviderConfigInput, ProviderModelInput};
@@ -10,8 +12,7 @@ mod request_auth;
 use indexmap::IndexMap;
 use maestro_credentials::{AuthCredential, AuthStorage};
 use maestro_models::{
-    Model, OAuthCredentials, OAuthError, OAuthProviderHandle, get_models, get_oauth_providers,
-    get_providers,
+    Model, OAuthCredentials, OAuthProviderHandle, get_models, get_oauth_providers, get_providers,
 };
 use request_auth::ProviderRequestConfig;
 pub use request_auth::ResolvedRequestAuth;
@@ -52,7 +53,7 @@ pub struct ModelRegistry {
     operations: Box<dyn ModelFileOperations>,
     /// Currently published list.
     models: ModelList,
-    /// Current file failure, separate from OAuth failures.
+    /// Current file failure, separate from propagated catalog failures.
     load_error: Option<String>,
     /// Request sources keyed by exact provider identity.
     provider_configs: HashMap<String, ProviderRequestConfig>,
@@ -65,30 +66,30 @@ impl ModelRegistry {
     /// Load immediately from the explicit native file path.
     ///
     /// # Errors
-    /// Returns an OAuth transformation failure.
+    /// Returns a catalog error wrapping an account transformation failure.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn create(
         auth_storage: Arc<AuthStorage>,
         models_json_path: impl Into<String>,
-    ) -> Result<Self, OAuthError> {
+    ) -> Result<Self, CatalogError> {
         Self::with_operations(auth_storage, models_json_path, NativeModelFileOperations)
     }
     /// Construct an offline catalog without file access.
     ///
     /// # Errors
-    /// Returns an OAuth transformation failure.
-    pub fn in_memory(auth_storage: Arc<AuthStorage>) -> Result<Self, OAuthError> {
+    /// Returns a catalog error wrapping an account transformation failure.
+    pub fn in_memory(auth_storage: Arc<AuthStorage>) -> Result<Self, CatalogError> {
         Self::with_operations(auth_storage, "", MemoryOperations)
     }
     /// Load using caller-selected synchronous file effects.
     ///
     /// # Errors
-    /// Returns an OAuth transformation failure.
+    /// Returns a catalog error wrapping an account transformation failure.
     pub fn with_operations(
         auth_storage: Arc<AuthStorage>,
         models_json_path: impl Into<String>,
         operations: impl ModelFileOperations + 'static,
-    ) -> Result<Self, OAuthError> {
+    ) -> Result<Self, CatalogError> {
         let mut registry = Self {
             auth_storage,
             path: models_json_path.into(),
@@ -110,7 +111,7 @@ impl ModelRegistry {
         &mut self,
         provider_name: &str,
         config: Arc<RwLock<ProviderConfigInput>>,
-    ) -> Result<(), OAuthError> {
+    ) -> Result<(), CatalogError> {
         config
             .read()
             .unwrap_or_else(PoisonError::into_inner)
@@ -128,7 +129,7 @@ impl ModelRegistry {
     ///
     /// # Errors
     /// Returns the first transformation failure, retaining effects already applied.
-    pub fn refresh(&mut self) -> Result<(), OAuthError> {
+    pub fn refresh(&mut self) -> Result<(), CatalogError> {
         self.load_error = None;
         self.provider_configs.clear();
         self.model_headers.clear();
@@ -149,7 +150,7 @@ impl ModelRegistry {
     ///
     /// # Errors
     /// Returns a transformation failure without replacing the published list.
-    fn load_models(&mut self) -> Result<(), OAuthError> {
+    fn load_models(&mut self) -> Result<(), CatalogError> {
         let config = loading::load(&self.path, self.operations.as_ref());
         let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
         match config {
@@ -248,7 +249,7 @@ fn transform_handles(
     handles: Vec<Arc<RwLock<Model>>>,
     oauth: &OAuthProviderHandle,
     credentials: &OAuthCredentials,
-) -> Result<Vec<Arc<RwLock<Model>>>, OAuthError> {
+) -> Result<Vec<Arc<RwLock<Model>>>, CatalogError> {
     let models: Vec<_> = handles
         .iter()
         .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())

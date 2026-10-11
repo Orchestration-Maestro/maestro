@@ -1,11 +1,11 @@
 //! Request-time resolution of retained configuration sources.
-use super::{ModelRegistry, read_provider};
+use super::{CatalogError, ModelRegistry, read_provider};
 use indexmap::IndexMap;
 use maestro_credentials::{
     ConfigValueOperations, resolve_config_value_or_throw, resolve_config_value_uncached,
     resolve_headers_or_throw,
 };
-use maestro_models::{Model, OAuthError};
+use maestro_models::Model;
 use std::sync::{Arc, PoisonError, RwLock};
 
 /// Checked provider request sources, separate from descriptor metadata.
@@ -36,12 +36,12 @@ impl ModelRegistry {
     /// Select a provider key with the credentials fallback disabled.
     ///
     /// # Errors
-    /// Returns a lower-layer OAuth extraction failure.
+    /// Returns a catalog error wrapping a lower-layer account extraction failure.
     pub async fn get_api_key_for_provider(
         &self,
         provider: &str,
         operations: &dyn ConfigValueOperations,
-    ) -> Result<Option<String>, OAuthError> {
+    ) -> Result<Option<String>, CatalogError> {
         let key = self
             .auth_storage
             .get_api_key(provider, false, operations)
