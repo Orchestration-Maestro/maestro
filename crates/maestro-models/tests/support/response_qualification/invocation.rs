@@ -4,6 +4,8 @@
 mod progress;
 #[path = "socket.rs"]
 mod socket;
+#[path = "../socket_server.rs"]
+mod socket_server;
 
 use super::{
     Context, Phase, Route, Row, TestResult, Wire, bundled, canonical, descriptor, messages,

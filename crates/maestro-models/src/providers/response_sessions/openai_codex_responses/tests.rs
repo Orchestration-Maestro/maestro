@@ -20,6 +20,10 @@ mod cache_continuation;
 mod socket_sessions;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[path = "../../../../tests/support/socket_server.rs"]
+mod socket_server;
+
+#[cfg(not(target_arch = "wasm32"))]
 mod socket_debug;
 
 /// Serializes tests that touch session-keyed process state: cached sockets, counters and

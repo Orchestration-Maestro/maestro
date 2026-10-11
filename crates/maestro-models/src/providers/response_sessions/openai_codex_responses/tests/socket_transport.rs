@@ -109,9 +109,7 @@ pub(super) async fn operate_prepared(
 
 /// Bind a loopback listener and name its endpoint.
 pub(super) async fn listen() -> (TcpListener, String) {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let url = format!("http://{}", listener.local_addr().unwrap());
-    (listener, url)
+    super::socket_server::listen().await.unwrap()
 }
 
 /// Accept one socket and complete the server side of the upgrade.

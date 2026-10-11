@@ -25,19 +25,16 @@ use base64::Engine as _;
 use futures_util::future::{Either, join, join3, select as select_first};
 use futures_util::{FutureExt, SinkExt};
 use indexmap::IndexMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt as _;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 use tokio::time::advance;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::tungstenite::handshake::server::{
-    Callback, ErrorResponse, Request, Response,
-};
 use tokio_tungstenite::tungstenite::http::HeaderMap;
 use tokio_tungstenite::tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
-use tokio_tungstenite::{WebSocketStream, accept_hdr_async, connect_async};
+use tokio_tungstenite::{WebSocketStream, connect_async};
 
 /// The peer's end of a socket.
 type Peer = WebSocketStream<TcpStream>;
@@ -188,25 +185,12 @@ fn token(account: &str, signature: &str) -> String {
     format!("a.{payload}.{signature}")
 }
 
-/// Records the headers of the upgrade request it sees.
-struct Recorder(Arc<Mutex<Option<HeaderMap>>>);
-
-impl Callback for Recorder {
-    fn on_request(self, request: &Request, response: Response) -> Result<Response, ErrorResponse> {
-        *self.0.lock().unwrap() = Some(request.headers().clone());
-        Ok(response)
-    }
-}
-
 /// Accept one socket and keep the headers of its upgrade request.
 async fn accept_headers(listener: &TcpListener) -> (Peer, HeaderMap) {
-    let (stream, _) = listener.accept().await.unwrap();
-    let seen = Arc::new(Mutex::new(None));
-    let socket = accept_hdr_async(stream, Recorder(Arc::clone(&seen)))
+    let (socket, request) = super::socket_server::accept_request(listener)
         .await
         .unwrap();
-    let headers = seen.lock().unwrap().take().unwrap();
-    (socket, headers)
+    (socket, request.into_parts().0.headers)
 }
 
 /// Authored headers.

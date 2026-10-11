@@ -3,15 +3,7 @@
 use super::{TestResult, Value};
 use futures_util::{SinkExt, StreamExt};
 use maestro_models::HttpRequest;
-use std::sync::{Arc, Mutex, PoisonError};
-use tokio::net::TcpListener;
-use tokio_tungstenite::{
-    accept_hdr_async,
-    tungstenite::{
-        Message,
-        handshake::server::{Callback, ErrorResponse, Request, Response},
-    },
-};
+use tokio_tungstenite::tungstenite::Message;
 
 /// Peer failures retain their native error; the caller joins after successful model observations.
 type PeerResult = Result<HttpRequest, Box<dyn std::error::Error + Send + Sync>>;
@@ -20,22 +12,14 @@ type PeerResult = Result<HttpRequest, Box<dyn std::error::Error + Send + Sync>>;
 pub(super) async fn serve(
     events: Vec<Value>,
 ) -> TestResult<(String, tokio::task::JoinHandle<PeerResult>)> {
-    let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let base = format!("http://{}", listener.local_addr()?);
+    let (listener, base) = super::socket_server::listen().await?;
     let task = tokio::spawn(async move {
-        let (stream, _) = listener.accept().await?;
-        let seen = Arc::new(Mutex::new(None));
-        let mut socket = accept_hdr_async(stream, Recorder(Arc::clone(&seen))).await?;
+        let (mut socket, request) = super::socket_server::accept_request(&listener).await?;
         let frame = socket
             .next()
             .await
             .ok_or("missing socket frame")??
             .into_text()?;
-        let request = seen
-            .lock()
-            .map_err(|_| "upgrade poisoned")?
-            .take()
-            .ok_or("missing upgrade")?;
         for event in events {
             socket.send(Message::text(event.to_string())).await?;
         }
@@ -53,15 +37,4 @@ pub(super) async fn serve(
         })
     });
     Ok((base, task))
-}
-
-/// Retains one actual upgrade without recreating handshake logic.
-struct Recorder(Arc<Mutex<Option<Request>>>);
-
-impl Callback for Recorder {
-    fn on_request(self, request: &Request, response: Response) -> Result<Response, ErrorResponse> {
-        let request = request.clone();
-        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(request);
-        Ok(response)
-    }
 }
