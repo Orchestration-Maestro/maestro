@@ -344,11 +344,11 @@ fn failed_transform_keeps_applied_effects_without_upserting_config() {
             calls: None,
             id: "ignored",
             name: "Dynamic OAuth",
-            transform: Arc::new(|_| Err(dynamic::diagnostic("transform failed").into())),
+            transform: Arc::new(|_| Err(dynamic::account_failure("transform failed"))),
         }));
     }
-    let error = registry.register_provider("p", config).unwrap_err();
-    assert_eq!(*error.diagnostic, dynamic::diagnostic("transform failed"));
+    let error: maestro_catalog::CatalogError = registry.register_provider("p", config).unwrap_err();
+    dynamic::assert_account_failure(&error, "transform failed");
     assert_eq!(registry.get_provider_display_name("p"), "retained");
     assert!(registry.find("p", "new").is_some());
     assert!(registry.find("p", "old").is_none());
@@ -403,7 +403,7 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
             transform: Arc::new(move |models| {
                 calls.lock().unwrap().push(id);
                 if id == "q" && fail.load(std::sync::atomic::Ordering::SeqCst) {
-                    Err(dynamic::diagnostic("replay q failed").into())
+                    Err(dynamic::account_failure("replay q failed"))
                 } else {
                     Ok(models)
                 }
@@ -414,10 +414,8 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
     }
     calls.lock().unwrap().clear();
     fail.store(true, std::sync::atomic::Ordering::SeqCst);
-    assert_eq!(
-        registry.refresh().unwrap_err().to_string(),
-        "replay q failed"
-    );
+    let error: maestro_catalog::CatalogError = registry.refresh().unwrap_err();
+    dynamic::assert_account_failure(&error, "replay q failed");
     assert_eq!(*calls.lock().unwrap(), ["p", "q"]);
     assert_eq!(
         dynamic::selected(&registry, &["p", "q", "r"])
@@ -471,7 +469,7 @@ fn known_removal_stays_removed_when_survivor_replay_fails() {
         name: "Survivor",
         transform: Arc::new(move |models| {
             if observed.load(std::sync::atomic::Ordering::SeqCst) {
-                Err(dynamic::diagnostic("retained failure").into())
+                Err(dynamic::account_failure("retained failure"))
             } else {
                 Ok(models)
             }
@@ -482,10 +480,8 @@ fn known_removal_stays_removed_when_survivor_replay_fails() {
         .register_provider("q", dynamic::config(&["removed"]))
         .unwrap();
     fail.store(true, std::sync::atomic::Ordering::SeqCst);
-    assert_eq!(
-        registry.unregister_provider("q").unwrap_err().to_string(),
-        "retained failure"
-    );
+    let error: maestro_catalog::CatalogError = registry.unregister_provider("q").unwrap_err();
+    dynamic::assert_account_failure(&error, "retained failure");
     assert!(registry.find("p", "m").is_some());
     assert!(registry.find("q", "removed").is_none());
     fail.store(false, std::sync::atomic::Ordering::SeqCst);

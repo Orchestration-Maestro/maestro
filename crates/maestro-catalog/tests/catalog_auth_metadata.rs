@@ -1,6 +1,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! Authentication metadata and shared descriptor observations.
+#[path = "support/dynamic.rs"]
+pub mod dynamic;
 #[path = "support/request.rs"]
 pub mod request_support;
 #[path = "support/common.rs"]

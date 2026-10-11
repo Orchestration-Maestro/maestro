@@ -1027,14 +1027,17 @@ fn request_result_catches_storage_errors_while_key_lookup_propagates() {
     let mut provider = request_support::OAuth::new(id, "controlled");
     provider.fail_key = true;
     let _registration = provider.register();
-    let registry = support::registry(&document(r#""apiKey":"configured""#, ""));
-    let model = registry.find("p", "m").unwrap();
-    model.write().unwrap().provider = id.into();
+    let mut registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
+    let config = dynamic::config(&["m"]);
+    config.write().unwrap().api_key = Some("!never".into());
+    registry.register_provider(id, config).unwrap();
+    let model = registry.find(id, "m").unwrap();
     registry
         .auth_storage()
         .set(id, request_support::tokens(f64::MAX));
-    let failure = run(registry.get_api_key_for_provider(id, &Operations)).unwrap_err();
-    assert_eq!(failure.to_string(), "extraction failed");
+    let failure: maestro_catalog::CatalogError =
+        run(registry.get_api_key_for_provider(id, &Operations)).unwrap_err();
+    dynamic::assert_account_failure(&failure, "extraction failed");
     error(
         run(registry.get_api_key_and_headers(&model, &Operations)),
         "extraction failed",

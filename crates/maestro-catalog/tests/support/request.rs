@@ -155,7 +155,7 @@ impl maestro_models::OAuthProviderInterface for OAuth {
         credentials: &'a maestro_models::OAuthCredentials,
     ) -> Result<&'a str, maestro_models::OAuthError> {
         if self.fail_key {
-            Err(diagnostic("extraction failed"))
+            Err(super::dynamic::account_failure("extraction failed"))
         } else {
             Ok(&credentials.access)
         }

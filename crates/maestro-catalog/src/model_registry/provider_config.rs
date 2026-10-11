@@ -1,4 +1,5 @@
 //! Typed dynamic provider definitions and incoming validation.
+use super::CatalogError;
 use maestro_models::{
     Api, DiagnosticErrorInfo, ModelCompat, ModelCost, ModelInput, OAuthError, OAuthProviderHandle,
     StreamFunction, StreamOptionsInput, ThinkingLevelMap,
@@ -58,7 +59,7 @@ pub struct ProviderModelInput {
 }
 impl ProviderConfigInput {
     /// Check prerequisites in their consuming order before registration effects.
-    pub(super) fn validate(&self, provider: &str) -> Result<(), OAuthError> {
+    pub(super) fn validate(&self, provider: &str) -> Result<(), CatalogError> {
         let failure = if self.stream_simple.is_some() && nonempty(self.api.as_deref()).is_none() {
             Some(format!(
                 "Provider {provider}: \"api\" is required when registering streamSimple."

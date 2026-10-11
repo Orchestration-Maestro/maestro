@@ -283,13 +283,7 @@ fn constructor_transform_failure_propagates_before_later_providers() {
     let observed = fail.clone();
     register(ids[0], move |models| {
         if observed.load(Ordering::SeqCst) {
-            Err(maestro_models::DiagnosticErrorInfo {
-                name: None,
-                message: "transform failed".into(),
-                stack: None,
-                code: None,
-            }
-            .into())
+            Err(dynamic::account_failure("transform failed"))
         } else {
             Ok(models)
         }
@@ -304,12 +298,27 @@ fn constructor_transform_failure_propagates_before_later_providers() {
     for id in ids {
         auth.set(id, tokens());
     }
-    let first = ModelRegistry::in_memory(auth.clone()).unwrap();
-    assert!(first.get_error().is_none());
-    fail.store(true, Ordering::SeqCst);
-    let result = ModelRegistry::in_memory(auth);
-    assert_eq!(result.err().unwrap().to_string(), "transform failed");
-    assert_eq!(*later.lock().unwrap(), 1);
+    let file = support::File::new(br#"{"providers":{}}"#);
+    let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    for route in 0..3 {
+        fail.store(false, Ordering::SeqCst);
+        let construct = || match route {
+            0 => ModelRegistry::in_memory(auth.clone()),
+            1 => ModelRegistry::create(auth.clone(), file.path()),
+            _ => ModelRegistry::with_operations(
+                auth.clone(),
+                "<models-file>",
+                dynamic::CountFile(reads.clone()),
+            ),
+        };
+        assert!(construct().unwrap().get_error().is_none());
+        let before = *later.lock().unwrap();
+        fail.store(true, Ordering::SeqCst);
+        let error: maestro_catalog::CatalogError = construct().err().unwrap();
+        dynamic::assert_account_failure(&error, "transform failed");
+        assert_eq!(*later.lock().unwrap(), before);
+        assert_eq!(reads.load(Ordering::SeqCst), if route == 2 { 2 } else { 0 });
+    }
 }
 
 /// Register a stateful ordered chain plus key-only and absent-credential decoys.

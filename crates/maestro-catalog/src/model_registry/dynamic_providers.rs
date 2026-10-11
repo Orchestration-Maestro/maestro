@@ -1,10 +1,10 @@
 //! Dynamic application and retained provider replay.
 use super::provider_config::{RegisteredOAuth, nonempty};
 use super::request_auth::ProviderRequestConfig;
-use super::{ModelRegistry, ProviderConfigInput, ProviderModelInput};
+use super::{CatalogError, ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_credentials::AuthCredential;
 use maestro_models::{
-    ApiProvider, Model, OAuthError, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
+    ApiProvider, Model, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
     register_oauth_provider,
 };
 use std::sync::{Arc, PoisonError, RwLock};
@@ -14,7 +14,7 @@ impl ModelRegistry {
         &mut self,
         provider: &str,
         config: &Arc<RwLock<ProviderConfigInput>>,
-    ) -> Result<(), OAuthError> {
+    ) -> Result<(), CatalogError> {
         install_operations(provider, config);
         let oauth = {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
@@ -108,7 +108,7 @@ impl ModelRegistry {
         &mut self,
         provider: &str,
         oauth: &OAuthProviderHandle,
-    ) -> Result<(), OAuthError> {
+    ) -> Result<(), CatalogError> {
         let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider) else {
             return Ok(());
         };
@@ -124,8 +124,8 @@ impl ModelRegistry {
     /// Remove a retained registration before reloading; unknown names are no-ops.
     ///
     /// # Errors
-    /// Returns an underlying load or surviving provider transformation failure.
-    pub fn unregister_provider(&mut self, provider_name: &str) -> Result<(), OAuthError> {
+    /// Returns a catalog error wrapping a surviving account transformation failure.
+    pub fn unregister_provider(&mut self, provider_name: &str) -> Result<(), CatalogError> {
         if self
             .registered_providers
             .shift_remove(provider_name)
