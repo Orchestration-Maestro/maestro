@@ -26719,7 +26719,8 @@
     "input": {
       "id": "after-35",
       "after": {
-        "isError": false
+        "isError": false,
+        "terminate": false
       }
     },
     "expected": {
@@ -26840,7 +26841,7 @@
               "z": 2,
               "a": 1
             },
-            "terminate": true
+            "terminate": false
           },
           "isError": false
         },
@@ -26950,6 +26951,100 @@
           ]
         },
         {
+          "type": "turn_start"
+        },
+        {
+          "type": "message_start",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop"
+          }
+        },
+        {
+          "type": "message_end",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop"
+          }
+        },
+        {
+          "type": "turn_end",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop"
+          },
+          "toolResults": []
+        },
+        {
           "type": "agent_end",
           "messages": [
             {
@@ -27007,6 +27102,33 @@
                 "a": 1
               },
               "isError": false
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "done"
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop"
             }
           ]
         }
@@ -27029,6 +27151,13 @@
         "turn_end",
         "stop",
         "steering:1",
+        "turn_start",
+        "request",
+        "message_start",
+        "message_end",
+        "turn_end",
+        "stop",
+        "steering:2",
         "follow:0",
         "agent_end"
       ],
@@ -27286,6 +27415,211 @@
               "isError": false
             }
           ]
+        },
+        {
+          "phase": "stop",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop"
+          },
+          "toolResults": [],
+          "history": [
+            {
+              "role": "user",
+              "content": "earlier"
+            },
+            {
+              "role": "user",
+              "content": "prompt"
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call-0",
+                  "name": "echo",
+                  "arguments": {
+                    "value": "7"
+                  }
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse"
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "call-0",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result:call-0"
+                },
+                {
+                  "type": "image",
+                  "data": "AA==",
+                  "mimeType": "image/png"
+                }
+              ],
+              "details": {
+                "z": 2,
+                "a": 1
+              },
+              "isError": false
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "done"
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop"
+            }
+          ],
+          "newMessages": [
+            {
+              "role": "user",
+              "content": "prompt"
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call-0",
+                  "name": "echo",
+                  "arguments": {
+                    "value": "7"
+                  }
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse"
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "call-0",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result:call-0"
+                },
+                {
+                  "type": "image",
+                  "data": "AA==",
+                  "mimeType": "image/png"
+                }
+              ],
+              "details": {
+                "z": 2,
+                "a": 1
+              },
+              "isError": false
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "done"
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop"
+            }
+          ]
         }
       ],
       "requests": [
@@ -27297,6 +27631,68 @@
           {
             "role": "user",
             "content": "prompt"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "content": "earlier"
+          },
+          {
+            "role": "user",
+            "content": "prompt"
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-0",
+                "name": "echo",
+                "arguments": {
+                  "value": "7"
+                }
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "toolUse"
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call-0",
+            "toolName": "echo",
+            "content": [
+              {
+                "type": "text",
+                "text": "result:call-0"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              }
+            ],
+            "details": {
+              "z": 2,
+              "a": 1
+            },
+            "isError": false
           }
         ]
       ],
@@ -27362,6 +27758,33 @@
             "a": 1
           },
           "isError": false
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "api": "fixture",
+          "provider": "fixture",
+          "model": "fixture",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop"
         }
       ]
     }
@@ -29095,7 +29518,10 @@
       "id": "after-38",
       "after": {
         "terminate": true
-      }
+      },
+      "terminations": [
+        false
+      ]
     },
     "expected": {
       "events": [
@@ -29439,7 +29865,7 @@
               "z": 2,
               "a": 1
             },
-            "terminate": true
+            "terminate": false
           },
           "isError": false,
           "history": [
@@ -56148,8 +56574,8 @@
       "id": "after-termination-64",
       "count": 2,
       "terminations": [
-        true,
-        true
+        false,
+        false
       ],
       "after": {
         "terminate": true
@@ -56666,7 +57092,7 @@
               "z": 2,
               "a": 1
             },
-            "terminate": true
+            "terminate": false
           },
           "isError": false,
           "history": [
@@ -56742,7 +57168,7 @@
               "z": 2,
               "a": 1
             },
-            "terminate": true
+            "terminate": false
           },
           "isError": false,
           "history": [

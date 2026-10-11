@@ -20,11 +20,14 @@ preparation precedes [argument validation](models/arguments.md), then the before
 hook may edit validated arguments without another schema check. A blocked call
 uses its nonempty reason exactly, or `Tool execution was blocked` when the reason
 is absent or empty. Preparation, validation and before-hook failures skip execution
-and the after hook. Execution failures reach the after hook as tool-error results.
+and the after hook. Execution failures reach the after hook as tool-error
+results once admitted progress has settled; a progress failure rejects the
+operation first.
 After hooks replace supplied content and nonnull details wholesale and may replace
 error and termination flags, including false. An after-hook failure becomes a
-tool-error result; request callback and observation failures reject the operation
-at their callback boundary.
+tool-error result; request callback and observation failures reject the
+operation. In a parallel batch, sibling calls settle before that rejection
+returns.
 
 Progress futures run alongside execution and may overlap. A callback reserves
 admission before invoking the synchronous observer outside locks. Execution
