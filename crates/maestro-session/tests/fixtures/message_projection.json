@@ -2309,8 +2309,7 @@
           "excludeFromContext": true
         },
         {
-          "role": "future.notice",
-          "timestamp": 9
+          "role": "future.notice"
         },
         {
           "role": "assistant",
@@ -2526,9 +2525,7 @@
     "args": [
       [
         {
-          "role": "user",
-          "content": "edited through retained input",
-          "timestamp": 6
+          "content": "edited through retained input"
         }
       ]
     ],
