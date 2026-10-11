@@ -680,12 +680,18 @@
         "extensions": [
           "../local",
           "!**/alpha"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!**/alpha"
         ]
       },
       "files": {
         "local/z.ts": "",
         "local/a.ts": "",
-        "local/skip.ts": ""
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -719,7 +725,26 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -738,12 +763,19 @@
           "../local",
           "!**/alpha",
           "+skills/alpha"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!**/alpha",
+          "+../pkg/skills/alpha"
         ]
       },
       "files": {
         "local/z.ts": "",
         "local/a.ts": "",
-        "local/skip.ts": ""
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -777,7 +809,26 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -969,7 +1020,9 @@
         "extensions": [
           "../local",
           "!*.ts",
-          "+/pkg/../local/a.ts"
+          "+$BASE/local/a.ts",
+          "+$BASE/local/skip.ts",
+          "-$BASE/local/skip.ts"
         ]
       },
       "files": {
@@ -983,7 +1036,7 @@
         "extensions": [
           {
             "path": "$BASE/local/a.ts",
-            "enabled": false,
+            "enabled": true,
             "metadata": {
               "source": "local",
               "scope": "user",
@@ -1200,12 +1253,19 @@
           "../local",
           "!*.ts",
           "+skills/alpha/"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!*.md",
+          "+../pkg/skills/alpha/"
         ]
       },
       "files": {
         "local/z.ts": "",
         "local/a.ts": "",
-        "local/skip.ts": ""
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -1239,7 +1299,26 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -1258,12 +1337,19 @@
           "../local",
           "!*.ts",
           "+alpha"
+        ],
+        "skills": [
+          "../pkg/skills",
+          "!*.md",
+          "+alpha"
         ]
       },
       "files": {
         "local/z.ts": "",
         "local/a.ts": "",
-        "local/skip.ts": ""
+        "local/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -1297,7 +1383,26 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "local",
+              "scope": "user",
+              "origin": "top-level"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -2084,6 +2189,9 @@
             "source": "../pkg",
             "extensions": [
               "!**/alpha"
+            ],
+            "skills": [
+              "!**/alpha"
             ]
           }
         ]
@@ -2092,13 +2200,18 @@
         "pkg": {
           "extensions": [
             "extensions"
+          ],
+          "skills": [
+            "skills"
           ]
         }
       },
       "files": {
         "pkg/extensions/z.ts": "",
         "pkg/extensions/a.ts": "",
-        "pkg/extensions/skip.ts": ""
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -2135,7 +2248,28 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -2156,6 +2290,10 @@
             "extensions": [
               "!**/alpha",
               "+skills/alpha"
+            ],
+            "skills": [
+              "!**/alpha",
+              "+skills/alpha"
             ]
           }
         ]
@@ -2164,13 +2302,18 @@
         "pkg": {
           "extensions": [
             "extensions"
+          ],
+          "skills": [
+            "skills"
           ]
         }
       },
       "files": {
         "pkg/extensions/z.ts": "",
         "pkg/extensions/a.ts": "",
-        "pkg/extensions/skip.ts": ""
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -2207,7 +2350,28 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -2443,7 +2607,9 @@
             "source": "../pkg",
             "extensions": [
               "!*.ts",
-              "+/pkg/extensions/a.ts"
+              "+$BASE/pkg/extensions/a.ts",
+              "+$BASE/pkg/extensions/skip.ts",
+              "-$BASE/pkg/extensions/skip.ts"
             ]
           }
         ]
@@ -2466,7 +2632,7 @@
         "extensions": [
           {
             "path": "$BASE/pkg/extensions/a.ts",
-            "enabled": false,
+            "enabled": true,
             "metadata": {
               "source": "../pkg",
               "scope": "user",
@@ -2730,6 +2896,10 @@
             "extensions": [
               "!*.ts",
               "+skills/alpha/"
+            ],
+            "skills": [
+              "!*.md",
+              "+skills/alpha/"
             ]
           }
         ]
@@ -2738,13 +2908,18 @@
         "pkg": {
           "extensions": [
             "extensions"
+          ],
+          "skills": [
+            "skills"
           ]
         }
       },
       "files": {
         "pkg/extensions/z.ts": "",
         "pkg/extensions/a.ts": "",
-        "pkg/extensions/skip.ts": ""
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -2781,7 +2956,28 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },
@@ -2802,6 +2998,10 @@
             "extensions": [
               "!*.ts",
               "+alpha"
+            ],
+            "skills": [
+              "!*.md",
+              "+alpha"
             ]
           }
         ]
@@ -2810,13 +3010,18 @@
         "pkg": {
           "extensions": [
             "extensions"
+          ],
+          "skills": [
+            "skills"
           ]
         }
       },
       "files": {
         "pkg/extensions/z.ts": "",
         "pkg/extensions/a.ts": "",
-        "pkg/extensions/skip.ts": ""
+        "pkg/extensions/skip.ts": "",
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": ""
       }
     },
     "expected": {
@@ -2853,7 +3058,28 @@
             }
           }
         ],
-        "skills": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
         "prompts": [],
         "themes": []
       },

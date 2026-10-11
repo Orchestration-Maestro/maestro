@@ -10,8 +10,11 @@ fn empty_settings_have_no_package_resources() {
     use maestro_packages::PackageManager;
     let scratch = scratch::Scratch::new().unwrap();
     let base = scratch.0.to_str().unwrap();
-    let (manager, effects) =
-        resolution_support::manager(base, resolution_support::Filesystem::default());
+    let (manager, effects) = resolution_support::manager(
+        base,
+        configured_resolution_support::owned_filesystem(&scratch.0),
+    );
+    *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
     let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let sink = std::rc::Rc::clone(&events);
     manager.set_progress_callback(Some(std::rc::Rc::new(move |event| {
@@ -404,9 +407,12 @@ fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
     fs::write(format!("{package}/package.json"), "{}").unwrap();
     let effects = Rc::new(support::Effects {
         native_exists: true,
+        resources: Some(Rc::new(configured_resolution_support::owned_filesystem(
+            &scratch.0,
+        ))),
         ..Default::default()
     });
-    *effects.home_override.borrow_mut() = Some(std::env::temp_dir().to_str().unwrap().into());
+    *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
     for (patterns, expected) in [
         (json!(["prompts/a.md"]), [true, false, false]),
         (json!(["!prompts/a.md"]), [false, true, true]),
@@ -478,5 +484,58 @@ fn assert_relative_selection(
             };
             assert_eq!(record.enabled, enabled, "{root}/{name}: {patterns}");
         }
+    }
+}
+
+#[test]
+fn automatic_relative_home_keeps_authored_path_and_exact_override() {
+    let scratch = scratch::Scratch::new_in(Path::new(".")).unwrap();
+    let base = scratch.0.to_str().unwrap().strip_prefix("./").unwrap();
+    let home = format!("{base}/home");
+    let user = format!("{base}/user");
+    let project = format!("{base}/project");
+    let skill = format!("{home}/.agents/skills/k/SKILL.md");
+    fs::create_dir_all(Path::new(&skill).parent().unwrap()).unwrap();
+    fs::write(&skill, "skill").unwrap();
+    fs::create_dir_all(&user).unwrap();
+    fs::create_dir_all(&project).unwrap();
+    fs::write(format!("{project}/.git"), "marker").unwrap();
+    let effects = Rc::new(support::Effects {
+        native_exists: true,
+        resources: Some(Rc::new(configured_resolution_support::owned_filesystem(
+            &scratch.0,
+        ))),
+        ..Default::default()
+    });
+    *effects.home_override.borrow_mut() = Some(home);
+    for (patterns, enabled) in [(json!([]), true), (json!([format!("-{skill}")]), false)] {
+        fs::write(
+            format!("{user}/settings.json"),
+            json!({"skills":patterns}).to_string(),
+        )
+        .unwrap();
+        let settings = Rc::new(RefCell::new(SettingsManager::create(
+            &project, &user, ".maestro",
+        )));
+        let manager = DefaultPackageManager::new(
+            PackageManagerOptions {
+                cwd: project.clone(),
+                agent_dir: user.clone(),
+                settings_manager: settings,
+            },
+            support::Controlled(Rc::clone(&effects)),
+        );
+        resolution_support::run(async {
+            let result = manager.resolve(None).await?;
+            assert_eq!(result.skills.len(), 1);
+            assert_eq!(result.skills[0].path, skill);
+            assert_eq!(result.skills[0].enabled, enabled);
+            assert_eq!(
+                result.skills[0].metadata.scope,
+                maestro_resources::SourceScope::User
+            );
+            Ok(())
+        })
+        .unwrap();
     }
 }

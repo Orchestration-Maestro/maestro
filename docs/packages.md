@@ -193,8 +193,10 @@ Automatic prompts and themes are shallow; configured document directories recurs
 Conventional skill roots admit loose root Markdown, while `.agents/skills` roots
 admit skill-directory entries. The project also visits `.agents/skills` from its
 working directory through the nearest `.git` marker, inclusive, or to the filesystem
-root; the home `.agents/skills` root is user-scoped. Automatic selection uses only
-modifier overrides from that scope's resource list, not positive patterns.
+root; the home `.agents/skills` root is user-scoped. Its discovery paths keep the
+joined home-root spelling; only the ancestor comparison resolves that home root.
+Exact overrides can therefore select the authored home paths. Automatic selection
+uses only modifier overrides from that scope's resource list, not positive patterns.
 
 For each resource kind, identical authored paths retain the better precedence
 owner, keeping the first on equal rank and replacing at the existing key position.

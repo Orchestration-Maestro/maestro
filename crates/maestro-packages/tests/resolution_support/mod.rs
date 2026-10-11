@@ -16,6 +16,8 @@ use std::{
 /// Native filesystem with selected read/stat failures.
 #[derive(Default)]
 pub struct Filesystem {
+    /// Native observations are restricted to this fixture tree when supplied.
+    pub owned_root: Option<PathBuf>,
     /// Reject ambient resource-directory reads.
     pub fail_current: bool,
     /// Native error code returned by an ambient directory read.
@@ -38,6 +40,13 @@ pub type Canonical = Rc<dyn Fn(&Path) -> io::Result<PathBuf>>;
 impl Filesystem {
     /// Whether the recorded operation fails here.
     fn check(&self, operation: &str, path: &Path) -> io::Result<()> {
+        if let Some(root) = &self.owned_root {
+            let absolute =
+                maestro_path::normalize(&std::env::current_dir()?.join(path).to_string_lossy());
+            if !Path::new(&absolute).starts_with(root) {
+                return Err(io::ErrorKind::NotFound.into());
+            }
+        }
         if self
             .fail
             .get(operation)
@@ -50,7 +59,7 @@ impl Filesystem {
 }
 impl ResourceOperations for Filesystem {
     fn exists(&self, path: &Path) -> bool {
-        NativeResourceOperations.exists(path)
+        self.check("existsSync", path).is_ok() && NativeResourceOperations.exists(path)
     }
     fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
         self.check("readdirSync", path)?;
@@ -82,6 +91,7 @@ impl ResourceOperations for Filesystem {
         NativeResourceOperations.symlink_metadata(path)
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+        self.check("realpathSync", path)?;
         if let Some(canonical) = &self.canonical {
             return canonical(path);
         }

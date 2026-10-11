@@ -83,6 +83,13 @@ struct Fixture {
     /// Completed effect observations.
     effects: Rc<support::Effects>,
 }
+/// Restricts native resource path operands to one owned fixture tree.
+pub fn owned_filesystem(root: &Path) -> resolution_support::Filesystem {
+    resolution_support::Filesystem {
+        owned_root: Some(root.canonicalize().unwrap()),
+        ..Default::default()
+    }
+}
 /// Runs complete selected recipes.
 pub fn check(names: &[&str]) {
     let cases: Vec<Record> =
@@ -181,7 +188,7 @@ fn native_tree(root: &Path, recipe: &Recipe) {
 }
 /// Supplies controlled acquisition and ambient failures below their owning wrappers.
 fn effects(recipe: &Recipe, base: &str) -> Rc<support::Effects> {
-    let resources = resolution_support::Filesystem::default();
+    let resources = owned_filesystem(Path::new(base));
     let effects = Rc::new(support::Effects {
         native_exists: true,
         resources: Some(Rc::new(resources)),
@@ -411,10 +418,16 @@ fn gated_callback<'a>(
 }
 /// Demonstrates a non-static callback capture through a completed configured operation.
 pub fn borrowed_callback() {
-    let (manager, settings, effects) = support::manager(&json!({"packages":["npm:missing"]}));
+    let fixture = setup(&Recipe {
+        global: json!({"packages":["npm:missing"]}),
+        ..Recipe::default()
+    });
+    let manager = &fixture.manager;
+    let settings = &fixture.settings;
+    let effects = &fixture.effects;
     let callbacks = std::cell::RefCell::new(Vec::new());
     {
-        let callback = missing_callback(&callbacks, &settings, Some("skip"), None);
+        let callback = missing_callback(&callbacks, settings, Some("skip"), None);
         resolution_support::run(async { manager.resolve(Some(&callback)).await.map(drop) })
             .unwrap();
     }
