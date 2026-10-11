@@ -219,3 +219,36 @@ cargo test -p maestro-models --locked --test response_identity \
   --test interleaved_reasoning --test invocation_cancellation \
   --test history_handoffs --test handoff_tool_ids
 ```
+
+## Controlled reasoning and Unicode histories
+
+The reasoning and text cases own 185 recorded inputs: 164 finite wire invocations,
+one ordered cloud catalog query and 20 raw UTF-16 sanitizer inputs. Fifteen tests
+compare these local observations through public operations. Wire cases use the
+shipped adapters; catalog presence does not establish remote availability. The
+missing-result and Unicode input groups each retain 23 model/account routes, including separate ordinary and
+account-authenticated message cases.
+
+The cases compare native conversation reasoning controls and their omission when
+reasoning is absent, four shipped thinking-disable requests, and nested schema
+keywords in callback and wire payloads. See
+[reasoning conversations](reasoning-conversations.md) for the owning controls.
+Missing-result continuations use actual returned assistants, with separate
+next-tool, history-boundary and failed-assistant inputs. See
+[history projection](../conversation-projection.md) for repair behavior.
+
+Text observations retain emoji tool results, multiline comments and distinct
+role text. Byte-body cases compare ordered stream events and terminal records
+for one-byte chunks and an invalid byte inside a text delta, including the
+response protocols' later authoritative text replacement. Raw-unit cases call
+the existing sanitizer. Decoder rules belong to [chat completions](chat-completions.md),
+[message protocol](messages.md) and [response protocols](responses.md).
+These finite fixtures qualify local conversion, not remote reasoning quality,
+authentication validity or server schema acceptance.
+
+```sh
+cargo test -p maestro-models --locked --test cloud_model_routes \
+  --test content_thinking_disabled --test conversation_reasoning \
+  --test conversation_tool_schema --test missing_tool_results \
+  --test provider_unicode
+```

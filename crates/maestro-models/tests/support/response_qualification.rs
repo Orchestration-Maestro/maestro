@@ -26,7 +26,7 @@ struct Row {
     expected: Expected,
 }
 
-/// Catalog lookup or wire invocation.
+/// Catalog lookup, raw-unit sanitization or wire invocation.
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Input {
@@ -34,6 +34,10 @@ enum Input {
     Wire(Box<Wire>),
     /// Ordered catalog queries.
     Catalog(Catalog),
+    /// Complete ordered descriptors.
+    Models(Models),
+    /// Raw sanitizer units.
+    Sanitize(Sanitize),
 }
 
 /// Inputs passed to existing public model operations.
@@ -47,7 +51,9 @@ struct Wire {
     /// Invocation controls.
     options: Options,
     /// Native server events.
-    events: Vec<Value>,
+    events: Option<Vec<Value>>,
+    /// Exact native byte chunks instead of event framing.
+    chunks: Option<Vec<Vec<u8>>>,
     /// Success, failure, or cancellation phase.
     phase: Phase,
     /// Public operation selected by the source.
@@ -63,6 +69,10 @@ struct Wire {
 struct Options {
     /// Synthetic key supplied to the adapter.
     api_key: String,
+    /// Independent output token limit.
+    max_tokens: Option<f64>,
+    /// Independent sampling temperature.
+    temperature: Option<f64>,
     /// Simple reasoning policy.
     reasoning: Option<ThinkingLevel>,
     /// Raw response reasoning effort.
@@ -108,6 +118,8 @@ enum Route {
     Complete,
     /// Simple completion.
     CompleteSimple,
+    /// Simple streaming.
+    StreamSimple,
 }
 
 /// Ordered catalog enumeration operands.
@@ -132,12 +144,36 @@ struct Pair {
     api_override: Option<String>,
 }
 
+/// Ordered public model enumeration.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Models {
+    /// Operation identity.
+    operation: String,
+    /// Catalog provider.
+    provider: String,
+}
+
+/// Public sanitizer inputs.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Sanitize {
+    /// Operation identity.
+    operation: String,
+    /// Raw UTF-16 input units.
+    units: Vec<u16>,
+}
+
 /// Every retained expected subtree is compared.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Expected {
     /// Ordered catalog APIs including absent models.
     apis: Option<Vec<Option<String>>>,
+    /// Complete ordered catalog records.
+    models: Option<Vec<Value>>,
+    /// Sanitized text.
+    text: Option<String>,
     /// Payload callback observations.
     payloads: Option<Vec<Value>>,
     /// Application-owned wire request observations.
@@ -237,8 +273,7 @@ const OWNERS: [(&str, usize); 21] = [
 ];
 
 /// Load the strict corpus and reject duplicate identities and effective inputs.
-fn rows() -> TestResult<Vec<Row>> {
-    let source = include_str!("../fixtures/response_qualification.json");
+fn rows(source: &str, owners: &[(&str, usize)]) -> TestResult<Vec<Row>> {
     let raw: Vec<Value> = serde_json::from_str(source)?;
     let mut ids = HashSet::new();
     let mut inputs = HashSet::new();
@@ -246,7 +281,7 @@ fn rows() -> TestResult<Vec<Row>> {
         assert!(ids.insert(row["id"].to_string()), "duplicate scenario");
         assert!(inputs.insert(row["input"].to_string()), "duplicate query");
     }
-    for (owner, count) in OWNERS {
+    for &(owner, count) in owners {
         assert_eq!(
             raw.iter().filter(|row| row["test"] == owner).count(),
             count,
@@ -255,7 +290,7 @@ fn rows() -> TestResult<Vec<Row>> {
     }
     assert_eq!(
         raw.len(),
-        OWNERS.iter().map(|(_, count)| count).sum::<usize>(),
+        owners.iter().map(|(_, count)| count).sum::<usize>(),
         "owned corpus size"
     );
     Ok(serde_json::from_str(source)?)
@@ -263,34 +298,31 @@ fn rows() -> TestResult<Vec<Row>> {
 
 /// Run a test's recorded inputs in one isolated child process.
 pub fn assert_rows(test: &str) -> TestResult {
-    let all = rows()?;
+    assert_corpus_rows(
+        include_str!("../fixtures/response_qualification.json"),
+        &OWNERS,
+        test,
+    )
+}
+
+/// Select a strict corpus with explicit ownership and run its public observations.
+pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) -> TestResult {
+    let all = rows(source, owners)?;
     let owned: Vec<_> = all
         .iter()
         .filter(|row| row.test.ends_with(&format!("::{test}")))
         .collect();
     assert!(!owned.is_empty(), "unowned test");
+    let _registry = bundled::registry();
     if child_process::child_case().is_none() {
         let env = environment(&owned, &all)?;
-        let full_name = if owned[0].test.contains("history_handoffs/") {
-            let module = owned[0]
-                .test
-                .split("history_handoffs/")
-                .nth(1)
-                .ok_or("module")?;
-            format!(
-                "history_handoffs::{}::{test}",
-                module.split('.').next().ok_or("module")?
-            )
-        } else {
-            test.into()
-        };
+        let full_name = test_path(&owned[0].test, test)?;
         return child_process::rerun(
             &full_name,
             "responses",
             &env.into_iter().collect::<Vec<_>>(),
         );
     }
-    let _registry = bundled::registry();
     maestro_models::reset_api_providers();
     chat::block_on(false, async {
         let mut results = histories::Results::new();
@@ -298,10 +330,44 @@ pub fn assert_rows(test: &str) -> TestResult {
             match &row.input {
                 Input::Wire(wire) => execute(row, wire, &all, &mut results).await?,
                 Input::Catalog(catalog) => catalog_rows(row, catalog),
+                Input::Models(query) => model_rows(row, query)?,
+                Input::Sanitize(query) => {
+                    assert_eq!(query.operation, "sanitizeSurrogates");
+                    assert_eq!(
+                        Some(maestro_models::sanitize_surrogates(&query.units)),
+                        row.expected.text,
+                        "sanitized units"
+                    );
+                }
             }
         }
         Ok(())
     })
+}
+
+/// Translate the corpus's source-owned nested module into its Cargo test name.
+fn test_path(owner: &str, test: &str) -> TestResult<String> {
+    for directory in ["history_handoffs", "provider_unicode"] {
+        if let Some((_, module)) = owner.split_once(&format!("{directory}/")) {
+            return Ok(format!(
+                "{directory}::{}::{test}",
+                module.split('.').next().ok_or("module")?
+            ));
+        }
+    }
+    Ok(test.into())
+}
+
+/// Compare complete descriptors in the catalog's configured order.
+fn model_rows(row: &Row, query: &Models) -> TestResult {
+    assert_eq!(query.operation, "getModels");
+    let models = maestro_models::get_models(&query.provider);
+    assert!(!models.is_empty(), "configured models");
+    assert!(
+        canonical(json!(models)) == canonical(json!(row.expected.models.as_ref().ok_or("models")?)),
+        "ordered descriptors"
+    );
+    Ok(())
 }
 
 /// Observe API keys in authored order, retaining absent catalog entries.
