@@ -15,9 +15,9 @@ pub struct ComponentDriver {
     path: PathBuf,
     /// The running component, once started.
     harness: Option<Harness>,
-    /// Independently returned guest resources.
     /// Next invocation-local emitter identity.
     emitter_key: usize,
+    /// Independently returned guest resources.
     components: Vec<Option<wasmtime::component::ResourceAny>>,
     /// The table keys of the flags lent so far, by handle.
     flags: Vec<u32>,

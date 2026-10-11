@@ -24,9 +24,9 @@ impl Extension for Author {
 pub struct ControlledDriver {
     /// The host the extension registers with.
     host: Controlled,
-    /// Independently returned component resources.
     /// Next invocation-local emitter identity.
     emitter_key: usize,
+    /// Independently returned component resources.
     components: Vec<Option<crate::Component>>,
     /// The flags lent so far, by handle.
     flags: Vec<Flag>,

@@ -47,6 +47,13 @@ async fn lines(
     );
     Ok(())
 }
+/// Checks the complete emission from the just-completed synchronous operation.
+fn emitted(driver: &impl Driver, before: usize, expected: (usize, &str, Value)) {
+    assert_eq!(
+        driver.renderer_emissions()[before..],
+        [(expected.0, expected.1.into(), expected.2)]
+    );
+}
 /// Invokes literal registrations and observes complete operands and live state.
 async fn invocation(driver: &mut impl Driver) -> Result<(), String> {
     for name in ["", " x ", "雪", "__proto__", "constructor", "a/b"] {
@@ -150,13 +157,14 @@ async fn emissions(driver: &mut impl Driver) -> Result<(), String> {
     ] {
         let before = driver.renderer_emissions().len();
         driver.component(id, call).await?;
-        assert_eq!(
-            driver.renderer_emissions()[before..],
-            [(
+        emitted(
+            driver,
+            before,
+            (
                 index,
-                channel.into(),
-                json!({"text":if index==2 {"z"} else {"ok"},"invalidations":u32::from(index==5)})
-            )]
+                channel,
+                json!({"text":if index==2 {"z"} else {"ok"},"invalidations":u32::from(index==5)}),
+            ),
         );
     }
     host_emission_errors(driver, handler, id).await?;
@@ -707,7 +715,7 @@ async fn host_emission_errors(
     handler: u32,
     id: usize,
 ) -> Result<(), String> {
-    for error in ["", "host Ω\nsecond line"] {
+    for (attempt, error) in ["", "host Ω\nsecond line"].into_iter().enumerate() {
         driver.reject_bus_emission(Some(error.into()));
         let before = driver.renderer_emissions().len();
         for call in [
@@ -726,11 +734,20 @@ async fn host_emission_errors(
             error
         );
         assert_eq!(
-            driver.renderer_emissions()[before..]
-                .iter()
-                .map(|(_, channel, _)| channel.as_str())
-                .collect::<Vec<_>>(),
+            driver.renderer_emissions()[before..],
             ["input", "render", "release", "invalidate", "renderer"]
+                .into_iter()
+                .enumerate()
+                .map(|(offset, channel)| (
+                    6 + attempt * 6 + offset,
+                    channel.into(),
+                    if channel == "renderer" {
+                        json!(false)
+                    } else {
+                        json!({"text":"before-host-error", "invalidations":1 + attempt + usize::from(channel == "invalidate")})
+                    },
+                ))
+                .collect::<Vec<_>>()
         );
         driver.reject_bus_emission(None);
         lines(
@@ -751,20 +768,41 @@ async fn author_emission_errors(
     handler: u32,
     id: usize,
 ) -> Result<(), String> {
+    let before = driver.renderer_emissions().len();
     assert_eq!(
         driver.component(id, Call::Input("fail")).await.unwrap_err(),
         "author Ω\nline"
     );
-    for call in [Call::Render(0), Call::Release, Call::Invalidate] {
+    emitted(
+        driver,
+        before,
+        (18, "input", json!({"text":"fail", "invalidations":3})),
+    );
+    for (index, call, channel, invalidations) in [
+        (19, Call::Render(0), "render", 3),
+        (20, Call::Release, "release", 3),
+        (21, Call::Invalidate, "invalidate", 4),
+    ] {
+        let before = driver.renderer_emissions().len();
         assert_eq!(
             driver.component(id, call).await.unwrap_err(),
             "author Ω\nline"
+        );
+        emitted(
+            driver,
+            before,
+            (
+                index,
+                channel,
+                json!({"text":"fail", "invalidations":invalidations}),
+            ),
         );
     }
     driver.component(id, Call::Input("healthy")).await?;
     lines(driver, id, 1, "healthy", 4).await?;
     let mut failed: Value = serde_json::from_str(&message()).unwrap();
     failed["customType"] = json!("fail");
+    let before = driver.renderer_emissions().len();
     assert_eq!(
         driver
             .renderer(handler, &failed.to_string(), false, "theme-author-error")
@@ -772,6 +810,7 @@ async fn author_emission_errors(
             .unwrap_err(),
         "author Ω\nline"
     );
+    emitted(driver, before, (24, "renderer", json!(false)));
     let healthy = driver
         .renderer(handler, &message(), false, "theme-healthy")
         .await?
@@ -843,6 +882,7 @@ async fn release_renderer_aliases(
 async fn empty_author_error(driver: &mut impl Driver) -> Result<(), String> {
     register(driver, &["empty-author-error"], "error", Some(""), false).await?;
     let handler = driver.identity("renderer empty-author-error")?;
+    let before = driver.renderer_emissions().len();
     assert_eq!(
         driver
             .renderer(handler, &message(), false, "empty-error-theme")
@@ -850,18 +890,39 @@ async fn empty_author_error(driver: &mut impl Driver) -> Result<(), String> {
             .unwrap_err(),
         ""
     );
+    assert!(driver.renderer_emissions()[before..].is_empty());
     register(driver, &["empty-author-view"], "emit", Some(""), false).await?;
     let handler = driver.identity("renderer empty-author-view")?;
     let id = driver
         .renderer(handler, &message(), false, "empty-view-theme")
         .await?
         .ok_or("view missing")?;
+    let before = driver.renderer_emissions().len();
     assert_eq!(
         driver.component(id, Call::Input("fail")).await.unwrap_err(),
         ""
     );
-    for call in [Call::Render(7), Call::Release, Call::Invalidate] {
+    emitted(
+        driver,
+        before,
+        (32, "input", json!({"text":"fail", "invalidations":0})),
+    );
+    for (index, call, channel, invalidations) in [
+        (33, Call::Render(7), "render", 0),
+        (34, Call::Release, "release", 0),
+        (35, Call::Invalidate, "invalidate", 1),
+    ] {
+        let before = driver.renderer_emissions().len();
         assert_eq!(driver.component(id, call).await.unwrap_err(), "");
+        emitted(
+            driver,
+            before,
+            (
+                index,
+                channel,
+                json!({"text":"fail", "invalidations":invalidations}),
+            ),
+        );
     }
     driver.component(id, Call::Input("healthy")).await?;
     lines(driver, id, 7, "healthy", 1).await?;
