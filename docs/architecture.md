@@ -19,8 +19,8 @@ no internal dependencies apart from the optional utility. Classes are not numeri
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
-Seven leaves in the specification table have no internal dependencies; the
-foundation utility `maestro-path` is an eighth. Other crates may use a subset of
+Eight leaves in the specification table have no internal dependencies; the
+foundation utility `maestro-path` is a ninth. Other crates may use a subset of
 their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
