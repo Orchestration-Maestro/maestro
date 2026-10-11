@@ -924,12 +924,19 @@ fn device_provider_changes_only_matching_models() {
             domain.map_or(serde_json::Value::Null, Into::into),
         );
         let result = maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER
-            .modify_models(models.clone(), &credentials)
+            .modify_models(&models, &credentials)
+            .unwrap()
             .unwrap();
         let mut expected_models = original.clone();
         expected_models[0].base_url = expected.into();
         expected_models[2].base_url = expected.into();
-        assert_eq!(result, expected_models);
+        assert_eq!(
+            result
+                .into_iter()
+                .map(std::borrow::Cow::into_owned)
+                .collect::<Vec<_>>(),
+            expected_models
+        );
         assert_eq!(models, original);
     }
     modifier_accepts_falsy_metadata(&models);
@@ -1324,12 +1331,19 @@ fn modifier_accepts_falsy_metadata(models: &[maestro_models::Model]) {
             extra: maestro_models::JsonObject::from_iter([("enterpriseUrl".into(), domain)]),
         };
         let result = maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER
-            .modify_models(models.to_vec(), &credentials)
+            .modify_models(models, &credentials)
+            .unwrap()
             .unwrap();
         let mut expected = models.to_vec();
         expected[0].base_url = "https://api.token".into();
         expected[2].base_url = "https://api.token".into();
-        assert_eq!(result, expected);
+        assert_eq!(
+            result
+                .into_iter()
+                .map(std::borrow::Cow::into_owned)
+                .collect::<Vec<_>>(),
+            expected
+        );
     }
 }
 
@@ -1350,7 +1364,8 @@ fn modifier_rejects_metadata(models: &[maestro_models::Model]) {
         credentials.extra.insert("enterpriseUrl".into(), domain);
         assert!(
             maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER
-                .modify_models(models.to_vec(), &credentials)
+                .modify_models(models, &credentials)
+                .unwrap()
                 .unwrap_err()
                 .to_string()
                 .contains("invalid type")

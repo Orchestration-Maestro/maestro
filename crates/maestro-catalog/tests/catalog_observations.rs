@@ -1,5 +1,7 @@
 #![cfg(test)]
 //! Shared catalog state and reload observations.
+#[path = "support/dynamic.rs"]
+pub mod dynamic;
 mod support;
 use maestro_catalog::ModelRegistry;
 use maestro_models::get_model;
@@ -184,12 +186,15 @@ impl OAuthProviderInterface for Modifier {
     fn get_api_key<'a>(&self, _: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
         panic!("unexpected key resolution")
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: Vec<Model>,
+        models: &'m [Model],
         _: &OAuthCredentials,
-    ) -> Result<Vec<Model>, OAuthError> {
-        (self.action)(models)
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, OAuthError>> {
+        Some(
+            (self.action)(models.to_vec())
+                .map(|models| models.into_iter().map(std::borrow::Cow::Owned).collect()),
+        )
     }
 }
 /// Registration cleanup even when an assertion fails.
@@ -222,6 +227,9 @@ fn tokens() -> AuthCredential {
 }
 #[test]
 fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
+    if dynamic::isolated("oauth_transforms_run_in_registration_order_for_stored_tokens") {
+        return;
+    }
     let ids = [
         "catalog-order-a",
         "catalog-order-b",
@@ -246,11 +254,8 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
         .flat_map(|p| maestro_models::get_models(p))
         .map(|m| (m.provider, m.id))
         .collect();
-    let mut registry = ModelRegistry::in_memory(auth).unwrap();
-    for iteration in 0..2 {
-        if iteration == 1 {
-            registry.refresh().unwrap();
-        }
+    for _ in 0..2 {
+        let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
         let all = registry.get_all();
         let all = all.read().unwrap();
         assert_eq!(all[0].read().unwrap().name, "AB");
@@ -267,8 +272,11 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
     assert_eq!(*calls.lock().unwrap(), ["a", "b", "a", "b"]);
 }
 #[test]
-fn failed_oauth_transform_preserves_published_catalog() {
+fn constructor_transform_failure_propagates_before_later_providers() {
     use std::sync::atomic::{AtomicBool, Ordering};
+    if dynamic::isolated("constructor_transform_failure_propagates_before_later_providers") {
+        return;
+    }
     let ids = ["catalog-fail-first", "catalog-fail-later"];
     let _registrations = Registrations(ids.to_vec());
     let fail = Arc::new(AtomicBool::new(false));
@@ -296,22 +304,9 @@ fn failed_oauth_transform_preserves_published_catalog() {
     for id in ids {
         auth.set(id, tokens());
     }
-    let text = support::Text(Arc::new(Mutex::new(Some("{".into()))));
-    let mut registry =
-        ModelRegistry::with_operations(auth.clone(), "<models-file>", text.clone()).unwrap();
-    assert!(registry.get_error().is_some());
-    let old = registry.get_all();
-    *text.0.lock().unwrap() =
-        Some(r#"{"providers":{"openrouter":{"models":[{"id":"new"}]}}}"#.into());
+    let first = ModelRegistry::in_memory(auth.clone()).unwrap();
+    assert!(first.get_error().is_none());
     fail.store(true, Ordering::SeqCst);
-    assert_eq!(
-        registry.refresh().unwrap_err().to_string(),
-        "transform failed"
-    );
-    assert!(Arc::ptr_eq(&old, &registry.get_all()));
-    assert_eq!(registry.get_error(), None);
-    assert!(registry.find("openrouter", "new").is_none());
-    assert_eq!(*later.lock().unwrap(), 1);
     let result = ModelRegistry::in_memory(auth);
     assert_eq!(result.err().unwrap().to_string(), "transform failed");
     assert_eq!(*later.lock().unwrap(), 1);

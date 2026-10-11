@@ -144,9 +144,11 @@ Neither login nor refresh persists credentials.
 `uses_callback_server`, `login`, `refresh_token`, `get_api_key` and
 `modify_models`. It reports `anthropic`, `Anthropic (Claude Pro/Max)` and
 `Some(true)`, delegates login/refresh, and borrows `credentials.access` as its
-API key. The default model modifier returns the original moved vector without
-changing its contents, order or allocation. Other providers may override it
-with a fallible transformation.
+API key. `modify_models` takes a borrowed descriptor slice and returns `None`
+when no modifier is supplied. A supplied modifier returns `Some` with a fallible
+list of `Cow<Model>` descriptors: borrowed input elements keep their identity;
+owned elements represent new objects. Registry publication is described in
+[catalog](../catalog.md).
 
 `OAuthError` retains boxed `DiagnosticErrorInfo`, optional supplied/native
 `errno` and an optional wrapped `cause`. Display prints its message;
@@ -198,7 +200,7 @@ extraction failures retain their own messages. Refresh writes no token-failure
 messages to stderr.
 
 `OPENAI_CODEX_OAUTH_PROVIDER` delegates these operations with the default
-originator, borrows the access key and inherits the unchanged model modifier.
+originator, borrows the access key and supplies no model modifier.
 
 ### Controlled refresh example
 
@@ -276,7 +278,9 @@ The helper does not parse or normalize the supplied endpoint text.
 `GITHUB_COPILOT_OAUTH_PROVIDER` reports `github-copilot` and `GitHub Copilot`,
 borrows the access key and delegates login and refresh. Its model modifier
 normalizes truthy enterprise metadata and changes only matching-provider base URLs,
-preserving descriptor order and other fields. Absent, null, false, zero or empty
+preserving descriptor order and other fields. Unrelated descriptors are borrowed;
+matching descriptors are owned copies, even when their endpoint is unchanged.
+Absent, null, false, zero or empty
 enterprise metadata skips modifier normalization. Refresh retains supplied string
 or null metadata; absent metadata remains absent. Other non-string values fail
 before refresh effects; truthy non-string values fail before model modification

@@ -50,6 +50,7 @@ impl ModelRegistry {
             self.provider_configs
                 .get(provider)
                 .and_then(|config| config.api_key.as_deref())
+                .filter(|value| !value.is_empty())
                 .and_then(|value| resolve_config_value_uncached(value, operations))
         }))
     }
@@ -132,7 +133,7 @@ fn resolve_key(
     model: &Arc<RwLock<Model>>,
     operations: &dyn ConfigValueOperations,
 ) -> Result<Option<String>, String> {
-    let api_key = match (stored, config) {
+    let api_key = match (stored, config.filter(|value| !value.is_empty())) {
         (Some(key), _) => Some(key),
         (None, Some(value)) => {
             let provider = read_provider(model);

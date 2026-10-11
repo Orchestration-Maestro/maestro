@@ -214,11 +214,7 @@ fn response_provider_delegates_and_borrows_access_key() {
             maestro_models::get_model("google", "gemini-2.5-flash").unwrap(),
             maestro_models::get_model("anthropic", "claude-sonnet-4-5").unwrap(),
         ];
-        let expected = models.clone();
-        let pointer = models.as_ptr();
-        let models = provider.modify_models(models, &rotated).unwrap();
-        assert_eq!(models, expected);
-        assert_eq!(models.as_ptr(), pointer);
+        assert!(provider.modify_models(&models, &rotated).is_none());
         drop(occupied);
     });
 }

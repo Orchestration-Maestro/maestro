@@ -160,19 +160,22 @@ impl maestro_models::OAuthProviderInterface for OAuth {
             Ok(&credentials.access)
         }
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: Vec<maestro_models::Model>,
+        models: &'m [maestro_models::Model],
         _: &maestro_models::OAuthCredentials,
-    ) -> Result<Vec<maestro_models::Model>, maestro_models::OAuthError> {
-        if self
-            .fail_transform
-            .load(std::sync::atomic::Ordering::SeqCst)
-        {
-            Err(diagnostic("transform failed"))
-        } else {
-            Ok(models)
-        }
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, maestro_models::Model>>, maestro_models::OAuthError>>
+    {
+        Some(
+            if self
+                .fail_transform
+                .load(std::sync::atomic::Ordering::SeqCst)
+            {
+                Err(diagnostic("transform failed"))
+            } else {
+                Ok(models.iter().map(std::borrow::Cow::Borrowed).collect())
+            },
+        )
     }
 }
 /// Registry cleanup before dropping any captured test state.

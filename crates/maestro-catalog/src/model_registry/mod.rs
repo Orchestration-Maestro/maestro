@@ -1,11 +1,18 @@
 //! Published local model descriptors and file operations.
 mod auth_metadata;
 mod composition;
+mod dynamic_providers;
 mod loading;
+mod provider_config;
+pub use provider_config::{ProviderConfigInput, ProviderModelInput};
+use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
 use maestro_credentials::{AuthCredential, AuthStorage};
-use maestro_models::{Model, OAuthError, get_models, get_oauth_providers, get_providers};
+use maestro_models::{
+    Model, OAuthCredentials, OAuthError, OAuthProviderHandle, get_models, get_oauth_providers,
+    get_providers,
+};
 use request_auth::ProviderRequestConfig;
 pub use request_auth::ResolvedRequestAuth;
 use std::collections::HashMap;
@@ -49,6 +56,8 @@ pub struct ModelRegistry {
     load_error: Option<String>,
     /// Request sources keyed by exact provider identity.
     provider_configs: HashMap<String, ProviderRequestConfig>,
+    /// First configuration handles in initial registration order.
+    registered_providers: IndexMap<String, Arc<RwLock<ProviderConfigInput>>>,
     /// Model header sources keyed by both identity components.
     model_headers: HashMap<(String, String), IndexMap<String, String>>,
 }
@@ -87,24 +96,60 @@ impl ModelRegistry {
             models: Arc::default(),
             load_error: None,
             provider_configs: HashMap::new(),
+            registered_providers: IndexMap::new(),
             model_headers: HashMap::new(),
         };
-        registry.refresh()?;
+        registry.load_models()?;
         Ok(registry)
+    }
+    /// Validate and apply the incoming record, then merge defined fields into retained state.
+    ///
+    /// # Errors
+    /// Returns the first missing prerequisite or supplied model transformation failure.
+    pub fn register_provider(
+        &mut self,
+        provider_name: &str,
+        config: Arc<RwLock<ProviderConfigInput>>,
+    ) -> Result<(), OAuthError> {
+        config
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .validate(provider_name)?;
+        self.apply_provider_config(provider_name, &config)?;
+        self.upsert_registered_provider(provider_name, config);
+        Ok(())
     }
     /// Borrow the credential owner supplied at construction.
     #[must_use]
     pub fn auth_storage(&self) -> &Arc<AuthStorage> {
         &self.auth_storage
     }
-    /// Reload the file, clearing its previous diagnostic before OAuth transforms.
+    /// Reset shared protocol/account registrations, load the file and replay retained providers.
     ///
     /// # Errors
-    /// Returns a transformation failure without replacing the published list.
+    /// Returns the first transformation failure, retaining effects already applied.
     pub fn refresh(&mut self) -> Result<(), OAuthError> {
         self.load_error = None;
         self.provider_configs.clear();
         self.model_headers.clear();
+        maestro_models::reset_api_providers();
+        maestro_models::reset_oauth_providers();
+        self.load_models()?;
+        let providers: Vec<_> = self
+            .registered_providers
+            .iter()
+            .map(|(name, config)| (name.clone(), Arc::clone(config)))
+            .collect();
+        for (name, config) in providers {
+            self.apply_provider_config(&name, &config)?;
+        }
+        Ok(())
+    }
+    /// Load underlying descriptors and run stored account transformations before publication.
+    ///
+    /// # Errors
+    /// Returns a transformation failure without replacing the published list.
+    fn load_models(&mut self) -> Result<(), OAuthError> {
         let config = loading::load(&self.path, self.operations.as_ref());
         let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
         match config {
@@ -115,17 +160,16 @@ impl ModelRegistry {
             Ok(None) => {}
             Err(error) => self.load_error = Some(error),
         }
+        let mut handles = models
+            .into_iter()
+            .map(|m| Arc::new(RwLock::new(m)))
+            .collect();
         for provider in get_oauth_providers() {
             if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id()) {
-                models = provider.modify_models(models, &credentials)?;
+                handles = transform_handles(handles, &provider, &credentials)?;
             }
         }
-        self.models = Arc::new(RwLock::new(
-            models
-                .into_iter()
-                .map(|m| Arc::new(RwLock::new(m)))
-                .collect(),
-        ));
+        self.models = Arc::new(RwLock::new(handles));
         Ok(())
     }
     /// Move checked request sources before descriptor composition.
@@ -197,4 +241,33 @@ fn read_provider(model: &Arc<RwLock<Model>>) -> String {
         .unwrap_or_else(PoisonError::into_inner)
         .provider
         .clone()
+}
+
+/// Project borrowed provenance onto current handles without holding descriptor guards.
+fn transform_handles(
+    handles: Vec<Arc<RwLock<Model>>>,
+    oauth: &OAuthProviderHandle,
+    credentials: &OAuthCredentials,
+) -> Result<Vec<Arc<RwLock<Model>>>, OAuthError> {
+    let models: Vec<_> = handles
+        .iter()
+        .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())
+        .collect();
+    let Some(transformed) = oauth.modify_models(&models, credentials) else {
+        return Ok(handles);
+    };
+    let mut foreign = HashMap::new();
+    Ok(transformed?
+        .into_iter()
+        .map(|model| match model {
+            Cow::Borrowed(original) => match models.element_offset(original) {
+                Some(index) => Arc::clone(&handles[index]),
+                None => foreign
+                    .entry(std::ptr::from_ref(original))
+                    .or_insert_with(|| Arc::new(RwLock::new(original.clone())))
+                    .clone(),
+            },
+            Cow::Owned(model) => Arc::new(RwLock::new(model)),
+        })
+        .collect())
 }

@@ -1020,6 +1020,9 @@ fn request_fields_preserve_checked_input_domains() {
 }
 #[test]
 fn request_result_catches_storage_errors_while_key_lookup_propagates() {
+    if dynamic::isolated("request_result_catches_storage_errors_while_key_lookup_propagates") {
+        return;
+    }
     let id = "catalog-extraction-failure";
     let mut provider = request_support::OAuth::new(id, "controlled");
     provider.fail_key = true;
@@ -1040,6 +1043,9 @@ fn request_result_catches_storage_errors_while_key_lookup_propagates() {
 #[test]
 fn request_reads_shared_model_after_await_without_retaining_locks() {
     use std::future::Future;
+    if dynamic::isolated("request_reads_shared_model_after_await_without_retaining_locks") {
+        return;
+    }
     let id = "catalog-read-phases";
     let (entered_send, mut entered) = tokio::sync::oneshot::channel();
     let (resume_send, resume) = tokio::sync::oneshot::channel();
@@ -1093,10 +1099,13 @@ fn request_reads_shared_model_after_await_without_retaining_locks() {
 }
 #[test]
 fn oauth_reload_failure_keeps_new_request_configuration() {
+    if dynamic::isolated("oauth_reload_failure_keeps_new_request_configuration") {
+        return;
+    }
     let id = "catalog-request-reload";
     let provider = request_support::OAuth::new(id, "controlled");
     let fail = provider.fail_transform.clone();
-    let _registration = provider.register();
+    let provider = Arc::new(provider);
     let auth = support::auth();
     auth.set(id, request_support::tokens(f64::MAX));
     let text = support::Text(Arc::new(std::sync::Mutex::new(Some(document(
@@ -1106,6 +1115,9 @@ fn oauth_reload_failure_keeps_new_request_configuration() {
     let mut registry =
         maestro_catalog::ModelRegistry::with_operations(auth, "models-input.json", text.clone())
             .unwrap();
+    let config = dynamic::config(&["dynamic"]);
+    config.write().unwrap().oauth = Some(provider);
+    registry.register_provider(id, config).unwrap();
     let list = registry.get_all();
     let model = registry.find("p", "m").unwrap();
     *text.0.lock().unwrap() = Some(document(
@@ -1117,7 +1129,7 @@ fn oauth_reload_failure_keeps_new_request_configuration() {
         registry.refresh().unwrap_err().to_string(),
         "transform failed"
     );
-    assert!(Arc::ptr_eq(&list, &registry.get_all()));
+    assert!(!Arc::ptr_eq(&list, &registry.get_all()));
     success(
         run(registry.get_api_key_and_headers(&model, &Operations)),
         Some("second"),
@@ -1275,3 +1287,6 @@ fn numeric_header_boundaries_and_merge() {
         ],
     );
 }
+
+#[path = "support/dynamic.rs"]
+pub mod dynamic;
