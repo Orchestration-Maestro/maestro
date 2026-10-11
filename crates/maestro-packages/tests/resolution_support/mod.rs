@@ -45,6 +45,8 @@ struct Recipe {
 pub struct Filesystem {
     /// Reject ambient resource-directory reads.
     pub fail_current: bool,
+    /// Native error code returned by an ambient directory read.
+    pub current_error_code: Option<i32>,
     /// Number of resource-directory reads.
     pub current_reads: Rc<std::cell::Cell<usize>>,
     /// Replacement extension entry sequence.
@@ -103,6 +105,9 @@ impl ResourceOperations for Filesystem {
     }
     fn current_directory(&self) -> io::Result<String> {
         self.current_reads.set(self.current_reads.get() + 1);
+        if let Some(code) = self.current_error_code {
+            return Err(io::Error::from_raw_os_error(code));
+        }
         if self.fail_current {
             return Err(io::ErrorKind::PermissionDenied.into());
         }

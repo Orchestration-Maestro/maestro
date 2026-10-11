@@ -638,6 +638,7 @@ fn ignore_ingress_preserves_a_second_rule_bom() {
 async fn resolve_relative_manifest(
     entries: serde_json::Value,
     fail_current: bool,
+    current_error_code: Option<i32>,
 ) -> (
     std::io::Result<maestro_packages::ResolvedPaths>,
     usize,
@@ -677,6 +678,7 @@ async fn resolve_relative_manifest(
             native_exists: true,
             resources: Some(Rc::new(resolution_support::Filesystem {
                 fail_current,
+                current_error_code,
                 current_reads: reads.clone(),
                 ..Default::default()
             })),
@@ -709,6 +711,7 @@ fn relative_installed_roots_apply_each_override() {
             let (result, reads, root) = resolve_relative_manifest(
                 serde_json::json!({"extensions":extensions,"skills":skills}),
                 false,
+                None,
             )
             .await;
             let result = result.unwrap();
@@ -754,17 +757,33 @@ fn relative_installed_roots_apply_each_override() {
 fn relative_manifest_matching_reads_ambient_only_for_candidates() {
     block_on(Box::pin(async {
         let (result, reads, _) =
-            resolve_relative_manifest(serde_json::json!({"extensions":["!src/a.ts"]}), true).await;
+            resolve_relative_manifest(serde_json::json!({"extensions":["!src/a.ts"]}), true, None)
+                .await;
         assert!(result.unwrap().extensions.is_empty());
         assert_eq!(reads, 0);
         let (result, reads, _) = resolve_relative_manifest(
             serde_json::json!({"extensions":["$ROOT/src/a.ts","!src/a.ts"]}),
             true,
+            None,
         )
         .await;
         assert_eq!(
             result.err().expect("required matcher cwd must fail").kind(),
             std::io::ErrorKind::PermissionDenied
+        );
+        assert_eq!(reads, 1);
+        let (result, reads, _) = resolve_relative_manifest(
+            serde_json::json!({"extensions":["$ROOT/src/a.ts","!src/a.ts"]}),
+            false,
+            Some(2),
+        )
+        .await;
+        assert_eq!(
+            result
+                .err()
+                .expect("required matcher cwd must fail")
+                .raw_os_error(),
+            Some(2)
         );
         assert_eq!(reads, 1);
 
@@ -780,6 +799,7 @@ fn relative_manifest_literals_are_excluded_from_installed_packages() {
     let (result, reads, _) = resolve_relative_manifest(
         serde_json::json!({"extensions":["src/a.ts","!src/a.ts"],"skills":["skills/demo","!skills/demo"]}),
         false,
+        None,
     ).await;
     let result = result.unwrap();
     assert!(result.extensions.is_empty());
@@ -809,7 +829,7 @@ async fn assert_context_free_manifest(restore: bool) -> std::io::Result<()> {
         entries.push("+src/a.ts");
     }
     let (result, reads, root) =
-        resolve_relative_manifest(serde_json::json!({"extensions": entries}), true).await;
+        resolve_relative_manifest(serde_json::json!({"extensions": entries}), true, None).await;
     let result = result.expect("selection without matching must not require cwd");
     assert_eq!(reads, 0);
     assert_eq!(result.extensions.len(), 1);

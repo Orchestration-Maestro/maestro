@@ -71,12 +71,12 @@ pub(super) fn apply_patterns<'a>(
             enabled.insert(file.as_str());
             continue;
         }
-        let root = matcher_root
-            .get_or_insert_with(|| {
-                super::resource_discovery::resolve_entry_path(root, "", operations)
-            })
-            .as_ref()
-            .map_err(|error| io::Error::new(error.kind(), error.to_string()))?;
+        let root = match matcher_root {
+            Some(ref root) => root,
+            None => matcher_root.insert(super::resource_discovery::resolve_entry_path(
+                root, "", operations,
+            )?),
+        };
         let views = PathViews::new(file, root);
         let parent = (views.name == "SKILL.md").then(|| PathViews::new(&dirname(file), root));
         let mut excluded = false;
