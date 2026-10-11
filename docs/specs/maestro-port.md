@@ -266,11 +266,11 @@ request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`) and file-pattern leaf (`maestro-pattern`) are excluded from
 this permission.
 
-The graph contains 31 crates: the 30 table entries plus the foundation utility.
-It permits 94 internal production dependency edges: 72 table edges plus 22
-optional utility edges. Eight crates are leaves when utility edges are ignored,
-including the utility itself. The below-layer-0 owners are delivered before
-their consumers; the utility is delivered before its first consumer.
+The graph consists of the table entries plus the foundation utility. The
+[architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
+checks the table against the enforced dependency policy, including permitted
+utility edges and leaves. The below-layer-0 owners are delivered before their
+consumers; the utility is delivered before its first consumer.
 
 ### Crate order
 

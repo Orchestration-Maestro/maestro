@@ -20,7 +20,8 @@ fn maestro_host_identity_uses_node_os_spellings() {
         ("macos", "x86", "darwin", "ia32"),
         ("windows", "riscv64", "win32", "riscv64"),
     ] {
-        assert_eq!(node_names(os, arch), (platform, node_arch));
+        assert_eq!(expected_host_names(os, arch), (platform, node_arch));
+        assert_eq!(node_names(os, arch), expected_host_names(os, arch));
     }
 }
 
@@ -45,17 +46,7 @@ async fn maestro_response_sessions_request_ids_and_host_identity_scenario() {
         .output()
         .unwrap();
     let release = std::str::from_utf8(&release.stdout).unwrap().trim_end();
-    let arch = match std::env::consts::ARCH {
-        "x86_64" => "x64",
-        "x86" => "ia32",
-        "aarch64" => "arm64",
-        arch => arch,
-    };
-    let platform = match std::env::consts::OS {
-        "macos" => "darwin",
-        "windows" => "win32",
-        os => os,
-    };
+    let (platform, arch) = expected_host_names(std::env::consts::OS, std::env::consts::ARCH);
     let expected = format!("maestro ({platform} {release}; {arch})");
     assert!(
         headers
@@ -147,4 +138,23 @@ impl tokio_tungstenite::tungstenite::handshake::server::Callback for IdentityCap
         self.sender.send((id, session)).unwrap();
         Ok(response)
     }
+}
+
+/// Independent expected aliases shared by native identity witnesses.
+fn expected_host_names<'a>(os: &'a str, arch: &'a str) -> (&'a str, &'a str) {
+    let arch = match arch {
+        "x86_64" => "x64",
+        "x86" => "ia32",
+        "aarch64" => "arm64",
+        "powerpc64" => "ppc64",
+        "loongarch64" => "loong64",
+        arch => arch,
+    };
+    let platform = match os {
+        "macos" => "darwin",
+        "windows" => "win32",
+        "solaris" | "illumos" => "sunos",
+        os => os,
+    };
+    (platform, arch)
 }

@@ -147,7 +147,8 @@ fn write<T>(value: &RwLock<T>) -> RwLockWriteGuard<'_, T> {
 /// Run prompts over a copied outer history, retaining shared entries.
 ///
 /// # Errors
-/// Returns request callback, model setup or awaited observation failures.
+/// Returns request callback, model setup, awaited observation, steering,
+/// follow-up or stop-callback failures.
 #[cfg(not(target_arch = "wasm32"))]
 pub async fn run_agent_loop<C: CustomAgentMessages + Send + Sync + 'static>(
     prompts: Vec<AgentMessage<C>>,
@@ -163,7 +164,8 @@ pub async fn run_agent_loop<C: CustomAgentMessages + Send + Sync + 'static>(
 ///
 /// # Errors
 /// Rejects empty or assistant tails before observations; otherwise propagates
-/// request callback, model setup or awaited observation failures.
+/// request callback, model setup, awaited observation, steering, follow-up or
+/// stop-callback failures.
 #[cfg(not(target_arch = "wasm32"))]
 pub async fn run_agent_loop_continue<C: CustomAgentMessages + Send + Sync + 'static>(
     context: AgentContext<C>,
@@ -177,7 +179,8 @@ pub async fn run_agent_loop_continue<C: CustomAgentMessages + Send + Sync + 'sta
 /// Run prompts over a copied outer history, retaining shared entries.
 ///
 /// # Errors
-/// Returns request callback, model setup or awaited observation failures.
+/// Returns request callback, model setup, awaited observation, steering,
+/// follow-up or stop-callback failures.
 #[cfg(target_arch = "wasm32")]
 pub async fn run_agent_loop<C: CustomAgentMessages + 'static>(
     prompts: Vec<AgentMessage<C>>,
@@ -193,7 +196,8 @@ pub async fn run_agent_loop<C: CustomAgentMessages + 'static>(
 ///
 /// # Errors
 /// Rejects empty or assistant tails before observations; otherwise propagates
-/// request callback, model setup or awaited observation failures.
+/// request callback, model setup, awaited observation, steering, follow-up or
+/// stop-callback failures.
 #[cfg(target_arch = "wasm32")]
 pub async fn run_agent_loop_continue<C: CustomAgentMessages + 'static>(
     context: AgentContext<C>,

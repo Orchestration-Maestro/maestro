@@ -20,9 +20,11 @@ no internal dependencies apart from the optional utility. Classes are not numeri
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
-Eight leaves in the specification table have no internal dependencies; the
-foundation utility `maestro-path` is a ninth. Other crates may use a subset of
-their specification row, except these complete direct sets:
+The specification table identifies leaves with no internal dependencies; the
+foundation utility `maestro-path` is also a leaf. The
+[architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
+checks the table against the enforced graph policy. Other crates may use a subset
+of their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
 - RPC and web: application and theme.
@@ -84,10 +86,10 @@ adapter, shared request owner, cancellation leaf, watch leaf, lock leaf,
 file-pattern leaf and the
 terminal scenario harness. The edge is ignored when checking a crate's complete
 direct set or leaf
-status, so the graph holds 31 crates and 94 permitted edges: 72 table edges plus
-22 utility edges. Dev-dependencies on the
-utility, dependencies from the utility, and cycles are rejected like any other
-internal edge.
+status. The
+[architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
+checks permitted table and utility edges. Dev-dependencies on the utility,
+dependencies from the utility, and cycles are rejected like any other internal edge.
 
 ## Bounded ownership checks
 

@@ -635,10 +635,10 @@ fn assert_base(
     let mut expected = expected;
     expected.as_object_mut().unwrap().remove("apiKey");
     for (name, value) in expected.as_object().unwrap() {
-        assert_eq!(
-            crate::providers::json_text::compact_json(&actual[name]).unwrap(),
-            crate::providers::json_text::compact_json(value).unwrap(),
-            "common field {name}"
+        assert!(
+            crate::providers::json_text::compact_json(&actual[name]).unwrap()
+                == crate::providers::json_text::compact_json(value).unwrap(),
+            "common field {name} differs"
         );
     }
     assert_eq!(

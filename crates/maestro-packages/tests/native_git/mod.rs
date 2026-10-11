@@ -85,6 +85,12 @@ impl Repository {
             } else {
                 "git:github.com/acme/tool".into()
             })]);
+        // Unexpected dependency installation fails instead of reaching a registry.
+        settings.borrow_mut().set_npm_command(Some(
+            ["/bin/sh", "-c", "exit 97"]
+                .map(|value| maestro_settings::SettingsListEntry::String(value.into()))
+                .to_vec(),
+        ));
         let local = Rc::new(tokio::task::LocalSet::new());
         let manager: Rc<dyn PackageManager> = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {

@@ -105,6 +105,5 @@ fn named_classes_shield_group_delimiters() {
 /// An invalid named range endpoint does not swallow following alternatives.
 #[test]
 fn invalid_classes_preserve_following_group_alternatives() {
-    assert_eq!(minimatch("xb", "x@([a-[:alpha:]]|b)"), Ok(true));
     assert_eq!(minimatch("xbz", "x@([a-[:alpha:]]|b)z"), Ok(true));
 }

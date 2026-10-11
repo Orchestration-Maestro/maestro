@@ -403,6 +403,7 @@ fn matching_version_strings_skip_only_current_candidates() {
         ("{\"version\":\"1\"}", "\"1\"", false),
         ("{\"version\":\" \"}", "\" \"", false),
         ("{\"version\":\"1\"}", "\"2\"", true),
+        ("{\"version\":\"2\"}", "\"1\"", true),
         ("{\"version\":\"1.0\"}", "\"1.0.0\"", true),
         (
             "{\"version\":\"2\",\"version\":\"1\",\"unused\":{\"x\":4}}",
@@ -586,10 +587,11 @@ fn four_update_workers_preserve_order_across_independent_calls() {
         let (gates, mut starts) = Gates::install(&effects, count);
         let result = local.spawn_local(manager.update(None));
         runtime.block_on(local.run_until(async {
-            tokio::task::yield_now().await;
-            assert_eq!(effects.spawns.get(), count.min(4));
             for index in 0..count.min(4) {
                 assert_eq!(starts.recv().await, Some(index));
+            }
+            if count > 0 {
+                assert_eq!(effects.spawns.get(), count.min(4));
             }
             for index in 4..count {
                 gates.finish(index - 4);
@@ -599,7 +601,9 @@ fn four_update_workers_preserve_order_across_independent_calls() {
                 gates.finish(index);
             }
             result.await.unwrap().unwrap();
-            if count > 0 {
+            if count == 0 {
+                assert_eq!(effects.spawns.get(), 0);
+            } else {
                 let args = effects.calls.borrow().last().unwrap().1.clone();
                 assert_eq!(
                     &args[1..=count],
@@ -1133,4 +1137,51 @@ fn failing_group_hook(
             Ok(Some(0))
         })
     })
+}
+
+#[test]
+fn mixed_pinned_current_and_outdated_candidates_install_only_outdated() {
+    let (manager, _, effects) = configured(
+        json!([]),
+        json!(["npm:pinned@1", "npm:current", "npm:outdated"]),
+    );
+    effects.exists.set(true);
+    *effects.manifest.borrow_mut() = Some("{\"version\":\"1\"}".into());
+    effects
+        .capture_outputs
+        .borrow_mut()
+        .extend([Ok("\"1\"".into()), Ok("\"2\"".into())]);
+    update(manager, &effects, None).unwrap();
+    assert_eq!(
+        *effects.calls.borrow(),
+        [
+            (
+                "npm".into(),
+                vec![
+                    "view".into(),
+                    "current".into(),
+                    "version".into(),
+                    "--json".into()
+                ]
+            ),
+            (
+                "npm".into(),
+                vec![
+                    "view".into(),
+                    "outdated".into(),
+                    "version".into(),
+                    "--json".into()
+                ]
+            ),
+            (
+                "npm".into(),
+                vec![
+                    "install".into(),
+                    "outdated@latest".into(),
+                    "--prefix".into(),
+                    "/work/project/.maestro/npm".into()
+                ]
+            ),
+        ]
+    );
 }
