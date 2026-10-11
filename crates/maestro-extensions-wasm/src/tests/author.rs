@@ -31,6 +31,8 @@ mod registration_author;
 #[cfg(target_arch = "wasm32")]
 #[path = "registration_fixture.rs"]
 mod registration_fixture;
+#[path = "setup_author.rs"]
+mod setup_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
 #[path = "tool_author.rs"]
@@ -253,6 +255,7 @@ fn replacement(log: &ExtensionAPI) -> NewSessionCommandOptions {
     let released = Released::new(log, "continuation");
     let log = log.clone();
     NewSessionCommandOptions {
+        setup: None,
         data: NewSessionCommandData {
             parent_session: Some("parent".to_owned()),
         },
@@ -392,6 +395,9 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                 let api = tool_api.clone();
                 let captured = Rc::clone(&captured);
                 Box::pin(async move {
+                    if args == "setup-register" {
+                        return setup_author::register(&api);
+                    }
                     if let Some(request) = args.strip_prefix("compact ") {
                         let input = serde_json::from_str(request).map_err(|e| e.to_string())?;
                         return compaction_author::dispatch(&api, &ctx, &input, &aliases).await;

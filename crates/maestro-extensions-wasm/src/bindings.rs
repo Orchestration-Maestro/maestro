@@ -26,6 +26,7 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.extension-ui-context": crate::tests::catalog_host::Ui,
             "maestro:extension/host.model-registry": crate::tests::reader_host::Reader,
             "maestro:extension/host.readonly-session-manager": crate::tests::reader_host::Reader,

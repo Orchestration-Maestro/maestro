@@ -20,6 +20,7 @@ mod host_api;
 mod imports;
 mod model_registry;
 mod session;
+mod setup;
 mod tools;
 #[cfg(test)]
 pub(crate) use tools::ToolCapabilities;

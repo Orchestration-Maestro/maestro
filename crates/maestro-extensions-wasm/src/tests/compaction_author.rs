@@ -171,6 +171,7 @@ pub async fn dispatch(
             let input = input.clone();
             let aliases = aliases.clone();
             ctx.new_session(Some(NewSessionCommandOptions {
+                setup: None,
                 data: NewSessionCommandData {
                     parent_session: None,
                 },

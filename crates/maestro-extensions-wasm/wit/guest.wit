@@ -2,7 +2,8 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
-    use host.{autocomplete-item, callback-emitter, tool-update, callback, abort-signal, context, command-context, replaced-session-context};
+    invoke-setup: async func(handler: borrow<callback>, writer: session-manager) -> result<_, string>;
+    use host.{autocomplete-item, callback-emitter, tool-update, session-manager, callback, abort-signal, context, command-context, replaced-session-context};
 
     /// Host resources lent to one event callback; the signal accompanies a compaction.
     record capabilities { ctx: context, signal: option<abort-signal> }

@@ -256,6 +256,56 @@ impl Driver for ControlledDriver {
             observed.registrations.shortcuts.clone(),
         )
     }
+    async fn notify_setup(&mut self, handler: u32) -> Result<(), String> {
+        self.exports()
+            .invoke_setup(handler, self.host.writer("unused"))
+            .await
+    }
+    async fn setup_drop(&mut self) -> Result<(), String> {
+        let handler = self.identity("command setup")?;
+        let exports = self.exports();
+        let context = self.host.command_context("/work");
+        let (finished, completion) = tokio::sync::oneshot::channel();
+        self.host.observe().setup_finished = Some(finished);
+        let (hold, entered, open) = gate();
+        self.host.observe().hold_next_idle(hold);
+        let main = async {
+            let result = exports
+                .invoke_command(handler, super::setup_sessions::drop_input(), context)
+                .await;
+            completion.await.unwrap();
+            result
+        };
+        let helper = async {
+            entered.await.unwrap();
+            let _ = open.send(());
+        };
+        super::join::alongside(main, helper).await
+    }
+    async fn setup_pair(&mut self) -> Result<(), String> {
+        let handler = self.identity("command setup")?;
+        let exports = self.exports();
+        let first = self.host.command_context("/A");
+        let second = self.host.command_context("/B");
+        let start = self.host.observed().transcript.len();
+        let (hold_a, entered_a, open_a) = gate();
+        let (hold_b, entered_b, open_b) = gate();
+        self.host.observe().hold_next_idle(hold_a);
+        self.host.observe().hold_next_idle(hold_b);
+        let (a, b) = super::join::reversed(
+            exports.invoke_command(handler, super::setup_sessions::pair_input("A"), first),
+            exports.invoke_command(handler, super::setup_sessions::pair_input("B"), second),
+            [(entered_a, open_a), (entered_b, open_b)],
+            |phase| {
+                super::setup_sessions::pair_phase(&self.host.observed().transcript[start..], phase);
+                std::future::ready(())
+            },
+        )
+        .await;
+        a?;
+        b?;
+        Ok(())
+    }
     async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String> {
         let exports = self.exports();
         let start = self.transcript().len();

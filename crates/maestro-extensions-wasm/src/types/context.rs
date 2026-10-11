@@ -153,8 +153,12 @@ impl ExtensionContext {
 /// Continuation run against the replacement session of an operation.
 pub type WithSession = Box<dyn FnOnce(ReplacedSessionContext) -> ExtensionFuture<'static, ()>>;
 
-/// Plain data and continuation of a new session started from a command.
+/// One-shot setup receiving the writable session capability.
+pub type SetupSession = Box<dyn FnOnce(crate::SessionManager) -> ExtensionFuture<'static, ()>>;
+/// Plain data and callbacks of a command-created session.
 pub struct NewSessionCommandOptions {
+    /// One-shot setup invoked with the operation's writable session.
+    pub setup: Option<SetupSession>,
     /// Plain data of the new session.
     pub data: NewSessionCommandData,
     /// The host runs it against a context bound to the replacement session.

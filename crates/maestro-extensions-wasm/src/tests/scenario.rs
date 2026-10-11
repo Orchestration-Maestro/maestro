@@ -145,6 +145,12 @@ pub trait Driver {
     async fn shortcut(&mut self, handler: u32, cwd: &str) -> Result<(), String>;
     /// Command and shortcut registration observations in order.
     fn registrations(&self) -> Registrations;
+    /// Overlap two writable setup operations and finish the second first.
+    /// Drop the operation while its admitted setup is pending, then await its own final owner.
+    /// Invoke setup through a lent callback identity.
+    async fn notify_setup(&mut self, handler: u32) -> Result<(), String>;
+    async fn setup_drop(&mut self) -> Result<(), String>;
+    async fn setup_pair(&mut self) -> Result<(), String>;
     /// Runs two calls with distinct inputs through named entry/completion barriers.
     async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String>;
     /// The exact missing/wrong-kind diagnostic for a lent callback resource.

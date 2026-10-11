@@ -426,6 +426,106 @@ impl Driver for ComponentDriver {
             )
         })
     }
+    async fn notify_setup(&mut self, handler: u32) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let writer = harness
+            .store
+            .data_mut()
+            .push(super::setup_host::reader("unused"))
+            .map_err(|e| e.to_string())?;
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_setup(accessor, borrow(handler), writer)
+                    .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    async fn setup_drop(&mut self) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let handler = harness
+            .callback("command setup")
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let context = harness
+            .command_context("/work")
+            .map_err(|e| e.to_string())?;
+        let (finished, completion) = tokio::sync::oneshot::channel();
+        harness.observed().setup_finished = Some(finished);
+        let (hold, entered, open) = gate();
+        harness.observed().hold_next_idle(hold);
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let main = async {
+                    let result = exports
+                        .call_invoke_command(
+                            accessor,
+                            borrow(handler),
+                            super::setup_sessions::drop_input(),
+                            context,
+                        )
+                        .await;
+                    completion.await.unwrap();
+                    result
+                };
+                let helper = async {
+                    entered.await.unwrap();
+                    let _ = open.send(());
+                };
+                super::join::alongside(main, helper).await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    async fn setup_pair(&mut self) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let handler = harness
+            .callback("command setup")
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let first = harness.command_context("/A").map_err(|e| e.to_string())?;
+        let second = harness.command_context("/B").map_err(|e| e.to_string())?;
+        let start = harness.store.data().observed.transcript.len();
+        let (hold_a, entered_a, open_a) = gate();
+        let (hold_b, entered_b, open_b) = gate();
+        harness.observed().hold_next_idle(hold_a);
+        harness.observed().hold_next_idle(hold_b);
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let observe = async |phase| {
+                    setup_phase(accessor, start, phase);
+                };
+                let (a, b) = super::join::reversed(
+                    exports.call_invoke_command(
+                        accessor,
+                        borrow(handler),
+                        super::setup_sessions::pair_input("A"),
+                        first,
+                    ),
+                    exports.call_invoke_command(
+                        accessor,
+                        borrow(handler),
+                        super::setup_sessions::pair_input("B"),
+                        second,
+                    ),
+                    [(entered_a, open_a), (entered_b, open_b)],
+                    observe,
+                )
+                .await;
+                a.map_err(|e| e.to_string())??;
+                b.map_err(|e| e.to_string())??;
+                Ok(())
+            })
+            .await
+            .map_err(|e| e.to_string())?
+    }
     async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String> {
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
         let start = harness.store.data().observed.transcript.len();
@@ -625,5 +725,16 @@ async fn pending_observation(
         a.get()
             .observed
             .assert_pending_phase(phase, start, shortcut);
+    });
+}
+
+/// Observe one closed setup phase without borrowing state across guest execution.
+fn setup_phase(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    start: usize,
+    phase: super::join::Phase,
+) {
+    accessor.with(|mut a| {
+        super::setup_sessions::pair_phase(&a.get().observed.transcript[start..], phase);
     });
 }

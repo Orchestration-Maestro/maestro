@@ -209,18 +209,24 @@ impl<I: Imports> CommandContextPort for Command<I> {
         options: Option<NewSessionCommandOptions>,
     ) -> ExtensionFuture<'_, SessionChangeResult> {
         Box::pin(async move {
-            let NewSessionCommandOptions { data, with_session } =
-                options.unwrap_or_else(|| NewSessionCommandOptions {
-                    data: NewSessionCommandData {
-                        parent_session: None,
-                    },
-                    with_session: None,
-                });
+            let NewSessionCommandOptions {
+                data,
+                setup,
+                with_session,
+            } = options.unwrap_or_else(|| NewSessionCommandOptions {
+                data: NewSessionCommandData {
+                    parent_session: None,
+                },
+                setup: None,
+                with_session: None,
+            });
+            let setup = setup.map(|closure| Scoped::new(&self.imports, closure));
             let with_session = with_session.map(|closure| Scoped::new(&self.imports, closure));
             self.imports
                 .new_session(
                     &self.context,
                     data,
+                    setup.as_ref().map(|scoped| &scoped.handle),
                     with_session.as_ref().map(|scoped| &scoped.handle),
                 )
                 .await

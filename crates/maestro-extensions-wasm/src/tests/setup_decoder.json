@@ -1,0 +1,207 @@
+[
+  {
+    "name": "empty_context",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"custom Ω\",\"model\":null}",
+    "expected": {
+      "messages": [],
+      "thinkingLevel": "custom Ω",
+      "model": null
+    }
+  },
+  {
+    "name": "ordered_messages",
+    "input": "{\"messages\":[{\"role\":\"user\",\"content\":\"z\",\"timestamp\":1},{\"role\":\"user\",\"content\":\"a\",\"timestamp\":2},{\"role\":\"user\",\"content\":\"z\",\"timestamp\":3}],\"thinkingLevel\":\"\",\"model\":{\"provider\":\"custom Ω\",\"modelId\":\"x/y\"}}",
+    "expected": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "z",
+          "timestamp": 1.0
+        },
+        {
+          "role": "user",
+          "content": "a",
+          "timestamp": 2.0
+        },
+        {
+          "role": "user",
+          "content": "z",
+          "timestamp": 3.0
+        }
+      ],
+      "thinkingLevel": "",
+      "model": {
+        "provider": "custom Ω",
+        "modelId": "x/y"
+      }
+    }
+  },
+  {
+    "name": "missing_model",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\"}",
+    "expected": {
+      "messages": [],
+      "thinkingLevel": "off",
+      "model": null
+    }
+  },
+  {
+    "name": "missing_messages",
+    "input": "{\"thinkingLevel\":\"off\",\"model\":null}",
+    "expected": {
+      "error": "missing field `messages` at line 1 column 36"
+    }
+  },
+  {
+    "name": "null_messages",
+    "input": "{\"messages\":null,\"thinkingLevel\":\"off\",\"model\":null}",
+    "expected": {
+      "error": "invalid type: null, expected a sequence at line 1 column 16"
+    }
+  },
+  {
+    "name": "wrong_messages",
+    "input": "{\"messages\":{},\"thinkingLevel\":\"off\",\"model\":null}",
+    "expected": {
+      "error": "invalid type: map, expected a sequence at line 1 column 12"
+    }
+  },
+  {
+    "name": "missing_level",
+    "input": "{\"messages\":[],\"model\":null}",
+    "expected": {
+      "error": "missing field `thinkingLevel` at line 1 column 28"
+    }
+  },
+  {
+    "name": "null_level",
+    "input": "{\"messages\":[],\"thinkingLevel\":null,\"model\":null}",
+    "expected": {
+      "error": "invalid type: null, expected a string at line 1 column 35"
+    }
+  },
+  {
+    "name": "wrong_level",
+    "input": "{\"messages\":[],\"thinkingLevel\":false,\"model\":null}",
+    "expected": {
+      "error": "invalid type: boolean `false`, expected a string at line 1 column 36"
+    }
+  },
+  {
+    "name": "wrong_model",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":false}",
+    "expected": {
+      "error": "invalid type: boolean `false`, expected struct SessionContextModel at line 1 column 50"
+    }
+  },
+  {
+    "name": "missing_provider",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"modelId\":\"x\"}}",
+    "expected": {
+      "error": "missing field `provider` at line 1 column 60"
+    }
+  },
+  {
+    "name": "null_provider",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"provider\":null,\"modelId\":\"x\"}}",
+    "expected": {
+      "error": "invalid type: null, expected a string at line 1 column 61"
+    }
+  },
+  {
+    "name": "wrong_model_id",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"provider\":\"p\",\"modelId\":1}}",
+    "expected": {
+      "error": "invalid type: integer `1`, expected a string at line 1 column 72"
+    }
+  },
+  {
+    "name": "missing_model_id",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"provider\":\"p\"}}",
+    "expected": {
+      "error": "missing field `modelId` at line 1 column 61"
+    }
+  },
+  {
+    "name": "null_model_id",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"provider\":\"p\",\"modelId\":null}}",
+    "expected": {
+      "error": "invalid type: null, expected a string at line 1 column 75"
+    }
+  },
+  {
+    "name": "wrong_provider",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"provider\":false,\"modelId\":\"m\"}}",
+    "expected": {
+      "error": "invalid type: boolean `false`, expected a string at line 1 column 62"
+    }
+  },
+  {
+    "name": "null_context",
+    "input": "null",
+    "expected": {
+      "error": "invalid type: null, expected struct SessionContext at line 1 column 4"
+    }
+  },
+  {
+    "name": "wrong_context",
+    "input": "false",
+    "expected": {
+      "error": "invalid type: boolean `false`, expected struct SessionContext at line 1 column 5"
+    }
+  },
+  {
+    "name": "extra_positional",
+    "input": "[[],\"off\",null,4]",
+    "expected": {
+      "error": "trailing characters at line 1 column 16"
+    }
+  },
+  {
+    "name": "positional_context",
+    "input": "[[],\"custom\",null]",
+    "expected": {
+      "messages": [],
+      "thinkingLevel": "custom",
+      "model": null
+    }
+  },
+  {
+    "name": "positional_model",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":[\"p\",\"m\"]}",
+    "expected": {
+      "messages": [],
+      "thinkingLevel": "off",
+      "model": {
+        "provider": "p",
+        "modelId": "m"
+      }
+    }
+  },
+  {
+    "name": "unknown_members",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"model\":{\"provider\":\"p\",\"modelId\":\"m\",\"unused\":{\"x\":[null]}},\"unused\":false}",
+    "expected": {
+      "messages": [],
+      "thinkingLevel": "off",
+      "model": {
+        "provider": "p",
+        "modelId": "m"
+      }
+    }
+  },
+  {
+    "name": "duplicate_level",
+    "input": "{\"messages\":[],\"thinkingLevel\":\"off\",\"thinkingLevel\":\"high\",\"model\":null}",
+    "expected": {
+      "error": "duplicate field `thinkingLevel` at line 1 column 52"
+    }
+  },
+  {
+    "name": "malformed_message",
+    "input": "{\"messages\":[{\"role\":\"user\",\"content\":false}],\"thinkingLevel\":\"off\",\"model\":null}",
+    "expected": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 45"
+    }
+  }
+]
