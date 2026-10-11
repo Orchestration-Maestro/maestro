@@ -317,3 +317,24 @@ fn maestro_paths_follow_a_link_whose_expansion_brings_back_components_already_re
         text(&file)
     );
 }
+/// Native entries use byte-name order on Unix, unlike insertion order.
+#[test]
+fn native_directory_entries_follow_platform_order() {
+    use maestro_resources::skills::ResourceOperations;
+    let dir = support::Directory::new();
+    for name in ["z.md", "b.md", "a.md"] {
+        let _ = dir.file(name, "fixture");
+    }
+    let entries = NativeResourceOperations.read_dir(&dir.0).unwrap();
+    let names: Vec<_> = entries.into_iter().map(|e| e.name).collect();
+    #[cfg(unix)]
+    assert_eq!(names, ["a.md", "b.md", "z.md"]);
+    #[cfg(windows)]
+    assert_eq!(
+        names,
+        std::fs::read_dir(&dir.0)
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect::<Vec<_>>()
+    );
+}

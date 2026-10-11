@@ -3918,3 +3918,39 @@ fn native_prompt_discovery_reads_authored_file_links() {
         .collect();
     assert_records(&actual, &expected);
 }
+
+/// Native prompt loading returns ordered source records.
+#[cfg(unix)]
+#[test]
+fn native_prompt_discovery_uses_ordered_directory_entries() {
+    let dir = support::Directory::new();
+    let z = dir.file("prompts/z.md", "last body");
+    let a = dir.file("prompts/a.md", "first body");
+    let paths = vec![support::text(a.parent().unwrap()).into()];
+    let result = load_prompt_templates(
+        LoadPromptTemplatesOptions {
+            cwd: support::text(&dir.0),
+            home: support::text(&dir.0),
+            agent_dir: "",
+            config_dir_name: ".maestro",
+            prompt_paths: &paths,
+            include_defaults: false,
+        },
+        &maestro_resources::NativeResourceOperations,
+    )
+    .unwrap();
+    assert_eq!(
+        result
+            .iter()
+            .map(|p| (
+                p.name.as_str(),
+                p.content.as_str(),
+                p.source_info.path.as_str()
+            ))
+            .collect::<Vec<_>>(),
+        [
+            ("a", "first body", support::text(&a)),
+            ("z", "last body", support::text(&z))
+        ]
+    );
+}

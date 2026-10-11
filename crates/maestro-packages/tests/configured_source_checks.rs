@@ -667,6 +667,9 @@ use maestro_packages::PackageOperations;
 struct WorkflowOperations(Controlled);
 #[cfg(unix)]
 impl PackageOperations for WorkflowOperations {
+    fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
+        &maestro_resources::NativeResourceOperations
+    }
     fn read_file(&self, path: &str) -> std::io::Result<String> {
         self.0.read_file(path)
     }

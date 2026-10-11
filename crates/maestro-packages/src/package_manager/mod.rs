@@ -7,13 +7,18 @@ mod concurrency;
 mod configuration;
 mod git;
 mod git_checks;
+mod manifest;
 mod npm;
 mod operations;
 mod paths;
 #[cfg(not(target_arch = "wasm32"))]
 mod process;
 mod progress;
+mod resolution;
+mod resource_discovery;
 mod sources;
+use maestro_resources::SourceScope;
+pub use resolution::{ResolvedPaths, ResolvedResource};
 mod update;
 use maestro_settings::SettingsManager;
 #[cfg(not(target_arch = "wasm32"))]
@@ -81,6 +86,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
 /// Source acquisition, removal and configured-source operations.
 pub trait PackageManager {
+    /// Resolves explicit sources using conventional resource discovery.
+    /// # Errors
+    /// Returns required path, installed-source lookup or installed-resource discovery failures.
+    fn resolve_extension_sources<'a>(
+        &'a self,
+        sources: &'a [String],
+        scope: Option<SourceScope>,
+    ) -> PackageFuture<'a, ResolvedPaths>;
     /// Appends a source unless its identity exists in the selected scope; `None` means user.
     /// # Errors
     /// Returns consumed settings, borrow or path failures.
@@ -158,6 +171,13 @@ pub trait PackageManager {
     ) -> PackageFuture<'a, bool>;
 }
 impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
+    fn resolve_extension_sources<'a>(
+        &'a self,
+        sources: &'a [String],
+        scope: Option<SourceScope>,
+    ) -> PackageFuture<'a, ResolvedPaths> {
+        Box::pin(async move { self.resolve_sources(sources, scope) })
+    }
     fn add_source_to_settings(
         &self,
         source: &str,

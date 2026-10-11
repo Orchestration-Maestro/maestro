@@ -3,6 +3,7 @@
 pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 
 /// Complete provenance accompanying a resolved path.
+#[derive(Clone)]
 pub struct PathMetadata {
     /// Extensible source label.
     pub source: String,

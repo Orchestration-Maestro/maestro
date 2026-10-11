@@ -1,0 +1,2575 @@
+[
+  {
+    "case": "empty_sources",
+    "files": {},
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "missing_local",
+    "files": {},
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/missing"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "explicit_opaque_file",
+    "files": {
+      "opaque.data": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/opaque.data"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/opaque.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/opaque.data",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "empty_source_user",
+    "files": {
+      "user/extensions/u.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      ""
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/user/extensions/u.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/user"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "scope_user",
+    "files": {
+      "user/pkg/extensions/u.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/user/pkg/extensions/u.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/user/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "scope_project",
+    "files": {
+      ".maestro/pkg/extensions/p.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "pkg"
+    ],
+    "scope": "project",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/.maestro/pkg/extensions/p.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "pkg",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": "$BASE/.maestro/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "scope_temporary",
+    "files": {
+      "pkg/extensions/t.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "pkg"
+    ],
+    "scope": "temporary",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/t.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "pkg",
+            "scope": "temporary",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "ecma_trim",
+    "files": {
+      "pkg/file.ts": "fixture",
+      "pkg/.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "﻿$BASE/pkg/file.ts﻿",
+      "$BASE/pkg/.ts"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/file.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "﻿$BASE/pkg/file.ts﻿",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg/.ts",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "all_kinds",
+    "files": {
+      "pkg/extensions/b.js": "fixture",
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/skills/loose.md": "fixture",
+      "pkg/prompts/deep/b.md": "fixture",
+      "pkg/prompts/a.md": "fixture",
+      "pkg/themes/deep/b.json": "fixture",
+      "pkg/themes/a.json": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/b.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/loose.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/deep/b.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": [
+        {
+          "path": "$BASE/pkg/themes/a.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/themes/deep/b.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "case": "root_fallback",
+    "files": {
+      "pkg/unrelated.txt": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "empty_convention",
+    "files": {},
+    "dirs": [
+      "pkg/extensions"
+    ],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "convention_file",
+    "files": {
+      "pkg/extensions": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "root_index_ts",
+    "files": {
+      "pkg/extensions/index.ts": "fixture",
+      "pkg/extensions/index.js": "fixture",
+      "pkg/extensions/helper.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "root_index_js",
+    "files": {
+      "pkg/extensions/index.js": "fixture",
+      "pkg/extensions/helper.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/index.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "root_index_directory",
+    "files": {
+      "pkg/extensions/index.js": "fixture",
+      "pkg/extensions/index.ts/child.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_native_read_failure",
+    "files": {
+      "pkg/extensions/index.ts": "fixture",
+      "pkg/extensions/package.json": "{\"maestro\":{\"extensions\":[\"other.ts\"]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {
+      "readFileSync": [
+        "/extensions/package.json"
+      ]
+    },
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "child_entry_rules",
+    "files": {
+      "pkg/extensions/one/index.ts": "fixture",
+      "pkg/extensions/one/helper.ts": "fixture",
+      "pkg/extensions/two/index.js": "fixture",
+      "pkg/extensions/two/helper.js": "fixture",
+      "pkg/extensions/three/helper.ts": "fixture",
+      "pkg/extensions/top.js": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/one/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/top.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/two/index.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "root_manifest",
+    "files": {
+      "pkg/extensions/b.ts": "fixture",
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/extensions/index.ts": "fixture",
+      "pkg/extensions/package.json": "{\"maestro\":{\"extensions\":[\"b.ts\",\"missing.ts\",\"a.ts\",\"b.ts\"]}}",
+      "pkg/extensions/.gitignore": "*\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "child_manifest",
+    "files": {
+      "pkg/extensions/child/b.ts": "fixture",
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":[\"b.ts\",\"missing.ts\",\"a.ts\",\"b.ts\"]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/child/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "literal_manifest",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.js": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":[\"*.ts\"]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_empty_list",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":[]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_missing_field",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_null_field",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":null}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_wrong_field",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":7}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_wrong_bool",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":true}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_wrong_object",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":{\"ignored\":7}}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_wrong_root",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "[]"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_invalid_json",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_null_root",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "null"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_duplicate",
+    "files": {
+      "pkg/extensions/child/a.ts": "fixture",
+      "pkg/extensions/child/index.ts": "fixture",
+      "pkg/extensions/child/package.json": "{\"maestro\":{\"extensions\":[\"missing.ts\"],\"extensions\":[\"a.ts\"]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/child/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_bad_item_root",
+    "files": {
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/extensions/index.ts": "fixture",
+      "pkg/skills/SKILL.md": "fixture",
+      "pkg/extensions/package.json": "{\"maestro\":{\"extensions\":[\"a.ts\",7]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_bad_item_child",
+    "files": {
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/extensions/bad/index.ts": "fixture",
+      "pkg/extensions/z.ts": "fixture",
+      "pkg/skills/SKILL.md": "fixture",
+      "pkg/extensions/bad/package.json": "{\"maestro\":{\"extensions\":[7]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_explicit_unusual",
+    "files": {
+      "pkg/extensions/.hidden.data": "fixture",
+      "pkg/extensions/node_modules/file.data": "fixture",
+      "outside.data": "fixture",
+      "pkg/extensions/package.json": "{\"maestro\":{\"extensions\":[\".hidden.data\",\"node_modules/file.data\",\"as-dir\",\"../../outside.data\"]}}"
+    },
+    "dirs": [
+      "pkg/extensions/as-dir"
+    ],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/.hidden.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/node_modules/file.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/extensions/as-dir",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/outside.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "skill_stop",
+    "files": {
+      "pkg/skills/SKILL.md": "fixture",
+      "pkg/skills/root.md": "fixture",
+      "pkg/skills/child/SKILL.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "skill_loose_root",
+    "files": {
+      "pkg/skills/root.md": "fixture",
+      "pkg/skills/child/loose.md": "fixture",
+      "pkg/skills/child/deep/SKILL.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/child/deep/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/skills/root.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "skill_ignored_entry",
+    "files": {
+      "pkg/skills/SKILL.md": "fixture",
+      "pkg/skills/root.md": "fixture",
+      "pkg/skills/child/SKILL.md": "fixture",
+      "pkg/skills/.gitignore": "/SKILL.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/child/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/skills/root.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "skill_entry_directory",
+    "files": {
+      "pkg/skills/SKILL.md/inside/SKILL.md": "fixture",
+      "pkg/skills/root.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/SKILL.md/inside/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/skills/root.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "suffix_hidden_dependencies",
+    "files": {
+      "pkg/extensions/.hidden.ts": "fixture",
+      "pkg/extensions/node_modules/index.ts": "fixture",
+      "pkg/extensions/upper.TS": "fixture",
+      "pkg/skills/.hidden.md": "fixture",
+      "pkg/skills/node_modules/SKILL.md": "fixture",
+      "pkg/prompts/.hidden.md": "fixture",
+      "pkg/prompts/node_modules/skip.md": "fixture",
+      "pkg/prompts/a.MD": "fixture",
+      "pkg/prompts/a.md": "fixture",
+      "pkg/themes/a.JSON": "fixture",
+      "pkg/themes/a.json": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": [
+        {
+          "path": "$BASE/pkg/themes/a.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "case": "ignore_order",
+    "files": {
+      "pkg/prompts/a.md": "fixture",
+      "pkg/prompts/keep.md": "fixture",
+      "pkg/prompts/hidden.md": "fixture",
+      "pkg/prompts/final.md": "fixture",
+      "pkg/prompts/.gitignore": "*.md\r\n!keep.md\r\n",
+      "pkg/prompts/.ignore": "!hidden.md\n",
+      "pkg/prompts/.fdignore": "hidden.md\n!final.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/final.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_parent_pruning",
+    "files": {
+      "pkg/prompts/dir/keep.md": "fixture",
+      "pkg/prompts/other.md": "fixture",
+      "pkg/prompts/.gitignore": "dir/\n!dir/keep.md\n",
+      "pkg/prompts/dir/.ignore": "!*\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_nested",
+    "files": {
+      "pkg/prompts/sub/a.md": "fixture",
+      "pkg/prompts/sub/deep/a.md": "fixture",
+      "pkg/prompts/other/a.md": "fixture",
+      "pkg/prompts/sub/.ignore": "/a.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/sub/deep/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_case_braces",
+    "files": {
+      "pkg/prompts/A.md": "fixture",
+      "pkg/prompts/a{b,c}.md": "fixture",
+      "pkg/prompts/ab.md": "fixture",
+      "pkg/prompts/.ignore": "a.md\na{b,c}.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/ab.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_escaped_punctuation",
+    "files": {
+      "pkg/prompts/!name.md": "fixture",
+      "pkg/prompts/#name.md": "fixture",
+      "pkg/prompts/plain.md": "fixture",
+      "pkg/prompts/.ignore": "\\!name.md\n\\#name.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/plain.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_read_failure",
+    "files": {
+      "pkg/prompts/a.md": "fixture",
+      "pkg/prompts/.ignore": "*.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {
+      "readFileSync": [
+        "/prompts/.ignore"
+      ]
+    },
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "read_dir_partial",
+    "files": {
+      "pkg/prompts/a.md": "fixture",
+      "pkg/prompts/bad/z.md": "fixture",
+      "pkg/prompts/z.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {
+      "readdirSync": [
+        "/prompts/bad"
+      ]
+    },
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/z.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "native_permission_partial",
+    "files": {
+      "pkg/prompts/a.md": "fixture",
+      "pkg/prompts/bad/z.md": "fixture",
+      "pkg/prompts/z.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/z.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    },
+    "denied": "pkg/prompts/bad"
+  },
+  {
+    "case": "local_stat_failure",
+    "files": {
+      "pkg/extensions/a.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {
+      "statSync": [
+        "/pkg"
+      ]
+    },
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "link_files",
+    "files": {
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/skills/target.md": "fixture",
+      "pkg/prompts/deep/a.md": "fixture"
+    },
+    "dirs": [],
+    "links": {
+      "pkg/extensions/link.ts": "a.ts",
+      "pkg/extensions/broken.ts": "missing",
+      "pkg/skills/SKILL.md": "target.md",
+      "pkg/prompts/alias": "deep"
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/alias/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "canonical_first",
+    "files": {
+      "pkg/extensions/a.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {
+      "alias": "pkg"
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/alias",
+      "$BASE/pkg",
+      "$BASE/pkg/extensions/a.ts"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/alias/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/alias",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/alias"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "source_order",
+    "files": {
+      "one/extensions/z.ts": "fixture",
+      "two/extensions/a.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/two",
+      "$BASE/one",
+      "$BASE/two"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/two/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/two",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/two"
+          }
+        },
+        {
+          "path": "$BASE/one/extensions/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/one",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/one"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "self_link",
+    "files": {
+      "pkg/prompts/a.md": "fixture"
+    },
+    "dirs": [],
+    "links": {
+      "pkg/prompts/self": "."
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "growing_link",
+    "files": {
+      "pkg/prompts/a.md": "fixture"
+    },
+    "dirs": [],
+    "links": {
+      "pkg/prompts/grow": "grow/tail"
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "finite_repeated_link",
+    "files": {
+      "pkg/extensions/a.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {
+      "pkg/repeat": "."
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/pkg/repeat/repeat"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/repeat/repeat/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg/repeat/repeat",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg/repeat/repeat"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_bounds_cycle",
+    "files": {
+      "pkg/prompts/a.md": "fixture",
+      "pkg/prompts/.ignore": "self/self/\n"
+    },
+    "dirs": [],
+    "links": {
+      "pkg/prompts/self": "."
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "finite_alias_first",
+    "files": {
+      "pkg/prompts/z.md": "fixture",
+      "pkg/prompts/.ignore": "self/self/\n"
+    },
+    "dirs": [],
+    "links": {
+      "pkg/prompts/self": "."
+    },
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/self/z.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "installed_npm_user",
+    "files": {
+      "global_node_modules/pkg/extensions/a.ts": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "npm:pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/global_node_modules/pkg/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "npm:pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/global_node_modules/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "installed_npm_project",
+    "files": {
+      ".maestro/npm/node_modules/pkg/prompts/a.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "npm:pkg"
+    ],
+    "scope": "project",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/.maestro/npm/node_modules/pkg/prompts/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "npm:pkg",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": "$BASE/.maestro/npm/node_modules/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "installed_git_user",
+    "files": {
+      "user/git/github.com/team/repo/themes/a.json": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "git:https://github.com/team/repo.git"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": [
+        {
+          "path": "$BASE/user/git/github.com/team/repo/themes/a.json",
+          "enabled": true,
+          "metadata": {
+            "source": "git:https://github.com/team/repo.git",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/user/git/github.com/team/repo"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "case": "installed_git_project",
+    "files": {
+      ".maestro/git/github.com/team/repo/skills/SKILL.md": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "git:https://github.com/team/repo.git@main"
+    ],
+    "scope": "project",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/.maestro/git/github.com/team/repo/skills/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "git:https://github.com/team/repo.git@main",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": "$BASE/.maestro/git/github.com/team/repo"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "installed_remote_no_layout",
+    "files": {
+      "global_node_modules/pkg/other.data": "fixture"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "npm:pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "earlier_source_survives_bad_root",
+    "files": {
+      "first.ts": "fixture",
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/extensions/index.ts": "fixture",
+      "pkg/extensions/package.json": "{\"maestro\":{\"extensions\":[\"a.ts\",7]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/first.ts",
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/first.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/first.ts",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "manifest_unknown_members",
+    "files": {
+      "pkg/extensions/a.ts": "fixture",
+      "pkg/extensions/index.ts": "fixture",
+      "pkg/extensions/package.json": "{\"unused\":{\"extensions\":7},\"maestro\":{\"extensions\":[\"a.ts\"],\"skills\":[7],\"ignored\":[{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7},{\"unknown\":7}]}}"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$BASE/pkg/extensions/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_nested_basename",
+    "files": {
+      "pkg/prompts/sub/a.md": "fixture",
+      "pkg/prompts/sub/deep/a.md": "fixture",
+      "pkg/prompts/other/a.md": "fixture",
+      "pkg/prompts/sub/.ignore": "*.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_literal_directories",
+    "files": {
+      "pkg/prompts/[draft]/skip.md": "fixture",
+      "pkg/prompts/d/skip.md": "fixture",
+      "pkg/prompts/#notes/skip.md": "fixture",
+      "pkg/prompts/!notes/skip.md": "fixture",
+      "pkg/prompts/[draft]/keep.md": "fixture",
+      "pkg/prompts/#notes/keep.md": "fixture",
+      "pkg/prompts/!notes/keep.md": "fixture",
+      "pkg/prompts/[draft]/.ignore": "/skip.md\n",
+      "pkg/prompts/#notes/.ignore": "/skip.md\n",
+      "pkg/prompts/!notes/.ignore": "/skip.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/!notes/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/#notes/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/[draft]/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/d/skip.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_scoped_directory_normalization",
+    "files": {
+      "pkg/prompts/sub/.ignore": "cache/ \n",
+      "pkg/prompts/sub/deep/cache/a.md": "hidden",
+      "pkg/prompts/other/a.md": "visible"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_scoped_escaped_slash",
+    "files": {
+      "pkg/prompts/sub/.ignore": "cache\\/\n",
+      "pkg/prompts/sub/deep/cache/a.md": "hidden",
+      "pkg/prompts/other/a.md": "visible"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_deeper_negation",
+    "files": {
+      "pkg/prompts/.ignore": "*.md\n",
+      "pkg/prompts/sub/.ignore": "!keep.md\n",
+      "pkg/prompts/sub/keep.md": "visible",
+      "pkg/prompts/sub/drop.md": "hidden"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/sub/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_unicode_case",
+    "files": {
+      "pkg/prompts/.ignore": "É.md\n",
+      "pkg/prompts/é.md": "hidden",
+      "pkg/prompts/e.md": "decoy"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/e.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_file_bom",
+    "files": {
+      "pkg/prompts/.ignore": "﻿*.md\n",
+      "pkg/prompts/a.md": "hidden"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "skill_nonroot_stop",
+    "files": {
+      "pkg/skills/selected/SKILL.md": "selected",
+      "pkg/skills/selected/deeper/SKILL.md": "excluded"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/selected/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_ascii_range",
+    "files": {
+      "pkg/prompts/.ignore": "[A-z]*.md\n",
+      "pkg/prompts/_note.md": "_note.md",
+      "pkg/prompts/Note.md": "Note.md",
+      "pkg/prompts/1note.md": "1note.md"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/1note.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_cross_case_range",
+    "files": {
+      "pkg/prompts/.ignore": "[Z-a]*.md\n",
+      "pkg/prompts/_note.md": "_note.md",
+      "pkg/prompts/Znote.md": "Znote.md",
+      "pkg/prompts/1note.md": "1note.md"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/1note.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_invalid_range_continuation",
+    "files": {
+      "pkg/prompts/.ignore": "[z-a]*.md\nx.md\n",
+      "pkg/prompts/x.md": "hidden",
+      "pkg/prompts/keep.md": "retained"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  }
+]

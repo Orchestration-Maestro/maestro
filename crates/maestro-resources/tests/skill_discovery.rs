@@ -1674,3 +1674,34 @@ fn maestro_skills_classify_exact_default_roots() {
         assert_eq!(result.skills[0].source_info.scope, scope);
     }
 }
+
+/// Native directory order chooses the first conflicting skill name.
+#[cfg(unix)]
+#[test]
+fn native_skill_discovery_uses_ordered_directory_entries() {
+    let dir = Directory::new();
+    let loser = dir.file("z/SKILL.md", "---\nname: common\ndescription: Last\n---");
+    let winner = dir.file("a/SKILL.md", "---\nname: common\ndescription: First\n---");
+    let result = maestro_resources::load_skills(
+        maestro_resources::LoadSkillsOptions {
+            cwd: support::text(&dir.0),
+            home: support::text(&dir.0),
+            agent_dir: "",
+            config_dir_name: ".maestro",
+            skill_paths: &[support::text(&dir.0).into()],
+            include_defaults: false,
+        },
+        &NativeResourceOperations,
+    )
+    .unwrap();
+    assert_eq!(result.skills.len(), 1);
+    assert_eq!(result.skills[0].file_path, winner);
+    assert_eq!(result.skills[0].description, "First");
+    let collision = result
+        .diagnostics
+        .iter()
+        .find_map(|d| d.collision.as_ref())
+        .unwrap();
+    assert_eq!(collision.winner_path, winner);
+    assert_eq!(collision.loser_path, loser);
+}
