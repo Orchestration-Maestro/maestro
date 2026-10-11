@@ -7,7 +7,7 @@ use serde::ser::{Error as _, Serialize, Serializer};
 ///
 /// Record fields may skip [`Missing`](Presence::Missing) during serialization and default
 /// to it when absent. Null is distinct from omission.
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum Presence<T> {
     /// The property is absent.
     #[default]

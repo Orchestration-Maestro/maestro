@@ -63,7 +63,7 @@ are later scope, not active foundation concepts.
 - **AgentSession:** The application session coordinating agent execution, prompt delivery, events, selection, compaction, retries and navigation.
 - **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record.
 - **Active branch:** The path from the root to the selected position.
-- **Context projection:** The model-bound view of supplied conversation context; branch selection and storage remain session responsibilities.
+- **Context projection:** The selected-ancestry message and setting values produced from supplied session entries; persistence remains with the session owner.
 - **Compaction:** Reduction of model context without deleting raw history.
 
 ### State

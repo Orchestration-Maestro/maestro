@@ -12,8 +12,6 @@ maestro-request = { path = "../maestro-request" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock", "wasmbind"] }
 ryu-js.workspace = true
 serde_json.workspace = true
-
-[dev-dependencies]
 serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
