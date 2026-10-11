@@ -60,5 +60,5 @@ package manager turns a nonzero or missing code into the failure
 
 ## File patterns
 
-The pure [basic file-pattern operation](package-patterns.md) is available
+The pure [file-pattern operation](package-patterns.md) is available
 separately from package discovery.

@@ -560,6 +560,12 @@ respectively. Awaited operations are documented in [conversation turns](docs/loo
 dependencies (MIT OR Apache-2.0). The directly translated matcher source is
 BlueOak-1.0.0; see [third-party notices](THIRD-PARTY-NOTICES.md).
 
+For fixed Unicode class predicates, `maestro-packages` also uses
+`regress =0.12.0` with defaults (`backend-pikevm`, `std`) and
+`prohibit-unsafe` on all targets (MIT OR Apache-2.0). Its only normal transitive
+dependency is the existing `memchr =2.8.3` (`alloc`, `std`; MIT selected).
+No library type enters the pattern operation's public interface.
+
 ## Approved footer-effects libraries
 
 On Unix, `maestro-app` uses Tokio `=1.53.2` (defaults off; `rt`, `time`,
