@@ -1,6 +1,6 @@
-# Controlled chat conformance
+# Controlled model conformance
 
-The controlled qualification cases inject finite HTTP responses through `Fetch`;
+The controlled chat qualification cases inject finite HTTP responses through `Fetch`;
 they do not contact a live provider. They exercise the generic `stream`,
 `stream_simple`, `complete` and `complete_simple` interfaces. The gateway cases
 use catalog routing, including the responses API for `gpt-5.1`.
@@ -82,6 +82,107 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let message = message.read().map_err(|_| "message poisoned")?;
         assert_eq!(message.usage.cache_write, 30.0);
         assert_eq!(message.usage.cost.cache_write, 0.000_002_5);
+        Ok::<_, Box<dyn std::error::Error>>(())
+    })
+}
+```
+
+## Controlled message conformance
+
+The message qualification injects finite, named message events ending in
+`message_stop`. Its 20 tests own 142 distinct inputs: 126 wire invocations,
+15 fixed selector inputs and one catalog expansion. These responses qualify
+local conversion, not remote acceptance, authentication validity, cache hits,
+billing or reasoning quality. See [message protocol](messages.md) for the
+adapter's request and reduction rules.
+
+The cases exercise public `stream`, `stream_simple` and `complete` with real
+catalog descriptors. Captured requests, ordered events and completed messages
+are compared with recorded expectations. The catalog expansion checks candidate
+order and one selected probe per provider; fixed inputs distinguish priority,
+cost arithmetic, stable ties, locale collation and filtering before selection.
+
+The message cases cover:
+
+- Eager tool-input defaults, legacy compatibility and requests without tools;
+  configured and supported forced probes use the selected catalog routes.
+- Cache-marker placement with none, short and long retention, including final
+  user text, image and tool-result blocks and an assistant-last history.
+  Four eager/long compatibility pairs check the switches independently.
+- Simple calls without reasoning disable thinking on `claude-sonnet-4-5`,
+  `claude-opus-4-6` and `claude-opus-4-7`; raw calls distinguish absent, false
+  and true enablement. Effort mappings, display modes, signed thinking fragments
+  and exact arithmetic text have separate controlled observations.
+- Subscription tool-name conversion, first-declared inbound spelling and
+  unchanged caller context; ordinary keys and unrelated names provide contrasts.
+  Tool-end observations inspect the same invocation's shared message handle.
+- Account authentication and headers, user/assistant initiator and image input;
+  interleaved beta controls are crossed with thinking enablement and adaptive
+  model selection, with a separate legacy tool-streaming case.
+
+Run these cases without provider credentials:
+
+```sh
+cargo test -p maestro-models --locked --test message_eager_input \
+  --test message_long_retention --test message_thinking_disabled \
+  --test message_adaptive_thinking --test account_tool_names \
+  --test account_message_routing
+```
+
+### Inject a completed message
+
+This native example uses the same dependencies as the chat example above.
+The injected transport returns text and a terminal message event; the synthetic
+credential never goes to a provider.
+
+```rust
+use maestro_models::{Context, Fetch, HttpResponse, SimpleStreamOptions, StreamOptions};
+use std::sync::Arc;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let fetch: Fetch = Arc::new(|_| {
+        let events = [
+            serde_json::json!({"type":"message_start","message":{
+                "id":"controlled","type":"message","role":"assistant",
+                "model":"claude-opus-4-7","content":[],"stop_reason":null,
+                "stop_sequence":null,"usage":{"input_tokens":3,"output_tokens":0}}}),
+            serde_json::json!({"type":"content_block_start","index":0,
+                "content_block":{"type":"text","text":""}}),
+            serde_json::json!({"type":"content_block_delta","index":0,
+                "delta":{"type":"text_delta","text":"OK"}}),
+            serde_json::json!({"type":"content_block_stop","index":0}),
+            serde_json::json!({"type":"message_delta","delta":{"stop_reason":"end_turn"},
+                "usage":{"output_tokens":1}}),
+            serde_json::json!({"type":"message_stop"}),
+        ];
+        let wire: String = events.iter().map(|event| {
+            format!("event: {}\ndata: {event}\n\n", event["type"].as_str().unwrap_or(""))
+        }).collect();
+        Box::pin(std::future::ready(Ok(HttpResponse {
+            status: 200,
+            status_text: String::new(),
+            headers: [("content-type".into(), "text/event-stream".into())].into(),
+            body: Box::pin(futures_util::stream::iter([Ok(wire.into_bytes())])),
+        })))
+    });
+    let model = maestro_models::get_model("anthropic", "claude-opus-4-7")
+        .ok_or("missing catalog model")?;
+    let context: Context = serde_json::from_value(serde_json::json!({
+        "messages": [{"role":"user","content":"Reply with exactly: OK","timestamp":1}]
+    }))?;
+    let options = SimpleStreamOptions {
+        common: StreamOptions {
+            api_key: Some("controlled-key".into()), fetch: Some(fetch),
+            max_tokens: Some(32.0), ..StreamOptions::default()
+        },
+        ..SimpleStreamOptions::default()
+    };
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let message = maestro_models::complete_simple(model, context, Some(options)).await?;
+        let message = message.read().map_err(|_| "message poisoned")?;
+        assert_eq!(message.stop_reason, maestro_models::StopReason::Stop);
+        assert!(matches!(&message.content[0], maestro_models::AssistantContent::Text(text)
+            if text.text == "OK"));
         Ok::<_, Box<dyn std::error::Error>>(())
     })
 }
