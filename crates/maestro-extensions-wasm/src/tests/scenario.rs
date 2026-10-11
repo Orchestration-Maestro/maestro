@@ -56,6 +56,25 @@ pub type Registrations = (
 /// handler answered, or to the message it failed with, and the scenario writes it to the
 /// transcript.
 pub trait Driver {
+    /// The operation resource returned by the most recent delivery.
+    fn returned_bash(&self) -> Option<usize>;
+    /// Creates an independently observed byte receiver.
+    fn shell_output(
+        &mut self,
+        error: Option<String>,
+        cancel: Option<usize>,
+    ) -> Result<usize, String>;
+    /// Invokes an actual returned operation with typed operands.
+    async fn shell_exec(&mut self, run: super::shell_host::Run) -> Result<Option<f64>, String>;
+    /// Drops one returned operation alias.
+    async fn drop_bash(&mut self, id: usize) -> Result<(), String>;
+    /// Successfully received chunks observed so far.
+    fn shell_chunks(&self, id: usize) -> Vec<Vec<u8>>;
+    /// Signal final-owner count for the supplied handle.
+    fn shell_signal_drops(&self, id: usize) -> usize;
+    /// Output final-owner count.
+    fn shell_drops(&self, id: usize) -> usize;
+
     /// Actual invocation-local emitter identities and attempted payloads.
     fn renderer_emissions(&self) -> Vec<(usize, String, serde_json::Value)>;
     /// Invokes a renderer with an independently owned theme.

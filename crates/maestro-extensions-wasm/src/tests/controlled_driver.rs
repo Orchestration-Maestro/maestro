@@ -24,6 +24,10 @@ impl Extension for Author {
 pub struct ControlledDriver {
     /// The host the extension registers with.
     host: Controlled,
+    /// Independently returned shell resources.
+    bash: Vec<Option<crate::BashOperations>>,
+    /// Last returned shell resource slot.
+    last_bash: Option<usize>,
     /// Next invocation-local emitter identity.
     emitter_key: usize,
     /// Independently returned component resources.
@@ -40,10 +44,38 @@ impl ControlledDriver {
         Self {
             host: Controlled::default(),
             components: Vec::new(),
+            bash: Vec::new(),
+            last_bash: None,
             emitter_key: 0,
             flags: Vec::new(),
             previous: None,
         }
+    }
+
+    /// Releases the registration and cancels the signal after the first output and idle witness.
+    async fn shell_pending(
+        &self,
+        state: (Option<u32>, usize, Option<usize>),
+        gate: (
+            tokio::sync::oneshot::Receiver<()>,
+            tokio::sync::oneshot::Sender<()>,
+        ),
+    ) {
+        let (Some(handler), output, signal) = state else {
+            return;
+        };
+        let (pending, proceed) = gate;
+        pending.await.unwrap();
+        assert_eq!(self.shell_chunks(output), [vec![122]]);
+        assert_eq!(
+            self.host.observe().take_registration("event user_bash"),
+            Some(handler)
+        );
+        release(handler);
+        if let Some(flag) = signal {
+            self.flag(flag).unwrap().abort();
+        }
+        proceed.send(()).unwrap();
     }
 
     /// The component's exports served over the controlled host.
@@ -100,6 +132,78 @@ impl Drop for ControlledDriver {
 }
 
 impl Driver for ControlledDriver {
+    fn returned_bash(&self) -> Option<usize> {
+        self.last_bash
+    }
+    fn shell_output(
+        &mut self,
+        error: Option<String>,
+        cancel: Option<usize>,
+    ) -> Result<usize, String> {
+        let cancel = cancel
+            .map(|id| self.flag(id).map(Flag::shared))
+            .transpose()?;
+        let mut observed = self.host.observe();
+        let id = observed.shell.outputs.len();
+        observed.shell.outputs.push(super::shell_host::Output {
+            error,
+            cancel,
+            ..Default::default()
+        });
+        Ok(id)
+    }
+    fn shell_chunks(&self, id: usize) -> Vec<Vec<u8>> {
+        self.host.observed().shell.outputs[id].chunks.clone()
+    }
+    fn shell_signal_drops(&self, id: usize) -> usize {
+        self.host
+            .observed()
+            .shell
+            .signal_drops
+            .get(&self.flags[id].key())
+            .copied()
+            .unwrap_or(0)
+    }
+    fn shell_drops(&self, id: usize) -> usize {
+        self.host.observed().shell.outputs[id].drops
+    }
+    async fn shell_exec(&mut self, run: super::shell_host::Run) -> Result<Option<f64>, String> {
+        let operation = self.bash[run.operation]
+            .as_ref()
+            .ok_or("operation absent")?
+            .clone();
+        let request = fixtures::guest::BashRequest {
+            command: run.command,
+            cwd: run.cwd,
+            timeout: run.timeout,
+            env: run.env,
+        };
+        let signal = run
+            .signal
+            .map(|id| self.flag(id).map(|flag| self.host.signal(flag)))
+            .transpose()?;
+        let resources = crate::component_adapter::bash::BashCapabilities {
+            output: self.host.bash_receiver(run.output),
+            signal,
+        };
+        let exports = self.exports();
+        let (pause, pending, proceed) = gate();
+        if run.release_pending.is_some() {
+            self.host.observe().hold_next_idle(pause);
+        }
+        let helper = self.shell_pending(
+            (run.release_pending, run.output, run.signal),
+            (pending, proceed),
+        );
+        super::join::alongside(exports.invoke_bash(&operation, request, resources), helper)
+            .await
+            .map(|r| r.exit_code)
+    }
+    fn drop_bash(&mut self, id: usize) -> impl Future<Output = Result<(), String>> {
+        drop(self.bash[id].take());
+        std::future::ready(Ok(()))
+    }
+
     fn renderer_emissions(&self) -> Vec<(usize, String, serde_json::Value)> {
         self.host.observed().bus.renderer_emissions.clone()
     }
@@ -193,10 +297,15 @@ impl Driver for ControlledDriver {
         signal: Option<usize>,
     ) -> Result<Delivery, String> {
         let resources = self.resources(cwd, signal)?;
-        let outcome = self
+        let mut outcome = self
             .exports()
             .invoke_event(handler, event.to_owned(), resources)
             .await?;
+        self.last_bash = outcome.operations.take().map(|operation| {
+            let id = self.bash.len();
+            self.bash.push(Some(operation));
+            id
+        });
         Ok(fixtures::delivery(outcome))
     }
 
@@ -208,9 +317,14 @@ impl Driver for ControlledDriver {
     ) -> Result<Delivery, String> {
         let resources = self.resources(cwd, None)?;
         let exports = self.exports();
-        let outcome = self
+        let mut outcome = self
             .held(exports.invoke_event(handler, event.to_owned(), resources))
             .await?;
+        self.last_bash = outcome.operations.take().map(|operation| {
+            let id = self.bash.len();
+            self.bash.push(Some(operation));
+            id
+        });
         Ok(fixtures::delivery(outcome))
     }
 

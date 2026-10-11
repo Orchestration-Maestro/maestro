@@ -111,6 +111,22 @@ impl host::HostCallback for State {
     }
 }
 
+impl host::HostBashOutput for State {
+    fn on_data(
+        &mut self,
+        this: Resource<super::shell_host::Receiver>,
+        bytes: Vec<u8>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let id = self.table.get(&this)?.0;
+        Ok(self.observed.shell.outputs[id].data(&bytes))
+    }
+    fn drop(&mut self, this: Resource<super::shell_host::Receiver>) -> wasmtime::Result<()> {
+        let id = self.table.get(&this)?.0;
+        self.observed.shell.outputs[id].drops += 1;
+        self.release(this)
+    }
+}
+
 impl host::HostToolUpdate for State {
     fn update(
         &mut self,
@@ -140,6 +156,12 @@ impl host::HostAbortSignal for State {
     }
 
     fn drop(&mut self, this: Resource<Flag>) -> wasmtime::Result<()> {
+        *self
+            .observed
+            .shell
+            .signal_drops
+            .entry(this.rep() as usize)
+            .or_default() += 1;
         self.release(this)
     }
 }

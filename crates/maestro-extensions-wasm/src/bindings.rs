@@ -26,6 +26,7 @@ pub(crate) mod host_side {
         world: "extension",
         imports: { default: trappable },
         with: {
+            "maestro:extension/host.bash-output": crate::tests::shell_host::Receiver,
             "maestro:extension/host.theme": crate::tests::renderer_host::Theme,
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.extension-ui-context": crate::tests::catalog_host::Ui,

@@ -73,6 +73,8 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Raw shell byte receiver observations.
+    pub shell: super::shell_host::Bank,
     /// Replacement-operation host decisions.
     pub replacement: super::replacement_host::Bank,
     /// Setup-session host decisions.

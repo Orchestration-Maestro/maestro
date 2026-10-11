@@ -40,10 +40,21 @@ interface guest {
     /// How an event callback ended: with an encoded result, or with the message it failed with.
     variant decision { returned(encoded), failed(string) }
 
-    /// An event after its callback ran. The two parts are independent: the event is the
-    /// callback's edit, whether it returned or failed, and is absent only when the callback
-    /// replaced it with an event of another kind.
-    record event-outcome { event: encoded, decision: decision }
+    /// Owned operands of one asynchronous execution.
+    record bash-request {
+        command: string, cwd: string, timeout: option<f64>,
+        env: option<list<tuple<string, option<string>>>>,
+    }
+    use host.{bash-output};
+    /// Owned callback and cancellation resources for execution.
+    record bash-capabilities { output: bash-output, signal: option<abort-signal> }
+    /// Authored operation retained after the event returns.
+    resource bash-operations {
+        exec: async func(request: bash-request, resources: bash-capabilities) -> result<option<f64>, string>;
+    }
+    /// Independent edited-event encoding, decision encoding and returned operations.
+    /// Replacing the event kind leaves the edited document absent.
+    record event-outcome { event: encoded, decision: decision, operations: option<bash-operations> }
 
     /// Runs the extension factory; returns when it has completed.
     start: async func() -> result<_, string>;

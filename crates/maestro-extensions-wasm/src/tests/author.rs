@@ -39,6 +39,8 @@ mod replacement_author;
 mod setup_author;
 #[cfg(not(target_arch = "wasm32"))]
 use super::registration_fixture;
+#[path = "shell_author.rs"]
+mod shell_author;
 #[path = "tool_author.rs"]
 mod tool_author;
 
@@ -892,5 +894,7 @@ fn capture_registration(
     args: &str,
     ctx: &ExtensionCommandContext,
 ) -> Option<Result<(), String>> {
-    renderer_author::dispatch(api, args).or_else(|| registration_author::dispatch(api, args, ctx))
+    shell_author::dispatch(api, args, ctx)
+        .or_else(|| renderer_author::dispatch(api, args))
+        .or_else(|| registration_author::dispatch(api, args, ctx))
 }

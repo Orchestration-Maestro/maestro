@@ -9,12 +9,22 @@ use super::callbacks;
 use super::contexts;
 use super::host_api::Host;
 use super::imports::Imports;
-use crate::bindings::exports::maestro::extension::guest::{Decision, Encoded, EventOutcome};
+use crate::bindings::exports::maestro::extension::guest::{Decision, Encoded};
 use crate::loader::Extension;
 use crate::types::{
     CommandHandler, EventData, ExtensionAPI, ExtensionHandler, ExtensionResult, WithSession,
 };
 use crate::{ArgumentCompletions, AutocompleteItem, ShortcutHandler};
+
+/// Independent event data, decision data and returned operations.
+pub(crate) struct EventOutcome {
+    /// Edited event or its encoding error.
+    pub(crate) event: Encoded,
+    /// Returned decision or its encoding error.
+    pub(crate) decision: Decision,
+    /// Returned operations retained independently of both encodings.
+    pub(crate) operations: Option<crate::BashOperations>,
+}
 
 /// Serves the exports an extension component provides on top of its host.
 pub(crate) struct Exports<I: Imports> {
@@ -43,6 +53,7 @@ pub(crate) fn outcome<E: Serialize, R: Serialize>(
 ) -> EventOutcome {
     EventOutcome {
         event: encode(event),
+        operations: None,
         decision: match decision {
             Ok(result) => Decision::Returned(encode(result)),
             Err(message) => Decision::Failed(message),
@@ -118,13 +129,20 @@ impl<I: Imports> Exports<I> {
         let kind = discriminant(&data);
         let signal = signal.map(|signal| contexts::signal(&self.imports, signal));
         let mut event = data.attach(signal)?;
-        let decision = match callbacks::find::<ExtensionHandler>(handler) {
+        let mut decision = match callbacks::find::<ExtensionHandler>(handler) {
             Ok(handler) => handler(&mut event, contexts::context(&self.imports, ctx)).await,
             Err(message) => Err(message),
         };
         let edited = EventData::from(event);
         let edited = (discriminant(&edited) == kind).then_some(edited);
-        Ok(outcome(edited, decision))
+        let operations = match &mut decision {
+            Ok(Some(crate::ExtensionEventResult::UserBash(result))) => result.operations.take(),
+            _ => None,
+        };
+        Ok(EventOutcome {
+            operations,
+            ..outcome(edited, decision)
+        })
     }
 }
 

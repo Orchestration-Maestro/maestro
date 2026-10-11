@@ -222,6 +222,10 @@ pub trait Imports: Clone + 'static {
     ) -> ExtensionResult<()>;
     /// Host-owned progress resource.
     type Update: 'static;
+    /// Owned receiver of streamed command bytes.
+    type BashOutput: 'static;
+    /// Delivers one uninterpreted output chunk.
+    fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()>;
     /// Host-owned cancellation flag.
     type Signal: 'static;
     /// Context with the live capabilities every callback receives.

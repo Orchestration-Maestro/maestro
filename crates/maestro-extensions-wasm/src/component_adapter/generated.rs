@@ -232,6 +232,10 @@ impl Imports for Generated {
         })
     }
 
+    type BashOutput = host::BashOutput;
+    fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
+        output.on_data(bytes)
+    }
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Theme = host::Theme;
@@ -323,6 +327,7 @@ pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
     type ComponentView = RenderedComponent;
+    type BashOperations = ReturnedBashOperations;
     fn invoke_renderer(
         handler: &host::Callback,
         request: guest::RenderRequest,
@@ -448,9 +453,16 @@ impl<E: Extension> Guest for Glue<E> {
         resources: guest::Capabilities,
     ) -> Result<guest::EventOutcome, String> {
         let guest::Capabilities { ctx, signal } = resources;
-        Exports::new(Generated)
+        let outcome = Exports::new(Generated)
             .invoke_event(handler.id(), event, Capabilities { ctx, signal })
-            .await
+            .await?;
+        Ok(guest::EventOutcome {
+            event: outcome.event,
+            decision: outcome.decision,
+            operations: outcome
+                .operations
+                .map(|ops| guest::BashOperations::new(ReturnedBashOperations(ops))),
+        })
     }
 }
 
@@ -473,5 +485,25 @@ impl guest::GuestComponentView for RenderedComponent {
     }
     fn invalidate(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
         super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.invalidate(emitter))
+    }
+}
+
+/// Guest-owned resource retaining authored execution operations.
+#[doc(hidden)]
+pub struct ReturnedBashOperations(crate::BashOperations);
+impl guest::GuestBashOperations for ReturnedBashOperations {
+    async fn exec(
+        &self,
+        request: guest::BashRequest,
+        resources: guest::BashCapabilities,
+    ) -> ExtensionResult<Option<f64>> {
+        let resources = super::bash::BashCapabilities {
+            output: resources.output,
+            signal: resources.signal,
+        };
+        Ok(Exports::new(Generated)
+            .invoke_bash(&self.0, request, resources)
+            .await?
+            .exit_code)
     }
 }
