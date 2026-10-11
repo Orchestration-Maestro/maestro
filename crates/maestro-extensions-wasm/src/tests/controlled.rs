@@ -21,6 +21,14 @@ use crate::types::{ExtensionFuture, ExtensionResult};
 pub struct Flag(std::sync::Arc<std::sync::atomic::AtomicBool>);
 
 impl Flag {
+    /// Shared flag for controlled receiver cancellation.
+    pub fn shared(&self) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
+        self.0.clone()
+    }
+    /// Stable key for the owned signal witness.
+    pub fn key(&self) -> usize {
+        std::sync::Arc::as_ptr(&self.0) as usize
+    }
     /// Cancels the flag.
     pub fn abort(&self) {
         self.0.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -63,7 +71,21 @@ pub struct Signal {
     /// The flag the test controls.
     flag: Flag,
     /// Marks the resource as lent.
-    _lease: Lease,
+    lease: Lease,
+}
+
+impl Drop for Signal {
+    fn drop(&mut self) {
+        let key = std::sync::Arc::as_ptr(&self.flag.0) as usize;
+        *self
+            .lease
+            .0
+            .borrow_mut()
+            .shell
+            .signal_drops
+            .entry(key)
+            .or_default() += 1;
+    }
 }
 
 /// Progress resource lent to tool execution.
@@ -146,6 +168,14 @@ pub struct Controlled {
 }
 
 impl Controlled {
+    /// Lends a raw byte receiver with its own lifetime.
+    pub fn bash_receiver(&self, id: usize) -> super::shell_host::NativeReceiver {
+        super::shell_host::NativeReceiver {
+            observed: Rc::clone(&self.observed),
+            id,
+            _lease: Lease::new(&self.observed),
+        }
+    }
     /// Lends an independently owned theme.
     pub fn theme(&self, key: &str) -> Theme {
         Theme {
@@ -176,7 +206,7 @@ impl Controlled {
     pub fn signal(&self, flag: &Flag) -> Signal {
         Signal {
             flag: flag.clone(),
-            _lease: Lease::new(&self.observed),
+            lease: Lease::new(&self.observed),
         }
     }
 
@@ -241,6 +271,11 @@ impl Controlled {
 }
 
 impl Imports for Controlled {
+    type BashOutput = super::shell_host::NativeReceiver;
+    fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
+        self.observe().shell.outputs[output.id].data(bytes)
+    }
+
     fn fork<'a>(
         &'a self,
         context: &'a CommandContext,
@@ -957,7 +992,7 @@ impl Imports for Controlled {
         let flag = self.observed.borrow().catalog.flag.clone();
         Ok(flag.map(|flag| Signal {
             flag: Flag(flag),
-            _lease: Lease::new(&self.observed),
+            lease: Lease::new(&self.observed),
         }))
     }
     fn abort(&self, context: &Context) -> ExtensionResult<()> {
@@ -1038,7 +1073,7 @@ impl Imports for Controlled {
         let flag = self.observed.borrow().catalog.flag.clone();
         Ok(flag.map(|flag| Signal {
             flag: Flag(flag),
-            _lease: Lease::new(&self.observed),
+            lease: Lease::new(&self.observed),
         }))
     }
     fn command_abort(&self, context: &CommandContext) -> ExtensionResult<()> {

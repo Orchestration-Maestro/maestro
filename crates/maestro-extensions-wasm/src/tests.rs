@@ -68,6 +68,8 @@ mod session_summary;
 pub(crate) mod setup_host;
 mod setup_sessions;
 mod shared_records;
+mod shell_callbacks;
+pub(crate) mod shell_host;
 mod stream_events;
 mod tool_callbacks;
 mod tool_events;
@@ -234,6 +236,7 @@ fn spell(ty: &Type, resources: &[(String, ResourceType)]) -> String {
     };
     let optional = |ty: Option<Type>| ty.map_or_else(|| "_".to_owned(), |ty| spell(&ty, resources));
     match ty {
+        Type::U8 => "u8".to_owned(),
         Type::U32 => "u32".to_owned(),
         Type::String => "string".to_owned(),
         Type::Float64 => "f64".to_owned(),
@@ -330,6 +333,8 @@ struct Contract {
     action_signatures: Vec<Signature>,
     /// Typed registration imports and callback exports.
     registration_signatures: Vec<Signature>,
+    /// Returned execution resource and synchronous output types.
+    shell_signatures: Vec<Signature>,
     /// Renderer registration, invocation and exported resource methods.
     renderer_signatures: Vec<Signature>,
     /// Signatures of the new retained-capability and usage routes.
@@ -357,8 +362,11 @@ fn contract() -> Result<Contract, String> {
         .map(|(name, found)| (name.to_owned(), found.ty));
     let guest = instance(exported, "maestro:extension/guest@0.1.0")?;
     let host = instance(imported, "maestro:extension/host@0.1.0")?;
-    let (event_params, event_results) =
-        signature(&engine, &guest, "invoke-event", &resources(&engine, &host))?;
+    let (event_params, event_results) = signature(&engine, &guest, "invoke-event", &{
+        let mut declared = resources(&engine, &host);
+        declared.extend(resources(&engine, &guest));
+        declared
+    })?;
     Ok(Contract {
         exports: functions(&engine, &guest),
         imports: functions(&engine, &host),
@@ -390,6 +398,7 @@ fn contract() -> Result<Contract, String> {
         action_signatures: action_signatures(&engine, &host, &guest)?,
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
         renderer_signatures: renderer_signatures(&engine, &host, &guest)?,
+        shell_signatures: shell_signatures(&engine, &host, &guest)?,
         event_params,
         event_results,
     })
@@ -411,7 +420,7 @@ fn assert_typed_event_export(contract: &Contract) {
         contract.event_results,
         [concat!(
             "result<record {event: result<option<string>, string>, ",
-            "decision: variant {returned(result<option<string>, string>), failed(string)}}, string>"
+            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<bash-operations>>}, string>"
         )],
         "the event export answers with the two independent parts or a refusal"
     );
@@ -510,21 +519,7 @@ fn assert_catalog_imports(contract: &Contract) {
 #[test]
 fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String> {
     let contract = contract()?;
-    assert_eq!(
-        names(&contract.exports, true),
-        [
-            "invoke-command",
-            "invoke-completion",
-            "invoke-event",
-            "invoke-setup",
-            "invoke-shortcut",
-            "invoke-tail",
-            "invoke-tool",
-            "invoke-with-session",
-            "start"
-        ],
-        "every event, command and pending call is native async"
-    );
+    assert_async_exports(&contract);
     assert_eq!(
         names(&contract.exports, false),
         [
@@ -541,6 +536,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
         ],
         "component methods, preparation and release stay synchronous"
     );
+    assert_shell_contract(&contract);
     assert_renderer_contract(&contract);
     assert_typed_event_export(&contract);
     assert_reader_imports(&contract);
@@ -934,5 +930,55 @@ fn assert_renderer_contract(contract: &Contract) {
         contract
             .imports
             .contains(&("register-message-renderer".into(), false))
+    );
+}
+
+/// Reads the actual owned execution and raw-output resource methods.
+fn shell_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+    guest: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    let mut declared = resources(engine, host);
+    declared.extend(resources(engine, guest));
+    [
+        (guest, "[method]bash-operations.exec"),
+        (host, "[method]bash-output.on-data"),
+    ]
+    .into_iter()
+    .map(|(interface, name)| signature(engine, interface, name, &declared))
+    .collect()
+}
+/// Owned output and optional signal coexist with literal numeric/environment operands.
+fn assert_shell_contract(contract: &Contract) {
+    assert!(
+        contract
+            .imports
+            .contains(&("[method]bash-output.on-data".into(), false))
+    );
+    let expected = [
+        (vec!["self: borrow<bash-operations>", "request: record {command: string, cwd: string, timeout: option<f64>, env: option<list<tuple<string, option<string>>>>}", "resources: record {output: own<bash-output>, signal: option<own<abort-signal>>}"],vec!["result<option<f64>, string>"]),
+        (vec!["self: borrow<bash-output>","data: list<u8>"],vec!["result<_, string>"])
+    ].map(|(params,results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(),results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
+    assert_eq!(contract.shell_signatures, expected);
+}
+
+/// Complete asynchronous export inventory, including the returned operation method.
+fn assert_async_exports(contract: &Contract) {
+    assert_eq!(
+        names(&contract.exports, true),
+        [
+            "[method]bash-operations.exec",
+            "invoke-command",
+            "invoke-completion",
+            "invoke-event",
+            "invoke-setup",
+            "invoke-shortcut",
+            "invoke-tail",
+            "invoke-tool",
+            "invoke-with-session",
+            "start"
+        ],
+        "every event, command and pending call is native async"
     );
 }

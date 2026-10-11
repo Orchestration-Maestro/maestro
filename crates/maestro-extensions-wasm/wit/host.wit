@@ -2,6 +2,8 @@ package maestro:extension@0.1.0;
 
 /// Capabilities and resources the host provides to an extension.
 interface host {
+    /// Receiver of unmodified command-output bytes.
+    resource bash-output { on-data: func(data: list<u8>) -> result<_, string>; }
     use session.{new-session-command-data, session-change-result};
     /// Writable session capability supplied to new-session setup.
     resource session-manager {

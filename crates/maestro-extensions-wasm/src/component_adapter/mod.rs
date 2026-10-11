@@ -13,6 +13,7 @@ mod event_bus;
 pub(crate) mod renderers;
 #[cfg(test)]
 pub(crate) use event_bus::events;
+pub(crate) mod bash;
 mod contexts;
 mod exports;
 #[cfg(target_arch = "wasm32")]
@@ -27,9 +28,9 @@ mod tools;
 pub(crate) use tools::ToolCapabilities;
 
 pub(crate) use callbacks::release;
-#[cfg(test)]
-pub(crate) use exports::outcome;
 pub(crate) use exports::{Capabilities, Exports};
+#[cfg(test)]
+pub(crate) use exports::{EventOutcome, outcome};
 #[cfg(target_arch = "wasm32")]
 pub use generated::Glue;
 pub(crate) use imports::Imports;

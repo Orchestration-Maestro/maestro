@@ -15,6 +15,10 @@ pub struct ComponentDriver {
     path: PathBuf,
     /// The running component, once started.
     harness: Option<Harness>,
+    /// Independently returned shell resources.
+    bash: Vec<Option<wasmtime::component::ResourceAny>>,
+    /// Last returned shell resource slot.
+    last_bash: Option<usize>,
     /// Next invocation-local emitter identity.
     emitter_key: usize,
     /// Independently returned guest resources.
@@ -39,6 +43,8 @@ impl ComponentDriver {
             path,
             harness: None,
             components: Vec::new(),
+            bash: Vec::new(),
+            last_bash: None,
             emitter_key: 0,
             flags: Vec::new(),
             previous: None,
@@ -142,6 +148,115 @@ impl ComponentDriver {
 }
 
 impl Driver for ComponentDriver {
+    fn returned_bash(&self) -> Option<usize> {
+        self.last_bash
+    }
+    fn shell_output(
+        &mut self,
+        error: Option<String>,
+        cancel: Option<usize>,
+    ) -> Result<usize, String> {
+        let key = cancel
+            .map(|id| self.key(id))
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let state = harness.store.data_mut();
+        let cancel = key
+            .map(|key| {
+                state
+                    .table
+                    .get(&Resource::<super::host::Flag>::new_borrow(key))
+                    .map(|flag| flag.0.clone())
+            })
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        let id = state.observed.shell.outputs.len();
+        state
+            .observed
+            .shell
+            .outputs
+            .push(super::shell_host::Output {
+                error,
+                cancel,
+                ..Default::default()
+            });
+        Ok(id)
+    }
+    fn shell_chunks(&self, id: usize) -> Vec<Vec<u8>> {
+        self.observed(|o| o.shell.outputs[id].chunks.clone())
+    }
+    fn shell_signal_drops(&self, id: usize) -> usize {
+        self.observed(|o| {
+            o.shell
+                .signal_drops
+                .get(&(self.flags[id] as usize))
+                .copied()
+                .unwrap_or(0)
+        })
+    }
+    fn shell_drops(&self, id: usize) -> usize {
+        self.observed(|o| o.shell.outputs[id].drops)
+    }
+    async fn shell_exec(&mut self, run: super::shell_host::Run) -> Result<Option<f64>, String> {
+        let operation = self.bash[run.operation].ok_or("operation absent")?;
+        let key = run
+            .signal
+            .map(|id| self.key(id))
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        let request = fixtures::guest::BashRequest {
+            command: run.command,
+            cwd: run.cwd,
+            timeout: run.timeout,
+            env: run.env,
+        };
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let signal = key.map(Resource::new_own);
+        let output = harness
+            .store
+            .data_mut()
+            .push(super::shell_host::Receiver(run.output))
+            .map_err(|e| e.to_string())?;
+        let resources = fixtures::guest::BashCapabilities { output, signal };
+        let (pause, pending, proceed) = gate();
+        if run.release_pending.is_some() {
+            harness.observed().hold_next_idle(pause);
+        }
+        let exports = harness.exports.clone();
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let helper = shell_pending(
+                    accessor,
+                    &exports,
+                    (run.release_pending, run.output, key),
+                    (pending, proceed),
+                );
+                super::join::alongside(
+                    exports
+                        .bash_operations()
+                        .call_exec(accessor, operation, request, resources),
+                    helper,
+                )
+                .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    async fn drop_bash(&mut self, id: usize) -> Result<(), String> {
+        if let Some(operation) = self.bash[id].take() {
+            operation
+                .resource_drop_async(
+                    &mut started(&mut self.harness).map_err(|e| e.to_string())?.store,
+                )
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
+
     fn renderer_emissions(&self) -> Vec<(usize, String, serde_json::Value)> {
         self.observed(|o| o.bus.renderer_emissions.clone())
     }
@@ -306,10 +421,15 @@ impl Driver for ComponentDriver {
         let resources = self
             .resources(cwd, signal)
             .map_err(|error| error.to_string())?;
-        let outcome = self
+        let mut outcome = self
             .call(handler, event, resources, false)
             .await
             .map_err(|error| error.to_string())??;
+        self.last_bash = outcome.operations.take().map(|operation| {
+            let id = self.bash.len();
+            self.bash.push(Some(operation));
+            id
+        });
         Ok(fixtures::delivery(outcome))
     }
 
@@ -322,10 +442,15 @@ impl Driver for ComponentDriver {
         let resources = self
             .resources(cwd, None)
             .map_err(|error| error.to_string())?;
-        let outcome = self
+        let mut outcome = self
             .call(handler, event, resources, true)
             .await
             .map_err(|error| error.to_string())??;
+        self.last_bash = outcome.operations.take().map(|operation| {
+            let id = self.bash.len();
+            self.bash.push(Some(operation));
+            id
+        });
         Ok(fixtures::delivery(outcome))
     }
 
@@ -1058,4 +1183,37 @@ async fn component_call(
             .0
             .map(|()| Reply::Done),
     })
+}
+
+/// Joins teardown/cancellation to the execution's already-observed idle gate.
+async fn shell_pending(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    exports: &fixtures::guest::Guest,
+    state: (Option<u32>, usize, Option<u32>),
+    gate: (
+        tokio::sync::oneshot::Receiver<()>,
+        tokio::sync::oneshot::Sender<()>,
+    ),
+) {
+    let (Some(handler), output, key) = state else {
+        return;
+    };
+    let (pending, proceed) = gate;
+    pending.await.unwrap();
+    accessor.with(|mut a| {
+        assert_eq!(a.get().observed.shell.outputs[output].chunks, [vec![122]]);
+        assert_eq!(
+            a.get().observed.take_registration("event user_bash"),
+            Some(handler)
+        );
+        if let Some(key) = key {
+            a.get().abort(key).unwrap();
+        }
+    });
+    exports
+        .func_release()
+        .call_concurrent(accessor, (borrow(handler),))
+        .await
+        .unwrap();
+    proceed.send(()).unwrap();
 }

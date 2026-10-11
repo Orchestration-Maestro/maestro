@@ -17,6 +17,9 @@ pub struct UserBashEvent {
 #[serde(rename_all = "camelCase")]
 /// `UserBashEventResult` data.
 pub struct UserBashEventResult {
+    /// Custom execution capability, carried outside the JSON payload.
+    #[serde(skip)]
+    pub operations: Option<crate::BashOperations>,
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     /// Result.
     pub result: Presence<BashResult>,

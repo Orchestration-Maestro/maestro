@@ -105,8 +105,36 @@ For shared content and JSON conventions, see [the data boundary](#events-and-res
 carrier offers `decode::<T>()` for an on-demand typed view and `from_value()` for
 finite-checked authored replacements. Named aliases expose the built-in typed views;
 name predicates compare the name alone. Result input remains an opaque string.
-`UserBashEventResult` carries an already-produced `BashResult`; this crate does not
-execute shell commands.
+`UserBashEventResult` may independently return custom `BashOperations` and an
+already-produced `BashResult`. Operations travel as a typed capability, outside the
+[event/result document](#events-and-results).
+
+```rust
+use std::rc::Rc;
+use maestro_extensions_wasm::{
+    BashExecResult, BashOperations, ExtensionEventResult, Presence, UserBashEventResult,
+};
+
+api.on("user_bash", Rc::new(|_event, _ctx| Box::pin(async {
+    Ok(Some(ExtensionEventResult::UserBash(UserBashEventResult {
+        operations: Some(BashOperations {
+            exec: Rc::new(|_command, _cwd, options| Box::pin(async move {
+                (options.on_data)(b"custom output")?;
+                Ok(BashExecResult { exit_code: None })
+            })),
+        }),
+        result: Presence::Missing,
+    })))
+})))?;
+```
+
+The adapter forwards command, working directory, optional timeout in seconds,
+optional environment values and raw byte chunks. It does not execute a process,
+schedule a timeout, merge environments or sanitize output; those policies belong
+to the supplied operation and its caller. Cloned operation, output and signal
+owners may outlive the event or execution that supplied them. Callback errors
+return to the author/caller without undoing prior output. For the signal's live
+`aborted()` state, see [live context capabilities](#live-context-and-catalog-capabilities).
 
 ## Event channels
 
@@ -223,7 +251,7 @@ the guest does not discover resources or build the prompt.
 | --- | --- | --- |
 | `tool_call` | `ToolCallEventResult` | `block?`, `reason?` |
 | `tool_result` | `ToolResultEventResult` | `content?`, opaque `details?`, `isError?` |
-| `user_bash` | `UserBashEventResult` | supplied `result?` |
+| `user_bash` | `UserBashEventResult` | custom `operations?`, supplied `result?` |
 | `context` | `ContextEventResult` | `messages?` |
 | `message_end` | `MessageEndEventResult` | `message?` |
 | `before_agent_start` | `BeforeAgentStartEventResult` | `message?`, `systemPrompt?` |

@@ -10,7 +10,7 @@ use super::scenario::{Decision, Delivery, Encoded};
 macro_rules! define_fixtures {
     () => {
         /// The outcome of an event delivery, independent of the bindings.
-        pub fn delivery(outcome: guest::EventOutcome) -> super::scenario::Delivery {
+        pub fn delivery(outcome: Outcome) -> super::scenario::Delivery {
             use super::scenario::{Decision, Delivery};
             Delivery {
                 event: outcome.event,
