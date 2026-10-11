@@ -5,8 +5,8 @@
 use crate::minimatch::{IgnorePattern, canonical};
 
 /// The decision of the last matching rule, or absence of a matching rule.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TestResult {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TestResult {
     /// No rule selected the entry.
     Unmatched,
     /// A positive rule excludes the entry.
@@ -15,7 +15,8 @@ pub(crate) enum TestResult {
     Unignored,
 }
 /// Compiled ordered rules belonging to one directory.
-pub(crate) struct Ignore {
+#[derive(Default)]
+pub struct Ignore {
     /// Rules in authored order.
     rules: Vec<Rule>,
 }
@@ -30,11 +31,12 @@ struct Rule {
 }
 impl Ignore {
     /// Creates an empty rule list.
-    pub(crate) fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self { rules: Vec::new() }
     }
     /// Admits nonblank, noncomment lines with no dangling escape.
-    pub(crate) fn add(&mut self, pattern: &str) {
+    pub fn add(&mut self, pattern: &str) {
         if pattern.is_empty()
             || pattern.starts_with('#')
             || pattern.chars().all(crate::whitespace)
@@ -73,7 +75,8 @@ impl Ignore {
         });
     }
     /// Folds and splits an entry once, then selects its last matching rule.
-    pub(crate) fn test(&self, path: &str, directory: bool) -> TestResult {
+    #[must_use]
+    pub fn test(&self, path: &str, directory: bool) -> TestResult {
         let folded: String = path.chars().map(canonical).collect();
         let mut components: Vec<_> = folded.split('/').collect();
         if directory {
@@ -120,6 +123,43 @@ fn prepare(pattern: &str) -> String {
         }
     }
     result
+}
+
+/// Matchers scoped to the directories on the active traversal branch.
+#[derive(Default)]
+pub struct ScopedIgnoreRules {
+    /// Ancestor matchers followed by the current directory's matcher.
+    stack: Vec<(String, Ignore)>,
+}
+impl ScopedIgnoreRules {
+    /// Adds the entered directory's rules using a scan-root-relative slash path.
+    pub fn push(&mut self, directory: String, rules: Ignore) {
+        self.stack.push((directory, rules));
+    }
+    /// Removes the newest scope, doing nothing when empty.
+    pub fn pop(&mut self) {
+        self.stack.pop();
+    }
+    /// Selects the deepest matching decision for a scan-root-relative slash path.
+    #[must_use]
+    pub fn ignored(&self, path: &str, directory: bool) -> bool {
+        self.stack
+            .iter()
+            .rev()
+            .find_map(|(dir, rules)| {
+                let relative = if dir.is_empty() {
+                    path
+                } else {
+                    path.strip_prefix(dir)?.strip_prefix('/')?
+                };
+                match rules.test(relative, directory) {
+                    TestResult::Unmatched => None,
+                    TestResult::Ignored => Some(true),
+                    TestResult::Unignored => Some(false),
+                }
+            })
+            .unwrap_or(false)
+    }
 }
 
 #[cfg(test)]

@@ -2,7 +2,6 @@
 #![doc = include_str!("../../../docs/package-sources.md")]
 
 mod git;
-mod ignore;
 
 pub use git::{GitSource, parse_git_url};
 
@@ -26,7 +25,6 @@ pub use package_manager::{
     ProgressEventType, ResolvedPaths, ResolvedResource,
 };
 
-mod minimatch;
-pub use minimatch::{PatternError, minimatch};
+pub use maestro_pattern::{PatternError, minimatch};
 
 pub use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};

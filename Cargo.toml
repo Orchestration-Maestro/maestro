@@ -7,7 +7,6 @@ resolver = "3"
 futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
 num-bigint = "=0.4.8"
 num-traits = "=0.2.19"
-ignore = { version = "=0.4.23", default-features = false }
 yaml-rust2 = { version = "=0.13.0", default-features = false }
 ryu-js = "=1.0.3"
 serde = { version = "=1.0.229", features = ["derive"] }

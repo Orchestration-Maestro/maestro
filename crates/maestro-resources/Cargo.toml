@@ -10,9 +10,13 @@ maestro-request = { path = "../maestro-request" }
 maestro-path = { path = "../maestro-path" }
 num-bigint.workspace = true
 num-traits.workspace = true
-ignore.workspace = true
+maestro-pattern = { path = "../maestro-pattern" }
 yaml-rust2.workspace = true
 ryu-js.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

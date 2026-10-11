@@ -1,0 +1,5612 @@
+{
+  "skill_ignore_literals_keep_unicode_case_groups": [
+    {
+      "files": {
+        "Σ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "σ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ς.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "s.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "Σ.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/s.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/s.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "e.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "É.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/e.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/e.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "Ǆ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ǅ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ǆ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "d.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "ǅ.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/d.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/d.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "µ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Μ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "μ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "m.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "µ.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/m.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/m.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "ß.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ẞ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "SS.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ss.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "ß.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/SS.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/SS.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ss.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ss.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ẞ.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ẞ.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "K.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "K.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "k.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ſ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "S.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "s.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ı.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "I.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "i.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "K.md\nſ.md\nı.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/I.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/I.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/K.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/K.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/S.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/S.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/i.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/i.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/k.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/k.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/s.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/s.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "𐐀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "𐐨.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "𐐀.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_classes_keep_scalar_membership": [
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[É].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[À-Ö].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[à-ö].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[!É].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[^É].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[aÉ].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[Z-a].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[é-àq].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[[:unknown:]].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[[:alpha:]].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[[:digit:]].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😁.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😁.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "É.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ê.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "Ø.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "q.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "z.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "_.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "`.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "1.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "٣.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "u].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😁.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "🚀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[😀-🙏].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/1.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/1.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/_.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/_.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/`.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/`.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/q.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/q.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/u].md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/u].md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/z.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/z.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/É.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/É.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Ø.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Ø.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ê.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ê.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/٣.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/٣.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/🚀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/🚀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_questions_count_scalars": [
+    {
+      "files": {
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ab.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "中.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "?.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ab.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ab.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "😀.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ab.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "中.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "??.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/中.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/中.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/😀.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/😀.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_syntax_keeps_literal_and_inert_rules": [
+    {
+      "files": {
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "{a,b}.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "{a,b}.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/b.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "@(a|b).md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "@(a|b).md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/b.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "?.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "é.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "\\?.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/é.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/é.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "*.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "\\*.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "].md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[\\]a].md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/b.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "[unclosed": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "[unclosed\ndrop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "foo\\.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "visible.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "foo\\\\\\\nkeep.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/foo\\.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/foo\\.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/visible.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/visible.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_ingress_keeps_whitespace_and_file_order": [
+    {
+      "files": {
+        "Σ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "σ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ς.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".gitignore": "*.md\r\n",
+        ".ignore": "!Σ.md\r\n!keep.md\r\n",
+        ".fdignore": "σ.md\r\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "﻿drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "﻿﻿drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "﻿#drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": " \t#drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": " drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "drop.md \n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "drop.md\\ \n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "drop.md﻿\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "drop.md\rkeep.md"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        " drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md /SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "drop.md/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "﻿drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "keep.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "x.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "\n \t﻿\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md /SKILL.md",
+            "baseDir": "$ROOT/drop.md ",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md /SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md "
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop.md",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/drop.md/SKILL.md",
+            "baseDir": "$ROOT/drop.md",
+            "sourceInfo": {
+              "path": "$ROOT/drop.md/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/drop.md"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/keep.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/keep.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/x.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/x.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/﻿drop.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/﻿drop.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md /SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/drop.md/SKILL.md"
+          }
+        ]
+      }
+    }
+  ],
+  "skill_ignore_directory_scopes_keep_anchors_and_basename_reach": [
+    {
+      "files": {
+        "drop.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "deep/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "deep/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "/drop.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/deep/drop/SKILL.md",
+            "baseDir": "$ROOT/deep/drop",
+            "sourceInfo": {
+              "path": "$ROOT/deep/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/deep/drop"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/deep/keep/SKILL.md",
+            "baseDir": "$ROOT/deep/keep",
+            "sourceInfo": {
+              "path": "$ROOT/deep/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/deep/keep"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "deep/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "deep/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "/drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/deep/drop/SKILL.md",
+            "baseDir": "$ROOT/deep/drop",
+            "sourceInfo": {
+              "path": "$ROOT/deep/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/deep/drop"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/deep/keep/SKILL.md",
+            "baseDir": "$ROOT/deep/keep",
+            "sourceInfo": {
+              "path": "$ROOT/deep/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/deep/keep"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/cache/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/cache/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/cache/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "cache/ \n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "cache",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/cache/SKILL.md",
+            "baseDir": "$ROOT/sibling/cache",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/cache/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/cache"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/cache/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/cache/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/cache/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "cache\\/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "cache",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/cache/SKILL.md",
+            "baseDir": "$ROOT/nested/cache",
+            "sourceInfo": {
+              "path": "$ROOT/nested/cache/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/cache"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "cache",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/deep/cache/SKILL.md",
+            "baseDir": "$ROOT/nested/deep/cache",
+            "sourceInfo": {
+              "path": "$ROOT/nested/deep/cache/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/deep/cache"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "cache",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/cache/SKILL.md",
+            "baseDir": "$ROOT/sibling/cache",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/cache/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/cache"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "SKILL.md\n",
+        "nested/.ignore": "!SKILL.md\n",
+        "nested/deep/.ignore": "SKILL.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/drop/SKILL.md",
+            "baseDir": "$ROOT/nested/drop",
+            "sourceInfo": {
+              "path": "$ROOT/nested/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/drop/SKILL.md",
+            "baseDir": "$ROOT/sibling/drop",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "/drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/deep/drop/SKILL.md",
+            "baseDir": "$ROOT/nested/deep/drop",
+            "sourceInfo": {
+              "path": "$ROOT/nested/deep/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/deep/drop"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/drop/SKILL.md",
+            "baseDir": "$ROOT/sibling/drop",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "**/drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/drop/SKILL.md",
+            "baseDir": "$ROOT/sibling/drop",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "Σ.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/Σ/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/ς/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/Σ/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "Σ/SKILL.md\n",
+        "nested/.ignore": "!Σ/SKILL.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "Σ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/Σ/SKILL.md",
+            "baseDir": "$ROOT/nested/Σ",
+            "sourceInfo": {
+              "path": "$ROOT/nested/Σ/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/Σ"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "ς",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/ς/SKILL.md",
+            "baseDir": "$ROOT/nested/ς",
+            "sourceInfo": {
+              "path": "$ROOT/nested/ς/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/ς"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "Σ",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/Σ/SKILL.md",
+            "baseDir": "$ROOT/sibling/Σ",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/Σ/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/Σ"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Σ.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/Σ.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/nested/Σ/SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/nested/ς/SKILL.md"
+          },
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/sibling/Σ/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "nested/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "nested/drop/\n"
+      },
+      "root_suffix": "/./",
+      "expected": {
+        "skills": [
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/keep/SKILL.md",
+            "baseDir": "$ROOT/nested/keep",
+            "sourceInfo": {
+              "path": "$ROOT/nested/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/keep"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_parent_pruning_precedes_child_negations": [
+    {
+      "files": {
+        "Σ/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ς/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "s/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "Σ/\n!Σ/keep/SKILL.md\n",
+        "Σ/.ignore": "!**\n",
+        "ς/.ignore": "!**\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/s/keep/SKILL.md",
+            "baseDir": "$ROOT/s/keep",
+            "sourceInfo": {
+              "path": "$ROOT/s/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/s/keep"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "Σ/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ς/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "s/keep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "Σ/\n!Σ/\n!Σ/keep/SKILL.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/s/keep/SKILL.md",
+            "baseDir": "$ROOT/s/keep",
+            "sourceInfo": {
+              "path": "$ROOT/s/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/s/keep"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/Σ/keep/SKILL.md",
+            "baseDir": "$ROOT/Σ/keep",
+            "sourceInfo": {
+              "path": "$ROOT/Σ/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/Σ/keep"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "keep",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ς/keep/SKILL.md",
+            "baseDir": "$ROOT/ς/keep",
+            "sourceInfo": {
+              "path": "$ROOT/ς/keep/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/ς/keep"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/deep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "visible/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "/\n!SKILL.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "nested",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/SKILL.md",
+            "baseDir": "$ROOT/nested",
+            "sourceInfo": {
+              "path": "$ROOT/nested/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "visible",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/visible/SKILL.md",
+            "baseDir": "$ROOT/visible",
+            "sourceInfo": {
+              "path": "$ROOT/visible/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/visible"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_directory_markers_keep_globstar_boundaries": [
+    {
+      "files": {
+        "a/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/deep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "a/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "b",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b/SKILL.md",
+            "baseDir": "$ROOT/b",
+            "sourceInfo": {
+              "path": "$ROOT/b/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/b"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/deep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "a/**/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "b",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b/SKILL.md",
+            "baseDir": "$ROOT/b",
+            "sourceInfo": {
+              "path": "$ROOT/b/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/b"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/deep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "a/**\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "b",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b/SKILL.md",
+            "baseDir": "$ROOT/b",
+            "sourceInfo": {
+              "path": "$ROOT/b/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/b"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/deep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "a/**/**/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "b",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b/SKILL.md",
+            "baseDir": "$ROOT/b",
+            "sourceInfo": {
+              "path": "$ROOT/b/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/b"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/deep/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "b/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "a/**/\n!a/**/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "a",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a/SKILL.md",
+            "baseDir": "$ROOT/a",
+            "sourceInfo": {
+              "path": "$ROOT/a/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/a"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/a.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "b",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/b/SKILL.md",
+            "baseDir": "$ROOT/b",
+            "sourceInfo": {
+              "path": "$ROOT/b/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/b"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_escaped_punctuation_stays_literal": [
+    {
+      "files": {
+        "!literal.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "literal.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ordinary.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "\\!literal.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/literal.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/literal.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ordinary.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ordinary.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "nested/!literal/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/literal/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "sibling/!literal/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/.ignore": "\\!literal/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "literal",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/literal/SKILL.md",
+            "baseDir": "$ROOT/nested/literal",
+            "sourceInfo": {
+              "path": "$ROOT/nested/literal/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested/literal"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "!literal",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/sibling/!literal/SKILL.md",
+            "baseDir": "$ROOT/sibling/!literal",
+            "sourceInfo": {
+              "path": "$ROOT/sibling/!literal/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/sibling/!literal"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "path": "$ROOT/sibling/!literal/SKILL.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": {
+        "#literal.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ordinary.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/#literal/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "\\#literal.md\n",
+        "nested/.ignore": "\\#literal/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ordinary.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/ordinary.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_entry_selection_preserves_traversal": [
+    {
+      "files": {
+        "SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "loose.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "loose.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/SKILL.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "loose.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "/SKILL.md\n!nested/SKILL.md\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/loose.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/loose.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "nested",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/SKILL.md",
+            "baseDir": "$ROOT/nested",
+            "sourceInfo": {
+              "path": "$ROOT/nested/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "SKILL.md/child/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "child",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/SKILL.md/child/SKILL.md",
+            "baseDir": "$ROOT/SKILL.md/child",
+            "sourceInfo": {
+              "path": "$ROOT/SKILL.md/child/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/SKILL.md/child"
+            },
+            "disableModelInvocation": false
+          },
+          {
+            "name": "nested",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/nested/SKILL.md",
+            "baseDir": "$ROOT/nested",
+            "sourceInfo": {
+              "path": "$ROOT/nested/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/nested"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "visible/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".hidden/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "node_modules/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "!**\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "visible",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/visible/SKILL.md",
+            "baseDir": "$ROOT/visible",
+            "sourceInfo": {
+              "path": "$ROOT/visible/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/visible"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "real/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        ".ignore": "real/\n"
+      },
+      "links": {
+        "alias": "real",
+        "broken": "missing"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "alias",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/alias/SKILL.md",
+            "baseDir": "$ROOT/alias",
+            "sourceInfo": {
+              "path": "$ROOT/alias/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/alias"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "target.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "nested/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n"
+      },
+      "links": {
+        "SKILL.md": "target.md"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "skills",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/SKILL.md",
+            "baseDir": "$ROOT",
+            "sourceInfo": {
+              "path": "$ROOT/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "visible/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n"
+      },
+      "directories": [
+        ".gitignore"
+      ],
+      "expected": {
+        "skills": [
+          {
+            "name": "visible",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/visible/SKILL.md",
+            "baseDir": "$ROOT/visible",
+            "sourceInfo": {
+              "path": "$ROOT/visible/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/visible"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ],
+  "skill_ignore_directory_scopes_keep_literal_identity": [
+    {
+      "files": {
+        "[ab]/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "[ab]/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/a/drop/SKILL.md",
+            "baseDir": "$ROOT/a/drop",
+            "sourceInfo": {
+              "path": "$ROOT/a/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/a/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a*b/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "axb/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a*b/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/axb/drop/SKILL.md",
+            "baseDir": "$ROOT/axb/drop",
+            "sourceInfo": {
+              "path": "$ROOT/axb/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/axb/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a?b/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ayb/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a?b/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ayb/drop/SKILL.md",
+            "baseDir": "$ROOT/ayb/drop",
+            "sourceInfo": {
+              "path": "$ROOT/ayb/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/ayb/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "!scope/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "scope/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "!scope/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/scope/drop/SKILL.md",
+            "baseDir": "$ROOT/scope/drop",
+            "sourceInfo": {
+              "path": "$ROOT/scope/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/scope/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "#scope/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "scope/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "#scope/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/scope/drop/SKILL.md",
+            "baseDir": "$ROOT/scope/drop",
+            "sourceInfo": {
+              "path": "$ROOT/scope/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/scope/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a\\b/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ab/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a\\b/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ab/drop/SKILL.md",
+            "baseDir": "$ROOT/ab/drop",
+            "sourceInfo": {
+              "path": "$ROOT/ab/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/ab/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    },
+    {
+      "files": {
+        "a/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "ab/drop/SKILL.md": "---\ndescription: Fixture skill\n---\nRead fixture.\n",
+        "a/.ignore": "drop/\n"
+      },
+      "expected": {
+        "skills": [
+          {
+            "name": "drop",
+            "description": "Fixture skill",
+            "filePath": "$ROOT/ab/drop/SKILL.md",
+            "baseDir": "$ROOT/ab/drop",
+            "sourceInfo": {
+              "path": "$ROOT/ab/drop/SKILL.md",
+              "source": "local",
+              "scope": "temporary",
+              "origin": "top-level",
+              "baseDir": "$ROOT/ab/drop"
+            },
+            "disableModelInvocation": false
+          }
+        ],
+        "diagnostics": []
+      }
+    }
+  ]
+}

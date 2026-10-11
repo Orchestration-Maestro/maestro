@@ -79,7 +79,7 @@ source files and entry-bearing children. Skills stop at an admitted `SKILL.md`;
 loose Markdown is root-only. Prompts and themes recurse by their suffix.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
-directory-scoped rules and ignored-parent pruning. Rules match Unicode scalars
+directory-scoped rules from `maestro-pattern` and ignored-parent pruning. Rules match Unicode scalars
 with one-to-one uppercase equivalence; expansions and non-ASCII-to-ASCII mappings
 remain distinct. A question wildcard consumes one scalar, and bracket complements
 apply to the complete case-equivalent member set. Braces and parentheses are

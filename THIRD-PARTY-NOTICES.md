@@ -2,7 +2,8 @@
 
 ## Package pattern matcher
 
-The package pattern matcher derives from minimatch 10.2.5 by Isaac Z. Schlueter
+The file pattern matcher in `crates/maestro-pattern/src/minimatch/`, re-exported
+by packages, derives from minimatch 10.2.5 by Isaac Z. Schlueter
 and contributors. This source is licensed under the
 [Blue Oak Model License 1.0.0](https://blueoakcouncil.org/license/1.0.0).
 
@@ -10,7 +11,8 @@ Brace expansion uses brace-expansion 0.1.1 under MIT OR Apache-2.0.
 
 ## Package ignore rules
 
-The package ignore-rule matcher derives from ignore 7.0.5.
+The ignore-rule matcher in `crates/maestro-pattern/src/ignore.rs`, shared by
+package and skill discovery, derives from ignore 7.0.5.
 
 ```text
 Copyright (c) 2013 Kael Zhang <i@kael.me>, contributors

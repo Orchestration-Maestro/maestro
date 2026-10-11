@@ -1,5 +1,5 @@
 //! Basic package pattern behavior through the public operation.
-use maestro_packages::{PatternError, minimatch};
+use maestro_pattern::{PatternError, minimatch};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 

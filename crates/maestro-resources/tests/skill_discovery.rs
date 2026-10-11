@@ -1218,7 +1218,7 @@ fn maestro_skills_respect_excluded_parent_directories() {
     let keep = dir.file("kept/child/SKILL.md", "---\ndescription: Kept\n---");
     let _ = dir.file("excluded/.ignore", "!child/SKILL.md\n");
     let _ = dir.file(".ignore", "EXCLUDED/\n!excluded/child/SKILL.md\n");
-    let _ = dir.file(
+    let local = dir.file(
         "self-blocked/SKILL.md",
         "---\ndescription: Blocked at entry\n---",
     );
@@ -1231,8 +1231,9 @@ fn maestro_skills_respect_excluded_parent_directories() {
         },
         &NativeResourceOperations,
     );
-    assert_eq!(result.skills.len(), 1);
+    assert_eq!(result.skills.len(), 2);
     assert_eq!(result.skills[0].file_path, keep);
+    assert_eq!(result.skills[1].file_path, local);
     assert!(result.diagnostics.is_empty());
 }
 
