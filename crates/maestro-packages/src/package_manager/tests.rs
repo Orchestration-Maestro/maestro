@@ -220,26 +220,6 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
     );
 }
 
-/// Prefix cases preserve authored syntax while correcting filesystem scope.
-#[test]
-fn ignore_prefixes_preserve_authored_rule_text() {
-    #[derive(serde::Deserialize)]
-    #[serde(deny_unknown_fields)]
-    struct Row {
-        line: String,
-        prefix: String,
-        expected: Option<String>,
-    }
-    let rows: Vec<Row> =
-        serde_json::from_str(include_str!("../../tests/fixtures/discovery_prefixes.json")).unwrap();
-    for (index, row) in rows.into_iter().enumerate() {
-        assert_eq!(
-            super::resource_discovery::prefix_ignore_pattern(&row.line, &row.prefix),
-            row.expected,
-            "case {index}"
-        );
-    }
-}
 /// Qualified native ignore decisions include literal braces and named classes.
 #[test]
 fn ignore_rules_match_qualified_native_cases() {

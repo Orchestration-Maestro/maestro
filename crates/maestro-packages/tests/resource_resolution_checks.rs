@@ -467,3 +467,48 @@ fn ignore_directory_prefixes_are_literal_identities() {
     }))
     .unwrap();
 }
+
+/// Directory patterns are normalized by their own scoped matcher.
+#[test]
+fn nested_ignore_directory_rules_keep_native_normalization() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&[
+            "ignore_scoped_directory_normalization",
+            "ignore_scoped_escaped_slash",
+            "ignore_deeper_negation",
+        ])
+        .await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Unicode case folding excludes the accented name without excluding its decoy.
+#[test]
+fn ignore_matching_folds_unicode_literal_names() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_unicode_case"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// One leading file byte-order mark is not part of the first ignore pattern.
+#[test]
+fn ignore_files_strip_one_leading_byte_order_mark() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_file_bom"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// An admitted nested skill entry stops descent into a distinguishable child.
+#[test]
+fn nonroot_skill_entry_stops_deeper_skill_discovery() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["skill_nonroot_stop"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}

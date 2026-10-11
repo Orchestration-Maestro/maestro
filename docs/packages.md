@@ -78,7 +78,10 @@ source files and entry-bearing children. Skills stop at an admitted `SKILL.md`;
 loose Markdown is root-only. Prompts and themes recurse by their suffix.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
-case-insensitive rules with literal braces and ignored-parent pruning. Native Unix
+directory-scoped rules with Unicode-lowercased patterns and paths, literal braces,
+and ignored-parent pruning. One leading byte-order mark is removed from each
+ignore file. The deepest matching directory decides, with later rules winning
+within that directory. Native Unix
 listings use byte-name order; replacement filesystem adapters supply their own
 order through `PackageOperations::resource_operations`. Returned records retain
 the first authored path and provenance after per-kind canonical deduplication.

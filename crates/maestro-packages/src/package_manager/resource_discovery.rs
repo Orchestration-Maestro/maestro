@@ -41,7 +41,7 @@ pub(super) fn collect_resource_files(
     {
         return Ok(entries);
     }
-    let mut rules = IgnoreRules::new();
+    let mut rules = ScopedIgnoreRules::default();
     Ok(collect_files(dir, dir, kind, operations, &mut rules))
 }
 /// Recurses through conventional resource directories.
@@ -50,17 +50,18 @@ fn collect_files(
     root: &str,
     kind: ResourceType,
     operations: &dyn ResourceOperations,
-    rules: &mut IgnoreRules,
+    rules: &mut ScopedIgnoreRules,
 ) -> Vec<String> {
     let mut result = Vec::new();
     if !operations.exists(Path::new(dir)) {
         return result;
     }
-    rules.load(dir, root, operations);
+    let mut local = IgnoreRules::new();
+    local.load(dir, operations);
+    rules.stack.push((dir.to_owned(), local));
     let entries = operations.read_dir(Path::new(dir)).unwrap_or_default();
-    if matches!(kind, ResourceType::Skills)
-        && admitted_skill(dir, root, &entries, operations, rules)
-    {
+    if matches!(kind, ResourceType::Skills) && admitted_skill(dir, &entries, operations, rules) {
+        rules.stack.pop();
         return vec![join(&[dir, "SKILL.md"])];
     }
     for entry in entries {
@@ -72,10 +73,7 @@ fn collect_files(
         let Some(file_type) = entry_type(&entry, &path, operations) else {
             continue;
         };
-        if rules.ignored(
-            &relative_path(root, &path),
-            file_type == ResourceFileType::Directory,
-        ) {
+        if rules.ignored(&path, file_type == ResourceFileType::Directory) {
             continue;
         }
         if file_type == ResourceFileType::Directory {
@@ -90,6 +88,7 @@ fn collect_files(
             result.push(path);
         }
     }
+    rules.stack.pop();
     result
 }
 impl ResourceType {
@@ -157,112 +156,91 @@ fn relative_path(root: &str, path: &str) -> String {
         path
     }
 }
-/// Shared ordered ignore state for one conventional traversal.
+/// Matchers scoped to the directories on the active traversal branch.
+#[derive(Default)]
+struct ScopedIgnoreRules {
+    /// Ancestor matchers followed by the current directory's matcher.
+    stack: Vec<(String, IgnoreRules)>,
+}
+impl ScopedIgnoreRules {
+    /// The deepest matching rule decides; pruned parents are never traversed.
+    fn ignored(&self, path: &str, directory: bool) -> bool {
+        self.stack
+            .iter()
+            .rev()
+            .find_map(|(dir, rules)| {
+                let decision = rules
+                    .matcher
+                    .matched(relative_path(dir, path).to_lowercase(), directory);
+                (!decision.is_none()).then(|| decision.is_ignore())
+            })
+            .unwrap_or(false)
+    }
+}
+/// Ordered ignore rules belonging to one directory.
 pub(super) struct IgnoreRules {
     /// Incrementally accumulated rules.
     builder: ignore::gitignore::GitignoreBuilder,
-    /// Whether added rules require compilation.
-    dirty: bool,
     /// The compiled rules after the latest directory load.
     matcher: ignore::gitignore::Gitignore,
 }
 impl IgnoreRules {
-    /// Starts an empty case-insensitive matcher.
+    /// Starts an empty case-sensitive matcher for folded input.
     pub(super) fn new() -> Self {
-        let mut builder = ignore::gitignore::GitignoreBuilder::new("");
-        let _ = builder.case_insensitive(true);
+        let builder = ignore::gitignore::GitignoreBuilder::new("");
         Self {
             builder,
-            dirty: false,
             matcher: ignore::gitignore::Gitignore::empty(),
         }
     }
     /// Adds a rule without replacing already accumulated rules.
     pub(super) fn add(&mut self, rule: &str) {
-        self.dirty = true;
-        let _ = self.builder.add_line(None, &encode_ignore_rule(rule));
+        let _ = self
+            .builder
+            .add_line(None, &encode_ignore_rule(rule).to_lowercase());
     }
     /// Publishes accumulated rules when they compile.
     pub(super) fn compile(&mut self) {
-        if !std::mem::take(&mut self.dirty) {
-            return;
-        }
         if let Ok(matcher) = self.builder.build() {
             self.matcher = matcher;
         }
     }
     /// Reads the three conventional ignore files in declaration order.
-    fn load(&mut self, dir: &str, root: &str, operations: &dyn ResourceOperations) {
-        let relative = relative_path(root, dir);
-        let prefix = if relative.is_empty() {
-            relative
-        } else {
-            format!("{relative}/")
-        };
+    fn load(&mut self, dir: &str, operations: &dyn ResourceOperations) {
         for name in [".gitignore", ".ignore", ".fdignore"] {
             let path = join(&[dir, name]);
-            if !operations.exists(Path::new(&path)) {
-                continue;
-            }
             let Ok(text) = operations.read_file(Path::new(&path)) else {
                 continue;
             };
-            for pattern in text
+            for line in text
+                .strip_prefix('\u{feff}')
+                .unwrap_or(&text)
                 .split('\n')
                 .map(|line| line.strip_suffix('\r').unwrap_or(line))
-                .filter_map(|line| prefix_ignore_pattern(line, &prefix))
             {
-                self.add(&pattern);
+                self.add(line);
             }
         }
         self.compile();
     }
     /// Tests parent exclusions before the entry itself.
+    #[cfg(test)]
     pub(super) fn ignored(&self, path: &str, directory: bool) -> bool {
         Path::new(path)
             .ancestors()
             .skip(1)
             .filter(|path| !path.as_os_str().is_empty())
-            .any(|parent| self.matcher.matched(parent, true).is_ignore())
-            || self.matcher.matched(path, directory).is_ignore()
+            .any(|parent| {
+                self.matcher
+                    .matched(parent.to_string_lossy().to_lowercase(), true)
+                    .is_ignore()
+            })
+            || self
+                .matcher
+                .matched(path.to_lowercase(), directory)
+                .is_ignore()
     }
 }
-/// Scopes authored rules to literal directories, preserving anchors and basename descent.
-pub(super) fn prefix_ignore_pattern(line: &str, prefix: &str) -> Option<String> {
-    let trimmed = crate::trim(line);
-    if trimmed.is_empty() || trimmed.starts_with('#') {
-        return None;
-    }
-    let (negative, pattern) = line
-        .strip_prefix('!')
-        .map_or((false, line), |pattern| (true, pattern));
-    let pattern = if negative || prefix.is_empty() || !pattern.starts_with("\\!") {
-        pattern
-    } else {
-        &pattern[1..]
-    };
-    if prefix.is_empty() {
-        return Some(line.to_owned());
-    }
-    let descendant = if pattern.trim_end_matches('/').contains('/') {
-        ""
-    } else {
-        "**/"
-    };
-    let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
-    let mut literal_prefix = String::new();
-    for character in prefix.chars() {
-        if matches!(character, '\\' | '*' | '?' | '[' | ']' | '!' | '#') {
-            literal_prefix.push('\\');
-        }
-        literal_prefix.push(character);
-    }
-    Some(format!(
-        "{}{literal_prefix}{descendant}{pattern}",
-        if negative { "!" } else { "" }
-    ))
-}
-
 /// Encodes literal braces and C-locale named bracket classes for the native matcher.
 fn encode_ignore_rule(pattern: &str) -> String {
     let mut result = String::new();
@@ -346,7 +324,7 @@ fn collect_child(
     root: &str,
     kind: ResourceType,
     operations: &dyn ResourceOperations,
-    rules: &mut IgnoreRules,
+    rules: &mut ScopedIgnoreRules,
 ) -> io::Result<Vec<String>> {
     if matches!(kind, ResourceType::Extensions) {
         resolve_extension_entries(dir, operations).map(Option::unwrap_or_default)
@@ -357,16 +335,15 @@ fn collect_child(
 /// Determines whether a file-like skill entry overrides directory scanning.
 fn admitted_skill(
     dir: &str,
-    root: &str,
     entries: &[ResourceEntry],
     operations: &dyn ResourceOperations,
-    rules: &IgnoreRules,
+    rules: &ScopedIgnoreRules,
 ) -> bool {
     entries.iter().any(|entry| {
         let path = join(&[dir, "SKILL.md"]);
         entry.name == "SKILL.md"
             && entry_type(entry, &path, operations) == Some(ResourceFileType::File)
-            && !rules.ignored(&relative_path(root, &path), false)
+            && !rules.ignored(&path, false)
     })
 }
 /// Resolves literal manifest operands, consulting ambient directories only on demand.

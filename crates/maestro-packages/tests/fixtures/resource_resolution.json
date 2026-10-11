@@ -2293,5 +2293,185 @@
       ],
       "themes": []
     }
+  },
+  {
+    "case": "ignore_scoped_directory_normalization",
+    "files": {
+      "pkg/prompts/sub/.ignore": "cache/ \n",
+      "pkg/prompts/sub/deep/cache/a.md": "hidden",
+      "pkg/prompts/other/a.md": "visible"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_scoped_escaped_slash",
+    "files": {
+      "pkg/prompts/sub/.ignore": "cache\\/\n",
+      "pkg/prompts/sub/deep/cache/a.md": "hidden",
+      "pkg/prompts/other/a.md": "visible"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_deeper_negation",
+    "files": {
+      "pkg/prompts/.ignore": "*.md\n",
+      "pkg/prompts/sub/.ignore": "!keep.md\n",
+      "pkg/prompts/sub/keep.md": "visible",
+      "pkg/prompts/sub/drop.md": "hidden"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/sub/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_unicode_case",
+    "files": {
+      "pkg/prompts/.ignore": "É.md\n",
+      "pkg/prompts/é.md": "hidden",
+      "pkg/prompts/e.md": "decoy"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/e.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_file_bom",
+    "files": {
+      "pkg/prompts/.ignore": "﻿*.md\n",
+      "pkg/prompts/a.md": "hidden"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "skill_nonroot_stop",
+    "files": {
+      "pkg/skills/selected/SKILL.md": "selected",
+      "pkg/skills/selected/deeper/SKILL.md": "excluded"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$BASE/pkg/skills/selected/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "prompts": [],
+      "themes": []
+    }
   }
 ]
