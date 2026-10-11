@@ -133,7 +133,9 @@ component actually supports, not a promise of new interactions.
 | Error | error with the existing error text/sign; tool background remains panel |
 | Streaming/busy | live with existing indicator/text; pending background remains panel |
 
-Within grouped families, states apply only to the components that support them;
+The component rows below override the generic notation where their existing
+presentation differs. Within grouped families, states apply only to components
+that support them;
 component-specific outcomes are listed in their rows below. Focus/hover/disabled
 styling is not invented for passive components. Status signs use `glyphs` only where the
 surface already has a sign; wording and animation stay with their owners.
@@ -150,10 +152,10 @@ caller which pack roles to use, without changing the widget APIs.
 | Text, TruncatedText | Default: text; optional caller background panel | [Widgets](docs/terminal/widgets.md) |
 | Spacer | Default: empty rows; no colour token | [Widgets](docs/terminal/widgets.md#spacer) |
 | Input | Default text; focus uses existing cursor; no hover/disabled/error state | [Widgets](docs/terminal/widgets.md#input) |
-| Editor | Default text, border; focus cursor; selected/completion accent, descriptions muted | [Editor](docs/terminal/editor.md) |
+| Editor | Default text and border, including scroll indicators; inverse-video cursor, focus enables hardware cursor when completion is closed; completion selection accent, descriptions/count/no-match muted | [Editor](docs/terminal/editor.md) |
 | SelectList | Default text, description/scroll muted; selected accent; no-match muted | [Widgets](docs/terminal/widgets.md) |
-| SettingsList | Default text, description/hint muted; selected accent; submenu keeps its component styling | [Widgets](docs/terminal/widgets.md) |
-| Markdown | Default text; headings/links/inline code accent; quotes muted/border; code text/border | [Markdown](docs/terminal/markdown.md) |
+| SettingsList | Default label text and value muted; selected cursor/label/value accent; description/hint/scroll/empty/no-match muted; optional search uses Input, submenu keeps its component styling | [Widgets](docs/terminal/widgets.md) |
+| Markdown | Default text; headings/links/inline code/list bullets accent, link URL muted; quotes muted/border and horizontal rules border; code text/border with caller highlighting, bold/italic/underline retained | [Markdown](docs/terminal/markdown.md) |
 | Image | Default image protocol output; text fallback muted; no recolouring of image content | [Images](docs/terminal/images.md) |
 | Loader, CancellableLoader | Busy live; message text; cancellation keeps existing input treatment | [Widgets](docs/terminal/widgets.md) |
 | TUI overlays | Default background/panel; focus belongs to overlay child, border if already present | [Overlays](docs/terminal/overlays.md) |
@@ -164,18 +166,37 @@ These are not yet implemented terminal application surfaces. Reuse toolkit
 components above; the theme-key adapter stays in
 [brand-roles.json](crates/maestro-theme/assets/theme/brand-roles.json).
 
-| Component family | States and role mappings |
+| Component | States and role mappings |
 | --- | --- |
-| Footer, keybinding hints | Default text/muted; selected model/thinking accent; busy live; errors error; Footer context usage warning warning, critical error |
-| User, assistant, skill-invocation, branch-summary, compaction-summary messages | Default text; user panel; thinking muted; streaming live; errors error |
-| ToolExecution, BashExecution, diff | Default title text/output muted; pending live/panel; success success/panel; error error/panel; BashExecution cancellation and output-truncation notices warning; diff additions success, removals error, context muted |
-| CustomMessage | Default panel/text and label accent; other states supplied by registered renderer |
-| DynamicBorder, BorderedLoader, CountdownTimer | Default border; busy live/accent; existing cancellation/focus treatment only |
-| CustomEditor, ExtensionEditor, ExtensionInput | Default text/border; focus accent/cursor; editor completions selected accent |
-| ExtensionSelector, ConfigSelector, ModelSelector, OAuthSelector, ScopedModelsSelector | Default text/muted; focused/selected accent; errors error; busy live where loading exists; ModelSelector current-model sign success; OAuthSelector configured/matching auth success, differing auth warning, unconfigured muted |
-| SessionSelector, SessionSelectorSearch, TreeSelector, UserMessageSelector | Default text/muted; focus/selected accent; search no-match muted; SessionSelector loading accent, deletion confirmation error, status accent/error |
-| SettingsSelector, ShowImagesSelector, ThemeSelector, ThinkingSelector | Default text/muted; focus/selected accent; preview keeps selected theme's own colours |
-| LoginDialog | Default text/muted; focus/selected accent; error error; busy live; login instructions warning, URL accent, open-link hint muted |
+| Footer | Path, usage, model/thinking and ordinary context statistics muted; context usage above 70% warning, above 90% error; extension status text keeps its supplied styling |
+| Keybinding hints | Keys and descriptions muted; no own busy/error state |
+| UserMessage | Text on panel; Markdown styling belongs to the toolkit |
+| AssistantMessage | Text; visible/hidden thinking muted and italic; aborted/error text error; streaming updates content without an extra status colour |
+| SkillInvocationMessage | Collapsed label accent, name text, expand hint muted; expanded label accent and content text on panel |
+| BranchSummaryMessage, CompactionSummaryMessage | Collapsed/expanded label accent and content text on panel; collapsed expand key muted |
+| ToolExecution | Partial, successful and error backgrounds panel; fallback title text, output/image fallback muted; collapsed/expanded content keeps the tool renderer's styling; hidden self-rendered content has no outer surface |
+| BashExecution | Running command, border and spinner success, or muted when excluded from context; running message/output muted; completed command success; cancelled/truncated notices warning, nonzero exit error; collapsed hidden-line hint muted, expanded output muted |
+| Diff | Additions success, removals error, context muted |
+| CustomMessage | Default label accent and content text on panel; collapsed/expanded custom rendering belongs to the registered renderer |
+| DynamicBorder | Border by default; caller-supplied colour when overridden; no own input/busy state |
+| BorderedLoader | Border; cancellable/noncancellable spinner accent, message muted; cancellation adds no outcome colour |
+| CountdownTimer | No visual surface; countdown text uses the owning dialog's title style |
+| CustomEditor | Toolkit Editor styling; app keybindings add no visual state |
+| ExtensionEditor | Border and accent title; child Editor text/cursor/completions use toolkit styling |
+| ExtensionInput | Border and accent title/countdown; child Input text/cursor |
+| ExtensionSelector | Border and accent title/countdown; selected arrow/option accent, other options text |
+| ConfigSelector | Text and muted filter/hints/no-results/count; group headers accent, subgroup headers muted; selected name bold; enabled mark success, disabled mark muted (resource enabled state, not disabled input) |
+| ModelSelector | Text; selected arrow/model and active scope accent; inactive scope, provider badges, model description, scroll count and no-match muted; current-model sign success; configured-provider hint warning; model-loading error text error |
+| OAuthSelector | Accent title and selected provider; other names text, scroll/no-match/unconfigured muted; matching configured credentials and environment/runtime/fallback/model-file auth signs success; different configured auth warning with muted separator |
+| ScopedModelsSelector | Accent title and selected arrow/model; other models text; provider badges, hints, count/no-match muted; enabled mark success, disabled mark muted, marks omitted when all enabled; unsaved warning |
+| SessionSelector | Accent borders, selected cursor and current session; selected row panel with bold message; named noncurrent session warning; prefixes/metadata/hints/no-results muted; active scope/sort/name filters and loading progress accent; delete confirmation/message/metadata error; other status accent or error |
+| SessionSelectorSearch | Nonvisual search parsing/filtering; no own component tokens; SessionSelector owns search Input and results |
+| TreeSelector | Selected cursor, active-path and fold marks accent; selected row panel with bold content; connectors/timestamps/search hints/count/no-entries muted; search query accent; attached labels and branch-summary label warning; user/custom/compaction labels accent; assistant label success with text content, muted aborted/no-content, or error text; tool results, bash, model/thinking changes, custom records, label changes and session titles muted; label editor prompt/hints muted with child Input cursor |
+| UserMessageSelector | Selected cursor accent and message bold; other messages text; metadata/count/empty/help muted; borders use their existing caller styling |
+| SettingsSelector | Accent title, muted description/hints; child SettingsList selection and submenu styling |
+| ShowImagesSelector, ThinkingSelector | Border; toolkit SelectList text/selected accent/description muted; no own loading/error outcome |
+| ThemeSelector | Border; toolkit SelectList text/selected accent/description muted; preview retains the selected theme's colours |
+| LoginDialog | Border and accent title/URL; optional instructions warning; manual prompts/placeholders, waiting/progress and cancel/open-link hints muted, prompt text text; child Input cursor; no own rendered success/error or spinner state |
 
 ### Browser and exported-viewer inventory to port
 
@@ -185,21 +206,67 @@ The browser author build is tracked in [browser scaffolding](https://github.com/
 and [browser storage](https://github.com/Orchestration-Maestro/maestro/issues/236)
 retain their own application policy.
 
-| Component family | States and role mappings |
+Browser controls retain their existing focus, hover, disabled and pressed
+structure. Map primary filled controls to on-accent on accent, secondary surfaces
+to text on panel, muted descriptions/placeholders to muted, focus rings to accent
+and destructive controls to error. Preserve existing opacity, visibility and
+selection cues; these mappings add no controls or outcome branches. Code uses
+`type.mono`; prose uses `type.body`. Document/image pixels and sandbox-authored
+content are not brand colours.
+
+| Component | States and role mappings |
 | --- | --- |
-| ChatPanel, AgentInterface | Default background/text; busy/streaming live; errors error; child controls focus/hover accent |
-| MessageList, UserMessage, AssistantMessage, ToolMessage, ToolMessageDebugView, AbortedMessage, StreamingMessageContainer | Default text/panel; streaming live; tool success success, errors error; interactive controls focus/hover accent |
-| Input, MessageEditor | Default text/panel/border; focus accent; hover accent on controls; disabled muted; sending busy live; errors error; MessageEditor drag-over accent border/text on panel, file-processing indicator muted |
-| ThinkingBlock, ExpandableSection, ConsoleBlock | Default text/muted; toggle focus/hover accent; expanded content text/panel; errors error where output carries errors |
-| AttachmentTile, AttachmentOverlay | Default panel/text/border; selected/focus/hover accent on controls; loading live; errors error |
-| CustomProviderCard, ProviderKeyInput | Default panel/text/muted; focus/hover accent; disabled muted; validation error error; CustomProviderCard checking warning, connected success, disconnected error with muted status text; ProviderKeyInput testing muted, saved-key sign success |
-| ModelSelector, ProvidersModelsTab | Default text/muted; focus/hover/selected accent; loading live; errors error |
-| CustomProviderDialog, ApiKeyPromptDialog, SettingsDialog, ApiKeysTab, ProxyTab | Default background/panel/text/border; focus/hover accent; disabled muted; validation error error; busy live where saving/checking exists; SettingsDialog selected sidebar tab text/panel, selected mobile tab text/accent border, inactive tabs muted |
-| PersistentStorageDialog, SessionListDialog | Default text/panel; focus/hover/selected accent on controls; denied/error error; loading live where supported |
-| SandboxIframe, ConsoleRuntimeProvider, ArtifactsRuntimeProvider, AttachmentsRuntimeProvider, FileDownloadRuntimeProvider | Frame border/background; default content stays sandbox-owned; busy live/error error in host status only |
-| Tool renderers: BashRenderer, DefaultRenderer, CalculateRenderer, GetCurrentTimeRenderer, JavaScript REPL, ExtractDocument | Default text/panel/border; pending live; result success/error; code uses mono, descriptions muted; expand controls focus/hover accent |
-| ArtifactElement, ArtifactPill, artifacts tool renderer, Console; HtmlArtifact, SvgArtifact, ImageArtifact, MarkdownArtifact, TextArtifact, GenericArtifact, PdfArtifact, DocxArtifact, ExcelArtifact | Default container panel/text/border; source/preview/download and sheet controls focus/hover/selected accent; loading live; errors error; document colours stay document-owned |
-| Export viewer sidebar, search/filter, tree, content, image modal | Default background/panel/text/border; focus/hover/selected accent on controls; tool/error content uses success/error; no streaming state in a stored session |
+| ChatPanel | Background/text; missing-agent text muted; artifacts-open badge on-accent on accent with existing count/hover treatment; child AgentInterface and ArtifactsPanel own their states |
+| AgentInterface | Background/text; missing-session and statistics muted; clickable cost hover text; streaming visibility and editor controls belong to their children |
+| MessageList | Child-owned message styling; no own loading/error surface |
+| UserMessage | Text on panel; attachments and Markdown keep child styling |
+| AssistantMessage | Content text; nonstreaming usage muted with text hover when clickable; error and aborted messages error; thinking/tools child-owned |
+| ToolMessage | Default card panel/text/border, or no wrapper for custom rendering; pending/success/error and expansion belong to the selected tool renderer; debug mode uses ToolMessageDebugView |
+| ToolMessageDebugView | Call/result labels and absent-result text muted; JSON/text code uses mono; no own outcome colour |
+| AbortedMessage | Error text, italic |
+| StreamingMessageContainer | Streaming placeholder/cursor muted with existing pulse; idle without a message renders nothing; message content uses its own component styling |
+| Input | Text, muted placeholder, border; selected text on-accent on accent; focus accent ring; disabled retains existing opacity/pointer treatment; required sign and error text/border error; no own busy state |
+| MessageEditor | Text on panel/border, muted placeholder; drag-over accent border/message with existing overlay; file-processing spinner muted; idle send control disabled for empty input/no attachments or processing files; streaming replaces send with abort; thinking/model/attachment controls keep existing selected/hover/focus treatment; no own rendered error outcome |
+| ThinkingBlock | Collapsed header muted, hover text; streaming keeps existing shimmer in muted/text roles; expanded Markdown thinking content muted; chevron retains rotation; no error state |
+| ExpandableSection | Collapsed/expanded toggle muted, hover text; expanded children own content styling |
+| ConsoleBlock | Border and panel header, muted label/copy control; hover on-accent on accent; copied check retains control colour; output text or error by variant on background, mono |
+| AttachmentTile | Preview image unchanged; filename/icon fallback muted on panel/border; PDF badge muted on background; thumbnail hover keeps opacity cue; optional remove control muted, hover text on panel; no loading/error indicator |
+| AttachmentOverlay | Background backdrop and header/border/text; preview/extracted-text toggle and download/close controls keep focus/hover/selected treatment; extracted text text on panel, empty-text fallback text; rendered load error error text/border on panel; selected spreadsheet tab accent text/border, others muted with text/border hover; document pixels unchanged; no loading spinner |
+| CustomProviderCard | Name text, metadata/model count/status description muted, border; auto-discovery checking sign warning, connected success, disconnected error; refresh/edit/delete ghost controls keep existing hover/focus treatment; no separate validation outcome |
+| ProviderKeyInput | Text label; testing badge muted on panel; saved-key check success, invalid badge error; child password Input focus; save disabled while testing, empty, or an unchanged saved key; no delete control |
+| ModelSelector | Text model names, muted metadata/badges and unsupported capability icons with existing opacity; current-model check success; selected row panel; mouse-hover panel; active thinking/vision filters on-accent on accent, inactive text on panel; search Input focus; no own rendered loading/error outcome |
+| ProvidersModelsTab | Text headings, muted descriptions/empty state, border separator; add/child refresh/edit/delete controls keep their styles; provider status belongs to CustomProviderCard, keys to ProviderKeyInput; load/delete failures are not rendered outcomes |
+| CustomProviderDialog | Text headings and border; child inputs/select focus; test disabled while testing or missing base URL, save disabled for missing name/base URL; testing button text and discovered models muted; connection error error; manual-provider guidance muted; save failure uses existing alert, not a new inline outcome |
+| ApiKeyPromptDialog | Text header and dialog surface; key testing/saved/invalid/disabled presentation belongs to ProviderKeyInput; no separate busy/error state |
+| SettingsDialog | Background/panel/text/border; active desktop sidebar text on panel, active mobile tab text with accent border; inactive tabs muted with text/panel hover; selected child tab owns content; no own loading/error state |
+| ApiKeysTab | Muted introduction; ProviderKeyInput owns each key's states |
+| ProxyTab | Text label, muted explanation/hint; enabled switch on-accent on accent, disabled switch panel; proxy URL Input disabled while proxy off with existing opacity, otherwise text/focus; no rendered save/error outcome |
+| PersistentStorageDialog | Text header, muted explanation; visible warning sign warning on panel with warning boundary; grant/continue controls keep focus/hover treatment; denial, unavailable API and request failure are logged, not rendered outcomes; no reachable requesting/disabled state |
+| SessionListDialog | Text titles on panel/border, muted metadata; loading and empty text muted; row hover panel; delete affordance error and revealed by row hover; load/delete failures log only, no rendered error outcome or persistent selection state |
+| SandboxIframe | Host iframe frame has no own branded status; sandbox content owns styling; no rendered busy/error outcome |
+| ConsoleRuntimeProvider, ArtifactsRuntimeProvider, AttachmentsRuntimeProvider, FileDownloadRuntimeProvider | Nonvisual runtime providers; no component colour/state mapping; consumer console, artifact or attachment owns presentation |
+| BashRenderer | Pending header live, complete sign success, error sign error, description muted; command/output ConsoleBlock text or error; no expansion toggle |
+| DefaultRenderer | Header live while streaming without a result, success for a non-error result or nonstreaming call, error for an error result; muted labels, input/output code mono and images unchanged; no expansion toggle |
+| CalculateRenderer, GetCurrentTimeRenderer | Pending/complete/error header live/success/error; successful output text, error output error; no expansion toggle |
+| JavaScript REPL renderer | Pending/complete/error header live/success/error; collapsed/expanded code toggle muted with text hover; code mono, console text/error by result, returned attachments child-owned |
+| ExtractDocument renderer | Pending/complete/error header live/success/error; collapsed/expanded toggle muted with text hover; URL/metadata muted; result attachments child-owned |
+| ArtifactsPanel | Background/text, tab-bar border; active tab accent text and underline, inactive tab muted with text hover and transparent underline; active artifact supplies header controls/content; close control keeps hover/focus treatment; collapsed or empty panel hidden; overlay uses background backdrop and no side border, inline uses border; no own busy/error outcome |
+| ArtifactElement | Nonvisual base contract for content/header controls; concrete artifact owns presentation |
+| ArtifactPill | Text filename on panel/border; hover panel and pointer only when a panel is supplied; no selected/loading/error state |
+| Artifacts tool renderer | Pending/complete/error header live/success/error; expanded/collapsed toggle muted with text hover where details exist; code mono, diff additions success/removals error, error text/console error; file pills child-owned |
+| Console | Collapsed/expanded summary muted, hover text; expanded logs muted or error by log type, mono; autoscroll enabled on-accent on accent, off retains panel hover; copy control keeps hover treatment |
+| HtmlArtifact | Preview sandbox owns pixels; code view mono on background; source/preview toggle keeps existing selected/hover/focus control treatment, run/copy/download controls keep focus/hover and copied cue; console shown only when logs exist, console owns errors |
+| SvgArtifact, MarkdownArtifact | Preview SVG pixels unchanged or Markdown child-owned; source view mono; source/preview toggle keeps existing selected/hover/focus control treatment; copy/download controls keep focus/hover and copied cue; no own loading/error outcome |
+| ImageArtifact | Image pixels unchanged on background; download control focus/hover; image-load failure displays its existing fallback image, not an error panel |
+| TextArtifact | Text/code mono, syntax styling from code renderer; copy/download controls keep focus/hover and copied cue; no own loading/error outcome |
+| GenericArtifact | Text filename and muted icon/no-preview guidance on background; download focus/hover; no own loading/error outcome |
+| PdfArtifact, DocxArtifact | Background with document-owned pixels and border/separators; download focus/hover; rendered load error error text/border on panel; no loading indicator |
+| ExcelArtifact | Background and text/border cells, panel headers/alternating rows; active sheet accent text/border, inactive muted with text/border hover; download focus/hover; rendered load error error text/border on panel; no loading indicator |
+| Export viewer sidebar | Background/panel/text/border; usage/footer muted; selected entry panel, active path accent, entry labels accent/success/warning/error/muted by entry kind; mobile open/close controls muted with text/panel hover, resizer hover/drag panel; mobile backdrop background; no streaming state |
+| Export viewer search/filter | Text and muted placeholder/hints; focus accent; active filter on-accent on accent, inactive muted; filter/close hover text and text border; no disabled/busy/error outcome |
+| Export viewer tree | Text entries, muted connectors/metadata; selected/hovered panel with bold selected content, active-path accent treatment; off-path dimmed until hover; labels warning, user/skill/custom/compaction accent, assistant success with muted aborted/no-content or error; tool and state-change summaries muted |
+| Export viewer content | Text on panel; tool output muted, success/error outcomes success/error; thinking muted; code mono and diff success/error/muted; expanded/collapsed controls keep hover treatment; document content unchanged |
+| Export viewer image modal | Image mount only; image pixels unchanged; no modal styling, open/close handlers or loading/streaming outcome in the viewer |
 
 ### Landed OAuth completion page
 
