@@ -380,7 +380,7 @@ async fn command_corpus(
                 .iter()
                 .any(|entry| entry == r#"entry registered-shortcut "/ordinary-origin""#)
         );
-        release_command(driver, completion, command).await?;
+        release_command(driver, completion, command, description).await?;
         assert!(driver.release(&format!("shortcut {key}")).await);
     }
     Ok(())
@@ -391,11 +391,15 @@ async fn release_command(
     driver: &mut impl Driver,
     completion: bool,
     command: u32,
+    description: Option<&str>,
 ) -> Result<(), String> {
     if completion {
         let id = driver.identity("completion run Ω")?;
         assert_ne!(id, command);
         initial_completion(driver, command, id).await?;
+        if description == Some("") {
+            return completion_first(driver).await;
+        }
         assert!(driver.release("command run Ω").await);
         assert_eq!(
             driver.completion(id, "after release").await?,
@@ -789,5 +793,19 @@ async fn release_order(
         );
         assert!(driver.release("completion owned").await);
     }
+    Ok(())
+}
+
+/// Removing completion leaves the separately registered command callable.
+async fn completion_first(driver: &mut impl Driver) -> Result<(), String> {
+    assert!(driver.release("completion run Ω").await);
+    driver
+        .run_plain_command("run Ω", "after completion release")
+        .await?;
+    assert_eq!(
+        driver.transcript().last().unwrap(),
+        r#"entry registered-command {"args":"after completion release","cwd":"/work"}"#
+    );
+    assert!(driver.release("command run Ω").await);
     Ok(())
 }
