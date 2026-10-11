@@ -1,0 +1,314 @@
+[
+  {
+    "kind": "tool",
+    "name": "object",
+    "input": "{\"name\":\"x\",\"description\":\"\",\"parameters\":\"{\\\"z\\\":1, \\\"a\\\":false}\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": "",
+        "parameters": "{\"z\":1, \"a\":false}",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "tool",
+    "name": "array",
+    "input": "[\"x\",\"\",\"{}\",{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}]",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": "",
+        "parameters": "{}",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "tool",
+    "name": "duplicate",
+    "input": "{\"name\":\"first\",\"name\":\"x\",\"description\":\"\",\"parameters\":\"{\\\"z\\\":1, \\\"a\\\":false}\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "error": "duplicate field `name` at line 1 column 22"
+    }
+  },
+  {
+    "kind": "tool",
+    "name": "parameters-object",
+    "input": "{\"name\":\"x\",\"description\":\"\",\"parameters\":{},\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "error": "invalid type: map, expected a string at line 1 column 42"
+    }
+  },
+  {
+    "kind": "tool",
+    "name": "missing-name",
+    "input": "{\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"},\"description\":\"\",\"parameters\":\"{\\\"z\\\":1, \\\"a\\\":false}\"}",
+    "result": {
+      "error": "missing field `name` at line 1 column 145"
+    }
+  },
+  {
+    "kind": "tool",
+    "name": "null-name",
+    "input": "{\"name\":null,\"description\":\"\",\"parameters\":\"{\\\"z\\\":1, \\\"a\\\":false}\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "error": "invalid type: null, expected a string at line 1 column 12"
+    }
+  },
+  {
+    "kind": "tool",
+    "name": "unknown-deep",
+    "input": "{\"unread\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"name\":\"x\",\"description\":\"\",\"parameters\":\"{\\\"z\\\":1, \\\"a\\\":false}\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": "",
+        "parameters": "{\"z\":1, \"a\":false}",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "command",
+    "name": "description-missing",
+    "input": "{\"name\":\"x\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": null,
+        "source": "extension",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "command",
+    "name": "array",
+    "input": "[\"x\",null,\"extension\",{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}]",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": null,
+        "source": "extension",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "command",
+    "name": "description-null",
+    "input": "{\"name\":\"x\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"},\"description\":null}",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": null,
+        "source": "extension",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "command",
+    "name": "description-empty",
+    "input": "{\"name\":\"x\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"},\"description\":\"\"}",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": "",
+        "source": "extension",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "command",
+    "name": "description-wrong",
+    "input": "{\"name\":\"x\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"},\"description\":42}",
+    "result": {
+      "error": "invalid type: integer `42`, expected a string at line 1 column 138"
+    }
+  },
+  {
+    "kind": "command",
+    "name": "source-map",
+    "input": "{\"name\":\"x\",\"source\":{\"extension\":null},\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "ok": {
+        "name": "x",
+        "description": null,
+        "source": "extension",
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "kind": "command",
+    "name": "source-wrong",
+    "input": "{\"name\":\"x\",\"source\":\"unknown\",\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
+    "result": {
+      "error": "unknown variant `unknown`, expected one of `extension`, `prompt`, `skill` at line 1 column 30"
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "details-missing",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":-0.0}",
+    "result": {
+      "ok": {
+        "summary": "s",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": -0.0
+      }
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "array",
+    "input": "[\"s\",\"cut\",0,null]",
+    "result": {
+      "ok": {
+        "summary": "s",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 0.0,
+        "details": null
+      }
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "details-null",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":-0.0,\"details\":null}",
+    "result": {
+      "ok": {
+        "summary": "s",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": -0.0,
+        "details": null
+      }
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "details-text-null",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":-0.0,\"details\":\"null\"}",
+    "result": {
+      "ok": {
+        "summary": "s",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": -0.0,
+        "details": "null"
+      }
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "details-text-object",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":-0.0,\"details\":\"{\\\"z\\\":0,\\\"z\\\":1}\"}",
+    "result": {
+      "ok": {
+        "summary": "s",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": -0.0,
+        "details": "{\"z\":0,\"z\":1}"
+      }
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "details-wrong",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":-0.0,\"details\":{\"a\":1}}",
+    "result": {
+      "error": "invalid type: map, expected a string at line 1 column 70"
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "tokens-null",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":null}",
+    "result": {
+      "error": "invalid type: null, expected f64 at line 1 column 59"
+    }
+  },
+  {
+    "kind": "compact",
+    "name": "tokens-wrong",
+    "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":\"1\"}",
+    "result": {
+      "error": "invalid type: string \"1\", expected f64 at line 1 column 58"
+    }
+  },
+  {
+    "kind": "thinking",
+    "name": "literal",
+    "input": "\"off\"",
+    "result": {
+      "ok": "off"
+    }
+  },
+  {
+    "kind": "thinking",
+    "name": "object",
+    "input": "{\"off\":null}",
+    "result": {
+      "ok": "off"
+    }
+  },
+  {
+    "kind": "thinking",
+    "name": "unknown",
+    "input": "\"maximum\"",
+    "result": {
+      "error": "unknown variant `maximum`, expected one of `off`, `minimal`, `low`, `medium`, `high`, `xhigh` at line 1 column 9"
+    }
+  },
+  {
+    "kind": "thinking",
+    "name": "null",
+    "input": "null",
+    "result": {
+      "error": "expected value at line 1 column 1"
+    }
+  }
+]

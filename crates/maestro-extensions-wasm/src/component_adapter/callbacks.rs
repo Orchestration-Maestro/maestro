@@ -87,6 +87,8 @@ macro_rules! kinds {
 kinds! {
     shared {
         Event(ExtensionHandler),
+        CompactionComplete(crate::CompactionComplete),
+        CompactionError(crate::CompactionError),
         Listener(crate::EventListener),
         Command(CommandHandler),
         Completion(crate::ArgumentCompletions),

@@ -6,7 +6,7 @@ canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
-event channels, live context observations and model catalog queries.
+event channels, live context observations, model catalog queries, ordinary actions and compaction notifications.
 
 ## Build a component
 
@@ -282,6 +282,47 @@ and branch entries, queries the session reader and catalog, and returns compacti
 content whose opaque details depend on those live query results. Summary formatting
 remains in its existing author helper.
 
+## Ordinary actions
+
+`ExtensionAPI` provides `send_message`, `send_user_message`, `append_entry`,
+`set_session_name`, `get_session_name` and `set_label`. Ordinary sends forward the
+supplied data and optional delivery choices to the host. `SendMessageOptions`
+requests `steer`, `followUp` or `nextTurn` delivery and an optional `trigger_turn`;
+`SendUserMessageOptions` requests `steer` or `followUp`. Missing options and empty
+options remain distinct. Clearing a label uses `None`, not an empty string.
+
+`get_active_tools`, `get_all_tools` and `get_commands` return the host's ordered
+records without sorting or deduplication. `set_active_tools` forwards the requested
+names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) and
+[`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
+retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
+opaque schema and details text.
+
+## Model selection and action errors
+
+`set_model` waits for the host's boolean reply; other ordinary actions return their
+immediate host result. `false` is a successful selection reply, not a guest error.
+`get_thinking_level` reads the supplied level and `set_thinking_level` forwards the
+requested level. Authentication, catalog construction, clamping, queues and
+persistence remain host policy. Host rejections, including loading and stale-context
+messages, remain recoverable `ExtensionResult` errors (inside the future for model
+selection).
+
+## Compaction admission and notifications
+
+`ExtensionContext::compact` is inherited by command and replacement command views.
+It returns admission before its optional completion or error notification.
+[`CompactOptions`](../../crates/maestro-extensions-wasm/src/types/context.rs) carries
+optional literal instructions, `on_complete` and `on_error`. Completion receives
+`CompactionResult`; error receives the supplied message. A callback failure returns
+to the host, which decides whether to invoke the error callback.
+
+Accepted notifications retain their callback entries until host release; rejected
+admission retains neither entry. Host release removes a callback's table ownership;
+separately retained aliases keep their captures. Compaction notifications receive
+the existing callback-scoped emitter: see [event channels](#event-channels). The
+guest forwards emissions; the host routes them.
+
 ## How an event travels
 
 The guest exports one asynchronous function, `invoke-event`, for every event. The host passes
@@ -289,15 +330,17 @@ the callback, the event as one host-encoded JSON document whose `type` names the
 the event needs: a context, and for before-compaction or before-tree its owned signal.
 A signal that comes with any other event is dropped. Resources never appear in the document.
 
-Unshared optional properties keep three states apart: omitted, explicitly `null`, and present, including
-empty strings, empty lists and `false`. In unshared records such a field is a
+Unshared optional event fields keep three states apart: omitted, explicitly `null`, and present, including
+empty strings, empty lists and `false`. Such an event field is a
 `Presence<T>`: it defaults to `Missing` when the property is absent and is skipped on
 serialization only while it is `Missing`. Serializing `Missing` on its own, outside a property,
 is an error; `Null` serializes as `null` and `Present` as its value.
 
 Shared records retain their own optional-field serialization: ordinary `Option` fields
 collapse missing and null, while existing nested options retain explicit null. They
-have no added `Presence` wrapper.
+have no added `Presence` wrapper. The inventory record
+[`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
+also uses standard `Option` decoding for `description`: missing and null both become `None`.
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder

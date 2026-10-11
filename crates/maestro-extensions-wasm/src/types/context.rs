@@ -5,6 +5,33 @@
     clippy::excessive_nesting
 )]
 
+/// A synchronous completion notification with callback-scoped emission.
+///
+/// The emitter cannot be retained beyond this invocation:
+/// ```compile_fail,E0521
+/// use std::{cell::RefCell, rc::Rc};
+/// use maestro_extensions_wasm::{CallbackEmitter, CompactionComplete};
+/// let retained: Rc<RefCell<Option<CallbackEmitter<'static>>>> = Rc::default();
+/// let callback: CompactionComplete = Rc::new(move |_, emitter| {
+///     retained.replace(Some(emitter));
+///     Ok(())
+/// });
+/// ```
+pub type CompactionComplete =
+    Rc<dyn for<'a> Fn(crate::CompactionResult, crate::CallbackEmitter<'a>) -> ExtensionResult<()>>;
+/// A synchronous error notification with callback-scoped emission.
+pub type CompactionError =
+    Rc<dyn for<'a> Fn(String, crate::CallbackEmitter<'a>) -> ExtensionResult<()>>;
+/// A fire-and-return compaction request.
+#[derive(Default)]
+pub struct CompactOptions {
+    /// Optional literal instructions forwarded to the host.
+    pub custom_instructions: Option<String>,
+    /// Optional completion callback supplied to the host.
+    pub on_complete: Option<CompactionComplete>,
+    /// Optional error callback supplied to the host.
+    pub on_error: Option<CompactionError>,
+}
 pub use crate::bindings::maestro::extension::host::ContextUsage;
 use crate::{Model, ModelRegistry, ReadonlySessionManager};
 /// Retained opaque UI capability supplied by the host.
@@ -68,6 +95,8 @@ port! {
     ContextPort for ExtensionContext via 0 {
         /// The working directory of the current session.
         fn cwd() -> String;
+        /// Requests compaction without waiting for notification.
+        fn compact(options: Option<CompactOptions>) -> ();
         /// Acquires the currently bound UI capability.
         fn ui() -> ExtensionUIContext;
         /// Reads the host UI availability flag.

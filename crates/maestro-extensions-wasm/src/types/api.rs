@@ -13,8 +13,11 @@ use super::context::{ExtensionCommandContext, ExtensionContext};
 use super::events::ExtensionHandler;
 use super::extension_result::{ExtensionFuture, ExtensionResult};
 use super::tools::ToolDefinition;
-use crate::AutocompleteItem;
 pub use crate::bindings::maestro::extension::host::{FlagOptions, FlagType, FlagValue};
+use crate::{
+    AutocompleteItem, CustomMessageInput, Model, SendMessageOptions, SendUserMessageOptions,
+    SlashCommandInfo, ThinkingLevel, ToolInfo, UserContent,
+};
 
 /// Handler of a registered command: receives the argument text and a command context.
 pub type CommandHandler =
@@ -60,6 +63,33 @@ port! {
         fn register_tool(tool: ToolDefinition) -> ();
         /// Forwards a custom entry to the host's session.
         fn append_entry(custom_type: &str, data: Option<Value>) -> ();
+        /// Sends the supplied custom message and optional delivery choices.
+        fn send_message(message: CustomMessageInput, options: Option<SendMessageOptions>) -> ();
+        /// Sends the supplied user content and optional delivery choice.
+        fn send_user_message(content: UserContent, options: Option<SendUserMessageOptions>) -> ();
+        /// Sets the literal session name through the host.
+        fn set_session_name(name: &str) -> ();
+        /// Reads the host's current optional session name.
+        fn get_session_name() -> Option<String>;
+        /// Sets or clears a label through the host.
+        fn set_label(entry_id: &str, label: Option<&str>) -> ();
+        /// Reads the host's ordered active tool names.
+        fn get_active_tools() -> Vec<String>;
+        /// Reads the host's ordered tool inventory.
+        fn get_all_tools() -> Vec<ToolInfo>;
+        /// Selects the supplied tool names through the host.
+        fn set_active_tools(tool_names: &[String]) -> ();
+        /// Reads the host's ordered command inventory.
+        fn get_commands() -> Vec<SlashCommandInfo>;
+        /// Reads the host's current thinking level.
+        fn get_thinking_level() -> ThinkingLevel;
+        /// Sets the requested thinking level through the host.
+        fn set_thinking_level(level: ThinkingLevel) -> ();
+
+    }
+    asynchronous {
+        /// Selects the supplied model through the host.
+        fn set_model(model: Model) -> bool;
     }
     infallible {
         /// Returns the supplied host bus.
@@ -76,5 +106,13 @@ impl ExtensionAPI {
     #[must_use]
     pub fn new(host: Rc<dyn ExtensionHost>) -> Self {
         Self(host)
+    }
+}
+
+impl ExtensionAPI {
+    /// Selects the supplied model through the host and awaits its boolean reply.
+    #[must_use]
+    pub fn set_model(&self, model: Model) -> ExtensionFuture<'_, bool> {
+        self.0.set_model(model)
     }
 }

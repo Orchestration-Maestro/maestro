@@ -10,6 +10,57 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn send_message(
+        &self,
+        message: crate::CustomMessageInput,
+        options: Option<crate::SendMessageOptions>,
+    ) -> ExtensionResult<()> {
+        self.0.send_message(
+            &encode_value(&message)?,
+            options.as_ref().map(encode_value).transpose()?.as_deref(),
+        )
+    }
+    fn send_user_message(
+        &self,
+        content: crate::UserContent,
+        options: Option<crate::SendUserMessageOptions>,
+    ) -> ExtensionResult<()> {
+        self.0.send_user_message(
+            &encode_value(&content)?,
+            options.as_ref().map(encode_value).transpose()?.as_deref(),
+        )
+    }
+    fn set_model(&self, model: crate::Model) -> crate::ExtensionFuture<'_, bool> {
+        Box::pin(async move { self.0.set_model(encode_value(&model)?).await })
+    }
+    fn get_all_tools(&self) -> ExtensionResult<Vec<crate::ToolInfo>> {
+        super::session::decode(&self.0.get_all_tools()?)
+    }
+    fn get_commands(&self) -> ExtensionResult<Vec<crate::SlashCommandInfo>> {
+        super::session::decode(&self.0.get_commands()?)
+    }
+    fn get_thinking_level(&self) -> ExtensionResult<crate::ThinkingLevel> {
+        super::session::decode(&self.0.get_thinking_level()?)
+    }
+    fn set_thinking_level(&self, level: crate::ThinkingLevel) -> ExtensionResult<()> {
+        self.0.set_thinking_level(&encode_value(&level)?)
+    }
+    fn set_session_name(&self, name: &str) -> ExtensionResult<()> {
+        self.0.set_session_name(name)
+    }
+    fn get_session_name(&self) -> ExtensionResult<Option<String>> {
+        self.0.get_session_name()
+    }
+    fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()> {
+        self.0.set_label(entry_id, label)
+    }
+    fn get_active_tools(&self) -> ExtensionResult<Vec<String>> {
+        self.0.get_active_tools()
+    }
+    fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()> {
+        self.0.set_active_tools(tool_names)
+    }
+
     fn events(&self) -> crate::EventBus {
         super::event_bus::events(self.0.clone())
     }

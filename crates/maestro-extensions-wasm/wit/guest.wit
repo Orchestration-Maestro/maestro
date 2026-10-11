@@ -52,4 +52,6 @@ interface guest {
     invoke-event: async func(
         handler: borrow<callback>, event: string, resources: capabilities,
     ) -> result<event-outcome, string>;
+    invoke-compaction-complete: func(handler: borrow<callback>, %result: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+    invoke-compaction-error: func(handler: borrow<callback>, error: string, emitter: borrow<callback-emitter>) -> result<_, string>;
 }

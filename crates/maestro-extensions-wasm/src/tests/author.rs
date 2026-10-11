@@ -16,10 +16,14 @@ use maestro_extensions_wasm::{
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
 
+#[path = "action_author.rs"]
+mod action_author;
 #[path = "bus_author.rs"]
 mod bus_author;
 #[path = "catalog_author.rs"]
 mod catalog_author;
+#[path = "compaction_author.rs"]
+mod compaction_author;
 #[path = "reader_author.rs"]
 mod reader_author;
 #[path = "registration_author.rs"]
@@ -368,6 +372,7 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
         captured: Rc::default(),
         kept: Rc::default(),
     };
+    let compaction_aliases = compaction_author::Aliases::default();
     let captured = Rc::clone(&probe.captured);
     let tool_api = api.clone();
     api.on(
@@ -383,9 +388,17 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
             get_argument_completions: None,
             description: None,
             handler: Rc::new(move |args, ctx| {
+                let aliases = compaction_aliases.clone();
                 let api = tool_api.clone();
                 let captured = Rc::clone(&captured);
                 Box::pin(async move {
+                    if let Some(request) = args.strip_prefix("compact ") {
+                        let input = serde_json::from_str(request).map_err(|e| e.to_string())?;
+                        return compaction_author::dispatch(&api, &ctx, &input, &aliases).await;
+                    }
+                    if let Some(request) = args.strip_prefix("action ") {
+                        return action_author::dispatch(&api, request).await;
+                    }
                     if args == "bus-prepare" {
                         return bus_author::register_preparation(&api);
                     }

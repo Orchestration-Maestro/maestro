@@ -101,6 +101,15 @@ pub trait Driver {
     fn abort_signal(&mut self, signal: usize) -> Result<(), String>;
     /// The handle of the flag lent for the most recent compaction.
     fn previous_signal(&mut self) -> &mut Option<usize>;
+    /// Repeats release through a fresh borrow of an existing identity.
+    async fn repeat_release(&mut self, handler: u32) -> Result<(), String>;
+    /// Delivers one compaction notification through an existing borrowed emitter.
+    async fn notify_compaction(
+        &mut self,
+        handler: u32,
+        payload: &str,
+        complete: bool,
+    ) -> Result<(), String>;
     /// Synchronously invokes a registered preparation callback.
     async fn prepare(&mut self, name: &str, args: &str) -> Result<String, String> {
         self.prepare_key(self.identity(&format!("prepare {name}"))?, args)
